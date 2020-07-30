@@ -13,7 +13,7 @@ namespace Azure.Cosmos
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            return typeToConvert == typeof(Geometry)
+            return typeToConvert == typeof(GeoJson)
                 || typeToConvert == typeof(GeometryCollection)
                 || typeToConvert == typeof(LineString)
                 || typeToConvert == typeof(MultiLineString)

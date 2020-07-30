@@ -11,21 +11,21 @@ namespace Azure.Cosmos.Spatial
     /// Base class for spatial geometry objects in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    internal abstract class Geometry : IEquatable<Geometry>
+    internal abstract class GeoJson : IEquatable<GeoJson>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="GeoJson" /> class in the Azure Cosmos DB service.
         /// </summary>
-        protected Geometry()
+        protected GeoJson()
             : this(boundingBox: default)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="GeoJson" /> class in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="boundingBox">Bounding box.</param>
-        protected Geometry(BoundingBox boundingBox)
+        protected GeoJson(BoundingBox boundingBox)
         {
             this.BoundingBox = boundingBox;
         }
@@ -49,16 +49,16 @@ namespace Azure.Cosmos.Spatial
         public BoundingBox BoundingBox { get; }
 
         /// <summary>
-        /// Determines whether the specified <see cref="Geometry" /> is equal to the current <see cref="Geometry" /> in the Azure Cosmos DB service.
+        /// Determines whether the specified <see cref="GeoJson" /> is equal to the current <see cref="GeoJson" /> in the Azure Cosmos DB service.
         /// </summary>
         /// <returns>
         /// true if the specified object  is equal to the current object; otherwise, false.
         /// </returns>
         /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj) => obj is Geometry geometry && this.Equals(geometry);
+        public override bool Equals(object obj) => obj is GeoJson geometry && this.Equals(geometry);
 
         /// <summary>
-        /// Serves as a hash function for the <see cref="Geometry" /> type in the Azure Cosmos DB service.
+        /// Serves as a hash function for the <see cref="GeoJson" /> type in the Azure Cosmos DB service.
         /// </summary>
         /// <returns>
         /// A hash code for the current geometry.
@@ -77,13 +77,13 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <summary>
-        /// Determines if this <see cref="Geometry" /> is equal to the <paramref name="other" /> in the Azure Cosmos DB service.
+        /// Determines if this <see cref="GeoJson" /> is equal to the <paramref name="other" /> in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="other"><see cref="Geometry" /> to compare to this <see cref="Geometry" />.</param>
+        /// <param name="other"><see cref="GeoJson" /> to compare to this <see cref="GeoJson" />.</param>
         /// <returns><c>true</c> if geometries are equal. <c>false</c> otherwise.</returns>
-        public abstract bool Equals(Geometry other);
+        public abstract bool Equals(GeoJson other);
 
-        protected bool EqualsBase(Geometry other)
+        protected bool EqualsBase(GeoJson other)
         {
             return this.Type == other.Type && this.BoundingBox.Equals(other.BoundingBox);
         }

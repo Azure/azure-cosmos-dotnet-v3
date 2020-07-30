@@ -58,7 +58,7 @@ namespace Azure.Cosmos.Spatial
     /// </example>
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.6"/>
     [DataContract]
-    internal class Polygon : Geometry, IEquatable<Polygon>
+    internal class Polygon : GeoJson, IEquatable<Polygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class,
@@ -135,7 +135,7 @@ namespace Azure.Cosmos.Spatial
             }
         }
 
-        public override bool Equals(Geometry other) => other is Polygon polygon && this.Equals(polygon);
+        public override bool Equals(GeoJson other) => other is Polygon polygon && this.Equals(polygon);
 
         /// <summary>
         /// Determines if this <see cref="Polygon"/> is equal to the <paramref name="other" /> in the Azure Cosmos DB service.

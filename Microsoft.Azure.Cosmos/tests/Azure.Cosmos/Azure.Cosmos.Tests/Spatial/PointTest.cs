@@ -34,13 +34,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreEqual(new Position(20, 20), point.BoundingBox.Min);
             Assert.AreEqual(new Position(30, 30), point.BoundingBox.Max);
 
-            Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
-            Assert.AreEqual(GeometryType.Point, geom.Type);
+            GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
+            Assert.AreEqual(GeoJsonType.Point, geom.Type);
 
             Assert.AreEqual(geom, point);
 
             string json1 = JsonSerializer.Serialize(point, this.restContractOptions);
-            Geometry geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            GeoJson geom1 = JsonSerializer.Deserialize<GeoJson>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 

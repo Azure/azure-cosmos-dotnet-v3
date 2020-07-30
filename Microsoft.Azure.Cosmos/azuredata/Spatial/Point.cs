@@ -12,7 +12,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.2"/>
     [DataContract]
-    internal class Point : Geometry, IEquatable<Point>
+    internal class Point : GeoJson, IEquatable<Point>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Point" /> class in the Azure Cosmos DB service.
@@ -77,7 +77,7 @@ namespace Azure.Cosmos.Spatial
             return this.Coordinates.Equals(other.Coordinates);
         }
 
-        public override bool Equals(Geometry other) => other is Point point && this.Equals(point);
+        public override bool Equals(GeoJson other) => other is Point point && this.Equals(point);
 
         /// <summary>
         /// Serves as a hash function for the <see cref="Point" /> type in the Azure Cosmos DB service.

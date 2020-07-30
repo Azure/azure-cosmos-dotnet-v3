@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.8"/>
     [DataContract]
-    internal class GeometryCollection : Geometry, IEquatable<GeometryCollection>
+    internal class GeometryCollection : GeoJson, IEquatable<GeometryCollection>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="GeometryCollection"/> class.
@@ -23,7 +23,7 @@ namespace Azure.Cosmos.Spatial
         /// <param name="geometries">
         /// Child geometries.
         /// </param>
-        public GeometryCollection(IReadOnlyList<Geometry> geometries)
+        public GeometryCollection(IReadOnlyList<GeoJson> geometries)
             : this(geometries, boundingBox: default)
         {
         }
@@ -37,10 +37,10 @@ namespace Azure.Cosmos.Spatial
         /// <param name="boundingBox">
         /// The bounding box.
         /// </param>
-        public GeometryCollection(IReadOnlyList<Geometry> geometries, BoundingBox boundingBox)
+        public GeometryCollection(IReadOnlyList<GeoJson> geometries, BoundingBox boundingBox)
             : base(boundingBox)
         {
-            this.Geometries = new List<Geometry>(geometries ?? throw new ArgumentNullException(nameof(geometries)));
+            this.Geometries = new List<GeoJson>(geometries ?? throw new ArgumentNullException(nameof(geometries)));
         }
 
         /// <inheritdoc/>
@@ -53,7 +53,7 @@ namespace Azure.Cosmos.Spatial
         /// Child geometries.
         /// </value>
         [DataMember(Name = "geometries")]
-        public IReadOnlyList<Geometry> Geometries { get; }
+        public IReadOnlyList<GeoJson> Geometries { get; }
 
         /// <inheritdoc/>
         public override int GetHashCode()
@@ -65,7 +65,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override bool Equals(Geometry other) => other is GeometryCollection geometryCollection && this.Equals(geometryCollection);
+        public override bool Equals(GeoJson other) => other is GeometryCollection geometryCollection && this.Equals(geometryCollection);
 
         /// <summary>
         /// Determines if this <see cref="GeometryCollection" /> is equal to the <paramref name="other" />.

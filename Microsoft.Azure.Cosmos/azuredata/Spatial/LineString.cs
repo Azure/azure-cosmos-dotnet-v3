@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.4"/>
     [DataContract]
-    internal class LineString : Geometry, IEquatable<LineString>
+    internal class LineString : GeoJson, IEquatable<LineString>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LineString"/> class. 
@@ -81,7 +81,7 @@ namespace Azure.Cosmos.Spatial
             }
         }
 
-        public override bool Equals(Geometry other) => other is LineString lineString && this.Equals(lineString);
+        public override bool Equals(GeoJson other) => other is LineString lineString && this.Equals(lineString);
 
         /// <summary>
         /// Determines if this <see cref="LineString"/> is equal to the <paramref name="other" />.

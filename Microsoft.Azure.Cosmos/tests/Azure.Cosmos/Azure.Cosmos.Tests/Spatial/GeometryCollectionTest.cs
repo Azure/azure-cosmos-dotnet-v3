@@ -35,13 +35,13 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.IsInstanceOfType(geometryCollection.Geometries[0], typeof(Point));
             Assert.AreEqual(new Position(20, 20), (geometryCollection.Geometries[0] as Point).Position);
 
-            Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
-            Assert.AreEqual(GeometryType.GeometryCollection, geom.Type);
+            GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
+            Assert.AreEqual(GeoJsonType.GeometryCollection, geom.Type);
 
             Assert.AreEqual(geom, geometryCollection);
 
             string json1 = JsonSerializer.Serialize(geometryCollection, this.restContractOptions);
-            Geometry geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            GeoJson geom1 = JsonSerializer.Deserialize<GeoJson>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 

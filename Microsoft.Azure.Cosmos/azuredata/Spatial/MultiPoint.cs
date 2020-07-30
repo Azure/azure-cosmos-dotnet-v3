@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// <seealso cref="Point"/>.
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.3"/>
     [DataContract]
-    internal class MultiPoint : Geometry, IEquatable<MultiPoint>
+    internal class MultiPoint : GeoJson, IEquatable<MultiPoint>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPoint" /> class.
@@ -66,7 +66,7 @@ namespace Azure.Cosmos.Spatial
                 (current, point) => (current * 397) ^ point.GetHashCode());
         }
 
-        public override bool Equals(Geometry other) => other is MultiPoint multiPoint && this.Equals(multiPoint);
+        public override bool Equals(GeoJson other) => other is MultiPoint multiPoint && this.Equals(multiPoint);
 
         /// <summary>
         /// Determines if this <see cref="MultiPoint"/> is equal to <paramref name="other" />.

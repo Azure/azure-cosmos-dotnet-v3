@@ -8,7 +8,7 @@ namespace Azure.Cosmos.Linq
     using Azure.Cosmos.Spatial;
 
     /// <summary>
-    /// Extension methods for <see cref="Geometry"/> used for LINQ translation.
+    /// Extension methods for <see cref="GeoJson"/> used for LINQ translation.
     /// </summary>
     internal static class SpatialExtensions
     {
@@ -17,8 +17,8 @@ namespace Azure.Cosmos.Linq
         /// <summary>
         /// Distance in meters between two geometries in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="from">First <see cref="Geometry"/>.</param>
-        /// <param name="to">Second <see cref="Geometry"/>.</param>
+        /// <param name="from">First <see cref="GeoJson"/>.</param>
+        /// <param name="to">Second <see cref="GeoJson"/>.</param>
         /// <returns>Returns distance in meters between two geometries.</returns>
         /// <example>
         /// <code>
@@ -27,16 +27,16 @@ namespace Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static double Distance(this Geometry from, Geometry to)
+        public static double Distance(this GeoJson from, GeoJson to)
             => throw new NotImplementedException(SpatialExtensionMethodsNotImplementedMessage);
 
         /// <summary>
-        /// Determines if the  <paramref name="inner" /> <see cref="Geometry"/> is fully contained inside the <paramref name="outer" /> <see cref="Geometry"/> in the Azure Cosmos DB service.
+        /// Determines if the  <paramref name="inner" /> <see cref="GeoJson"/> is fully contained inside the <paramref name="outer" /> <see cref="GeoJson"/> in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="inner">Inner <see cref="Geometry"/>.</param>
-        /// <param name="outer">Outer <see cref="Geometry"/>.</param>
+        /// <param name="inner">Inner <see cref="GeoJson"/>.</param>
+        /// <param name="outer">Outer <see cref="GeoJson"/>.</param>
         /// <returns>
-        /// <c>true</c> if current inner <see cref="Geometry"/> is fully contained inside <paramref name="outer" /> <see cref="Geometry"/>.
+        /// <c>true</c> if current inner <see cref="GeoJson"/> is fully contained inside <paramref name="outer" /> <see cref="GeoJson"/>.
         /// <c>false</c> otherwise.
         /// </returns>
         /// <example>
@@ -55,7 +55,7 @@ namespace Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static bool Within(this Geometry inner, Geometry outer)
+        public static bool Within(this GeoJson inner, GeoJson outer)
             => throw new NotImplementedException(SpatialExtensionMethodsNotImplementedMessage);
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Azure.Cosmos.Linq
         /// If a geometry is not valid, it will not be indexed. Also during query time invalid geometries are equivalent to <c>undefined</c>.
         /// </para>
         /// </summary>
-        /// <param name="geometry">The <see cref="Geometry"/> to validate.</param>
+        /// <param name="geometry">The <see cref="GeoJson"/> to validate.</param>
         /// <returns><c>true</c> if geometry is valid. <c>false</c> otherwise.</returns>
         /// <example>
         /// <para>
@@ -79,7 +79,7 @@ namespace Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static bool IsValid(this Geometry geometry)
+        public static bool IsValid(this GeoJson geometry)
             => throw new NotImplementedException(SpatialExtensionMethodsNotImplementedMessage);
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Azure.Cosmos.Linq
         /// If a geometry is not valid, it will not be indexed. Also during query time invalid geometries are equivalent to <c>undefined</c>.
         /// </para>
         /// </summary>
-        /// <param name="geometry">The <see cref="Geometry"/> to validate.</param>
+        /// <param name="geometry">The <see cref="GeoJson"/> to validate.</param>
         /// <returns>Instance of <see cref="IsValidDetailedResult"/>.</returns>
         /// <example>
         /// <para>
@@ -104,14 +104,14 @@ namespace Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static IsValidDetailedResult IsValidDetailed(this Geometry geometry)
+        public static IsValidDetailedResult IsValidDetailed(this GeoJson geometry)
             => throw new NotImplementedException(SpatialExtensionMethodsNotImplementedMessage);
 
         /// <summary>
         /// Checks if current geometry1 intersects with geometry2.
         /// </summary>
-        /// <param name="geometry1">First <see cref="Geometry"/>.</param>
-        /// <param name="geometry2">Second <see cref="Geometry"/>.</param>
+        /// <param name="geometry1">First <see cref="GeoJson"/>.</param>
+        /// <param name="geometry2">Second <see cref="GeoJson"/>.</param>
         /// <returns>Returns true if geometry1 intersects with geometry2, otherwise returns false.</returns>
         /// <example>
         /// <code>
@@ -120,7 +120,7 @@ namespace Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static bool Intersects(this Geometry geometry1, Geometry geometry2)
+        public static bool Intersects(this GeoJson geometry1, GeoJson geometry2)
             => throw new NotImplementedException(SpatialExtensionMethodsNotImplementedMessage);
     }
 }

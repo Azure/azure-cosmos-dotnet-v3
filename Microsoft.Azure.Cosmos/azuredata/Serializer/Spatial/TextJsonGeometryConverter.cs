@@ -12,9 +12,9 @@ namespace Azure.Cosmos
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
 
-    internal sealed class TextJsonGeometryConverter : JsonConverter<Geometry>
+    internal sealed class TextJsonGeometryConverter : JsonConverter<GeoJson>
     {
-        public override Geometry Read(
+        public override GeoJson Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -26,7 +26,7 @@ namespace Azure.Cosmos
 
         public override void Write(
             Utf8JsonWriter writer,
-            Geometry geometry,
+            GeoJson geometry,
             JsonSerializerOptions options)
         {
             TextJsonGeometryConverter.WritePropertyValues(writer, geometry, options);
@@ -34,7 +34,7 @@ namespace Azure.Cosmos
 
         public static void WritePropertyValues(
             Utf8JsonWriter writer,
-            Geometry geometry,
+            GeoJson geometry,
             JsonSerializerOptions options)
         {
             if (geometry == null)
@@ -117,7 +117,7 @@ namespace Azure.Cosmos
                     writer.WritePropertyName(JsonEncodedStrings.Geometries);
                     GeometryCollection geometryCollection = geometry as GeometryCollection;
                     writer.WriteStartArray();
-                    foreach (Geometry geometryIn in geometryCollection.Geometries)
+                    foreach (GeoJson geometryIn in geometryCollection.Geometries)
                     {
                         TextJsonGeometryConverter.WritePropertyValues(writer, geometryIn, options);
                     }
@@ -129,7 +129,7 @@ namespace Azure.Cosmos
             writer.WriteEndObject();
         }
 
-        public static Geometry ReadProperty(
+        public static GeoJson ReadProperty(
             JsonElement root,
             JsonSerializerOptions options)
         {
@@ -152,12 +152,12 @@ namespace Azure.Cosmos
 
             BoundingBox boundingBox = TextJsonBoundingBoxConverter.ReadProperty(root);
 
-            Geometry geometry = null;
+            GeoJson geometry = null;
             switch (geometryType)
             {
                 case GeometryType.GeometryCollection:
                     {
-                        List<Geometry> geometries = new List<Geometry>();
+                        List<GeoJson> geometries = new List<GeoJson>();
                         if (root.TryGetProperty(JsonEncodedStrings.Geometries.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())

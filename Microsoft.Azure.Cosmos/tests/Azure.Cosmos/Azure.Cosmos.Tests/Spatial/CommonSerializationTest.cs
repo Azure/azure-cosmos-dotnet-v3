@@ -69,7 +69,7 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestNullTypeGeometry()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            Geometry point = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
+            GeoJson point = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
         }
 
         /// <summary>

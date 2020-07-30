@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// <seealso cref="LineString"/>.
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.5"/>
     [DataContract]
-    internal class MultiLineString : Geometry, IEquatable<MultiLineString>
+    internal class MultiLineString : GeoJson, IEquatable<MultiLineString>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiLineString"/> class. 
@@ -72,7 +72,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override bool Equals(Geometry other) => other is MultiLineString multiLineString && this.Equals(multiLineString);
+        public override bool Equals(GeoJson other) => other is MultiLineString multiLineString && this.Equals(multiLineString);
 
         /// <summary>
         /// Determines if this <see cref="MultiLineString"/> is equal to <paramref name="other" />.

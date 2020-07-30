@@ -34,7 +34,7 @@
             Assert.AreEqual("asdf", point.Description);
 
             string json1 = JsonSerializer.Serialize(point);
-            Geometry point1 = JsonSerializer.Deserialize<PointWithAdditionalProperties>(json1);
+            GeoJson point1 = JsonSerializer.Deserialize<PointWithAdditionalProperties>(json1);
             Assert.AreEqual(point1, point);
         }
 

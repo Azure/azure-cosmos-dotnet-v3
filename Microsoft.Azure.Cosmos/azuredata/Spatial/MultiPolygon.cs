@@ -16,7 +16,7 @@ namespace Azure.Cosmos.Spatial
     /// <seealso cref="Polygon"/>
     /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.6"/>
     [DataContract]
-    internal class MultiPolygon : Geometry, IEquatable<MultiPolygon>
+    internal class MultiPolygon : GeoJson, IEquatable<MultiPolygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPolygon"/> class.
@@ -71,7 +71,7 @@ namespace Azure.Cosmos.Spatial
         }
 
         /// <inheritdoc/>
-        public override bool Equals(Geometry other) => other is MultiPolygon multiPolygon && this.Equals(multiPolygon);
+        public override bool Equals(GeoJson other) => other is MultiPolygon multiPolygon && this.Equals(multiPolygon);
 
         /// <summary>
         /// Determines if this <see cref="MultiPolygon"/> is equal to <paramref name="other" />.
