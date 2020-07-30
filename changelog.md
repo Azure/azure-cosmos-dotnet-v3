@@ -378,8 +378,6 @@ Microsoft provides notification at least **12 months** in advance of retiring an
 
 After 31 August 2022, Azure Cosmos DB will no longer make bug fixes, add new features, and provide support for versions 1.x of the Azure Cosmos DB .NET or .NET Core SDK for SQL API. If you prefer not to upgrade, requests sent from version 1.x of the SDK will continue to be served by the Azure Cosmos DB service.
 
-<br/>
-
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
 | [3.6.0](#3.6.0) |January 23, 2020 |--- |
