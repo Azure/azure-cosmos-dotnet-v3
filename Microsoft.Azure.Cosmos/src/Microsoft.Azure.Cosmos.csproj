@@ -39,6 +39,7 @@
     <IncludeSource>false</IncludeSource>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <NoWarn>NU5125</NoWarn>
+    <Optimize>true</Optimize>    
   </PropertyGroup>
 
   <ItemGroup>
