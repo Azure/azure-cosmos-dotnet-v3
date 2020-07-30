@@ -389,10 +389,15 @@ namespace Microsoft.Azure.Cosmos
             IDisposable synchronizationContextScope = diagnosticsContext.CreateScope("SynchronizationContext");
             return Task.Run(() =>
             {
-                synchronizationContextScope.Dispose();
-                return this.RunWithDiagnosticsHelperAsync<TResult>(
-                    diagnosticsContext,
-                    task);
+                using (new ActivityScope(Guid.NewGuid()))
+                {
+                    // The goal of synchronizationContextScope is to log how much latency the Task.Run added to the latency.
+                    // Dispose of it here so it only measures the latency added by the Task.Run.
+                    synchronizationContextScope.Dispose();
+                    return this.RunWithDiagnosticsHelperAsync<TResult>(
+                        diagnosticsContext,
+                        task);
+                }
             });
         }
 
@@ -400,16 +405,19 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
-            try
+            using (new ActivityScope(Guid.NewGuid()))
             {
-                using (diagnosticsContext.GetOverallScope())
+                try
                 {
-                    return await task(diagnosticsContext).ConfigureAwait(false);
+                    using (diagnosticsContext.GetOverallScope())
+                    {
+                        return await task(diagnosticsContext).ConfigureAwait(false);
+                    }
                 }
-            }
-            catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
-            {
-                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                {
+                    throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+                }
             }
         }
 
