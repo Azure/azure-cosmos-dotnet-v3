@@ -53,7 +53,7 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartArray();
-            foreach (Position position in lineStringCoordinates.Positions)
+            foreach (Position position in lineStringCoordinates)
             {
                 TextJsonPositionConverter.WritePropertyValues(writer, position, options);
             }

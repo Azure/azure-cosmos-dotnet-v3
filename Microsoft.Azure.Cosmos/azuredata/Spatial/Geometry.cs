@@ -4,13 +4,14 @@
 
 namespace Azure.Cosmos.Spatial
 {
+    using System;
     using System.Runtime.Serialization;
 
     /// <summary>
     /// Base class for spatial geometry objects in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    internal abstract class Geometry
+    internal abstract class Geometry : IEquatable<Geometry>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.
@@ -62,7 +63,9 @@ namespace Azure.Cosmos.Spatial
         /// <returns>
         /// A hash code for the current geometry.
         /// </returns>
-        public override int GetHashCode()
+        public override abstract int GetHashCode();
+
+        protected int GetHashCodeBase()
         {
             unchecked
             {
@@ -78,18 +81,10 @@ namespace Azure.Cosmos.Spatial
         /// </summary>
         /// <param name="other"><see cref="Geometry" /> to compare to this <see cref="Geometry" />.</param>
         /// <returns><c>true</c> if geometries are equal. <c>false</c> otherwise.</returns>
-        private bool Equals(Geometry other)
+        public abstract bool Equals(Geometry other);
+
+        protected bool EqualsBase(Geometry other)
         {
-            if (other is null)
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
             return this.Type == other.Type && this.BoundingBox.Equals(other.BoundingBox);
         }
     }

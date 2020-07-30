@@ -56,6 +56,7 @@ namespace Azure.Cosmos.Spatial
     /// ]]>        
     /// </code>
     /// </example>
+    /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.6"/>
     [DataContract]
     internal class Polygon : Geometry, IEquatable<Polygon>
     {
@@ -63,43 +64,47 @@ namespace Azure.Cosmos.Spatial
         /// Initializes a new instance of the <see cref="Polygon"/> class,
         /// from external ring (the polygon contains no holes) in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="externalRingPositions">
-        /// External polygon ring coordinates.
-        /// </param>
-        public Polygon(IList<Position> externalRingPositions)
-            : this(new[] { new LinearRing(externalRingPositions) })
+        /// <param name="externalRing">The exterior ring bounds the surface.</param>
+        /// <param name="boundingBox">The bounding box.</param>
+        public Polygon(LinearRing externalRing, BoundingBox boundingBox = null)
+            : this(new LinearRing[] { externalRing }, boundingBox)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="rings">
+        /// <param name="externalRing">The exterior ring bounds the surface.</param>
+        /// <param name="interiorRings">Holes within the surface.</param>
+        /// <param name="boundingBox">The bounding box.</param>
+        public Polygon(LinearRing externalRing, IReadOnlyList<LinearRing> interiorRings, BoundingBox boundingBox = null)
+            : this(new LinearRing[] { externalRing }.Concat(interiorRings).ToList(), boundingBox)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="coordinates">
         /// Polygon rings.
         /// </param>
         /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public Polygon(IList<LinearRing> rings, BoundingBox boundingBox = null)
+        public Polygon(IReadOnlyList<LinearRing> coordinates, BoundingBox boundingBox = null)
             : base(boundingBox)
         {
-            if (rings == null)
+            if (coordinates == null)
             {
-                throw new ArgumentNullException("rings");
+                throw new ArgumentNullException(nameof(coordinates));
             }
 
-            this.Rings = new ReadOnlyCollection<LinearRing>(rings);
-        }
+            if (coordinates.Count == 0)
+            {
+                throw new ArgumentException("The \"coordinates\" member MUST be an array of linear ring coordinate arrays. The first MUST be the exterior ring");
+            }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// This constructor is used only during deserialization.
-        /// </remarks>
-        internal Polygon()
-            : base()
-        {
+            this.Coordinates = coordinates;
         }
 
         /// <inheritdoc/>
@@ -112,19 +117,7 @@ namespace Azure.Cosmos.Spatial
         /// Polygon rings.
         /// </value>
         [DataMember(Name = "coordinates")]
-        public ReadOnlyCollection<LinearRing> Rings { get; private set; }
-
-        /// <summary>
-        /// Determines whether the specified <see cref="Polygon" /> is equal to the current <see cref="Polygon" /> in the Azure Cosmos DB service.
-        /// </summary>
-        /// <returns>
-        /// true if the specified object is equal to the current object; otherwise, false.
-        /// </returns>
-        /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj)
-        {
-            return this.Equals(obj as Polygon);
-        }
+        public IReadOnlyList<LinearRing> Coordinates { get; }
 
         /// <summary>
         /// Serves as a hash function for the <see cref="Polygon" /> type in the Azure Cosmos DB service.
@@ -136,9 +129,13 @@ namespace Azure.Cosmos.Spatial
         {
             unchecked
             {
-                return this.Rings.Aggregate(base.GetHashCode(), (current, value) => (current * 397) ^ value.GetHashCode());
+                return this.Coordinates.Aggregate(
+                    base.GetHashCodeBase(),
+                    (current, value) => (current * 397) ^ value.GetHashCode());
             }
         }
+
+        public override bool Equals(Geometry other) => other is Polygon polygon && this.Equals(polygon);
 
         /// <summary>
         /// Determines if this <see cref="Polygon"/> is equal to the <paramref name="other" /> in the Azure Cosmos DB service.
@@ -157,7 +154,12 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return base.Equals(other) && this.Rings.SequenceEqual(other.Rings);
+            if (!base.EqualsBase(other))
+            {
+                return false;
+            }
+
+            return this.Coordinates.SequenceEqual(other.Coordinates);
         }
     }
 }

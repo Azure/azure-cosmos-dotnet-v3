@@ -54,7 +54,8 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartArray();
-            foreach (double coordinate in boundingBox.Min.Coordinates.Concat(boundingBox.Max.Coordinates))
+
+            foreach (double coordinate in boundingBox)
             {
                 writer.WriteNumberValue(coordinate);
             }
@@ -75,8 +76,7 @@ namespace Azure.Cosmos
             }
 
             int coordinateCount = root.GetArrayLength();
-            if (coordinateCount % 2 != 0
-                || coordinateCount < 4)
+            if (((coordinateCount % 2) != 0) || (coordinateCount < 4))
             {
                 throw new JsonException(RMResources.SpatialBoundingBoxInvalidCoordinates);
             }
@@ -92,9 +92,13 @@ namespace Azure.Cosmos
                 coordinates.Add(coordinate);
             }
 
-            return new BoundingBox(
-                new Position(coordinates.Take(coordinateCount / 2).ToList()),
-                new Position(coordinates.Skip(coordinateCount / 2).ToList()));
+            List<(double, double)> points = new List<(double, double)>(coordinateCount / 2);
+            for (int i = 0; i < coordinateCount; i += 2)
+            {
+                points.Add((coordinates[i], coordinates[i + 1]));
+            }
+
+            return new BoundingBox(points[0], points[1], points.Skip(2).ToList());
         }
     }
 }

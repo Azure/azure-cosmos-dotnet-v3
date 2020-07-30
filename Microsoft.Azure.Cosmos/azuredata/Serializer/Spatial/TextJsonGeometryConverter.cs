@@ -56,13 +56,13 @@ namespace Azure.Cosmos
                 case GeometryType.Point:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     Point point = geometry as Point;
-                    TextJsonPositionConverter.WritePropertyValues(writer, point.Position, options);
+                    TextJsonPositionConverter.WritePropertyValues(writer, point.Coordinates, options);
                     break;
                 case GeometryType.MultiPoint:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiPoint multiPoint = geometry as MultiPoint;
                     writer.WriteStartArray();
-                    foreach (Position position in multiPoint.Points)
+                    foreach (Position position in multiPoint.Coordinates)
                     {
                         TextJsonPositionConverter.WritePropertyValues(writer, position, options);
                     }
@@ -73,7 +73,7 @@ namespace Azure.Cosmos
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     LineString lineString = geometry as LineString;
                     writer.WriteStartArray();
-                    foreach (Position position in lineString.Positions)
+                    foreach (Position position in lineString.Coordinates)
                     {
                         TextJsonPositionConverter.WritePropertyValues(writer, position, options);
                     }
@@ -84,7 +84,7 @@ namespace Azure.Cosmos
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiLineString multiLineString = geometry as MultiLineString;
                     writer.WriteStartArray();
-                    foreach (LineStringCoordinates lineCoordinates in multiLineString.LineStrings)
+                    foreach (LineStringCoordinates lineCoordinates in multiLineString.Coordinates)
                     {
                         TextJsonLineStringCoordinatesConverter.WritePropertyValues(writer, lineCoordinates, options);
                     }
@@ -95,7 +95,7 @@ namespace Azure.Cosmos
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     Polygon polygon = geometry as Polygon;
                     writer.WriteStartArray();
-                    foreach (LinearRing linearRing in polygon.Rings)
+                    foreach (LinearRing linearRing in polygon.Coordinates)
                     {
                         TextJsonLinearRingConverter.WritePropertyValues(writer, linearRing, options);
                     }
@@ -106,7 +106,7 @@ namespace Azure.Cosmos
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiPolygon multiPolygon = geometry as MultiPolygon;
                     writer.WriteStartArray();
-                    foreach (PolygonCoordinates polygonCoordinates in multiPolygon.Polygons)
+                    foreach (PolygonCoordinates polygonCoordinates in multiPolygon.Coordinates)
                     {
                         TextJsonPolygonCoordinatesConverter.WritePropertyValues(writer, polygonCoordinates, options);
                     }

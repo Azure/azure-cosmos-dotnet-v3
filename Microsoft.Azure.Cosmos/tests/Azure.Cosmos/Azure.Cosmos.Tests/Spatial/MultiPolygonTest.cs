@@ -5,7 +5,6 @@
 namespace Azure.Cosmos.Test.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -33,13 +32,13 @@ namespace Azure.Cosmos.Test.Spatial
 
             MultiPolygon multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(json, this.restContractOptions);
 
-            Assert.AreEqual(2, multiPolygon.Polygons.Count);
-            Assert.AreEqual(2, multiPolygon.Polygons[0].Rings.Count);
+            Assert.AreEqual(2, multiPolygon.Coordinates.Count);
+            Assert.AreEqual(2, multiPolygon.Coordinates[0].Count);
 
-            Assert.AreEqual(new Position(20, 30), multiPolygon.Polygons[0].Rings[0].Positions[0]);
+            Assert.AreEqual(new Position(20, 30), multiPolygon.Coordinates[0][0][0]);
 
-            Assert.AreEqual(new Position(20, 20), multiPolygon.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), multiPolygon.BoundingBox.Max);
+            Assert.AreEqual(new Position(20, 20), multiPolygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual(new Position(30, 30), multiPolygon.BoundingBox.NortheasertlyPoint);
 
             Geometry geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
             Assert.AreEqual(GeometryType.MultiPolygon, geom.Type);
@@ -72,7 +71,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
             MultiPolygon multiPolygon2 =
                 new MultiPolygon(
@@ -89,7 +88,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
             MultiPolygon polygon3 =
                 new MultiPolygon(
@@ -106,7 +105,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
             MultiPolygon polygon4 =
                 new MultiPolygon(
@@ -123,7 +122,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
             MultiPolygon polygon5 =
                 new MultiPolygon(
@@ -140,7 +139,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 41)));
+                    new BoundingBox((0, 0), (40, 41)));
 
             MultiPolygon polygon6 =
                 new MultiPolygon(
@@ -157,7 +156,7 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(multiPolygon1, multiPolygon2);
             Assert.AreEqual(multiPolygon1.GetHashCode(), multiPolygon2.GetHashCode());
@@ -206,12 +205,12 @@ namespace Azure.Cosmos.Test.Spatial
                                             })
                                 })
                     },
-                    new BoundingBox(new Position(0, 0), new Position(40, 40)));
+                    new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(new Position(20, 20), multiPolygon.Polygons[0].Rings[0].Positions[0]);
+            Assert.AreEqual(new Position(20, 20), multiPolygon.Coordinates[0][0][0]);
 
-            Assert.AreEqual(new Position(0, 0), multiPolygon.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), multiPolygon.BoundingBox.Max);
+            Assert.AreEqual(new Position(0, 0), multiPolygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual(new Position(40, 40), multiPolygon.BoundingBox.NortheasertlyPoint);
         }
     }
 }

@@ -6,57 +6,41 @@ namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    
+
     /// <summary>
     /// Represents a geometry consisting of multiple <see cref="LineString"/>.
     /// </summary>
     /// <seealso cref="LineString"/>.
+    /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.5"/>
     [DataContract]
     internal class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiLineString"/> class. 
         /// </summary>
-        /// <param name="lineStrings">
-        /// List of <see cref="LineStringCoordinates"/> instances representing individual line strings.
+        /// <param name="coordinates">
+        /// List of <see cref="LineStringCoordinates"/> instances.
         /// </param>
-        public MultiLineString(IList<LineStringCoordinates> lineStrings)
-            : this(lineStrings, boundingBox: default)
+        public MultiLineString(IReadOnlyList<LineStringCoordinates> coordinates)
+            : this(coordinates, boundingBox: default)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiLineString"/> class.
         /// </summary>
-        /// <param name="lineStrings">
-        /// List of <see cref="LineStringCoordinates"/> instances representing individual line strings.
+        /// <param name="coordinates">
+        /// List of <see cref="LineStringCoordinates"/> instances.
         /// </param>
         /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public MultiLineString(IList<LineStringCoordinates> lineStrings, BoundingBox boundingBox)
+        public MultiLineString(IReadOnlyList<LineStringCoordinates> coordinates, BoundingBox boundingBox)
             : base(boundingBox)
         {
-            if (lineStrings == null)
-            {
-                throw new ArgumentNullException("lineStrings");
-            }
-
-            this.LineStrings = new ReadOnlyCollection<LineStringCoordinates>(lineStrings);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MultiLineString"/> class.
-        /// </summary>
-        /// <remarks>
-        /// This constructor is used only during deserialization.
-        /// </remarks>
-        internal MultiLineString()
-            : base(boundingBox: default)
-        {
+            this.Coordinates = coordinates ?? throw new ArgumentNullException(nameof(coordinates));
         }
 
         /// <inheritdoc/>
@@ -69,19 +53,7 @@ namespace Azure.Cosmos.Spatial
         /// Collection of <see cref="LineStringCoordinates"/> representing individual line strings.
         /// </value>
         [DataMember(Name = "coordinates")]
-        public ReadOnlyCollection<LineStringCoordinates> LineStrings { get; private set; }
-
-        /// <summary>
-        /// Determines whether the specified <see cref="MultiLineString" /> is equal to the current <see cref="MultiLineString" />.
-        /// </summary>
-        /// <returns>
-        /// true if the specified object is equal to the current object; otherwise, false.
-        /// </returns>
-        /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj)
-        {
-            return this.Equals(obj as MultiLineString);
-        }
+        public IReadOnlyList<LineStringCoordinates> Coordinates { get; private set; }
 
         /// <summary>
         /// Serves as a hash function for the <see cref="MultiLineString" /> type.
@@ -93,9 +65,14 @@ namespace Azure.Cosmos.Spatial
         {
             unchecked
             {
-                return this.LineStrings.Aggregate(base.GetHashCode(), (current, value) => (current * 397) ^ value.GetHashCode());
+                return this.Coordinates.Aggregate(
+                    base.GetHashCodeBase(),
+                    (current, value) => (current * 397) ^ value.GetHashCode());
             }
         }
+
+        /// <inheritdoc/>
+        public override bool Equals(Geometry other) => other is MultiLineString multiLineString && this.Equals(multiLineString);
 
         /// <summary>
         /// Determines if this <see cref="MultiLineString"/> is equal to <paramref name="other" />.
@@ -114,7 +91,12 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return base.Equals(other) && this.LineStrings.SequenceEqual(other.LineStrings);
+            if (!base.EqualsBase(other))
+            {
+                return false;
+            }
+
+            return this.Coordinates.SequenceEqual(other.Coordinates);
         }
     }
 }
