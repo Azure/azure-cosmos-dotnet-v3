@@ -523,6 +523,91 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        [DataTestMethod]
+        [DataRow(true, false, false, false, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
+        [DataRow(false, false, false, false, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
+        [DataRow(true, true, false, false, DisplayName = "Read request - Multi master - no preferred locations - should NOT retry")]
+        [DataRow(false, true, false, false, DisplayName = "Write request - Multi master - no preferred locations - should NOT retry")]
+        [DataRow(true, false, true, true, DisplayName = "Read request - Single master - with preferred locations - should retry")]
+        [DataRow(false, false, true, false, DisplayName = "Write request - Single master - with preferred locations - should NOT retry")]
+        [DataRow(true, true, true, true, DisplayName = "Read request - Multi master - with preferred locations - should retry")]
+        [DataRow(false, true, true, true, DisplayName = "Write request - Multi master - with preferred locations - should retry")]
+        public async Task ClientRetryPolicy_ValidateRetryOnServiceUnavailable(
+            bool isReadRequest,
+            bool useMultipleWriteLocations,
+            bool usesPreferredLocations,
+            bool shouldHaveRetried)
+        {
+            const bool enableEndpointDiscovery = true;
+
+            this.Initialize(
+                useMultipleWriteLocations: useMultipleWriteLocations,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: !usesPreferredLocations);
+
+            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, enableEndpointDiscovery, new RetryOptions());
+
+            using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
+            {
+                int retryCount = 0;
+
+                try
+                {
+                    await BackoffRetryUtility<bool>.ExecuteAsync(
+                        () =>
+                        {
+                            retryPolicy.OnBeforeSendRequest(request);
+
+                            if (retryCount == 1)
+                            {
+                                Uri expectedEndpoint = null;
+                                if (usesPreferredLocations)
+                                {
+                                    expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                                }
+                                else
+                                {
+                                    if (isReadRequest)
+                                    {
+                                        expectedEndpoint = new Uri(this.databaseAccount.ReadLocationsInternal[1].Endpoint);
+                                    }
+                                    else
+                                    {
+                                        expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
+                                    }
+                                }
+
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+                            }
+                            else if (retryCount > 1)
+                            {
+                                Assert.Fail("Should retry once");
+                            }
+
+                            retryCount++;
+
+                            throw new ServiceUnavailableException();
+                        },
+                        retryPolicy);
+
+                    Assert.Fail();
+                }
+                catch (ServiceUnavailableException)
+                {
+                    DefaultTrace.TraceInformation("Received expected ServiceUnavailableException");
+                    if (shouldHaveRetried)
+                    {
+                        Assert.AreEqual(2, retryCount, $"Retry count {retryCount}, shouldHaveRetried {shouldHaveRetried} isReadRequest {isReadRequest} useMultipleWriteLocations {useMultipleWriteLocations} usesPreferredLocations {usesPreferredLocations}");
+                    }
+                    else
+                    {
+                        Assert.AreEqual(1, retryCount, $"Retry count {retryCount}, shouldHaveRetried {shouldHaveRetried} isReadRequest {isReadRequest} useMultipleWriteLocations {useMultipleWriteLocations} usesPreferredLocations {usesPreferredLocations}");
+                    }
+                }
+            }
+        }
+
         private static AccountProperties CreateDatabaseAccount(bool useMultipleWriteLocations)
         {
             AccountProperties databaseAccount = new AccountProperties()
