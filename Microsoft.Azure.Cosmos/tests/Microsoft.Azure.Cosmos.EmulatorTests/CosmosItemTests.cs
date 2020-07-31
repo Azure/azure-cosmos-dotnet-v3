@@ -2076,14 +2076,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
-#if SUBPARTITIONING
-        [Ignore] //Ignoring this test until EnableSubpartitioning is set to true in BE.
+#if INTERNAL || SUBPARTITIONING
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {
+            string currentVersion = HttpConstants.Versions.CurrentVersion;
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
             CosmosClient client = TestCommon.CreateCosmosClient(true);
             Cosmos.Database database = null;
-            database = await client.CreateDatabaseAsync("mydb");
+            database = await client.CreateDatabaseIfNotExistsAsync("mydb");
             try
             {
                 ContainerProperties containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/Address" });
@@ -2178,6 +2179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 await database.DeleteAsync();
+                HttpConstants.Versions.CurrentVersion = currentVersion;
             }
 
         }
