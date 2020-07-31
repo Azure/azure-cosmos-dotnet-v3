@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.PartitionMapper;
 
     /// <summary>
     /// CosmosOrderByItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -51,78 +53,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         /// </summary>
         private const string TrueFilter = "true";
 
-        /// <summary>
-        /// For ORDER BY queries we need to drain the first page of every enumerator before adding it to the prioirty queue for k-way merge.
-        /// Since this requires async work, we defer it until the user calls MoveNextAsync().
-        /// </summary>
-        private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumerators;
+        private readonly OrderByItemEnumerator orderByItemEnumerator;
+        private readonly int pageSize;
 
-        private readonly PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> initializedEnumerators;
-
-        private readonly CrossPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState> crossPartitionRangePageAsyncEnumerator;
-
-        private readonly List<SortOrder> sortOrders;
-
-        private readonly IDocumentContainer documentContainer;
-
-        private OrderByCrossPartitionQueryPipelineStage(
-            CrossPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState> crossPartitionRangePageAsyncEnumerator)
+        private OrderByCrossPartitionQueryPipelineStage(OrderByItemEnumerator orderByItemEnumerator)
         {
-            this.crossPartitionRangePageAsyncEnumerator = crossPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionRangePageAsyncEnumerator));
+            this.orderByItemEnumerator = orderByItemEnumerator ?? throw new ArgumentNullException(nameof(orderByItemEnumerator));
         }
 
-        public TryCatch<QueryPage> Current => throw new NotImplementedException();
+        public TryCatch<QueryPage> Current { get; private set; }
 
-        public ValueTask DisposeAsync() => this.crossPartitionRangePageAsyncEnumerator.DisposeAsync();
+        public ValueTask DisposeAsync() => this.orderByItemEnumerator.DisposeAsync();
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (this.uninitializedEnumerators.Count != 0)
+            if (this.orderByItemEnumerator.Current.Failed)
             {
-                (OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token) = this.uninitializedEnumerators.Dequeue();
-                if (token != null)
-                {
-                    TryCatch monadicFilterAsync = await OrderByCrossPartitionQueryPipelineStage.MonadicFilterAsync(
-                        enumerator,
-                        this.sortOrders,
-                        token,
-                        cancellationToken: default);
-                    if (monadicFilterAsync.Failed)
-                    {
-                        // Check if it's a retryable exception.
-                        Exception exception = monadicFilterAsync.Exception;
-                        while (exception.InnerException != null)
-                        {
-                            exception = exception.InnerException;
-                        }
-
-                        if (IsSplitException(exception))
-                        {
-                            // Handle split
-                            IEnumerable<PartitionKeyRange> childRanges = await this.documentContainer.GetChildRangeAsync(
-                                enumerator.Range,
-                                cancellationToken: default);
-                            foreach (PartitionKeyRange childRange in childRanges)
-                            {
-                                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
-                                    documentContainer,
-                                    sqlQuerySpec,
-                                    range,
-                                    pageSize,
-                                    state: default)
-                                enumerators.Enqueue(childPaginator);
-                            }
-
-                            // Recursively retry
-                            return await this.MoveNextAsync();
-                        }
-                    }
-                }
-                else
-                {
-
-                }
+                // If we have a buffered exception,
+                // then return that first.
+                this.Current = this.orderByItemEnumerator.Current;
+                return true;
             }
+
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -254,6 +206,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     }
                 }
             }
+
+            OrderByItemEnumerator orderByItemEnumerator = new OrderByItemEnumerator(
+                documentContainer,
+                )
         }
 
         private static TryCatch<PartitionMapping<OrderByContinuationToken>> MonadicGetOrderByContinuationTokenMapping(

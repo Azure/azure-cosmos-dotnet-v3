@@ -23,13 +23,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyRange feedRange,
             int pageSize,
+            string filter,
             QueryState state = default)
             : base(feedRange, state)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.pageSize = pageSize;
+            this.Filter = filter;
         }
+
+        public string Filter { get; }
 
         public override ValueTask DisposeAsync() => default;
 

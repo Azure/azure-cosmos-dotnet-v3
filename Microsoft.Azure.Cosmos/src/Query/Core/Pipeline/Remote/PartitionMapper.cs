@@ -7,14 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal abstract class CrossPartitionQueryPipelineStage : IQueryPipelineStage
+    internal static class PartitionMapper
     {
-        protected static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMapping<PartitionedToken>(
+        public static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMapping<PartitionedToken>(
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken
@@ -101,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         /// <param name="partitionKeyRanges">The partition key ranges to match.</param>
         /// <param name="partitionedContinuationTokens">The continuation tokens to match with.</param>
         /// <returns>A dictionary of ranges matched with their continuation tokens.</returns>
-        protected static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
+        public static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
             ReadOnlyMemory<PartitionKeyRange> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             return partitionKeyRangeToToken;
         }
 
-        protected readonly struct PartitionMapping<T>
+        public readonly struct PartitionMapping<T>
         {
             public PartitionMapping(
                 IReadOnlyDictionary<PartitionKeyRange, T> partitionsLeftOfTarget,
