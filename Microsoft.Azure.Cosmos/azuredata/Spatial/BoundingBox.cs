@@ -15,7 +15,7 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <see link="https://tools.ietf.org/html/rfc7946#section-5"/>
     [DataContract]
-    internal sealed class BoundingBox : IEquatable<BoundingBox>, IEnumerable<double>
+    internal class BoundingBox : IEquatable<BoundingBox>, IEnumerable<double>
     {
         private readonly IReadOnlyList<(double, double)> points;
 
@@ -125,7 +125,7 @@ namespace Azure.Cosmos.Spatial
             public bool MoveNext()
             {
                 this.index++;
-                return this.index >= this.points.Count * 2;
+                return this.index < this.points.Count * 2;
             }
 
             public void Reset()

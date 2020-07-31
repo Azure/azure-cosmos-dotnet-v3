@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -107,14 +106,8 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreNotEqual(multiLineString1, multiLineString3);
             Assert.AreNotEqual(multiLineString1.GetHashCode(), multiLineString3.GetHashCode());
 
-            Assert.AreNotEqual(multiLineString1, multiLineString4);
-            Assert.AreNotEqual(multiLineString1.GetHashCode(), multiLineString4.GetHashCode());
-
             Assert.AreNotEqual(multiLineString1, multiLineString5);
             Assert.AreNotEqual(multiLineString1.GetHashCode(), multiLineString5.GetHashCode());
-
-            Assert.AreNotEqual(multiLineString1, multiLineString6);
-            Assert.AreNotEqual(multiLineString1.GetHashCode(), multiLineString6.GetHashCode());
         }
 
         /// <summary>

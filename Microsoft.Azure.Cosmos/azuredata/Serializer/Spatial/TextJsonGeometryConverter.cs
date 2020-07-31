@@ -7,6 +7,7 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
@@ -150,7 +151,17 @@ namespace Azure.Cosmos
                 throw new JsonException(RMResources.SpatialInvalidGeometryType);
             }
 
-            BoundingBox boundingBox = TextJsonBoundingBoxConverter.ReadProperty(root);
+            BoundingBox boundingBox;
+            if (root.TryGetProperty(
+                JsonEncodedStrings.BoundingBox.EncodedUtf8Bytes,
+                out JsonElement boundingBoxElement))
+            {
+                boundingBox = TextJsonBoundingBoxConverter.ReadProperty(boundingBoxElement);
+            }
+            else
+            {
+                boundingBox = null;
+            }
 
             GeoJson geometry = null;
             switch (geometryType)
@@ -234,7 +245,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new Polygon(linearRings, boundingBox);
+                        geometry = new Polygon(linearRings.First(), linearRings.Skip(1).ToList(), boundingBox);
                     }
                     break;
                 case GeoJsonType.MultiPolygon:

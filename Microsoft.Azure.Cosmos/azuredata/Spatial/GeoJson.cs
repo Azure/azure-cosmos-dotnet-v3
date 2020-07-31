@@ -85,7 +85,22 @@ namespace Azure.Cosmos.Spatial
 
         protected bool EqualsBase(GeoJson other)
         {
-            return this.Type == other.Type && this.BoundingBox.Equals(other.BoundingBox);
+            if (this.Type != other.Type)
+            {
+                return false;
+            }
+
+            if ((this.BoundingBox is null) != (other.BoundingBox is null))
+            {
+                return false;
+            }
+
+            if (this.BoundingBox == null)
+            {
+                return true;
+            }
+
+            return this.BoundingBox.Equals(other.BoundingBox);
         }
     }
 }

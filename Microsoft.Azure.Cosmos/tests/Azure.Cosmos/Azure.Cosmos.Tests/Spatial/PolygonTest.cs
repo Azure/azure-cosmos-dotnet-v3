@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -56,94 +55,52 @@ namespace Azure.Cosmos.Test.Spatial
         {
             Polygon polygon1 =
                 new Polygon(
-                    new[]
-                    {
-                        new LinearRing(
-                            new[]
-                            {
-                                new Position(20, 20),
-                                new Position(20, 21),
-                                new Position(21, 21),
-                                new Position(21, 20),
-                                new Position(22, 20)
-                            })
-                    },
+                    new LinearRing(
+                        new[]
+                        {
+                            new Position(20, 20),
+                            new Position(20, 21),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(20, 20)
+                        }),
                     new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon2 = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                        {
-                            new Position(20, 20),
-                            new Position(20, 21),
-                            new Position(21, 21),
-                            new Position(21, 20),
-                            new Position(22, 20)
-                        })
-                },
+                new LinearRing(
+                    new[]
+                    {
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
                 new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon3 = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                        {
-                            new Position(20, 20),
-                            new Position(20, 22),
-                            new Position(21, 21),
-                            new Position(21, 20),
-                            new Position(22, 20)
-                        })
-                },
-                new BoundingBox((0, 0), (40, 40)));
-
-            Polygon polygon4 = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                        {
-                            new Position(20, 20),
-                            new Position(20, 21),
-                            new Position(21, 21),
-                            new Position(21, 20),
-                            new Position(22, 20)
-                        })
-                },
+                new LinearRing(
+                    new[]
+                    {
+                        new Position(20, 20),
+                        new Position(20, 22),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
                 new BoundingBox((0, 0), (40, 40)));
 
             Polygon polygon5 = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                        {
-                            new Position(20, 20),
-                            new Position(20, 21),
-                            new Position(21, 21),
-                            new Position(21, 20),
-                            new Position(22, 20)
-                        })
-                },
+                new LinearRing(
+                    new[]
+                    {
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
                 new BoundingBox((0, 0), (40, 41)));
-
-            Polygon polygon6 = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                        {
-                            new Position(20, 20),
-                            new Position(20, 21),
-                            new Position(21, 21),
-                            new Position(21, 20),
-                            new Position(22, 20)
-                        })
-                },
-                new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(polygon1, polygon2);
             Assert.AreEqual(polygon1.GetHashCode(), polygon2.GetHashCode());
@@ -151,14 +108,8 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreNotEqual(polygon1, polygon3);
             Assert.AreNotEqual(polygon1.GetHashCode(), polygon3.GetHashCode());
 
-            Assert.AreNotEqual(polygon1, polygon4);
-            Assert.AreNotEqual(polygon1.GetHashCode(), polygon4.GetHashCode());
-
             Assert.AreNotEqual(polygon1, polygon5);
             Assert.AreNotEqual(polygon1.GetHashCode(), polygon5.GetHashCode());
-
-            Assert.AreNotEqual(polygon1, polygon6);
-            Assert.AreNotEqual(polygon1.GetHashCode(), polygon6.GetHashCode());
         }
 
         /// <summary>
@@ -168,7 +119,7 @@ namespace Azure.Cosmos.Test.Spatial
         [ExpectedException(typeof(ArgumentNullException))]
         public void TestPolygonConstructorNullException()
         {
-            new Polygon(externalRing: null);
+            new Polygon(exteriorRing: null);
         }
 
         /// <summary>
@@ -178,18 +129,15 @@ namespace Azure.Cosmos.Test.Spatial
         public void TestPolygonConstructors()
         {
             Polygon polygon = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                        {
-                            new Position(20, 20),
-                            new Position(20, 21),
-                            new Position(21, 21),
-                            new Position(21, 20),
-                            new Position(22, 20)
-                        })
-                },
+                new LinearRing(
+                    new[]
+                    {
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
                 new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(new Position(20, 20), polygon.Coordinates[0][0]);

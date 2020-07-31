@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
     using System.Text.Json;
@@ -80,14 +80,8 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreNotEqual(geometryCollection1, geometryCollection3);
             Assert.AreNotEqual(geometryCollection1.GetHashCode(), geometryCollection3.GetHashCode());
 
-            Assert.AreNotEqual(geometryCollection1, geometryCollection4);
-            Assert.AreNotEqual(geometryCollection1.GetHashCode(), geometryCollection4.GetHashCode());
-
             Assert.AreNotEqual(geometryCollection1, geometryCollection5);
             Assert.AreNotEqual(geometryCollection1.GetHashCode(), geometryCollection5.GetHashCode());
-
-            Assert.AreNotEqual(geometryCollection1, geometryCollection6);
-            Assert.AreNotEqual(geometryCollection1.GetHashCode(), geometryCollection6.GetHashCode());
         }
 
         /// <summary>

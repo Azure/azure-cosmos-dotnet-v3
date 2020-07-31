@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
     using System.Text.Json;
@@ -70,10 +70,6 @@ namespace Azure.Cosmos.Test.Spatial
                 new Position(20, 30),
                 new BoundingBox((0, 0), (40, 41)));
 
-            Point point6 = new Point(
-                new Position(20, 30),
-                new BoundingBox((0, 0), (40, 40)));
-
             Assert.AreEqual(point1, point2);
             Assert.AreEqual(point1.GetHashCode(), point2.GetHashCode());
 
@@ -85,9 +81,6 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreNotEqual(point1, point5);
             Assert.AreNotEqual(point1.GetHashCode(), point5.GetHashCode());
-
-            Assert.AreNotEqual(point1, point6);
-            Assert.AreNotEqual(point1.GetHashCode(), point6.GetHashCode());
         }
 
         /// <summary>

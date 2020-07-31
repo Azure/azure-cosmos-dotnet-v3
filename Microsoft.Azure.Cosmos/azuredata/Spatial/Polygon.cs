@@ -64,47 +64,39 @@ namespace Azure.Cosmos.Spatial
         /// Initializes a new instance of the <see cref="Polygon"/> class,
         /// from external ring (the polygon contains no holes) in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="externalRing">The exterior ring bounds the surface.</param>
+        /// <param name="exteriorRing">The exterior ring bounds the surface.</param>
         /// <param name="boundingBox">The bounding box.</param>
-        public Polygon(LinearRing externalRing, BoundingBox boundingBox = null)
-            : this(new LinearRing[] { externalRing }, boundingBox)
+        public Polygon(LinearRing exteriorRing, BoundingBox boundingBox = null)
+            : this(exteriorRing, interiorRings: null, boundingBox)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="externalRing">The exterior ring bounds the surface.</param>
+        /// <param name="exteriorRing">The exterior ring bounds the surface.</param>
         /// <param name="interiorRings">Holes within the surface.</param>
         /// <param name="boundingBox">The bounding box.</param>
-        public Polygon(LinearRing externalRing, IReadOnlyList<LinearRing> interiorRings, BoundingBox boundingBox = null)
-            : this(new LinearRing[] { externalRing }.Concat(interiorRings).ToList(), boundingBox)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="coordinates">
-        /// Polygon rings.
-        /// </param>
-        /// <param name="boundingBox">
-        /// Additional geometry parameters.
-        /// </param>
-        public Polygon(IReadOnlyList<LinearRing> coordinates, BoundingBox boundingBox = null)
+        public Polygon(LinearRing exteriorRing, IReadOnlyList<LinearRing> interiorRings, BoundingBox boundingBox = null)
             : base(boundingBox)
         {
-            if (coordinates == null)
+            if (exteriorRing == null)
             {
-                throw new ArgumentNullException(nameof(coordinates));
+                throw new ArgumentNullException(nameof(exteriorRing));
             }
 
-            if (coordinates.Count == 0)
+            if ((interiorRings != null) && interiorRings.Any(ring => ring == null))
             {
-                throw new ArgumentException("The \"coordinates\" member MUST be an array of linear ring coordinate arrays. The first MUST be the exterior ring");
+                throw new ArgumentException($"{nameof(interiorRings)} must not have any null rings.");
             }
 
-            this.Coordinates = coordinates;
+            List<LinearRing> rings = new List<LinearRing>() { exteriorRing };
+            if (interiorRings != null)
+            {
+                rings.AddRange(interiorRings);
+            }
+
+            this.Coordinates = rings;
         }
 
         /// <inheritdoc/>
@@ -118,6 +110,10 @@ namespace Azure.Cosmos.Spatial
         /// </value>
         [DataMember(Name = "coordinates")]
         public IReadOnlyList<LinearRing> Coordinates { get; }
+
+        public LinearRing ExteriorRing => this.Coordinates[0];
+
+        public IReadOnlyList<LinearRing> InteriorRings => this.Coordinates.Skip(1).ToList();
 
         /// <summary>
         /// Serves as a hash function for the <see cref="Polygon" /> type in the Azure Cosmos DB service.

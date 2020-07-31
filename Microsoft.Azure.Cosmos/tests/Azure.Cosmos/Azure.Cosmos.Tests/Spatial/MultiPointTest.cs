@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -72,24 +71,14 @@ namespace Azure.Cosmos.Test.Spatial
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new BoundingBox((0, 0), (40, 41)));
 
-            MultiPoint multiPoint6 = new MultiPoint(
-                new[] { new Position(20, 30), new Position(30, 40) },
-                new BoundingBox((0, 0), (40, 40)));
-
             Assert.AreEqual(multiPoint1, multiPoint2);
             Assert.AreEqual(multiPoint1.GetHashCode(), multiPoint2.GetHashCode());
 
             Assert.AreNotEqual(multiPoint1, multiPoint3);
             Assert.AreNotEqual(multiPoint1.GetHashCode(), multiPoint3.GetHashCode());
 
-            Assert.AreNotEqual(multiPoint1, multiPoint4);
-            Assert.AreNotEqual(multiPoint1.GetHashCode(), multiPoint4.GetHashCode());
-
             Assert.AreNotEqual(multiPoint1, multiPoint5);
             Assert.AreNotEqual(multiPoint1.GetHashCode(), multiPoint5.GetHashCode());
-
-            Assert.AreNotEqual(multiPoint1, multiPoint6);
-            Assert.AreNotEqual(multiPoint1.GetHashCode(), multiPoint6.GetHashCode());
         }
 
         /// <summary>

@@ -1,14 +1,11 @@
 ﻿namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
     using System.Runtime.Serialization;
     using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
-    using Azure.Cosmos.Test.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

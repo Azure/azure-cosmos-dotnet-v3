@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
     using System.Text.Json;
@@ -24,8 +24,30 @@ namespace Azure.Cosmos.Test.Spatial
             string json = @"{
                     ""type"":""MultiPolygon"",
                     ""coordinates"":[
-                        [[[20,30], [30,30], [30,20], [20,20], [20, 30]], [[25,28], [25,25], [25, 28], [28,28], [25, 28]]],
-                        [[[0,0], [0, 1], [1, 0], [0, 0], [0, 10]]]
+                        [
+                            [
+                                [20,30],
+                                [30,30],
+                                [30,20],
+                                [20,20],
+                                [20, 30]
+                            ],
+                            [
+                                [25,28],
+                                [25,25],
+                                [25, 28],
+                                [28,28],
+                                [25, 28]
+                            ]
+                        ],
+                        [
+                            [
+                                [0,0],
+                                [0, 1],
+                                [1, 0],
+                                [0, 0]
+                            ]
+                        ]
                     ],
                     ""bbox"":[20, 20, 30, 30]
             }";
@@ -37,8 +59,8 @@ namespace Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(20, 30), multiPolygon.Coordinates[0][0][0]);
 
-            Assert.AreEqual(new Position(20, 20), multiPolygon.BoundingBox.SouthwesterlyPoint);
-            Assert.AreEqual(new Position(30, 30), multiPolygon.BoundingBox.NortheasertlyPoint);
+            Assert.AreEqual((20, 20), multiPolygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((30, 30), multiPolygon.BoundingBox.NortheasertlyPoint);
 
             GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
             Assert.AreEqual(GeoJsonType.MultiPolygon, geom.Type);
@@ -62,14 +84,17 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 20),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 20)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 40)));
 
@@ -79,14 +104,17 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 20),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 20)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 40)));
 
@@ -96,14 +124,17 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 21), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 21),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 21)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 40)));
 
@@ -113,14 +144,17 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 20),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 20)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 40)));
 
@@ -130,14 +164,17 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 20),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 20)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 41)));
 
@@ -147,14 +184,17 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 20),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 20)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 40)));
 
@@ -164,14 +204,8 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreNotEqual(multiPolygon1, polygon3);
             Assert.AreNotEqual(multiPolygon1.GetHashCode(), polygon3.GetHashCode());
 
-            Assert.AreNotEqual(multiPolygon1, polygon4);
-            Assert.AreNotEqual(multiPolygon1.GetHashCode(), polygon4.GetHashCode());
-
             Assert.AreNotEqual(multiPolygon1, polygon5);
             Assert.AreNotEqual(multiPolygon1.GetHashCode(), polygon5.GetHashCode());
-
-            Assert.AreNotEqual(multiPolygon1, polygon6);
-            Assert.AreNotEqual(multiPolygon1.GetHashCode(), polygon6.GetHashCode());
         }
 
         /// <summary>
@@ -196,21 +230,24 @@ namespace Azure.Cosmos.Test.Spatial
                     {
                         new PolygonCoordinates(
                             new[]
-                                {
-                                    new LinearRing(
-                                        new[]
-                                            {
-                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                new Position(21, 20), new Position(22, 20)
-                                            })
-                                })
+                            {
+                                new LinearRing(
+                                    new[]
+                                    {
+                                        new Position(20, 20),
+                                        new Position(20, 21),
+                                        new Position(21, 21),
+                                        new Position(21, 20),
+                                        new Position(20, 20)
+                                    })
+                            })
                     },
                     new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(new Position(20, 20), multiPolygon.Coordinates[0][0][0]);
 
-            Assert.AreEqual(new Position(0, 0), multiPolygon.BoundingBox.SouthwesterlyPoint);
-            Assert.AreEqual(new Position(40, 40), multiPolygon.BoundingBox.NortheasertlyPoint);
+            Assert.AreEqual((0, 0), multiPolygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), multiPolygon.BoundingBox.NortheasertlyPoint);
         }
     }
 }
