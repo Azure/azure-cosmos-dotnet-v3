@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             List<FeedRangeCompositeContinuation> tokens = new List<FeedRangeCompositeContinuation>();
             foreach (FeedRange range in ranges)
             {
-                FeedRangeEPK feedRangeEPK = range as FeedRangeEPK;
+                FeedRangeEpk feedRangeEPK = range as FeedRangeEpk;
                 FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(containerRid, feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
                 tokens.Add(feedRangeCompositeContinuation);
                 serializations.Add(feedRangeCompositeContinuation.ToString());

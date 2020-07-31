@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -14,95 +16,57 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosBoolean : CosmosElement
+    sealed class CosmosBoolean : CosmosElement, IEquatable<CosmosBoolean>, IComparable<CosmosBoolean>
     {
+        private const int TrueHash = 1071096595;
+        private const int FalseHash = 1031304189;
+
         private static readonly CosmosBoolean True = new CosmosBoolean(true);
         private static readonly CosmosBoolean False = new CosmosBoolean(false);
 
         private CosmosBoolean(bool value)
-            : base(CosmosElementType.Boolean)
+            : base()
         {
             this.Value = value;
         }
 
         public bool Value { get; }
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-            cosmosElementVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
-            return cosmosElementVisitor.Visit(this);
-        }
+        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosBoolean cosmosBoolean && this.Equals(cosmosBoolean);
 
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
-        {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
+        public bool Equals(CosmosBoolean cosmosBoolean) => this.Value == cosmosBoolean.Value;
 
-            return cosmosElementVisitor.Visit(this, input);
-        }
+        public override int GetHashCode() => this.Value ? TrueHash : FalseHash;
 
-        public static CosmosBoolean Create(bool boolean)
-        {
-            return boolean ? CosmosBoolean.True : CosmosBoolean.False;
-        }
+        public int CompareTo(CosmosBoolean cosmosBoolean) => this.Value.CompareTo(cosmosBoolean.Value);
 
-        public override void WriteTo(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
+        public static CosmosBoolean Create(bool boolean) => boolean ? CosmosBoolean.True : CosmosBoolean.False;
 
-            jsonWriter.WriteBoolValue(this.Value);
-        }
+        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteBoolValue(this.Value);
 
-        public static new CosmosBoolean CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-        {
-            return CosmosElement.CreateFromBuffer<CosmosBoolean>(buffer);
-        }
+        public static new CosmosBoolean CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosBoolean>(buffer);
 
-        public static new CosmosBoolean Parse(string json)
-        {
-            return CosmosElement.Parse<CosmosBoolean>(json);
-        }
+        public static new CosmosBoolean Parse(string json) => CosmosElement.Parse<CosmosBoolean>(json);
 
-        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosBoolean cosmosBoolean)
-        {
-            return CosmosElement.TryCreateFromBuffer<CosmosBoolean>(buffer, out cosmosBoolean);
-        }
+        public static bool TryCreateFromBuffer(
+            ReadOnlyMemory<byte> buffer,
+            out CosmosBoolean cosmosBoolean) => CosmosElement.TryCreateFromBuffer<CosmosBoolean>(buffer, out cosmosBoolean);
 
-        public static bool TryParse(string json, out CosmosBoolean cosmosBoolean)
-        {
-            return CosmosElement.TryParse<CosmosBoolean>(json, out cosmosBoolean);
-        }
+        public static bool TryParse(
+            string json,
+            out CosmosBoolean cosmosBoolean) => CosmosElement.TryParse<CosmosBoolean>(json, out cosmosBoolean);
 
         public static new class Monadic
         {
-            public static TryCatch<CosmosBoolean> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
-            {
-                return CosmosElement.Monadic.CreateFromBuffer<CosmosBoolean>(buffer);
-            }
+            public static TryCatch<CosmosBoolean> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosBoolean>(buffer);
 
-            public static TryCatch<CosmosBoolean> Parse(string json)
-            {
-                return CosmosElement.Monadic.Parse<CosmosBoolean>(json);
-            }
+            public static TryCatch<CosmosBoolean> Parse(string json) => CosmosElement.Monadic.Parse<CosmosBoolean>(json);
         }
     }
 #if INTERNAL

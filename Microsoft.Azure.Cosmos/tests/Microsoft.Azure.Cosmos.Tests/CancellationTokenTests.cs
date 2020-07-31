@@ -58,13 +58,10 @@ namespace Microsoft.Azure.Cosmos
                 GatewayStoreModel storeModel = new GatewayStoreModel(
                     endpointManager,
                     sessionContainer,
-                    TimeSpan.FromSeconds(5),
                     ConsistencyLevel.Eventual,
                     eventSource,
                     null,
-                    new UserAgentContainer(),
-                    ApiType.None,
-                    messageHandler);
+                    new HttpClient(messageHandler));
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {
@@ -115,13 +112,10 @@ namespace Microsoft.Azure.Cosmos
                 GatewayStoreModel storeModel = new GatewayStoreModel(
                     endpointManager,
                     sessionContainer,
-                    TimeSpan.FromSeconds(5),
                     ConsistencyLevel.Eventual,
                     eventSource,
                     null,
-                    new UserAgentContainer(),
-                    ApiType.None,
-                    messageHandler);
+                    new HttpClient(messageHandler));
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {
