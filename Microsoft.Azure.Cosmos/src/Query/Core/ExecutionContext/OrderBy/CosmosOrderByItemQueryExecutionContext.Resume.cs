@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderByCrossPartitionQueryPipelineStage;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using ResourceId = Documents.ResourceId;
 
@@ -60,15 +61,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                 .Zip(sortOrders, (expression, order) => new OrderByColumn(expression, order))
                 .ToList();
 
-            return (await context.TryInitializeAsync(
-                sqlQuerySpec: initParams.SqlQuerySpec,
-                requestContinuation: requestContinuationToken,
-                collectionRid: initParams.CollectionRid,
-                partitionKeyRanges: initParams.PartitionKeyRanges,
-                initialPageSize: initParams.InitialPageSize,
-                orderByColumns: columns,
-                cancellationToken: cancellationToken))
-                .Try<IDocumentQueryExecutionComponent>(() => context);
+            await Task.Delay(0);
+
+            return default;
         }
     }
 }

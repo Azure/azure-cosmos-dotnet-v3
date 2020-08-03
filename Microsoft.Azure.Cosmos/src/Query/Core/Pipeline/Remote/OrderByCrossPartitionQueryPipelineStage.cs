@@ -32,18 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     /// </summary>
     internal sealed class OrderByCrossPartitionQueryPipelineStage : IQueryPipelineStage
     {
-        private static readonly QueryState UninitializedQueryState = new QueryState(CosmosString.Create("ORDER BY NOT INITIALIZED YET!"));
-        private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
-
-        private static class Expressions
-        {
-            public const string LessThan = "<";
-            public const string LessThanOrEqualTo = "<=";
-            public const string EqualTo = "=";
-            public const string GreaterThan = ">";
-            public const string GreaterThanOrEqualTo = ">=";
-        }
-
         /// <summary>
         /// Order by queries are rewritten to allow us to inject a filter.
         /// This placeholder is so that we can just string replace it with the filter we want without having to understand the structure of the query.
@@ -56,23 +44,161 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         /// </summary>
         private const string TrueFilter = "true";
 
-        private readonly OrderByItemEnumerator orderByItemEnumerator;
+        private static readonly QueryState UninitializedQueryState = new QueryState(CosmosString.Create("ORDER BY NOT INITIALIZED YET!"));
+        private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
+
+        private readonly IDocumentContainer documentContainer;
+        private readonly SqlQuerySpec sqlQuerySpec;
+        private readonly IReadOnlyList<SortOrder> sortOrders;
+        private readonly PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators;
+        private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens;
         private readonly int pageSize;
 
-        private OrderByCrossPartitionQueryPipelineStage()
+        private QueryState state;
+
+        private static class Expressions
         {
-            this.orderByItemEnumerator = orderByItemEnumerator ?? throw new ArgumentNullException(nameof(orderByItemEnumerator));
+            public const string LessThan = "<";
+            public const string LessThanOrEqualTo = "<=";
+            public const string EqualTo = "=";
+            public const string GreaterThan = ">";
+            public const string GreaterThanOrEqualTo = ">=";
+        }
+
+        private OrderByCrossPartitionQueryPipelineStage(
+            IDocumentContainer documentContainer,
+            SqlQuerySpec sqlQuerySpec,
+            IReadOnlyList<SortOrder> sortOrders,
+            int pageSize,
+            IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
+            QueryState state)
+        {
+            this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+            this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
+            this.sortOrders = sortOrders ?? throw new ArgumentNullException(nameof(sortOrders));
+            this.enumerators = new PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator>(new OrderByEnumeratorComparer(this.sortOrders));
+            this.pageSize = pageSize < 0 ? throw new ArgumentOutOfRangeException($"{nameof(pageSize)} must be a non negative number.") : pageSize;
+            this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
+            this.state = state;
         }
 
         public TryCatch<QueryPage> Current { get; private set; }
 
-        public ValueTask DisposeAsync() => this.orderByItemEnumerator.DisposeAsync();
+        public ValueTask DisposeAsync() => default;
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            bool movedNext = await this.orderByItemEnumerator.MoveNextAsync();
-            this.Current = this.orderByItemEnumerator.Current;
-            return movedNext;
+            this.state = null;
+            if (this.uninitializedEnumeratorsAndTokens.Count != 0)
+            {
+                (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
+                if (token is null)
+                {
+                    // We need to prime the page
+                    if (!await uninitializedEnumerator.MoveNextAsync())
+                    {
+                        throw new InvalidOperationException("Failed to prime the enumerator.");
+                    }
+
+                    if (uninitializedEnumerator.Current.Failed)
+                    {
+                        //TODO HANDLE SPLIT
+                        this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                        this.Current = TryCatch<QueryPage>.FromException(uninitializedEnumerator.Current.Exception);
+                    }
+                    else
+                    {
+                        this.enumerators.Enqueue(uninitializedEnumerator);
+                        QueryPage page = uninitializedEnumerator.Current.Result.Page;
+                        // Just return an empty page with the stats
+                        this.Current = TryCatch<QueryPage>.FromResult(
+                            new QueryPage(
+                                documents: EmptyPage,
+                                requestCharge: page.RequestCharge,
+                                activityId: page.ActivityId,
+                                responseLengthInBytes: page.ResponseLengthInBytes,
+                                cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                                disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                                state: this.state));
+                    }
+
+                    return true;
+                }
+                else
+                {
+                    // We need to actually filter the enumerator
+                    TryCatch<(bool, TryCatch<OrderByQueryPage>)> filterMonad = await FilterNextAsync(
+                        uninitializedEnumerator,
+                        this.sortOrders,
+                        token,
+                        cancellationToken: default);
+
+                    if (filterMonad.Failed)
+                    {
+                        //TODO HANDLE SPLIT
+                        this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
+                        return true;
+                    }
+
+                    (bool doneFiltering, TryCatch<OrderByQueryPage> monadicQueryByPage) = filterMonad.Result;
+                    if (doneFiltering)
+                    {
+                        this.enumerators.Enqueue(uninitializedEnumerator);
+                    }
+                    else
+                    {
+                        this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                    }
+
+                    QueryPage page = uninitializedEnumerator.Current.Result.Page;
+                    // Just return an empty page with the stats
+                    this.Current = TryCatch<QueryPage>.FromResult(
+                        new QueryPage(
+                            documents: EmptyPage,
+                            requestCharge: page.RequestCharge,
+                            activityId: page.ActivityId,
+                            responseLengthInBytes: page.ResponseLengthInBytes,
+                            cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                            disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                            state: this.state));
+
+                    return true;
+                }
+            }
+
+            if (this.enumerators.Count == 0)
+            {
+                return false;
+            }
+
+            // Try to form a page with as many items in the sorted order without having to do async work.
+            List<CosmosElement> documents = new List<CosmosElement>();
+            while (documents.Count < this.pageSize)
+            {
+                OrderByQueryPartitionRangePageAsyncEnumerator currentEnumerator = this.enumerators.Dequeue();
+                if (!currentEnumerator.Current.Result.Enumerator.MoveNext())
+                {
+                    // The order by page ran out of results
+                    // mark the enumerator as unitialized and it will get requeueed on the next iteration with a fresh page.
+                    this.uninitializedEnumeratorsAndTokens.Enqueue((currentEnumerator, (OrderByContinuationToken)null));
+                    break;
+                }
+
+                documents.Add(currentEnumerator.Current.Result.Enumerator.Current);
+            }
+
+            // Return a page of results
+            // No stats to report, since we already reported it when we moved to this page.
+            this.Current = TryCatch<QueryPage>.FromResult(
+                new QueryPage(
+                    documents: documents,
+                    requestCharge: 0,
+                    activityId: default,
+                    responseLengthInBytes: 0,
+                    cosmosQueryExecutionInfo: default,
+                    disallowContinuationTokenMessage: default,
+                    state: default /*TODO figure out continuation logic*/));
+            return true;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -121,8 +247,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             {
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
             }
-
-            IReadOnlyList<SortOrder> sortOrders = orderByColumns.Select(column => column.SortOrder).ToList();
 
             List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> enumeratorsAndTokens;
             if (continuationToken == null)
@@ -208,34 +332,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 }
             }
 
-            OrderByItemEnumerator orderByItemEnumerator = new OrderByItemEnumerator(
+            OrderByCrossPartitionQueryPipelineStage stage = new OrderByCrossPartitionQueryPipelineStage(
                 documentContainer,
-                createEnumerator: (range, state, filter) => new OrderByQueryPartitionRangePageAsyncEnumerator(
-                    documentContainer,
-                    sqlQuerySpec,
-                    range,
-                    pageSize,
-                    filter,
-                    state: state),
+                sqlQuerySpec,
+                orderByColumns.Select(column => column.SortOrder).ToList(),
+                pageSize,
                 enumeratorsAndTokens,
-                initializeAsync: async (enumerator, token) =>
-                {
-                    TryCatch<OrderByQueryPage> queryPage;
-                    if (token is null)
-                    {
-                        await enumerator.MoveNextAsync();
-                        queryPage = enumerator.Current;
-                    }
-                    else
-                    {
-                        queryPage = await MonadicFilterAsync(enumerator, sortOrders, token, cancellationToken: default);
-                    }
-
-                    return queryPage;
-                },
-                new OrderByEnumeratorComparer(sortOrders));
-
-            OrderByCrossPartitionQueryPipelineStage stage = new OrderByCrossPartitionQueryPipelineStage(orderByItemEnumerator);
+                continuationToken == null ? null : new QueryState(continuationToken));
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
@@ -485,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         /// <param name="continuationToken">The continuation token.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private static async Task<TryCatch<(bool, TryCatch<OrderByQueryPage>)>> MonadicFilterNextAsync(
+        private static async Task<TryCatch<(bool, TryCatch<OrderByQueryPage>)>> FilterNextAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator enumerator,
             IReadOnlyList<SortOrder> sortOrders,
             OrderByContinuationToken continuationToken,

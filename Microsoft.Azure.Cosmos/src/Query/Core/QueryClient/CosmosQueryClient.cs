@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             CancellationToken cancellationToken);
 
         public abstract Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             Guid clientQueryCorrelationId,

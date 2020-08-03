@@ -6,10 +6,11 @@
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosCrossPartitionQueryExecutionContext;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.PartitionMapper;
 
     [TestClass]
     public class ContinuationResumeLogicTests
@@ -301,7 +302,7 @@
             IEnumerable<PartitionKeyRange> partitionKeyRanges,
             IEnumerable<IPartitionedToken> partitionedTokens)
         {
-            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> actualMapping = CosmosCrossPartitionQueryExecutionContext.MatchRangesToContinuationTokens(
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> actualMapping = PartitionMapper.MatchRangesToContinuationTokens(
                 partitionKeyRanges.OrderBy(x => Guid.NewGuid()).ToArray(),
                 partitionedTokens.OrderBy(x => Guid.NewGuid()).ToList());
 
@@ -317,7 +318,7 @@
             IEnumerable<PartitionKeyRange> partitionKeyRanges,
             IEnumerable<IPartitionedToken> partitionedTokens)
         {
-            TryCatch<PartitionMapping<IPartitionedToken>> tryGetInitializationInfo = CosmosCrossPartitionQueryExecutionContext.TryGetInitializationInfo(
+            TryCatch<PartitionMapping<IPartitionedToken>> tryGetInitializationInfo = PartitionMapper.MonadicGetPartitionMapping<IPartitionedToken>(
                 partitionKeyRanges.OrderBy(x => Guid.NewGuid()).ToArray(),
                 partitionedTokens.OrderBy(x => Guid.NewGuid()).ToList());
             Assert.IsTrue(tryGetInitializationInfo.Succeeded);

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 if (shouldRetry)
                 {
                     await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
-                        this.cosmosQueryContext.ResourceLink.OriginalString,
+                        this.cosmosQueryContext.ResourceLink,
                         default);
                     this.alreadyRetried = true;
                     await this.currentQueryPipelineStage.DisposeAsync();

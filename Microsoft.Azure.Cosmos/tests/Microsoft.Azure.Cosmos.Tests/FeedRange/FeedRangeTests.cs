@@ -205,8 +205,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             string representation = feedRangeEPK.ToJsonString();
             FeedRangeEpk feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpk;
             Assert.IsNotNull(feedRangeEPKDeserialized);
-            Assert.AreEqual(FeedRangeEpk.Range.Min, feedRangeEPKDeserialized.Range.Min);
-            Assert.AreEqual(FeedRangeEpk.Range.Max, feedRangeEPKDeserialized.Range.Max);
+            Assert.AreEqual(feedRangeEPK.Range.Min, feedRangeEPKDeserialized.Range.Min);
+            Assert.AreEqual(feedRangeEPK.Range.Max, feedRangeEPKDeserialized.Range.Max);
         }
 
         [TestMethod]

@@ -61,7 +61,7 @@
         }
 
         public override Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,

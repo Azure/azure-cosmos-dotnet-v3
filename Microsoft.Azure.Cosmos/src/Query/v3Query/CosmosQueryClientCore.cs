@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,

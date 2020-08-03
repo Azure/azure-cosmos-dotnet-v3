@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.PartitionMapper;
     using PartitionKeyRange = Documents.PartitionKeyRange;
 
     internal sealed partial class CosmosParallelItemQueryExecutionContext : CosmosCrossPartitionQueryExecutionContext
@@ -143,9 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
                 return TryCatch<PartitionMapping<CompositeContinuationToken>>.FromException(tryParseCompositeContinuationTokens.Exception);
             }
 
-            return CosmosCrossPartitionQueryExecutionContext.TryGetInitializationInfo<CompositeContinuationToken>(
-                partitionKeyRanges,
-                tryParseCompositeContinuationTokens.Result);
+            return default;
         }
 
         private static TryCatch<IReadOnlyList<CompositeContinuationToken>> TryParseCompositeContinuationList(
