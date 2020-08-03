@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
@@ -20,21 +21,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
         private readonly IDocumentContainer documentContainer;
         private readonly Func<PartitionKeyRange, QueryState, string, OrderByQueryPartitionRangePageAsyncEnumerator> createEnumerator;
-        private readonly Func<OrderByQueryPartitionRangePageAsyncEnumerator, Task<TryCatch<QueryPage>>> intializeAsync;
+        private readonly Func<OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken, Task<TryCatch<OrderByQueryPage>>> intializeAsync;
         private readonly PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators;
-        private readonly Queue<OrderByQueryPartitionRangePageAsyncEnumerator> uninitializedEnumerators;
+        private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens;
 
         public OrderByItemEnumerator(
             IDocumentContainer documentContainer,
             Func<PartitionKeyRange, QueryState, string, OrderByQueryPartitionRangePageAsyncEnumerator> createEnumerator,
-            IEnumerable<OrderByQueryPartitionRangePageAsyncEnumerator> uninitializedEnumerators,
-            Func<OrderByQueryPartitionRangePageAsyncEnumerator, Task<TryCatch<QueryPage>>> initializeAsync,
+            IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
+            Func<OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken, Task<TryCatch<OrderByQueryPage>>> initializeAsync,
             IComparer<OrderByQueryPartitionRangePageAsyncEnumerator> itemComparer)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.createEnumerator = createEnumerator ?? throw new ArgumentNullException(nameof(createEnumerator));
             this.intializeAsync = initializeAsync ?? throw new ArgumentNullException(nameof(initializeAsync));
-            this.uninitializedEnumerators = new Queue<OrderByQueryPartitionRangePageAsyncEnumerator>(uninitializedEnumerators);
+            this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
             this.enumerators = new PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator>(itemComparer);
         }
 
@@ -42,15 +43,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (this.uninitializedEnumerators.Count != 0)
+            if (this.uninitializedEnumeratorsAndTokens.Count != 0)
             {
-                OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator = this.uninitializedEnumerators.Dequeue();
-                TryCatch<QueryPage> initializeMonad = await this.intializeAsync(uninitializedEnumerator);
+                (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
+                TryCatch<OrderByQueryPage> initializeMonad = await this.intializeAsync(uninitializedEnumerator, token);
                 if (initializeMonad.Failed)
                 {
-                    if (!await this.TryHandleExceptionAsync(uninitializedEnumerator))
+                    if (!await this.TryHandleExceptionAsync(uninitializedEnumerator, token))
                     {
-                        this.uninitializedEnumerators.Enqueue(uninitializedEnumerator);
+                        this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
                     }
 
                     this.Current = TryCatch<QueryPage>.FromException(uninitializedEnumerator.Current.Exception);
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
                 // We want to report back the metrics from initialization, so that the user has accurate metrics,
                 // But we need to make up a fake continuation token, since we aren't in a valid state to continue from.
-                QueryPage initialiazationPage = initializeMonad.Result;
+                QueryPage initialiazationPage = initializeMonad.Result.Page;
                 this.Current = TryCatch<QueryPage>.FromResult(
                     new QueryPage(
                         documents: EmptyPage,
@@ -128,7 +129,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             return true;
         }
 
-        private async Task<bool> TryHandleExceptionAsync(OrderByQueryPartitionRangePageAsyncEnumerator enumerator)
+        private async Task<bool> TryHandleExceptionAsync(
+            OrderByQueryPartitionRangePageAsyncEnumerator enumerator,
+            OrderByContinuationToken token)
         {
             if (!enumerator.Current.Failed)
             {
@@ -155,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                         childRange,
                         enumerator.State,
                         enumerator.Filter);
-                    this.uninitializedEnumerators.Enqueue(childPaginator);
+                    this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
                 }
 
                 return true;

@@ -30,8 +30,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     /// This way we can generate a single continuation token for all n partitions.
     /// This class is able to stop and resume execution by generating continuation tokens and reconstructing an execution context from said token.
     /// </summary>
-    internal sealed class OrderByCrossPartitionQueryPipelineStage : CrossPartitionQueryPipelineStage
+    internal sealed class OrderByCrossPartitionQueryPipelineStage : IQueryPipelineStage
     {
+        private static readonly QueryState UninitializedQueryState = new QueryState(CosmosString.Create("ORDER BY NOT INITIALIZED YET!"));
+        private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
+
         private static class Expressions
         {
             public const string LessThan = "<";
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         private readonly OrderByItemEnumerator orderByItemEnumerator;
         private readonly int pageSize;
 
-        private OrderByCrossPartitionQueryPipelineStage(OrderByItemEnumerator orderByItemEnumerator)
+        private OrderByCrossPartitionQueryPipelineStage()
         {
             this.orderByItemEnumerator = orderByItemEnumerator ?? throw new ArgumentNullException(nameof(orderByItemEnumerator));
         }
@@ -67,14 +70,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (this.orderByItemEnumerator.Current.Failed)
-            {
-                // If we have a buffered exception,
-                // then return that first.
-                this.Current = this.orderByItemEnumerator.Current;
-                return true;
-            }
-
+            bool movedNext = await this.orderByItemEnumerator.MoveNextAsync();
+            this.Current = this.orderByItemEnumerator.Current;
+            return movedNext;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -124,7 +122,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
             }
 
-            List<OrderByQueryPartitionRangePageAsyncEnumerator> remoteEnumerators;
+            IReadOnlyList<SortOrder> sortOrders = orderByColumns.Select(column => column.SortOrder).ToList();
+
+            List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> enumeratorsAndTokens;
             if (continuationToken == null)
             {
                 // Start off all the partition key ranges with null continuation
@@ -132,13 +132,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
                     sqlQuerySpec.Parameters);
 
-                remoteEnumerators = targetRanges
-                    .Select(range => new OrderByQueryPartitionRangePageAsyncEnumerator(
+                enumeratorsAndTokens = targetRanges
+                    .Select(range => (new OrderByQueryPartitionRangePageAsyncEnumerator(
                         documentContainer,
                         sqlQuerySpec,
                         range,
                         pageSize,
-                        state: default))
+                        TrueFilter,
+                        state: default), (OrderByContinuationToken)null))
                     .ToList();
             }
             else
@@ -183,8 +184,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     { (partitionMapping.PartitionsRightOfTarget, rightFilter) },
                 };
 
-                IReadOnlyList<SortOrder> sortOrders = orderByColumns.Select(column => column.SortOrder).ToList();
-                remoteEnumerators = new List<OrderByQueryPartitionRangePageAsyncEnumerator>();
+                enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
                 foreach ((IReadOnlyDictionary<PartitionKeyRange, OrderByContinuationToken> tokenMapping, string filter) in tokenMappingAndFilters)
                 {
                     SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
@@ -200,16 +200,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                             sqlQuerySpec,
                             range,
                             pageSize,
+                            filter,
                             state: token != null ? new QueryState(CosmosString.Create(token.CompositeContinuationToken.Token)) : null);
 
-                        remoteEnumerators.Add(remoteEnumerator);
+                        enumeratorsAndTokens.Add((remoteEnumerator, token));
                     }
                 }
             }
 
             OrderByItemEnumerator orderByItemEnumerator = new OrderByItemEnumerator(
                 documentContainer,
-                )
+                createEnumerator: (range, state, filter) => new OrderByQueryPartitionRangePageAsyncEnumerator(
+                    documentContainer,
+                    sqlQuerySpec,
+                    range,
+                    pageSize,
+                    filter,
+                    state: state),
+                enumeratorsAndTokens,
+                initializeAsync: async (enumerator, token) =>
+                {
+                    TryCatch<OrderByQueryPage> queryPage;
+                    if (token is null)
+                    {
+                        await enumerator.MoveNextAsync();
+                        queryPage = enumerator.Current;
+                    }
+                    else
+                    {
+                        queryPage = await MonadicFilterAsync(enumerator, sortOrders, token, cancellationToken: default);
+                    }
+
+                    return queryPage;
+                },
+                new OrderByEnumeratorComparer(sortOrders));
+
+            OrderByCrossPartitionQueryPipelineStage stage = new OrderByCrossPartitionQueryPipelineStage(orderByItemEnumerator);
+            return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
         private static TryCatch<PartitionMapping<OrderByContinuationToken>> MonadicGetOrderByContinuationTokenMapping(
@@ -393,7 +420,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     ReadOnlySpan<(OrderByColumn orderByColumn, CosmosElement orderByItem)> columnAndItemPrefix = columnAndItems.Span.Slice(start: 0, length: prefixLength);
 
                     bool lastPrefix = prefixLength == numOrderByItems;
-                    bool firstPrefix = prefixLength == 1;
 
                     OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, "(");
 
@@ -459,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         /// <param name="continuationToken">The continuation token.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private static async Task<TryCatch> MonadicFilterAsync(
+        private static async Task<TryCatch<(bool, TryCatch<OrderByQueryPage>)>> MonadicFilterNextAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator enumerator,
             IReadOnlyList<SortOrder> sortOrders,
             OrderByContinuationToken continuationToken,
@@ -475,107 +501,83 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
             if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
             {
-                return TryCatch.FromException(
+                return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromException(
                     new MalformedContinuationTokenException(
                         $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
             }
 
-            Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
             int itemToSkip = continuationToken.SkipCount;
-            bool continuationRidVerified = false;
 
             // Throw away documents until it matches the item from the continuation token.
-            while (await enumerator.MoveNextAsync())
+            if (!await enumerator.MoveNextAsync())
             {
-                TryCatch<OrderByQueryPage> monadicOrderByQueryPage = enumerator.Current;
-                if (monadicOrderByQueryPage.Failed)
+                return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromResult((true, enumerator.Current));
+            }
+
+            TryCatch<OrderByQueryPage> monadicOrderByQueryPage = enumerator.Current;
+            if (monadicOrderByQueryPage.Failed)
+            {
+                return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromException(monadicOrderByQueryPage.Exception);
+            }
+
+            OrderByQueryPage orderByQueryPage = monadicOrderByQueryPage.Result;
+            IEnumerator<CosmosElement> documents = orderByQueryPage.Enumerator;
+            while (documents.MoveNext())
+            {
+                OrderByQueryResult orderByResult = new OrderByQueryResult(documents.Current);
+                ResourceId rid = ResourceId.Parse(orderByResult.Rid);
+                int cmp = 0;
+                for (int i = 0; (i < sortOrders.Count) && (cmp == 0); ++i)
                 {
-                    return TryCatch.FromException(monadicOrderByQueryPage.Exception);
+                    cmp = ItemComparer.Instance.Compare(
+                        continuationToken.OrderByItems[i].Item,
+                        orderByResult.OrderByItems[i].Item);
+
+                    if (cmp != 0)
+                    {
+                        cmp = sortOrders[i] == SortOrder.Ascending ? cmp : -cmp;
+                    }
                 }
 
-                OrderByQueryPage orderByQueryPage = monadicOrderByQueryPage.Result;
-                IEnumerator<CosmosElement> documents = orderByQueryPage.Enumerator;
-                while (documents.MoveNext())
+                if (cmp < 0)
                 {
-                    OrderByQueryResult orderByResult = new OrderByQueryResult(documents.Current);
+                    // We might have passed the item due to deletions and filters.
+                    return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromResult((true, enumerator.Current));
+                }
 
-                    int cmp = 0;
-                    for (int i = 0; (i < sortOrders.Count) && (cmp == 0); ++i)
+                if (cmp == 0)
+                {
+                    // Once the item matches the order by items from the continuation tokens
+                    // We still need to remove all the documents that have a lower rid in the rid sort order.
+                    // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
+                    cmp = continuationRid.Document.CompareTo(rid.Document);
+                    if ((orderByQueryPage.Page.CosmosQueryExecutionInfo == null) || orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseRidEnabled)
                     {
-                        cmp = ItemComparer.Instance.Compare(
-                            continuationToken.OrderByItems[i].Item,
-                            orderByResult.OrderByItems[i].Item);
-
-                        if (cmp != 0)
+                        // If reverse rid is enabled on the backend then fallback to the old way of doing it.
+                        if (sortOrders[0] == SortOrder.Descending)
                         {
-                            cmp = sortOrders[i] == SortOrder.Ascending ? cmp : -cmp;
+                            cmp = -cmp;
+                        }
+                    }
+                    else
+                    {
+                        // Go by the whatever order the index wants
+                        if (orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseIndexScan)
+                        {
+                            cmp = -cmp;
                         }
                     }
 
-                    if (cmp < 0)
+                    // We might have passed the item due to deletions and filters.
+                    // We also have a skip count for JOINs
+                    if (cmp < 0 || (cmp == 0 && itemToSkip-- <= 0))
                     {
-                        // We might have passed the item due to deletions and filters.
-                        return TryCatch.FromResult();
-                    }
-
-                    if (cmp == 0)
-                    {
-                        if (!resourceIds.TryGetValue(orderByResult.Rid, out ResourceId rid))
-                        {
-                            if (!ResourceId.TryParse(orderByResult.Rid, out rid))
-                            {
-                                return TryCatch.FromException(
-                                    new MalformedContinuationTokenException(
-                                        $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse."));
-                            }
-
-                            resourceIds.Add(orderByResult.Rid, rid);
-                        }
-
-                        if (!continuationRidVerified)
-                        {
-                            if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
-                            {
-                                return TryCatch.FromException(
-                                    new MalformedContinuationTokenException(
-                                        $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
-                            }
-
-                            continuationRidVerified = true;
-                        }
-
-                        // Once the item matches the order by items from the continuation tokens
-                        // We still need to remove all the documents that have a lower rid in the rid sort order.
-                        // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
-                        cmp = continuationRid.Document.CompareTo(rid.Document);
-                        if ((orderByQueryPage.Page.CosmosQueryExecutionInfo == null) || orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseRidEnabled)
-                        {
-                            // If reverse rid is enabled on the backend then fallback to the old way of doing it.
-                            if (sortOrders[0] == SortOrder.Descending)
-                            {
-                                cmp = -cmp;
-                            }
-                        }
-                        else
-                        {
-                            // Go by the whatever order the index wants
-                            if (orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseIndexScan)
-                            {
-                                cmp = -cmp;
-                            }
-                        }
-
-                        // We might have passed the item due to deletions and filters.
-                        // We also have a skip count for JOINs
-                        if (cmp < 0 || (cmp == 0 && itemToSkip-- <= 0))
-                        {
-                            return TryCatch.FromResult();
-                        }
+                        return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromResult((true, enumerator.Current));
                     }
                 }
             }
 
-            return TryCatch.FromResult();
+            return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromResult((false, enumerator.Current));
         }
 
         private static bool IsSplitException(Exception exeception)
