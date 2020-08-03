@@ -627,6 +627,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return client.Read<DocumentCollection>(documentCollections[0].ResourceId);
         }
 
+        internal static DocumentCollection CreateOrGetDocumentCollectionWithMultiHash(DocumentClient client, out Database database)
+        {
+            database = TestCommon.CreateOrGetDatabase(client);
+
+            IList<DocumentCollection> documentCollections = TestCommon.ListAll<DocumentCollection>(
+                client,
+                database.ResourceId);
+
+            if (documentCollections.Count == 0)
+            {
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk","/key" }), Kind = PartitionKind.MultiHash };
+                DocumentCollection documentCollection1 = new DocumentCollection
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    PartitionKey = partitionKeyDefinition
+                };
+
+                return TestCommon.CreateCollectionAsync(client, database, documentCollection1,
+                    new RequestOptions() { OfferThroughput = 10000 }).Result;
+            }
+
+            return client.Read<DocumentCollection>(documentCollections[0].ResourceId);
+        }
+
         internal static Document CreateOrGetDocument(DocumentClient client)
         {
 
