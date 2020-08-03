@@ -97,7 +97,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     // We need to prime the page
                     if (!await uninitializedEnumerator.MoveNextAsync())
                     {
-                        throw new InvalidOperationException("Failed to prime the enumerator.");
+                        // No more documents, so just return an empty page
+                        this.Current = TryCatch<QueryPage>.FromResult(
+                            new QueryPage(
+                                documents: EmptyPage,
+                                requestCharge: 0,
+                                activityId: string.Empty,
+                                responseLengthInBytes: 0,
+                                cosmosQueryExecutionInfo: default,
+                                disallowContinuationTokenMessage: default,
+                                state: this.state));
+                        return true;
                     }
 
                     if (uninitializedEnumerator.Current.Failed)
@@ -108,7 +118,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     }
                     else
                     {
-                        this.enumerators.Enqueue(uninitializedEnumerator);
+                        if (!uninitializedEnumerator.Current.Result.Enumerator.MoveNext())
+                        {
+                            // Page was empty
+                            this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                        }
+                        else
+                        {
+                            this.enumerators.Enqueue(uninitializedEnumerator);
+                        }
+
                         QueryPage page = uninitializedEnumerator.Current.Result.Page;
                         // Just return an empty page with the stats
                         this.Current = TryCatch<QueryPage>.FromResult(
@@ -143,7 +162,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     (bool doneFiltering, TryCatch<OrderByQueryPage> monadicQueryByPage) = filterMonad.Result;
                     if (doneFiltering)
                     {
-                        this.enumerators.Enqueue(uninitializedEnumerator);
+                        // TODO test empty pages
+                        if (uninitializedEnumerator.Current.Result.Enumerator.Current != null)
+                        {
+                            this.enumerators.Enqueue(uninitializedEnumerator);
+                        }
                     }
                     else
                     {
@@ -176,15 +199,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             while (documents.Count < this.pageSize)
             {
                 OrderByQueryPartitionRangePageAsyncEnumerator currentEnumerator = this.enumerators.Dequeue();
+                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentEnumerator.Current.Result.Enumerator.Current);
+                documents.Add(orderByQueryResult.Payload);
+
                 if (!currentEnumerator.Current.Result.Enumerator.MoveNext())
                 {
                     // The order by page ran out of results
-                    // mark the enumerator as unitialized and it will get requeueed on the next iteration with a fresh page.
-                    this.uninitializedEnumeratorsAndTokens.Enqueue((currentEnumerator, (OrderByContinuationToken)null));
+                    if (currentEnumerator.State != null)
+                    {
+                        // If the continuation isn't null
+                        // then mark the enumerator as unitialized and it will get requeueed on the next iteration with a fresh page.
+                        this.uninitializedEnumeratorsAndTokens.Enqueue((currentEnumerator, (OrderByContinuationToken)null));
+                    }
+                    
                     break;
                 }
 
-                documents.Add(currentEnumerator.Current.Result.Enumerator.Current);
+                this.enumerators.Enqueue(currentEnumerator);
             }
 
             // Return a page of results

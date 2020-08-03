@@ -78,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 return string.CompareOrdinal(enumerator1.Range.MinInclusive, enumerator2.Range.MinInclusive);
             }
 
-            OrderByQueryResult result1 = new OrderByQueryResult(enumerator1.Current.Result.Page.Documents.First());
-            OrderByQueryResult result2 = new OrderByQueryResult(enumerator2.Current.Result.Page.Documents.First());
+            OrderByQueryResult result1 = new OrderByQueryResult(enumerator1.Current.Result.Enumerator.Current);
+            OrderByQueryResult result2 = new OrderByQueryResult(enumerator2.Current.Result.Enumerator.Current);
 
             // First compare the documents based on the sort order of the query.
             int cmp = this.CompareOrderByItems(result1.OrderByItems, result2.OrderByItems);

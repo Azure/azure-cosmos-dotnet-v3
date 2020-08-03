@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 {
+    using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         public OrderByQueryPage(QueryPage queryPage)
             : base(queryPage.State)
         {
+            this.Page = queryPage ?? throw new ArgumentNullException(nameof(queryPage));
             this.Enumerator = queryPage.Documents.GetEnumerator();
         }
 
