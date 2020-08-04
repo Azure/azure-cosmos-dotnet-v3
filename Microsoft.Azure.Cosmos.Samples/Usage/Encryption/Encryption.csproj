@@ -15,7 +15,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
 </ItemGroup>
   <ItemGroup>
-    <None Include="..\AppSettings.json">
+    <None Include="AppSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
