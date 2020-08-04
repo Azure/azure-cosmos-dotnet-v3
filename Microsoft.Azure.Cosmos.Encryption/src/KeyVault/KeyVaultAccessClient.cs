@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly AsyncCache<Uri, KeyClient> akvClientCache;
         private readonly AsyncCache<Uri, CryptographyClient> akvCryptoClientCache;
         private readonly KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory;
+        private readonly KeyClientFactory keyClientFactory;
+        private readonly CryptographyClientFactory cryptographyClientFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KeyVaultAccessClient"/> class.
@@ -32,6 +34,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.keyVaultTokenCredentialFactory = keyVaultTokenCredentialFactory;
             this.akvClientCache = new AsyncCache<Uri, KeyClient>();
             this.akvCryptoClientCache = new AsyncCache<Uri, CryptographyClient>();
+            this.keyClientFactory = new KeyClientFactory();
+            this.cryptographyClientFactory = new CryptographyClientFactory();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="KeyVaultAccessClient"/> class.
+        /// Invokes internal Facotory Methods.
+        /// </summary>
+        /// <param name="keyVaultTokenCredentialFactory"> TokenCredential </param>
+        /// <param name="keyClientFactory"> KeyClient Factory </param>
+        /// <param name="cryptographyClientFactory"> CryptoClient Factory </param>
+        internal KeyVaultAccessClient(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory, KeyClientFactory keyClientFactory, CryptographyClientFactory cryptographyClientFactory)
+        {
+            this.keyVaultTokenCredentialFactory = keyVaultTokenCredentialFactory;
+            this.akvClientCache = new AsyncCache<Uri, KeyClient>();
+            this.akvCryptoClientCache = new AsyncCache<Uri, CryptographyClient>();
+            this.keyClientFactory = keyClientFactory;
+            this.cryptographyClientFactory = cryptographyClientFactory;
         }
 
         /// <summary>
@@ -154,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 singleValueInitFunc: async () =>
                 {
                     TokenCredential tokenCred = await this.keyVaultTokenCredentialFactory.GetTokenCredentialAsync(keyVaultUriProperties.KeyUri, cancellationToken);
-                    return new KeyClient(keyVaultUriProperties.KeyVaultUri, tokenCred);
+                    return this.keyClientFactory.GetKeyClient(keyVaultUriProperties, tokenCred);
                 },
                 cancellationToken: cancellationToken);
 
@@ -183,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     // we need to acquire the Client Cert Creds for cases where we directly access Crypto Services.
                     TokenCredential tokenCred = await this.keyVaultTokenCredentialFactory.GetTokenCredentialAsync(keyVaultUriProperties.KeyUri, cancellationToken);
-                    return new CryptographyClient(keyVaultUriProperties.KeyUri, tokenCred);
+                    return this.cryptographyClientFactory.GetCryptographyClient(keyVaultUriProperties, tokenCred);
                 },
                 cancellationToken: cancellationToken);
             return cryptoClient;

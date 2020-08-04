@@ -28,6 +28,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
         }
 
+        /// <summary>
+        /// Creates a new instance of a provider to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
+        /// </summary>
+        /// <param name="keyVaultTokenCredentialFactory"> KeyVaultTokenCredentialFactory instance </param>
+        /// <param name="keyClientFactory"> KeyClient Factory Methods </param>
+        /// <param name="cryptographyClientFactory"> CryptographyClient Factory Methods </param>
+        internal AzureKeyVaultKeyWrapProvider(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory, KeyClientFactory keyClientFactory, CryptographyClientFactory cryptographyClientFactory)
+        {
+            this.keyVaultAccessClient = new KeyVaultAccessClient(keyVaultTokenCredentialFactory, keyClientFactory, cryptographyClientFactory);
+            this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
+        }
+
         /// <inheritdoc />
         public override async Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
             byte[] wrappedKey,
