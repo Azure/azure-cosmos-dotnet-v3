@@ -4,6 +4,8 @@
     using System.Collections.Generic;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
+    using Azure.Core;
+    using Azure.Identity;
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
@@ -102,6 +104,13 @@
             return certs[0];
         }
 
+        private static TokenCredential GetTokenCredential(string tenantId, string clientId, string clientCertThumbprint)
+        {
+            ClientCertificateCredential clientCertificateCredential;
+            clientCertificateCredential = new ClientCertificateCredential(tenantId, clientId, Program.GetCertificate(clientCertThumbprint));
+            return clientCertificateCredential;
+        }
+
         /// <summary>
         /// Administrative operations - create the database, container, and generate the necessary data encryption keys.
         /// These are initializations and are expected to be invoked only once - do not invoke these before every item request.
@@ -136,9 +145,14 @@
                 throw new ArgumentNullException("Please specify a valid ClientCertThumbprint in the appSettings.json");
             }
 
-            AzureKeyVaultCosmosEncryptor encryptor = new AzureKeyVaultCosmosEncryptor(
-                clientId,
-                Program.GetCertificate(clientCertThumbprint));
+            // Get the Tenant ID 
+            string tenantId = configuration["TenantId"];
+            if (string.IsNullOrEmpty(tenantId))
+            {
+                throw new ArgumentNullException("Please specify a valid Tenant Id in the appSettings.json");
+            }
+
+            AzureKeyVaultCosmosEncryptor encryptor = new AzureKeyVaultCosmosEncryptor(Program.GetTokenCredential(tenantId, clientId, clientCertThumbprint));
 
             await encryptor.InitializeAsync(database, Program.keyContainerId);
 
