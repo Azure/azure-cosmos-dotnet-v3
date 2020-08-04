@@ -4,38 +4,39 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Security.Cryptography.X509Certificates;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
-    /// See <a href="https://docs.microsoft.com/en-us/rest/api/azure/index#register-your-client-application-with-azure-ad">this link</a> for details on registering your application with Azure AD.
-    /// The registered application must have the keys/readKey, keys/wrapKey and keys/unwrapKey permissions on the Azure Key Vaults that will be used for wrapping and unwrapping data encryption keys
-    /// - see <a href="https://docs.microsoft.com/en-us/azure/key-vault/about-keys-secrets-and-certificates#key-access-control">this link</a> for details on this.
-    /// Azure key vaults used with client side encryption for Cosmos DB need to have soft delete and purge protection enabled - see
-    /// <a href="https://docs.microsoft.com/en-us/azure/key-vault/key-vault-ovw-soft-delete">this link</a> for details regarding the same.
     /// Unwrapped data encryption keys will be cached within the client SDK for a period of 1 hour.
     /// </summary>
     internal class AzureKeyVaultKeyWrapProvider : EncryptionKeyWrapProvider
     {
-        private static readonly KeyVaultAccessClientFactory keyVaultAccessClientFactory = new KeyVaultAccessClientFactory();
-        private readonly IKeyVaultAccessClient keyVaultAccessClient;
+        private readonly KeyVaultAccessClient keyVaultAccessClient;
         private readonly TimeSpan rawDekCacheTimeToLive;
 
         /// <summary>
         /// Creates a new instance of a provider to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
         /// </summary>
-        /// <param name="clientId">Application (client) ID.</param>
-        /// <param name="certificate">A certificate that can be used as secret to prove the application’s identity when requesting a token.</param>
-        /// <param name="rawDataEncryptionKeyCacheTimeToLive">
+        /// <param name="keyVaultTokenCredentialFactory"> KeyVaultTokenCredentialFactory instance </param>
         /// Amount of time the unencrypted form of the data encryption key can be cached on the client before <see cref="UnwrapKeyAsync"/> needs to be called again.
-        /// </param>
-        public AzureKeyVaultKeyWrapProvider(
-            string clientId,
-            X509Certificate2 certificate)
+        public AzureKeyVaultKeyWrapProvider(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory)
         {
-            this.keyVaultAccessClient = AzureKeyVaultKeyWrapProvider.keyVaultAccessClientFactory.CreateKeyVaultAccessClient(clientId, certificate);
+            this.keyVaultAccessClient = new KeyVaultAccessClient(keyVaultTokenCredentialFactory);
+            this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
+        }
+
+        /// <summary>
+        /// Creates a new instance of a provider to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys stored in Azure Key Vault.
+        /// </summary>
+        /// <param name="keyVaultTokenCredentialFactory"> KeyVaultTokenCredentialFactory instance </param>
+        /// <param name="keyClientFactory"> KeyClient Factory Methods </param>
+        /// <param name="cryptographyClientFactory"> CryptographyClient Factory Methods </param>
+        internal AzureKeyVaultKeyWrapProvider(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory, KeyClientFactory keyClientFactory, CryptographyClientFactory cryptographyClientFactory)
+        {
+            this.keyVaultAccessClient = new KeyVaultAccessClient(keyVaultTokenCredentialFactory, keyClientFactory, cryptographyClientFactory);
             this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
         }
 
@@ -57,21 +58,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     nameof(metadata));
             }
 
-            string wrappedKeyString = Convert.ToBase64String(wrappedKey);
-            try
+            if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                KeyVaultUnwrapResult result = await this.keyVaultAccessClient.UnwrapKeyAsync(wrappedKeyString, new Uri(metadata.Value), cancellationToken);
-                return new EncryptionKeyUnwrapResult(Convert.FromBase64String(result.UnwrappedKeyBytesInBase64), this.rawDekCacheTimeToLive);
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
             }
-            catch (KeyVaultAccessException ex)
-            {
-                if (ex.KeyVaultErrorCode == KeyVaultErrorCode.KeyVaultKeyNotFound)
-                {
-                    throw new KeyNotFoundException(ex.Message, ex);
-                }
 
-                throw;
-            }
+            byte[] result = await this.keyVaultAccessClient.UnwrapKeyAsync(wrappedKey, keyVaultUriProperties, cancellationToken);
+            return new EncryptionKeyUnwrapResult(result, this.rawDekCacheTimeToLive);
         }
 
         /// <inheritdoc />
@@ -85,28 +78,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentException("Invalid metadata", nameof(metadata));
             }
 
-            string keyString = Convert.ToBase64String(key);
-            try
+            if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                Uri keyVaultKeyUri = new Uri(metadata.Value);
-                if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultKeyUri, cancellationToken))
-                {
-                    throw new ArgumentException("Key Vault provided must have soft delete and purge protection enabled.");
-                }
-
-                KeyVaultWrapResult result = await this.keyVaultAccessClient.WrapKeyAsync(keyString, keyVaultKeyUri, cancellationToken);
-                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
-                return new EncryptionKeyWrapResult(Convert.FromBase64String(result.WrappedKeyBytesInBase64), responseMetadata);
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
             }
-            catch (KeyVaultAccessException ex)
+
+            if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))
             {
-                if (ex.KeyVaultErrorCode == KeyVaultErrorCode.KeyVaultKeyNotFound)
-                {
-                    throw new KeyNotFoundException(ex.Message, ex);
-                }
-
-                throw;
+                throw new ArgumentException(string.Format("Key Vault {0} provided must have soft delete and purge protection enabled.", keyVaultUriProperties.KeyUri));
             }
+
+            byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultUriProperties, cancellationToken);
+            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
+            return new EncryptionKeyWrapResult(result, responseMetadata);
         }
     }
 }

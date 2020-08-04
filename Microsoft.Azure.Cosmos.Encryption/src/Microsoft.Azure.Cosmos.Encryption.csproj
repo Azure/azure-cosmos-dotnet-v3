@@ -19,16 +19,14 @@
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
-    <DefineConstants>$(DefineConstants);INTERNAL</DefineConstants>  
   </PropertyGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 
   <ItemGroup>
-     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.4" />
-     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.3-preview" />
-     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="*" />
+     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.3" />
+     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.9.1-preview" />
      <PackageReference Include="Azure.Core" Version="1.3.0" />
      <PackageReference Include="Azure.Identity" Version="1.1.1" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     

@@ -4,35 +4,13 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Net;
-    using System.Runtime.Serialization;
+    using global::Azure;
 
-    [Serializable]
-    internal class KeyVaultAccessException : Exception
+    internal class KeyVaultAccessException : RequestFailedException
     {
-        public KeyVaultAccessException(
-            HttpStatusCode statusCode,
-            KeyVaultErrorCode keyVaultErrorCode,
-            string errorMessage)
+        public KeyVaultAccessException(int statusCode, string keyVaultErrorCode, string? errorMessage, Exception? innerException)
+            : base(statusCode, keyVaultErrorCode, errorMessage, innerException)
         {
-            this.HttpStatusCode = statusCode;
-            this.KeyVaultErrorCode = keyVaultErrorCode;
-            this.ErrorMessage = errorMessage;
-        }
-
-        protected KeyVaultAccessException(SerializationInfo info, StreamingContext context)
-        {
-        }
-
-        public HttpStatusCode HttpStatusCode { get; }
-
-        public KeyVaultErrorCode KeyVaultErrorCode { get; }
-
-        public string ErrorMessage { get; }
-
-        public override string ToString()
-        {
-            return $"KeyVaultAccessClient failed with HttpStatusCode {this.HttpStatusCode} and KeyVaultError {this.KeyVaultErrorCode.ToString()}. {this.ErrorMessage}";
         }
     }
 }
