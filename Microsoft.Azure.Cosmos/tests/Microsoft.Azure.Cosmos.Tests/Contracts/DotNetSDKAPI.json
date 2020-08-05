@@ -260,7 +260,7 @@
       },
       "NestedTypes": {}
     },
-    "RemainingLeaseTokenWork": {
+    "RemainingLeaseWork": {
       "Subclasses": {},
       "Members": {
         "Int64 get_RemainingWork()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -275,14 +275,14 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.FeedToken get_LeaseToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_LeaseToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedToken get_LeaseToken()"
+          "MethodInfo": "System.String get_LeaseToken()"
         },
-        "Microsoft.Azure.Cosmos.FeedToken LeaseToken": {
+        "System.String LeaseToken": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -882,20 +882,20 @@
         "ChangesEstimationDetailedHandler": {
           "Subclasses": {},
           "Members": {
-            "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+            "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
+              "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
             },
             "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
             },
-            "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)": {
+            "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)"
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)"
             },
             "Void .ctor(System.Object, IntPtr)": {
               "Type": "Constructor",
@@ -962,20 +962,20 @@
     "ChangesEstimationDetailedHandler": {
       "Subclasses": {},
       "Members": {
-        "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+        "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
+          "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
         },
         "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
         },
-        "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseTokenWork], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)"
         },
         "Void .ctor(System.Object, IntPtr)": {
           "Type": "Constructor",
@@ -2758,17 +2758,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ETag()"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "FeedToken": {
-      "Subclasses": {},
-      "Members": {
-        "System.String ToString()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String ToString()"
         }
       },
       "NestedTypes": {}

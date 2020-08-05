@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 Debug.Assert(lease.CurrentLeaseToken != null, "TakeLeasesAsync: lease.CurrentLeaseToken cannot be null.");
 
-                allPartitions.Add(lease.CurrentLeaseToken?.ToString(), lease);
+                allPartitions.Add(lease.CurrentLeaseToken, lease);
                 if (string.IsNullOrWhiteSpace(lease.Owner) || this.IsExpired(lease))
                 {
                     DefaultTrace.TraceVerbose("Found unused or expired lease: {0}", lease);
