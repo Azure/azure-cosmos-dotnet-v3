@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             {
                 foreach (string key in dce.Headers)
                 {
-                    headers.Add(key, dce.Headers[key]);
+                    string value = dce.Headers[key] ?? throw new ArgumentNullException($"{nameof(key)}: {key}; {nameof(value)}: {dce.Headers[key] ?? "null"}; {dce.ToString()};");
+                    headers.Add(key, value);
                 }
             }
 
