@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Dynamic;
+    using System.Linq.Expressions;
     using System.Threading.Tasks;
 
     [TestClass]
@@ -709,6 +710,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             queryDefinition.WithParameter("@param3", 6);
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+
+        }
+
+        [TestMethod]
+        public async Task LinqCaseInsensitiveStringTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 100, randomPartitionKey: true);
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+
+            async Task TestSearch(Expression<Func<ToDoActivity, bool>> expression, string expectedMethod, bool caseInsensitive, int expectedResults)
+            {
+                string expectedQueryText = $"SELECT VALUE root FROM root WHERE {expectedMethod}(root[\"description\"], @param1{(caseInsensitive ? ", true" : "")})";
+
+                IArgumentProvider arguments = (IArgumentProvider)expression.Body;
+
+                string searchString = (arguments.GetArgument(0) as ConstantExpression).Value as string;
+
+                IQueryable<ToDoActivity> queryable = linqQueryable.Where(expression);
+
+                Dictionary<object, string> parameters = new Dictionary<object, string>();
+                parameters.Add(searchString, "@param1");
+
+                QueryDefinition queryDefinition = queryable.ToQueryDefinition(parameters);
+
+                string queryText = queryDefinition.ToSqlQuerySpec().QueryText;
+
+                Assert.AreEqual(expectedQueryText, queryText);
+
+                Assert.AreEqual(expectedResults, await queryable.CountAsync());
+            }
+
+            await TestSearch(x => x.description.StartsWith("create"), "STARTSWITH", false, 0);
+            await TestSearch(x => x.description.StartsWith("cReAtE", StringComparison.OrdinalIgnoreCase), "STARTSWITH", true, 200);
+
+            await TestSearch(x => x.description.EndsWith("activity"), "ENDSWITH", false, 0);
+            await TestSearch(x => x.description.EndsWith("AcTiViTy", StringComparison.OrdinalIgnoreCase), "ENDSWITH", true, 200);
+
+            await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "STRINGEQUALS", true, 200);
+
+            await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
+            await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 200);
 
         }
 
