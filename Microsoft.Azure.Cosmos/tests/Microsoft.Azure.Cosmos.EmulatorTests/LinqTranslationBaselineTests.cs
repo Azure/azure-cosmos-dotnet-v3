@@ -38,13 +38,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 EnableEndpointDiscovery = true,
             };
 
-            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                    cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
-                    {
-                        ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-                        // We want to simulate the property not exist so ignoring the null value
-                        NullValueHandling = NullValueHandling.Ignore
-                    })).WithConnectionModeGateway();
+            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+            {
+                cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
+                {
+                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                    // We want to simulate the property not exist so ignoring the null value
+                    NullValueHandling = NullValueHandling.Ignore
+                })).WithConnectionModeGateway();
             });
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid().ToString("N")}";
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id : Guid.NewGuid().ToString(),partitionKeyPath : "/Pk"));
+            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
         }
 
         [TestCleanup]
@@ -148,59 +149,59 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestLiteralSerialization()
         {
             List<DataObject> testData = new List<DataObject>();
-            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Byte
             inputs.Add(new LinqTestInput("Byte 1", b => getQuery(b).Select(doc => new { value = 1 })));
-            inputs.Add(new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = Byte.MinValue})));
-            inputs.Add(new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = Byte.MaxValue})));
+            inputs.Add(new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = Byte.MinValue })));
+            inputs.Add(new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = Byte.MaxValue })));
             // SByte
-            inputs.Add(new LinqTestInput("SByte 2", b => getQuery(b).Select(doc => new { value = 2})));
-            inputs.Add(new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = SByte.MinValue})));
-            inputs.Add(new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = SByte.MaxValue})));
+            inputs.Add(new LinqTestInput("SByte 2", b => getQuery(b).Select(doc => new { value = 2 })));
+            inputs.Add(new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = SByte.MinValue })));
+            inputs.Add(new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = SByte.MaxValue })));
             // UInt16
-            inputs.Add(new LinqTestInput("UInt16 3", b => getQuery(b).Select(doc => new { value = 3})));
-            inputs.Add(new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = UInt16.MinValue})));
-            inputs.Add(new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = UInt16.MaxValue})));
+            inputs.Add(new LinqTestInput("UInt16 3", b => getQuery(b).Select(doc => new { value = 3 })));
+            inputs.Add(new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = UInt16.MinValue })));
+            inputs.Add(new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = UInt16.MaxValue })));
             // UInt32
-            inputs.Add(new LinqTestInput("UInt32 4", b => getQuery(b).Select(doc => new { value = 4})));
-            inputs.Add(new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = UInt32.MinValue})));
-            inputs.Add(new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = UInt32.MaxValue})));
+            inputs.Add(new LinqTestInput("UInt32 4", b => getQuery(b).Select(doc => new { value = 4 })));
+            inputs.Add(new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = UInt32.MinValue })));
+            inputs.Add(new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = UInt32.MaxValue })));
             // UInt64
-            inputs.Add(new LinqTestInput("UInt64 5", b => getQuery(b).Select(doc => new { value = 5})));
-            inputs.Add(new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = UInt64.MinValue})));
-            inputs.Add(new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = UInt64.MaxValue})));
+            inputs.Add(new LinqTestInput("UInt64 5", b => getQuery(b).Select(doc => new { value = 5 })));
+            inputs.Add(new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = UInt64.MinValue })));
+            inputs.Add(new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = UInt64.MaxValue })));
             // Int16
-            inputs.Add(new LinqTestInput("Int16 6", b => getQuery(b).Select(doc => new { value = 6})));
-            inputs.Add(new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = Int16.MinValue})));
-            inputs.Add(new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = Int16.MaxValue})));
+            inputs.Add(new LinqTestInput("Int16 6", b => getQuery(b).Select(doc => new { value = 6 })));
+            inputs.Add(new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = Int16.MinValue })));
+            inputs.Add(new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = Int16.MaxValue })));
             // Int32
-            inputs.Add(new LinqTestInput("Int32 7", b => getQuery(b).Select(doc => new { value = 7})));
-            inputs.Add(new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = Int32.MinValue})));
-            inputs.Add(new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = Int32.MaxValue})));
+            inputs.Add(new LinqTestInput("Int32 7", b => getQuery(b).Select(doc => new { value = 7 })));
+            inputs.Add(new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = Int32.MinValue })));
+            inputs.Add(new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = Int32.MaxValue })));
             // Int64
-            inputs.Add(new LinqTestInput("Int64 8", b => getQuery(b).Select(doc => new { value = 8})));
-            inputs.Add(new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = Int64.MinValue})));
-            inputs.Add(new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = Int64.MaxValue})));
+            inputs.Add(new LinqTestInput("Int64 8", b => getQuery(b).Select(doc => new { value = 8 })));
+            inputs.Add(new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = Int64.MinValue })));
+            inputs.Add(new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = Int64.MaxValue })));
             // Decimal
-            inputs.Add(new LinqTestInput("Decimal 9", b => getQuery(b).Select(doc => new { value = 9})));
-            inputs.Add(new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = Decimal.MinValue})));
-            inputs.Add(new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = Decimal.MaxValue})));
+            inputs.Add(new LinqTestInput("Decimal 9", b => getQuery(b).Select(doc => new { value = 9 })));
+            inputs.Add(new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = Decimal.MinValue })));
+            inputs.Add(new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = Decimal.MaxValue })));
             // Double
-            inputs.Add(new LinqTestInput("Double 10", b => getQuery(b).Select(doc => new { value = 10})));
-            inputs.Add(new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = Double.MinValue})));
-            inputs.Add(new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = Double.MaxValue})));
+            inputs.Add(new LinqTestInput("Double 10", b => getQuery(b).Select(doc => new { value = 10 })));
+            inputs.Add(new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = Double.MinValue })));
+            inputs.Add(new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = Double.MaxValue })));
             // Single
-            inputs.Add(new LinqTestInput("Single 11", b => getQuery(b).Select(doc => new { value = 11})));
-            inputs.Add(new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = Single.MinValue})));
-            inputs.Add(new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = Single.MaxValue})));
+            inputs.Add(new LinqTestInput("Single 11", b => getQuery(b).Select(doc => new { value = 11 })));
+            inputs.Add(new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = Single.MinValue })));
+            inputs.Add(new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = Single.MaxValue })));
             // Bool
-            inputs.Add(new LinqTestInput("Bool true", b => getQuery(b).Select(doc => new { value = true})));
-            inputs.Add(new LinqTestInput("Bool false", b => getQuery(b).Select(doc => new { value = false})));
+            inputs.Add(new LinqTestInput("Bool true", b => getQuery(b).Select(doc => new { value = true })));
+            inputs.Add(new LinqTestInput("Bool false", b => getQuery(b).Select(doc => new { value = false })));
             // String
             string nullStr = null;
-            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty})));
+            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty })));
             inputs.Add(new LinqTestInput("String str1", b => getQuery(b).Select(doc => new { value = "str1" })));
             inputs.Add(new LinqTestInput("String special", b => getQuery(b).Select(doc => new { value = "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890" })));
             inputs.Add(new LinqTestInput("String unicode", b => getQuery(b).Select(doc => new { value = "unicode 㐀㐁㨀㨁䶴䶵" })));
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
@@ -517,7 +518,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxStrLength = 100;
             const int MinStrLength = 5;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 StringBuilder sb = new StringBuilder(LinqTestsCommon.RandomString(random, random.Next(MaxStrLength - MinStrLength) + MinStrLength));
                 if (random.NextDouble() < 0.5)
                 {
@@ -527,11 +529,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     sb[p] = 't';
                     sb[p] = 'r';
                 }
-                return new DataObject() {
+                return new DataObject()
+                {
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
-            };
+                };
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
             return getQuery;
@@ -555,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<string> constantList = new List<string>() { "one", "two", "three" };
             string[] constantArray = new string[] { "one", "two", "three" };
 
-            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();            
+            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Concat
@@ -568,6 +571,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Contains w/ string", b => getQuery(b).Select(doc => doc.StringField.Contains("str"))));
             inputs.Add(new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))));
             inputs.Add(new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))));
+            // Contains (case-insensitive)
+            inputs.Add(new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))));
             // Contains with constants should be IN
             inputs.Add(new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))));
             inputs.Add(new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))));
@@ -584,6 +590,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // EndsWith
             inputs.Add(new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))));
             inputs.Add(new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))));
+            // EndsWith (case-insensitive)
+            inputs.Add(new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))));
             // IndexOf
             inputs.Add(new LinqTestInput("IndexOf char", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c'))));
             inputs.Add(new LinqTestInput("IndexOf string", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str"))));
@@ -603,6 +612,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             //StartsWith
             inputs.Add(new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))));
             inputs.Add(new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))));
+            //StartsWith (case-insensitive)
+            inputs.Add(new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.OrdinalIgnoreCase))));
+            inputs.Add(new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))));
             // Substring
             inputs.Add(new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))));
             // ToUpper
@@ -616,7 +628,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxAbsValue = 10;
             const int MaxArraySize = 50;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.ArrayField = new int[random.Next(MaxArraySize)];
                 for (int i = 0; i < obj.ArrayField.Length; ++i)
@@ -674,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The spatial functions are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -702,7 +715,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxStringLength = 20;
             const int MaxArrayLength = 10;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.EnumerableField = new List<int>();
@@ -719,6 +733,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Equals
             inputs.Add(new LinqTestInput("Equals", b => getQuery(b).Select(doc => doc.StringField.Equals("str"))));
+            // Equals (case-insensitive)
+            inputs.Add(new LinqTestInput("Equals (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Equals("STR", StringComparison.OrdinalIgnoreCase))));
             // ToString
             inputs.Add(new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())));
             // get_item
@@ -733,7 +749,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             const int MaxArrayLength = 10;
             const int MaxAbsValue = 10;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
@@ -760,7 +777,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             const int Records = 100;
             const int MaxStringLength = 20;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.StringField2 = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
@@ -782,8 +800,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCategory("Ignore")]
         public void TestStringCompareTo()
         {
-            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
-            
+            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+
             const int Records = 100;
             const int MaxStringLength = 20;
             Func<Random, DataObject> createDataObj = (random) =>
@@ -834,7 +852,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The UDFs invokation are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -868,7 +886,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             const int MaxAbsValue = 5;
             const int MaxCoordinateValue = 200;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
@@ -914,7 +933,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             int seed = generatedData.Item1;
             List<DataObject> data = generatedData.Item2;
 
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
