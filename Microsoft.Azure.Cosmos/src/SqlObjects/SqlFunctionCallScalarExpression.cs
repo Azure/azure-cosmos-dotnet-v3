@@ -85,6 +85,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Sqrt, Identifiers.Sqrt },
             { Names.Square, Identifiers.Square },
             { Names.Startswith, Identifiers.Startswith },
+            { Names.StringEquals, Identifiers.StringEquals },
+            { Names.StringToArray, Identifiers.StringToArray },
+            { Names.StringToBoolean, Identifiers.StringToBoolean },
+            { Names.StringToNull, Identifiers.StringToNull },
+            { Names.StringToNumber, Identifiers.StringToNumber },
+            { Names.StringToObject, Identifiers.StringToObject },
             { Names.StDistance, Identifiers.StDistance },
             { Names.StIntersects, Identifiers.StIntersects },
             { Names.StIsvalid, Identifiers.StIsvalid },
@@ -93,6 +99,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Substring, Identifiers.Substring },
             { Names.Sum, Identifiers.Sum },
             { Names.Tan, Identifiers.Tan },
+            { Names.ToString, Identifiers.ToString },
+            { Names.Trim, Identifiers.Trim },
             { Names.Trunc, Identifiers.Trunc },
             { Names.Upper, Identifiers.Upper },
         };
@@ -260,6 +268,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Sqrt = "SQRT";
             public const string Square = "SQUARE";
             public const string Startswith = "STARTSWITH";
+            public const string StringEquals = "STRINGEQUALS";
+            public const string StringToArray = "STRINGTOARRAY";
+            public const string StringToBoolean = "STRINGTOBOOLEAN";
+            public const string StringToNull = "STRINGTONULL";
+            public const string StringToNumber = "STRINGTONUMBER";
+            public const string StringToObject = "STRINGTOOBJECT";
             public const string StDistance = "ST_DISTANCE";
             public const string StIntersects = "ST_INTERSECTS";
             public const string StIsvalid = "ST_ISVALID";
@@ -268,6 +282,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Substring = "SUBSTRING";
             public const string Sum = "SUM";
             public const string Tan = "TAN";
+#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
+            public const string ToString = "TOSTRING";
+#pragma warning restore CS0108 // Member hides inherited member; missing new keyword
+            public const string Trim = "TRIM";
             public const string Trunc = "TRUNC";
             public const string Upper = "UPPER";
         }
@@ -342,6 +360,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Sqrt = SqlIdentifier.Create(Names.Sqrt);
             public static readonly SqlIdentifier Square = SqlIdentifier.Create(Names.Square);
             public static readonly SqlIdentifier Startswith = SqlIdentifier.Create(Names.Startswith);
+            public static readonly SqlIdentifier StringEquals = SqlIdentifier.Create(Names.StringEquals);
+            public static readonly SqlIdentifier StringToArray = SqlIdentifier.Create(Names.StringToArray);
+            public static readonly SqlIdentifier StringToBoolean = SqlIdentifier.Create(Names.StringToBoolean);
+            public static readonly SqlIdentifier StringToNull = SqlIdentifier.Create(Names.StringToNull);
+            public static readonly SqlIdentifier StringToNumber = SqlIdentifier.Create(Names.StringToNumber);
+            public static readonly SqlIdentifier StringToObject = SqlIdentifier.Create(Names.StringToObject);
             public static readonly SqlIdentifier StDistance = SqlIdentifier.Create(Names.StDistance);
             public static readonly SqlIdentifier StIntersects = SqlIdentifier.Create(Names.StIntersects);
             public static readonly SqlIdentifier StIsvalid = SqlIdentifier.Create(Names.StIsvalid);
@@ -350,6 +374,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Substring = SqlIdentifier.Create(Names.Substring);
             public static readonly SqlIdentifier Sum = SqlIdentifier.Create(Names.Sum);
             public static readonly SqlIdentifier Tan = SqlIdentifier.Create(Names.Tan);
+#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
+            public static readonly SqlIdentifier ToString = SqlIdentifier.Create(Names.ToString);
+#pragma warning restore CS0108 // Member hides inherited member; missing new keyword
+            public static readonly SqlIdentifier Trim = SqlIdentifier.Create(Names.Trim);
             public static readonly SqlIdentifier Trunc = SqlIdentifier.Create(Names.Trunc);
             public static readonly SqlIdentifier Upper = SqlIdentifier.Create(Names.Upper);
         }
