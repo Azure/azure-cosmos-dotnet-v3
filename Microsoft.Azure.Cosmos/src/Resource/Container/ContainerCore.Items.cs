@@ -627,6 +627,12 @@ namespace Microsoft.Azure.Cosmos
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
             {
+                PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                if (partitionKey.HasValue && partitionKey.Value != PartitionKey.None && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
+                {
+                    throw new ArgumentException(RMResources.MissingPartitionKeyValue);
+                }
+
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,
@@ -709,7 +715,7 @@ namespace Microsoft.Azure.Cosmos
 
             return responseMessage;
         }
-
+     
         public override async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
             CancellationToken cancellation = default(CancellationToken))
@@ -734,21 +740,23 @@ namespace Microsoft.Azure.Cosmos
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-                string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation);
-                for (int i = 0; i < tokens.Length - 1; i++)
+                IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                List<CosmosElement> cosmosElementList = new List<CosmosElement>(tokenslist.Count);
+
+                foreach (IReadOnlyList<string> tokenList in tokenslist)
                 {
-                    if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                    CosmosElement element;
+                    if (ContainerCore.TryParseTokenListForElement(pathTraversal, tokenList, out element))
                     {
-                        return PartitionKey.None;
+                        cosmosElementList.Add(element);
+                    }
+                    else
+                    {
+                        cosmosElementList.Add(null);
                     }
                 }
 
-                if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
-                {
-                    return PartitionKey.None;
-                }
-
-                return this.CosmosElementToPartitionKeyObject(partitionKeyValue);
+                return ContainerCore.CosmosElementToPartitionKeyObject(cosmosElementList);
             }
             finally
             {
@@ -757,18 +765,54 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement) => cosmosElement switch
+        private static bool TryParseTokenListForElement(CosmosObject pathTraversal, IReadOnlyList<string> tokens, out CosmosElement result)
         {
-            CosmosString cosmosString => new PartitionKey(cosmosString.Value),
-            CosmosNumber cosmosNumber => new PartitionKey(Number64.ToDouble(cosmosNumber.Value)),
-            CosmosBoolean cosmosBoolean => new PartitionKey(cosmosBoolean.Value),
-            CosmosNull _ => PartitionKey.Null,
-            _ => throw new ArgumentException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        RMResources.UnsupportedPartitionKeyComponentValue,
-                        cosmosElement)),
-        };
+            result = null;
+            for (int i = 0; i < tokens.Count - 1; i++)
+            {
+                if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                {
+                    return false;
+                }
+            }
+
+            if (!pathTraversal.TryGetValue(tokens[tokens.Count - 1], out result))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static PartitionKey CosmosElementToPartitionKeyObject(IReadOnlyList<CosmosElement> cosmosElementList) 
+        {
+            PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
+
+            foreach (CosmosElement cosmosElement in cosmosElementList)
+            {
+                if (cosmosElement == null)
+                {
+                    partitionKeyBuilder.AddNoneType();
+                }
+                else
+                {
+                    _ = cosmosElement switch
+                    {
+                        CosmosString cosmosString => partitionKeyBuilder.Add(cosmosString.Value),
+                        CosmosNumber cosmosNumber => partitionKeyBuilder.Add(Number64.ToDouble(cosmosNumber.Value)),
+                        CosmosBoolean cosmosBoolean => partitionKeyBuilder.Add(cosmosBoolean.Value),
+                        CosmosNull _ => partitionKeyBuilder.AddNullValue(),
+                        _ => throw new ArgumentException(
+                               string.Format(
+                                   CultureInfo.InvariantCulture,
+                                   RMResources.UnsupportedPartitionKeyComponentValue,
+                                   cosmosElement)),
+                    };
+                }
+            }
+
+            return partitionKeyBuilder.Build();
+        }
 
         private string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
