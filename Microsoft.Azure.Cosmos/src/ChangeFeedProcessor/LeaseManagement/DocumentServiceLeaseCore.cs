@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseCore : DocumentServiceLease
     {
         private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        private FeedRangePartitionKeyRange currentLeaseToken;
 
         public DocumentServiceLeaseCore()
         {
@@ -52,19 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         [JsonIgnore]
-        public override FeedRange CurrentLeaseToken
-        {
-            get
-            {
-                if (this.currentLeaseToken == null
-                    && !string.IsNullOrEmpty(this.LeaseToken))
-                {
-                    this.currentLeaseToken = new FeedRangePartitionKeyRange(this.LeaseToken);
-                }
-
-                return this.currentLeaseToken;
-            }
-        }
+        public override string CurrentLeaseToken => this.LeaseToken;
 
         [JsonProperty("Owner")]
         public override string Owner { get; set; }

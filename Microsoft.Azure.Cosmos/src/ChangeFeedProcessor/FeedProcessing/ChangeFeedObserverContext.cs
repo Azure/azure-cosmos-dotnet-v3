@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     internal abstract class ChangeFeedObserverContext
     {
         /// <summary>
-        /// Gets the <see cref="FeedRange"/> associated with the items being processed.
+        /// Gets the Lease Token associated with the current lease.
         /// </summary>
-        public abstract FeedRange FeedRange { get; }
+        public abstract string LeaseToken { get; }
 
         /// <summary>
         /// Checkpoints progress of a stream. This method is valid only if manual checkpoint was configured.

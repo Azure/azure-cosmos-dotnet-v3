@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal class ProcessorOptions
     {
-        public FeedRange FeedRange { get; set; }
+        public string LeaseToken { get; set; }
 
         public int? MaxItemCount { get; set; }
 
