@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
-            if (!this.container.TryGetValue(lease.CurrentLeaseToken.ToString(), out DocumentServiceLease refreshedLease))
+            if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            this.container.TryRemove(lease.CurrentLeaseToken.ToString(), out DocumentServiceLease removedLease);
+            this.container.TryRemove(lease.CurrentLeaseToken, out DocumentServiceLease removedLease);
             return Task.CompletedTask;
         }
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             // Get fresh lease. The assumption here is that checkpointing is done with higher frequency than lease renewal so almost
             // certainly the lease was updated in between.
-            if (!this.container.TryGetValue(lease.CurrentLeaseToken.ToString(), out DocumentServiceLease refreshedLease))
+            if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);

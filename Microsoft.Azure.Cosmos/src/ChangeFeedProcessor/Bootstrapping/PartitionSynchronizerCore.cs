@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            string partitionId = lease.CurrentLeaseToken.ToString();
+            string partitionId = lease.CurrentLeaseToken;
             string lastContinuationToken = lease.ContinuationToken;
 
             DefaultTrace.TraceInformation("Lease {0} is gone due to split", partitionId);
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 },
                 this.degreeOfParallelism).ConfigureAwait(false);
 
-            DefaultTrace.TraceInformation("lease {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken.ToString())));
+            DefaultTrace.TraceInformation("lease {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
 
             return newLeases;
         }
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         {
             // Get leases after getting ranges, to make sure that no other hosts checked in continuation token for split partition after we got leases.
             IEnumerable<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
-            HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken.ToString()));
+            HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken));
             HashSet<string> addedPartitionIds = new HashSet<string>(partitionIds);
             addedPartitionIds.ExceptWith(existingPartitionIds);
 

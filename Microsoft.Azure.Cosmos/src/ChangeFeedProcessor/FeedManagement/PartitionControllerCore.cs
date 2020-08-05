@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
 
-            if (!this.currentlyOwnedPartitions.TryAdd(lease.CurrentLeaseToken.ToString(), tcs))
+            if (!this.currentlyOwnedPartitions.TryAdd(lease.CurrentLeaseToken, tcs))
             {
                 await this.leaseManager.UpdatePropertiesAsync(lease).ConfigureAwait(false);
                 DefaultTrace.TraceVerbose("Lease with token {0}: updated", lease.CurrentLeaseToken);
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private async Task RemoveLeaseAsync(DocumentServiceLease lease)
         {
             TaskCompletionSource<bool> worker;
-            if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken.ToString(), out worker))
+            if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken, out worker))
             {
                 return;
             }

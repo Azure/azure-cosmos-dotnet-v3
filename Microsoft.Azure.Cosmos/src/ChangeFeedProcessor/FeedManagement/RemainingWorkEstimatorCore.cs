@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
         {
             // Current lease schema maps Token to PKRangeId
-            string partitionKeyRangeId = existingLease.CurrentLeaseToken.ToString();
+            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
             using FeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,

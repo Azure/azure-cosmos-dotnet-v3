@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 SessionToken = this.changeFeedProcessorOptions.SessionToken,
             };
 
-            string partitionKeyRangeId = lease.CurrentLeaseToken.ToString();
+            string partitionKeyRangeId = lease.CurrentLeaseToken;
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
