@@ -126,11 +126,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
                 },
                 pageSize: 10,
-                continuationToken: CosmosArray.Create(
-                    new List<CosmosElement>()
-                    {
-                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
-                    }));
+                continuationToken: CosmosString.Create(
+                    CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }).ToString()));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -184,12 +185,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
                 },
                 pageSize: 10,
-                continuationToken: CosmosArray.Create(
-                    new List<CosmosElement>()
-                    {
-                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken1),
-                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken2)
-                    }));
+                continuationToken: CosmosString.Create(
+                    CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken1),
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken2)
+                        }).ToString()));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
@@ -201,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
-                sqlQuerySpec: new SqlQuerySpec("SELECT r._rid, [{\"item\": c._ts}] AS orderByItems, c AS payload FROM Root AS c ORDER BY c._ts"),
+                sqlQuerySpec: new SqlQuerySpec(@"SELECT r._rid, [{""item"": c._ts}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c._ts"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
@@ -237,22 +239,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             QueryState queryState = null;
             do
             {
-                TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
-                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                    sqlQuerySpec: new SqlQuerySpec(@"SELECT r._rid, [{""item"": c._ts}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c._ts"),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                    {
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    },
                     pageSize: 10,
                     continuationToken: queryState?.Value);
                 Assert.IsTrue(monadicCreate.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
-                Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
-                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                Assert.IsTrue(tryGetQueryPage.Succeeded);
+                QueryPage queryPage;
+                do
+                {
+                    // We need to drain out all the initial empty pages,
+                    // since they are non resumable state.
+                    Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
+                    TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                    if (tryGetQueryPage.Failed)
+                    {
+                        Assert.Fail(tryGetQueryPage.Exception.ToString());
+                    }
 
-                QueryPage queryPage = tryGetQueryPage.Result;
-                documents.AddRange(queryPage.Documents);
-
-                queryState = queryPage.State;
+                    queryPage = tryGetQueryPage.Result;
+                    documents.AddRange(queryPage.Documents);
+                    queryState = queryPage.State;
+                } while (queryPage.Documents.Count == 0);
             } while (queryState != null);
 
             Assert.AreEqual(numItems, documents.Count);

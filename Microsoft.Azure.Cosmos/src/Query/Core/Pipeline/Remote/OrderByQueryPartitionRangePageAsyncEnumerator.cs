@@ -31,29 +31,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.pageSize = pageSize;
             this.Filter = filter;
+            this.StartOfPageState = state;
         }
 
         public string Filter { get; }
 
+        public QueryState StartOfPageState { get; private set; }
+
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource
-            .MonadicQueryAsync(
-                sqlQuerySpec: this.sqlQuerySpec,
-                continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-                feedRange: new FeedRangeEpk(this.Range.ToRange()),
-                pageSize: this.pageSize,
-                cancellationToken)
-            .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
-           {
-               TryCatch<QueryPage> monadicQueryPage = antecedent.Result;
-               if (monadicQueryPage.Failed)
-               {
-                   return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
-               }
+        protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        {
+            this.StartOfPageState = this.State;
+            return this.queryDataSource
+                .MonadicQueryAsync(
+                    sqlQuerySpec: this.sqlQuerySpec,
+                    continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
+                    feedRange: new FeedRangeEpk(this.Range.ToRange()),
+                    pageSize: this.pageSize,
+                    cancellationToken)
+                .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
+                {
+                    TryCatch<QueryPage> monadicQueryPage = antecedent.Result;
+                    if (monadicQueryPage.Failed)
+                    {
+                        return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
+                    }
 
-               QueryPage queryPage = monadicQueryPage.Result;
-               return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
-           });
+                    QueryPage queryPage = monadicQueryPage.Result;
+                    return TryCatch<OrderByQueryPage>.FromResult(new OrderByQueryPage(queryPage));
+                });
+        }
     }
 }

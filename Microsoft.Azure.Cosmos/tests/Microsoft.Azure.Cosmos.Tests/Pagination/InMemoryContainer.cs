@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             const string selectStar = "SELECT * FROM c";
-            const string orderBy = "SELECT r._rid, [{\"item\": c._ts}] AS orderByItems, c AS payload FROM Root AS c ORDER BY c._ts";
+            const string orderBy = @"SELECT r._rid, [{""item"": c._ts}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c._ts";
 
             if (!sqlQuerySpec.QueryText.Equals(selectStar, StringComparison.OrdinalIgnoreCase)
                 && !sqlQuerySpec.QueryText.Equals(orderBy, StringComparison.OrdinalIgnoreCase))
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
                     {
-                        ["_rid"] = CosmosNumber64.Create(record.ResourceIdentifier),
+                        ["_rid"] = CosmosString.Create(record.ResourceIdentifier.ToString()),
                         ["orderByItems"] = CosmosArray.Create(
                             new List<CosmosElement>()
                             {
