@@ -129,7 +129,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             CancellationToken cancellationToken = default;
 
-            EncryptionTestsTokenCredentialFactory encryptionTestsTokenCredentialFactory = new EncryptionTestsTokenCredentialFactory();
             KeyVaultAccessClient keyVaultAccessClient = new KeyVaultAccessClient(encryptionTestsTokenCredentialFactory, new KeyClientTestFactory(), new CryptographyClientFactoryTestFactory());
 
             keyVaultKeyUri = new Uri("https://testdemo3.vault.azure.net/keys/testkey1/47d306aeaae74baab294672354603ca3");
@@ -150,7 +149,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             CancellationToken cancellationToken = default;
 
-            EncryptionTestsTokenCredentialFactory encryptionTestsTokenCredentialFactory = new EncryptionTestsTokenCredentialFactory();
             KeyVaultAccessClient keyVaultAccessClient = new KeyVaultAccessClient(encryptionTestsTokenCredentialFactory, new KeyClientTestFactory(), new CryptographyClientFactoryTestFactory());
 
             Uri keyVaultKeyUriPurgeTest = new Uri("https://testdemo2.vault.azure.net/keys/testkey2/ad47829797dc46489223cc5da3cba3ca");
@@ -1569,18 +1567,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         internal class EncryptionTestsTokenCredentialFactory : KeyVaultTokenCredentialFactory
         {
-            TokenCredential defaultAzureCredential = null;
-
-            public EncryptionTestsTokenCredentialFactory()
-            {                
-                this.defaultAzureCredential = new DefaultAzureCredential();
-            }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
             public override async ValueTask<TokenCredential> GetTokenCredentialAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
             {
-                return this.defaultAzureCredential;
+                return await Task.FromResult(new DefaultAzureCredential());
             }        
         }
     }
