@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             sqlQuery = monadicParse.Result;
-            return false;
+            return true;
         }
 
         public static SqlQuery Parse(string text)
