@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class BatchAsyncContainerExecutorCache : IDisposable
     {
+        // Same as bulk v2.
+        private const int DefaultMaxBulkRequestBodySizeInBytes = 220201;
         private ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
 
         public BatchAsyncContainerExecutor GetExecutorForContainer(
@@ -35,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
                 container,
                 cosmosClientContext,
                 Constants.MaxOperationsInDirectModeBatchRequest,
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes);
+                DefaultMaxBulkRequestBodySizeInBytes);
             if (!this.executorsPerContainer.TryAdd(containerLink, newExecutor))
             {
                 newExecutor.Dispose();
