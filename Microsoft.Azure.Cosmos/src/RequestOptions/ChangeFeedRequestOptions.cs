@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Only applies in the case where no FeedToken is provided or the FeedToken was never used in a previous iterator.
         /// </remarks>
-        public StartFrom From { get; set; } = new StartFromNow(FeedRangeEPK.FullRange);
+        public StartFrom From { get; set; } = new StartFromNow(FeedRangeEpk.FullRange);
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
             /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
             /// </summary>
             /// <returns>A <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.</returns>
-            public static StartFrom CreateFromNow() => CreateFromNowWithRange(FeedRangeEPK.FullRange);
+            public static StartFrom CreateFromNow() => CreateFromNowWithRange(FeedRangeEpk.FullRange);
 
             /// <summary>
             /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
             /// </summary>
             /// <param name="dateTime">The time to start reading from.</param>
             /// <returns>A <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
-            public static StartFrom CreateFromTime(DateTime dateTime) => CreateFromTimeWithRange(dateTime, FeedRangeEPK.FullRange);
+            public static StartFrom CreateFromTime(DateTime dateTime) => CreateFromTimeWithRange(dateTime, FeedRangeEpk.FullRange);
 
             /// <summary>
             /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
             /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.
             /// </summary>
             /// <returns>A <see cref="StartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.</returns>
-            public static StartFrom CreateFromBeginning() => CreateFromBeginningWithRange(FeedRangeEPK.FullRange);
+            public static StartFrom CreateFromBeginning() => CreateFromBeginningWithRange(FeedRangeEpk.FullRange);
 
             /// <summary>
             /// Creates a <see cref="StartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.

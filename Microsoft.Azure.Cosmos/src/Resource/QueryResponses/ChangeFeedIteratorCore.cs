@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
             if (etag != null)
             {
                 FeedRange feedRange = this.changeFeedOptions.From.Accept(ChangeFeedRequestOptions.FeedRangeExtractor.Singleton);
-                if ((feedRange == null) || feedRange is FeedRangeEPK)
+                if ((feedRange == null) || feedRange is FeedRangeEpk)
                 {
                     // For now the backend does not support EPK Ranges if they don't line up with a PKRangeId
                     // So if the range the user supplied is a logical pk value, then we don't want to overwrite it.
