@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            long resourceIdentifer,
+            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken);
 

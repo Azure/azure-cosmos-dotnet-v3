@@ -4,12 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Documents;
 
     internal interface IDocumentContainer : IMonadicDocumentContainer, IFeedRangeProvider, IQueryDataSource
     {
@@ -24,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         Task<DocumentContainerPage> ReadFeedAsync(
             int partitionKeyRangeId,
-            long resourceIdentifier,
+            ResourceId resourceIdentifier,
             int pageSize,
             CancellationToken cancellationToken);
 

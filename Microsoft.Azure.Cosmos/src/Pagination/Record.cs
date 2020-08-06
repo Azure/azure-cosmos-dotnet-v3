@@ -5,23 +5,25 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents;
 
     internal sealed class Record
     {
         public Record(
-            long resourceIdentifier,
+            ResourceId resourceIdentifier,
             long timestamp,
             string identifier,
             CosmosObject payload)
         {
-            this.ResourceIdentifier = resourceIdentifier < 0 ? throw new ArgumentOutOfRangeException(nameof(resourceIdentifier)) : resourceIdentifier;
+            this.ResourceIdentifier = resourceIdentifier;
             this.Timestamp = timestamp < 0 ? throw new ArgumentOutOfRangeException(nameof(timestamp)) : timestamp;
             this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
             this.Payload = payload ?? throw new ArgumentNullException(nameof(payload));
         }
 
-        public long ResourceIdentifier { get; }
+        public ResourceId ResourceIdentifier { get; }
 
         public long Timestamp { get; }
 
@@ -29,10 +31,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public CosmosObject Payload { get; }
 
-        public static Record Create(long previousResourceIdentifier, CosmosObject payload)
+        public static Record Create(ResourceId previousResourceIdentifier, CosmosObject payload)
         {
+            const string dummyRidString = "AYIMAMmFOw8YAAAAAAAAAA==";
+            ResourceId resourceId = ResourceId.Parse(dummyRidString);
+            PropertyInfo prop = resourceId
+                .GetType()
+                .GetProperty("Document", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            prop.SetValue(resourceId, previousResourceIdentifier.Document + 1);
+
             return new Record(
-                previousResourceIdentifier + 1,
+                resourceId,
                 DateTime.UtcNow.Ticks,
                 Guid.NewGuid().ToString(),
                 payload);

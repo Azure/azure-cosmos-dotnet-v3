@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 enumeratorsAndTokens = targetRanges
                     .Select(range => (new OrderByQueryPartitionRangePageAsyncEnumerator(
                         documentContainer,
-                        sqlQuerySpec,
+                        rewrittenQueryForOrderBy,
                         range,
                         pageSize,
                         TrueFilter,
@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                         OrderByContinuationToken token = kvp.Value;
                         OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                             documentContainer,
-                            sqlQuerySpec,
+                            rewrittenQueryForOrderBy,
                             range,
                             pageSize,
                             filter,

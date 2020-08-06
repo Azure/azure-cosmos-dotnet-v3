@@ -16,9 +16,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Documents;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
@@ -230,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            long resourceIdentifer,
+            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
         {
@@ -256,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             List<Record> page = records
-                .Where(record => record.ResourceIdentifier > resourceIdentifer)
+                .Where(record => record.ResourceIdentifier.Document > resourceIdentifer.Document)
                 .Take(pageSize)
                 .ToList();
 
@@ -286,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             throw new NotImplementedException();
         }
 
-        public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int partitionKeyRangeId,
@@ -298,158 +301,89 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
 
-            const string selectStar = "SELECT * FROM c";
-            const string orderBy = @"SELECT r._rid, [{""item"": c._ts}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c._ts";
-
-            if (!sqlQuerySpec.QueryText.Equals(selectStar, StringComparison.OrdinalIgnoreCase)
-                && !sqlQuerySpec.QueryText.Equals(orderBy, StringComparison.OrdinalIgnoreCase))
+            TryCatch<SqlQuery> monadicParse = QueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
+            if (monadicParse.Failed)
             {
-                throw new NotSupportedException("InMemoryCollection only supports SELECT * FROM c and order by _ts queries");
+                return Task.FromResult(TryCatch<QueryPage>.FromException(monadicParse.Exception));
             }
 
-            if (sqlQuerySpec.QueryText.Equals(selectStar, StringComparison.OrdinalIgnoreCase))
+            SqlQuery sqlQuery = monadicParse.Result;
+
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                partitionKeyRangeId,
+                out PartitionKeyHashRange range))
             {
-                // For now just do a read feed
-                long resourceIdentifier = continuationToken != null ? long.Parse(continuationToken) : 0;
-                TryCatch<DocumentContainerPage> tryGetPage = await this.MonadicReadFeedAsync(
-                    partitionKeyRangeId,
-                    resourceIdentifier,
-                    pageSize,
-                    cancellationToken);
-
-                if (tryGetPage.Failed)
-                {
-                    return TryCatch<QueryPage>.FromException(tryGetPage.Exception);
-                }
-
-                DocumentContainerPage page = tryGetPage.Result;
-                List<CosmosElement> documents = new List<CosmosElement>(page.Records.Count);
-                foreach (Record record in page.Records)
-                {
-                    Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
-                    {
-                        ["_rid"] = CosmosNumber64.Create(record.ResourceIdentifier),
-                        ["_ts"] = CosmosNumber64.Create(record.Timestamp),
-                        ["id"] = CosmosString.Create(record.Identifier)
-                    };
-
-                    foreach (KeyValuePair<string, CosmosElement> property in record.Payload)
-                    {
-                        keyValuePairs[property.Key] = property.Value;
-                    }
-
-                    documents.Add(CosmosObject.Create(keyValuePairs));
-                }
-
-                QueryPage queryPage = new QueryPage(
-                    documents: documents,
-                    requestCharge: 42,
-                    activityId: Guid.NewGuid().ToString(),
-                    responseLengthInBytes: 1337,
-                    cosmosQueryExecutionInfo: default,
-                    disallowContinuationTokenMessage: default,
-                    state: page.State != null ? new QueryState(CosmosString.Create(page.State.ResourceIdentifer.ToString())) : null);
-
-                return TryCatch<QueryPage>.FromResult(queryPage);
-            }
-            else
-            {
-                // We need to simulate an order by
-                (long timestamp, long resourceIdentifer) timestampAndIdentifier;
-                if (continuationToken == null)
-                {
-                    timestampAndIdentifier = (-1, -1);
-                }
-                else
-                {
-                    string[] tokens = continuationToken.Split(",");
-                    timestampAndIdentifier = (long.Parse(tokens[0]), long.Parse(tokens[1]));
-                }
-
-                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
-                    partitionKeyRangeId,
-                    out PartitionKeyHashRange range))
-                {
-                    return TryCatch<QueryPage>.FromException(
-                        new CosmosException(
+                return Task.FromResult(TryCatch<QueryPage>.FromException(
+                    new CosmosException(
                         message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
                         statusCode: System.Net.HttpStatusCode.Gone,
                         subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                         activityId: Guid.NewGuid().ToString(),
-                        requestCharge: 42));
-                }
-
-                if (!this.partitionedRecords.TryGetValue(range, out Records records))
-                {
-                    throw new InvalidOperationException("failed to find the range.");
-                }
-
-                List<Record> results = records
-                    .OrderBy(record => record.Timestamp)
-                    .ThenBy(record => record.ResourceIdentifier)
-                    .Where(record =>
-                           (record.Timestamp > timestampAndIdentifier.timestamp)
-                           || ((record.Timestamp == timestampAndIdentifier.timestamp) && (record.ResourceIdentifier > timestampAndIdentifier.resourceIdentifer)))
-                    .Take(pageSize)
-                    .ToList();
-
-                if (results.Count == 0)
-                {
-                    return TryCatch<QueryPage>.FromResult(
-                        new QueryPage(
-                            documents: new List<CosmosElement>(),
-                            requestCharge: 42,
-                            activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: 1337,
-                            cosmosQueryExecutionInfo: default,
-                            disallowContinuationTokenMessage: default,
-                            state: null));
-                }
-
-                List<CosmosElement> documents = new List<CosmosElement>(results.Count);
-                foreach (Record record in results)
-                {
-                    Dictionary<string, CosmosElement> payloadProperties = new Dictionary<string, CosmosElement>()
-                    {
-                        ["_rid"] = CosmosNumber64.Create(record.ResourceIdentifier),
-                        ["_ts"] = CosmosNumber64.Create(record.Timestamp),
-                        ["id"] = CosmosString.Create(record.Identifier)
-                    };
-
-                    foreach (KeyValuePair<string, CosmosElement> property in record.Payload)
-                    {
-                        payloadProperties[property.Key] = property.Value;
-                    }
-
-                    Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
-                    {
-                        ["_rid"] = CosmosString.Create(record.ResourceIdentifier.ToString()),
-                        ["orderByItems"] = CosmosArray.Create(
-                            new List<CosmosElement>()
-                            {
-                                CosmosObject.Create(
-                                    new Dictionary<string, CosmosElement>()
-                                    {
-                                        ["item"] = CosmosNumber64.Create(record.Timestamp)
-                                    })
-                            }),
-                        ["payload"] = CosmosObject.Create(payloadProperties),
-                    };
-
-                    documents.Add(CosmosObject.Create(keyValuePairs));
-                }
-
-                QueryPage queryPage = new QueryPage(
-                    documents: documents,
-                    requestCharge: 42,
-                    activityId: Guid.NewGuid().ToString(),
-                    responseLengthInBytes: 1337,
-                    cosmosQueryExecutionInfo: default,
-                    disallowContinuationTokenMessage: default,
-                    state: new QueryState(CosmosString.Create($"{results.Last().Timestamp},{results.Last().ResourceIdentifier}")));
-
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                        requestCharge: 42)));
             }
+
+            if (!this.partitionedRecords.TryGetValue(range, out Records records))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            List<CosmosObject> documents = new List<CosmosObject>();
+            foreach (Record record in records)
+            {
+                Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
+                {
+                    ["_rid"] = CosmosString.Create(record.ResourceIdentifier.ToString()),
+                    ["_ts"] = CosmosNumber64.Create(record.Timestamp),
+                    ["id"] = CosmosString.Create(record.Identifier)
+                };
+
+                foreach (KeyValuePair<string, CosmosElement> property in record.Payload)
+                {
+                    keyValuePairs[property.Key] = property.Value;
+                }
+
+                documents.Add(CosmosObject.Create(keyValuePairs));
+            }
+
+            IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
+
+            int index;
+            if (continuationToken != null)
+            {
+                if (!int.TryParse(continuationToken, out index))
+                {
+                    return Task.FromResult(
+                        TryCatch<QueryPage>.FromException(
+                            new Exception("FAILED TO PARSE CONTINUATION TOKEN")));
+                }
+            }
+            else
+            {
+                index = 0;
+            }
+
+            List<CosmosElement> queryPageResults = queryResults.Skip(index).Take(pageSize).ToList();
+
+            QueryState queryState;
+            if (queryPageResults.Count == 0)
+            {
+                queryState = null;
+            }
+            else
+            {
+                queryState = new QueryState(CosmosString.Create((index + pageSize).ToString()));
+            }
+
+            return Task.FromResult(
+                TryCatch<QueryPage>.FromResult(
+                    new QueryPage(
+                        queryPageResults,
+                        requestCharge: 42,
+                        activityId: Guid.NewGuid().ToString(),
+                        responseLengthInBytes: 1337,
+                        cosmosQueryExecutionInfo: default,
+                        disallowContinuationTokenMessage: default,
+                        state: queryState)));
         }
 
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(
@@ -644,10 +578,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public Record Add(CosmosObject payload)
             {
-                long previousResourceId;
+                ResourceId previousResourceId;
                 if (this.Count == 0)
                 {
-                    previousResourceId = 0;
+                    previousResourceId = ResourceId.Empty;
                 }
                 else
                 {

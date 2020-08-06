@@ -203,11 +203,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
-                sqlQuerySpec: new SqlQuerySpec(@"SELECT r._rid, [{""item"": c._ts}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c._ts"),
+                sqlQuerySpec: new SqlQuerySpec(@"
+                    SELECT c._rid AS _rid, [{""item"": c._ts}] AS orderByItems, c AS payload
+                    FROM c
+                    WHERE {documentdb-formattableorderbyquery-filter}
+                    ORDER BY c._ts"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("c._ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: null);
@@ -218,7 +222,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             while (await queryPipelineStage.MoveNextAsync())
             {
                 TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                Assert.IsTrue(tryGetQueryPage.Succeeded);
+                if (tryGetQueryPage.Failed)
+                {
+                    Assert.Fail(tryGetQueryPage.Exception.ToString());
+                }
 
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
@@ -241,11 +248,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
-                    sqlQuerySpec: new SqlQuerySpec(@"SELECT r._rid, [{""item"": c._ts}] AS orderByItems, c AS payload FROM c WHERE ({documentdb-formattableorderbyquery-filter}) ORDER BY c._ts"),
+                    sqlQuerySpec: new SqlQuerySpec(@"
+                        SELECT c._rid AS _rid, [{""item"": c._ts}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c._ts"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                     orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                     {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("c._ts", SortOrder.Ascending)
                     },
                     pageSize: 10,
                     continuationToken: queryState?.Value);
