@@ -32,6 +32,14 @@ namespace Microsoft.Azure.Cosmos
             this.Range = range;
         }
 
+#if SUBPARTITIONING
+        public FeedRangeEpk(Documents.PartitionKey partitionKey)
+        {
+            //Backend call will return the EPK range.
+            //This is to bring in support for specifying partial partition key
+        }
+#endif
+
         public Documents.Routing.Range<string> Range { get; }
 
         public override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
