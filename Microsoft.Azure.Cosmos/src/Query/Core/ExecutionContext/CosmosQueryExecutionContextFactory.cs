@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
@@ -157,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         SqlQuery sqlQuery;
                         using (cosmosQueryContext.CreateDiagnosticScope("QueryParsing"))
                         {
-                            parsed = SqlQuery.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
+                            parsed = QueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
                         }
 
                         if (parsed)

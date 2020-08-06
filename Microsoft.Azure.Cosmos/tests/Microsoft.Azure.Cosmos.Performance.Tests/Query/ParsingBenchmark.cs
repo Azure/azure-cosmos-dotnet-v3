@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static void ParseUsingMangedParser(SqlQuerySpec sqlQuerySpec)
         {
-            if (!SqlQuery.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
+            if (!QueryParser.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
             {
                 throw new InvalidOperationException("FAILED TO PARSE QUERY.");
             }

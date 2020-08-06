@@ -701,12 +701,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     Assert.IsTrue(feedOptions.TestSettings.Stats.PipelineType.HasValue);
                                     Assert.AreEqual(TestInjections.PipelineType.Passthrough, feedOptions.TestSettings.Stats.PipelineType.Value);
 
-#if false
                                     if (pk.HasValue)
                                     {
                                         Assert.AreEqual(0, cosmosQueryClientCore.QueryPlanCalls);
                                     }
-#endif
 
                                     return queryResults;
                                 }
