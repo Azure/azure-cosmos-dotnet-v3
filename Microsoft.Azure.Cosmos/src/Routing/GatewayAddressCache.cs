@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIds)
                 {
-                    DefaultTrace.TraceInformation("Refresh addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
+                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
                        pkRangeId.CollectionRid,
                        pkRangeId.PartitionKeyRangeId,
                        this.serviceEndpoint);
