@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class BatchAsyncContainerExecutorCache : IDisposable
     {
-        // Same as bulk v2.
+        // Large size leads to large number of index term which can lead to frequent timeouts, so limiting to 200KB. Bulk V2 also have same values.
         internal const int DefaultMaxBulkRequestBodySizeInBytes = 220201;
         private ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
 
