@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
                 requestOptions: new ChangeFeedRequestOptions()
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedStartFrom.CreateFromBeginning(),
                 });
 
             while (feedIterator.HasMoreResults)
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 itemsCore.GetStandByFeedIterator(
                     new ChangeFeedRequestOptions()
                     {
-                        From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(lastcontinuation),
+                        From = ChangeFeedStartFrom.CreateFromContinuation(lastcontinuation),
                     });
 
             while (setIteratorNew.HasMoreResults)
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 itemsCore.GetStandByFeedIterator(
                     requestOptions: new ChangeFeedRequestOptions()
                     {
-                        From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(corruptedTokenSerialized),
+                        From = ChangeFeedStartFrom.CreateFromContinuation(corruptedTokenSerialized),
                     });
             _ = await setIteratorNew.ReadNextAsync(this.cancellationToken);
 
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 1,
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedStartFrom.CreateFromBeginning(),
                 });
 
             while (feedIterator.HasMoreResults)
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                    From = ChangeFeedStartFrom.CreateFromBeginning(),
                 };
 
                 FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(
                 requestOptions: new ChangeFeedRequestOptions()
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning()
+                    From = ChangeFeedStartFrom.CreateFromBeginning()
                 });
             while (feedIterator.HasMoreResults)
             {
@@ -328,10 +328,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(
                 (ContainerCore)this.Container,
+                ChangeFeedStartFrom.CreateFromBeginning(),
                 new ChangeFeedRequestOptions()
                 {
                     MaxItemCount = 100,
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
                 });
             using (ResponseMessage responseMessage =
                     await iterator.ReadNextAsync(this.cancellationToken))
@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     itemsCore.GetStandByFeedIterator(
                         requestOptions: new ChangeFeedRequestOptions()
                         {
-                            From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token),
+                            From = ChangeFeedStartFrom.CreateFromContinuation(token),
                         });
                 while (true)
                 {
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 itemsCore.GetStandByFeedIterator(
                     requestOptions: new ChangeFeedRequestOptions()
                     {
-                        From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token),
+                        From = ChangeFeedStartFrom.CreateFromContinuation(token),
                     });
             while (iteratorForToken.HasMoreResults)
             {
@@ -486,9 +486,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             internal CosmosChangeFeedResultSetIteratorCoreMock(
                 ContainerCore container,
+                ChangeFeedStartFrom changeFeedStartFrom,
                 ChangeFeedRequestOptions options) : base(
                     clientContext: container.ClientContext,
                     container: container,
+                    changeFeedStartFrom: changeFeedStartFrom,
                     options: options)
             {
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()

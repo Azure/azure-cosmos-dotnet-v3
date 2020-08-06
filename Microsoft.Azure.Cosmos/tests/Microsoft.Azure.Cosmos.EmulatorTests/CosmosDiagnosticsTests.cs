@@ -472,7 +472,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.CreateFromBeginning(),
+                changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             });
             this.hasMoreResults = true;
 
-            if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+            if (this.changeFeedOptions?.From is ChangeFeedStartFromContinuation startFromContinuation)
             {
                 if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
@@ -54,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
                 FeedRange feedRange = feedRangeContinuation.GetFeedRange();
                 string etag = feedRangeContinuation.GetContinuation();
 
-                this.changeFeedOptions.From = new ChangeFeedRequestOptions.StartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+                this.changeFeedOptions.From = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
             }
         }
 
@@ -72,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 diagnostics.AddDiagnosticsInternal(
                     new FeedRangeStatistics(
-                        this.changeFeedOptions.From.Accept(ChangeFeedRequestOptions.FeedRangeExtractor.Singleton)));
+                        this.changeFeedOptions.From.Accept(FeedRangeExtractor.Singleton)));
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
@@ -129,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             string etag = this.FeedRangeContinuation.GetContinuation();
             if (etag != null)
             {
-                FeedRange feedRange = this.changeFeedOptions.From.Accept(ChangeFeedRequestOptions.FeedRangeExtractor.Singleton);
+                FeedRange feedRange = this.changeFeedOptions.From.Accept(FeedRangeExtractor.Singleton);
                 if ((feedRange == null) || feedRange is FeedRangeEpk)
                 {
                     // For now the backend does not support EPK Ranges if they don't line up with a PKRangeId
@@ -137,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                     feedRange = this.FeedRangeContinuation.GetFeedRange();
                 }
 
-                this.changeFeedOptions.From = new ChangeFeedRequestOptions.StartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+                this.changeFeedOptions.From = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -213,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
 
-                FeedRange feedRange = this.changeFeedOptions.From.Accept(ChangeFeedRequestOptions.FeedRangeExtractor.Singleton);
+                FeedRange feedRange = this.changeFeedOptions.From.Accept(FeedRangeExtractor.Singleton);
                 IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)feedRange).AcceptAsync(
                     feedRangePartitionKeyRangeExtractor,
                     cancellationToken);

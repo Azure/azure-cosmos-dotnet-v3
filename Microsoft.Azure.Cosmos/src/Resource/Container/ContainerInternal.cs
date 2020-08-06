@@ -111,9 +111,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

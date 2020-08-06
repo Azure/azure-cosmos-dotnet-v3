@@ -156,10 +156,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(feedRange),
                     MaxItemCount = 1
                 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.CreateFromBeginningWithRange(feedRange),
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {
@@ -195,10 +196,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             {
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation),
                     MaxItemCount = 100
                 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.CreateFromContinuation(continuation),
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {

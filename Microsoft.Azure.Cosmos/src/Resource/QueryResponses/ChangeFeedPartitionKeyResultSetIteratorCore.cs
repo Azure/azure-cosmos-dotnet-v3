@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             // Change Feed read uses Etag for continuation
             if (this.continuationToken != null)
             {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.continuationToken);
+                this.changeFeedOptions.From = ChangeFeedStartFrom.CreateFromContinuation(this.continuationToken);
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(

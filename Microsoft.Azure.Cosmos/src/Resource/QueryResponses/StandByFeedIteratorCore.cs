@@ -28,17 +28,20 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
+        private readonly ChangeFeedStartFrom changeFeedStartFrom;
         private string containerRid;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
 
             this.clientContext = clientContext;
             this.container = container;
+            this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.changeFeedOptions = options;
         }
 
@@ -95,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
 
-                if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+                if (this.changeFeedOptions?.From is ChangeFeedStartFromContinuation startFromContinuation)
                 {
                     this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
                         this.containerRid,
@@ -105,11 +108,11 @@ namespace Microsoft.Azure.Cosmos
 
                     if (token.Token != null)
                     {
-                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token.Token);
+                        this.changeFeedOptions.From = ChangeFeedStartFrom.CreateFromContinuation(token.Token);
                     }
                     else
                     {
-                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                        this.changeFeedOptions.From = ChangeFeedStartFrom.CreateFromBeginning();
                     }
                 }
                 else
@@ -125,11 +128,11 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange = new FeedRangePartitionKeyRange(rangeId);
             if (currentRangeToken.Token != null)
             {
-                this.changeFeedOptions.From = new ChangeFeedRequestOptions.StartFromContinuationAndFeedRange(currentRangeToken.Token, (FeedRangeInternal)feedRange);
+                this.changeFeedOptions.From = new ChangeFeedStartFromContinuationAndFeedRange(currentRangeToken.Token, (FeedRangeInternal)feedRange);
             }
             else
             {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(feedRange);
+                this.changeFeedOptions.From = ChangeFeedStartFrom.CreateFromBeginningWithRange(feedRange);
             }
 
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);

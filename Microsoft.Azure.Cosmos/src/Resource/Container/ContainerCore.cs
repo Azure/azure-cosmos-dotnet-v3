@@ -251,16 +251,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
             return new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 container: this,
                 changeFeedRequestOptions: changeFeedRequestOptions);

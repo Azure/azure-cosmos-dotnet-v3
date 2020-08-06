@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation("something"),
+                From = ChangeFeedStartFrom.CreateFromContinuation("something"),
             };
             requestOptions.PopulateRequestOptions(request);
 
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                From = ChangeFeedRequestOptions.StartFrom.CreateFromNow(),
+                From = ChangeFeedStartFrom.CreateFromNow(),
             };
 
             requestOptions.PopulateRequestOptions(request);
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                From = ChangeFeedStartFrom.CreateFromBeginning(),
             };
 
             requestOptions.PopulateRequestOptions(request);
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 MaxItemCount = 10,
-                From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
+                From = ChangeFeedStartFrom.CreateFromBeginning(),
             };
             requestOptions.PopulateRequestOptions(request);
 
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                From = ChangeFeedRequestOptions.StartFrom.CreateFromTime(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
+                From = ChangeFeedStartFrom.CreateFromTime(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
             };
             requestOptions.PopulateRequestOptions(request);
 
@@ -314,14 +314,14 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_AddsFeedRange()
         {
             FeedRange feedRange = new FeedRangePartitionKeyRange("randomPK");
-            ChangeFeedRequestOptions.StartFrom[] froms = new ChangeFeedRequestOptions.StartFrom[]
+            ChangeFeedStartFrom[] froms = new ChangeFeedStartFrom[]
             {
-                ChangeFeedRequestOptions.StartFrom.CreateFromBeginningWithRange(feedRange),
-                ChangeFeedRequestOptions.StartFrom.CreateFromNowWithRange(feedRange),
-                ChangeFeedRequestOptions.StartFrom.CreateFromTimeWithRange(DateTime.MinValue.ToUniversalTime(), feedRange)
+                ChangeFeedStartFrom.CreateFromBeginningWithRange(feedRange),
+                ChangeFeedStartFrom.CreateFromNowWithRange(feedRange),
+                ChangeFeedStartFrom.CreateFromTimeWithRange(DateTime.MinValue.ToUniversalTime(), feedRange)
             };
 
-            foreach (ChangeFeedRequestOptions.StartFrom from in froms)
+            foreach (ChangeFeedStartFrom from in froms)
             {
                 RequestMessage request = new RequestMessage();
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()

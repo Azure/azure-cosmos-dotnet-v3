@@ -551,6 +551,7 @@ namespace Microsoft.Azure.Cosmos
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
                 container: this,
+                changeFeedStartFrom: ChangeFeedStartFrom.CreateFromBeginning(),
                 options: cosmosQueryRequestOptions);
         }
 

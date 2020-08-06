@@ -373,15 +373,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(changeFeedRequestOptions);
+            return base.GetChangeFeedStreamIterator(changeFeedStartFrom, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(changeFeedRequestOptions);
+            return base.GetChangeFeedIterator<T>(changeFeedStartFrom, changeFeedRequestOptions);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
