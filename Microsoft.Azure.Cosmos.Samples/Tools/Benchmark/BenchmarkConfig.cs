@@ -85,6 +85,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Partitionkey, only for publish")]
         public string ResultsPartitionKeyValue { get; set; }
 
+        [Option(Required = false, HelpText = "Disable core SDK logging")]
+        public bool DisableCoreSdkLogging { get; set; }
+
         [Option(Required = false, HelpText = "Container to publish results to")]
         internal string ResultsContainer { get; set; } = "runsummary";
 
@@ -105,12 +108,12 @@ namespace CosmosBenchmark
         {
             using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
-                Console.WriteLine($"{nameof(BenchmarkConfig)} arguments");
-                Console.WriteLine($"IsServerGC: {GCSettings.IsServerGC}");
-                Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine(JsonHelper.ToString(this));
-                Console.WriteLine("--------------------------------------------------------------------- ");
-                Console.WriteLine();
+                Utility.TeeTraceInformation($"{nameof(BenchmarkConfig)} arguments");
+                Utility.TeeTraceInformation($"IsServerGC: {GCSettings.IsServerGC}");
+                Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
+                Utility.TeeTraceInformation(JsonHelper.ToString(this));
+                Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
+                Utility.TeeTraceInformation(string.Empty);
             }
         }
 

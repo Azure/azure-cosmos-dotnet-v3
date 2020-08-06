@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -22,7 +23,6 @@ namespace Microsoft.Azure.Cosmos
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out MemoryStream payload);
+            AuthorizationTokenType tokenType);
     }
 }

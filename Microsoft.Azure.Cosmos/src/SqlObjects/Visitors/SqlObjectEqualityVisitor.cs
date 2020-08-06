@@ -643,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.Identifer, second.Identifer))
+            if (!Equals(first.Identifier, second.Identifier))
             {
                 return false;
             }

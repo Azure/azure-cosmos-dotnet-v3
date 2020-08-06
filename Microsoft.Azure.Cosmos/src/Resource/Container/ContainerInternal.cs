@@ -39,7 +39,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
-        public abstract Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
+            CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
             CancellationToken cancellationToken);
