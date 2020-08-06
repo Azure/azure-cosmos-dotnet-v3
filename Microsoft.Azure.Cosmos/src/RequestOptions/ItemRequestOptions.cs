@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for write item operation like Create, Upsert, and Replace.
+        /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
         /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
         /// the resource back over the network and serializing it on the client.
         /// </summary>
@@ -191,7 +191,8 @@ namespace Microsoft.Azure.Cosmos
               !enableContentResponseOnWrite.Value &&
               (operationType == OperationType.Create ||
               operationType == OperationType.Replace ||
-              operationType == OperationType.Upsert);
+              operationType == OperationType.Upsert ||
+              operationType == OperationType.Patch);
         }
     }
 }

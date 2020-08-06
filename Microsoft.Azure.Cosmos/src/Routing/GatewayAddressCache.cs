@@ -52,12 +52,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri serviceEndpoint,
             Protocol protocol,
             IAuthorizationTokenProvider tokenProvider,
-            UserAgentContainer userAgent,
             IServiceConfigurationReader serviceConfigReader,
-            TimeSpan requestTimeout,
+            HttpClient httpClient,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            HttpMessageHandler messageHandler = null,
-            ApiType apiType = ApiType.None,
             bool enableTcpConnectionEndpointRediscovery = false)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
@@ -73,23 +70,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
-            this.httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
-            if (requestTimeout != null)
-            {
-                this.httpClient.Timeout = requestTimeout;
-            }
+            this.httpClient = httpClient;
+
             this.protocolFilter =
                 string.Format(CultureInfo.InvariantCulture,
                 GatewayAddressCache.protocolFilterFormat,
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
-
-            // Set requested API version header for version enforcement.
-            this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            this.httpClient.AddUserAgentHeader(userAgent);
-            this.httpClient.AddApiTypeHeader(apiType);
         }
 
         public Uri ServiceEndpoint
@@ -532,29 +519,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public void Dispose()
         {
-            this.Dispose(true);
             GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (this.httpClient != null)
-                {
-                    try
-                    {
-                        this.httpClient.Dispose();
-                    }
-                    catch (Exception exception)
-                    {
-                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception);
-                    }
-
-                    this.httpClient = null;
-                }
-            }
         }
 
         internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)
