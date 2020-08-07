@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedStartFrom"/> class.
         /// </summary>
-        internal protected ChangeFeedStartFrom()
+        internal ChangeFeedStartFrom()
         {
             // Internal so people can't derive from this type.
         }
@@ -55,32 +55,32 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.
         /// </summary>
-        /// <param name="dateTime">The time to start reading from.</param>
+        /// <param name="dateTimeUtc">The time (in UTC) to start reading from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
-        public static ChangeFeedStartFrom Time(DateTime dateTime) => Time(dateTime, FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Time(DateTime dateTimeUtc) => Time(dateTimeUtc, FeedRangeEpk.FullRange);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.
         /// </summary>
-        /// <param name="dateTime">The time to start reading from.</param>
+        /// <param name="dateTimeUtc">The time to start reading from.</param>
         /// <param name="feedRange">The range to start from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
-        public static ChangeFeedStartFrom Time(DateTime dateTime, FeedRange feedRange)
+        public static ChangeFeedStartFrom Time(DateTime dateTimeUtc, FeedRange feedRange)
         {
             if (!(feedRange is FeedRangeInternal feedRangeInternal))
             {
                 throw new ArgumentException($"{nameof(feedRange)} needs to be a {nameof(FeedRangeInternal)}.");
             }
 
-            return new ChangeFeedStartFromTime(dateTime, feedRangeInternal);
+            return new ChangeFeedStartFromTime(dateTimeUtc, feedRangeInternal);
         }
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from a save point.
         /// </summary>
-        /// <param name="continuation">The continuation to resume from.</param>
+        /// <param name="continuationToken">The continuation to resume from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from a save point.</returns>
-        public static ChangeFeedStartFrom ContinuationToken(string continuation) => new ChangeFeedStartFromContinuation(continuation);
+        public static ChangeFeedStartFrom ContinuationToken(string continuationToken) => new ChangeFeedStartFromContinuation(continuationToken);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.
