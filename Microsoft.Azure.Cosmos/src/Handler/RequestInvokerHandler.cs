@@ -125,9 +125,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             // user request might span multiple backend requests.
             // This will still have a single request id for retry scenarios
             ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
-            Debug.Assert(activityScope != null &&
-                (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan),
-                "There should be an activity id already set");
+            //Debug.Assert(activityScope != null &&
+            //    (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan),
+            //    "There should be an activity id already set");
 
             try
             {

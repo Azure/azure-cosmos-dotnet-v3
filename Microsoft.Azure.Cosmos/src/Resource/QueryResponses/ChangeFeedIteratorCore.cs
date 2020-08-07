@@ -129,18 +129,8 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
 
             string etag = this.FeedRangeContinuation.GetContinuation();
-            if (etag != null)
-            {
-                FeedRange feedRange = this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton);
-                if ((feedRange == null) || feedRange is FeedRangeEpk)
-                {
-                    // For now the backend does not support EPK Ranges if they don't line up with a PKRangeId
-                    // So if the range the user supplied is a logical pk value, then we don't want to overwrite it.
-                    feedRange = this.FeedRangeContinuation.GetFeedRange();
-                }
-
-                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
-            }
+            FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,

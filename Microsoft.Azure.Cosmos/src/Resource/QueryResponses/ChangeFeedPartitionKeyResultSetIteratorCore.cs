@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
-        private string continuationToken;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -45,12 +44,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A change feed response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            // Change Feed read uses Etag for continuation
-            if (this.continuationToken != null)
-            {
-                this.changeFeedStartFrom = ChangeFeedStartFrom.ContinuationToken(this.continuationToken);
-            }
-
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 cosmosContainerCore: this.container,
                 resourceUri: this.container.LinkUri,
@@ -67,9 +60,13 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: default,
                 cancellationToken: cancellationToken);
 
-            this.continuationToken = responseMessage.Headers.ETag;
+            // Change Feed uses etag as continuation token.
+            string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
-            responseMessage.Headers.ContinuationToken = this.continuationToken;
+            responseMessage.Headers.ContinuationToken = etag;
+
+            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton);
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;
         }

@@ -180,7 +180,10 @@ namespace Microsoft.Azure.Cosmos
         public override void Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange)
         {
             // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-            this.requestMessage.Headers.IfNoneMatch = startFromContinuationAndFeedRange.Etag;
+            if (startFromContinuationAndFeedRange.Etag != null)
+            {
+                this.requestMessage.Headers.IfNoneMatch = startFromContinuationAndFeedRange.Etag;
+            }
 
             startFromContinuationAndFeedRange.FeedRange.Accept(this.feedRangeVisitor);
         }
@@ -331,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public ChangeFeedStartFromContinuationAndFeedRange(string etag, FeedRangeInternal feedRange)
         {
-            this.Etag = etag ?? throw new ArgumentNullException(nameof(etag));
+            this.Etag = etag;
             this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
 
