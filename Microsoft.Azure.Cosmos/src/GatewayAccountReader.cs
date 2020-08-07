@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             else if (this.tokenCredentialCache != null)
             {
                 authorizationToken = AuthorizationHelper.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync());
+                    await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
             }
             else
             {

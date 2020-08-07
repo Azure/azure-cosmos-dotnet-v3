@@ -74,14 +74,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static void ValidateCollection<T>(DocumentClient[] replicaClients,
+        internal static async Task ValidateCollection<T>(DocumentClient[] replicaClients,
             string collectionId,
             INameValueCollection headers = null,
             bool verifyAddress = true) where T : Resource, new()
         {
             Assert.IsTrue(replicaClients != null && replicaClients.Length > 1, "Must pass in at least two replica clients");
 
-            Task.Delay(3000); // allow previous operations to complete and propagate, bringing more robustness to tests
+            await Task.Delay(3000); // allow previous operations to complete and propagate, bringing more robustness to tests
 
             foreach (DocumentClient client in replicaClients)
             {
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     typeof(T) == typeof(UserDefinedFunction) ||
                     typeof(T) == typeof(Trigger))
                 {
-                    TestCommon.ListAllScriptDirect<T>(client, collectionId, headers ?? new DictionaryNameValueCollection());
+                    await TestCommon.ListAllScriptDirect<T>(client, collectionId, headers ?? new DictionaryNameValueCollection());
                 }
                 else
                 {

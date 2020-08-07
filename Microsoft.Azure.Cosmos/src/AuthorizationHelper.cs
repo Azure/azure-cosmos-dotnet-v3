@@ -203,7 +203,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-
         public static string GenerateAadAuthorizationSignature(string aadToken)
         {
             return HttpUtility.UrlEncode(String.Format(

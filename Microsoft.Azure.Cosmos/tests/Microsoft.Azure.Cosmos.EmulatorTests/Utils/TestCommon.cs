@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static ResourceResponse<T> CreateScriptDirect<T>(DocumentClient client, string collectionLink, T resource) where T : Resource, new()
+        internal static async ValueTask<ResourceResponse<T>> CreateScriptDirect<T>(DocumentClient client, string collectionLink, T resource) where T : Resource, new()
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                  OperationType.Create,
@@ -355,10 +355,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  AuthorizationTokenType.PrimaryMasterKey,
                  null))
             {
-                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
+                (string token, string payload) = await ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey).Result.Token;
-                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
+                    HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                request.Headers[HttpConstants.HttpHeaders.Authorization] = token;
 
                 RouteToTheOnlyPartition(client, request);
 
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static ResourceResponse<T> UpdateScriptDirect<T>(DocumentClient client, T resource) where T : Resource, new()
+        internal static async ValueTask<ResourceResponse<T>> UpdateScriptDirect<T>(DocumentClient client, T resource) where T : Resource, new()
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                  OperationType.Replace,
@@ -382,9 +382,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  null,
                  null))
             {
-                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
-                    PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Put, request.Headers, AuthorizationTokenType.PrimaryMasterKey).Result.Token;
+                (string authorization, string payload) = await ((IAuthorizationTokenProvider) client).GetUserAuthorizationAsync(request.ResourceAddress,
+                        PathsHelper.GetResourcePath(request.ResourceType),
+                        HttpConstants.HttpMethods.Put, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
                 RouteToTheOnlyPartition(client, request);
 
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static ResourceResponse<T> DeleteScriptDirect<T>(DocumentClient client, string resourceIdOrFullName) where T : Resource, new()
+        internal static async ValueTask<ResourceResponse<T>> DeleteScriptDirect<T>(DocumentClient client, string resourceIdOrFullName) where T : Resource, new()
         {
             using (DocumentServiceRequest request = CreateRequest(
                            OperationType.Delete,
@@ -407,9 +407,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                            null,
                            AuthorizationTokenType.PrimaryMasterKey))
             {
-                string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(request.ResourceAddress,
-                    PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Delete, request.Headers, AuthorizationTokenType.PrimaryMasterKey).Result.Token;
+                (string authorization, string payload) = await ((IAuthorizationTokenProvider) client).GetUserAuthorizationAsync(request.ResourceAddress,
+                        PathsHelper.GetResourcePath(request.ResourceType),
+                        HttpConstants.HttpMethods.Delete, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
                 RouteToTheOnlyPartition(client, request);
 
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static IList<T> ListAllScriptDirect<T>(DocumentClient client,
+        internal static async ValueTask<IList<T>> ListAllScriptDirect<T>(DocumentClient client,
                 string resourceIdOrFullName,
                 INameValueCollection headers = null) where T : Resource, new()
         {
@@ -454,14 +454,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     try
                     {
-                        pagedResult = ReadScriptFeedDirect<T>(client, resourceIdOrFullName, localHeaders);
+                        pagedResult = await ReadScriptFeedDirect<T>(client, resourceIdOrFullName, localHeaders);
                         break;
                     }
                     catch (ServiceUnavailableException)
                     {
                         if (--nMaxRetry > 0)
                         {
-                            Task.Delay(5000); //Wait 5 seconds before retry.
+                            await Task.Delay(5000); //Wait 5 seconds before retry.
                         }
                         else
                         {
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if (--nMaxRetry > 0)
                         {
-                            Task.Delay(5000); //Wait 5 seconds before retry.
+                            await Task.Delay(5000); //Wait 5 seconds before retry.
                         }
                         else
                         {
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        private static DocumentFeedResponse<T> ReadScriptFeedDirect<T>(
+        private static async ValueTask<DocumentFeedResponse<T>> ReadScriptFeedDirect<T>(
             DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection localHeaders) where T : Resource, new()
@@ -508,12 +508,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     RouteToTheOnlyPartition(client, request);
 
-                    string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(
+                    (string authorization, string payload) = await ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(
                         request.ResourceAddress,
                         PathsHelper.GetResourcePath(request.ResourceType),
                         HttpConstants.HttpMethods.Get,
                         request.Headers,
-                        AuthorizationTokenType.PrimaryMasterKey).Result.Token;
+                        AuthorizationTokenType.PrimaryMasterKey);
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
                     using (new ActivityScope(Guid.NewGuid()))

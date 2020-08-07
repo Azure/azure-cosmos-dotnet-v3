@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
-            this.TokenCredentialRefreshBuffer = ConnectionPolicy.Default.TokenCredentialRefreshBuffer;
+            this.TokenCredentialRefreshBuffer = ConnectionPolicy.Default.TokenCredentialBackgroundRefreshInterval;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
@@ -631,7 +631,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
-                TokenCredentialRefreshBuffer = this.TokenCredentialRefreshBuffer,
+                TokenCredentialBackgroundRefreshInterval = this.TokenCredentialRefreshBuffer,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
                 UserAgentContainer = userAgent,

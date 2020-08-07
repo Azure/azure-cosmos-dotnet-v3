@@ -1124,9 +1124,7 @@ namespace Microsoft.Azure.Cosmos
                 this.tokenCredentialCache = new TokenCredentialCache(
                     tokenCredential,
                     this.ServiceEndpoint.Host,
-                    this.ConnectionPolicy.TokenCredentialRefreshBuffer ?? TimeSpan.FromSeconds(ConnectionPolicy.defaultTokenCredentialRefreshBuffer),
-                    (int)this.ConnectionPolicy.RequestTimeout.TotalSeconds,
-                    this.timerPoolGranularityInSeconds);
+                    this.ConnectionPolicy.TokenCredentialBackgroundRefreshInterval ?? ConnectionPolicy.DefaultTokenCredentialBackgroundRefreshInterval);
             }
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
@@ -6420,65 +6418,66 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             AuthorizationTokenType tokenType)
         {
-            string authorizationToken = this.GetUserAuthorizationTokenCore(
+            (string authorizationToken, AuthorizationHelper.ArrayOwner arrayOwner) = await this.GetUserAuthorizationTokenCoreAsync(
                 resourceAddress,
                 resourceType,
                 requestVerb,
                 headers,
                 tokenType,
-                out AuthorizationHelper.ArrayOwner arrayOwner);
+                EmptyCosmosDiagnosticsContext.Singleton);
+
             using (arrayOwner)
             {
-                if (arrayOwner.Buffer.Count == 0)
-                {
-                    payload = null;
-                }
-                else
+                string payload = null;
+                if (arrayOwner.Buffer.Count > 0)
                 {
                     payload = Encoding.UTF8.GetString(arrayOwner.Buffer.Array, arrayOwner.Buffer.Offset, (int)arrayOwner.Buffer.Count);
                 }
-                return authorizationToken;
+
+                return (authorizationToken, payload);
             }
         }
 
-        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
-            string resourceAddress,
-            string resourceType,
-            string requestVerb,
-            INameValueCollection headers,
-            AuthorizationTokenType tokenType)
-        {
-            string authorizationToken = this.GetUserAuthorizationTokenCore(
-                resourceAddress,
-                resourceType,
-                requestVerb,
-                headers,
-                tokenType,
-                out AuthorizationHelper.ArrayOwner arrayOwner);
-            using (arrayOwner)
-            {
-                return authorizationToken;
-            }
-        }
-
-        private string GetUserAuthorizationTokenCore(
+        async ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            out AuthorizationHelper.ArrayOwner payload) // unused, use token based upon what is passed in constructor 
+            CosmosDiagnosticsContext diagnosticsContext)
+        {
+            (string authorizationToken, AuthorizationHelper.ArrayOwner arrayOwner) = await this.GetUserAuthorizationTokenCoreAsync(
+                resourceAddress,
+                resourceType,
+                requestVerb,
+                headers,
+                tokenType,
+                diagnosticsContext);
+
+            using (arrayOwner)
+            {
+                return authorizationToken;
+            }
+        }
+
+        private async ValueTask<(string authorizationToken, AuthorizationHelper.ArrayOwner arrayOwner)> GetUserAuthorizationTokenCoreAsync(
+            string resourceAddress,
+            string resourceType,
+            string requestVerb,
+            INameValueCollection headers,
+            AuthorizationTokenType tokenType,
+            CosmosDiagnosticsContext diagnosticsContext) // unused, use token based upon what is passed in constructor 
         {
             if (this.hasAuthKeyResourceToken && this.resourceTokens == null)
             {
                 // If the input auth token is a resource token, then use it as a bearer-token.
-                return (HttpUtility.UrlEncode(this.authKeyResourceToken), null);
+                return (HttpUtility.UrlEncode(this.authKeyResourceToken), default);
             }
 
             if (this.tokenCredentialCache != null)
             {
                 return (AuthorizationHelper.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync()), null);
+                    await this.tokenCredentialCache.GetTokenAsync(diagnosticsContext)), default);
             }
 
             if (this.authKeyHashFunction != null)
@@ -6487,7 +6486,7 @@ namespace Microsoft.Azure.Cosmos
                 headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
                 string token = AuthorizationHelper.GenerateKeyAuthorizationSignature(
-                        requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out string payload);
+                        requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out AuthorizationHelper.ArrayOwner payload);
 
                 return (token, payload);
             }
@@ -6541,7 +6540,7 @@ namespace Microsoft.Azure.Cosmos
                            CultureInfo.InvariantCulture, ClientResources.AuthTokenNotFound, resourceAddress));
                     }
 
-                    return (HttpUtility.UrlEncode(resourceToken), null);
+                    return (HttpUtility.UrlEncode(resourceToken), default);
                 }
                 else
                 {
@@ -6611,7 +6610,7 @@ namespace Microsoft.Azure.Cosmos
                             CultureInfo.InvariantCulture, ClientResources.AuthTokenNotFound, resourceAddress));
                     }
 
-                    return (HttpUtility.UrlEncode(resourceToken), null);
+                    return (HttpUtility.UrlEncode(resourceToken), default);
                 }
             }
         }
@@ -6789,7 +6788,7 @@ namespace Microsoft.Azure.Cosmos
                     else if (this.tokenCredentialCache != null)
                     {
                         authorizationToken = AuthorizationHelper.GenerateAadAuthorizationSignature(
-                            await this.tokenCredentialCache.GetTokenAsync());
+                            await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
                     }
                     else
                     {

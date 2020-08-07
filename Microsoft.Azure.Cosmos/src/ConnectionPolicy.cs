@@ -16,14 +16,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ConnectionPolicy
     {
-        internal UserAgentContainer UserAgentContainer;
-        internal const int defaultTokenCredentialRefreshBuffer = 300;
         private const int defaultRequestTimeout = 10;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
+        internal static readonly TimeSpan DefaultTokenCredentialBackgroundRefreshInterval = TimeSpan.FromMinutes(5);
 
+        internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
 
         private Protocol connectionProtocol;
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.connectionProtocol = Protocol.Https;
             this.RequestTimeout = TimeSpan.FromSeconds(ConnectionPolicy.defaultRequestTimeout);
             this.MediaRequestTimeout = TimeSpan.FromSeconds(ConnectionPolicy.defaultMediaRequestTimeout);
-            this.TokenCredentialRefreshBuffer = null;
+            this.TokenCredentialBackgroundRefreshInterval = null;
             this.ConnectionMode = ConnectionMode.Gateway;
             this.MaxConcurrentFanoutRequests = defaultMaxConcurrentFanoutRequests;
             this.MediaReadMode = MediaReadMode.Buffered;
@@ -122,13 +122,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Time before expiry of the existing token at which SDK will try to refresh the token to avoid
-        /// refreshing it on expiry resulting in increased latency.
+        /// The interval the SDK will run a background task to refresh the token.
+        /// This avoid increased latency caused by waiting for the new token, and increases
+        /// reliability by always having a buffer for retries before the token expires.
         /// </summary>
         /// <value>
-        /// Default value is 300 seconds.
+        /// Default value is 5 minutes.
         /// </value>
-        public TimeSpan? TokenCredentialRefreshBuffer
+        public TimeSpan? TokenCredentialBackgroundRefreshInterval
         {
             get;
             set;

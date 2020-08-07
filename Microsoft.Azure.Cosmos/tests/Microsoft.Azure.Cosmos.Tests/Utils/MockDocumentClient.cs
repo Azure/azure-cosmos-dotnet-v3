@@ -142,14 +142,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new ValueTask<(string token, string payload)>((null, null));
         }
 
-        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
+        ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType,
+            CosmosDiagnosticsContext diagnosticsContext) /* unused, use token based upon what is passed in constructor */
         {
-            return null;
+            return new ValueTask<string>((string)null);
         }
 
         internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)

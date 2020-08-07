@@ -26,12 +26,13 @@ namespace Microsoft.Azure.Cosmos
             HttpClient staticHttpClient = new HttpClient(messageHandler);
 
             GatewayAccountReader accountReader = new GatewayAccountReader(
-                new Uri("https://localhost"),
-                Mock.Of<IComputeHash>(),
-                false,
-                null,
-                new ConnectionPolicy(),
-                staticHttpClient);
+                serviceEndpoint: new Uri("https://localhost"),
+                stringHMACSHA256Helper: Mock.Of<IComputeHash>(),
+                hasResourceToken: false,
+                resourceToken: null,
+                tokenCredentialCache: null,
+                connectionPolicy: new ConnectionPolicy(),
+                httpClient: staticHttpClient);
 
             DocumentClientException exception = await Assert.ThrowsExceptionAsync<DocumentClientException>(() => accountReader.InitializeReaderAsync());
             Assert.AreEqual(HttpStatusCode.Conflict, exception.StatusCode);
