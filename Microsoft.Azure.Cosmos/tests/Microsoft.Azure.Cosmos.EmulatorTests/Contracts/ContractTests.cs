@@ -156,10 +156,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = 1
+                    PageSizeHint = 1
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
-                    changeFeedStartFrom: ChangeFeedStartFrom.CreateFromBeginningWithRange(feedRange),
+                    changeFeedStartFrom: ChangeFeedStartFrom.Beginning(feedRange),
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
@@ -196,10 +196,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             {
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = 100
+                    PageSizeHint = 100
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
-                    changeFeedStartFrom: ChangeFeedStartFrom.CreateFromContinuation(continuation),
+                    changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)

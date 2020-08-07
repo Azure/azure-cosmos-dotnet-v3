@@ -261,6 +261,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new ChangeFeedIteratorCore(
                 container: this,
+                changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
@@ -275,6 +276,7 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 container: this,
+                changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);

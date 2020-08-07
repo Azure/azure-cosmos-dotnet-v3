@@ -21,7 +21,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [ExpectedException(typeof(ArgumentNullException))]
         public void ChangeFeedIteratorCore_Null_Container()
         {
-            new ChangeFeedIteratorCore(container: null, new ChangeFeedRequestOptions());
+            new ChangeFeedIteratorCore(
+                container: null,
+                ChangeFeedStartFrom.Beginning(),
+                new ChangeFeedRequestOptions());
         }
 
         [DataTestMethod]
@@ -32,16 +35,20 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             new ChangeFeedIteratorCore(
                 Mock.Of<ContainerInternal>(),
+                ChangeFeedStartFrom.Beginning(),
                 new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = maxItemCount
+                    PageSizeHint = maxItemCount
                 });
         }
 
         [TestMethod]
         public void ChangeFeedIteratorCore_HasMoreResultsDefault()
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(Mock.Of<ContainerInternal>(), null);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                Mock.Of<ContainerInternal>(),
+                ChangeFeedStartFrom.Beginning(),
+                null);
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
@@ -434,9 +441,14 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             return clientContext;
         }
 
-        private static ChangeFeedIteratorCore CreateWithCustomFeedToken(ContainerInternal containerInternal, FeedRangeContinuation feedToken)
+        private static ChangeFeedIteratorCore CreateWithCustomFeedToken(
+            ContainerInternal containerInternal,
+            FeedRangeContinuation feedToken)
         {
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(containerInternal, changeFeedRequestOptions: default);
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                containerInternal,
+                ChangeFeedStartFrom.Beginning(),
+                changeFeedRequestOptions: default);
             System.Reflection.FieldInfo prop = changeFeedIteratorCore
                 .GetType()
                 .GetField(

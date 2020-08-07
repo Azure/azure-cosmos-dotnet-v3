@@ -26,26 +26,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             }
             else if (startTime.HasValue)
             {
-                startFrom = ChangeFeedStartFrom.CreateFromTimeWithRange(startTime.Value, feedRange);
+                startFrom = ChangeFeedStartFrom.Time(startTime.Value, feedRange);
             }
             else if (startFromBeginning)
             {
-                startFrom = ChangeFeedStartFrom.CreateFromBeginningWithRange(feedRange);
+                startFrom = ChangeFeedStartFrom.Beginning(feedRange);
             }
             else
             {
-                startFrom = ChangeFeedStartFrom.CreateFromNowWithRange(feedRange);
+                startFrom = ChangeFeedStartFrom.Now(feedRange);
             }
 
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                MaxItemCount = maxItemCount,
-                From = startFrom,
+                PageSizeHint = maxItemCount,
             };
 
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
                 clientContext: container.ClientContext,
                 container: container,
+                changeFeedStartFrom: startFrom,
                 options: requestOptions);
         }
     }

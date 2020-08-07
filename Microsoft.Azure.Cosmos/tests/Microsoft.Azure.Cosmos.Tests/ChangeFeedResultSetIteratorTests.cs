@@ -66,10 +66,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
                 new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.CreateFromBeginning(),
+                ChangeFeedStartFrom.Beginning(),
                 new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = 10,
+                    PageSizeHint = 10,
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -128,10 +128,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
                 new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.CreateFromBeginning(),
+                ChangeFeedStartFrom.Beginning(),
                 new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = 10,
+                    PageSizeHint = 10,
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -193,10 +193,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
                 new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.CreateFromBeginning(),
+                ChangeFeedStartFrom.Beginning(),
                 new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = 10,
+                    PageSizeHint = 10,
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
@@ -253,10 +253,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
                 mockContext.Object,
                 new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.CreateFromBeginning(),
+                ChangeFeedStartFrom.Beginning(),
                 new ChangeFeedRequestOptions()
                 {
-                    MaxItemCount = 10,
+                    PageSizeHint = 10,
                 });
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");

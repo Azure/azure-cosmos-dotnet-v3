@@ -25,12 +25,14 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
+        private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResults;
 
         private FeedRangeContinuation FeedRangeContinuation;
 
         public ChangeFeedIteratorCore(
             ContainerInternal container,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
@@ -42,7 +44,8 @@ namespace Microsoft.Azure.Cosmos
             });
             this.hasMoreResults = true;
 
-            if (this.changeFeedOptions?.From is ChangeFeedStartFromContinuation startFromContinuation)
+            this.changeFeedStartFrom = changeFeedStartFrom;
+            if (this.changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
             {
                 if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
@@ -53,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 FeedRange feedRange = feedRangeContinuation.GetFeedRange();
                 string etag = feedRangeContinuation.GetContinuation();
 
-                this.changeFeedOptions.From = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
             }
         }
 
@@ -71,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 diagnostics.AddDiagnosticsInternal(
                     new FeedRangeStatistics(
-                        this.changeFeedOptions.From.Accept(FeedRangeExtractor.Singleton)));
+                        this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton)));
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
@@ -128,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
             string etag = this.FeedRangeContinuation.GetContinuation();
             if (etag != null)
             {
-                FeedRange feedRange = this.changeFeedOptions.From.Accept(FeedRangeExtractor.Singleton);
+                FeedRange feedRange = this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton);
                 if ((feedRange == null) || feedRange is FeedRangeEpk)
                 {
                     // For now the backend does not support EPK Ranges if they don't line up with a PKRangeId
@@ -136,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
                     feedRange = this.FeedRangeContinuation.GetFeedRange();
                 }
 
-                this.changeFeedOptions.From = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -145,7 +148,11 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
                 cosmosContainerCore: this.container,
-                requestEnricher: default,
+                requestEnricher: (request) =>
+                {
+                    PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: diagnosticsScope,
@@ -212,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
 
-                FeedRange feedRange = this.changeFeedOptions.From.Accept(FeedRangeExtractor.Singleton);
+                FeedRange feedRange = this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton);
                 IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)feedRange).AcceptAsync(
                     feedRangePartitionKeyRangeExtractor,
                     cancellationToken);

@@ -18,16 +18,19 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
         private string continuationToken;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
             ContainerInternal container,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.changeFeedStartFrom = changeFeedStartFrom;
             this.changeFeedOptions = options;
         }
 
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             // Change Feed read uses Etag for continuation
             if (this.continuationToken != null)
             {
-                this.changeFeedOptions.From = ChangeFeedStartFrom.CreateFromContinuation(this.continuationToken);
+                this.changeFeedStartFrom = ChangeFeedStartFrom.ContinuationToken(this.continuationToken);
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -54,7 +57,11 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
-                requestEnricher: default,
+                requestEnricher: (requestMessage) =>
+                {
+                    PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(requestMessage);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: default,

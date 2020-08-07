@@ -224,11 +224,8 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                From = ChangeFeedStartFrom.CreateFromContinuation("something"),
-            };
-            requestOptions.PopulateRequestOptions(request);
+            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFrom.ContinuationToken("something").Accept(visitor);
 
             Assert.AreEqual(expected: "something", actual: request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
@@ -238,12 +235,8 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_StartFromNow()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                From = ChangeFeedStartFrom.CreateFromNow(),
-            };
-
-            requestOptions.PopulateRequestOptions(request);
+            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFrom.Now().Accept(visitor);
 
             Assert.AreEqual(expected: "*", request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
@@ -253,12 +246,8 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_StartFromBeginning()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                From = ChangeFeedStartFrom.CreateFromBeginning(),
-            };
-
-            requestOptions.PopulateRequestOptions(request);
+            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFrom.Beginning().Accept(visitor);
 
             Assert.IsNull(request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
@@ -282,12 +271,13 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
             RequestMessage request = new RequestMessage();
+            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                MaxItemCount = 10,
-                From = ChangeFeedStartFrom.CreateFromBeginning(),
+                PageSizeHint = 10,
             };
             requestOptions.PopulateRequestOptions(request);
+            ChangeFeedStartFrom.Beginning().Accept(visitor);
 
             Assert.AreEqual(expected: "10", actual: request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
             Assert.IsNull(request.Headers.IfNoneMatch);
@@ -298,11 +288,8 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_AddsStartTime()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                From = ChangeFeedStartFrom.CreateFromTime(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)),
-            };
-            requestOptions.PopulateRequestOptions(request);
+            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFrom.Time(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Accept(visitor);
 
             Assert.AreEqual(
                 expected: "Tue, 01 Jan 1985 00:00:00 GMT",
@@ -316,19 +303,16 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange = new FeedRangePartitionKeyRange("randomPK");
             ChangeFeedStartFrom[] froms = new ChangeFeedStartFrom[]
             {
-                ChangeFeedStartFrom.CreateFromBeginningWithRange(feedRange),
-                ChangeFeedStartFrom.CreateFromNowWithRange(feedRange),
-                ChangeFeedStartFrom.CreateFromTimeWithRange(DateTime.MinValue.ToUniversalTime(), feedRange)
+                ChangeFeedStartFrom.Beginning(feedRange),
+                ChangeFeedStartFrom.Now(feedRange),
+                ChangeFeedStartFrom.Time(DateTime.MinValue.ToUniversalTime(), feedRange)
             };
 
             foreach (ChangeFeedStartFrom from in froms)
             {
                 RequestMessage request = new RequestMessage();
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-                {
-                    From = from,
-                };
-                requestOptions.PopulateRequestOptions(request);
+                PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+                from.Accept(visitor);
 
                 Assert.AreEqual(
                     expected: "randomPK",

@@ -35,14 +35,14 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
         /// </summary>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.</returns>
-        public static ChangeFeedStartFrom CreateFromNow() => CreateFromNowWithRange(FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Now() => Now(FeedRangeEpk.FullRange);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
         /// </summary>
         /// <param name="feedRange">The range to start from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.</returns>
-        public static ChangeFeedStartFrom CreateFromNowWithRange(FeedRange feedRange)
+        public static ChangeFeedStartFrom Now(FeedRange feedRange)
         {
             if (!(feedRange is FeedRangeInternal feedRangeInternal))
             {
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="dateTime">The time to start reading from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
-        public static ChangeFeedStartFrom CreateFromTime(DateTime dateTime) => CreateFromTimeWithRange(dateTime, FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Time(DateTime dateTime) => Time(dateTime, FeedRangeEpk.FullRange);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="dateTime">The time to start reading from.</param>
         /// <param name="feedRange">The range to start from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
-        public static ChangeFeedStartFrom CreateFromTimeWithRange(DateTime dateTime, FeedRange feedRange)
+        public static ChangeFeedStartFrom Time(DateTime dateTime, FeedRange feedRange)
         {
             if (!(feedRange is FeedRangeInternal feedRangeInternal))
             {
@@ -80,20 +80,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="continuation">The continuation to resume from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from a save point.</returns>
-        public static ChangeFeedStartFrom CreateFromContinuation(string continuation) => new ChangeFeedStartFromContinuation(continuation);
+        public static ChangeFeedStartFrom ContinuationToken(string continuation) => new ChangeFeedStartFromContinuation(continuation);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.
         /// </summary>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.</returns>
-        public static ChangeFeedStartFrom CreateFromBeginning() => CreateFromBeginningWithRange(FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Beginning() => Beginning(FeedRangeEpk.FullRange);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.
         /// </summary>
         /// <param name="feedRange">The range to start from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.</returns>
-        public static ChangeFeedStartFrom CreateFromBeginningWithRange(FeedRange feedRange)
+        public static ChangeFeedStartFrom Beginning(FeedRange feedRange)
         {
             if (!(feedRange is FeedRangeInternal feedRangeInternal))
             {
@@ -153,11 +153,11 @@ namespace Microsoft.Azure.Cosmos
             // The problem is Multi master accounts do not support StartTime header on ReadFeed, and thus,
             // it would break multi master Change Feed Processor users using Start From Beginning semantics.
             // It's also an optimization, since the backend won't have to binary search for the value.
-            if (startFromTime.Time != PopulateStartFromRequestOptionVisitor.StartFromBeginningTime)
+            if (startFromTime.StartTime != PopulateStartFromRequestOptionVisitor.StartFromBeginningTime)
             {
                 this.requestMessage.Headers.Add(
                     HttpConstants.HttpHeaders.IfModifiedSince,
-                    startFromTime.Time.ToString("r", CultureInfo.InvariantCulture));
+                    startFromTime.StartTime.ToString("r", CultureInfo.InvariantCulture));
             }
 
             startFromTime.FeedRange.Accept(this.feedRangeVisitor);
@@ -249,14 +249,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException($"{nameof(time)}.{nameof(DateTime.Kind)} must be {nameof(DateTimeKind)}.{nameof(DateTimeKind.Utc)}");
             }
 
-            this.Time = time;
+            this.StartTime = time;
             this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
 
         /// <summary>
         /// Gets the time the ChangeFeed operation should start reading from.
         /// </summary>
-        public DateTime Time { get; }
+        public DateTime StartTime { get; }
 
         /// <summary>
         /// Gets the (optional) range to start from.
