@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
@@ -584,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
-                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+                computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
                 using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(

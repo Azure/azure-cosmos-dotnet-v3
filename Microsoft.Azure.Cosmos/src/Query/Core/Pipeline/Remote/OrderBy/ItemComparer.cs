@@ -1,13 +1,13 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 {
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
 
     /// <summary>
     /// Utility class used to compare all items that we get back from a query.

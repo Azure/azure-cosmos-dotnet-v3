@@ -12,10 +12,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -35,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: null);
@@ -53,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -72,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" } },
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosString.Create(
@@ -182,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", Cosmos.Query.Core.ExecutionContext.OrderBy.SortOrder.Ascending)
+                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosString.Create(

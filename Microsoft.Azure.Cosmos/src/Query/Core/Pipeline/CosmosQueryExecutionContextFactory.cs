@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -337,17 +338,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             List<Documents.PartitionKeyRange> targetRanges,
             string collectionRid)
         {
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                sqlQuerySpec: inputParameters.SqlQuerySpec,
-                collectionRid: collectionRid,
-                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-                partitionKeyRanges: targetRanges,
-                initialPageSize: inputParameters.MaxItemCount,
-                maxConcurrency: inputParameters.MaxConcurrency,
-                maxItemCount: inputParameters.MaxItemCount,
-                maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
-                returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
-                testSettings: inputParameters.TestInjections);
+            //CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+            //    sqlQuerySpec: inputParameters.SqlQuerySpec,
+            //    collectionRid: collectionRid,
+            //    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+            //    partitionKeyRanges: targetRanges,
+            //    initialPageSize: inputParameters.MaxItemCount,
+            //    maxConcurrency: inputParameters.MaxConcurrency,
+            //    maxItemCount: inputParameters.MaxItemCount,
+            //    maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
+            //    returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
+            //    testSettings: inputParameters.TestInjections);
 
             // Modify query plan
             PartitionedQueryExecutionInfo passThroughQueryInfo = new PartitionedQueryExecutionInfo()
@@ -367,26 +368,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     RewrittenQuery = null,
                     Top = null,
                 },
-                QueryRanges = initParams.PartitionedQueryExecutionInfo.QueryRanges,
+                QueryRanges = partitionedQueryExecutionInfo.QueryRanges,
             };
 
-            initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                sqlQuerySpec: initParams.SqlQuerySpec,
-                collectionRid: initParams.CollectionRid,
-                partitionedQueryExecutionInfo: passThroughQueryInfo,
-                partitionKeyRanges: initParams.PartitionKeyRanges,
-                initialPageSize: initParams.MaxItemCount.GetValueOrDefault(1000),
-                maxConcurrency: initParams.MaxConcurrency,
-                maxItemCount: initParams.MaxItemCount,
-                maxBufferedItemCount: initParams.MaxBufferedItemCount,
-                returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
-                testSettings: initParams.TestSettings);
+            //initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+            //    sqlQuerySpec: initParams.SqlQuerySpec,
+            //    collectionRid: initParams.CollectionRid,
+            //    partitionedQueryExecutionInfo: passThroughQueryInfo,
+            //    partitionKeyRanges: initParams.PartitionKeyRanges,
+            //    initialPageSize: initParams.MaxItemCount.GetValueOrDefault(1000),
+            //    maxConcurrency: initParams.MaxConcurrency,
+            //    maxItemCount: initParams.MaxItemCount,
+            //    maxBufferedItemCount: initParams.MaxBufferedItemCount,
+            //    returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
+            //    testSettings: initParams.TestSettings);
 
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
             return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
-                pageSize: initParams.InitialPageSize,
+                pageSize: inputParameters.MaxItemCount,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 

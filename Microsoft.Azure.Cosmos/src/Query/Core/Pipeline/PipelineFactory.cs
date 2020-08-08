@@ -7,12 +7,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;

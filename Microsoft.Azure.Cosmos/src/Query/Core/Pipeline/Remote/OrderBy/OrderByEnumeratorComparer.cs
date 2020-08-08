@@ -1,19 +1,19 @@
-﻿//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
 
     /// <summary>
     /// For cross partition order by queries we serve documents from the partition
     /// that has the next document in the sort order of the query.
     /// If there is a tie, then we break the tie by picking the leftmost partition.
     /// </summary>
-    internal sealed class OrderByItemProducerTreeComparer : IComparer<ItemProducerTree>
+    internal sealed class OrderByEnumeratorComparer : IComparer<OrderByQueryPartitionRangePageAsyncEnumerator>
     {
         /// <summary>
         /// The sort orders for the query (1 for each order by in the query).
@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// Initializes a new instance of the OrderByConsumeComparer class.
         /// </summary>
         /// <param name="sortOrders">The sort orders for the query.</param>
-        public OrderByItemProducerTreeComparer(SortOrder[] sortOrders)
+        public OrderByEnumeratorComparer(IReadOnlyList<SortOrder> sortOrders)
         {
             if (sortOrders == null)
             {
                 throw new ArgumentNullException("Sort Orders array can not be null for an order by comparer.");
             }
 
-            if (sortOrders.Length == 0)
+            if (sortOrders.Count == 0)
             {
                 throw new ArgumentException("Sort Orders array can not be empty for an order by comparerer.");
             }
@@ -43,37 +43,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         /// <summary>
         /// Compares two document producer trees and returns an integer with the relation of which has the document that comes first in the sort order.
         /// </summary>
-        /// <param name="producer1">The first document producer tree.</param>
-        /// <param name="producer2">The second document producer tree.</param>
+        /// <param name="enumerator1">The first document producer tree.</param>
+        /// <param name="enumerator2">The second document producer tree.</param>
         /// <returns>
         /// Less than zero if the document in the first document producer comes first.
         /// Zero if the documents are equivalent.
         /// Greater than zero if the document in the second document producer comes first.
         /// </returns>
-        public int Compare(ItemProducerTree producer1, ItemProducerTree producer2)
+        public int Compare(
+            OrderByQueryPartitionRangePageAsyncEnumerator enumerator1,
+            OrderByQueryPartitionRangePageAsyncEnumerator enumerator2)
         {
-            if (object.ReferenceEquals(producer1, producer2))
+            if (object.ReferenceEquals(enumerator1, enumerator2))
             {
                 return 0;
             }
 
-            if (producer1.HasMoreResults && !producer2.HasMoreResults)
+            if (enumerator1.Current.Failed && !enumerator2.Current.Failed)
             {
                 return -1;
             }
 
-            if (!producer1.HasMoreResults && producer2.HasMoreResults)
+            if (!enumerator1.Current.Failed && enumerator2.Current.Failed)
             {
                 return 1;
             }
 
-            if (!producer1.HasMoreResults && !producer2.HasMoreResults)
+            if (enumerator1.Current.Failed && enumerator2.Current.Failed)
             {
-                return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
+                return string.CompareOrdinal(enumerator1.Range.MinInclusive, enumerator2.Range.MinInclusive);
             }
 
-            OrderByQueryResult result1 = new OrderByQueryResult(producer1.Current);
-            OrderByQueryResult result2 = new OrderByQueryResult(producer2.Current);
+            OrderByQueryResult result1 = new OrderByQueryResult(enumerator1.Current.Result.Enumerator.Current);
+            OrderByQueryResult result2 = new OrderByQueryResult(enumerator2.Current.Result.Enumerator.Current);
 
             // First compare the documents based on the sort order of the query.
             int cmp = this.CompareOrderByItems(result1.OrderByItems, result2.OrderByItems);
@@ -84,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
             }
 
             // If there is a tie, then break the tie by picking the one from the left most partition.
-            return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
+            return string.CompareOrdinal(enumerator1.Range.MinInclusive, enumerator2.Range.MinInclusive);
 
         }
 
