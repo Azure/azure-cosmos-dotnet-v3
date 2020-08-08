@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.PartitionMapper;
 
@@ -259,11 +259,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             else
             {
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                    new CompositeContinuationToken()
-                    {
-                        Token = currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
-                        Range = currentEnumerator.Range.ToRange(),
-                    },
+                    new ParallelContinuationToken(
+                        token: currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
+                        range: currentEnumerator.Range.ToRange()),
                     orderByQueryResult.OrderByItems,
                     orderByQueryResult.Rid,
                     skipCount: 0,
@@ -413,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                             range,
                             pageSize,
                             filter,
-                            state: token?.CompositeContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.CompositeContinuationToken.Token)) : null);
+                            state: token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null);
 
                         enumeratorsAndTokens.Add((remoteEnumerator, token));
                     }
@@ -706,10 +704,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             {
                 return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromException(
                     new MalformedContinuationTokenException(
-                        $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context."));
+                        $"Invalid Rid in the continuation token {continuationToken.ParallelContinuationToken.Token} for OrderBy~Context."));
             }
-
-            int itemToSkip = continuationToken.SkipCount;
 
             // Throw away documents until it matches the item from the continuation token.
             if (!await enumerator.MoveNextAsync())

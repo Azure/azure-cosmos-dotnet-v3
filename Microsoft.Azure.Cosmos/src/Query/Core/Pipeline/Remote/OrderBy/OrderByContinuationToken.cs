@@ -1,7 +1,8 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
+
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 {
     using System;
     using System.Collections.Generic;
@@ -11,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -74,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         /// <param name="skipCount">The skip count (refer to property documentation).</param>
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
-            CompositeContinuationToken compositeContinuationToken,
+            ParallelContinuationToken compositeContinuationToken,
             IReadOnlyList<OrderByItem> orderByItems,
             string rid,
             int skipCount,
@@ -96,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             //// filter is allowed to be null.
-            this.CompositeContinuationToken = compositeContinuationToken ?? throw new ArgumentNullException(nameof(compositeContinuationToken));
+            this.ParallelContinuationToken = compositeContinuationToken ?? throw new ArgumentNullException(nameof(compositeContinuationToken));
             this.OrderByItems = orderByItems ?? throw new ArgumentNullException(nameof(orderByItems));
             this.Rid = rid;
             this.SkipCount = skipCount;
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         /// ]]>
         /// </example>
         [JsonProperty(PropertyNames.CompositeToken)]
-        public CompositeContinuationToken CompositeContinuationToken
+        public ParallelContinuationToken ParallelContinuationToken
         {
             get;
         }
@@ -208,11 +210,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
         }
 
         [JsonIgnore]
-        public Range<string> PartitionRange => this.CompositeContinuationToken.Range;
+        public Range<string> Range => this.ParallelContinuationToken.Range;
 
         public static CosmosElement ToCosmosElement(OrderByContinuationToken orderByContinuationToken)
         {
-            CosmosElement compositeContinuationToken = CompositeContinuationToken.ToCosmosElement(orderByContinuationToken.CompositeContinuationToken);
+            CosmosElement compositeContinuationToken = ParallelContinuationToken.ToCosmosElement(orderByContinuationToken.ParallelContinuationToken);
             List<CosmosElement> orderByItemsRaw = new List<CosmosElement>();
             foreach (OrderByItem orderByItem in orderByContinuationToken.OrderByItems)
             {
@@ -250,13 +252,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                     new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.CompositeToken}': {cosmosElement}"));
             }
 
-            TryCatch<CompositeContinuationToken> tryCompositeContinuation = CompositeContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenElement);
+            TryCatch<ParallelContinuationToken> tryCompositeContinuation = ParallelContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenElement);
             if (!tryCompositeContinuation.Succeeded)
             {
                 return TryCatch<OrderByContinuationToken>.FromException(tryCompositeContinuation.Exception);
             }
 
-            CompositeContinuationToken compositeContinuationToken = tryCompositeContinuation.Result;
+            ParallelContinuationToken compositeContinuationToken = tryCompositeContinuation.Result;
 
             if (!cosmosObject.TryGetValue(PropertyNames.OrderByItems, out CosmosArray orderByItemsRaw))
             {

@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void MonadicCreate_NonCompositeContinuationToken()
+        public void MonadicCreate_NonParallelContinuationToken()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
@@ -103,14 +103,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>("A", "B", true, false),
-                Token = "asdf",
-            };
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                compositeContinuationToken,
+                parallelContinuationToken,
                 new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
                 rid: "rid",
                 skipCount: 42,
@@ -139,33 +137,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>("A", "B", true, false),
-                Token = "asdf",
-            };
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
-            CompositeContinuationToken compositeContinuationToken1 = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>("A", "B", true, false),
-                Token = "asdf",
-            };
+            ParallelContinuationToken parallelContinuationToken1 = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             OrderByContinuationToken orderByContinuationToken1 = new OrderByContinuationToken(
-                compositeContinuationToken1,
+                parallelContinuationToken1,
                 new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
                 rid: "rid",
                 skipCount: 42,
                 filter: "filter");
 
-            CompositeContinuationToken compositeContinuationToken2 = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>("B", "C", true, false),
-                Token = "asdf",
-            };
+            ParallelContinuationToken parallelContinuationToken2 = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("B", "C", true, false));
 
             OrderByContinuationToken orderByContinuationToken2 = new OrderByContinuationToken(
-                compositeContinuationToken2,
+                parallelContinuationToken2,
                 new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
                 rid: "rid",
                 skipCount: 42,

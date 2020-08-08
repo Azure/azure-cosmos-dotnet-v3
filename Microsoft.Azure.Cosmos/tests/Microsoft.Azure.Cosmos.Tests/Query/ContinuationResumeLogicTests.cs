@@ -3,10 +3,10 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -25,15 +25,13 @@
                 Id = "0"
             };
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>(
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
                     min: string.Empty,
                     max: "FF",
                     isMinInclusive: true,
-                    isMaxInclusive: false),
-                Token = "asdf"
-            };
+                    isMaxInclusive: false));
 
             IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMapping = new Dictionary<PartitionKeyRange, IPartitionedToken>()
             {
@@ -43,7 +41,7 @@
             ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
                 expectedMapping,
                 new PartitionKeyRange[] { partitionKeyRange },
-                new CompositeContinuationToken[] { token });
+                new ParallelContinuationToken[] { token });
         }
 
         [TestMethod]
@@ -63,15 +61,13 @@
                 Id = "1"
             };
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>(
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
                     min: string.Empty,
                     max: "B",
                     isMinInclusive: true,
-                    isMaxInclusive: false),
-                Token = "asdf"
-            };
+                    isMaxInclusive: false));
 
             IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMapping = new Dictionary<PartitionKeyRange, IPartitionedToken>()
             {
@@ -82,7 +78,7 @@
             ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
                 expectedMapping,
                 new PartitionKeyRange[] { partitionKeyRange1, partitionKeyRange2 },
-                new CompositeContinuationToken[] { token });
+                new ParallelContinuationToken[] { token });
         }
 
         [TestMethod]
@@ -95,15 +91,13 @@
                 Id = "1"
             };
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>(
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
                     min: "B",
                     max: "C",
                     isMinInclusive: true,
-                    isMaxInclusive: false),
-                Token = "asdf"
-            };
+                    isMaxInclusive: false));
 
             IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMapping = new Dictionary<PartitionKeyRange, IPartitionedToken>()
             {
@@ -113,7 +107,7 @@
             ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
                 expectedMapping,
                 new PartitionKeyRange[] { partitionKeyRange },
-                new CompositeContinuationToken[] { token });
+                new ParallelContinuationToken[] { token });
         }
 
         [TestMethod]
@@ -150,15 +144,13 @@
                 Id = "3"
             };
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>(
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
                     min: string.Empty,
                     max: "A",
                     isMinInclusive: true,
-                    isMaxInclusive: false),
-                Token = "asdf"
-            };
+                    isMaxInclusive: false));
 
             IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
             {
@@ -207,15 +199,13 @@
                 Id = "3"
             };
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>(
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
                     min: "A",
                     max: "B",
                     isMinInclusive: true,
-                    isMaxInclusive: false),
-                Token = "asdf"
-            };
+                    isMaxInclusive: false));
 
             IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
             {
@@ -264,15 +254,13 @@
                 Id = "3"
             };
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>(
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
                     min: "B",
                     max: "C",
                     isMinInclusive: true,
-                    isMaxInclusive: false),
-                Token = "asdf"
-            };
+                    isMaxInclusive: false));
 
             IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
             {

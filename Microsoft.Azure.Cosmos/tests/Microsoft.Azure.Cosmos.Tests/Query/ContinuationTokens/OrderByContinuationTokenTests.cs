@@ -9,11 +9,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -22,11 +21,9 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public void TestRoundTripAsCosmosElement()
         {
-            CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-            {
-                Token = "someToken",
-                Range = new Documents.Routing.Range<string>("asdf", "asdf", false, false),
-            };
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                token: "someToken",
+                range: new Range<string>("asdf", "asdf", false, false));
 
             List<OrderByItem> orderByItems = new List<OrderByItem>()
             {
@@ -39,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int skipCount = 42;
             string filter = "someFilter";
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                compositeContinuationToken,
+                parallelContinuationToken,
                 orderByItems,
                 rid,
                 skipCount,

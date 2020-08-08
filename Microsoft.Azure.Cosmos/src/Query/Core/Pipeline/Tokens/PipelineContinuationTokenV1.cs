@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens
 {
     using System;
     using System.Collections.Generic;

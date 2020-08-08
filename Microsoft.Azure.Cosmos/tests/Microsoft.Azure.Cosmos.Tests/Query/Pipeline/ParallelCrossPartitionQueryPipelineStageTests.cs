@@ -9,11 +9,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
@@ -65,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void MonadicCreate_NonCompositeContinuationToken()
+        public void MonadicCreate_NonParallelContinuationToken()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
@@ -79,34 +77,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void MonadicCreate_SingleCompositeContinuationToken()
+        public void MonadicCreate_SingleParallelContinuationToken()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>("A", "B", true, false),
-                Token = "asdf",
-            };
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
-                continuationToken: CosmosArray.Create(new List<CosmosElement>() { CompositeContinuationToken.ToCosmosElement(token) }));
+                continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
 
         [TestMethod]
-        public void MonadicCreate_MultipleCompositeContinuationToken()
+        public void MonadicCreate_MultipleParallelContinuationToken()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            CompositeContinuationToken token = new CompositeContinuationToken()
-            {
-                Range = new Documents.Routing.Range<string>("A", "B", true, false),
-                Token = "asdf",
-            };
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
@@ -115,8 +109,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
                     {
-                        CompositeContinuationToken.ToCosmosElement(token),
-                        CompositeContinuationToken.ToCosmosElement(token)
+                        ParallelContinuationToken.ToCosmosElement(token),
+                        ParallelContinuationToken.ToCosmosElement(token)
                     }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }

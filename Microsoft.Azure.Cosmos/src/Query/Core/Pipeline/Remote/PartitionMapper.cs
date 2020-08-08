@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
             // Find the continuation token for the partition we left off on:
             PartitionedToken firstContinuationToken = partitionedContinuationTokens
-                .OrderBy((partitionedToken) => partitionedToken.PartitionRange.Min)
+                .OrderBy((partitionedToken) => partitionedToken.Range.Min)
                 .First();
 
             // Segment the ranges based off that:
@@ -56,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
             PartitionKeyRange firstContinuationRange = new PartitionKeyRange
             {
-                MinInclusive = firstContinuationToken.PartitionRange.Min,
-                MaxExclusive = firstContinuationToken.PartitionRange.Max
+                MinInclusive = firstContinuationToken.Range.Min,
+                MaxExclusive = firstContinuationToken.Range.Max
             };
 
             int matchedIndex = sortedRanges.Span.BinarySearch(
@@ -119,8 +118,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 foreach (PartitionedToken partitionedToken in partitionedContinuationTokens)
                 {
                     // See if continuation token includes the range
-                    if ((partitionKeyRange.MinInclusive.CompareTo(partitionedToken.PartitionRange.Min) >= 0)
-                        && (partitionKeyRange.MaxExclusive.CompareTo(partitionedToken.PartitionRange.Max) <= 0))
+                    if ((partitionKeyRange.MinInclusive.CompareTo(partitionedToken.Range.Min) >= 0)
+                        && (partitionKeyRange.MaxExclusive.CompareTo(partitionedToken.Range.Max) <= 0))
                     {
                         partitionKeyRangeToToken[partitionKeyRange] = partitionedToken;
                         break;

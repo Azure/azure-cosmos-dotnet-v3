@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
@@ -53,24 +52,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
                 }
                 else
                 {
-                    List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>(crossPartitionState.Value.Count);
+                    List<ParallelContinuationToken> parallelContinuationTokens = new List<ParallelContinuationToken>(crossPartitionState.Value.Count);
                     foreach ((PartitionKeyRange range, QueryState state) in crossPartitionState.Value)
                     {
-                        CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-                        {
-                            Range = range.ToRange(),
-                            Token = state != null ? ((CosmosString)state.Value).Value : null,
-                        };
+                        ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                            token: state != null ? ((CosmosString)state.Value).Value : null,
+                            range: range.ToRange());
 
-                        compositeContinuationTokens.Add(compositeContinuationToken);
+                        parallelContinuationTokens.Add(parallelContinuationToken);
                     }
 
-                    List<CosmosElement> cosmosElementContinuationTokens = compositeContinuationTokens
-                        .Select(token => CompositeContinuationToken.ToCosmosElement(token))
+                    List<CosmosElement> cosmosElementContinuationTokens = parallelContinuationTokens
+                        .Select(token => ParallelContinuationToken.ToCosmosElement(token))
                         .ToList();
-                    CosmosArray cosmosElementCompositeContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
+                    CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
 
-                    queryState = new QueryState(cosmosElementCompositeContinuationTokens);
+                    queryState = new QueryState(cosmosElementParallelContinuationTokens);
                 }
 
                 QueryPage crossPartitionQueryPage = new QueryPage(
@@ -127,34 +124,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
                 return TryCatch<CrossPartitionState<QueryState>>.FromResult(default);
             }
 
-            if (!(continuationToken is CosmosArray compositeContinuationTokenListRaw))
+            if (!(continuationToken is CosmosArray parallelContinuationTokenListRaw))
             {
                 return TryCatch<CrossPartitionState<QueryState>>.FromException(
                     new MalformedContinuationTokenException(
                         $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
             }
 
-            if (compositeContinuationTokenListRaw.Count == 0)
+            if (parallelContinuationTokenListRaw.Count == 0)
             {
                 return TryCatch<CrossPartitionState<QueryState>>.FromException(
                     new MalformedContinuationTokenException(
                         $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
             }
 
-            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-            foreach (CosmosElement compositeContinuationTokenRaw in compositeContinuationTokenListRaw)
+            List<ParallelContinuationToken> parallelContinuationTokens = new List<ParallelContinuationToken>();
+            foreach (CosmosElement parallelContinuationTokenRaw in parallelContinuationTokenListRaw)
             {
-                TryCatch<CompositeContinuationToken> tryCreateCompositeContinuationToken = CompositeContinuationToken.TryCreateFromCosmosElement(compositeContinuationTokenRaw);
-                if (tryCreateCompositeContinuationToken.Failed)
+                TryCatch<ParallelContinuationToken> tryCreateParallelContinuationToken = ParallelContinuationToken.TryCreateFromCosmosElement(parallelContinuationTokenRaw);
+                if (tryCreateParallelContinuationToken.Failed)
                 {
                     return TryCatch<CrossPartitionState<QueryState>>.FromException(
-                        tryCreateCompositeContinuationToken.Exception);
+                        tryCreateParallelContinuationToken.Exception);
                 }
 
-                compositeContinuationTokens.Add(tryCreateCompositeContinuationToken.Result);
+                parallelContinuationTokens.Add(tryCreateParallelContinuationToken.Result);
             }
 
-            List<(PartitionKeyRange, QueryState)> rangesAndStates = compositeContinuationTokens
+            List<(PartitionKeyRange, QueryState)> rangesAndStates = parallelContinuationTokens
                 .Select(token => (
                     new PartitionKeyRange()
                     {

@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
@@ -30,28 +27,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
         /// <returns>The appropriate IDistinctMap.</returns>
         public static TryCatch<DistinctMap> TryCreate(
             DistinctQueryType distinctQueryType,
-            CosmosElement distinctMapContinuationToken)
-        {
-            TryCatch<DistinctMap> tryCreateDistinctMap;
-            switch (distinctQueryType)
+            CosmosElement distinctMapContinuationToken) => distinctQueryType switch
             {
-                case DistinctQueryType.None:
-                    throw new ArgumentException("distinctQueryType can not be None. This part of code is not supposed to be reachable. Please contact support to resolve this issue.");
-
-                case DistinctQueryType.Unordered:
-                    tryCreateDistinctMap = UnorderdDistinctMap.TryCreate(distinctMapContinuationToken);
-                    break;
-
-                case DistinctQueryType.Ordered:
-                    tryCreateDistinctMap = OrderedDistinctMap.TryCreate(distinctMapContinuationToken);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unrecognized DistinctQueryType: {distinctQueryType}.");
-            }
-
-            return tryCreateDistinctMap;
-        }
+                DistinctQueryType.None => throw new ArgumentException("distinctQueryType can not be None. This part of code is not supposed to be reachable. Please contact support to resolve this issue."),
+                DistinctQueryType.Unordered => UnorderdDistinctMap.TryCreate(distinctMapContinuationToken),
+                DistinctQueryType.Ordered => OrderedDistinctMap.TryCreate(distinctMapContinuationToken),
+                _ => throw new ArgumentException($"Unrecognized DistinctQueryType: {distinctQueryType}."),
+            };
 
         /// <summary>
         /// Adds a JToken to this DistinctMap.
