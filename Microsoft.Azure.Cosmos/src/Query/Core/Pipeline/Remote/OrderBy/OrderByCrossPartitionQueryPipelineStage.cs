@@ -783,17 +783,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                 && (cosmosException.StatusCode == HttpStatusCode.Gone)
                 && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
         }
-
-        public readonly struct OrderByColumn
-        {
-            public OrderByColumn(string expression, SortOrder sortOrder)
-            {
-                this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
-                this.SortOrder = sortOrder;
-            }
-
-            public string Expression { get; }
-            public SortOrder SortOrder { get; }
-        }
     }
 }

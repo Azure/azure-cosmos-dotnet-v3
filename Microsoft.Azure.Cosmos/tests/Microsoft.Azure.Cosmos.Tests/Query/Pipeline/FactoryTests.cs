@@ -4,14 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>(),
                 queryInfo: new QueryInfo() { },
                 pageSize: 10,
                 requestContinuationToken: default);

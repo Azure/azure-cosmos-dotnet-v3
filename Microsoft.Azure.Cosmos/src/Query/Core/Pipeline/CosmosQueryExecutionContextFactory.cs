@@ -430,6 +430,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 executionEnvironment: inputParameters.ExecutionEnvironment,
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
+                targetRanges: targetRanges,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
                 pageSize: (int)optimalPageSize,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken);

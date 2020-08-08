@@ -5,16 +5,20 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Documents;
 
     internal static class PipelineFactory
     {
@@ -22,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             ExecutionEnvironment executionEnvironment,
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
+            IReadOnlyList<PartitionKeyRange> targetRanges,
             QueryInfo queryInfo,
             int pageSize,
             CosmosElement requestContinuationToken)
@@ -29,7 +34,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {
-                throw new NotImplementedException();
+                monadicCreatePipelineStage = (continuationToken) => OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: sqlQuerySpec,
+                    targetRanges: targetRanges,
+                    orderByColumns: queryInfo
+                        .OrderByExpressions
+                        .Zip(queryInfo.OrderBy, (expression, sortOrder) => new OrderByColumn(expression, sortOrder)).ToList(),
+                    pageSize: pageSize,
+                    continuationToken: requestContinuationToken);
             }
             else
             {
@@ -105,7 +118,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     monadicCreateSourceStage);
             }
 
-            return monadicCreatePipelineStage(requestContinuationToken);
+            return monadicCreatePipelineStage(requestContinuationToken)
+                .Try<IQueryPipelineStage>(onSuccess: (stage) => new SkipEmptyPageQueryPipelineStage(stage));
         }
     }
 }

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -170,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
+                documentContainer.GetFeedRangesAsync(default(CancellationToken)).Result,
                 GetQueryPlan(query),
                 pageSize: 10,
                 requestContinuationToken: state);

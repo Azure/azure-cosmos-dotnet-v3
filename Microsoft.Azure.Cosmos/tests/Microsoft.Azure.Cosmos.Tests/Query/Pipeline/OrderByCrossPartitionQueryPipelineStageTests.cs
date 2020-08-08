@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: null);
@@ -50,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -69,9 +69,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -88,9 +88,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -118,9 +118,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" } },
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosString.Create(
@@ -171,9 +171,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" },
                     new PartitionKeyRange() { Id = "1", MinInclusive = "B", MaxExclusive = "C" }
                 },
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("_ts", SortOrder.Ascending)
+                    new OrderByColumn("_ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: CosmosString.Create(
@@ -200,9 +200,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
-                orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                orderByColumns: new List<OrderByColumn>()
                 {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("c._ts", SortOrder.Ascending)
+                    new OrderByColumn("c._ts", SortOrder.Ascending)
                 },
                 pageSize: 10,
                 continuationToken: null);
@@ -245,9 +245,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c._ts"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
-                    orderByColumns: new List<OrderByCrossPartitionQueryPipelineStage.OrderByColumn>()
+                    orderByColumns: new List<OrderByColumn>()
                     {
-                    new OrderByCrossPartitionQueryPipelineStage.OrderByColumn("c._ts", SortOrder.Ascending)
+                    new OrderByColumn("c._ts", SortOrder.Ascending)
                     },
                     pageSize: 10,
                     continuationToken: queryState?.Value);
