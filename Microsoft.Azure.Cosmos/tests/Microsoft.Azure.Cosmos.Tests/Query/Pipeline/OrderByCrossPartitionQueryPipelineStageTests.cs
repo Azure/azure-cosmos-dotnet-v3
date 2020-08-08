@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task TestDrainFully_WithStateResume()
         {
-            int numItems = 1000;
+            int numItems = 100;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
             List<CosmosElement> documents = new List<CosmosElement>();
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     queryPage = tryGetQueryPage.Result;
                     documents.AddRange(queryPage.Documents);
                     queryState = queryPage.State;
-                } while (queryPage.Documents.Count == 0);
+                } while ((queryPage.Documents.Count == 0) && (queryState != null));
             } while (queryState != null);
 
             Assert.AreEqual(numItems, documents.Count);

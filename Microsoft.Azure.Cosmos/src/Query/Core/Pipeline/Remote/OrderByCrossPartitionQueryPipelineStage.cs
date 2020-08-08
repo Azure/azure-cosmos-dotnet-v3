@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
         /// </summary>
         private const string TrueFilter = "true";
 
-        private static readonly QueryState UninitializedQueryState = new QueryState(CosmosString.Create("ORDER BY NOT INITIALIZED YET!"));
+        private static readonly QueryState InitializingQueryState = new QueryState(CosmosString.Create("ORDER BY NOT INITIALIZED YET!"));
         private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
 
         private readonly IDocumentContainer documentContainer;
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
             this.enumerators = new PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator>(new OrderByEnumeratorComparer(this.sortOrders));
             this.pageSize = pageSize < 0 ? throw new ArgumentOutOfRangeException($"{nameof(pageSize)} must be a non negative number.") : pageSize;
             this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
-            this.state = state;
+            this.state = state ?? InitializingQueryState;
         }
 
         public TryCatch<QueryPage> Current { get; private set; }
@@ -88,7 +88,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            this.state = null;
             if (this.uninitializedEnumeratorsAndTokens.Count != 0)
             {
                 (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
@@ -121,7 +120,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                         if (!uninitializedEnumerator.Current.Result.Enumerator.MoveNext())
                         {
                             // Page was empty
-                            this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                            if (uninitializedEnumerator.State != null)
+                            {
+                                this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                            }
+
+                            if ((this.uninitializedEnumeratorsAndTokens.Count == 0) && (this.enumerators.Count == 0))
+                            {
+                                // Query did not match any results. We need to emit a fake empty page with null continuation
+                                this.Current = TryCatch<QueryPage>.FromResult(
+                                    new QueryPage(
+                                        documents: EmptyPage,
+                                        requestCharge: 0,
+                                        activityId: Guid.NewGuid().ToString(),
+                                        responseLengthInBytes: 0,
+                                        cosmosQueryExecutionInfo: default,
+                                        disallowContinuationTokenMessage: default,
+                                        state: null));
+                                return true;
+                            }
                         }
                         else
                         {
@@ -162,10 +179,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                     (bool doneFiltering, TryCatch<OrderByQueryPage> monadicQueryByPage) = filterMonad.Result;
                     if (doneFiltering)
                     {
-                        // TODO test empty pages
                         if (uninitializedEnumerator.Current.Result.Enumerator.Current != null)
                         {
                             this.enumerators.Enqueue(uninitializedEnumerator);
+                        }
+                        else if ((this.uninitializedEnumeratorsAndTokens.Count == 0) && (this.enumerators.Count == 0))
+                        {
+                            // Query did not match any results.
+                            // We need to emit a fake empty page with null continuation
+                            this.Current = TryCatch<QueryPage>.FromResult(
+                                new QueryPage(
+                                    documents: EmptyPage,
+                                    requestCharge: 0,
+                                    activityId: Guid.NewGuid().ToString(),
+                                    responseLengthInBytes: 0,
+                                    cosmosQueryExecutionInfo: default,
+                                    disallowContinuationTokenMessage: default,
+                                    state: null));
+                            return true;
                         }
                     }
                     else
@@ -191,6 +222,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
 
             if (this.enumerators.Count == 0)
             {
+                // Finished draining.
                 return false;
             }
 
@@ -721,7 +753,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 if (cmp == 0)
                 {
                     // Once the item matches the order by items from the continuation tokens
-                    // We still need to remove all the documents that have a lower rid in the rid sort order.
+                    // We still need to remove all the documents that have a lower or same rid in the rid sort order.
                     // If there is a tie in the sort order the documents should be in _rid order in the same direction as the index (given by the backend)
                     cmp = continuationRid.Document.CompareTo(rid.Document);
                     if ((orderByQueryPage.Page.CosmosQueryExecutionInfo == null) || orderByQueryPage.Page.CosmosQueryExecutionInfo.ReverseRidEnabled)
@@ -741,9 +773,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                         }
                     }
 
-                    // We might have passed the item due to deletions and filters.
-                    // We also have a skip count for JOINs
-                    if (cmp < 0 || (cmp == 0 && itemToSkip-- <= 0))
+                    if (cmp < 0)
                     {
                         return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromResult((true, enumerator.Current));
                     }
