@@ -129,8 +129,8 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
 
             string etag = this.FeedRangeContinuation.GetContinuation();
-            FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
-            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+            FeedRangeInternal feedRange = this.FeedRangeContinuation.FeedRange;
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
