@@ -499,6 +499,29 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangesHandlerWithContext<T> onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+        }
+
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
             string processorName,
             ChangesEstimationHandler estimationDelegate,

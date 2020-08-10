@@ -18,7 +18,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// </summary>
         /// <param name="context">The context specifying partition for this observer, etc.</param>
         /// <returns>A Task to allow asynchronous execution.</returns>
-        public abstract Task OpenAsync(ChangeFeedObserverContext context);
+        public virtual Task OpenAsync(ChangeFeedProcessorContext context)
+        {
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// This is called when change feed observer is closed.
@@ -26,7 +29,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <param name="context">The context specifying partition for this observer, etc.</param>
         /// <param name="reason">Specifies the reason the observer is closed.</param>
         /// <returns>A Task to allow asynchronous execution.</returns>
-        public abstract Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
+        public virtual Task CloseAsync(ChangeFeedProcessorContext context, ChangeFeedObserverCloseReason reason)
+        {
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// This is called when document changes are available on change feed.
@@ -35,6 +41,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <param name="docs">The documents changed.</param>
         /// <param name="cancellationToken">Token to signal that the partition processing is going to finish.</param>
         /// <returns>A Task to allow asynchronous execution.</returns>
-        public abstract Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken);
+        public abstract Task ProcessChangesAsync(ChangeFeedProcessorContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken);
     }
 }

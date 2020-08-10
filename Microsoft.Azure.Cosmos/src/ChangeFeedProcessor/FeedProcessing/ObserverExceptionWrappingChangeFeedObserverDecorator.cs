@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.changeFeedObserver = changeFeedObserver;
         }
 
-        public override async Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
+        public override async Task CloseAsync(ChangeFeedProcessorContext context, ChangeFeedObserverCloseReason reason)
         {
             try
             {
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        public override async Task OpenAsync(ChangeFeedObserverContext context)
+        public override async Task OpenAsync(ChangeFeedProcessorContext context)
         {
             try
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
+        public override async Task ProcessChangesAsync(ChangeFeedProcessorContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
         {
             try
             {

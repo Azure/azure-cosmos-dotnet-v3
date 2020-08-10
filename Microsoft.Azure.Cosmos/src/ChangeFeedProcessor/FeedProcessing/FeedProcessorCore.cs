@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
-            ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
+            ChangeFeedProcessorContext context = new ChangeFeedProcessorContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
             IEnumerable<T> asFeedResponse;
             try
             {

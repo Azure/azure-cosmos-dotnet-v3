@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task RunAsync(CancellationToken shutdownToken)
         {
-            var context = new ChangeFeedObserverContextCore<T>(this.lease.CurrentLeaseToken);
+            var context = new ChangeFeedProcessorContextCore<T>(this.lease.CurrentLeaseToken);
             await this.observer.OpenAsync(context).ConfigureAwait(false);
 
             this.processorCancellation = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);

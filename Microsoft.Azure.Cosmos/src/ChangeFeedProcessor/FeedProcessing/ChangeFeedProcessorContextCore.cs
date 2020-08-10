@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
+    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
@@ -11,23 +12,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     /// <summary>
     /// The context passed to <see cref="ChangeFeedObserver{T}"/> events.
     /// </summary>
-    internal sealed class ChangeFeedObserverContextCore<T> : ChangeFeedObserverContext
+    internal sealed class ChangeFeedProcessorContextCore<T> : ChangeFeedProcessorContext
     {
         private readonly PartitionCheckpointer checkpointer;
 
-        internal ChangeFeedObserverContextCore(string leaseToken)
+        internal ChangeFeedProcessorContextCore(string leaseToken)
         {
             this.LeaseToken = leaseToken;
         }
 
-        internal ChangeFeedObserverContextCore(string leaseToken, ResponseMessage feedResponse, PartitionCheckpointer checkpointer)
+        internal ChangeFeedProcessorContextCore(
+            string leaseToken,
+            ResponseMessage feedResponse,
+            PartitionCheckpointer checkpointer)
         {
             this.LeaseToken = leaseToken;
-            this.DocumentFeedResponse = feedResponse;
+            this.DocumentFeedResponse = feedResponse ?? throw new ArgumentNullException(nameof(feedResponse));
             this.checkpointer = checkpointer;
         }
 
         public override string LeaseToken { get; }
+
+        public override string SessionToken => this.DocumentFeedResponse.Headers.Session;
 
         public ResponseMessage DocumentFeedResponse { get; }
 

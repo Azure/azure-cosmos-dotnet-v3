@@ -21,38 +21,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     {
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly Mock<ChangeFeedObserver<MyDocument>> observer;
-        private readonly ChangeFeedObserverContext changeFeedObserverContext;
+        private readonly ChangeFeedProcessorContext changeFeedObserverContext;
         private readonly FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument> observerWrapper;
         private readonly IReadOnlyList<MyDocument> documents;
 
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {
             this.observer = new Mock<ChangeFeedObserver<MyDocument>>();
-            this.changeFeedObserverContext = Mock.Of<ChangeFeedObserverContext>();
+            this.changeFeedObserverContext = Mock.Of<ChangeFeedProcessorContext>();
             this.observerWrapper = new FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument>(this.observer.Object);
 
-            var document = new MyDocument();
-            documents = new List<MyDocument> { document };
+            MyDocument document = new MyDocument();
+            this.documents = new List<MyDocument> { document };
         }
 
         [TestMethod]
         public async Task OpenAsync_ShouldCallOpenAsync()
         {
-            await observerWrapper.OpenAsync(this.changeFeedObserverContext);
+            await this.observerWrapper.OpenAsync(this.changeFeedObserverContext);
 
             Mock.Get(this.observer.Object)
-                .Verify(feedObserver => feedObserver.OpenAsync(It.IsAny<ChangeFeedObserverContext>()),
+                .Verify(feedObserver => feedObserver.OpenAsync(It.IsAny<ChangeFeedProcessorContext>()),
                     Times.Once);
         }
 
         [TestMethod]
         public async Task CloseAsync_ShouldCallCloseAsync()
         {
-            await observerWrapper.CloseAsync(this.changeFeedObserverContext, ChangeFeedObserverCloseReason.Shutdown);
+            await this.observerWrapper.CloseAsync(this.changeFeedObserverContext, ChangeFeedObserverCloseReason.Shutdown);
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .CloseAsync(It.IsAny<ChangeFeedObserverContext>(),
+                        .CloseAsync(It.IsAny<ChangeFeedProcessorContext>(),
                         It.Is<ChangeFeedObserverCloseReason>(reason => reason == ChangeFeedObserverCloseReason.Shutdown)),
                     Times.Once);
         }
@@ -60,11 +60,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ProcessChangesAsync_ShouldPassDocumentsToProcessChangesAsync()
         {
-            await observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, cancellationTokenSource.Token);
+            await this.observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, this.cancellationTokenSource.Token);
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
+                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(),
                             It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
                             It.IsAny<CancellationToken>()
                         ),
@@ -76,12 +76,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             try
             {
-                await observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, cancellationTokenSource.Token);
+                await this.observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, this.cancellationTokenSource.Token);
                 Assert.Fail("Should had thrown");
             }
             catch (ObserverException ex)
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
+                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(),
                             It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
                             It.IsAny<CancellationToken>()
                         ),
@@ -103,12 +103,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
                 .Throws(new Documents.DocumentClientException("Some message", (HttpStatusCode) 429, Documents.SubStatusCodes.Unknown));
 
             try
             {
-                await observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, cancellationTokenSource.Token);
+                await this.observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, this.cancellationTokenSource.Token);
                 Assert.Fail("Should had thrown");
             }
             catch (ObserverException ex)
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
+                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(),
                             It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
                             It.IsAny<CancellationToken>()
                         ),

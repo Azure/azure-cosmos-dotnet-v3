@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
             mockObserver.Setup(o => o.ProcessChangesAsync(
-                    It.IsAny<ChangeFeedObserverContext>(),
+                    It.IsAny<ChangeFeedProcessorContext>(),
                     It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
                     It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(mockObserver.Object)
                 .Verify(o => o.ProcessChangesAsync(
-                    It.IsAny<ChangeFeedObserverContext>(), 
+                    It.IsAny<ChangeFeedProcessorContext>(), 
                     It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
                     It.IsAny<CancellationToken>())
                     , Times.Once);

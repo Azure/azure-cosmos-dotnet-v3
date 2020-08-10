@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedProcessorContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.Shutdown));
         }
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedProcessorContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.LeaseLost));
         }
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedProcessorContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.Unknown));
         }
 
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedProcessorContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.ObserverError));
         }
 
@@ -134,13 +134,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task RunObserver_ShouldPassPartitionToObserver_WhenExecuted()
         {
             Mock.Get(observer)
-                .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<dynamic>>(), It.IsAny<CancellationToken>()))
+                .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(), It.IsAny<IReadOnlyList<dynamic>>(), It.IsAny<CancellationToken>()))
                 .Callback(() => shutdownToken.Cancel());
 
             await sut.RunAsync(shutdownToken.Token).ConfigureAwait(false);
             Mock.Get(observer)
                 .Verify(feedObserver => feedObserver
-                    .OpenAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken)));
+                    .OpenAsync(It.Is<ChangeFeedProcessorContext>(context => context.LeaseToken == lease.CurrentLeaseToken)));
         }
 
         [TestMethod]

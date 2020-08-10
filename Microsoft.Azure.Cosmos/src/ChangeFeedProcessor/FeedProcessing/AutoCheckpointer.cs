@@ -28,17 +28,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.observer = observer;
         }
 
-        public override Task OpenAsync(ChangeFeedObserverContext context)
+        public override Task OpenAsync(ChangeFeedProcessorContext context)
         {
             return this.observer.OpenAsync(context);
         }
 
-        public override Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
+        public override Task CloseAsync(ChangeFeedProcessorContext context, ChangeFeedObserverCloseReason reason)
         {
             return this.observer.CloseAsync(context, reason);
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
+        public override async Task ProcessChangesAsync(ChangeFeedProcessorContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
         {
             await this.observer.ProcessChangesAsync(context, docs, cancellationToken).ConfigureAwait(false);
             this.processedDocCount += docs.Count;

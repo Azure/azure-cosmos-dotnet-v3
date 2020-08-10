@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(mock => mock.CreateObserver(), Times.Once);
 
             Mock.Get(observer.Object)
-                .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedObserverContext>((context) => context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
+                .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedProcessorContext>((context) => context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
         }
 
         [TestMethod]

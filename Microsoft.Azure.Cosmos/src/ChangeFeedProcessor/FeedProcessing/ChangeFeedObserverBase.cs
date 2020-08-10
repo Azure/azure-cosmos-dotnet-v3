@@ -13,23 +13,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     {
         private readonly ChangesHandler<T> onChanges;
 
+        private readonly ChangesHandlerWithContext<T> onChangesWithContext;
+
         public ChangeFeedObserverBase(ChangesHandler<T> onChanges)
         {
             this.onChanges = onChanges;
         }
 
-        public override Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
+        public ChangeFeedObserverBase(ChangesHandlerWithContext<T> onChanges)
         {
-            return Task.CompletedTask;
+            this.onChangesWithContext = onChanges;
         }
 
-        public override Task OpenAsync(ChangeFeedObserverContext context)
+        public override Task ProcessChangesAsync(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> docs,
+            CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
-        }
+            if (this.onChangesWithContext != null)
+            {
+                return this.onChangesWithContext(context, docs, cancellationToken);
+            }
 
-        public override Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
-        {
             return this.onChanges(docs, cancellationToken);
         }
     }

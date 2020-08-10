@@ -167,6 +167,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Configures the processor for manual checkpointing.
+        /// </summary>
+        /// <remarks>
+        /// The processor will no longer automatically checkpoint the leases after a successful handler execution.
+        /// It is the application code's reposibility to call <see cref="ChangeFeed.ChangeFeedProcessorContext.CheckpointAsync"/>.
+        /// </remarks>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        public ChangeFeedProcessorBuilder WithManualCheckpoint()
+        {
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.CheckpointFrequency = this.changeFeedProcessorOptions.CheckpointFrequency ?? new CheckpointFrequency();
+            this.changeFeedProcessorOptions.CheckpointFrequency.ExplicitCheckpoint = true;
+
+            return this;
+        }
+
+        /// <summary>
         /// Uses an in-memory container to maintain state of the leases
         /// </summary>
         /// <remarks>
