@@ -2,12 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-using System;
-using System.Diagnostics;
-using Newtonsoft.Json.Bson;
-
 namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
 {
+    using System;
+    using System.Diagnostics;
+
     /// <summary>
     /// This class implements lexical scanner for DocumentDB SQL grammar.
     /// Calling public 'Scan' function scans a single token and returns the following information:
@@ -129,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
 
                 if (!this.IsEof)
                 {
-                    value = this.GetDigitValue(this.buffer.Span[this.atomEndIndex]);
+                    value = GetDigitValue(this.buffer.Span[this.atomEndIndex]);
 
                     // Commit the read if it is a valid digit
                     if (value >= 0)
@@ -210,9 +209,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
                 return double.TryParse(this.buffer.Slice(this.atomStartIndex, this.AtomLength).ToString(), out value);
             }
 
-            public bool TryCopyAtomText(ReadOnlySpan<char> span)
+            public bool TryCopyAtomText(Memory<char> destination)
             {
-                if(span.Length < this.AtomLength)
+                if (destination.Length < this.AtomLength)
+                {
+                    return false;
+                }
+
+                this.buffer.CopyTo(destination);
+                return true;
+            }
+
+            public StringToken RetrieveAtomStringToken()
+            {
+                return StringTokenLookup.Find(this.buffer.Slice(this.atomStartIndex, this.AtomLength).Span);
+            }
+
+            private static int GetDigitValue(char c)
+            {
+                if ((c >= '0') && (c <= '9')) return c - '0';
+
+                // not a digit
+                return -1;
+            }
+
+            private static int GetHexDigitValue(char c)
+            {
+                if ((c >= '0') && (c <= '9')) return c - '0';
+                if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+                if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+
+                // not a hex digit
+                return -1;
             }
         }
     }
