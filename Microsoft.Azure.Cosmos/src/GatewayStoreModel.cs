@@ -189,14 +189,20 @@ namespace Microsoft.Azure.Cosmos
 
         private void ApplySessionToken(DocumentServiceRequest request)
         {
-            if (request.Headers != null &&
-                !string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
+            // Master resources don't require session token. Stored procedures, trigger, and user defined functions CRUD operations are done on
+            // master so they do not require the session token. 
+            if (ReplicatedResourceClient.IsMasterResource(request.ResourceType) ||
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType != Documents.OperationType.ExecuteJavaScript) ||
+                request.ResourceType == ResourceType.Trigger ||
+                request.ResourceType == ResourceType.UserDefinedFunction)
             {
-                if (ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+                if (request.Headers != null &&
+                   !string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
                     request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
                 }
-                return; //User is explicitly controlling the session.
+
+                return; //Is master resource or User is explicitly controlling the session.
             }
 
             if (request.Headers != null &&
@@ -219,9 +225,9 @@ namespace Microsoft.Azure.Cosmos
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency || ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+            if (!sessionConsistency)
             {
-                return; // Only apply the session token in case of session consistency and when resource is not a master resource
+                return; // Only apply the session token in case of session consistency
             }
 
             //Apply the ambient session.
