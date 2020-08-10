@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// This class implements lexical scanner for DocumentDB SQL grammar.
@@ -46,17 +48,239 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
             this.reader = new BufferReader(buffer);
         }
 
+        public int Scan(Memory<char> textBuffer, out TokenValue tokenValue, out SqlLocation sqlLocation)
+        {
+            int tokenId = this.Scan(out tokenValue);
+            sqlLocation = new SqlLocation((ulong)this.reader.atomStartIndex, (ulong)this.reader.atomEndIndex);
+            return tokenId;
+        }
+
+        public int Scan(Memory<char> textBuffer, out TokenValue tokenValue)
+        {
+            this.reader.StartNewAtom();
+
+            if (!this.reader.TryReadNext(out char current))
+            {
+                tokenValue = default;
+                return END_OF_FILE;
+            }
+
+            switch (current)
+            {
+                case '"':
+                case '\'':
+                    return ScanQuotedString(current, textBuffer, out tokenValue);
+
+                case ',':
+                case ':':
+                case '{':
+                case '}':
+                case '[':
+                case ']':
+                case '(':
+                case ')':
+                    tokenValue = TokenValue.FromLong((long)current);
+                    return (int)tokenValue.LongValue;
+
+                case '+':
+                case '*':
+                case '/':
+                case '%':
+                case '~':
+                case '&':
+                case '^':
+                case '=':
+                    tokenValue = TokenValue.FromLong((long)current);
+                    return (int)tokenValue.LongValue;
+
+                case '-':
+                    if (this.reader.TryReadNextIfEquals('-'))
+                    {
+                        // "--" (single-line comment)
+                        return ScanSingleLineComment(value, pwchTextBuffer, cchTextBuffer);
+                    }
+
+                    // "-"
+                    tokenValue = TokenValue.FromLong((long)current);
+                    return (int)tokenValue.LongValue;
+
+                case '|':
+                    if (this.reader.TryReadNextIfEquals('|'))
+                    {
+                        // "||"
+                        tokenValue = TokenValue.FromLong(y_tab._STR_CONCAT);
+                    }
+                    else
+                    {
+                        // "|"
+                        tokenValue = TokenValue.FromLong((long)current);
+                    }
+                    return (int)tokenValue.LongValue;
+
+                case '<':
+                    if (this.reader.TryReadNextIfEquals('='))
+                    {
+                        // "<="
+                        tokenValue = TokenValue.FromLong(y_tab._LE);
+                    }
+                    else if (this.reader.TryReadNextIfEquals('>'))
+                    {
+                        // "<>"
+                        tokenValue = TokenValue.FromLong(y_tab._NE);
+                    }
+                    else if (this.reader.TryReadNextIfEquals('<'))
+                    {
+                        // "<<"
+                        tokenValue = TokenValue.FromLong(y_tab._LSHIFT);
+                    }
+                    else
+                    {
+                        // "<"
+                        tokenValue = TokenValue.FromLong((long)current);
+                    }
+                    return (int)tokenValue.LongValue;
+
+                case '>':
+                    if (this.reader.TryReadNextIfEquals('='))
+                    {
+                        // ">="
+                        tokenValue = TokenValue.FromLong(y_tab._GE);
+                    }
+                    else if (this.reader.TryReadNextIfEquals('>'))
+                    {
+                        if (this.reader.TryReadNextIfEquals('>'))
+                        {
+                            // ">>>"
+                            tokenValue = TokenValue.FromLong(y_tab._RSHIFT_ZF);
+                        }
+                        else
+                        {
+                            // ">>"
+                            tokenValue = TokenValue.FromLong(y_tab._RSHIFT);
+                        }
+                    }
+                    else
+                    {
+                        // ">"
+                        tokenValue = TokenValue.FromLong((long)current);
+                    }
+                    return (int)tokenValue.LongValue;
+
+                case '?':
+                    if (this.reader.TryReadNextIfEquals('?'))
+                    {
+                        // "??"
+                        tokenValue = TokenValue.FromLong(y_tab._COALESCE);
+                    }
+                    else
+                    {
+                        // "?"
+                        tokenValue = TokenValue.FromLong((long)current);
+                    }
+                    return (int)tokenValue.LongValue;
+
+                case '!':
+                    if (this.reader.TryReadNextIfEquals('='))
+                    {
+                        // "!="
+                        tokenValue = TokenValue.FromLong(y_tab._NE);
+                        return (int)tokenValue.LongValue;
+                    }
+
+                    // '!' is not a valid token by itself
+                    break;
+
+                case '.':
+                    if (this.reader.CheckNext(IsDigit))
+                    {
+                        // Scan a decimal number
+                        this.reader.UndoRead();
+                        return ScanDecimal(value);
+                    }
+
+                    tokenValue = TokenValue.FromLong((long)current);
+                    return (int)tokenValue.LongValue;
+
+                case '@':
+                    {
+                        char nextChar;
+                        if (this.reader.TryReadNextIf(IsIdentifierStart, out nextChar))
+                        {
+                            return ScanParameter(value, pwchTextBuffer, cchTextBuffer);
+                        }
+
+                        // '@' is not a valid token by itself
+                        break;
+                    }
+            }
+
+            // Scan white spaces
+            if (IsWhitespace(current))
+            {
+                this.reader.AdvanceWhile(IsWhitespace);
+                return y_tab._LEX_WHITE;
+            }
+
+            // Scan an identifier
+            if (IsIdentifierStart(current))
+            {
+                return ScanIdentifier(value, pwchTextBuffer, cchTextBuffer);
+            }
+
+            // Scan a number
+            if (IsDigit(current))
+            {
+                // Check whether this is a hex number or decimal
+                if ((current == '0') && this.reader.TryReadNextIfEquals('x', 'X'))
+                {
+                    return ScanHexNumber(value);
+                }
+
+                // Undo the digit read and scan as decimal
+                this.reader.UndoRead();
+                return ScanDecimal(value);
+            }
+
+            tokenValue = default;
+            return y_tab._LEX_INVALID;
+        }
+
+        private static int ScanQuotedString(char quotationChar, Memory<char> textBuffer, out TokenValue value)
+        {
+
+        }
+
         public readonly struct TokenValue
         {
-            public long LongValue { get; }
-            public double DoubleValue { get; }
+            private readonly Either<long, double> either;
+
+            private TokenValue(Either<long, double> either)
+            {
+                this.either = either;
+            }
+
+            public bool IsLong => this.either.IsLeft;
+            public bool IsDouble => this.either.IsRight;
+
+            public long LongValue => this.either.FromLeft(default);
+
+            public double DoubleValue => this.either.FromRight(default);
+
+            public static TokenValue FromLong(long value) => new TokenValue(value);
+
+            public static TokenValue FromDouble(double value) => new TokenValue(value);
+
+            public static implicit operator Either<long, double>(TokenValue value) => value.either;
+            public static explicit operator TokenValue(Either<long, double> value) => new TokenValue(value);
+            public static explicit operator TokenValue(long value) => new TokenValue(value);
+            public static explicit operator TokenValue(double value) => new TokenValue(value);
         }
 
         private sealed class BufferReader
         {
             private ReadOnlyMemory<char> buffer;
-            private int atomStartIndex;
-            private int atomEndIndex;
+            public int atomStartIndex;
+            public int atomEndIndex;
 
             public BufferReader(ReadOnlyMemory<char> buffer)
             {
@@ -148,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
 
                 if (!this.IsEof)
                 {
-                    value = this.GetHexDigitValue(this.buffer.Span[this.atomEndIndex++]);
+                    value = GetHexDigitValue(this.buffer.Span[this.atomEndIndex++]);
 
                     // Commit the read if it is a valid hex digit
                     if (value >= 0)
