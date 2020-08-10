@@ -5,7 +5,7 @@
     <RootNamespace>CosmosBenchmark</RootNamespace>
     <AssemblyName>CosmosBenchmark</AssemblyName>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <Optimize Condition="'$(Platform)'=='Release'">true</Optimize>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
