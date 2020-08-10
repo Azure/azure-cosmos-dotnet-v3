@@ -208,13 +208,11 @@ namespace Microsoft.Azure.Cosmos
             if (request.Headers != null &&
                  request.OperationType == OperationType.QueryPlan)
             {
+                string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
+                bool isPlanOnly = false;
+                if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
                 {
-                    string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
-                    bool isPlanOnly = false;
-                    if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
-                    {
-                        return; // for query plan session token is not needed
-                    }
+                    return; // for query plan session token is not needed
                 }
             }
 
