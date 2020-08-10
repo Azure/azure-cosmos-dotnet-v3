@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -162,7 +163,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             ContainerInternal itemsCore = this.Container;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
-                ChangeFeedStartFrom.Beginning(new FeedRangePartitionKey(new PartitionKey(pkToRead)))) as ChangeFeedIteratorCore;
+                ChangeFeedStartFrom.Beginning(
+                    FeedRange.FromPartitionKey(
+                        new PartitionKey(pkToRead)))) as ChangeFeedIteratorCore;
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {

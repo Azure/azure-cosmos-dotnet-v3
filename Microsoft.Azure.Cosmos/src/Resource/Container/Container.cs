@@ -1188,10 +1188,12 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
-        ///     FeedRange = feedRanges[0]
+        ///     PageSizeHint = 10,
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(options);
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
+        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1230,10 +1232,12 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
-        ///     FeedRange = feedRanges[0]
+        ///     PageSizeHint = 10,
         /// }
         /// 
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(options);
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
+        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     options);
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     while (feedIterator.HasMoreResults)

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Net;
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: this.changeFeedOptions,
                 requestEnricher: (requestMessage) =>
                 {
-                    PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(requestMessage);
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
                     this.changeFeedStartFrom.Accept(visitor);
                 },
                 partitionKey: default,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
 
-            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton);
+            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;

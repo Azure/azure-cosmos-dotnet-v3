@@ -64,6 +64,11 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Continuation)]
         public virtual string ContinuationToken { get; internal set; }
 
+        internal void Add(object ifModifiedSince, string v)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>

@@ -2,18 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
@@ -188,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
                 containerInternal: this.container,
                 requestEnricher: (request) =>
                 {
-                    PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
                     this.changeFeedStartFrom.Accept(visitor);
                 },
                 responseCreator: response => response,

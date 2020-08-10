@@ -44,6 +44,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key value to create a feed range from.</param>
         /// <returns>The feed range that spans the partition.</returns>
-        public static FeedRange CreateFromPartitionKey(PartitionKey partitionKey) => new FeedRangePartitionKey(partitionKey);
+        public static FeedRange FromPartitionKey(PartitionKey partitionKey) => new FeedRangePartitionKey(partitionKey);
     }
 }

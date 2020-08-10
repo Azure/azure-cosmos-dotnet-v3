@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 diagnostics.AddDiagnosticsInternal(
                     new FeedRangeStatistics(
-                        this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton)));
+                        this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton)));
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 requestEnricher: (request) =>
                 {
-                    PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
                     this.changeFeedStartFrom.Accept(visitor);
                 },
                 partitionKey: default,
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
 
-                FeedRange feedRange = this.changeFeedStartFrom.Accept(FeedRangeExtractor.Singleton);
+                FeedRange feedRange = this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
                 IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)feedRange).AcceptAsync(
                     feedRangePartitionKeyRangeExtractor,
                     cancellationToken);
