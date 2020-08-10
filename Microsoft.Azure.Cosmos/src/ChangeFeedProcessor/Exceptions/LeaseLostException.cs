@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// Initializes a new instance of the <see cref="LeaseLostException" /> class.
         /// </summary>
         public LeaseLostException()
+            : base(LeaseLostException.DefaultMessage)
         {
         }
 
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// </summary>
         /// <param name="lease">Instance of a lost lease.</param>
         internal LeaseLostException(DocumentServiceLease lease)
-            : base(DefaultMessage)
+            : base(LeaseLostException.DefaultMessage)
         {
             this.Lease = lease;
         }
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// <param name="lease">Instance of a lost lease.</param>
         /// <param name="isGone">Whether lease doesn't exist.</param>
         internal LeaseLostException(DocumentServiceLease lease, bool isGone)
-            : base(DefaultMessage)
+            : base(LeaseLostException.DefaultMessage)
         {
             this.Lease = lease;
             this.IsGone = isGone;
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// <param name="innerException">The inner exception.</param>
         /// <param name="isGone">Whether lease doesn't exist.</param>
         internal LeaseLostException(DocumentServiceLease lease, Exception innerException, bool isGone)
-            : base(DefaultMessage, innerException)
+            : base(LeaseLostException.DefaultMessage, innerException)
         {
             this.Lease = lease;
             this.IsGone = isGone;
