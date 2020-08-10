@@ -228,6 +228,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
+        [TestMethod]
+        public void WithManualCheckpoint()
+        {
+            Action<DocumentServiceLeaseStoreManager, Container, string, string, ChangeFeedLeaseOptions, ChangeFeedProcessorOptions, Container> validation = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
+                string leaseContainerPrefix,
+                string instanceName,
+                ChangeFeedLeaseOptions changeFeedLeaseOptions,
+                ChangeFeedProcessorOptions changeFeedProcessorOptions,
+                Container monitoredContainer) =>
+            {
+                Assert.IsTrue(changeFeedProcessorOptions.CheckpointFrequency.ExplicitCheckpoint);
+            };
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                validation);
+
+            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+            builder.WithManualCheckpoint();
+
+            Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
+        }
+
         private static ContainerInternal GetMockedContainer(string containerName = null)
         {
             Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
