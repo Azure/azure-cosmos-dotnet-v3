@@ -89,6 +89,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.FeedRange)
                 .Returns(range);
             Mock.Get(feedToken)
+                .Setup(f => f.GetFeedRange())
+                .Returns(range);
+            Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
             Mock.Get(feedToken)
@@ -141,6 +144,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
+                .Returns(range);
+            Mock.Get(feedToken)
+                .Setup(f => f.GetFeedRange())
                 .Returns(range);
             Mock.Get(feedToken)
                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
@@ -205,6 +211,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
+                .Returns(range);
+            Mock.Get(feedToken)
+                .Setup(f => f.GetFeedRange())
                 .Returns(range);
             Mock.Get(feedToken)
                 .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
@@ -315,6 +324,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
                 .Returns(range);
+            Mock.Get(feedToken)
+                .Setup(f => f.GetFeedRange())
+                .Returns(range);
 
             Mock.Get(feedToken)
                 .SetupSequence(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
@@ -331,6 +343,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             Mock.Get(feedToken)
                 .Verify(f => f.ReplaceContinuation(It.IsAny<string>()), Times.Once);
+
+            Mock.Get(feedToken)
+                .Setup(f => f.GetFeedRange())
+                .Returns(range);
 
             Mock.Get(feedToken)
                 .Verify(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
