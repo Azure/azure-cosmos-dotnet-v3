@@ -189,28 +189,31 @@ namespace Microsoft.Azure.Cosmos
 
         private void ApplySessionToken(DocumentServiceRequest request)
         {
-            // Master resources don't require session token. Stored procedures, trigger, and user defined functions CRUD operations are done on
-            // master so they do not require the session token. 
-            if (ReplicatedResourceClient.IsMasterResource(request.ResourceType) ||
-                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType != Documents.OperationType.ExecuteJavaScript) ||
-                request.ResourceType == ResourceType.Trigger ||
-                request.ResourceType == ResourceType.UserDefinedFunction)
+            if (request.Headers == null)
             {
-                if (request.Headers != null &&
-                   !string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
+                return;
+            }
+
+            // Master resource operations don't require session token.
+            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType))
+            {
+                if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
                     request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
                 }
 
-                return; //Is master resource or User is explicitly controlling the session.
+                return;
             }
 
-            if (request.Headers != null &&
-                 request.OperationType == OperationType.QueryPlan)
+            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
+            {
+                return; // User is explicitly controlling the session.
+            }
+
+            if (request.OperationType == OperationType.QueryPlan)
             {
                 string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
-                bool isPlanOnly = false;
-                if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
+                if (bool.TryParse(isPlanOnlyString, out bool isPlanOnly) && isPlanOnly)
                 {
                     return; // for query plan session token is not needed
                 }
@@ -235,6 +238,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers[HttpConstants.HttpHeaders.SessionToken] = sessionToken;
             }
+        }
+
+        // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
+        internal static bool IsMasterOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            // Stored procedures, trigger, and user defined functions CRUD operations are done on
+            // master so they do not require the session token. Stored procedures execute is not a master operation
+            return ReplicatedResourceClient.IsMasterResource(resourceType) ||
+                   (resourceType == ResourceType.StoredProcedure && operationType != Documents.OperationType.ExecuteJavaScript) ||
+                   resourceType == ResourceType.Trigger ||
+                   resourceType == ResourceType.UserDefinedFunction;
         }
 
         private void Dispose(bool disposing)
