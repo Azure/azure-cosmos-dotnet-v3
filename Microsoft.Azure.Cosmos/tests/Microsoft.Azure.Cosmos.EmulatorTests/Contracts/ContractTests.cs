@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using Microsoft.Azure.Documents;
     using System.IO;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper

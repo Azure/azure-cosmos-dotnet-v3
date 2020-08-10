@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
 
     [TestClass]
     public class ChangeFeedResultSetIteratorTests
