@@ -2,6 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Collections.Specialized;
+using System.Net.Http.Headers;
+using Microsoft.Azure.Documents.Collections;
+
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -86,6 +90,32 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Assert.IsTrue(exception.Message.Contains(message));
                 }
+            }
+        }
+
+        [TestMethod]
+        public void VerifyDocumentClientExceptionWithNullHeader()
+        {
+            string errorMessage = "Test Exception!";
+
+            DocumentClientException dce = new DocumentClientException(
+                message: errorMessage,
+                innerException: null,
+                statusCode: HttpStatusCode.BadRequest);
+
+            string headerValue = "Test" + Guid.NewGuid();
+            dce.Headers.Add(headerValue, (string)null);
+
+            try
+            {
+                ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
+                Assert.Fail("Should throw exception");
+            }
+            catch (ArgumentNullException ane)
+            {
+                Assert.IsTrue(ane.ToString().Contains(headerValue));
+                Assert.IsTrue(ane.ToString().Contains(errorMessage));
+                Assert.IsTrue(ane.InnerException is DocumentClientException);
             }
         }
 
