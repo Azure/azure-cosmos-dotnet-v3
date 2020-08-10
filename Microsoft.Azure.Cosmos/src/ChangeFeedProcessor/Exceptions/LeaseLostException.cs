@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
     /// Exception occurred when lease is lost, that would typically happen when it is taken by another host. Other cases: communication failure, number of retries reached, lease not found.
     /// </summary>
     [Serializable]
-    internal class LeaseLostException : Exception
+    public class LeaseLostException : Exception
     {
         private static readonly string DefaultMessage = "The lease was lost.";
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// Initializes a new instance of the <see cref="LeaseLostException" /> class using the specified lease.
         /// </summary>
         /// <param name="lease">Instance of a lost lease.</param>
-        public LeaseLostException(DocumentServiceLease lease)
+        internal LeaseLostException(DocumentServiceLease lease)
             : base(DefaultMessage)
         {
             this.Lease = lease;
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// Initializes a new instance of the <see cref="LeaseLostException" /> class using error message.
         /// </summary>
         /// <param name="message">The exception error message.</param>
-        public LeaseLostException(string message)
+        internal LeaseLostException(string message)
             : base(message)
         {
         }
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// </summary>
         /// <param name="message">The exception error message.</param>
         /// <param name="innerException">The inner exception.</param>
-        public LeaseLostException(string message, Exception innerException)
+        internal LeaseLostException(string message, Exception innerException)
             : base(message, innerException)
         {
         }
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// </summary>
         /// <param name="lease">Instance of a lost lease.</param>
         /// <param name="isGone">Whether lease doesn't exist.</param>
-        public LeaseLostException(DocumentServiceLease lease, bool isGone)
+        internal LeaseLostException(DocumentServiceLease lease, bool isGone)
             : base(DefaultMessage)
         {
             this.Lease = lease;
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// <param name="lease">Instance of a lost lease.</param>
         /// <param name="innerException">The inner exception.</param>
         /// <param name="isGone">Whether lease doesn't exist.</param>
-        public LeaseLostException(DocumentServiceLease lease, Exception innerException, bool isGone)
+        internal LeaseLostException(DocumentServiceLease lease, Exception innerException, bool isGone)
             : base(DefaultMessage, innerException)
         {
             this.Lease = lease;
@@ -92,12 +92,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// <summary>
         /// Gets the lost lease.
         /// </summary>
-        public DocumentServiceLease Lease { get; }
+        internal DocumentServiceLease Lease { get; }
 
         /// <summary>
         /// Gets a value indicating whether lease doesn't exist.
         /// </summary>
-        public bool IsGone { get; }
+        internal bool IsGone { get; }
 
         /// <summary>
         /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.
