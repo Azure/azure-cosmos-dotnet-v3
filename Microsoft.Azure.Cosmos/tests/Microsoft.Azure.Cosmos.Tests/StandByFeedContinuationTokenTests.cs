@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             RequestMessage request = new RequestMessage();
-            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
             ChangeFeedStartFrom.ContinuationToken("something").Accept(visitor);
 
             Assert.AreEqual(expected: "something", actual: request.Headers.IfNoneMatch);
@@ -235,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_StartFromNow()
         {
             RequestMessage request = new RequestMessage();
-            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
             ChangeFeedStartFrom.Now().Accept(visitor);
 
             Assert.AreEqual(expected: "*", request.Headers.IfNoneMatch);
@@ -246,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_StartFromBeginning()
         {
             RequestMessage request = new RequestMessage();
-            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
             ChangeFeedStartFrom.Beginning().Accept(visitor);
 
             Assert.IsNull(request.Headers.IfNoneMatch);
@@ -257,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
             RequestMessage request = new RequestMessage();
-            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 PageSizeHint = 10,
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_AddsStartTime()
         {
             RequestMessage request = new RequestMessage();
-            PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
             ChangeFeedStartFrom.Time(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Accept(visitor);
 
             Assert.AreEqual(
@@ -297,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
             foreach (ChangeFeedStartFrom from in froms)
             {
                 RequestMessage request = new RequestMessage();
-                PopulateStartFromRequestOptionVisitor visitor = new PopulateStartFromRequestOptionVisitor(request);
+                ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
                 from.Accept(visitor);
 
                 Assert.AreEqual(
