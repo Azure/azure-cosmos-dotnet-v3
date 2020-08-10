@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.leaseContainer == null && this.LeaseStoreManager == null)
             {
-                throw new InvalidOperationException($"Defining the lease store by WithLeaseContainer or WithInMemoryLeaseContainer is required.");
+                throw new InvalidOperationException($"Defining the lease store by WithLeaseContainer is required.");
             }
 
             if (this.changeFeedLeaseOptions.LeasePrefix == null)
