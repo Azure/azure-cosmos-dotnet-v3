@@ -128,10 +128,6 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string etag = this.FeedRangeContinuation.GetContinuation();
-            FeedRangeInternal feedRange = this.FeedRangeContinuation.FeedRange;
-            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
-
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
@@ -150,6 +146,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (await this.ShouldRetryAsync(responseMessage, cancellationToken))
             {
+                string etag = this.FeedRangeContinuation.GetContinuation();
+                FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+
                 return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
             }
 
@@ -159,6 +159,11 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed read uses Etag for continuation
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
                 this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
+
+                string etag = this.FeedRangeContinuation.GetContinuation();
+                FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,
                     this.FeedRangeContinuation);
