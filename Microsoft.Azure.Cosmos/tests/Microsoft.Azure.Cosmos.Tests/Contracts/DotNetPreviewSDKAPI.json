@@ -179,15 +179,15 @@
     "FeedRange": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.FeedRange CreateFromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange CreateFromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)"
-        },
         "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)"
         },
         "System.String ToJsonString()": {
           "Type": "Method",
