@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -361,6 +362,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        [TestMethod]
+        public async Task WithManualCheckpoint()
+        {
+            IEnumerable<int> expectedIds = new List<int>() { 1, 2, 3, 3 };
+            List<int> receivedIds = new List<int>();
+
+            int iterationCount = 0;
+
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    iterationCount++;
+                    foreach (TestClass doc in docs)
+                    {
+                        receivedIds.Add(int.Parse(doc.id));
+                    }
+
+                    if (iterationCount != 3)
+                    {
+                        await context.CheckpointAsync();
+                    }
+                })
+                .WithInstanceName("random")
+                .WithManualCheckpoint()
+                .WithMaxItems(1)
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            // Inserting documents
+            foreach (int id in new List<int>() { 1, 2, 3 })
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            // Waiting on all notifications to finish
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+
+            // At this point, the last item was not checkpointed, so starting the processor again should receive it again
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+
+            // Verify that we maintain order
+            CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
         }
 
         private class FailedUserSerializer : CosmosSerializer
