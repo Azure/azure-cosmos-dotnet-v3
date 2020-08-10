@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             {
                                 if (item?.CurrentLeaseToken == null) continue;
                                 long result = await this.GetRemainingWorkAsync(item, cancellationToken);
-                                partialResults.Add(new RemainingLeaseWork(item.CurrentLeaseToken, result));
+                                partialResults.Add(new RemainingLeaseWork(item.CurrentLeaseToken, result, item.Owner));
                             }
                             catch (CosmosException ex)
                             {
