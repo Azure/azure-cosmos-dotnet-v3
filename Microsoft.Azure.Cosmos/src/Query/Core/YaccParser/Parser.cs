@@ -8,8 +8,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
-    internal sealed class Parser
+    internal sealed partial class Parser
     {
+        private static class Erorrs
+        {
+            public const string SqlSelectStarWithNoFrom = "Syntax error, 'SELECT *' is not valid if FROM clause is omitted.";
+        }
+
         private readonly Scanner scanner;
         private readonly List<SqlError> errors;
         private readonly Dictionary<ReadOnlyMemory<char>, string> stringCache;
@@ -21,16 +26,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
             this.stringCache = new Dictionary<ReadOnlyMemory<char>, string>();
         }
 
+        public SqlParseResult Parse(ReadOnlyMemory<char> text)
+        {
+            Parser parser = new Parser(text);
+            SqlProgram program = parser.Parse();
+            SqlParseResult parseResult = new SqlParseResult(text, program, parser.errors);
+
+            return parseResult;
+        }
+
+        private SqlProgram Parse()
+        {
+            SqlProgram program = yyparse(this);
+            return program;
+        }
+
+        private bool TryGetNextToken(out int tokenId, out YYSTYPE value, out YYLTYPE location)
+        {
+            throw new NotImplementedException();
+        }
+
         private readonly struct YYSTYPE
         {
-            private readonly SqlObject queryObject;
-
             public YYSTYPE(SqlObject queryObject)
             {
-                this.queryObject = queryObject ?? throw new ArgumentNullException(nameof(queryObject));
+                this.QueryObject = queryObject ?? throw new ArgumentNullException(nameof(queryObject));
             }
 
-            public static implicit operator SqlObject(YYSTYPE value) => value.queryObject;
+            public SqlObject QueryObject { get; }
+
+            public static implicit operator SqlObject(YYSTYPE value) => value.QueryObject;
             public static explicit operator YYSTYPE(SqlObject value) => new YYSTYPE(value);
         }
 
@@ -42,6 +67,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.YaccParser
             {
                 this.location = location;
             }
+
+            public ulong StartIndex => this.location.StartIndex;
+            public ulong EndIndex => this.location.EndIndex;
 
             public static implicit operator SqlLocation(YYLTYPE value) => value.location;
             public static explicit operator YYLTYPE(SqlLocation value) => new YYLTYPE(value);
