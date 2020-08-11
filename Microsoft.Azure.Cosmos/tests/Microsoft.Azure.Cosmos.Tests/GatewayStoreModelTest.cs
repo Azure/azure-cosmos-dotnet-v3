@@ -197,6 +197,25 @@ namespace Microsoft.Azure.Cosmos
                     Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
                 }
             }
+
+            Assert.IsTrue(GatewayStoreModel.IsMasterOperation(
+                    ResourceType.Document,
+                    OperationType.QueryPlan));
+
+            DocumentServiceRequest dsrQueryPlan = DocumentServiceRequest.CreateFromName(
+                OperationType.QueryPlan,
+                "Test",
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            dsrQueryPlan.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
+
+            GatewayStoreModel.ApplySessionToken(
+                dsrQueryPlan,
+                ConsistencyLevel.Session,
+                new Mock<ISessionContainer>().Object);
+
+            Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
         }
 
         [TestMethod]

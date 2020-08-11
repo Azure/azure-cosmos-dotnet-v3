@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -197,6 +198,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (request.Headers == null)
             {
+                Debug.Fail("DocumentServiceRequest does not have headers.");
                 return;
             }
 
@@ -214,15 +216,6 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
             {
                 return; // User is explicitly controlling the session.
-            }
-
-            if (request.OperationType == OperationType.QueryPlan)
-            {
-                string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
-                if (bool.TryParse(isPlanOnlyString, out bool isPlanOnly) && isPlanOnly)
-                {
-                    return; // for query plan session token is not needed
-                }
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
@@ -256,7 +249,8 @@ namespace Microsoft.Azure.Cosmos
             return ReplicatedResourceClient.IsMasterResource(resourceType) ||
                    GatewayStoreModel.IsStoredProcedureCrudOperation(resourceType, operationType) ||
                    resourceType == ResourceType.Trigger ||
-                   resourceType == ResourceType.UserDefinedFunction;
+                   resourceType == ResourceType.UserDefinedFunction ||
+                   operationType == OperationType.QueryPlan;
         }
 
         internal static bool IsStoredProcedureCrudOperation(
