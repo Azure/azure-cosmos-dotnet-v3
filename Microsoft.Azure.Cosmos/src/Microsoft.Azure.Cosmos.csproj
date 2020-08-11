@@ -39,6 +39,7 @@
     <IncludeSource>false</IncludeSource>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <NoWarn>NU5125</NoWarn>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>

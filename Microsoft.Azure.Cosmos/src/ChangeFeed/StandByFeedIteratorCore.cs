@@ -2,18 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
@@ -28,17 +25,20 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
+        private ChangeFeedStartFrom changeFeedStartFrom;
         private string containerRid;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
             ContainerCore container,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
 
             this.clientContext = clientContext;
             this.container = container;
+            this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.changeFeedOptions = options;
         }
 
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
 
-                if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+                if (this.changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
                 {
                     this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
                         this.containerRid,
@@ -105,11 +105,11 @@ namespace Microsoft.Azure.Cosmos
 
                     if (token.Token != null)
                     {
-                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(token.Token);
+                        this.changeFeedStartFrom = ChangeFeedStartFrom.ContinuationToken(token.Token);
                     }
                     else
                     {
-                        this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                        this.changeFeedStartFrom = ChangeFeedStartFrom.Beginning();
                     }
                 }
                 else
@@ -122,12 +122,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+            FeedRange feedRange = new FeedRangePartitionKeyRange(rangeId);
             if (currentRangeToken.Token != null)
             {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(currentRangeToken.Token);
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(currentRangeToken.Token, (FeedRangeInternal)feedRange);
+            }
+            else
+            {
+                this.changeFeedStartFrom = ChangeFeedStartFrom.Beginning(feedRange);
             }
 
-            this.changeFeedOptions.FeedRange = new FeedRangePartitionKeyRange(rangeId);
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
@@ -179,7 +183,11 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 containerInternal: this.container,
-                requestEnricher: default,
+                requestEnricher: (request) =>
+                {
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
                 responseCreator: response => response,
                 partitionKey: default,
                 streamPayload: default,
