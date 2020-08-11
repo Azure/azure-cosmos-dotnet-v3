@@ -24,9 +24,8 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                     if (value == null)
                     {
                         throw new ArgumentNullException(
-                            message: $"{nameof(key)}: {key}; {nameof(value)}: {dce.Headers[key] ?? "null"};",
+                            message: $"{nameof(key)}: {key};",
                             innerException: dce);
-
                     }
 
                     headers.Add(key, value);
