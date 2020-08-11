@@ -2,11 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -26,12 +25,14 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
+        private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResults;
 
         private FeedRangeContinuation FeedRangeContinuation;
 
         public ChangeFeedIteratorCore(
             ContainerInternal container,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
@@ -43,7 +44,8 @@ namespace Microsoft.Azure.Cosmos
             });
             this.hasMoreResults = true;
 
-            if (this.changeFeedOptions?.From is ChangeFeedRequestOptions.StartFromContinuation startFromContinuation)
+            this.changeFeedStartFrom = changeFeedStartFrom;
+            if (this.changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
             {
                 if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
                 {
@@ -51,16 +53,10 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.FeedRangeContinuation = feedRangeContinuation;
-                this.changeFeedOptions.FeedRange = feedRangeContinuation.GetFeedRange();
-                string continuationToken = feedRangeContinuation.GetContinuation();
-                if (continuationToken != null)
-                {
-                    this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
-                }
-                else
-                {
-                    this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
-                }
+                FeedRange feedRange = feedRangeContinuation.GetFeedRange();
+                string etag = feedRangeContinuation.GetContinuation();
+
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
             }
         }
 
@@ -76,7 +72,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
             using (diagnostics.GetOverallScope())
             {
-                diagnostics.AddDiagnosticsInternal(new FeedRangeStatistics(this.changeFeedOptions.FeedRange));
+                diagnostics.AddDiagnosticsInternal(
+                    new FeedRangeStatistics(
+                        this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton)));
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
                     using (diagnostics.CreateScope("InitializeContainerResourceId"))
@@ -130,26 +128,17 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            string continuation = this.FeedRangeContinuation.GetContinuation();
-            if (continuation != null)
-            {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation);
-            }
-
-            if ((this.changeFeedOptions.FeedRange == null) || this.changeFeedOptions.FeedRange is FeedRangeEpk)
-            {
-                // For now the backend does not support EPK Ranges if they don't line up with a PKRangeId
-                // So if the range the user supplied is a logical pk value, then we don't want to overwrite it.
-                this.changeFeedOptions.FeedRange = this.FeedRangeContinuation.GetFeedRange();
-            }
-
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
                 cosmosContainerCore: this.container,
-                requestEnricher: default,
+                requestEnricher: (request) =>
+                {
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: diagnosticsScope,
@@ -157,6 +146,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (await this.ShouldRetryAsync(responseMessage, cancellationToken))
             {
+                string etag = this.FeedRangeContinuation.GetContinuation();
+                FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+
                 return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
             }
 
@@ -166,6 +159,11 @@ namespace Microsoft.Azure.Cosmos
                 // Change Feed read uses Etag for continuation
                 this.hasMoreResults = responseMessage.IsSuccessStatusCode;
                 this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
+
+                string etag = this.FeedRangeContinuation.GetContinuation();
+                FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
+                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
+
                 return FeedRangeResponse.CreateSuccess(
                     responseMessage,
                     this.FeedRangeContinuation);
@@ -216,13 +214,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
 
-                IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)this.changeFeedOptions.FeedRange).AcceptAsync(
+                FeedRange feedRange = this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
+                IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)feedRange).AcceptAsync(
                     feedRangePartitionKeyRangeExtractor,
                     cancellationToken);
 
                 this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
                     containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: (FeedRangeInternal)this.changeFeedOptions.FeedRange,
+                    feedRange: (FeedRangeInternal)feedRange,
                     ranges: ranges);
             }
             else if (this.FeedRangeContinuation?.FeedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)

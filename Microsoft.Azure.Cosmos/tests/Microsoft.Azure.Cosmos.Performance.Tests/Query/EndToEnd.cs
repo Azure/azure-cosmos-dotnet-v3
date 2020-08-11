@@ -7,6 +7,7 @@
     using System.Reflection;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Json;
@@ -120,10 +121,7 @@
         {
             ChangeFeedIteratorCore feedIterator = ((ContainerCore)this.container)
                 .GetChangeFeedStreamIterator(
-                    changeFeedRequestOptions: new ChangeFeedRequestOptions()
-                    {
-                        From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
-                    }) as ChangeFeedIteratorCore;
+                    ChangeFeedStartFrom.Beginning()) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults)
             {

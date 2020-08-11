@@ -1176,6 +1176,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
@@ -1187,10 +1188,12 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
-        ///     FeedRange = feedRanges[0]
+        ///     PageSizeHint = 10,
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(options);
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
+        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1211,42 +1214,13 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume the Change Feed for a Partition Key value.
-        /// </summary>
-        /// <param name="partitionKey">A <see cref="PartitionKey"/> to read the Change Feed for.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// using (FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(new PartitionKey("myPartitionKey")))
-        /// {
-        ///     while (feedIterator.HasMoreResults)
-        ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
-        ///         {
-        ///             using (StreamReader sr = new StreamReader(response.Content))
-        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///             {
-        ///                 JObject result = JObject.Load(jtr);
-        ///             }
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the Change Feed for a particular Partition Key.</returns>
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
@@ -1258,10 +1232,12 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
-        ///     FeedRange = feedRanges[0]
+        ///     PageSizeHint = 10,
         /// }
         /// 
-        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(options);
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
+        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     options);
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     while (feedIterator.HasMoreResults)
@@ -1278,34 +1254,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        ///  This method creates an iterator to consume the Change Feed for a Partition Key value.
-        /// </summary>
-        /// <param name="partitionKey">A <see cref="PartitionKey"/> to read the Change Feed for.</param>
-        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
-        /// <example>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(new PartitionKey("myPartitionKey")))
-        /// {
-        ///     while (feedIterator.HasMoreResults)
-        ///     {
-        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
-        ///         {
-        ///             Console.WriteLine(item);
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the Change Feed for a Partition Key.</returns>
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
