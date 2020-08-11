@@ -48,7 +48,10 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ApplySessionToken(request);
+            GatewayStoreModel.ApplySessionToken(
+                request,
+                this.defaultConsistencyLevel,
+                this.sessionContainer);
 
             DocumentServiceResponse response;
             try
@@ -187,7 +190,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ApplySessionToken(DocumentServiceRequest request)
+        internal static void ApplySessionToken(
+            DocumentServiceRequest request,
+            ConsistencyLevel defaultConsistencyLevel,
+            ISessionContainer sessionContainer)
         {
             if (request.Headers == null)
             {
@@ -222,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
 
             bool sessionConsistency =
-                this.defaultConsistencyLevel == ConsistencyLevel.Session ||
+                defaultConsistencyLevel == ConsistencyLevel.Session ||
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
@@ -232,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             //Apply the ambient session.
-            string sessionToken = this.sessionContainer.ResolveGlobalSessionToken(request);
+            string sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
 
             if (!string.IsNullOrEmpty(sessionToken))
             {
@@ -248,9 +254,17 @@ namespace Microsoft.Azure.Cosmos
             // Stored procedures, trigger, and user defined functions CRUD operations are done on
             // master so they do not require the session token. Stored procedures execute is not a master operation
             return ReplicatedResourceClient.IsMasterResource(resourceType) ||
-                   (resourceType == ResourceType.StoredProcedure && operationType != Documents.OperationType.ExecuteJavaScript) ||
+                   GatewayStoreModel.IsStoredProcedureCrudOperation(resourceType, operationType) ||
                    resourceType == ResourceType.Trigger ||
                    resourceType == ResourceType.UserDefinedFunction;
+        }
+
+        internal static bool IsStoredProcedureCrudOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            return resourceType == ResourceType.StoredProcedure &&
+                   operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
         private void Dispose(bool disposing)
