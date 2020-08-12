@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
@@ -120,6 +121,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 disposeDiagnosticContext = true;
             }
 
+            // This is needed for query where a single
+            // user request might span multiple backend requests.
+            // This will still have a single request id for retry scenarios
+            ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
+            Debug.Assert(activityScope == null || (activityScope != null &&
+                         (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan)),
+                "There should be an activity id already set");
+
             try
             {
                 HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
@@ -183,6 +192,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     diagnosticsContext.GetOverallScope().Dispose();
                 }
+
+                activityScope?.Dispose();
             }
         }
 
