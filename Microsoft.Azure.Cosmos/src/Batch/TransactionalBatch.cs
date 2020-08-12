@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -47,10 +48,22 @@ namespace Microsoft.Azure.Cosmos
     ///     status = "ToBeDone"
     /// };
     ///
+    /// ToDoActivity test4 = new ToDoActivity()
+    /// {
+    ///     type = activityType,
+    ///     id = "running",
+    ///     status = "ToBeDone"
+    /// };
+    ///
+    /// List<PatchOperation> patchOperations = new List<PatchOperation>();
+    /// patchOperations.Add(PatchOperation.CreateReplaceOperation("/status", "InProgress");
+    /// patchOperations.Add(PatchOperation.CreateAddOperation("/progress", 50);
+    /// 
     /// using (TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(new Cosmos.PartitionKey(activityType))
     ///     .CreateItem<ToDoActivity>(test1)
     ///     .ReplaceItem<ToDoActivity>(test2.id, test2)
     ///     .UpsertItem<ToDoActivity>(test3)
+    ///     .PatchItem(test4.id, patchOperations)
     ///     .DeleteItem("reading")
     ///     .CreateItemStream(streamPayload1)
     ///     .ReplaceItemStream("eating", streamPayload2)
@@ -193,6 +206,20 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch DeleteItem(
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null);
+
+#if INTERNAL
+        /// <summary>
+        /// Adds an operation to patch an item into the batch.
+        /// </summary>
+        /// <param name="id">The unique id of the item.</param>
+        /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request.</param>
+        /// <returns>The transactional batch instance with the operation added.</returns>
+        public abstract TransactionalBatch PatchItem(
+                string id,
+                IReadOnlyList<PatchOperation> patchOperations,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+#endif
 
         /// <summary>
         /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.

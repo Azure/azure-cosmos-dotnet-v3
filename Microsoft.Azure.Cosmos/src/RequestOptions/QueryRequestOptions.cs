@@ -159,6 +159,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal TestInjections TestSettings { get; set; }
 
+        internal FeedRange FeedRange { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -231,6 +233,12 @@ namespace Microsoft.Azure.Cosmos
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
+            if (this.FeedRange != null)
+            {
+                FeedRangeRequestMessagePopulatorVisitor queryFeedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
+                ((FeedRangeInternal)this.FeedRange).Accept(queryFeedRangeVisitor);
+            }
+
             base.PopulateRequestOptions(request);
         }
 
@@ -265,16 +273,6 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
                 request.Headers.ContinuationToken = continuationToken;
-            }
-        }
-
-        internal static void FillMaxItemCount(
-            RequestMessage request,
-            int? maxItemCount)
-        {
-            if (maxItemCount != null && maxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
     }

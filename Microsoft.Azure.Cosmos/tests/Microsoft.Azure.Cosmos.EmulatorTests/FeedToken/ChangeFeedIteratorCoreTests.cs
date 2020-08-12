@@ -7,17 +7,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [SDK.EmulatorTests.TestClass]
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
@@ -65,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning()) as ChangeFeedIteratorCore;
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {
@@ -88,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             // Insert another batch of 25 and use the last FeedToken from the first cycle
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
-            ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.ContinuationToken(continuation)) as ChangeFeedIteratorCore;
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -120,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await Task.Delay(1000);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = now });
+            FeedIterator feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Time(now));
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
@@ -162,7 +162,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             ContainerInternal itemsCore = this.Container;
-            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(
+                    FeedRange.FromPartitionKey(
+                        new PartitionKey(pkToRead)))) as ChangeFeedIteratorCore;
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {
@@ -173,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         totalCount += response.Count;
-                        foreach(ToDoActivity toDoActivity in response)
+                        foreach (ToDoActivity toDoActivity in response)
                         {
                             Assert.AreEqual(pkToRead, toDoActivity.status);
                         }
@@ -193,7 +196,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
             }
 
-            ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.ContinuationToken(continuation)) as ChangeFeedIteratorCore;
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -240,7 +244,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             ContainerInternal itemsCore = this.Container;
-            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(new PartitionKey(pkToRead), changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(
+                ChangeFeedStartFrom.Beginning(new FeedRangePartitionKey(new PartitionKey(pkToRead))));
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {
@@ -264,7 +269,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
             }
 
-            FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(continuationToken: continuation, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(
+                ChangeFeedStartFrom.ContinuationToken(continuation));
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -292,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(ChangeFeedStartFrom.Beginning());
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {
@@ -307,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             // Insert another batch of 25 and use the last FeedToken from the first cycle
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(continuationToken: continuation, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() });
+            FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(ChangeFeedStartFrom.ContinuationToken(continuation));
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -330,7 +336,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             bool createdDocuments = false;
 
             ContainerInternal itemsCore = this.Container;
-            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator() as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning()) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults
                 || (createdDocuments && totalCount == 0))
@@ -366,7 +373,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { MaxItemCount = 1, StartTime = DateTime.MinValue.ToUniversalTime() }) as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(),
+                changeFeedRequestOptions: new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 1,
+                }) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults)
             {
@@ -406,16 +418,30 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int count = 0;
             while (true)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() };
+                ChangeFeedStartFrom startFrom;
+                if (continuation == null)
+                {
+                    startFrom = ChangeFeedStartFrom.Beginning();
+                }
+                else
+                {
+                    startFrom = ChangeFeedStartFrom.ContinuationToken(continuation);
+                }
 
-                ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
-                using (ResponseMessage responseMessage =
-                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(startFrom) as ChangeFeedIteratorCore;
+                using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         count += response.Count;
+                    }
+                    else
+                    {
+                        if (responseMessage.StatusCode != HttpStatusCode.NotModified)
+                        {
+                            Assert.Fail(responseMessage.ErrorMessage);
+                        }
                     }
 
                     continuation = responseMessage.ContinuationToken;
@@ -428,7 +454,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                 if (iterations++ > pkRangesCount)
                 {
-                    Assert.Fail("Feed does not contain all elements even after looping through PK ranges. Either the continuation is not moving forward or there is some state problem.");
+                    Assert.Fail("" +
+                        "Feed does not contain all elements even after looping through PK ranges. " +
+                        "Either the continuation is not moving forward or there is some state problem.");
                 }
             }
         }
@@ -444,7 +472,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             List<CompositeContinuationToken> previousToken = null;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime(), MaxItemCount = 1 }) as ChangeFeedIteratorCore;
+            ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(),
+                new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 1,
+                }) as ChangeFeedIteratorCore;
             while (true)
             {
                 using (ResponseMessage responseMessage =
@@ -489,7 +522,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 int count = 0;
                 ChangeFeedIteratorCore iteratorForToken =
-                    itemsCore.GetChangeFeedStreamIterator(token, changeFeedRequestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue }) as ChangeFeedIteratorCore;
+                    itemsCore.GetChangeFeedStreamIterator(
+                        ChangeFeedStartFrom.Beginning(token)) as ChangeFeedIteratorCore;
                 while (true)
                 {
                     using (ResponseMessage responseMessage =
@@ -524,9 +558,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         public async Task CannotMixTokensFromOtherContainers()
         {
             IReadOnlyList<FeedRange> tokens = await this.LargerContainer.GetFeedRangesAsync();
-            FeedIterator iterator = this.LargerContainer.GetChangeFeedStreamIterator(tokens[0]);
+            FeedIterator iterator = this.LargerContainer.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(tokens[0]));
             ResponseMessage responseMessage = await iterator.ReadNextAsync();
-            iterator = this.Container.GetChangeFeedStreamIterator(responseMessage.ContinuationToken);
+            iterator = this.Container.GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.ContinuationToken(responseMessage.ContinuationToken));
             responseMessage = await iterator.ReadNextAsync();
             Assert.IsNotNull(responseMessage.CosmosException);
             Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage.StatusCode);

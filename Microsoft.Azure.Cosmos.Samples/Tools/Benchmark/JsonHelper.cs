@@ -11,7 +11,10 @@ namespace CosmosBenchmark
     internal static class JsonHelper
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-        private static readonly JsonSerializer serializer = JsonSerializer.Create();
+        private static readonly JsonSerializer serializer = JsonSerializer.Create(new JsonSerializerSettings() {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    Formatting = Formatting.Indented,
+                });
         private const int DefaultCapacity = 1024;
 
         public static string ToString<T>(T input)
@@ -38,10 +41,7 @@ namespace CosmosBenchmark
             {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
-                    writer.Formatting = Formatting.None;
-                    writer.Formatting = Formatting.Indented;
-                    JsonSerializer jsonSerializer = JsonHelper.serializer;
-                    jsonSerializer.Serialize(writer, input);
+                    JsonHelper.serializer.Serialize(writer, input);
                     writer.Flush();
                     streamWriter.Flush();
                 }

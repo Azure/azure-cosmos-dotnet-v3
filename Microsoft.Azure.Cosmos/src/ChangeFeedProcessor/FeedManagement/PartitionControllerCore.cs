@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             catch (Exception e)
             {
                 Extensions.TraceException(e);
-                DefaultTrace.TraceWarning("Lease with token {0}: processing failed", e, lease.CurrentLeaseToken);
+                DefaultTrace.TraceWarning("Lease with token {0}: processing failed", lease.CurrentLeaseToken);
             }
 
             await this.RemoveLeaseAsync(lease).ConfigureAwait(false);
