@@ -34,17 +34,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
-        /// <param name="pathsToEncrypt">list of all the paths to encrypt along with their corresponding keys</param>
+        /// <param name="propertiesToEncrypt">list of all the paths to encrypt along with their corresponding keys</param>
         /// <returns>Container to perform operations supporting property and item level client-side encryption / decryption.</returns>
         public static Container WithPropertyEncryptor(
             this Container container,
             Encryptor encryptor,
-            Dictionary<List<string>, string> pathsToEncrypt)
+            Dictionary<List<string>, string> propertiesToEncrypt)
         {
             return new EncryptionContainer(
                 container,
                 encryptor,
-                pathsToEncrypt);
+                propertiesToEncrypt);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
-                pathsToEncrypt: null,
+                propertiesToEncrypt: null,
                 decryptionResultHandler);
         }
     }

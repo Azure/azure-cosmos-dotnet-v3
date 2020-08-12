@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
@@ -8,7 +12,6 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal sealed class EncryptionContainer : Container
     {
@@ -22,35 +25,35 @@
 
         // A dictionary of the property paths to encrypt with their corresponding key
         // 1 or more paths can be stored in the List to encrypt with the corresponding key
-        private IReadOnlyDictionary<List<string>, string> pathsToEncrypt = new Dictionary<List<string>, string>();
+        private readonly IReadOnlyDictionary<List<string>, string> propertiesToEncrypt = new Dictionary<List<string>, string>();
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
-        /// <param name="toEncrypt">Dictionary of List of paths and their corresponding key for property encryption</param>
+        /// <param name="propertiesToEncrypt">Dictionary of List of paths and their corresponding key for property encryption</param>
         public EncryptionContainer(
             Container container,
             Encryptor encryptor,
-            IReadOnlyDictionary<List<string>, string> toEncrypt = null)
+            IReadOnlyDictionary<List<string>, string> propertiesToEncrypt = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
-            this.pathsToEncrypt = toEncrypt;
+            this.propertiesToEncrypt = propertiesToEncrypt;
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.cosmosSerializer = this.Database.Client.ClientOptions.Serializer;
 
-            if (toEncrypt != null)
+            if (propertiesToEncrypt != null)
             {
                 List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
-                foreach (KeyValuePair<List<string>, string> entry in toEncrypt)
+                foreach (KeyValuePair<List<string>, string> entry in propertiesToEncrypt)
                 {
                     propertyEncryptionOptions.Add(
                         new EncryptionOptions()
                         {
                             DataEncryptionKeyId = entry.Value,
-                            EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                            EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                             PathsToEncrypt = entry.Key,
                         });
                 }
@@ -78,26 +81,8 @@
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (this.pathsToEncrypt != null)
-            {
-                if (partitionKey == null)
-                {
-                    throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
-                }
-
-                Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
-                using (ResponseMessage responseMessage = await this.CreateItemStreamAsync(
-                    itemStream,
-                    partitionKey.Value,
-                    requestOptions,
-                    cancellationToken))
-                {
-                    return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
-                }
-            }
-
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            if ((requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
+                || this.propertiesToEncrypt != null)
             {
                 if (partitionKey == null)
                 {
@@ -135,23 +120,18 @@
                 throw new ArgumentNullException(nameof(streamPayload));
             }
 
-            if (this.pathsToEncrypt != null && this.pathsToEncrypt.Count != 0)
-            {
-                CosmosDiagnosticsContext diagnosticsContexts = CosmosDiagnosticsContext.Create(options: null);
-
-                streamPayload = await PropertyEncryptionProcessor.EncryptAsync(
-                    streamPayload,
-                    this.Encryptor,
-                    this.propertyEncryptionOptions,
-                    diagnosticsContexts,
-                    cancellationToken);
-            }
-
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
             {
-                if (this.propertyEncryptionOptions != null)
+                if (this.propertyEncryptionOptions != null && this.propertiesToEncrypt != null && this.propertiesToEncrypt.Count != 0)
                 {
+                    streamPayload = await PropertyEncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    this.Encryptor,
+                    this.propertyEncryptionOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+
                     ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
                          streamPayload,
                          partitionKey,
@@ -297,22 +277,8 @@
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (this.pathsToEncrypt != null)
-            {
-                using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-                using (ResponseMessage responseMessage = await this.ReplaceItemStreamAsync(
-                    itemStream,
-                    id,
-                    partitionKey.Value,
-                    requestOptions,
-                    cancellationToken))
-                {
-                    return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
-                }
-            }
-
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            if ((requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
+                || this.propertiesToEncrypt != null)
             {
                 if (partitionKey == null)
                 {
@@ -445,21 +411,8 @@
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (this.pathsToEncrypt != null)
-            {
-                using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-                using (ResponseMessage responseMessage = await this.UpsertItemStreamAsync(
-                    itemStream,
-                    partitionKey.Value,
-                    requestOptions,
-                    cancellationToken))
-                {
-                    return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
-                }
-            }
-
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            if ((requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
+                || this.propertiesToEncrypt != null)
             {
                 if (partitionKey == null)
                 {
@@ -726,38 +679,24 @@
                 decryptionResultHandler = null;
             }
 
+            // we just try to identify if the request is with Encrypted Values so that they can be replaced
+            // later on in the processing phase with encrypted values.
             if (queryDefinition != null)
             {
                 if (this.propertyEncryptionOptions != null)
                 {
-                    string modifiedText = queryDefinition.QueryText;
                     foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
                     {
-                        foreach (List<string> paths in this.pathsToEncrypt.Keys)
+                        foreach (List<string> paths in this.propertiesToEncrypt.Keys)
                         {
-                            modifiedText = modifiedText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
-                        }
-                    }
-
-                    foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
-                    {
-                        foreach (List<string> paths in this.pathsToEncrypt.Keys)
-                        {
-                            if (SqlQuery.TryParse(modifiedText, out SqlQuery sqlQuery)
-                                && (sqlQuery.WhereClause != null)
-                                && (sqlQuery.WhereClause.FilterExpression != null)
-                                && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression)
-                                && (expression.OperatorKind == SqlBinaryScalarOperatorKind.Equal))
-                            {
-                                return new EncryptionFeedIterator(
-                                        queryDefinition,
-                                        this.pathsToEncrypt,
-                                        requestOptions,
-                                        this.Encryptor,
-                                        this.container,
-                                        decryptionResultHandler,
-                                        continuationToken);
-                            }
+                            return new EncryptionFeedIterator(
+                                           queryDefinition,
+                                           this.propertiesToEncrypt,
+                                           requestOptions,
+                                           this.Encryptor,
+                                           this.container,
+                                           decryptionResultHandler,
+                                           continuationToken);
                         }
                     }
                 }
@@ -769,7 +708,7 @@
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.pathsToEncrypt,
+                this.propertiesToEncrypt,
                 decryptionResultHandler);
         }
 
@@ -790,18 +729,21 @@
 
             if (queryText != null)
             {
-                if (this.pathsToEncrypt != null)
+                if (this.propertiesToEncrypt != null)
                 {
-                    foreach (List<string> paths in this.pathsToEncrypt.Keys)
+                    foreach (List<string> paths in this.propertiesToEncrypt.Keys)
                     {
                         foreach (string path in paths)
                         {
+                            // first hit,this query contains a path which was encrypted send it out for
+                            // reconstructing it with encrypted values.We handle what parameters to encrypt
+                            // when we recreate the query since the query can contain paths that were not encrypted to begin with.
                             if (queryText.Contains(path.Substring(1)))
                             {
                                 QueryDefinition queryDefinition = new QueryDefinition(queryText);
                                 return new EncryptionFeedIterator(
                                        queryDefinition,
-                                       this.pathsToEncrypt,
+                                       this.propertiesToEncrypt,
                                        requestOptions,
                                        this.Encryptor,
                                        this.container,
@@ -819,7 +761,7 @@
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.pathsToEncrypt,
+                this.propertiesToEncrypt,
                 decryptionResultHandler);
         }
 
@@ -870,7 +812,7 @@
                     continuationToken,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.pathsToEncrypt,
+                this.propertiesToEncrypt,
                 decryptionResultHandler);
         }
 
@@ -893,7 +835,7 @@
                     feedRange,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.pathsToEncrypt,
+                this.propertiesToEncrypt,
                 decryptionResultHandler);
         }
 
@@ -916,7 +858,7 @@
                     partitionKey,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.pathsToEncrypt,
+                this.propertiesToEncrypt,
                 decryptionResultHandler);
         }
 
@@ -983,7 +925,7 @@
                    continuationToken,
                    requestOptions),
                this.Encryptor,
-               this.pathsToEncrypt,
+               this.propertiesToEncrypt,
                decryptionResultHandler);
         }
 
@@ -1019,7 +961,7 @@
                       input,
                       this.Encryptor,
                       diagnosticsContext,
-                      this.pathsToEncrypt,
+                      this.propertiesToEncrypt,
                       cancellationToken);
             }
             catch (Exception exception)
@@ -1028,7 +970,7 @@
                 if (decryptionResultHandler == null)
                 {
                     throw;
-                } 
+                }
 
                 using (MemoryStream memoryStream = new MemoryStream((int)input.Length))
                 {

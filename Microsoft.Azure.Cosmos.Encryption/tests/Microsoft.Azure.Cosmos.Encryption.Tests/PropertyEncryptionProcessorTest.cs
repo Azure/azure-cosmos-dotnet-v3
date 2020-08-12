@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new EncryptionOptions()
                 {
                     DataEncryptionKeyId = PropertyEncryptionProcessorTests.pdekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                     PathsToEncrypt = TestDoc.PropertyPathsToEncrypt
                 }
             } };
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new EncryptionOptions()
                 {
                     DataEncryptionKeyId = PropertyEncryptionProcessorTests.pdekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                     PathsToEncrypt = new List<string>() { "/Name", "/Invalid" }
                 });
 

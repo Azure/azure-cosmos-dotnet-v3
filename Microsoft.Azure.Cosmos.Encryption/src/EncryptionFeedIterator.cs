@@ -8,12 +8,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.SqlObjects;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
@@ -22,35 +20,35 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly Container container;
         private readonly Action<DecryptionResult> decryptionResultHandler;
         private readonly QueryDefinition queryDefinition;
-        private readonly QueryRequestOptions requestOptions;
+        private readonly QueryRequestOptions queryRequestOptions;
         private readonly string continuationToken;
-        private readonly IReadOnlyDictionary<List<string>, string> pathsToEncrypt = new Dictionary<List<string>, string>();
+        private readonly IReadOnlyDictionary<List<string>, string> propertiesToEncrypt = new Dictionary<List<string>, string>();
         private FeedIterator feedIterator;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            IReadOnlyDictionary<List<string>, string> pathsToEncrypt,
+            IReadOnlyDictionary<List<string>, string> propertiesToEncrypt,
             Action<DecryptionResult> decryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
-            this.pathsToEncrypt = pathsToEncrypt;
+            this.propertiesToEncrypt = propertiesToEncrypt;
             this.decryptionResultHandler = decryptionResultHandler;
         }
 
         public EncryptionFeedIterator(
             QueryDefinition queryDefinition,
-            IReadOnlyDictionary<List<string>, string> pathsToEncrypt,
-            QueryRequestOptions requestOptions,
+            IReadOnlyDictionary<List<string>, string> propertiesToEncrypt,
+            QueryRequestOptions queryRequestOptions,
             Encryptor encryptor,
             Container container,
             Action<DecryptionResult> decryptionResultHandler,
             string continuationToken = null)
         {
             this.queryDefinition = queryDefinition;
-            this.pathsToEncrypt = pathsToEncrypt;
-            this.requestOptions = requestOptions;
+            this.propertiesToEncrypt = propertiesToEncrypt;
+            this.queryRequestOptions = queryRequestOptions;
             this.encryptor = encryptor;
             this.container = container;
             this.decryptionResultHandler = decryptionResultHandler;
@@ -112,13 +110,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 try
                 {
                     JObject decryptedDocument;
-                    if (this.pathsToEncrypt != null)
+                    if (this.propertiesToEncrypt != null)
                     {
                         decryptedDocument = await PropertyEncryptionProcessor.DecryptAsync(
                             document,
                             this.encryptor,
                             diagnosticsContext,
-                            this.pathsToEncrypt,
+                            this.propertiesToEncrypt,
                             cancellationToken);
                     }
                     else
@@ -172,42 +170,63 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async Task<FeedIterator> InitializeInternalFeedIteratorAsync(QueryDefinition queryDefinition)
         {
             QueryDefinition newqueryDefinition = queryDefinition;
+
+            // if paramaterized Query was sent else build one.
             if (queryDefinition.Parameters.Count == 0)
             {
-                newqueryDefinition = this.CreateDefinition(this.queryDefinition.QueryText);
+                 newqueryDefinition = this.CreateDefinition(this.queryDefinition.QueryText);
             }
 
             QueryDefinition queryWithEncryptedParameters = new QueryDefinition(newqueryDefinition.QueryText);
-            string modifiedText = newqueryDefinition.QueryText;
 
+            // when passed via QueryDefinition we need to replace with actual Values.
+            string queryTextWithValues = newqueryDefinition.QueryText;
             foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
             {
-                modifiedText = modifiedText.Replace((string)parameters.Value.Name, (string)parameters.Value.Value);
+                queryTextWithValues = queryTextWithValues.Replace((string)parameters.Value.Name, parameters.Value.Value.ToString());
+
+                // if the query definition had a bunch of encrypted and plain text values
+                // lets replace it initially with plain text and the configured encrypted properties get replaced with encrypted values.
+                queryWithEncryptedParameters.WithParameter(parameters.Value.Name, parameters.Value.Value);
             }
 
-            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
+            if (SqlQuery.TryParse(queryTextWithValues, out SqlQuery sqlQuery)
+                    && (sqlQuery.WhereClause != null)
+                    && (sqlQuery.WhereClause.FilterExpression != null)
+                    && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression)
+                    && (expression.OperatorKind == SqlBinaryScalarOperatorKind.Equal))
             {
-                foreach (List<string> paths in this.pathsToEncrypt.Keys)
+                // we have bunch of parameters that we have indentified,these need to be encrypted before we send out a
+                // query request.
+                foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
                 {
-                    if (SqlQuery.TryParse(modifiedText, out SqlQuery sqlQuery)
-                        && (sqlQuery.WhereClause != null)
-                        && (sqlQuery.WhereClause.FilterExpression != null)
-                        && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression)
-                        && (expression.OperatorKind == SqlBinaryScalarOperatorKind.Equal))
-                    {
-                        foreach (string path in paths)
-                        {
-                            string leftExpression = expression.LeftExpression.ToString();
-                            if (leftExpression.Contains(path.Substring(1)))
-                            {
-                                byte[] plaintext = System.Text.Encoding.UTF8.GetBytes((string)parameters.Value.Value);
-                                byte[] ciphertext = await this.encryptor.EncryptAsync(
-                                    plaintext,
-                                    this.pathsToEncrypt[paths],
-                                    CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256);
+                    string propertyValue = string.Empty;
+                    string propertyName = parameters.Value.Name.Substring(1);
+                    int pos = queryTextWithValues.IndexOf(propertyName);
 
-                                queryWithEncryptedParameters.WithParameter(parameters.Key, ciphertext);
-                            }
+                    // TODO handle this and formats.
+                    if (pos >= 0)
+                    {
+                        string temp = queryTextWithValues.Substring(pos + propertyName.Length).Trim();
+                        string[] parts = temp.Split(' ');
+                        propertyValue = parts[1];
+                    }
+
+                    foreach (List<string> paths in this.propertiesToEncrypt.Keys)
+                    {
+                        if (paths.Contains("/" + propertyName))
+                        {
+                            // get the Data Encryption Key configured for this path set.
+                            this.propertiesToEncrypt.TryGetValue(paths, out string dEK);
+
+                            byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(propertyValue);
+                            byte[] ciphertext = await this.encryptor.EncryptAsync(
+                                plaintext,
+                                dEK,
+                                CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic);
+
+                            // replace the parameter values with the encrypted value.
+                            queryWithEncryptedParameters.WithParameter("@" + propertyName, ciphertext);
                         }
                     }
                 }
@@ -216,31 +235,56 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.container.GetItemQueryStreamIterator(
                                     queryWithEncryptedParameters,
                                     this.continuationToken,
-                                    this.requestOptions);
+                                    this.queryRequestOptions);
         }
 
         private QueryDefinition CreateDefinition(string queryText)
         {
             QueryDefinition queryDefinition = new QueryDefinition(queryText);
-            foreach (List<string> paths in this.pathsToEncrypt.Keys)
-            {
-                if (SqlQuery.TryParse(queryText, out SqlQuery sqlQuery)
+            string newExpression = queryText;
+            Dictionary<string, string> parameterKeyValue = new Dictionary<string, string>();
+
+            if (SqlQuery.TryParse(queryText, out SqlQuery sqlQuery)
                     && (sqlQuery.WhereClause != null)
                     && (sqlQuery.WhereClause.FilterExpression != null)
                     && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression)
                     && (expression.OperatorKind == SqlBinaryScalarOperatorKind.Equal))
+            {
+                // for each of the paths to be encrypted identify the properties in
+                // the current query and build a new query.
+                foreach (List<string> paths in this.propertiesToEncrypt.Keys)
                 {
+                    string propertyValue = null;
+                    string propertyName = null;
                     foreach (string path in paths)
                     {
-                        string rightExpression = expression.RightExpression.ToString();
-                        string leftExpression = expression.LeftExpression.ToString();
-                        if (leftExpression.Contains(path.Substring(1)))
+                        propertyValue = string.Empty;
+                        propertyName = path.Substring(1);
+                        int pos = queryText.IndexOf(propertyName);
+
+                        // TODO handle this and formats.
+                        if (pos >= 0)
                         {
-                            string newExpression = queryText.Replace(rightExpression, "@" + path.Substring(1));
-                            queryDefinition = new QueryDefinition(newExpression);
-                            queryDefinition.WithParameter("@" + path.Substring(1), rightExpression);
+                            string temp = queryText.Substring(pos + propertyName.Length).Trim();
+                            string[] parts = temp.Split(' ');
+                            propertyValue = parts[1];
+
+                            if (paths.Contains("/" + propertyName))
+                            {
+                                // build the list of parameters and their values to build query definition with these parameters.
+                                newExpression = newExpression.Replace(propertyValue, "@" + propertyName);
+                                parameterKeyValue.Add(propertyName, propertyValue);
+                            }
                         }
                     }
+                }
+
+                // Build a new QueryDefinition for the new expression
+                // with paramertes identified.
+                queryDefinition = new QueryDefinition(newExpression);
+                foreach (KeyValuePair<string, string> entry in parameterKeyValue)
+                {
+                    queryDefinition.WithParameter("@" + entry.Key, entry.Value);
                 }
             }
 

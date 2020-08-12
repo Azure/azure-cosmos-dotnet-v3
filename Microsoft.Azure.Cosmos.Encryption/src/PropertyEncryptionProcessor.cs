@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -83,16 +82,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (itemJObj != null)
                 {
-                    foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+                    foreach (string propertiesToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
-                        string propertyName = pathToEncrypt.Substring(1);
+                        string propertyName = propertiesToEncrypt.Substring(1);
                         if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
-                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{propertiesToEncrypt}' which was not found.");
                         }
 
-                        string value = propertyValue.Value<string>();
-                        byte[] plainText = System.Text.Encoding.UTF8.GetBytes(value);
+                        string value = JsonConvert.SerializeObject(propertyValue);
+                        Debug.Assert(value != null);
+
+                        byte[] plainText = Encoding.UTF8.GetBytes(value);
 
                         byte[] cipherText = await encryptor.EncryptAsync(
                             plainText,
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         {
                             EncryptionProperties encryptionProperties = new EncryptionProperties(
                                         encryptionFormatVersion: 2,
-                                        CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                                        CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                                         pathsToEncrypt[paths],
                                         propertyValue.ToObject<byte[]>(),
                                         path);
@@ -225,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         EncryptionProperties encryptionProperties = new EncryptionProperties(
                                     encryptionFormatVersion: 2,
-                                    CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                                    CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                                     pathsToEncrypt[paths],
                                     propertyValue.ToObject<byte[]>(),
                                     path);
@@ -288,7 +289,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionProperties.EncryptedPaths != null)
             {
-                string val = System.Text.Encoding.UTF8.GetString(plainText);
+                string val = Encoding.UTF8.GetString(plainText);
+                val = JsonConvert.DeserializeObject(val).ToString();
 
                 JObject plainTextJObj = new JObject();
                 string key = encryptionProperties.EncryptedPaths.Substring(1);

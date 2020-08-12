@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
-                CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                 EncryptionContainerTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);

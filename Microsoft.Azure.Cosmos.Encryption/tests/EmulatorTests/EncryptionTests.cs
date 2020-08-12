@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             EncryptionTests.singlepropertySingleDek = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncrypt);
             EncryptionTests.multipropertyMultiDek = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncryptMultiDek);
+            EncryptionTests.multipropertySingleDek = EncryptionTests.itemContainer.WithPropertyEncryptor(encryptor, EncryptionTests.PathsToEncryptSingleDek);
 
             EncryptionTests.rawDekForKeyVault = DataEncryptionKey.Generate(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
             EncryptionTests.encryptionTestsTokenCredentialFactory = new EncryptionTestsTokenCredentialFactory();
@@ -550,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.singlepropertySingleDek,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}'",
+                    "SELECT * FROM c where c.PK = {0} and c.id = {1}",
                     expectedDoc.PK,
                     expectedDoc.Id),
                 expectedDoc);
@@ -621,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.singlepropertySingleDek,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}'",
+                    "SELECT * FROM c where c.PK = {0} and c.id = {1}",
                     expectedDoc.PK,
                     expectedDoc.Id),
                 expectedDoc);
@@ -677,68 +678,66 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                  EncryptionTests.multipropertyMultiDek,
                  string.Format(
                      "SELECT * FROM c where c.Name = {0}",
-                     expectedDoc.Name),
+                     JsonConvert.SerializeObject(expectedDoc.Name)),
                      expectedDoc);
+
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.multipropertyMultiDek,
                  string.Format(
                      "SELECT * FROM c where c.City = {0}",
-                     expectedDoc.City),
-                     expectedDoc);
-            // FIX
-#if true
+                     JsonConvert.SerializeObject(expectedDoc.City)),
+                     expectedDoc);          
+
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.multipropertyMultiDek,
                 string.Format(
-                    "SELECT * FROM c where c.id = '{0}' and c.City = {1}",
-                    expectedDoc.Id,
-                    expectedDoc.City),
+                    "SELECT * FROM c where c.id = {0} and c.City = {1}",
+                    JsonConvert.SerializeObject(expectedDoc.Id),
+                    JsonConvert.SerializeObject(expectedDoc.City)),
                 expectedDoc);
-#endif
            
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.multipropertyMultiDek,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}'",
-                    expectedDoc.PK,
-                    expectedDoc.Id),
+                    "SELECT * FROM c where c.PK = {0} and c.id = {1}",
+                    JsonConvert.SerializeObject(expectedDoc.PK),
+                    JsonConvert.SerializeObject(expectedDoc.Id)),
                 expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                EncryptionTests.multipropertyMultiDek,
                queryDefinition: new QueryDefinition(
-                   "select * from c where c.City = @theCity")
-                        .WithParameter("@theCity", expectedDoc.City),
+                   "select * from c where c.City = @City")
+                        .WithParameter("@City", JsonConvert.SerializeObject(expectedDoc.City)),
                expectedDoc: expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                EncryptionTests.multipropertyMultiDek,
                queryDefinition: new QueryDefinition(
-                   "select * from c where c.Name = @theName")
-                        .WithParameter("@theName", expectedDoc.Name),
+                   "select * from c where c.Name = @Name")
+                        .WithParameter("@Name", JsonConvert.SerializeObject(expectedDoc.Name)),
                expectedDoc: expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.multipropertyMultiDek,
                 queryDefinition: new QueryDefinition(
-                    "select * from c where c.id = @theId and c.PK = @thePK")
-                         .WithParameter("@theId", expectedDoc.Id)
-                         .WithParameter("@thePK", expectedDoc.PK),
+                    "select * from c where c.id = @Id and c.PK = @PK")
+                         .WithParameter("@Id", JsonConvert.SerializeObject(expectedDoc.Id))
+                         .WithParameter("@PK", JsonConvert.SerializeObject(expectedDoc.PK)),
                 expectedDoc: expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                EncryptionTests.multipropertyMultiDek,
                queryDefinition: new QueryDefinition(
-                   "select * from c where c.id = @theId and c.SSN = @theSSN")
-                        .WithParameter("@theId", expectedDoc.Id)
-                        .WithParameter("@theSSN", expectedDoc.SSN),
+                   "select * from c where c.id = @Id and c.SSN = @SSN")
+                        .WithParameter("@Id", JsonConvert.SerializeObject(expectedDoc.Id))
+                        .WithParameter("@SSN", JsonConvert.SerializeObject(expectedDoc.SSN)),
                expectedDoc: expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                  EncryptionTests.multipropertyMultiDek,
                  "SELECT c.id, c.PK, c.Name,c.City,c.SSN, c.Sensitive, c.NonSensitive FROM c",
-                 expectedDoc);
-
+                 expectedDoc: expectedDoc);
         }
 
         [TestMethod]
@@ -768,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.multipropertySingleDek,
                 string.Format(
-                    "SELECT * FROM c where c.id = '{0}' and c.Name= {1} ",
+                    "SELECT * FROM c where c.id = {0} and c.Name= {1} ",
                     expectedDoc.Id, expectedDoc.Name),
                 expectedDoc);
 
@@ -840,13 +839,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await EncryptionTests.ValidateQueryResultsAsync(
                EncryptionTests.singlepropertySingleDek,
-               string.Format("SELECT * FROM c where c.Sensitive = '{0}'", testDoc.Sensitive),
+               string.Format("SELECT * FROM c where c.Sensitive = {0}", testDoc.Sensitive),
                expectedDoc);
 
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.singlepropertySingleDek,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}' and c.NonSensitive = '{2}'",
+                    "SELECT * FROM c where c.PK = {0} and c.id = {1} and c.NonSensitive = {2}",
                     expectedDoc.PK,
                     expectedDoc.Id,
                     expectedDoc.NonSensitive),
@@ -1003,7 +1002,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await EncryptionTests.ValidateQueryResultsAsync(
                 EncryptionTests.encryptionContainer,
                 string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}' and c.NonSensitive = '{2}'",
+                    "SELECT * FROM c where c.PK = {0} and c.id = '{1}' and c.NonSensitive = {2}",
                     expectedDoc.PK,
                     expectedDoc.Id,
                     expectedDoc.NonSensitive),
@@ -1881,7 +1880,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
-                CosmosEncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
                 EncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
