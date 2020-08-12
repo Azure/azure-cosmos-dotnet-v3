@@ -16,34 +16,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             DateTime? startTime,
             bool startFromBeginning)
         {
-            ChangeFeedRequestOptions.StartFrom startFrom;
+            FeedRangeInternal feedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId);
+
+            ChangeFeedStartFrom startFrom;
             if (continuationToken != null)
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuationToken);
+                // For continuation based feed range we need to manufactor a new continuation token that has the partition key range id in it.
+                startFrom = new ChangeFeedStartFromContinuationAndFeedRange(continuationToken, feedRange);
             }
             else if (startTime.HasValue)
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromTime(startTime.Value);
+                startFrom = ChangeFeedStartFrom.Time(startTime.Value, feedRange);
             }
             else if (startFromBeginning)
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning();
+                startFrom = ChangeFeedStartFrom.Beginning(feedRange);
             }
             else
             {
-                startFrom = ChangeFeedRequestOptions.StartFrom.CreateFromNow();
+                startFrom = ChangeFeedStartFrom.Now(feedRange);
             }
 
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                MaxItemCount = maxItemCount,
-                FeedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId),
-                From = startFrom,
+                PageSizeHint = maxItemCount,
             };
 
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
                 clientContext: container.ClientContext,
                 container: container,
+                changeFeedStartFrom: startFrom,
                 options: requestOptions);
         }
     }

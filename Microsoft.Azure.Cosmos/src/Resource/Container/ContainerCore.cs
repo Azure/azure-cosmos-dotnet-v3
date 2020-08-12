@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -251,42 +252,32 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new ChangeFeedIteratorCore(
-                container: this,
-                changeFeedRequestOptions: changeFeedRequestOptions);
-        }
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
-            changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
             return new ChangeFeedIteratorCore(
                 container: this,
+                changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 container: this,
-                changeFeedRequestOptions: changeFeedRequestOptions);
-
-            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
-            changeFeedRequestOptions.FeedRange = new FeedRangePartitionKey(partitionKey);
-            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                container: this,
+                changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);

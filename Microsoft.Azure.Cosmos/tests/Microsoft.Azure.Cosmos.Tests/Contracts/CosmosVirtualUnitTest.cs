@@ -51,33 +51,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Contracts
         }
 
         [TestMethod]
-        public void VerifyAllPublicClassesCanBeMockedUnitTesting()
+        public void VerifyAllPublicClassesCanBeMocked()
         {
+            // The following classes are public, but not meant to be mocked.
+            HashSet<string> nonMockableClasses = new HashSet<string>()
+            {
+                "ChangeFeedStartFrom"
+            };
+
             // All of the public classes should not contain an internal abstract method
             // create unit tests by mocking the different types. Data Contracts do not support mocking so exclude all types that end with Settings.
             IEnumerable<Type> allClasses = from t in Assembly.GetAssembly(typeof(CosmosClient)).GetTypes()
-                                           where t.IsClass && t.Namespace == "Microsoft.Azure.Cosmos" && t.IsPublic
+                                           where
+                                                t.IsClass &&
+                                                t.Namespace == "Microsoft.Azure.Cosmos" &&
+                                                t.IsPublic &&
+                                                !nonMockableClasses.Contains(t.Name)
                                            select t;
 
             // Get the entire list to prevent running the test for each method/property
             List<Tuple<string, string>> nonVirtualPublic = new List<Tuple<string, string>>();
-            foreach (Type publiClass in allClasses)
+            foreach (Type publicClass in allClasses)
             {
                 // DeclaredOnly flag gets only the properties declared in the current class. 
                 // This ignores inherited properties to prevent duplicate findings.
-                IEnumerable<Tuple<string, string>> allProps = publiClass.GetProperties(BindingFlags.DeclaredOnly)
+                IEnumerable<Tuple<string, string>> allProps = publicClass.GetProperties(BindingFlags.DeclaredOnly)
                     .Where(x => x.GetGetMethod().IsAbstract && !x.GetGetMethod().IsPublic)
-                    .Select(x => new Tuple<string, string>(publiClass.FullName, x.Name));
+                    .Select(x => new Tuple<string, string>(publicClass.FullName, x.Name));
                 nonVirtualPublic.AddRange(allProps);
 
-                IEnumerable<Tuple<string, string>> allMethods = publiClass.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                IEnumerable<Tuple<string, string>> allMethods = publicClass.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                     .Where(x => x.IsAbstract && !x.IsPublic)
-                    .Select(x => new Tuple<string, string>(publiClass.FullName, x.Name));
+                    .Select(x => new Tuple<string, string>(publicClass.FullName, x.Name));
                 nonVirtualPublic.AddRange(allMethods);
             }
 
             Assert.AreEqual(0, nonVirtualPublic.Count,
-                "The following methods and properties should be virtual to allow unit testing:" +
+                "The following methods and properties should be virtual to allow mocking:" +
                 string.Join(";", nonVirtualPublic.Select(x => $"Class:{x.Item1}; Member:{x.Item2}")));
         }
 
