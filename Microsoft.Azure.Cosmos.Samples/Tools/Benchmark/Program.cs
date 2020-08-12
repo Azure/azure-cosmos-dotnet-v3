@@ -100,6 +100,12 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
+                    if (config.DisableCoreSdkLogging)
+                    {
+                        // Do it after client initialization (HACK)
+                        Program.ClearCoreSdkListeners();
+                    }
+
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
                     runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
                 }
@@ -112,13 +118,13 @@ namespace CosmosBenchmark
                 }
 
                 runSummary.WorkloadType = config.WorkloadType;
-                runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:hh-mm")}-{config.CommitId}";
+                runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:HH-mm")}-{config.CommitId}";
                 runSummary.Commit = config.CommitId;
                 runSummary.CommitDate = config.CommitDate;
                 runSummary.CommitTime = config.CommitTime;
 
                 runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                runSummary.Time = DateTime.UtcNow.ToString("hh-mm");
+                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
                 runSummary.BranchName = config.BranchName;
                 runSummary.TotalOps = config.ItemCount;
                 runSummary.Concurrency = taskCount;
@@ -235,6 +241,14 @@ namespace CosmosBenchmark
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
             }
+        }
+
+        private static void ClearCoreSdkListeners()
+        {
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Clear();
         }
     }
 }

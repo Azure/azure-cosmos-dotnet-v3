@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
@@ -202,12 +204,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<(string, string)> activityIdAndErrorMessage = new List<(string, string)>(maxCount);
                 Guid transportExceptionActivityId = Guid.NewGuid();
                 string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
-
+                Guid activityIdScope = Guid.Empty;
                 Action<Uri, Documents.ResourceOperation, Documents.DocumentServiceRequest> interceptor =
                     (uri, operation, request) =>
                 {
+                    Assert.AreNotEqual(Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
+                    
                     if (request.ResourceType == Documents.ResourceType.Document)
                     {
+                        if (activityIdScope == Guid.Empty)
+                        {
+                            activityIdScope = Trace.CorrelationManager.ActivityId;
+                        }
+                        else
+                        {
+                            Assert.AreEqual(Trace.CorrelationManager.ActivityId, activityIdScope, "Activity scope should match on retries");
+                        }
+
                         if (count >= maxCount)
                         {
                             TransportClientHelper.ThrowTransportExceptionOnItemOperation(
@@ -459,7 +472,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(),
+                changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())

@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -15,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private sealed class EagerCosmosObject : CosmosObject
         {
@@ -23,11 +25,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public EagerCosmosObject(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
             {
-                if (properties == null)
-                {
-                    throw new ArgumentNullException(nameof(properties));
-                }
-
                 this.properties = new List<KeyValuePair<string, CosmosElement>>(properties);
             }
 
@@ -50,15 +47,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override int Count => this.properties.Count;
 
-            public override bool ContainsKey(string key)
-            {
-                return this.TryGetValue(key, out CosmosElement unused);
-            }
+            public override bool ContainsKey(string key) => this.TryGetValue(key, out _);
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
-            {
-                return this.properties.GetEnumerator();
-            }
+            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this.properties.GetEnumerator();
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
@@ -71,17 +62,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     }
                 }
 
-                value = null;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                value = default; // Dictionary.TryGetValue does not do nullable references
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
                 jsonWriter.WriteObjectStart();
 
                 foreach (KeyValuePair<string, CosmosElement> kvp in this.properties)

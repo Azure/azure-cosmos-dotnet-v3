@@ -1491,7 +1491,7 @@
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
             foreach (float value in values)
             {
-                string expectedStringOutput = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
+                string expectedStringOutput = $"S{value.ToString("R", CultureInfo.InvariantCulture)}";
                 byte[] expectedBinaryOutput;
                 unchecked
                 {
@@ -1520,7 +1520,7 @@
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
             foreach (double value in values)
             {
-                string expectedStringOutput = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
+                string expectedStringOutput = $"D{value.ToString("R", CultureInfo.InvariantCulture)}";
                 byte[] expectedBinaryOutput;
                 unchecked
                 {

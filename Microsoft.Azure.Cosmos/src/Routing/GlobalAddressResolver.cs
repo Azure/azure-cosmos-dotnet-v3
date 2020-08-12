@@ -135,8 +135,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
-                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryUpdate on all AddressCaches of all regions
-                tasks.Add(addressCache.Value.AddressCache.TryUpdateAddressAsync(serverKey, cancellationToken));
+                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
+                tasks.Add(addressCache.Value.AddressCache.TryRemoveAddressesAsync(serverKey, cancellationToken));
             }
 
             await Task.WhenAll(tasks);
