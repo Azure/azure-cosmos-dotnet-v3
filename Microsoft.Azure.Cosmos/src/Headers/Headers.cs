@@ -7,10 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
-    using System.Linq;
-    using System.Reflection;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -31,14 +28,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal SubStatusCodes SubStatusCode
         {
-            get
-            {
-                return Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
-            }
-            set
-            {
-                this.SubStatusCodeLiteral = value.ToString();
-            }
+            get => Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
+            set => this.SubStatusCodeLiteral = value.ToString();
         }
 
         /// <summary>
@@ -46,15 +37,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ContinuationToken
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.Continuation);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.Continuation);
 
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.Continuation, value);
-            }
+            internal set => this.Set(HttpConstants.HttpHeaders.Continuation, value);
         }
 
         /// <summary>
@@ -75,10 +60,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return double.Parse(value);
             }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.RequestCharge, value.ToString());
-            }
+            internal set => this.Set(HttpConstants.HttpHeaders.RequestCharge, value.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>
@@ -89,14 +71,8 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         public virtual string ActivityId
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.ActivityId);
-            }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.ActivityId, value.ToString());
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.ActivityId);
+            internal set => this.Set(HttpConstants.HttpHeaders.ActivityId, value);
         }
 
         /// <summary>
@@ -110,14 +86,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string ETag
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.ETag);
-            }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.ETag, value.ToString());
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.ETag);
+            internal set => this.Set(HttpConstants.HttpHeaders.ETag, value);
         }
 
         /// <summary>
@@ -125,14 +95,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ContentType
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.ContentType);
-            }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.ContentType, value.ToString());
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.ContentType);
+            internal set => this.Set(HttpConstants.HttpHeaders.ContentType, value);
         }
 
         /// <summary>
@@ -143,14 +107,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string Session
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.SessionToken);
-            }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.SessionToken, value.ToString());
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.SessionToken);
+            internal set => this.Set(HttpConstants.HttpHeaders.SessionToken, value);
         }
 
         /// <summary>
@@ -158,14 +116,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ContentLength
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.ContentLength);
-            }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.ContentLength, value.ToString());
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.ContentLength);
+            internal set => this.Set(HttpConstants.HttpHeaders.ContentLength, value);
         }
 
         /// <summary>
@@ -173,122 +125,62 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string Location
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.Location);
-            }
-            internal set
-            {
-                this.Set(HttpConstants.HttpHeaders.Location, value.ToString());
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.Location);
+            internal set => this.Set(HttpConstants.HttpHeaders.Location, value);
         }
 
         internal string SubStatusCodeLiteral
         {
-            get
-            {
-                return this.GetString(WFConstants.BackendHeaders.SubStatus);
-            }
-            set
-            {
-                this.Set(WFConstants.BackendHeaders.SubStatus, value);
-            }
+            get => this.GetString(WFConstants.BackendHeaders.SubStatus);
+            set => this.Set(WFConstants.BackendHeaders.SubStatus, value);
         }
 
         internal string RetryAfterLiteral
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.RetryAfterInMilliseconds);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.RetryAfterInMilliseconds);
+            set => this.Set(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, value);
         }
 
         internal string PartitionKey
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.PartitionKey);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.PartitionKey, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.PartitionKey);
+            set => this.Set(HttpConstants.HttpHeaders.PartitionKey, value);
         }
 
         internal string PartitionKeyRangeId
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.PartitionKeyRangeId);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.PartitionKeyRangeId, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.PartitionKeyRangeId);
+            set => this.Set(HttpConstants.HttpHeaders.PartitionKeyRangeId, value);
         }
 
         internal string IsUpsert
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.IsUpsert);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.IsUpsert, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.IsUpsert);
+            set => this.Set(HttpConstants.HttpHeaders.IsUpsert, value);
         }
 
         internal string OfferThroughput
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.OfferThroughput);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.OfferThroughput, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.OfferThroughput);
+            set => this.Set(HttpConstants.HttpHeaders.OfferThroughput, value);
         }
 
         internal string IfNoneMatch
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.IfNoneMatch);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.IfNoneMatch, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.IfNoneMatch);
+            set => this.Set(HttpConstants.HttpHeaders.IfNoneMatch, value);
         }
 
         internal string PageSize
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.PageSize);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.PageSize, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.PageSize);
+            set => this.Set(HttpConstants.HttpHeaders.PageSize, value);
         }
 
         internal string QueryMetricsText
         {
-            get
-            {
-                return this.GetString(HttpConstants.HttpHeaders.QueryMetrics);
-            }
-            set
-            {
-                this.Set(HttpConstants.HttpHeaders.QueryMetrics, value);
-            }
+            get => this.GetString(HttpConstants.HttpHeaders.QueryMetrics);
+            set => this.Set(HttpConstants.HttpHeaders.QueryMetrics, value);
         }
 
         /// <summary>
@@ -296,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new CosmosMessageHeadersInternal();
+            this.CosmosMessageHeaders = new DictionaryNameValueCollection();
         }
 
         internal Headers(INameValueCollection nameValue)
@@ -440,8 +332,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static SubStatusCodes GetSubStatusCodes(string value)
         {
-            uint nSubStatus = 0;
-            if (uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+            if (uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint nSubStatus))
             {
                 return (SubStatusCodes)nSubStatus;
             }
