@@ -304,8 +304,7 @@
                 }
 
                 AggregateException innerExceptions = itemResponse.Exception.Flatten();
-                CosmosException cosmosException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) as CosmosException;
-                if (cosmosException != null)
+                if (innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
                 {
                     return new OperationResponse<T>()
                     {
