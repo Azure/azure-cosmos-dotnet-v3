@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new DictionaryNameValueCollection();
+            this.CosmosMessageHeaders = new CosmosMessageHeadersInternal();
         }
 
         internal Headers(INameValueCollection nameValue)
