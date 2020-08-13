@@ -21,7 +21,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
-    #if false
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
 
@@ -563,5 +562,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         /// <return>The visitor result.</return>
         public virtual Result VisitLiteral([NotNull] sqlParser.LiteralContext context) { return VisitChildren(context); }
     }
-#endif
 }
