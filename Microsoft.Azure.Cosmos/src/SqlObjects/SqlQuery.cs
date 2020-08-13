@@ -5,10 +5,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Runtime.ExceptionServices;
-#if false
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
-#endif
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
@@ -76,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 throw new ArgumentNullException(nameof(text));
             }
 
-#if false
             AntlrInputStream str = new AntlrInputStream(text);
             sqlLexer lexer = new sqlLexer(str);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -106,13 +103,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
             sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
             return true;
-#else
-            sqlQuery = default;
-            return false;
-#endif
         }
 
-#if false
         private sealed class ThrowExceptionOnErrors : IAntlrErrorStrategy
         {
             public static readonly ThrowExceptionOnErrors Singleton = new ThrowExceptionOnErrors();
@@ -153,6 +145,5 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 // Do nothing
             }
         }
-#endif
     }
 }
