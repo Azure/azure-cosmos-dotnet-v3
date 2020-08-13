@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task TryUpdateAddressAsync(
+        public Task TryRemoveAddressesAsync(
             ServerKey serverKey,
             CancellationToken cancellationToken)
         {
@@ -263,21 +263,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIds)
                 {
-                    DefaultTrace.TraceInformation("Refresh addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
+                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
                        pkRangeId.CollectionRid,
                        pkRangeId.PartitionKeyRangeId,
                        this.serviceEndpoint);
 
-                    tasks.Add(this.serverPartitionAddressCache.GetAsync(
-                       pkRangeId,
-                       null,
-                       () => this.GetAddressesForRangeIdAsync(
-                           null,
-                           pkRangeId.CollectionRid,
-                           pkRangeId.PartitionKeyRangeId,
-                           forceRefresh: true),
-                       cancellationToken,
-                       forceRefresh: true));
+                    tasks.Add(this.serverPartitionAddressCache.RemoveAsync(pkRangeId));
                 }
 
                 // remove the server key from the map since we are updating the addresses
@@ -285,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out ignorePkRanges);
             }
 
-            await Task.WhenAll(tasks);
+            return Task.WhenAll(tasks);
         }
 
         public async Task<PartitionAddressInformation> UpdateAsync(

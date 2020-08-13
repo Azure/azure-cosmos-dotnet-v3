@@ -26,560 +26,560 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     /// <summary>
     /// This interface defines a complete listener for a parse tree produced by
-    /// <see cref="sqlParser"/>.
+    /// <see cref="AntlrSqlParser"/>.
     /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
     internal interface IsqlListener : IParseTreeListener
     {
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.program"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.program"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterProgram([NotNull] sqlParser.ProgramContext context);
+        void EnterProgram([NotNull] AntlrSqlParser.ProgramContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.program"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.program"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitProgram([NotNull] sqlParser.ProgramContext context);
+        void ExitProgram([NotNull] AntlrSqlParser.ProgramContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.sql_query"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.sql_query"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSql_query([NotNull] sqlParser.Sql_queryContext context);
+        void EnterSql_query([NotNull] AntlrSqlParser.Sql_queryContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.sql_query"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.sql_query"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSql_query([NotNull] sqlParser.Sql_queryContext context);
+        void ExitSql_query([NotNull] AntlrSqlParser.Sql_queryContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.select_clause"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.select_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSelect_clause([NotNull] sqlParser.Select_clauseContext context);
+        void EnterSelect_clause([NotNull] AntlrSqlParser.Select_clauseContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.select_clause"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.select_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSelect_clause([NotNull] sqlParser.Select_clauseContext context);
+        void ExitSelect_clause([NotNull] AntlrSqlParser.Select_clauseContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.top_spec"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.top_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterTop_spec([NotNull] sqlParser.Top_specContext context);
+        void EnterTop_spec([NotNull] AntlrSqlParser.Top_specContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.top_spec"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.top_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitTop_spec([NotNull] sqlParser.Top_specContext context);
+        void ExitTop_spec([NotNull] AntlrSqlParser.Top_specContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.selection"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.selection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSelection([NotNull] sqlParser.SelectionContext context);
+        void EnterSelection([NotNull] AntlrSqlParser.SelectionContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.selection"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.selection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSelection([NotNull] sqlParser.SelectionContext context);
+        void ExitSelection([NotNull] AntlrSqlParser.SelectionContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.select_star_spec"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.select_star_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSelect_star_spec([NotNull] sqlParser.Select_star_specContext context);
+        void EnterSelect_star_spec([NotNull] AntlrSqlParser.Select_star_specContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.select_star_spec"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.select_star_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSelect_star_spec([NotNull] sqlParser.Select_star_specContext context);
+        void ExitSelect_star_spec([NotNull] AntlrSqlParser.Select_star_specContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.select_value_spec"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.select_value_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSelect_value_spec([NotNull] sqlParser.Select_value_specContext context);
+        void EnterSelect_value_spec([NotNull] AntlrSqlParser.Select_value_specContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.select_value_spec"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.select_value_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSelect_value_spec([NotNull] sqlParser.Select_value_specContext context);
+        void ExitSelect_value_spec([NotNull] AntlrSqlParser.Select_value_specContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.select_list_spec"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.select_list_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSelect_list_spec([NotNull] sqlParser.Select_list_specContext context);
+        void EnterSelect_list_spec([NotNull] AntlrSqlParser.Select_list_specContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.select_list_spec"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.select_list_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSelect_list_spec([NotNull] sqlParser.Select_list_specContext context);
+        void ExitSelect_list_spec([NotNull] AntlrSqlParser.Select_list_specContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.select_item"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.select_item"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSelect_item([NotNull] sqlParser.Select_itemContext context);
+        void EnterSelect_item([NotNull] AntlrSqlParser.Select_itemContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.select_item"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.select_item"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSelect_item([NotNull] sqlParser.Select_itemContext context);
+        void ExitSelect_item([NotNull] AntlrSqlParser.Select_itemContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.from_clause"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.from_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterFrom_clause([NotNull] sqlParser.From_clauseContext context);
+        void EnterFrom_clause([NotNull] AntlrSqlParser.From_clauseContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.from_clause"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.from_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitFrom_clause([NotNull] sqlParser.From_clauseContext context);
+        void ExitFrom_clause([NotNull] AntlrSqlParser.From_clauseContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>JoinCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterJoinCollectionExpression([NotNull] sqlParser.JoinCollectionExpressionContext context);
+        void EnterJoinCollectionExpression([NotNull] AntlrSqlParser.JoinCollectionExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>JoinCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitJoinCollectionExpression([NotNull] sqlParser.JoinCollectionExpressionContext context);
+        void ExitJoinCollectionExpression([NotNull] AntlrSqlParser.JoinCollectionExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>AliasedCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterAliasedCollectionExpression([NotNull] sqlParser.AliasedCollectionExpressionContext context);
+        void EnterAliasedCollectionExpression([NotNull] AntlrSqlParser.AliasedCollectionExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>AliasedCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitAliasedCollectionExpression([NotNull] sqlParser.AliasedCollectionExpressionContext context);
+        void ExitAliasedCollectionExpression([NotNull] AntlrSqlParser.AliasedCollectionExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>ArrayIteratorCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterArrayIteratorCollectionExpression([NotNull] sqlParser.ArrayIteratorCollectionExpressionContext context);
+        void EnterArrayIteratorCollectionExpression([NotNull] AntlrSqlParser.ArrayIteratorCollectionExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>ArrayIteratorCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitArrayIteratorCollectionExpression([NotNull] sqlParser.ArrayIteratorCollectionExpressionContext context);
+        void ExitArrayIteratorCollectionExpression([NotNull] AntlrSqlParser.ArrayIteratorCollectionExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>InputPathCollection</c>
-        /// labeled alternative in <see cref="sqlParser.collection"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterInputPathCollection([NotNull] sqlParser.InputPathCollectionContext context);
+        void EnterInputPathCollection([NotNull] AntlrSqlParser.InputPathCollectionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>InputPathCollection</c>
-        /// labeled alternative in <see cref="sqlParser.collection"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitInputPathCollection([NotNull] sqlParser.InputPathCollectionContext context);
+        void ExitInputPathCollection([NotNull] AntlrSqlParser.InputPathCollectionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>SubqueryCollection</c>
-        /// labeled alternative in <see cref="sqlParser.collection"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSubqueryCollection([NotNull] sqlParser.SubqueryCollectionContext context);
+        void EnterSubqueryCollection([NotNull] AntlrSqlParser.SubqueryCollectionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>SubqueryCollection</c>
-        /// labeled alternative in <see cref="sqlParser.collection"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSubqueryCollection([NotNull] sqlParser.SubqueryCollectionContext context);
+        void ExitSubqueryCollection([NotNull] AntlrSqlParser.SubqueryCollectionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>StringPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterStringPathExpression([NotNull] sqlParser.StringPathExpressionContext context);
+        void EnterStringPathExpression([NotNull] AntlrSqlParser.StringPathExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>StringPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitStringPathExpression([NotNull] sqlParser.StringPathExpressionContext context);
+        void ExitStringPathExpression([NotNull] AntlrSqlParser.StringPathExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>EpsilonPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterEpsilonPathExpression([NotNull] sqlParser.EpsilonPathExpressionContext context);
+        void EnterEpsilonPathExpression([NotNull] AntlrSqlParser.EpsilonPathExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>EpsilonPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitEpsilonPathExpression([NotNull] sqlParser.EpsilonPathExpressionContext context);
+        void ExitEpsilonPathExpression([NotNull] AntlrSqlParser.EpsilonPathExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>IdentifierPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterIdentifierPathExpression([NotNull] sqlParser.IdentifierPathExpressionContext context);
+        void EnterIdentifierPathExpression([NotNull] AntlrSqlParser.IdentifierPathExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>IdentifierPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitIdentifierPathExpression([NotNull] sqlParser.IdentifierPathExpressionContext context);
+        void ExitIdentifierPathExpression([NotNull] AntlrSqlParser.IdentifierPathExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>NumberPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterNumberPathExpression([NotNull] sqlParser.NumberPathExpressionContext context);
+        void EnterNumberPathExpression([NotNull] AntlrSqlParser.NumberPathExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>NumberPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitNumberPathExpression([NotNull] sqlParser.NumberPathExpressionContext context);
+        void ExitNumberPathExpression([NotNull] AntlrSqlParser.NumberPathExpressionContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.where_clause"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.where_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterWhere_clause([NotNull] sqlParser.Where_clauseContext context);
+        void EnterWhere_clause([NotNull] AntlrSqlParser.Where_clauseContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.where_clause"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.where_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitWhere_clause([NotNull] sqlParser.Where_clauseContext context);
+        void ExitWhere_clause([NotNull] AntlrSqlParser.Where_clauseContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.group_by_clause"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.group_by_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterGroup_by_clause([NotNull] sqlParser.Group_by_clauseContext context);
+        void EnterGroup_by_clause([NotNull] AntlrSqlParser.Group_by_clauseContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.group_by_clause"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.group_by_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitGroup_by_clause([NotNull] sqlParser.Group_by_clauseContext context);
+        void ExitGroup_by_clause([NotNull] AntlrSqlParser.Group_by_clauseContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.order_by_clause"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.order_by_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context);
+        void EnterOrder_by_clause([NotNull] AntlrSqlParser.Order_by_clauseContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.order_by_clause"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.order_by_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context);
+        void ExitOrder_by_clause([NotNull] AntlrSqlParser.Order_by_clauseContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.order_by_items"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.order_by_items"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterOrder_by_items([NotNull] sqlParser.Order_by_itemsContext context);
+        void EnterOrder_by_items([NotNull] AntlrSqlParser.Order_by_itemsContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.order_by_items"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.order_by_items"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitOrder_by_items([NotNull] sqlParser.Order_by_itemsContext context);
+        void ExitOrder_by_items([NotNull] AntlrSqlParser.Order_by_itemsContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.order_by_item"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.order_by_item"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterOrder_by_item([NotNull] sqlParser.Order_by_itemContext context);
+        void EnterOrder_by_item([NotNull] AntlrSqlParser.Order_by_itemContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.order_by_item"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.order_by_item"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context);
+        void ExitOrder_by_item([NotNull] AntlrSqlParser.Order_by_itemContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.sort_order"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.sort_order"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSort_order([NotNull] sqlParser.Sort_orderContext context);
+        void EnterSort_order([NotNull] AntlrSqlParser.Sort_orderContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.sort_order"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.sort_order"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSort_order([NotNull] sqlParser.Sort_orderContext context);
+        void ExitSort_order([NotNull] AntlrSqlParser.Sort_orderContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.offset_limit_clause"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.offset_limit_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterOffset_limit_clause([NotNull] sqlParser.Offset_limit_clauseContext context);
+        void EnterOffset_limit_clause([NotNull] AntlrSqlParser.Offset_limit_clauseContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.offset_limit_clause"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.offset_limit_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitOffset_limit_clause([NotNull] sqlParser.Offset_limit_clauseContext context);
+        void ExitOffset_limit_clause([NotNull] AntlrSqlParser.Offset_limit_clauseContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.offset_count"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.offset_count"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterOffset_count([NotNull] sqlParser.Offset_countContext context);
+        void EnterOffset_count([NotNull] AntlrSqlParser.Offset_countContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.offset_count"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.offset_count"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitOffset_count([NotNull] sqlParser.Offset_countContext context);
+        void ExitOffset_count([NotNull] AntlrSqlParser.Offset_countContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.limit_count"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.limit_count"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterLimit_count([NotNull] sqlParser.Limit_countContext context);
+        void EnterLimit_count([NotNull] AntlrSqlParser.Limit_countContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.limit_count"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.limit_count"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitLimit_count([NotNull] sqlParser.Limit_countContext context);
+        void ExitLimit_count([NotNull] AntlrSqlParser.Limit_countContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>LiteralScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context);
+        void EnterLiteralScalarExpression([NotNull] AntlrSqlParser.LiteralScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>LiteralScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context);
+        void ExitLiteralScalarExpression([NotNull] AntlrSqlParser.LiteralScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>BetweenScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterBetweenScalarExpression([NotNull] sqlParser.BetweenScalarExpressionContext context);
+        void EnterBetweenScalarExpression([NotNull] AntlrSqlParser.BetweenScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>BetweenScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitBetweenScalarExpression([NotNull] sqlParser.BetweenScalarExpressionContext context);
+        void ExitBetweenScalarExpression([NotNull] AntlrSqlParser.BetweenScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>ObjectCreateScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context);
+        void EnterObjectCreateScalarExpression([NotNull] AntlrSqlParser.ObjectCreateScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>ObjectCreateScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context);
+        void ExitObjectCreateScalarExpression([NotNull] AntlrSqlParser.ObjectCreateScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>InScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterInScalarExpression([NotNull] sqlParser.InScalarExpressionContext context);
+        void EnterInScalarExpression([NotNull] AntlrSqlParser.InScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>InScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitInScalarExpression([NotNull] sqlParser.InScalarExpressionContext context);
+        void ExitInScalarExpression([NotNull] AntlrSqlParser.InScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>ArrayCreateScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context);
+        void EnterArrayCreateScalarExpression([NotNull] AntlrSqlParser.ArrayCreateScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context);
+        void ExitArrayCreateScalarExpression([NotNull] AntlrSqlParser.ArrayCreateScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>MemberIndexerScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context);
+        void EnterMemberIndexerScalarExpression([NotNull] AntlrSqlParser.MemberIndexerScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>MemberIndexerScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context);
+        void ExitMemberIndexerScalarExpression([NotNull] AntlrSqlParser.MemberIndexerScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>SubqueryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterSubqueryScalarExpression([NotNull] sqlParser.SubqueryScalarExpressionContext context);
+        void EnterSubqueryScalarExpression([NotNull] AntlrSqlParser.SubqueryScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>SubqueryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitSubqueryScalarExpression([NotNull] sqlParser.SubqueryScalarExpressionContext context);
+        void ExitSubqueryScalarExpression([NotNull] AntlrSqlParser.SubqueryScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>PropertyRefScalarExpressionBase</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterPropertyRefScalarExpressionBase([NotNull] sqlParser.PropertyRefScalarExpressionBaseContext context);
+        void EnterPropertyRefScalarExpressionBase([NotNull] AntlrSqlParser.PropertyRefScalarExpressionBaseContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>PropertyRefScalarExpressionBase</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitPropertyRefScalarExpressionBase([NotNull] sqlParser.PropertyRefScalarExpressionBaseContext context);
+        void ExitPropertyRefScalarExpressionBase([NotNull] AntlrSqlParser.PropertyRefScalarExpressionBaseContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>CoalesceScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterCoalesceScalarExpression([NotNull] sqlParser.CoalesceScalarExpressionContext context);
+        void EnterCoalesceScalarExpression([NotNull] AntlrSqlParser.CoalesceScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>CoalesceScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitCoalesceScalarExpression([NotNull] sqlParser.CoalesceScalarExpressionContext context);
+        void ExitCoalesceScalarExpression([NotNull] AntlrSqlParser.CoalesceScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>ConditionalScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterConditionalScalarExpression([NotNull] sqlParser.ConditionalScalarExpressionContext context);
+        void EnterConditionalScalarExpression([NotNull] AntlrSqlParser.ConditionalScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>ConditionalScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitConditionalScalarExpression([NotNull] sqlParser.ConditionalScalarExpressionContext context);
+        void ExitConditionalScalarExpression([NotNull] AntlrSqlParser.ConditionalScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>FunctionCallScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context);
+        void EnterFunctionCallScalarExpression([NotNull] AntlrSqlParser.FunctionCallScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>FunctionCallScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context);
+        void ExitFunctionCallScalarExpression([NotNull] AntlrSqlParser.FunctionCallScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>ArrayScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context);
+        void EnterArrayScalarExpression([NotNull] AntlrSqlParser.ArrayScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>ArrayScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context);
+        void ExitArrayScalarExpression([NotNull] AntlrSqlParser.ArrayScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>ExistsScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterExistsScalarExpression([NotNull] sqlParser.ExistsScalarExpressionContext context);
+        void EnterExistsScalarExpression([NotNull] AntlrSqlParser.ExistsScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>ExistsScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitExistsScalarExpression([NotNull] sqlParser.ExistsScalarExpressionContext context);
+        void ExitExistsScalarExpression([NotNull] AntlrSqlParser.ExistsScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>UnaryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterUnaryScalarExpression([NotNull] sqlParser.UnaryScalarExpressionContext context);
+        void EnterUnaryScalarExpression([NotNull] AntlrSqlParser.UnaryScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>UnaryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitUnaryScalarExpression([NotNull] sqlParser.UnaryScalarExpressionContext context);
+        void ExitUnaryScalarExpression([NotNull] AntlrSqlParser.UnaryScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>BinaryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterBinaryScalarExpression([NotNull] sqlParser.BinaryScalarExpressionContext context);
+        void EnterBinaryScalarExpression([NotNull] AntlrSqlParser.BinaryScalarExpressionContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>BinaryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitBinaryScalarExpression([NotNull] sqlParser.BinaryScalarExpressionContext context);
+        void ExitBinaryScalarExpression([NotNull] AntlrSqlParser.BinaryScalarExpressionContext context);
         /// <summary>
         /// Enter a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context);
+        void EnterPropertyRefScalarExpressionRecursive([NotNull] AntlrSqlParser.PropertyRefScalarExpressionRecursiveContext context);
         /// <summary>
         /// Exit a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context);
+        void ExitPropertyRefScalarExpressionRecursive([NotNull] AntlrSqlParser.PropertyRefScalarExpressionRecursiveContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.scalar_expression_list"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.scalar_expression_list"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterScalar_expression_list([NotNull] sqlParser.Scalar_expression_listContext context);
+        void EnterScalar_expression_list([NotNull] AntlrSqlParser.Scalar_expression_listContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.scalar_expression_list"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.scalar_expression_list"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitScalar_expression_list([NotNull] sqlParser.Scalar_expression_listContext context);
+        void ExitScalar_expression_list([NotNull] AntlrSqlParser.Scalar_expression_listContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.binary_operator"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.binary_operator"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterBinary_operator([NotNull] sqlParser.Binary_operatorContext context);
+        void EnterBinary_operator([NotNull] AntlrSqlParser.Binary_operatorContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.binary_operator"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.binary_operator"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitBinary_operator([NotNull] sqlParser.Binary_operatorContext context);
+        void ExitBinary_operator([NotNull] AntlrSqlParser.Binary_operatorContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.unary_operator"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.unary_operator"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterUnary_operator([NotNull] sqlParser.Unary_operatorContext context);
+        void EnterUnary_operator([NotNull] AntlrSqlParser.Unary_operatorContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.unary_operator"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.unary_operator"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitUnary_operator([NotNull] sqlParser.Unary_operatorContext context);
+        void ExitUnary_operator([NotNull] AntlrSqlParser.Unary_operatorContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.object_propertty_list"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.object_propertty_list"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterObject_propertty_list([NotNull] sqlParser.Object_propertty_listContext context);
+        void EnterObject_propertty_list([NotNull] AntlrSqlParser.Object_propertty_listContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.object_propertty_list"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.object_propertty_list"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitObject_propertty_list([NotNull] sqlParser.Object_propertty_listContext context);
+        void ExitObject_propertty_list([NotNull] AntlrSqlParser.Object_propertty_listContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.object_property"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.object_property"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterObject_property([NotNull] sqlParser.Object_propertyContext context);
+        void EnterObject_property([NotNull] AntlrSqlParser.Object_propertyContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.object_property"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.object_property"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitObject_property([NotNull] sqlParser.Object_propertyContext context);
+        void ExitObject_property([NotNull] AntlrSqlParser.Object_propertyContext context);
         /// <summary>
-        /// Enter a parse tree produced by <see cref="sqlParser.literal"/>.
+        /// Enter a parse tree produced by <see cref="AntlrSqlParser.literal"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void EnterLiteral([NotNull] sqlParser.LiteralContext context);
+        void EnterLiteral([NotNull] AntlrSqlParser.LiteralContext context);
         /// <summary>
-        /// Exit a parse tree produced by <see cref="sqlParser.literal"/>.
+        /// Exit a parse tree produced by <see cref="AntlrSqlParser.literal"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
-        void ExitLiteral([NotNull] sqlParser.LiteralContext context);
+        void ExitLiteral([NotNull] AntlrSqlParser.LiteralContext context);
     }
 }

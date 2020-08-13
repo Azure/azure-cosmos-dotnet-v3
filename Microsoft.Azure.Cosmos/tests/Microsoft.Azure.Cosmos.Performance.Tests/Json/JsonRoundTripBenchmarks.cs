@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Json
             //public static readonly CurratedDocsPayload LogData = CurratedDocsPayload.CreateFromCurratedDocs("LogData");
             //public static readonly CurratedDocsPayload MillionSong1KDocuments = CurratedDocsPayload.CreateFromCurratedDocs("MillionSong1KDocuments");
             //public static readonly CurratedDocsPayload MsnCollection = CurratedDocsPayload.CreateFromCurratedDocs("MsnCollection");
-            public static readonly CurratedDocsPayload NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
+            //public static readonly CurratedDocsPayload NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
             //public static readonly CurratedDocsPayload RunsCollection = CurratedDocsPayload.CreateFromCurratedDocs("runsCollection");
             //public static readonly CurratedDocsPayload StatesCommittees = CurratedDocsPayload.CreateFromCurratedDocs("states_committees");
             //public static readonly CurratedDocsPayload StatesLegislators = CurratedDocsPayload.CreateFromCurratedDocs("states_legislators");
