@@ -67,7 +67,7 @@
         /// <summary>
         /// In scenarios where connection to the Emulator requires disabled SSL verification due to multiple environments.
         /// </summary>
-        private static void ConnectToEmulatorWithSSLDisabled(
+        private static void ConnectToEmulatorWithSslDisabled(
             string endpoint,
             string authKey)
         {
@@ -121,7 +121,7 @@
         /// </summary>
         /// <see href="https://docs.microsoft.com/dotnet/architecture/microservices/implement-resilient-applications/use-httpclientfactory-to-implement-resilient-http-requests"/>
         /// <see href="https://docs.microsoft.com/aspnet/core/fundamentals/http-requests"/>
-        private static void UseNETCoreIHttpClientFactory(
+        private static void UseNetCoreIHttpClientFactory(
             string endpoint,
             string authKey)
         {
@@ -207,4 +207,3 @@
         }
     }
 }
-
