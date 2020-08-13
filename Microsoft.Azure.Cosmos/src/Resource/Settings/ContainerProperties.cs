@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
     /// A database may contain zero or more named containers and each container consists of zero or more JSON documents. 
     /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources, 
     /// they can be authorized using either the master key or resource keys.
-    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-resources/#collections</see> for more details on containers.
     /// </remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/databases-containers-items"/>
     /// <example>
     /// The example below creates a new partitioned container with 50000 Request-per-Unit throughput.
     /// The partition key is the first level 'country' property in all the documents within this container.
