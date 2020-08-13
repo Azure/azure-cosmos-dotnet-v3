@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Diagnostics;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -105,12 +106,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) = await this.WrapAsync(
-                    id,
-                    inMemoryRawDek.DataEncryptionKey.RawKey,
-                    dekProperties.EncryptionAlgorithm,
-                    newWrapMetadata,
-                    diagnosticsContext,
-                    cancellationToken);
+                id,
+                inMemoryRawDek.DataEncryptionKey.RawKey,
+                dekProperties.EncryptionAlgorithm,
+                newWrapMetadata,
+                diagnosticsContext,
+                cancellationToken);
 
             if (requestOptions == null)
             {
@@ -125,14 +126,37 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionKeyWrapMetadata = updatedMetadata,
             };
 
-            ItemResponse<DataEncryptionKeyProperties> response = await this.DekProvider.Container.ReplaceItemAsync(
-                newDekProperties,
-                newDekProperties.Id,
-                new PartitionKey(newDekProperties.Id),
-                requestOptions,
-                cancellationToken);
+            ItemResponse<DataEncryptionKeyProperties> response;
 
-            Debug.Assert(response.Resource != null);
+            try
+            {
+                response = await this.DekProvider.Container.ReplaceItemAsync(
+                    newDekProperties,
+                    newDekProperties.Id,
+                    new PartitionKey(newDekProperties.Id),
+                    requestOptions,
+                    cancellationToken);
+
+                Debug.Assert(response.Resource != null);
+            }
+            catch (CosmosException ex)
+            {
+                if (!ex.StatusCode.Equals(HttpStatusCode.PreconditionFailed))
+                {
+                    throw;
+                }
+
+                // Handle if exception is due to etag mismatch. The scenario is as follows - say there are 2 clients A and B that both have the DEK properties cached.
+                // From A, rewrap worked and the DEK is updated. Now from B, rewrap was attempted later based on the cached properties which will fail due to etag mismatch.
+                // To address this, we do an explicit read, which reads the key from storage and updates the cached properties; and then attempt rewrap again.
+                await this.ReadDataEncryptionKeyAsync(newDekProperties.Id);
+
+                return await this.RewrapDataEncryptionKeyAsync(
+                    id,
+                    newWrapMetadata,
+                    requestOptions,
+                    cancellationToken);
+            }
 
             this.DekProvider.DekCache.SetDekProperties(id, response.Resource);
             this.DekProvider.DekCache.SetRawDek(id, updatedRawDek);
