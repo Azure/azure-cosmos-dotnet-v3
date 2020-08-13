@@ -38,7 +38,6 @@ stages:
           version: 3.1.302
           installationPath: $(Agent.ToolsDirectory)/dotnet
 
-      steps:
       - task: DotNetCoreCLI@2
         displayName: Build Microsoft.Azure.Cosmos
         inputs: 
