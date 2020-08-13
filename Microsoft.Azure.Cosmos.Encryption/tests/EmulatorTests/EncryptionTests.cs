@@ -126,9 +126,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // modify dekProperties directly, which would lead to etag change
-            dekProperties.LastModified = DateTime.UtcNow;
-            await EncryptionTests.dekProvider.Container.ReplaceItemAsync<DataEncryptionKeyProperties>(
-                dekProperties,
+            DataEncryptionKeyProperties updatedDekProperties = new DataEncryptionKeyProperties(
+                dekProperties.Id,
+                dekProperties.EncryptionAlgorithm,
+                dekProperties.WrappedDataEncryptionKey,
+                dekProperties.EncryptionKeyWrapMetadata,
+                DateTime.UtcNow);
+            await EncryptionTests.keyContainer.ReplaceItemAsync<DataEncryptionKeyProperties>(
+                updatedDekProperties,
                 dekProperties.Id,
                 new PartitionKey(dekProperties.Id));
 
@@ -145,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new EncryptionKeyWrapMetadata(newMetadata.Value + EncryptionTests.metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
-            Assert.AreEqual(2, EncryptionTests.testKeyWrapProvider.WrapKeyCallsCount);
+            Assert.AreEqual(2, EncryptionTests.testKeyWrapProvider.WrapKeyCallsCount[newMetadata.Value]);
 
             // Use different DEK provider to avoid (unintentional) cache impact
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
@@ -1252,11 +1257,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         private class TestKeyWrapProvider : EncryptionKeyWrapProvider
         {
-            public int WrapKeyCallsCount { get; set; }
+            public Dictionary<string, int> WrapKeyCallsCount { get; private set; }
 
             public TestKeyWrapProvider()
             {
-                this.WrapKeyCallsCount = 0;
+                this.WrapKeyCallsCount = new Dictionary<string, int>();
             }
 
             public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
@@ -1267,11 +1272,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
-                if (metadata.Value == "newMetadata")
+                if (!this.WrapKeyCallsCount.ContainsKey(metadata.Value))
                 {
-                    this.WrapKeyCallsCount++;
+                    this.WrapKeyCallsCount[metadata.Value] = 1;
                 }
-
+                else
+                {
+                    this.WrapKeyCallsCount[metadata.Value]++;
+                }
+                
                 EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + EncryptionTests.metadataUpdateSuffix);
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value ? 1 : 2;
                 return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
