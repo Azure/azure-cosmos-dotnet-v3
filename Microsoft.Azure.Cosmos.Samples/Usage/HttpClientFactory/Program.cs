@@ -43,8 +43,8 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                Program.ConnectToEmulatorWithSSLDisabled(endpoint, authKey);
-                Program.UseNETCoreIHttpClientFactory(endpoint, authKey);
+                Program.ConnectToEmulatorWithSslDisabled(endpoint, authKey);
+                Program.UseNetCoreIHttpClientFactory(endpoint, authKey);
                 Program.ShareHttpHandlers(endpoint, authKey);
             }
             catch (CosmosException cre)
@@ -192,6 +192,7 @@
             // Maintain a single instance of the SocketsHttpHandler for the lifetime of the application
             SocketsHttpHandler socketsHttpHandler = new SocketsHttpHandler();
             socketsHttpHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(10); // Customize this value based on desired DNS refresh timer
+            socketsHttpHandler.MaxConnectionsPerServer = 20; // Customize the maximum number of allowed connections
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
