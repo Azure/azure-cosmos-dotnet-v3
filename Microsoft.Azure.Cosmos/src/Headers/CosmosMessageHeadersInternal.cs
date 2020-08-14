@@ -182,6 +182,26 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerable<string> Keys()
         {
+            if (this.isActivityIdSet)
+            {
+                yield return HttpConstants.HttpHeaders.ActivityId;
+            }
+
+            if (this.isPartitionkeySet)
+            {
+                yield return HttpConstants.HttpHeaders.PartitionKey;
+            }
+
+            if (this.isAuthorizationSet)
+            {
+                yield return HttpConstants.HttpHeaders.Authorization;
+            }
+
+            if (this.isDateSet)
+            {
+                yield return HttpConstants.HttpHeaders.XDate;
+            }
+
             foreach (string key in this.headers.Keys)
             {
                 yield return key;
@@ -195,12 +215,10 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerator<string> GetEnumerator()
         {
-            using (IEnumerator<string> headerIterator = this.headers.Select(x => x.Key).GetEnumerator())
+            IEnumerable<string> keys = this.Keys();
+            foreach (string key in keys)
             {
-                while (headerIterator.MoveNext())
-                {
-                    yield return headerIterator.Current;
-                }
+                yield return key;
             }
         }
 

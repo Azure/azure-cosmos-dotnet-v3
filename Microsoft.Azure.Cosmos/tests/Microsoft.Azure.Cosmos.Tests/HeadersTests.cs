@@ -184,6 +184,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Headers Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.PartitionKey = Guid.NewGuid().ToString();
+            string partitionKey = Headers.PartitionKey;
+            Headers.ContinuationToken = Guid.NewGuid().ToString();
+            Headers.Add(HttpConstants.HttpHeaders.Authorization, Guid.NewGuid().ToString());
+            string test = Headers[HttpConstants.HttpHeaders.Authorization];
             Headers.ContinuationToken = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
             Assert.AreEqual(4, Headers.CosmosMessageHeaders.Count());
