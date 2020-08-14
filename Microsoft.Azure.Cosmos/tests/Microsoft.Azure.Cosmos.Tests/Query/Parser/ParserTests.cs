@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
         {
             Assert.IsNotNull(query);
 
-            if (!QueryParser.TryParse(query, out SqlQuery parsedQuery))
+            if (!SqlParser.TryParse(query, out SqlQuery parsedQuery))
             {
                 Assert.Fail($"Failed to parse query: {query}");
             }
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             Assert.IsNotNull(query);
 
             Assert.IsFalse(
-                QueryParser.TryParse(query, out _),
+                SqlParser.TryParse(query, out _),
                 $"Expected failure to parse query: {query}");
         }
 
