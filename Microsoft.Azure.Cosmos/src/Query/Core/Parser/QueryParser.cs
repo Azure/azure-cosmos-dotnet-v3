@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 AntlrInputStream str = new AntlrInputStream(text);
                 sqlLexer lexer = new sqlLexer(str);
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
-                sqlParser parser = new sqlParser(tokens)
+                AntlrSqlParser parser = new AntlrSqlParser(tokens)
                 {
                     ErrorHandler = ThrowExceptionOnErrors.Singleton,
                 };
                 ErrorListener<IToken> listener = new ErrorListener<IToken>(parser, lexer, tokens);
                 parser.AddErrorListener(listener);
 
-                sqlParser.ProgramContext programContext;
+                AntlrSqlParser.ProgramContext programContext;
                 try
                 {
                     programContext = parser.program();
