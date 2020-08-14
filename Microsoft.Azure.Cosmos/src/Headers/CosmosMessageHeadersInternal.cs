@@ -18,6 +18,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosMessageHeadersInternal : INameValueCollection
     {
+        private const int HeadersDefaultCapacity = 10;
+
+        private readonly Dictionary<string, string> headers = new Dictionary<string, string>(
+            CosmosMessageHeadersInternal.HeadersDefaultCapacity,
+            StringComparer.OrdinalIgnoreCase);
+
         private string activityId = null;
         private bool isActivityIdSet = false;
 
@@ -29,11 +35,6 @@ namespace Microsoft.Azure.Cosmos
 
         private string authorization = null;
         private bool isAuthorizationSet = false;
-
-        private const int HeadersDefaultCapacity = 10;
-        private readonly Dictionary<string, string> headers = new Dictionary<string, string>(
-                CosmosMessageHeadersInternal.HeadersDefaultCapacity,
-                StringComparer.OrdinalIgnoreCase);
 
         public CosmosMessageHeadersInternal()
         {
