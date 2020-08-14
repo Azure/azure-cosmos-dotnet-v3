@@ -50,9 +50,9 @@ jobs:
     displayName: Microsoft.Azure.Cosmos.PerformanceTests
     condition: succeeded()
     inputs:
-      command: build
+      command: run
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -j Short -f *MockedItemBenchmark* -m --iterationCount 1 --warmupCount 1
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
