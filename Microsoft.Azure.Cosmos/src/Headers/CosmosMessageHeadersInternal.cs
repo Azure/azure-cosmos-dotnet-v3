@@ -114,7 +114,10 @@ namespace Microsoft.Azure.Cosmos
 
         public void Add(INameValueCollection collection)
         {
-            throw new NotImplementedException();
+            foreach (string key in collection.Keys())
+            {
+                this.Add(key, collection[key]);
+            }
         }
 
         public string[] GetValues(string key)
@@ -148,18 +151,19 @@ namespace Microsoft.Azure.Cosmos
 
         public NameValueCollection ToNameValueCollection()
         {
-            throw new NotImplementedException();
+            NameValueCollection nameValueCollection = new NameValueCollection(this.headers.Count);
+
+            foreach (KeyValuePair<string, string> kvp in this.headers)
+            {
+                nameValueCollection.Add(kvp.Key, kvp.Value);
+            }
+
+            return nameValueCollection;
         }
 
         public IEnumerator<string> GetEnumerator()
         {
-            using (IEnumerator<string> headerIterator = this.headers.Select(x => x.Key).GetEnumerator())
-            {
-                while (headerIterator.MoveNext())
-                {
-                    yield return headerIterator.Current;
-                }
-            }
+            return this.headers.Select(x => x.Key).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
