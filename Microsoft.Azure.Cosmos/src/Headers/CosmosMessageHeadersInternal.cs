@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -18,7 +18,19 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosMessageHeadersInternal : INameValueCollection
     {
-        private const int HeadersDefaultCapacity = 16;
+        private string activityId = null;
+        private bool isActivityIdSet = false;
+
+        private string date = null;
+        private bool isDateSet = false;
+
+        private string partitionkey = null;
+        private bool isPartitionkeySet = false;
+
+        private string authorization = null;
+        private bool isAuthorizationSet = false;
+
+        private const int HeadersDefaultCapacity = 10;
         private readonly Dictionary<string, string> headers = new Dictionary<string, string>(
                 CosmosMessageHeadersInternal.HeadersDefaultCapacity,
                 StringComparer.OrdinalIgnoreCase);
@@ -34,6 +46,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(headerName)}: {headerName ?? "null"}; {nameof(value)}: {value ?? "null"}");
             }
 
+            if (this.TrySetWellKnownHeader(
+                headerName,
+                value))
+            {
+                return;
+            }
+
             this.headers.Add(headerName, value);
         }
 
@@ -44,7 +63,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(headerName));
             }
 
-            value = null;
+            if (this.TryGetWellKnownHeader(
+                headerName,
+                out bool isSet,
+                out value))
+            {
+                return isSet;
+            }
+
             return this.headers.TryGetValue(headerName, out value);
         }
 
@@ -53,6 +79,14 @@ namespace Microsoft.Azure.Cosmos
             if (headerName == null)
             {
                 throw new ArgumentNullException(nameof(headerName));
+            }
+
+            if (this.TrySetWellKnownHeader(
+                headerName,
+                default,
+                false))
+            {
+                return;
             }
 
             this.headers.Remove(headerName);
@@ -81,6 +115,13 @@ namespace Microsoft.Azure.Cosmos
             if (key == null)
             {
                 throw new ArgumentNullException(nameof(key));
+            }
+
+            if (this.TrySetWellKnownHeader(
+                key,
+                value))
+            {
+                return;
             }
 
             this.headers.Remove(key);
@@ -182,6 +223,108 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return (T)(object)value;
+        }
+
+        private bool TryGetWellKnownHeader(
+            string key,
+            out bool isSet,
+            out string value)
+        {
+            switch (key.Length)
+            {
+                case 9:
+                    if (string.Equals(HttpConstants.HttpHeaders.XDate, key))
+                    {
+                        value = this.date;
+                        isSet = this.isDateSet;
+                        return true;
+                    }
+
+                    break;
+
+                case 13:
+                    if (string.Equals(HttpConstants.HttpHeaders.Authorization, key))
+                    {
+                        value = this.authorization;
+                        isSet = this.isAuthorizationSet;
+                        return true;
+                    }
+
+                    break;
+
+                case 16:
+                    if (string.Equals(HttpConstants.HttpHeaders.ActivityId, key))
+                    {
+                        value = this.activityId;
+                        isSet = this.isActivityIdSet;
+                        return true;
+                    }
+
+                    break;
+                case 28:
+                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKey, key))
+                    {
+                        value = this.partitionkey;
+                        isSet = this.isPartitionkeySet;
+                        return true;
+                    }
+
+                    break;
+            }
+
+            isSet = false;
+            value = null;
+            return false;
+        }
+
+        private bool TrySetWellKnownHeader(
+            string key,
+            string value,
+            bool isSet = true)
+        {
+            switch (key.Length)
+            {
+                case 9:
+                    if (string.Equals(HttpConstants.HttpHeaders.XDate, key))
+                    {
+                        this.date = value;
+                        this.isDateSet = isSet;
+                        return true;
+                    }
+
+                    break;
+
+                case 13:
+                    if (string.Equals(HttpConstants.HttpHeaders.Authorization, key))
+                    {
+                        this.authorization = value;
+                        this.isAuthorizationSet = isSet;
+                        return true;
+                    }
+
+                    break;
+
+                case 16:
+                    if (string.Equals(HttpConstants.HttpHeaders.ActivityId, key))
+                    {
+                        this.activityId = value;
+                        this.isActivityIdSet = isSet;
+                        return true;
+                    }
+
+                    break;
+                case 28:
+                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKey, key))
+                    {
+                        this.partitionkey = value;
+                        this.isPartitionkeySet = isSet;
+                        return true;
+                    }
+
+                    break;
+            }
+
+            return false;
         }
     }
 }
