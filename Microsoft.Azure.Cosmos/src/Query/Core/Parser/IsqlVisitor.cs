@@ -27,336 +27,336 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     /// <summary>
     /// This interface defines a complete generic visitor for a parse tree produced
-    /// by <see cref="sqlParser"/>.
+    /// by <see cref="AntlrSqlParser"/>.
     /// </summary>
     /// <typeparam name="Result">The return type of the visit operation.</typeparam>
     [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
     internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result>
     {
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.program"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.program"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitProgram([NotNull] sqlParser.ProgramContext context);
+        Result VisitProgram([NotNull] AntlrSqlParser.ProgramContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.sql_query"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.sql_query"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSql_query([NotNull] sqlParser.Sql_queryContext context);
+        Result VisitSql_query([NotNull] AntlrSqlParser.Sql_queryContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.select_clause"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.select_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSelect_clause([NotNull] sqlParser.Select_clauseContext context);
+        Result VisitSelect_clause([NotNull] AntlrSqlParser.Select_clauseContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.top_spec"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.top_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitTop_spec([NotNull] sqlParser.Top_specContext context);
+        Result VisitTop_spec([NotNull] AntlrSqlParser.Top_specContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.selection"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.selection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSelection([NotNull] sqlParser.SelectionContext context);
+        Result VisitSelection([NotNull] AntlrSqlParser.SelectionContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.select_star_spec"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.select_star_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSelect_star_spec([NotNull] sqlParser.Select_star_specContext context);
+        Result VisitSelect_star_spec([NotNull] AntlrSqlParser.Select_star_specContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.select_value_spec"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.select_value_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSelect_value_spec([NotNull] sqlParser.Select_value_specContext context);
+        Result VisitSelect_value_spec([NotNull] AntlrSqlParser.Select_value_specContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.select_list_spec"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.select_list_spec"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSelect_list_spec([NotNull] sqlParser.Select_list_specContext context);
+        Result VisitSelect_list_spec([NotNull] AntlrSqlParser.Select_list_specContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.select_item"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.select_item"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSelect_item([NotNull] sqlParser.Select_itemContext context);
+        Result VisitSelect_item([NotNull] AntlrSqlParser.Select_itemContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.from_clause"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.from_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitFrom_clause([NotNull] sqlParser.From_clauseContext context);
+        Result VisitFrom_clause([NotNull] AntlrSqlParser.From_clauseContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>JoinCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitJoinCollectionExpression([NotNull] sqlParser.JoinCollectionExpressionContext context);
+        Result VisitJoinCollectionExpression([NotNull] AntlrSqlParser.JoinCollectionExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>AliasedCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitAliasedCollectionExpression([NotNull] sqlParser.AliasedCollectionExpressionContext context);
+        Result VisitAliasedCollectionExpression([NotNull] AntlrSqlParser.AliasedCollectionExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>ArrayIteratorCollectionExpression</c>
-        /// labeled alternative in <see cref="sqlParser.collection_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitArrayIteratorCollectionExpression([NotNull] sqlParser.ArrayIteratorCollectionExpressionContext context);
+        Result VisitArrayIteratorCollectionExpression([NotNull] AntlrSqlParser.ArrayIteratorCollectionExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>InputPathCollection</c>
-        /// labeled alternative in <see cref="sqlParser.collection"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitInputPathCollection([NotNull] sqlParser.InputPathCollectionContext context);
+        Result VisitInputPathCollection([NotNull] AntlrSqlParser.InputPathCollectionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>SubqueryCollection</c>
-        /// labeled alternative in <see cref="sqlParser.collection"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.collection"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSubqueryCollection([NotNull] sqlParser.SubqueryCollectionContext context);
+        Result VisitSubqueryCollection([NotNull] AntlrSqlParser.SubqueryCollectionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>StringPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitStringPathExpression([NotNull] sqlParser.StringPathExpressionContext context);
+        Result VisitStringPathExpression([NotNull] AntlrSqlParser.StringPathExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>EpsilonPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitEpsilonPathExpression([NotNull] sqlParser.EpsilonPathExpressionContext context);
+        Result VisitEpsilonPathExpression([NotNull] AntlrSqlParser.EpsilonPathExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>IdentifierPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitIdentifierPathExpression([NotNull] sqlParser.IdentifierPathExpressionContext context);
+        Result VisitIdentifierPathExpression([NotNull] AntlrSqlParser.IdentifierPathExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>NumberPathExpression</c>
-        /// labeled alternative in <see cref="sqlParser.path_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.path_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitNumberPathExpression([NotNull] sqlParser.NumberPathExpressionContext context);
+        Result VisitNumberPathExpression([NotNull] AntlrSqlParser.NumberPathExpressionContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.where_clause"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.where_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitWhere_clause([NotNull] sqlParser.Where_clauseContext context);
+        Result VisitWhere_clause([NotNull] AntlrSqlParser.Where_clauseContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.group_by_clause"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.group_by_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitGroup_by_clause([NotNull] sqlParser.Group_by_clauseContext context);
+        Result VisitGroup_by_clause([NotNull] AntlrSqlParser.Group_by_clauseContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.order_by_clause"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.order_by_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context);
+        Result VisitOrder_by_clause([NotNull] AntlrSqlParser.Order_by_clauseContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.order_by_items"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.order_by_items"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitOrder_by_items([NotNull] sqlParser.Order_by_itemsContext context);
+        Result VisitOrder_by_items([NotNull] AntlrSqlParser.Order_by_itemsContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.order_by_item"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.order_by_item"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context);
+        Result VisitOrder_by_item([NotNull] AntlrSqlParser.Order_by_itemContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.sort_order"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.sort_order"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSort_order([NotNull] sqlParser.Sort_orderContext context);
+        Result VisitSort_order([NotNull] AntlrSqlParser.Sort_orderContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.offset_limit_clause"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.offset_limit_clause"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitOffset_limit_clause([NotNull] sqlParser.Offset_limit_clauseContext context);
+        Result VisitOffset_limit_clause([NotNull] AntlrSqlParser.Offset_limit_clauseContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.offset_count"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.offset_count"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitOffset_count([NotNull] sqlParser.Offset_countContext context);
+        Result VisitOffset_count([NotNull] AntlrSqlParser.Offset_countContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.limit_count"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.limit_count"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitLimit_count([NotNull] sqlParser.Limit_countContext context);
+        Result VisitLimit_count([NotNull] AntlrSqlParser.Limit_countContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>LiteralScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context);
+        Result VisitLiteralScalarExpression([NotNull] AntlrSqlParser.LiteralScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>BetweenScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitBetweenScalarExpression([NotNull] sqlParser.BetweenScalarExpressionContext context);
+        Result VisitBetweenScalarExpression([NotNull] AntlrSqlParser.BetweenScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>ObjectCreateScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context);
+        Result VisitObjectCreateScalarExpression([NotNull] AntlrSqlParser.ObjectCreateScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>InScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitInScalarExpression([NotNull] sqlParser.InScalarExpressionContext context);
+        Result VisitInScalarExpression([NotNull] AntlrSqlParser.InScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context);
+        Result VisitArrayCreateScalarExpression([NotNull] AntlrSqlParser.ArrayCreateScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>MemberIndexerScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context);
+        Result VisitMemberIndexerScalarExpression([NotNull] AntlrSqlParser.MemberIndexerScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>SubqueryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitSubqueryScalarExpression([NotNull] sqlParser.SubqueryScalarExpressionContext context);
+        Result VisitSubqueryScalarExpression([NotNull] AntlrSqlParser.SubqueryScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>PropertyRefScalarExpressionBase</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitPropertyRefScalarExpressionBase([NotNull] sqlParser.PropertyRefScalarExpressionBaseContext context);
+        Result VisitPropertyRefScalarExpressionBase([NotNull] AntlrSqlParser.PropertyRefScalarExpressionBaseContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>CoalesceScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitCoalesceScalarExpression([NotNull] sqlParser.CoalesceScalarExpressionContext context);
+        Result VisitCoalesceScalarExpression([NotNull] AntlrSqlParser.CoalesceScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>ConditionalScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitConditionalScalarExpression([NotNull] sqlParser.ConditionalScalarExpressionContext context);
+        Result VisitConditionalScalarExpression([NotNull] AntlrSqlParser.ConditionalScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>FunctionCallScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context);
+        Result VisitFunctionCallScalarExpression([NotNull] AntlrSqlParser.FunctionCallScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>ArrayScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context);
+        Result VisitArrayScalarExpression([NotNull] AntlrSqlParser.ArrayScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>ExistsScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitExistsScalarExpression([NotNull] sqlParser.ExistsScalarExpressionContext context);
+        Result VisitExistsScalarExpression([NotNull] AntlrSqlParser.ExistsScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>UnaryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitUnaryScalarExpression([NotNull] sqlParser.UnaryScalarExpressionContext context);
+        Result VisitUnaryScalarExpression([NotNull] AntlrSqlParser.UnaryScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>BinaryScalarExpression</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitBinaryScalarExpression([NotNull] sqlParser.BinaryScalarExpressionContext context);
+        Result VisitBinaryScalarExpression([NotNull] AntlrSqlParser.BinaryScalarExpressionContext context);
         /// <summary>
         /// Visit a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
-        /// labeled alternative in <see cref="sqlParser.scalar_expression"/>.
+        /// labeled alternative in <see cref="AntlrSqlParser.scalar_expression"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context);
+        Result VisitPropertyRefScalarExpressionRecursive([NotNull] AntlrSqlParser.PropertyRefScalarExpressionRecursiveContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.scalar_expression_list"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.scalar_expression_list"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitScalar_expression_list([NotNull] sqlParser.Scalar_expression_listContext context);
+        Result VisitScalar_expression_list([NotNull] AntlrSqlParser.Scalar_expression_listContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.binary_operator"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.binary_operator"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitBinary_operator([NotNull] sqlParser.Binary_operatorContext context);
+        Result VisitBinary_operator([NotNull] AntlrSqlParser.Binary_operatorContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.unary_operator"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.unary_operator"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitUnary_operator([NotNull] sqlParser.Unary_operatorContext context);
+        Result VisitUnary_operator([NotNull] AntlrSqlParser.Unary_operatorContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.object_propertty_list"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.object_propertty_list"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitObject_propertty_list([NotNull] sqlParser.Object_propertty_listContext context);
+        Result VisitObject_propertty_list([NotNull] AntlrSqlParser.Object_propertty_listContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.object_property"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.object_property"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitObject_property([NotNull] sqlParser.Object_propertyContext context);
+        Result VisitObject_property([NotNull] AntlrSqlParser.Object_propertyContext context);
         /// <summary>
-        /// Visit a parse tree produced by <see cref="sqlParser.literal"/>.
+        /// Visit a parse tree produced by <see cref="AntlrSqlParser.literal"/>.
         /// </summary>
         /// <param name="context">The parse tree.</param>
         /// <return>The visitor result.</return>
-        Result VisitLiteral([NotNull] sqlParser.LiteralContext context);
+        Result VisitLiteral([NotNull] AntlrSqlParser.LiteralContext context);
     }
 }
