@@ -146,6 +146,165 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void TestApplySessionForMasterOperation()
+        {
+            List<ResourceType> resourceTypes = new List<ResourceType>()
+            {
+                ResourceType.Database,
+                ResourceType.Collection,
+                ResourceType.User,
+                ResourceType.Permission,
+                ResourceType.StoredProcedure,
+                ResourceType.Trigger,
+                ResourceType.UserDefinedFunction,
+                ResourceType.Offer,
+                ResourceType.DatabaseAccount,
+                ResourceType.PartitionKeyRange,
+                ResourceType.UserDefinedType,
+            };
+
+            List<OperationType> operationTypes = new List<OperationType>()
+            {
+                OperationType.Create,
+                OperationType.Delete,
+                OperationType.Read,
+                OperationType.Upsert,
+                OperationType.Replace
+            };
+
+            foreach (ResourceType resourceType in resourceTypes)
+            {
+                foreach (OperationType operationType in operationTypes)
+                {
+                    Assert.IsTrue(GatewayStoreModel.IsMasterOperation(
+                        resourceType,
+                        operationType),
+                        $"{resourceType}, {operationType}");
+
+                    DocumentServiceRequest dsr = DocumentServiceRequest.CreateFromName(
+                        operationType,
+                        "Test",
+                        resourceType,
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                    dsr.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
+
+                    GatewayStoreModel.ApplySessionToken(
+                        dsr,
+                        ConsistencyLevel.Session,
+                        new Mock<ISessionContainer>().Object);
+
+                    Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                }
+            }
+
+            Assert.IsTrue(GatewayStoreModel.IsMasterOperation(
+                    ResourceType.Document,
+                    OperationType.QueryPlan));
+
+            DocumentServiceRequest dsrQueryPlan = DocumentServiceRequest.CreateFromName(
+                OperationType.QueryPlan,
+                "Test",
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            dsrQueryPlan.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
+
+            GatewayStoreModel.ApplySessionToken(
+                dsrQueryPlan,
+                ConsistencyLevel.Session,
+                new Mock<ISessionContainer>().Object);
+
+            Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
+        }
+
+        [TestMethod]
+        public void TestApplySessionForDataOperation()
+        {
+            List<ResourceType> resourceTypes = new List<ResourceType>()
+            {
+                ResourceType.Document,
+                ResourceType.Conflict,
+                ResourceType.Batch
+            };
+
+            List<OperationType> operationTypes = new List<OperationType>()
+            {
+                OperationType.Create,
+                OperationType.Delete,
+                OperationType.Read,
+                OperationType.Upsert,
+                OperationType.Replace
+            };
+
+            foreach (ResourceType resourceType in resourceTypes)
+            {
+                foreach (OperationType operationType in operationTypes)
+                {
+                    Assert.IsFalse(GatewayStoreModel.IsMasterOperation(
+                        resourceType,
+                        operationType),
+                        $"{resourceType}, {operationType}");
+
+                    // Verify when user does set session token
+                    DocumentServiceRequest dsr = DocumentServiceRequest.CreateFromName(
+                        operationType,
+                        "Test",
+                        resourceType,
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                    string dsrSessionToken = Guid.NewGuid().ToString();
+                    dsr.Headers.Add(HttpConstants.HttpHeaders.SessionToken, dsrSessionToken);
+
+                    GatewayStoreModel.ApplySessionToken(
+                        dsr,
+                        ConsistencyLevel.Session,
+                        new Mock<ISessionContainer>().Object);
+
+                    Assert.AreEqual(dsrSessionToken, dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
+
+                    // Verify when user does not set session token
+                    DocumentServiceRequest dsrNoSessionToken = DocumentServiceRequest.CreateFromName(
+                        operationType,
+                        "Test",
+                        resourceType,
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                    Mock<ISessionContainer> sMock = new Mock<ISessionContainer>();
+                    sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
+
+                    GatewayStoreModel.ApplySessionToken(
+                        dsrNoSessionToken,
+                        ConsistencyLevel.Session,
+                        sMock.Object);
+
+                    Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                }
+            }
+
+            // Verify stored procedure execute
+            Assert.IsFalse(GatewayStoreModel.IsMasterOperation(
+                ResourceType.StoredProcedure,
+                OperationType.ExecuteJavaScript));
+
+            DocumentServiceRequest dsrSprocExecute = DocumentServiceRequest.CreateFromName(
+                OperationType.ExecuteJavaScript,
+                "Test",
+                ResourceType.StoredProcedure,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            string sessionToken = Guid.NewGuid().ToString();
+            dsrSprocExecute.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
+
+            GatewayStoreModel.ApplySessionToken(
+                dsrSprocExecute,
+                ConsistencyLevel.Session,
+                new Mock<ISessionContainer>().Object);
+
+            Assert.AreEqual(sessionToken, dsrSprocExecute.Headers[HttpConstants.HttpHeaders.SessionToken]);
+        }
+
+        [TestMethod]
         public async Task TestErrorResponsesProvideBody()
         {
             string testContent = "Content";

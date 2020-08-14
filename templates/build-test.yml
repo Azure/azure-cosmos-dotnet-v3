@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: Tests ${{ parameters.BuildConfiguration }}
+  displayName: Tests Debug
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -22,7 +22,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CopyLocalLockFileAssemblies=true /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} --configuration Debug /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CopyLocalLockFileAssemblies=true /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests

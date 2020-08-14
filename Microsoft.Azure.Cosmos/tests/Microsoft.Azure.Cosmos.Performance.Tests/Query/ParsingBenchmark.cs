@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static void ParseUsingMangedParser(SqlQuerySpec sqlQuerySpec)
         {
-            if (!QueryParser.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
+            if (!SqlParser.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
             {
                 throw new InvalidOperationException("FAILED TO PARSE QUERY.");
             }
