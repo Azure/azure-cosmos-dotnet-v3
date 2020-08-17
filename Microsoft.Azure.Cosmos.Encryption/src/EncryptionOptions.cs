@@ -4,12 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
     /// Options for encryption of data.
     /// </summary>
-    public sealed class EncryptionOptions
+    public class EncryptionOptions
     {
         /// <summary>
         /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
@@ -28,6 +29,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// is the only one supported and is represented by "AEAes256CbcHmacSha256Randomized" value.
         /// </remarks>
         public string EncryptionAlgorithm { get; set; }
+
+        /// <summary>
+        /// Serializer for DataType
+        /// </summary>
+        public ISerializer Serializer { get; set; }
+
+        /// <summary>
+        /// Gets or Sets the DataType for the Property
+        /// </summary>
+        public Type PropertyDataType { get; set; }
 
         /// <summary>
         /// Gets or sets for the request payload, list of JSON paths to encrypt.

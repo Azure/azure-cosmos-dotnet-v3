@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         // A dictionary of the property paths to encrypt with their corresponding key
         // 1 or more paths can be stored in the List to encrypt with the corresponding key
-        private readonly IReadOnlyDictionary<List<string>, string> propertiesToEncrypt = new Dictionary<List<string>, string>();
+        private readonly IReadOnlyDictionary<List<string>, EncryptionSettings> propertiesToEncrypt = new Dictionary<List<string>, EncryptionSettings>();
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionContainer(
             Container container,
             Encryptor encryptor,
-            IReadOnlyDictionary<List<string>, string> propertiesToEncrypt = null)
+            IReadOnlyDictionary<List<string>, EncryptionSettings> propertiesToEncrypt = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
@@ -47,13 +47,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (propertiesToEncrypt != null)
             {
                 List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
-                foreach (KeyValuePair<List<string>, string> entry in propertiesToEncrypt)
+                foreach (KeyValuePair<List<string>, EncryptionSettings> entry in propertiesToEncrypt)
                 {
+                    EncryptionSettings encryptionSettings = entry.Value;
                     propertyEncryptionOptions.Add(
                         new EncryptionOptions()
                         {
-                            DataEncryptionKeyId = entry.Value,
-                            EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic,
+                            DataEncryptionKeyId = encryptionSettings.DataEncryptionKeyId,
+                            EncryptionAlgorithm = encryptionSettings.EncryptionAlgorithm,
+                            Serializer = encryptionSettings.GetSerializer(),
+                            PropertyDataType = encryptionSettings.PropertyDataType,
                             PathsToEncrypt = entry.Key,
                         });
                 }

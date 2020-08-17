@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly QueryDefinition queryDefinition;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly string continuationToken;
-        private readonly IReadOnlyDictionary<List<string>, string> propertiesToEncrypt = new Dictionary<List<string>, string>();
+        private readonly IReadOnlyDictionary<List<string>, EncryptionSettings> propertiesToEncrypt = new Dictionary<List<string>, EncryptionSettings>();
         private FeedIterator feedIterator;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            IReadOnlyDictionary<List<string>, string> propertiesToEncrypt,
+            IReadOnlyDictionary<List<string>, EncryptionSettings> propertiesToEncrypt,
             Action<DecryptionResult> decryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionFeedIterator(
             QueryDefinition queryDefinition,
-            IReadOnlyDictionary<List<string>, string> propertiesToEncrypt,
+            IReadOnlyDictionary<List<string>, EncryptionSettings> propertiesToEncrypt,
             QueryRequestOptions queryRequestOptions,
             Encryptor encryptor,
             Container container,
@@ -217,13 +217,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         if (paths.Contains("/" + propertyName))
                         {
                             // get the Data Encryption Key configured for this path set.
-                            this.propertiesToEncrypt.TryGetValue(paths, out string dEK);
+                            this.propertiesToEncrypt.TryGetValue(paths, out EncryptionSettings encryptionSettings);
 
                             byte[] plaintext = System.Text.Encoding.UTF8.GetBytes(propertyValue);
                             byte[] ciphertext = await this.encryptor.EncryptAsync(
                                 plaintext,
-                                dEK,
-                                CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic);
+                                encryptionSettings.DataEncryptionKeyId,
+                                encryptionSettings.EncryptionAlgorithm);
 
                             // replace the parameter values with the encrypted value.
                             queryWithEncryptedParameters.WithParameter("@" + propertyName, ciphertext);

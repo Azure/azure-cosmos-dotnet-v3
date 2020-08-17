@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static Container WithPropertyEncryptor(
             this Container container,
             Encryptor encryptor,
-            Dictionary<List<string>, string> propertiesToEncrypt)
+            Dictionary<List<string>, EncryptionSettings> propertiesToEncrypt)
         {
             return new EncryptionContainer(
                 container,
