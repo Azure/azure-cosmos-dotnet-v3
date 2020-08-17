@@ -158,14 +158,7 @@ namespace Microsoft.Azure.Cosmos
 
         public NameValueCollection ToNameValueCollection()
         {
-            NameValueCollection nameValueCollection = new NameValueCollection(this.headers.Count);
-
-            foreach (KeyValuePair<string, string> kvp in this.headers)
-            {
-                nameValueCollection.Add(kvp.Key, kvp.Value);
-            }
-
-            return nameValueCollection;
+            throw new NotImplementedException(nameof(this.ToNameValueCollection));
         }
 
         public IEnumerator<string> GetEnumerator()

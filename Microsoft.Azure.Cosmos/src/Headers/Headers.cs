@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos
             return valueTuple;
         }
 
-        internal TimeSpan? RetryAfter;
-
         internal SubStatusCodes SubStatusCode
         {
             get => Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
@@ -133,6 +131,21 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.GetString(WFConstants.BackendHeaders.SubStatus);
             set => this.Set(WFConstants.BackendHeaders.SubStatus, value);
+        }
+
+        internal TimeSpan? RetryAfter
+        {
+            get => Headers.GetRetryAfter(this.RetryAfterLiteral);
+            set
+            {
+                if (value.HasValue)
+                {
+                    this.RetryAfterLiteral = value.Value.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                    return;
+                }
+
+                this.RetryAfterLiteral = null;
+            }
         }
 
         internal string RetryAfterLiteral
@@ -338,6 +351,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return SubStatusCodes.Unknown;
+        }
+
+        internal static TimeSpan? GetRetryAfter(string value)
+        {
+            if (long.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out long retryIntervalInMilliseconds))
+            {
+                return TimeSpan.FromMilliseconds(retryIntervalInMilliseconds);
+            }
+
+            return null;
         }
     }
 }
