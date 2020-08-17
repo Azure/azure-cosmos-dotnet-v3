@@ -149,7 +149,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Handle if exception is due to etag mismatch. The scenario is as follows - say there are 2 clients A and B that both have the DEK properties cached.
                 // From A, rewrap worked and the DEK is updated. Now from B, rewrap was attempted later based on the cached properties which will fail due to etag mismatch.
                 // To address this, we do an explicit read, which reads the key from storage and updates the cached properties; and then attempt rewrap again.
-                await this.ReadDataEncryptionKeyAsync(newDekProperties.Id);
+                await this.ReadDataEncryptionKeyAsync(
+                    newDekProperties.Id,
+                    requestOptions: null,
+                    cancellationToken);
 
                 return await this.RewrapDataEncryptionKeyAsync(
                     id,
