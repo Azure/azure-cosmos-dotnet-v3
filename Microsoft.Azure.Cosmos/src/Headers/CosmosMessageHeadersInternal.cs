@@ -30,12 +30,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Add(string headerName, string value)
         {
-            if (headerName == null)
-            {
-                throw new ArgumentNullException($"{nameof(headerName)}; {nameof(value)}: {value ?? "null"}");
-            }
-
-            this.headers.Add(headerName, value);
+            this.Set(headerName, value);
         }
 
         public bool TryGetValue(string headerName, out string value)
@@ -45,7 +40,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(headerName));
             }
 
-            value = null;
             return this.headers.TryGetValue(headerName, out value);
         }
 
@@ -81,11 +75,15 @@ namespace Microsoft.Azure.Cosmos
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key));
+                throw new ArgumentNullException($"{nameof(key)}; {nameof(value)}: {value ?? "null"}");
             }
 
-            this.headers.Remove(key);
-            this.headers.Add(key, value);
+            if (value == null)
+            {
+                this.headers.Remove(key);
+            }
+
+            this.headers[key] = value;
         }
 
         public string Get(string key)
