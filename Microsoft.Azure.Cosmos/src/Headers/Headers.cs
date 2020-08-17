@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                     return 0;
                 }
 
-                return double.Parse(value);
+                return double.Parse(value, CultureInfo.InvariantCulture);
             }
             internal set => this.Set(HttpConstants.HttpHeaders.RequestCharge, value.ToString(CultureInfo.InvariantCulture));
         }
