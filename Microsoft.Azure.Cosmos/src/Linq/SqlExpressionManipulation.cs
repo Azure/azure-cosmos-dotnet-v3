@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         // This is the leaf of the recursion
                         if (propExp.Member == null)
                         {
-                            if (propExp.Identifer.Value == toReplace.Value)
+                            if (propExp.Identifier.Value == toReplace.Value)
                             {
                                 return replacement;
                             }
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         else
                         {
                             SqlScalarExpression replMember = Substitute(replacement, toReplace, propExp.Member);
-                            return SqlPropertyRefScalarExpression.Create(replMember, propExp.Identifer);
+                            return SqlPropertyRefScalarExpression.Create(replMember, propExp.Identifier);
                         }
                     }
                 case SqlConditionalScalarExpression conditionalExpression:

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using Microsoft.Azure.Documents;
     using System.IO;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -154,8 +155,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             foreach (FeedRange feedRange in feedRanges)
             {
                 IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime(), MaxItemCount = 1 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(feedRange: feedRange, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 1
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.Beginning(feedRange),
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {
@@ -163,18 +169,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                 }
 
+                FeedRangeEpk feedRangeEpk = feedRange as FeedRangeEpk;
+
                 // Construct the continuation's range, using PKRangeId + ETag
-                List<dynamic> ct = new List<dynamic>() { new { min = string.Empty, max = string.Empty, token = firstResponse.Headers.ETag } };
+                List<dynamic> ct = new List<dynamic>()
+                {
+                    new
+                    {
+                        min = feedRangeEpk.Range.Min,
+                        max = feedRangeEpk.Range.Max,
+                        token = firstResponse.Headers.ETag
+                    }
+                };
+
                 // Extract Etag and manually construct the continuation
-                dynamic oldContinuation = new { V = 0, PKRangeId = pkRangeIds.First(), Continuation = ct };
+                dynamic oldContinuation = new
+                {
+                    V = 0,
+                    PKRangeId = pkRangeIds.First(),
+                    Continuation = ct
+                };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));
             }
 
             // Now start the new iterators with the constructed continuations from migration
             foreach (string continuation in continuations)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { MaxItemCount = 100 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(continuationToken: continuation, changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
+                {
+                    PageSizeHint = 100
+                };
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {
@@ -182,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                     string migratedContinuation = firstResponse.ContinuationToken;
                     Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
-                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEPK);
+                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpk);
                 }
             }
 

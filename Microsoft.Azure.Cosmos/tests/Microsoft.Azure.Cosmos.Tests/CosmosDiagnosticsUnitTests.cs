@@ -5,19 +5,101 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosDiagnosticsUnitTests
     {
+        [TestMethod]
+        public void ValidateActivityScope()
+        {
+            Guid previousActivityId = Trace.CorrelationManager.ActivityId;
+            Guid testActivityId = Guid.NewGuid();
+            Trace.CorrelationManager.ActivityId = testActivityId;
+            using (ActivityScope scope = new ActivityScope(Guid.NewGuid()))
+            {
+                Assert.AreNotEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "Activity ID should not be the default");
+                Assert.AreNotEqual(testActivityId, Trace.CorrelationManager.ActivityId, "A new Activity ID should have set by the new ActivityScope");
+                Assert.IsNull(ActivityScope.CreateIfDefaultActivityId());
+            }
+
+            Assert.AreEqual(testActivityId, Trace.CorrelationManager.ActivityId, "Activity ID should be set back to previous version");
+            Trace.CorrelationManager.ActivityId = Guid.Empty;
+            Assert.IsNotNull(ActivityScope.CreateIfDefaultActivityId());
+
+            Trace.CorrelationManager.ActivityId = previousActivityId;
+        }
+
+        [TestMethod]
+        public async Task ValidateActivityId()
+        {
+            CosmosClientContext clientContext = ClientContextCore.Create(
+              MockCosmosUtil.CreateMockCosmosClient(),
+              new MockDocumentClient(),
+              new CosmosClientOptions());
+
+            Guid result = await clientContext.OperationHelperAsync<Guid>(
+                nameof(ValidateActivityId),
+                new RequestOptions(),
+                (diagnostics) =>
+                {
+                    return this.ValidateActivityIdHelper();
+                });
+
+            Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
+        }
+
+        [TestMethod]
+        public async Task ValidateActivityIdWithSynchronizationContext()
+        {
+            Mock<SynchronizationContext> mockSynchronizationContext = new Mock<SynchronizationContext>()
+            {
+                CallBase = true
+            };
+
+            CosmosClientContext clientContext = ClientContextCore.Create(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new MockDocumentClient(),
+                new CosmosClientOptions());
+
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(mockSynchronizationContext.Object);
+
+                Guid result = await clientContext.OperationHelperAsync<Guid>(
+                    nameof(ValidateActivityIdWithSynchronizationContext),
+                    new RequestOptions(),
+                    (diagnostics) =>
+                    {
+                        return this.ValidateActivityIdHelper();
+                    });
+
+                Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+            }
+        }
+
+        private Task<Guid> ValidateActivityIdHelper()
+        {
+            Guid activityId = Trace.CorrelationManager.ActivityId;
+            Assert.AreNotEqual(Guid.Empty, activityId);
+            return Task.FromResult(activityId);
+        }
+
         [TestMethod]
         public void ValidateDiagnosticsContext()
         {
