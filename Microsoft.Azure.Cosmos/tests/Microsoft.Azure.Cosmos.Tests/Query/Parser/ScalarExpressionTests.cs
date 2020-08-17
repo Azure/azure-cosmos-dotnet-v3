@@ -267,7 +267,6 @@
         [DataRow("(SELECT *", DisplayName = "missing right parens")]
         [DataRow("SELECT *)", DisplayName = "missing left parens")]
         [DataRow("SELECT *", DisplayName = "missing both parens")]
-        [DataRow("(2)", DisplayName = "not a subquery")]
         public void SubqueryScalarExpressionNegative(string scalarExpression)
         {
             ScalarExpressionTests.InvalidateScalarExpression(scalarExpression);
