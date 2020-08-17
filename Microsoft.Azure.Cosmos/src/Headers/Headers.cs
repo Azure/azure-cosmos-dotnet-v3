@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         internal SubStatusCodes SubStatusCode
         {
             get => Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
-            set => this.SubStatusCodeLiteral = value.ToString();
+            set => this.SubStatusCodeLiteral = ((uint)value).ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>
