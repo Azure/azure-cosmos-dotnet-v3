@@ -8,16 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
-    using System.Net.Http;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -54,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.EnsureSuccessStatusCode();
                     Assert.Fail("Should have thrown");
                 }
-                catch(CosmosException exception)
+                catch (CosmosException exception)
                 {
                     Assert.IsTrue(exception.Message.Contains(testContent));
                 }
@@ -65,9 +58,11 @@ namespace Microsoft.Azure.Cosmos
         public void EnsureSuccessStatusCode_ThrowsOnFailure_ContainsJsonBody()
         {
             string message = "TestContent";
-            Error error = new Error();
-            error.Code = "code";
-            error.Message = message;
+            Error error = new Error
+            {
+                Code = "code",
+                Message = message
+            };
             string testContent = JsonConvert.SerializeObject(error);
             using (MemoryStream memoryStream = new MemoryStream())
             {
@@ -86,6 +81,32 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Assert.IsTrue(exception.Message.Contains(message));
                 }
+            }
+        }
+
+        [TestMethod]
+        public void VerifyDocumentClientExceptionWithNullHeader()
+        {
+            string errorMessage = "Test Exception!";
+
+            DocumentClientException dce = new DocumentClientException(
+                message: errorMessage,
+                innerException: null,
+                statusCode: HttpStatusCode.BadRequest);
+
+            string headerValue = "Test" + Guid.NewGuid();
+            dce.Headers.Add(headerValue, null);
+
+            try
+            {
+                ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
+                Assert.Fail("Should throw exception");
+            }
+            catch (ArgumentNullException ane)
+            {
+                Assert.IsTrue(ane.ToString().Contains(headerValue));
+                Assert.IsTrue(ane.ToString().Contains(errorMessage));
+                Assert.IsTrue(ane.InnerException is DocumentClientException);
             }
         }
 
@@ -150,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         public void EnsureCorrectStatusCode()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
-            
+
             List<(HttpStatusCode statusCode, CosmosException exception)> exceptionsToStatusCodes = new List<(HttpStatusCode, CosmosException)>()
             {
                 (HttpStatusCode.NotFound, CosmosExceptionFactory.CreateNotFoundException(testMessage, activityId: Guid.NewGuid().ToString())),
@@ -160,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
                 ((HttpStatusCode)429, CosmosExceptionFactory.CreateThrottledException(testMessage, activityId: Guid.NewGuid().ToString())),
             };
 
-            foreach((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
+            foreach ((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
             {
                 this.ValidateExceptionInfo(item.exception, item.statusCode, testMessage);
             }
@@ -176,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw cosmosException;
             }
-            catch(CosmosException ce)
+            catch (CosmosException ce)
             {
                 Assert.IsTrue(ce.StackTrace.Contains(nameof(ValidateExceptionStackTraceHandling)), ce.StackTrace);
             }
@@ -200,7 +221,7 @@ namespace Microsoft.Azure.Cosmos
                 Code = System.Net.HttpStatusCode.BadRequest.ToString(),
                 Message = "Unsupported Query",
                 AdditionalErrorInfo = "Additional error info message",
-                
+
             };
 
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
@@ -225,7 +246,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseMessage.EnsureSuccessStatusCode();
                 Assert.Fail("Should throw exception");
-            }catch(CosmosException ce ) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
             {
                 Assert.IsTrue(ce.Message.Contains(error.Message));
                 Assert.IsTrue(ce.ToString().Contains(error.Message));
