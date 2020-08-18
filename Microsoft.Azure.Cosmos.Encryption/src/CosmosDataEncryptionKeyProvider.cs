@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null,
             TimeSpan? backgroundRefreshInterval = null,
-            double? dekRefreshFrequencyAsPercentageOfTtl = null)
+            ushort? dekRefreshFrequencyAsPercentageOfTtl = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(

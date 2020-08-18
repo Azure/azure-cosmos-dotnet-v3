@@ -6,15 +6,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
-    using System.Timers;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     internal sealed class UnwrappedDekLifecycleManager : IDisposable
     {
+        private readonly TimeSpan backgroundRefreshTimeInterval;
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly TimeSpan defaultBackgroundRefreshTimeInterval = TimeSpan.FromMinutes(5);
         private readonly CosmosDataEncryptionKeyProvider dekProvider;
-        private readonly TimeSpan iterationInterval = TimeSpan.FromMinutes(5);
-        private readonly Timer timer;
         private readonly List<InMemoryRawDek> inMemoryRawDeks;
-        private bool isRunning = false;
+        private bool isRefreshing = false;
         private bool isDisposed = false;
 
         /// <summary>
@@ -23,37 +25,64 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// 2. Delete (dispose) unwrapped DEK from memory after client specified TimeToLive expires or if it hasn't been used lately.
         /// </summary>
         /// <param name="dekProvider">Cosmos DEK provider to help manage the DEK lifecycle.</param>
-        /// <param name="iterationInterval">Time interval between successive runs.</param>
+        /// <param name="backgroundRefreshTimeInterval">Time interval between successive iterations of the background task to refresh DEKs.</param>
         public UnwrappedDekLifecycleManager(
             CosmosDataEncryptionKeyProvider dekProvider,
-            TimeSpan? iterationInterval = null)
+            TimeSpan? backgroundRefreshTimeInterval = null)
         {
             this.dekProvider = dekProvider;
 
-            if (iterationInterval.HasValue)
+            if (backgroundRefreshTimeInterval.HasValue)
             {
-                if (iterationInterval.Value <= TimeSpan.Zero)
+                if (backgroundRefreshTimeInterval.Value <= TimeSpan.Zero)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(iterationInterval));
+                    throw new ArgumentOutOfRangeException(nameof(backgroundRefreshTimeInterval));
                 }
 
-                this.iterationInterval = iterationInterval.Value;
+                this.backgroundRefreshTimeInterval = backgroundRefreshTimeInterval.Value;
+            }
+            else
+            {
+                this.backgroundRefreshTimeInterval = this.defaultBackgroundRefreshTimeInterval;
             }
 
             this.inMemoryRawDeks = new List<InMemoryRawDek>();
-
-            this.timer = new Timer(this.iterationInterval.TotalMilliseconds);
-            this.timer.Elapsed += this.Run;
-            this.timer.AutoReset = true;
-            this.timer.Enabled = true;
+            this.StartRefreshDekTimer();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "Background task.")]
-        private void Run(object source, ElapsedEventArgs e)
+#pragma warning disable VSTHRD100 // Avoid async void methods
+        private async void StartRefreshDekTimer()
+#pragma warning restore VSTHRD100 // Avoid async void methods
         {
-            if (!this.isRunning)
+            if (this.cancellationTokenSource.IsCancellationRequested)
             {
-                this.isRunning = true;
+                return;
+            }
+
+            try
+            {
+                await Task.Delay(this.backgroundRefreshTimeInterval, this.cancellationTokenSource.Token);
+                this.RefreshDek();
+            }
+            catch (Exception ex)
+            {
+                if (this.cancellationTokenSource.IsCancellationRequested &&
+                    (ex is TaskCanceledException || ex is ObjectDisposedException))
+                {
+                    return;
+                }
+
+                this.StartRefreshDekTimer();
+            }
+        }
+
+#pragma warning disable VSTHRD100 // Avoid async void methods
+        private async void RefreshDek()
+#pragma warning restore VSTHRD100 // Avoid async void methods
+        {
+            if (!this.isRefreshing)
+            {
+                this.isRefreshing = true;
                 for (int index = 0; index < this.inMemoryRawDeks.Count; index++)
                 {
                     if (this.inMemoryRawDeks[index].RawDekExpiry <= DateTime.UtcNow)
@@ -66,10 +95,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         EncryptionKeyUnwrapResult unwrapResult;
                         try
                         {
-                            unwrapResult = this.dekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+                            unwrapResult = await this.dekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
                                 this.inMemoryRawDeks[index].DataEncryptionKeyProperties.WrappedDataEncryptionKey,
                                 this.inMemoryRawDeks[index].DataEncryptionKeyProperties.EncryptionKeyWrapMetadata,
-                                cancellationToken: default).Result;
+                                cancellationToken: default);
                         }
                         catch (Exception)
                         {
@@ -84,8 +113,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     }
                 }
 
-                this.isRunning = false;
+                this.isRefreshing = false;
             }
+
+            this.StartRefreshDekTimer();
+            return;
         }
 
         public void Add(InMemoryRawDek inMemoryRawDek)
@@ -98,8 +130,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (!this.isDisposed)
             {
                 this.inMemoryRawDeks.Clear();
-                this.timer.Stop();
-                this.timer.Dispose();
+                if (!this.cancellationTokenSource.IsCancellationRequested)
+                {
+                    // If the user disposes of the object while awaiting an async call, this can cause task canceled exceptions.
+                    this.cancellationTokenSource.Cancel();
+
+                    // The background timer task can hit a ObjectDisposedException but it's an async background task
+                    // that is never awaited on so it will not be thrown back to the caller.
+                    this.cancellationTokenSource.Dispose();
+                }
+
                 this.isDisposed = true;
             }
         }

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class Constants
     {
-        public const double DefaultDekRefreshFrequencyAsPercentageOfTtl = 10.0;
+        public const ushort DefaultDekRefreshFrequencyAsPercentageOfTtl = 10;
         public const string DocumentsResourcePropertyName = "Documents";
         public const string EncryptedData = "_ed";
         public const string EncryptedInfo = "_ei";

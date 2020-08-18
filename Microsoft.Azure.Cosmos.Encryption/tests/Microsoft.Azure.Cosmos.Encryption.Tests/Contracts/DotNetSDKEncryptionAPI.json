@@ -80,10 +80,10 @@
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)"
         },
-        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Double])": {
+        "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.UInt16])": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Double])"
+          "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.UInt16])"
         },
         "Void Dispose()": {
           "Type": "Method",
@@ -404,10 +404,10 @@
               ],
               "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)"
             },
-            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Double])": {
+            "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.UInt16])": {
               "Type": "Constructor",
               "Attributes": [],
-              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.Double])"
+              "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan], System.Nullable`1[System.TimeSpan], System.Nullable`1[System.UInt16])"
             },
             "Void Dispose()": {
               "Type": "Method",

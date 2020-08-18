@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal class InMemoryRawDek
     {
-        private readonly double dekRefreshFrequencyAsPercentageOfTtl;
+        private readonly ushort dekRefreshFrequencyAsPercentageOfTtl;
         private TimeSpan clientCacheTimeToLive;
         private DateTime lastUsageTime;
         private DateTime nextRefreshTime;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             DataEncryptionKey dataEncryptionKey,
             DataEncryptionKeyProperties dekProperties,
             TimeSpan clientCacheTimeToLive,
-            double dekRefreshFrequencyAsPercentageOfTtl)
+            ushort dekRefreshFrequencyAsPercentageOfTtl)
         {
             this.DataEncryptionKey = dataEncryptionKey;
             this.RawDekExpiry = DateTime.UtcNow + clientCacheTimeToLive;

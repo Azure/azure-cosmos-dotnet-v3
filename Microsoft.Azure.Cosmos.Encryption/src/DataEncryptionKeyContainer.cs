@@ -112,6 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
+        /// <typeparam name="T">The type of object to query.</typeparam>
         /// <returns>An iterator over data encryption keys.</returns>
         /// <example>
         /// This create the type feed iterator for containers with queryDefinition as input.

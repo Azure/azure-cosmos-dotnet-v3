@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             string dekId,
             string metadata,
             TimeSpan timeSpan,
-            double dekRefreshFrequency)
+            ushort dekRefreshFrequency)
         {
             return new InMemoryRawDek(
                 dek,
