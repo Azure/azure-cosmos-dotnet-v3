@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 handler = handler.InnerHandler;
             }
 
-            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            string link = "/dbs/db/colls/colls";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.BatchExecutor).Returns(mockExecutor.Object);
