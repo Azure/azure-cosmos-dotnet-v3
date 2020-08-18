@@ -69,6 +69,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.JoinCollection.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.ArrayIteratorCollection.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.AliasedCollection.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\WhereClauseSqlParserBaselineTests.Tests.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
