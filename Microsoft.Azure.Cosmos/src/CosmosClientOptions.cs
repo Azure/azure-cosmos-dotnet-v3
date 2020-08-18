@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -136,9 +137,9 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                if (this.ConnectionMode != ConnectionMode.Gateway)
+                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit )
                 {
-                    throw new ArgumentException("Max connection limit is only valid for ConnectionMode.Gateway.");
+                    throw new ArgumentException($"{nameof(this.httpClientFactory)} can not be set along with {nameof(this.GatewayModeMaxConnectionLimit)}. This must be set on the HttpClientHandler.MaxConnectionsPerServer property.");
                 }
 
                 this.gatewayModeMaxConnectionLimit = value;
@@ -468,6 +469,9 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// Useful in scenarios where the application is using a pool of HttpClient instances to be shared, like ASP.NET Core applications with IHttpClientFactory or Blazor WebAssembly applications.
         /// </para>
+        /// <para>
+        /// For .NET core applications the default GatewayConnectionLimit will be ignored. It must be set on the HttpClientHandler.MaxConnectionsPerServer to limit the number of connections
+        /// </para>
         /// </remarks>
         [JsonIgnore]
         public Func<HttpClient> HttpClientFactory
@@ -478,6 +482,11 @@ namespace Microsoft.Azure.Cosmos
                 if (this.WebProxy != null)
                 {
                     throw new ArgumentException($"{nameof(this.HttpClientFactory)} cannot be set along {nameof(this.WebProxy)}");
+                }
+
+                if (this.GatewayModeMaxConnectionLimit != ConnectionPolicy.Default.MaxConnectionLimit)
+                {
+                    throw new ArgumentException($"{nameof(this.httpClientFactory)} can not be set along with {nameof(this.GatewayModeMaxConnectionLimit)}. This must be set on the HttpClientHandler.MaxConnectionsPerServer property.");
                 }
 
                 this.httpClientFactory = value;
@@ -623,7 +632,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory
+                HttpClientFactory = this.httpClientFactory,
             };
 
             if (this.ApplicationRegion != null)

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualBasic;
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerInternal container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new string[] { "pk" }));
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "pk" } }));
             containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                 .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
 
@@ -119,11 +120,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
                     default(CancellationToken));
-                if (pk is bool)
+                if (pk is bool boolValue)
                 {
-                    Assert.AreEqual(poco.pk, (bool)pk);
+                    Assert.AreEqual(poco.pk, boolValue);
                 }
-                else if (pk is double)
+                else if (pk is double doubleValue)
                 {
                     if (poco.pk is float)
                     {
@@ -138,11 +139,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Assert.AreEqual(Convert.ToDouble(poco.pk), (double)pk);
                     }
                 }
-                else if (pk is string)
+                else if (pk is string stringValue)
                 {
                     if (poco.pk is DateTime)
                     {
-                        Assert.AreEqual(poco.pk.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), (string)pk);
+                        Assert.AreEqual(poco.pk.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), stringValue);
                     }
                     else
                     {
@@ -294,6 +295,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_PatchStream()
+        {
+            (ContainerInternal container, Mock<BatchAsyncContainerExecutor> mockedExecutor) = this.CreateMockBulkCosmosClientContext();
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/new", "patched")
+            };
+
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            using (ResponseMessage streamResponse = await container.PatchItemStreamAsync(
+                partitionKey: partitionKey,
+                id: testItem.id,
+                patchOperations: patch))
+            {
+                mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            }
+        }
+
+        [TestMethod]
         public async Task AllowBatchingRequestsSendsToExecutor_Create()
         {
             (ContainerInternal container, Mock<BatchAsyncContainerExecutor> mockedExecutor) = this.CreateMockBulkCosmosClientContext();
@@ -385,17 +413,48 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_Patch()
+        {
+            (ContainerInternal container, Mock<BatchAsyncContainerExecutor> mockedExecutor) = this.CreateMockBulkCosmosClientContext();
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateAddOperation("/new", "patched")
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.PatchItemAsync<dynamic>(
+                testItem.id,
+                partitionKey,
+                patch);
+
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
-            ContainerInternal mockContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
+            ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
 
-            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
-            ContainerInternal container = containerMock.Object;
+            Mock<ContainerCore> mockedContainer = new Mock<ContainerCore>(
+                originalContainer.ClientContext,
+                (DatabaseInternal)originalContainer.Database,
+                originalContainer.Id,
+                null)
+            {
+                CallBase = true
+            };
 
-            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new string[] { "a", "b", "c" }));
-            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
+            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> {new List<string> { "a", "b", "c" }}));
+
+            ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
             List<dynamic> invalidNestedItems = new List<dynamic>
             {
@@ -456,11 +515,125 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (dynamic poco in invalidNestedItems)
             {
-                object pk = await container.GetPartitionKeyValueFromStreamAsync(
+                object pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
                     default(CancellationToken));
-                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk) || object.Equals(Cosmos.PartitionKey.None, pk));
+                Assert.IsTrue(object.Equals(Cosmos.PartitionKey.None, pk));
             }
+        }
+
+        [TestMethod]
+        public async Task TestMultipleNestedPartitionKeyValueFromStreamAsync()
+        {
+            ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
+
+            Mock<ContainerCore> mockedContainer = new Mock<ContainerCore>(
+                originalContainer.ClientContext,
+                (DatabaseInternal)originalContainer.Database,
+                originalContainer.Id,
+                null)
+            {
+                CallBase = true
+            };
+
+            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>) new List<IReadOnlyList<string>> { new List<string> { "a", "b", "c" }, new List<string> { "a","e","f" } }));
+
+            ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
+
+            List<dynamic> validNestedItems = new List<dynamic>
+            {
+                (
+                    new // a/b/c (Specify only one partition key)
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            b = new
+                            {
+                                c = 10,
+                            }
+                        }
+                    },
+                    "[10.0,{}]"
+                ),
+                (
+                    new // 
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            b = new
+                            {
+                                c = 10,
+                            },
+                            e = new
+                            {
+                                f = 15,
+                            }
+                        }
+                    },
+                    "[10.0,15.0]"
+                ),
+                (
+                    new
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            b = new
+                            {
+                                c = 10,
+                            },
+                            e = new
+                            {
+                                f = default(string), //null
+                            }
+                        }
+                    },
+                    "[10.0,null]"
+                ),
+                (
+                    new
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            e = new
+                            {
+                                f = 10,
+                            }
+                        }
+                    },
+                    "[{},10.0]"
+                ),
+                (
+                    new
+                    {
+                        id = Guid.NewGuid().ToString(),
+                        a = new
+                        {
+                            e = 10,
+                            b = new
+                            {
+                                k = 10,
+                            }
+                        }
+
+                    },
+                    "[{},{}]"
+                )
+            };
+
+            foreach (dynamic poco in validNestedItems)
+            {
+                Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
+                    MockCosmosUtil.Serializer.ToStream(poco.Item1),
+                    default(CancellationToken));
+                string partitionKeyString = pk.InternalKey.ToJsonString();
+                Assert.AreEqual(poco.Item2, partitionKeyString);
+            }
+
         }
 
         private (ContainerInternal, Mock<BatchAsyncContainerExecutor>) CreateMockBulkCosmosClientContext()
@@ -474,8 +647,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.ResponseFactory).Returns(context.ResponseFactory);
             mockContext.Setup(x => x.SerializerCore).Returns(context.SerializerCore);
             mockContext.Setup(x => x.DocumentClient).Returns(context.DocumentClient);
+
+            mockContext.Setup(x => x.CreateDiagnosticContext(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>()))
+                .Returns<string, RequestOptions>((x, y) => new CosmosDiagnosticsContextCore(x, "MockUserAgentString"));
+
+            mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
+            mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
-                It.IsAny<Uri>(),
+                It.IsAny<string>(),
                 It.IsAny<ResourceType>(),
                 It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
@@ -485,7 +678,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
-                It.IsAny<CancellationToken>())).Returns<Uri, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, CancellationToken>(
+                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, CancellationToken>(
                 (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, cancellationToken) =>
                  context.ProcessResourceOperationStreamAsync(
                      uri,

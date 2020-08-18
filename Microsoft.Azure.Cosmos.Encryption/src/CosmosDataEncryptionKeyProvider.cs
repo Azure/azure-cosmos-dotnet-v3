@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private const string ContainerPartitionKeyPath = "/id";
 
-        private DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
+        private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
 
         private Container container;
 
@@ -35,36 +35,60 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
+        /// <summary>
+        /// Gets a provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
+        /// </summary>
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
-        public DataEncryptionKeyContainer DataEncryptionKeyContainer => dataEncryptionKeyContainerCore;
+        /// <summary>
+        /// Gets Container for data encryption keys.
+        /// </summary>
+        public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.dataEncryptionKeyContainerCore;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
-            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider;
+            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
 
+        /// <summary>
+        /// Initialize Cosmos DB container for CosmosDataEncryptionKeyProvider to store wrapped DEKs
+        /// </summary>
+        /// <param name="database">Database</param>
+        /// <param name="containerId">Container id</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>A task to await on.</returns>
         public async Task InitializeAsync(
-            Database database, 
+            Database database,
             string containerId,
             CancellationToken cancellationToken = default)
         {
-            if(this.container != null)
+            if (this.container != null)
             {
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
+            }
+
+            if (database == null)
+            {
+                throw new ArgumentNullException(nameof(database));
             }
 
             ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
                 containerId,
                 partitionKeyPath: CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath);
 
-            if(containerResponse.Resource.PartitionKeyPath != CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath)
+            if (containerResponse.Resource.PartitionKeyPath != CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath)
             {
-                throw new ArgumentException($"Provided container {containerId} did not have the appropriate partition key definition. " +
+                throw new ArgumentException(
+                    $"Provided container {containerId} did not have the appropriate partition key definition. " +
                     $"The container needs to be created with PartitionKeyPath set to {CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath}.",
                     nameof(containerId));
             }
@@ -72,13 +96,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.container = containerResponse.Container;
         }
 
+        /// <inheritdoc/>
         public override async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
-                id, 
+                id,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 

@@ -7,133 +7,221 @@ namespace CosmosBenchmark
     using System;
     using System.IO;
     using System.Net;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents.Client;
+    using System.Collections.Generic;
+    using System.Reflection;
+    using System.Diagnostics;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
     /// </summary>
     public sealed class Program
     {
-        private CosmosClient client;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Program"/> class.
-        /// </summary>
-        /// <param name="client">The Azure Cosmos DB client instance.</param>
-        private Program(CosmosClient client)
-        {
-            this.client = client;
-        }
-
         /// <summary>
         /// Main method for the sample.
         /// </summary>
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
-            BenchmarkConfig config = BenchmarkConfig.From(args);
-            ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
-
-            string accountKey = config.Key;
-            config.Key = null; // Don't print
-            config.Print();
-
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            try
             {
-                ApplicationName = "cosmosdbdotnetbenchmark",
-                RequestTimeout = new TimeSpan(1, 0, 0),
-                MaxRetryAttemptsOnRateLimitedRequests = 0,
-                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(60),
-                MaxRequestsPerTcpConnection = 2,
-            };
+                BenchmarkConfig config = BenchmarkConfig.From(args);
+                ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
+                TelemetrySpan.IncludePercentile = config.EnableLatencyPercentiles;
 
-            using (CosmosClient client = new CosmosClient(
-                config.EndPoint,
-                accountKey,
-                clientOptions))
-            {
-                Program program = new Program(client);
-                await program.ExecuteAsync(config);
+                string accountKey = config.Key;
+                config.Key = null; // Don't print
+                config.Print();
+
+                Program program = new Program();
+
+                RunSummary runSummary = await program.ExecuteAsync(config, accountKey);
+
+                if (TelemetrySpan.IncludePercentile)
+                {
+                    TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
+                    using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+                    {
+                        TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                    }
+                }
             }
-
-            TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
-            using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+            finally
             {
-                TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
+                if (Debugger.IsAttached)
+                {
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadLine();
+                }
             }
-
-            Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadLine();
         }
 
         /// <summary>
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task ExecuteAsync(BenchmarkConfig config)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, string accountKey)
         {
-            if (config.CleanupOnStart)
+            using (CosmosClient cosmosClient = config.CreateCosmosClient(accountKey))
             {
-                Database database = this.client.GetDatabase(config.Database);
-                await database.DeleteStreamAsync();
+                if (config.CleanupOnStart)
+                {
+                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
+                    await database.DeleteStreamAsync();
+                }
+
+                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
+                Container container = containerResponse;
+
+                int? currentContainerThroughput = await container.ReadThroughputAsync();
+                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
+
+                int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
+
+                Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
+                Console.WriteLine();
+
+                string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
+                int opsPerTask = config.ItemCount / taskCount;
+
+                // TBD: 2 clients SxS some overhead
+                RunSummary runSummary;
+                using (DocumentClient documentClient = config.CreateDocumentClient(accountKey))
+                {
+                    Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(
+                        config,
+                        partitionKeyPath,
+                        cosmosClient,
+                        documentClient);
+
+                    if (config.DisableCoreSdkLogging)
+                    {
+                        // Do it after client initialization (HACK)
+                        Program.ClearCoreSdkListeners();
+                    }
+
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
+                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
+                }
+
+                if (config.CleanupOnFinish)
+                {
+                    Console.WriteLine($"Deleting Database {config.Database}");
+                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
+                    await database.DeleteStreamAsync();
+                }
+
+                runSummary.WorkloadType = config.WorkloadType;
+                runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:HH-mm")}-{config.CommitId}";
+                runSummary.Commit = config.CommitId;
+                runSummary.CommitDate = config.CommitDate;
+                runSummary.CommitTime = config.CommitTime;
+
+                runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
+                runSummary.BranchName = config.BranchName;
+                runSummary.TotalOps = config.ItemCount;
+                runSummary.Concurrency = taskCount;
+                runSummary.Database = config.Database;
+                runSummary.Container = config.Container;
+                runSummary.AccountName = config.EndPoint;
+                runSummary.pk = config.ResultsPartitionKeyValue;
+
+                string consistencyLevel = config.ConsistencyLevel;
+                if (string.IsNullOrWhiteSpace(consistencyLevel))
+                {
+                    AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+                    consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
+                }
+                runSummary.ConsistencyLevel = consistencyLevel;
+
+
+                if (config.PublishResults)
+                {
+                    Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
+                    await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
+                }
+
+                return runSummary;
             }
+        }
 
-            ContainerResponse containerResponse = await this.CreatePartitionedContainerAsync(config);
-            Container container = containerResponse;
-
-            int? currentContainerThroughput = await container.ReadThroughputAsync();
-            Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
-
-            int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
-
-            Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
-            Console.WriteLine();
-
-            string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-            int numberOfItemsToInsert = config.ItemCount / taskCount;
+        private Func<IBenchmarkOperatrion> GetBenchmarkFactory(
+            BenchmarkConfig config,
+            string partitionKeyPath,
+            CosmosClient cosmosClient,
+            DocumentClient documentClient)
+        {
             string sampleItem = File.ReadAllText(config.ItemTemplateFile);
 
-            IBenchmarkOperatrion benchmarkOperation = null;
-            switch (config.WorkloadType.ToLower())
+            Type[] availableBenchmarks = Program.AvailableBenchmarks();
+            IEnumerable<Type> res = availableBenchmarks
+                .Where(e => e.Name.Equals(config.WorkloadType, StringComparison.OrdinalIgnoreCase) || e.Name.Equals(config.WorkloadType + "BenchmarkOperation", StringComparison.OrdinalIgnoreCase));
+
+            if (res.Count() != 1)
             {
-                case "insert":
-                    benchmarkOperation = new InsertBenchmarkOperation(
-                        container,
-                        partitionKeyPath,
-                        sampleItem);
-                    break;
-                case "read":
-                    benchmarkOperation = new ReadBenchmarkOperation(
-                        container,
-                        partitionKeyPath,
-                        sampleItem);
-                    break;
-                default:
-                    throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}");
+                throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}. Available ones are " +
+                    string.Join(", \r\n", availableBenchmarks.Select(e => e.Name)));
             }
 
-            IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperation);
-            await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, 0.01);
+            ConstructorInfo ci = null;
+            object[] ctorArguments = null;
+            Type benchmarkTypeName = res.Single();
 
-            if (config.CleanupOnFinish)
+            if (benchmarkTypeName.Name.EndsWith("V3BenchmarkOperation"))
             {
-                Console.WriteLine($"Deleting Database {config.Database}");
-                Database database = this.client.GetDatabase(config.Database);
-                await database.DeleteStreamAsync();
+                ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(CosmosClient), typeof(string), typeof(string), typeof(string), typeof(string) });
+                ctorArguments = new object[]
+                    {
+                        cosmosClient,
+                        config.Database,
+                        config.Container,
+                        partitionKeyPath,
+                        sampleItem
+                    };
             }
+            else if (benchmarkTypeName.Name.EndsWith("V2BenchmarkOperation"))
+            {
+                ci = benchmarkTypeName.GetConstructor(new Type[] { typeof(DocumentClient), typeof(string), typeof(string), typeof(string), typeof(string) });
+                ctorArguments = new object[]
+                    {
+                        documentClient,
+                        config.Database,
+                        config.Container,
+                        partitionKeyPath,
+                        sampleItem
+                    };
+            }
+
+            if (ci == null)
+            {
+                throw new NotImplementedException($"Unsupported CTOR for workload type {config.WorkloadType} ");
+            }
+
+            return () => (IBenchmarkOperatrion)ci.Invoke(ctorArguments);
+        }
+
+        private static Type[] AvailableBenchmarks()
+        {
+            Type benchmarkType = typeof(IBenchmarkOperatrion);
+            return typeof(Program).Assembly.GetTypes()
+                .Where(p => benchmarkType.IsAssignableFrom(p))
+                .ToArray();
         }
 
         /// <summary>
         /// Create a partitioned container.
         /// </summary>
         /// <returns>The created container.</returns>
-        private async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options)
+        private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
         {
-            Database database = await this.client.CreateDatabaseIfNotExistsAsync(options.Database);
+            Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
 
             Container container = database.GetContainer(options.Container);
 
@@ -153,6 +241,14 @@ namespace CosmosBenchmark
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
             }
+        }
+
+        private static void ClearCoreSdkListeners()
+        {
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Clear();
         }
     }
 }

@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected TestDoc TestDocPk1ExistingB { get; set; }
         protected TestDoc TestDocPk1ExistingC { get; set; }
         protected TestDoc TestDocPk1ExistingD { get; set; }
+        protected TestDoc TestDocPk1ExistingE { get; set; }
 
         public static void ClassInit(TestContext context)
         {
@@ -292,8 +293,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        protected static RequestOptions GetUpdatedBatchRequestOptions(
-            RequestOptions batchOptions = null,
+        protected static TransactionalBatchRequestOptions GetUpdatedBatchRequestOptions(
+            TransactionalBatchRequestOptions batchOptions = null,
             bool isSchematized = false,
             bool useEpk = false,
             object partitionKey = null)
@@ -302,15 +303,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (batchOptions == null)
                 {
-                    batchOptions = new RequestOptions();
+                    batchOptions = new TransactionalBatchRequestOptions();
                 }
 
-                if (batchOptions.Properties == null)
+                Dictionary<string, object> properties = new Dictionary<string, object>()
                 {
-                    batchOptions.Properties = new Dictionary<string, object>();
-                }
+                    { WFConstants.BackendHeaders.BinaryPassthroughRequest, bool.TrueString }
+                };
 
-                batchOptions.Properties.Add(WFConstants.BackendHeaders.BinaryPassthroughRequest, bool.TrueString);
+                if (batchOptions.Properties != null)
+                {
+                    foreach(KeyValuePair<string, object> entry in batchOptions.Properties)
+                    {
+                        properties.Add(entry.Key, entry.Value);
+                    }
+                }
 
                 if (useEpk)
                 {
@@ -318,10 +325,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     .InternalKey
                                     .GetEffectivePartitionKeyString(BatchTestBase.PartitionKeyDefinition);
 
-                    batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
-                    batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
+                    properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
+                    properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
                     batchOptions.IsEffectivePartitionKeyRouting = true;
                 }
+
+                batchOptions.Properties = properties;
             }
 
             return batchOptions;
@@ -344,11 +353,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static TransactionalBatchItemRequestOptions GetBatchItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
         {
-            TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions()
-            {
-                Properties = new Dictionary<string, object>()
-            };
-
+            TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions();
             if (PopulateRequestOptions(requestOptions, doc, isSchematized, useEpk, ttlInSeconds))
             {
                 return requestOptions;
@@ -359,15 +364,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected static ItemRequestOptions GetItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
-            {
-                Properties = new Dictionary<string, object>()
-            };
-
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
             bool wasPopulated = BatchTestBase.PopulateRequestOptions(requestOptions, doc, isSchematized, useEpk, ttlInSeconds);
             if (isSchematized)
             {
-                requestOptions.Properties.Add(WFConstants.BackendHeaders.BinaryPassthroughRequest, bool.TrueString);
+                Dictionary<string, object> properties = requestOptions.Properties as Dictionary<string, object>;
+                properties.Add(WFConstants.BackendHeaders.BinaryPassthroughRequest, bool.TrueString);
                 wasPopulated = true;
             }
 
@@ -411,15 +413,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return bytes;
         }
 
+        internal static ISessionToken GetSessionToken(string sessionToken)
+        {
+            string[] tokenParts = sessionToken.Split(':');
+            return SessionTokenHelper.Parse(tokenParts[1]);
+        }
+
         private static bool PopulateRequestOptions(RequestOptions requestOptions, TestDoc doc, bool isSchematized, bool useEpk, int? ttlInSeconds)
         {
+            Dictionary<string, object> properties = new Dictionary<string, object>();
+            requestOptions.Properties = properties;
             if (isSchematized)
             {
-                requestOptions.Properties.Add(WFConstants.BackendHeaders.BinaryId, Encoding.UTF8.GetBytes(doc.Id));
+                properties.Add(WFConstants.BackendHeaders.BinaryId, Encoding.UTF8.GetBytes(doc.Id));
 
                 if (ttlInSeconds.HasValue)
                 {
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.Value.ToString());
+                    properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.Value.ToString());
                 }
 
                 if (useEpk)
@@ -428,8 +438,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     .InternalKey
                                     .GetEffectivePartitionKeyString(BatchTestBase.PartitionKeyDefinition);
 
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
+                    properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
+                    properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
                     requestOptions.IsEffectivePartitionKeyRouting = true;
                 }
 

@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
@@ -14,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
     {
         private sealed class EagerCosmosArray : CosmosArray
         {
@@ -22,41 +24,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public EagerCosmosArray(IEnumerable<CosmosElement> elements)
             {
-                if (elements == null)
-                {
-                    throw new ArgumentNullException($"{nameof(elements)}");
-                }
-
-                foreach (CosmosElement element in elements)
-                {
-                    if (element == null)
-                    {
-                        throw new ArgumentException($"{nameof(elements)} must not have null items.");
-                    }
-                }
-
                 this.cosmosElements = new List<CosmosElement>(elements);
             }
 
             public override int Count => this.cosmosElements.Count;
 
-            public override CosmosElement this[int index]
-            {
-                get
-                {
-                    return this.cosmosElements[index];
-                }
-            }
+            public override CosmosElement this[int index] => this.cosmosElements[index];
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this.cosmosElements.GetEnumerator();
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
                 jsonWriter.WriteArrayStart();
 
                 foreach (CosmosElement arrayItem in this)

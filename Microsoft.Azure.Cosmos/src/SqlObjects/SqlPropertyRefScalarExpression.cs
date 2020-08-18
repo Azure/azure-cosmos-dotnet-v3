@@ -1,21 +1,29 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal sealed class SqlPropertyRefScalarExpression : SqlScalarExpression
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlPropertyRefScalarExpression : SqlScalarExpression
     {
         private SqlPropertyRefScalarExpression(
             SqlScalarExpression member,
             SqlIdentifier identifier)
         {
             this.Member = member;
-            this.Identifer = identifier ?? throw new ArgumentNullException(nameof(identifier));
+            this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
         }
 
-        public SqlIdentifier Identifer { get; }
+        public SqlIdentifier Identifier { get; }
 
         public SqlScalarExpression Member { get; }
 

@@ -3,8 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosBinary : CosmosElement
+    abstract partial class CosmosBinary : CosmosElement, IEquatable<CosmosBinary>, IComparable<CosmosBinary>
     {
         private sealed class EagerCosmosBinary : CosmosBinary
         {
@@ -25,15 +26,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override ReadOnlyMemory<byte> Value { get; }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                jsonWriter.WriteBinaryValue(this.Value.Span);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteBinaryValue(this.Value.Span);
         }
     }
 #if INTERNAL

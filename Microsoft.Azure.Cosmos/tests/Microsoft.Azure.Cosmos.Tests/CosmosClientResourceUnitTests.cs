@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosClientContext context = this.CreateMockClientContext();
             DatabaseInternal db = new DatabaseInlineCore(context, databaseId);
-            Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
+            Assert.AreEqual(db.LinkUri, "dbs/" + databaseId);
 
             ContainerInternal container = new ContainerInlineCore(context, db, crId);
-            Assert.AreEqual(container.LinkUri.OriginalString, "dbs/" + databaseId + "/colls/" + crId);
+            Assert.AreEqual(container.LinkUri, "dbs/" + databaseId + "/colls/" + crId);
         }
 
         [TestMethod]

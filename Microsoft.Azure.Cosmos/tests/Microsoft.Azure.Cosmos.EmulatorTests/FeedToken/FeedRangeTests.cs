@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             List<FeedRangeCompositeContinuation> tokens = new List<FeedRangeCompositeContinuation>();
             foreach (FeedRange range in ranges)
             {
-                FeedRangeEPK feedRangeEPK = range as FeedRangeEPK;
+                FeedRangeEpk feedRangeEPK = range as FeedRangeEpk;
                 FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(containerRid, feedRangeEPK, new List<Documents.Routing.Range<string>>() { feedRangeEPK.Range }, continuation);
                 tokens.Add(feedRangeCompositeContinuation);
                 serializations.Add(feedRangeCompositeContinuation.ToString());

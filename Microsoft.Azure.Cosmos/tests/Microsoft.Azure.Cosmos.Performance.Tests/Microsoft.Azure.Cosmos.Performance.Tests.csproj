@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
@@ -198,6 +198,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
     <PackageReference Include="Moq" Version="4.13.1" />
+    <PackageReference Include="System.Linq" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -213,14 +214,6 @@
     <None Update="Json\CuratedDocsBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CuratedDocsBenchmark.cs</LastGenOutput>
-    </None>
-    <None Update="Json\JsonMicroBenchmarks.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>JsonMicroBenchmarks.cs</LastGenOutput>
-    </None>
-    <None Update="Json\JsonRoundtripBenchmark.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>JsonRoundtripBenchmark.cs</LastGenOutput>
     </None>
     <None Update="Json\Utf8vsUtf16StringBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -247,16 +240,6 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CuratedDocsBenchmark.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Json\JsonMicroBenchmarks.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>JsonMicroBenchmarks.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Json\JsonRoundtripBenchmark.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>JsonRoundtripBenchmark.tt</DependentUpon>
     </Compile>
     <Compile Update="Json\Utf8vsUtf16StringBenchmark.cs">
       <DesignTime>True</DesignTime>

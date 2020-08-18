@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             requestCharge: 0,
             errorMessage: string.Empty,
             method: HttpMethod.Get,
-            requestUri: new Uri("http://localhost"),
+            requestUri: "http://localhost",
             requestSessionToken: null,
             responseSessionToken: null);
 

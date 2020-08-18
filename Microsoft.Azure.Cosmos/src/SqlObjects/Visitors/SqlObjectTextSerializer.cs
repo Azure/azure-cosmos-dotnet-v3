@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
     using System.Buffers;
@@ -9,10 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.ServiceModel.Channels;
     using System.Text;
-    using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
@@ -428,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 this.writer.Write(".");
             }
 
-            sqlPropertyRefScalarExpression.Identifer.Accept(this);
+            sqlPropertyRefScalarExpression.Identifier.Accept(this);
         }
 
         public override void Visit(SqlQuery sqlQuery)

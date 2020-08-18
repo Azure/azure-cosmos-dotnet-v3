@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class FeedRangeContinuationTests
@@ -44,45 +45,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 new Documents.Routing.Range<string>("A", "B", true, false),
                 new Documents.Routing.Range<string>("D", "E", true, false),
             };
-            FeedRangeInternal feedRangeInternal = new FeedRangeEPK(new Documents.Routing.Range<string>("A", "E", true, false));
+            FeedRangeInternal feedRangeInternal = new FeedRangeEpk(new Documents.Routing.Range<string>("A", "E", true, false));
             FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, feedRangeInternal, keyRanges);
             Assert.IsTrue(FeedRangeContinuation.TryParse(token.ToString(), out _));
             Assert.IsFalse(FeedRangeContinuation.TryParse("whatever", out _));
-        }
-
-        [TestMethod]
-        public void FeedRangeCompositeContinuation_RequestVisitor()
-        {
-            const string containerRid = "containerRid";
-            const string continuation = "continuation";
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
-            FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, Mock.Of<FeedRangeInternal>(), new List<Documents.Routing.Range<string>>() { range }, continuation);
-            RequestMessage requestMessage = new RequestMessage();
-            requestMessage.OperationType = Documents.OperationType.ReadFeed;
-            requestMessage.ResourceType = Documents.ResourceType.Document;
-            FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
-            token.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
-            Assert.AreEqual(range.Min, requestMessage.Properties[HandlerConstants.StartEpkString]);
-            Assert.AreEqual(range.Max, requestMessage.Properties[HandlerConstants.EndEpkString]);
-            Assert.AreEqual(continuation, requestMessage.Headers.IfNoneMatch);
-            Assert.IsTrue(requestMessage.IsPartitionKeyRangeHandlerRequired);
-        }
-
-        [TestMethod]
-        public void FeedRangeCompositeContinuation_RequestVisitor_IfEPKAlreadyExists()
-        {
-            const string containerRid = "containerRid";
-            const string continuation = "continuation";
-            string epkString = Guid.NewGuid().ToString();
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
-            FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, Mock.Of<FeedRangeInternal>(), new List<Documents.Routing.Range<string>>() { range }, continuation);
-            RequestMessage requestMessage = new RequestMessage();
-            FeedRangeVisitor feedRangeVisitor = new FeedRangeVisitor(requestMessage);
-            requestMessage.Properties[HandlerConstants.StartEpkString] = epkString;
-            requestMessage.Properties[HandlerConstants.EndEpkString] = epkString;
-            token.Accept(feedRangeVisitor, ChangeFeedRequestOptions.FillContinuationToken);
-            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.StartEpkString]);
-            Assert.AreEqual(epkString, requestMessage.Properties[HandlerConstants.EndEpkString]);
         }
 
         [TestMethod]
@@ -98,12 +64,16 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ResponseMessage okResponse = new ResponseMessage(HttpStatusCode.OK);
             okResponse.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
+            okResponse.Headers[Documents.HttpConstants.HttpHeaders.ETag] = "1";
             Assert.IsFalse(feedRangeCompositeContinuation.HandleChangeFeedNotModified(okResponse).ShouldRetry);
 
+            ResponseMessage notModified = new ResponseMessage(HttpStatusCode.NotModified);
+            notModified.Headers[Documents.HttpConstants.HttpHeaders.ETag] = "1";
+
             // A 304 on a multi Range token should cycle on all available ranges before stopping retrying
-            Assert.IsTrue(feedRangeCompositeContinuation.HandleChangeFeedNotModified(new ResponseMessage(HttpStatusCode.NotModified)).ShouldRetry);
-            Assert.IsTrue(feedRangeCompositeContinuation.HandleChangeFeedNotModified(new ResponseMessage(HttpStatusCode.NotModified)).ShouldRetry);
-            Assert.IsFalse(feedRangeCompositeContinuation.HandleChangeFeedNotModified(new ResponseMessage(HttpStatusCode.NotModified)).ShouldRetry);
+            Assert.IsTrue(feedRangeCompositeContinuation.HandleChangeFeedNotModified(notModified).ShouldRetry);
+            Assert.IsTrue(feedRangeCompositeContinuation.HandleChangeFeedNotModified(notModified).ShouldRetry);
+            Assert.IsFalse(feedRangeCompositeContinuation.HandleChangeFeedNotModified(notModified).ShouldRetry);
         }
 
         [TestMethod]
@@ -149,6 +119,55 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             // New third token
             Assert.AreEqual(compositeContinuationTokens[0].Token, continuationTokens[2].Token);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MinInclusive, continuationTokens[2].Range.Min);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[2].Range.Max);
+        }
+
+        [TestMethod]
+        public async Task FeedRangeCompositeContinuation_HandleSplits_ReadFeed()
+        {
+            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
+            {
+                FeedRangeContinuationTests.BuildTokenForRange("A", "C", JsonConvert.SerializeObject(new CompositeContinuationToken() { Token = "token1", Range = new Documents.Routing.Range<string>("A", "C", true, false) })),
+                FeedRangeContinuationTests.BuildTokenForRange("C", "F", JsonConvert.SerializeObject(new CompositeContinuationToken() { Token = "token2", Range = new Documents.Routing.Range<string>("C", "F", true, false) })),
+            };
+
+            FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(Guid.NewGuid().ToString(), Mock.Of<FeedRangeInternal>(), JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(JsonConvert.SerializeObject(compositeContinuationTokens)));
+
+            MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
+
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
+            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
+
+            Mock<ContainerInternal> containerCore = new Mock<ContainerInternal>();
+            containerCore
+                .Setup(c => c.ClientContext).Returns(cosmosClientContext.Object);
+
+            Assert.AreEqual(2, feedRangeCompositeContinuation.CompositeContinuationTokens.Count);
+
+            ResponseMessage split = new ResponseMessage(HttpStatusCode.Gone);
+            split.Headers.SubStatusCode = Documents.SubStatusCodes.PartitionKeyRangeGone;
+            Assert.IsTrue((await feedRangeCompositeContinuation.HandleSplitAsync(containerCore.Object, split, default(CancellationToken))).ShouldRetry);
+
+            // verify token state
+            // Split should have updated initial and created a new token at the end
+            Assert.AreEqual(3, feedRangeCompositeContinuation.CompositeContinuationTokens.Count);
+            CompositeContinuationToken[] continuationTokens = feedRangeCompositeContinuation.CompositeContinuationTokens.ToArray();
+            // First token is split
+            Assert.AreEqual(JsonConvert.DeserializeObject<CompositeContinuationToken>(compositeContinuationTokens[0].Token).Range.Min, JsonConvert.DeserializeObject<CompositeContinuationToken>(continuationTokens[0].Token).Range.Min);
+            Assert.AreEqual(JsonConvert.DeserializeObject<CompositeContinuationToken>(compositeContinuationTokens[0].Token).Token, JsonConvert.DeserializeObject<CompositeContinuationToken>(continuationTokens[0].Token).Token);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[0].MinInclusive, continuationTokens[0].Range.Min);
+            Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[0].MaxExclusive, continuationTokens[0].Range.Max);
+
+            // Second token remains the same
+            Assert.AreEqual(compositeContinuationTokens[1].Token, continuationTokens[1].Token);
+            Assert.AreEqual(compositeContinuationTokens[1].Range.Min, continuationTokens[1].Range.Min);
+            Assert.AreEqual(compositeContinuationTokens[1].Range.Max, continuationTokens[1].Range.Max);
+
+            // New third token
+            Assert.AreEqual(JsonConvert.DeserializeObject<CompositeContinuationToken>(compositeContinuationTokens[0].Token).Range.Max, JsonConvert.DeserializeObject<CompositeContinuationToken>(continuationTokens[2].Token).Range.Max);
+            Assert.AreEqual(JsonConvert.DeserializeObject<CompositeContinuationToken>(compositeContinuationTokens[0].Token).Token, JsonConvert.DeserializeObject<CompositeContinuationToken>(continuationTokens[2].Token).Token);
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MinInclusive, continuationTokens[2].Range.Min);
             Assert.AreEqual(documentClient.AvailablePartitionKeyRanges[1].MaxExclusive, continuationTokens[2].Range.Max);
         }

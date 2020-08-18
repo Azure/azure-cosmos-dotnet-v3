@@ -1,11 +1,10 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal sealed class SqlObjectObfuscator : SqlObjectVisitor<SqlObject>
     {
@@ -301,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             return SqlPropertyRefScalarExpression.Create(
                 sqlPropertyRefScalarExpression.Member?.Accept(this) as SqlScalarExpression,
-                sqlPropertyRefScalarExpression.Identifer.Accept(this) as SqlIdentifier);
+                sqlPropertyRefScalarExpression.Identifier.Accept(this) as SqlIdentifier);
         }
 
         public override SqlObject Visit(SqlQuery sqlQuery)
