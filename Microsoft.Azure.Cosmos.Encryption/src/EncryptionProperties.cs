@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using Newtonsoft.Json;
+    using static Microsoft.Azure.Cosmos.Encryption.SerializerDefaultMappings;
 
     internal class EncryptionProperties
     {
@@ -20,16 +21,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
         [JsonProperty(PropertyName = Constants.EncryptedData)]
         public byte[] EncryptedData { get; }
 
+        [JsonProperty(PropertyName = Constants.EncryptedPaths)]
+        public string EncryptedPaths { get; }
+
+        public System.Type PropertyDataType { get; }
+
+        public ISerializer Serializer { get; }
+
         public EncryptionProperties(
             int encryptionFormatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
-            byte[] encryptedData)
+            byte[] encryptedData,
+            string encryptedPaths = null,
+            System.Type propertydataType = null)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
+            this.EncryptedPaths = encryptedPaths;
+            this.PropertyDataType = propertydataType;
+            this.Serializer = propertydataType.IsNull() ? null : (ISerializer)SqlSerializerByType[this.PropertyDataType];
         }
     }
 }

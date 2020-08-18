@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
 
@@ -24,8 +25,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor)
         {
             return new EncryptionContainer(
+               container,
+               encryptor);
+        }
+
+        /// <summary>
+        /// Get container with <see cref="Encryptor"/> with encrypted properties for performing operations using client-side encryption.
+        /// </summary>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="propertiesToEncrypt">list of all the paths to encrypt along with their corresponding keys</param>
+        /// <returns>Container to perform operations supporting property and item level client-side encryption / decryption.</returns>
+        public static Container WithPropertyEncryptor(
+            this Container container,
+            Encryptor encryptor,
+            ClientEncryptionPolicy propertiesToEncrypt)
+        {
+            return new EncryptionContainer(
                 container,
-                encryptor);
+                encryptor,
+                propertiesToEncrypt);
         }
 
         /// <summary>

@@ -11,5 +11,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         PlainText = 0,
         Randomized,
+        Deterministic,
     }
 }

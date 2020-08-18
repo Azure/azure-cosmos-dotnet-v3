@@ -17,24 +17,50 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly Container container;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly List<EncryptionOptions> propertyEncryptionOptions;
 
         internal Encryptor Encryptor { get; }
 
         internal CosmosResponseFactory ResponseFactory { get; }
+
+        private readonly ClientEncryptionPolicy clientEncryptionPolicy;
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="clientEncryptionPolicy">Dictionary of List of paths and their corresponding key for property encryption</param>
         public EncryptionContainer(
             Container container,
-            Encryptor encryptor)
+            Encryptor encryptor,
+            ClientEncryptionPolicy clientEncryptionPolicy = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.clientEncryptionPolicy = clientEncryptionPolicy;
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.cosmosSerializer = this.Database.Client.ClientOptions.Serializer;
+
+            if (clientEncryptionPolicy != null)
+            {
+                List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
+                foreach (KeyValuePair<List<string>, EncryptionSettings> entry in clientEncryptionPolicy.PropertyEncryptionSetting)
+                {
+                    EncryptionSettings encryptionSettings = entry.Value;
+                    propertyEncryptionOptions.Add(
+                        new EncryptionOptions()
+                        {
+                            DataEncryptionKeyId = encryptionSettings.DataEncryptionKeyId,
+                            EncryptionAlgorithm = encryptionSettings.EncryptionAlgorithm,
+                            Serializer = encryptionSettings.GetSerializer(),
+                            PropertyDataType = encryptionSettings.PropertyDataType,
+                            PathsToEncrypt = entry.Key,
+                        });
+                }
+
+                this.propertyEncryptionOptions = propertyEncryptionOptions;
+            }
         }
 
         public override string Id => this.container.Id;
@@ -56,8 +82,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            if ((requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
+                || this.clientEncryptionPolicy != null)
             {
                 if (partitionKey == null)
                 {
@@ -98,7 +124,36 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
             {
-                if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
+                if (this.propertyEncryptionOptions != null && this.clientEncryptionPolicy != null && this.clientEncryptionPolicy.PropertyEncryptionSetting.Count != 0)
+                {
+                    streamPayload = await PropertyEncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    this.Encryptor,
+                    this.propertyEncryptionOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                    ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
+                         streamPayload,
+                         partitionKey,
+                         requestOptions,
+                         cancellationToken);
+
+                    Action<DecryptionResult> decryptionErrorHandler = null;
+                    if (requestOptions is EncryptionItemRequestOptions propencryptionItemRequestOptions)
+                    {
+                        decryptionErrorHandler = propencryptionItemRequestOptions.DecryptionResultHandler;
+                    }
+
+                    responseMessage.Content = await this.DecryptResponseAsync(
+                        responseMessage.Content,
+                        decryptionErrorHandler,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    return responseMessage;
+                }
+                else if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
                     encryptionItemRequestOptions.EncryptionOptions != null)
                 {
                     streamPayload = await EncryptionProcessor.EncryptAsync(
@@ -223,8 +278,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            if ((requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
+                || this.clientEncryptionPolicy != null)
             {
                 if (partitionKey == null)
                 {
@@ -273,6 +328,37 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("ReplaceItemStream"))
             {
+                if (this.propertyEncryptionOptions != null)
+                {
+                    streamPayload = await PropertyEncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        this.Encryptor,
+                        this.propertyEncryptionOptions,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
+                        streamPayload,
+                        id,
+                        partitionKey,
+                        requestOptions,
+                        cancellationToken);
+
+                    Action<DecryptionResult> decryptionErrorHandler = null;
+                    if (requestOptions is EncryptionItemRequestOptions propencryptionItemRequestOptions)
+                    {
+                        decryptionErrorHandler = propencryptionItemRequestOptions.DecryptionResultHandler;
+                    }
+
+                    responseMessage.Content = await this.DecryptResponseAsync(
+                        responseMessage.Content,
+                        decryptionErrorHandler,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    return responseMessage;
+                }
+
                 if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
                     encryptionItemRequestOptions.EncryptionOptions != null)
                 {
@@ -326,8 +412,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
-                encryptionItemRequestOptions.EncryptionOptions != null)
+            if ((requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions && encryptionItemRequestOptions.EncryptionOptions != null)
+                || this.clientEncryptionPolicy != null)
             {
                 if (partitionKey == null)
                 {
@@ -368,6 +454,36 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("UpsertItemStream"))
             {
+                if (this.propertyEncryptionOptions != null)
+                {
+                    streamPayload = await PropertyEncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        this.Encryptor,
+                        this.propertyEncryptionOptions,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
+                        streamPayload,
+                        partitionKey,
+                        requestOptions,
+                        cancellationToken);
+
+                    Action<DecryptionResult> decryptionErrorHandler = null;
+                    if (requestOptions is EncryptionItemRequestOptions propencryptionItemRequestOptions)
+                    {
+                        decryptionErrorHandler = propencryptionItemRequestOptions.DecryptionResultHandler;
+                    }
+
+                    responseMessage.Content = await this.DecryptResponseAsync(
+                        responseMessage.Content,
+                        decryptionErrorHandler,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    return responseMessage;
+                }
+
                 if (requestOptions is EncryptionItemRequestOptions encryptionItemRequestOptions &&
                     encryptionItemRequestOptions.EncryptionOptions != null)
                 {
@@ -785,11 +901,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             try
             {
-                return await EncryptionProcessor.DecryptAsync(
-                    input,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
+                return await PropertyEncryptionProcessor.DecryptAsync(
+                      input,
+                      this.Encryptor,
+                      diagnosticsContext,
+                      this.clientEncryptionPolicy,
+                      cancellationToken);
             }
             catch (Exception exception)
             {
