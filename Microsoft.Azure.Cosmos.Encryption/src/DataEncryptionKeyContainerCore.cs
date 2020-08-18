@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // To address this, we do an explicit read, which reads the key from storage and updates the cached properties; and then attempt rewrap again.
                 await this.ReadDataEncryptionKeyAsync(
                     newDekProperties.Id,
-                    requestOptions: null,
+                    requestOptions,
                     cancellationToken);
 
                 return await this.RewrapDataEncryptionKeyAsync(
@@ -229,9 +229,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
             {
                 unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
-                        dekProperties.WrappedDataEncryptionKey,
-                        dekProperties.EncryptionKeyWrapMetadata,
-                        cancellationToken);
+                    dekProperties.WrappedDataEncryptionKey,
+                    dekProperties.EncryptionKeyWrapMetadata,
+                    cancellationToken);
             }
 
             DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
@@ -256,14 +256,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<ItemResponse<DataEncryptionKeyProperties>> ReadInternalAsync(
             string id,
-            RequestOptions requestOptions,
+            ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
                 id,
                 new PartitionKey(id),
-                cancellationToken: cancellationToken);
+                requestOptions,
+                cancellationToken);
         }
     }
 }
