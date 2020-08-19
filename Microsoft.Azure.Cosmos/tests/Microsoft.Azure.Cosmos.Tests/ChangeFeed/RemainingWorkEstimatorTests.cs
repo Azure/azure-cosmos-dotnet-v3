@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIterator.Object;
             };
 
-            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
+            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
                mockContainer.Object,
                feedCreator,
                1);
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIterator.Object;
             };
 
-            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
+            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
                mockContainer.Object,
                feedCreator,
                1);
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIteratorPKRange1.Object;
             };
 
-            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
+            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
                mockContainer.Object,
                feedCreator,
                1);
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIteratorPKRange1.Object;
             };
 
-            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
+            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
                mockContainer.Object,
                feedCreator,
                1);
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string oldToken = "0:12345";
             string expectedLsn = "12345";
-            Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(oldToken));
+            Assert.AreEqual(expectedLsn, FeedManagement.ChangeFeedEstimatorCore.ExtractLsnFromSessionToken(oldToken));
         }
 
         [TestMethod]
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string newToken = "0:-1#12345";
             string expectedLsn = "12345";
-            Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(newToken));
+            Assert.AreEqual(expectedLsn, FeedManagement.ChangeFeedEstimatorCore.ExtractLsnFromSessionToken(newToken));
         }
 
         [TestMethod]
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string newTokenWithRegionalLsn = "0:-1#12345#Region1=1#Region2=2";
             string expectedLsn = "12345";
-            Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
+            Assert.AreEqual(expectedLsn, FeedManagement.ChangeFeedEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
         }
 
         private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)

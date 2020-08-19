@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void NullDelegateThrows()
         {
             ChangesEstimationHandler changesEstimationHandler = null;
-            ChangeFeedEstimatorCoreTests.CreateEstimator(changesEstimationHandler, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCoreTests.CreateEstimator(changesEstimationHandler, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
         }
 
         [TestMethod]
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void NullDelegateThrows_Detailed()
         {
             ChangesEstimationDetailedHandler changesEstimationHandler = null;
-            ChangeFeedEstimatorCoreTests.CreateEstimator(changesEstimationHandler, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCoreTests.CreateEstimator(changesEstimationHandler, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
         }
 
         [TestMethod]
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 null,
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("leases"),
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 null,
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("leases"),
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 null,
                 null,
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 null,
                 null,
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 null,
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("leases"),
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 null,
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("leases"),
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
@@ -284,15 +284,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                                             && estimationDelegateValue[0].RemainingWork == remainingWork[0].RemainingWork);
         }
 
-        private static ChangeFeedEstimatorCore CreateEstimator(ChangesEstimationHandler estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
+        private static ChangeFeedEstimatorCore CreateEstimator(ChangesEstimationHandler estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator)
         {
-            remainingWorkEstimator = new Mock<RemainingWorkEstimator>();
+            remainingWorkEstimator = new Mock<ChangeFeedEstimator>();
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);
         }
 
-        private static ChangeFeedEstimatorCore CreateEstimator(ChangesEstimationDetailedHandler estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
+        private static ChangeFeedEstimatorCore CreateEstimator(ChangesEstimationDetailedHandler estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator)
         {
-            remainingWorkEstimator = new Mock<RemainingWorkEstimator>();
+            remainingWorkEstimator = new Mock<ChangeFeedEstimator>();
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);
         }
 

@@ -15,36 +15,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     internal sealed class FeedEstimatorCore : FeedEstimator
     {
         private static TimeSpan defaultMonitoringDelay = TimeSpan.FromSeconds(5);
-        private readonly RemainingWorkEstimator remainingWorkEstimator;
+        private readonly ChangeFeedEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
         private readonly ChangesEstimationHandler dispatchEstimation;
-        private readonly ChangesEstimationDetailedHandler dispatchDetailedEstimation;
         private readonly Func<CancellationToken, Task> estimateAndDispatchAsync;
 
         public FeedEstimatorCore(
             ChangesEstimationHandler dispatchEstimation,
-            RemainingWorkEstimator remainingWorkEstimator,
+            ChangeFeedEstimator remainingWorkEstimator,
             TimeSpan? estimationPeriod = null)
-            : this(remainingWorkEstimator, estimationPeriod)
         {
             this.dispatchEstimation = dispatchEstimation;
             this.estimateAndDispatchAsync = this.EstimateAsync;
-        }
-
-        public FeedEstimatorCore(
-            ChangesEstimationDetailedHandler dispatchDetailedEstimation,
-            RemainingWorkEstimator remainingWorkEstimator,
-            TimeSpan? estimationPeriod = null)
-            : this(remainingWorkEstimator, estimationPeriod)
-        {
-            this.dispatchDetailedEstimation = dispatchDetailedEstimation;
-            this.estimateAndDispatchAsync = this.EstimateDetailedAsync;
-        }
-
-        private FeedEstimatorCore(
-            RemainingWorkEstimator remainingWorkEstimator,
-            TimeSpan? estimationPeriod = null)
-        {
             this.remainingWorkEstimator = remainingWorkEstimator;
             this.monitoringDelay = estimationPeriod.HasValue ? estimationPeriod.Value : FeedEstimatorCore.defaultMonitoringDelay;
         }
@@ -77,20 +59,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             try
             {
                 await this.dispatchEstimation(estimation, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception userException)
-            {
-                Extensions.TraceException(userException);
-                DefaultTrace.TraceWarning("Exception happened on ChangeFeedEstimatorDispatcher.DispatchEstimation");
-            }
-        }
-
-        private async Task EstimateDetailedAsync(CancellationToken cancellationToken)
-        {
-            IReadOnlyList<RemainingLeaseWork> estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                await this.dispatchDetailedEstimation(estimation, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception userException)
             {

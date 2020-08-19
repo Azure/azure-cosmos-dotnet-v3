@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(estimationDelegate));
             }
 
-            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            ChangeFeedEstimatorPushCore changeFeedEstimatorCore = new ChangeFeedEstimatorPushCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,
@@ -522,22 +522,14 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
-            string processorName,
-            ChangesEstimationDetailedHandler estimationDelegate,
-            TimeSpan? estimationPeriod = null)
+        public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName)
         {
             if (processorName == null)
             {
                 throw new ArgumentNullException(nameof(processorName));
             }
 
-            if (estimationDelegate == null)
-            {
-                throw new ArgumentNullException(nameof(estimationDelegate));
-            }
-
-            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            ChangeFeedEstimatorPushCore changeFeedEstimatorCore = new ChangeFeedEstimatorPushCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,

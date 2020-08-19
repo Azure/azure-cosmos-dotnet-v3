@@ -2,170 +2,207 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using static Microsoft.Azure.Cosmos.Container;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Linq;
 
-    internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
+    internal sealed class ChangeFeedEstimatorCore : ChangeFeedEstimator
     {
-        private const string EstimatorDefaultHostName = "Estimator";
-
-        private readonly ChangesEstimationHandler initialEstimateDelegate;
-        private readonly ChangesEstimationDetailedHandler initialEstimateDetailedDelegate;
-        private readonly TimeSpan? estimatorPeriod;
-        private CancellationTokenSource shutdownCts;
-        private ContainerInternal leaseContainer;
-        private string monitoredContainerRid;
-        private ContainerInternal monitoredContainer;
-        private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
-        private FeedEstimator feedEstimator;
-        private RemainingWorkEstimator remainingWorkEstimator;
-        private ChangeFeedLeaseOptions changeFeedLeaseOptions;
-        private bool initialized = false;
-
-        private Task runAsync;
+        private const char PKRangeIdSeparator = ':';
+        private const char SegmentSeparator = '#';
+        private const string LSNPropertyName = "_lsn";
+        private readonly Func<string, string, bool, FeedIterator> feedCreator;
+        private readonly DocumentServiceLeaseContainer leaseContainer;
+        private readonly int degreeOfParallelism;
 
         public ChangeFeedEstimatorCore(
-            ChangesEstimationHandler initialEstimateDelegate,
-            TimeSpan? estimatorPeriod)
-            : this(estimatorPeriod)
+            DocumentServiceLeaseContainer leaseContainer,
+            Func<string, string, bool, FeedIterator> feedCreator,
+            int degreeOfParallelism)
         {
-            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
-
-            this.initialEstimateDelegate = initialEstimateDelegate;
-        }
-
-        public ChangeFeedEstimatorCore(
-            ChangesEstimationDetailedHandler initialEstimateDelegate,
-            TimeSpan? estimatorPeriod)
-            : this(estimatorPeriod)
-        {
-            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
-
-            this.initialEstimateDetailedDelegate = initialEstimateDelegate;
-        }
-
-        /// <summary>
-        /// Used for tests
-        /// </summary>
-        internal ChangeFeedEstimatorCore(
-            ChangesEstimationHandler initialEstimateDelegate,
-            TimeSpan? estimatorPeriod,
-            RemainingWorkEstimator remainingWorkEstimator)
-            : this(initialEstimateDelegate, estimatorPeriod)
-        {
-            this.remainingWorkEstimator = remainingWorkEstimator;
-        }
-
-        /// <summary>
-        /// Used for tests
-        /// </summary>
-        internal ChangeFeedEstimatorCore(
-            ChangesEstimationDetailedHandler initialEstimateDelegate,
-            TimeSpan? estimatorPeriod,
-            RemainingWorkEstimator remainingWorkEstimator)
-            : this(initialEstimateDelegate, estimatorPeriod)
-        {
-            this.remainingWorkEstimator = remainingWorkEstimator;
-        }
-
-        private ChangeFeedEstimatorCore(TimeSpan? estimatorPeriod)
-        {
-            if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
-
-            this.estimatorPeriod = estimatorPeriod;
-        }
-
-        public void ApplyBuildConfiguration(
-            DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            ContainerInternal leaseContainer,
-            string monitoredContainerRid,
-            string instanceName,
-            ChangeFeedLeaseOptions changeFeedLeaseOptions,
-            ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            ContainerInternal monitoredContainer)
-        {
-            if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
-            if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
-
-            this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
-            this.leaseContainer = leaseContainer;
-            this.monitoredContainerRid = monitoredContainerRid;
-            this.monitoredContainer = monitoredContainer;
-            this.changeFeedLeaseOptions = changeFeedLeaseOptions;
-        }
-
-        public override async Task StartAsync()
-        {
-            if (!this.initialized)
+            if (leaseContainer == null)
             {
-                await this.InitializeAsync().ConfigureAwait(false);
+                throw new ArgumentNullException(nameof(leaseContainer));
             }
 
-            this.shutdownCts = new CancellationTokenSource();
-            DefaultTrace.TraceInformation("Starting estimator...");
-            this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
+            if (feedCreator == null)
+            {
+                throw new ArgumentNullException(nameof(feedCreator));
+            }
+
+            if (degreeOfParallelism < 1)
+            {
+                throw new ArgumentOutOfRangeException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
+            }
+
+            this.leaseContainer = leaseContainer;
+            this.feedCreator = feedCreator;
+            this.degreeOfParallelism = degreeOfParallelism;
         }
 
-        public override async Task StopAsync()
+        public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation("Stopping estimator...");
-            this.shutdownCts.Cancel();
+            IReadOnlyList<RemainingLeaseWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
+            if (leaseTokens.Count == 0) return 1;
+
+            return leaseTokens.Sum(leaseToken => leaseToken.RemainingWork);
+        }
+
+        public override async Task<IReadOnlyList<RemainingLeaseWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellationToken)
+        {
+            IReadOnlyList<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
+            if (leases == null || leases.Count == 0)
+            {
+                return new List<RemainingLeaseWork>().AsReadOnly();
+            }
+
+            IEnumerable<Task<List<RemainingLeaseWork>>> tasks = Partitioner.Create(leases)
+                .GetPartitions(this.degreeOfParallelism)
+                .Select(partition => Task.Run(async () =>
+                {
+                    List<RemainingLeaseWork> partialResults = new List<RemainingLeaseWork>();
+                    using (partition)
+                    {
+                        while (!cancellationToken.IsCancellationRequested && partition.MoveNext())
+                        {
+                            DocumentServiceLease item = partition.Current;
+                            try
+                            {
+                                if (item?.CurrentLeaseToken == null) continue;
+                                long result = await this.GetRemainingWorkAsync(item, cancellationToken);
+                                partialResults.Add(new RemainingLeaseWork(item.CurrentLeaseToken, result, item.Owner));
+                            }
+                            catch (CosmosException ex)
+                            {
+                                Cosmos.Extensions.TraceException(ex);
+                                DefaultTrace.TraceWarning("Getting estimated work for lease token {0} failed!", item.CurrentLeaseToken);
+                            }
+                        }
+                    }
+
+                    return partialResults;
+                })).ToArray();
+
+            IEnumerable<List<RemainingLeaseWork>> results = await Task.WhenAll(tasks);
+            return results.SelectMany(r => r).ToList().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Parses a Session Token and extracts the LSN.
+        /// </summary>
+        /// <param name="sessionToken">A Session Token</param>
+        /// <returns>LSN value</returns>
+        internal static string ExtractLsnFromSessionToken(string sessionToken)
+        {
+            if (string.IsNullOrEmpty(sessionToken))
+            {
+                return string.Empty;
+            }
+
+            string parsedSessionToken = sessionToken.Substring(sessionToken.IndexOf(ChangeFeedEstimatorCore.PKRangeIdSeparator) + 1);
+            string[] segments = parsedSessionToken.Split(ChangeFeedEstimatorCore.SegmentSeparator);
+
+            if (segments.Length < 2)
+            {
+                return segments[0];
+            }
+
+            // GlobalLsn
+            return segments[1];
+        }
+
+        private static string GetFirstItemLSN(IEnumerable<JObject> items)
+        {
+            JObject item = items.FirstOrDefault();
+            if (item == null)
+            {
+                return null;
+            }
+
+            if (item.TryGetValue(LSNPropertyName, StringComparison.OrdinalIgnoreCase, out JToken property))
+            {
+                return property.Value<string>();
+            }
+
+            DefaultTrace.TraceWarning("Change Feed response item does not include LSN.");
+            return null;
+        }
+
+        private static long TryConvertToNumber(string number)
+        {
+            long parsed = 0;
+            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            {
+                DefaultTrace.TraceWarning("Cannot parse number '{0}'.", number);
+                return 0;
+            }
+
+            return parsed;
+        }
+
+        private static IEnumerable<JObject> GetItemsFromResponse(ResponseMessage response)
+        {
+            if (response.Content == null)
+            {
+                return new Collection<JObject>();
+            }
+
+            return CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(
+                CosmosContainerExtensions.DefaultJsonSerializer,
+                response.Content);
+        }
+
+        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
+        {
+            // Current lease schema maps Token to PKRangeId
+            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
+            using FeedIterator iterator = this.feedCreator(
+                partitionKeyRangeId,
+                existingLease.ContinuationToken,
+                string.IsNullOrEmpty(existingLease.ContinuationToken));
+
             try
             {
-                await this.runAsync.ConfigureAwait(false);
-            }
-            catch (TaskCanceledException)
-            {
-                // Expected during shutdown
-            }
-        }
-
-        private async Task InitializeAsync()
-        {
-            string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
-            this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorCore.EstimatorDefaultHostName).ConfigureAwait(false);
-            this.feedEstimator = this.BuildFeedEstimator();
-            this.initialized = true;
-        }
-
-        private FeedEstimator BuildFeedEstimator()
-        {
-            if (this.remainingWorkEstimator == null)
-            {
-                Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+                ResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.NotModified)
                 {
-                    return ResultSetIteratorUtils.BuildResultSetIterator(
-                        partitionKeyRangeId: partitionKeyRangeId,
-                        continuationToken: continuationToken,
-                        maxItemCount: 1,
-                        container: this.monitoredContainer,
-                        startTime: null,
-                        startFromBeginning: string.IsNullOrEmpty(continuationToken));
-                };
+                    response.EnsureSuccessStatusCode();
+                }
 
-                this.remainingWorkEstimator = new RemainingWorkEstimatorCore(
-                   this.documentServiceLeaseStoreManager.LeaseContainer,
-                   feedCreator,
-                   this.monitoredContainer.ClientContext.Client.ClientOptions?.GatewayModeMaxConnectionLimit ?? 1);
+                long parsedLSNFromSessionToken = ChangeFeedEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                IEnumerable<JObject> items = ChangeFeedEstimatorCore.GetItemsFromResponse(response);
+                long lastQueryLSN = items.Any()
+                    ? ChangeFeedEstimatorCore.TryConvertToNumber(ChangeFeedEstimatorCore.GetFirstItemLSN(items)) - 1
+                    : parsedLSNFromSessionToken;
+                if (lastQueryLSN < 0)
+                {
+                    return 1;
+                }
+
+                long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
+                return leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
             }
-
-            if (this.initialEstimateDetailedDelegate != null)
+            catch (Exception clientException)
             {
-                return new FeedEstimatorCore(this.initialEstimateDetailedDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
+                Cosmos.Extensions.TraceException(clientException);
+                DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
+                throw;
             }
-
-            return new FeedEstimatorCore(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
         }
     }
 }

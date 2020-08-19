@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            Mock<RemainingWorkEstimator> mockedEstimator = new Mock<RemainingWorkEstimator>();
+            Mock<ChangeFeedEstimator> mockedEstimator = new Mock<ChangeFeedEstimator>();
             mockedEstimator.Setup(e => e.GetEstimatedRemainingWorkAsync(It.IsAny<CancellationToken>())).ReturnsAsync(estimation);
 
             FeedEstimatorCore estimatorCore = new FeedEstimatorCore(estimatorDispatcher, mockedEstimator.Object, TimeSpan.FromMilliseconds(10));
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             };
 
-            Mock<RemainingWorkEstimator> mockedEstimator = new Mock<RemainingWorkEstimator>();
+            Mock<ChangeFeedEstimator> mockedEstimator = new Mock<ChangeFeedEstimator>();
             mockedEstimator.Setup(e => e.GetEstimatedRemainingWorkPerLeaseTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(estimation);
 
             FeedEstimatorCore estimatorCore = new FeedEstimatorCore(estimatorDispatcher, mockedEstimator.Object, TimeSpan.FromMilliseconds(10));
