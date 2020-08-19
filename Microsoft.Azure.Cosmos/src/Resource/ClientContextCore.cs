@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -25,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
+        private readonly CosmosHttpClient httpClient;
+
         private readonly string userAgent;
         private bool isDisposed = false;
 
@@ -36,7 +39,8 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache)
+            BatchAsyncContainerExecutorCache batchExecutorCache,
+            CosmosHttpClient cosmosHttpClient)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -46,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
+            this.httpClient = cosmosHttpClient;
         }
 
         internal static CosmosClientContext Create(
@@ -58,18 +63,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
+            ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy();
+            CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithClientOptions(
+                clientOptions.ApiType,
+                DocumentClientEventSource.Instance,
+                connectionPolicy.UserAgentContainer,
+                clientOptions);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
                cosmosClient.AccountKey,
                apitype: clientOptions.ApiType,
-               sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
+               httpClient: cosmosHttpClient,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
-               connectionPolicy: clientOptions.GetConnectionPolicy(),
+               connectionPolicy: connectionPolicy,
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
-               handler: ClientContextCore.CreateHttpClientHandler(clientOptions),
                sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
@@ -124,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
+                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
+                cosmosHttpClient: documentClient.httpClient);
         }
 
         /// <summary>
@@ -468,23 +479,6 @@ namespace Microsoft.Azure.Cosmos
                 || operationType == OperationType.Delete
                 || operationType == OperationType.Replace
                 || operationType == OperationType.Patch);
-        }
-
-        private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
-        {
-            if (clientOptions == null)
-            {
-                throw new ArgumentNullException(nameof(clientOptions));
-            }
-            
-            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-            HttpClientHandler httpClientHandler = new HttpClientHandler
-            {
-                Proxy = clientOptions.WebProxy,
-                MaxConnectionsPerServer = clientOptions.GatewayModeMaxConnectionLimit
-            };
-
-            return httpClientHandler;
         }
 
         private static CosmosClientOptions CreateOrCloneClientOptions(CosmosClientOptions clientOptions)
