@@ -660,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(docReplaced.NumericField, 3333);
 
                 // query for changed string value
-                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
+                Assert.AreEqual(1, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
                 requestHeaders.Remove("x-ms-indexing-directive");
                 requestHeaders.Add("x-ms-indexing-directive", "include");
