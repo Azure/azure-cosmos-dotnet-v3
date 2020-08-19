@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.client.Create<Document>(collection.GetIdOrFullName(), documentDefinition, requestHeaders);
 
                 IEnumerable<Document> queriedDocuments = this.client.CreateDocumentQuery<Document>(collection.GetLink(), @"select * from root r where r.StringField = ""222""", new FeedOptions { EnableCrossPartitionQuery = true });
-                Assert.AreEqual(0, queriedDocuments.Count());
+                Assert.AreEqual(1, queriedDocuments.Count());
             }
             catch (DocumentClientException e)
             {
