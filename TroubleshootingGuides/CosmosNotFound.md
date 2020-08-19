@@ -88,3 +88,9 @@ The database and/or container that the item exists in has been deleted.
 #### Solution:
 1. [Restore](https://docs.microsoft.com/azure/cosmos-db/online-backup-and-restore#backup-retention-period) the parent resource or recreate the resources.
 2. Create a new resource to replace the deleted resource
+
+### 7. Container/Collection names are case-sensitive
+Container/Collection names are case-sesnsitive in Cosmos DB.
+
+#### Solution:
+Make sure to use the exact name while connecting to Cosmos DB.
