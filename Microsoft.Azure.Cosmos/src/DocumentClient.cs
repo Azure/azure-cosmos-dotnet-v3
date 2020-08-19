@@ -416,12 +416,22 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("authKeyOrResourceToken");
             }
 
+            if (sendingRequestEventArgs != null)
+            {
+                this.sendingRequest += sendingRequestEventArgs;
+            }
+
             if (serializerSettings != null)
             {
                 this.serializerSettings = serializerSettings;
             }
 
             this.ApiType = apitype;
+
+            if (receivedResponseEventArgs != null)
+            {
+                this.receivedResponse += receivedResponseEventArgs;
+            }
 
             if (AuthorizationHelper.IsResourceToken(authKeyOrResourceToken))
             {
