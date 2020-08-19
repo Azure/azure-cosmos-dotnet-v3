@@ -50,9 +50,11 @@ namespace Microsoft.Azure.Cosmos
             };
 
             CosmosHttpClient httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
-                ApiType.None,
-                DocumentClientEventSource.Instance,
-                connectionPolicy);
+                apiType: ApiType.None,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
 
             Assert.IsNotNull(httpClient);
             HttpResponseMessage response = await httpClient.GetAsync(
@@ -78,9 +80,11 @@ namespace Microsoft.Azure.Cosmos
             };
 
             CosmosHttpClient httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
-                ApiType.None,
-                DocumentClientEventSource.Instance,
-                connectionPolicy);
+                apiType: ApiType.None,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
 
             Assert.IsNotNull(httpClient);
 

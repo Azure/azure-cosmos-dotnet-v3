@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
                 DocumentClientEventSource.Instance,
-                connectionPolicy,
+                connectionPolicy ?? ConnectionPolicy.Default,
                 sendingRequestEventArgs,
                 receivedResponseEventArgs);
 
