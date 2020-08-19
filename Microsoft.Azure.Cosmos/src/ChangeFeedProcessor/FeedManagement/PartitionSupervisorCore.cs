@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task RunAsync(CancellationToken shutdownToken)
         {
-            var context = new ChangeFeedObserverContextCore<T>(this.lease.CurrentLeaseToken);
+            ChangeFeedObserverContextCore<T> context = new ChangeFeedObserverContextCore<T>(this.lease.CurrentLeaseToken);
             await this.observer.OpenAsync(context).ConfigureAwait(false);
 
             this.processorCancellation = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
@@ -58,6 +58,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             catch (FeedSplitException)
             {
                 closeReason = ChangeFeedObserverCloseReason.LeaseGone;
+                throw;
+            }
+            catch (FeedNotFoundException)
+            {
+                closeReason = ChangeFeedObserverCloseReason.ResourceGone;
+                throw;
+            }
+            catch (FeedReadSessionNotAvailableException)
+            {
+                closeReason = ChangeFeedObserverCloseReason.ReadSessionNotAvailable;
                 throw;
             }
             catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)

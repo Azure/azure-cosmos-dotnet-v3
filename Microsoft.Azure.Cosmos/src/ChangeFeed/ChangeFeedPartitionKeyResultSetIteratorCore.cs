@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Net;
@@ -18,16 +18,18 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
-        private string continuationToken;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
             ContainerInternal container,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.changeFeedStartFrom = changeFeedStartFrom;
             this.changeFeedOptions = options;
         }
 
@@ -42,27 +44,29 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A change feed response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            // Change Feed read uses Etag for continuation
-            if (this.continuationToken != null)
-            {
-                this.changeFeedOptions.From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(this.continuationToken);
-            }
-
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 cosmosContainerCore: this.container,
                 resourceUri: this.container.LinkUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: this.changeFeedOptions,
-                requestEnricher: default,
+                requestEnricher: (requestMessage) =>
+                {
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: default,
                 cancellationToken: cancellationToken);
 
-            this.continuationToken = responseMessage.Headers.ETag;
+            // Change Feed uses etag as continuation token.
+            string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
-            responseMessage.Headers.ContinuationToken = this.continuationToken;
+            responseMessage.Headers.ContinuationToken = etag;
+
+            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;
         }
