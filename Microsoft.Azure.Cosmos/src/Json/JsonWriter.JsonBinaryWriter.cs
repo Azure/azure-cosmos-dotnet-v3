@@ -292,44 +292,6 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Position);
             }
 
-            /// <inheritdoc />
-            public override void WriteRawJsonToken(
-                JsonTokenType jsonTokenType,
-                ReadOnlySpan<byte> rawJsonToken)
-            {
-                if (rawJsonToken == null)
-                {
-                    throw new ArgumentNullException(nameof(rawJsonToken));
-                }
-
-                switch (jsonTokenType)
-                {
-                    // Supported JsonTokenTypes
-                    case JsonTokenType.String:
-                    case JsonTokenType.Number:
-                    case JsonTokenType.True:
-                    case JsonTokenType.False:
-                    case JsonTokenType.Null:
-                    case JsonTokenType.FieldName:
-                    case JsonTokenType.Int8:
-                    case JsonTokenType.Int16:
-                    case JsonTokenType.Int32:
-                    case JsonTokenType.UInt32:
-                    case JsonTokenType.Int64:
-                    case JsonTokenType.Float32:
-                    case JsonTokenType.Float64:
-                    case JsonTokenType.Guid:
-                    case JsonTokenType.Binary:
-                        break;
-                    default:
-                        throw new ArgumentException($"{nameof(JsonBinaryWriter)}.{nameof(WriteRawJsonToken)} can not write a {nameof(JsonTokenType)}: {jsonTokenType}");
-                }
-
-                this.JsonObjectState.RegisterToken(jsonTokenType);
-                this.binaryWriter.Write(rawJsonToken);
-                this.bufferedContexts.Peek().Count++;
-            }
-
             private void WriterArrayOrObjectStart(bool isArray)
             {
                 this.JsonObjectState.RegisterToken(isArray ? JsonTokenType.BeginArray : JsonTokenType.BeginObject);

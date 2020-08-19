@@ -914,11 +914,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 switch (source)
                 {
                     case IJsonReader sourceReader:
-                        writer.WriteAll(sourceReader);
+                        sourceReader.WriteAll(writer);
                         break;
 
                     case IJsonNavigator sourceNavigator:
-                        sourceNavigator.WriteTo(sourceNavigator.GetRootNode(), writer);
+                        sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
                         break;
 
                     default:
@@ -953,7 +953,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             NewtonsoftToCosmosDBReader newtonsoftReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            newtonsoftWriter.WriteAll(newtonsoftReader);
+            newtonsoftReader.WriteAll(newtonsoftWriter);
             return Encoding.UTF8.GetString(newtonsoftWriter.GetResult().ToArray());
         }
 

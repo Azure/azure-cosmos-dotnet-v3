@@ -480,19 +480,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <inheritdoc />
-            public override bool TryGetBufferedRawJson(
-                IJsonNavigatorNode jsonNode,
-                out ReadOnlyMemory<byte> bufferedRawJson)
-            {
-                if (!(jsonNode is BinaryNavigatorNode binaryNavigatorNode))
-                {
-                    throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
-                }
-
-                return this.TryGetBufferedRawJsonInternal(binaryNavigatorNode, out bufferedRawJson);
-            }
-
             private bool TryGetBufferedRawJsonInternal(
                 BinaryNavigatorNode binaryNavigatorNode,
                 out ReadOnlyMemory<byte> bufferedRawJson)
@@ -621,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return buffer;
             }
 
-            public override void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+            public override void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
             {
                 if (!(jsonNavigatorNode is BinaryNavigatorNode binaryNavigatorNode))
                 {

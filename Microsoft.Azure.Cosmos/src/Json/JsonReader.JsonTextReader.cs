@@ -6,10 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
-    using System.Text;
 
     /// <summary>
     /// JsonReader partial.
@@ -24,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// JsonReader that knows how to read text
         /// </summary>
-        private sealed class JsonTextReader : JsonReader
+        private sealed class JsonTextReader : JsonReader, IJsonTextReaderExtensions
         {
             private const char Int8TokenPrefix = 'I';
             private const char Int16TokenPrefix = 'H';
@@ -397,13 +394,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetBinaryValue(binaryToken);
             }
 
-            /// <inheritdoc />
-            public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
+            public Utf8Memory GetBufferedJsonToken()
             {
-                bufferedRawJsonToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                ReadOnlyMemory<byte> bufferedRawJson = this.jsonTextBuffer.GetBufferedRawJsonToken(
                     this.token.Start,
                     this.token.End);
-                return true;
+                return Utf8Memory.UnsafeCreateNoValidation(bufferedRawJson);
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)

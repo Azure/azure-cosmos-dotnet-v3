@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            navigator.WriteTo(navigator.GetRootNode(), writer);
+            navigator.WriteNode(navigator.GetRootNode(), writer);
         }
 
         public enum SerializationFormat
