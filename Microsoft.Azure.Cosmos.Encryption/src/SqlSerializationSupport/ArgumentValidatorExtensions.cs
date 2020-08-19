@@ -1,14 +1,18 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption
+﻿// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+
     internal static class ArgumentValidatorExtensions
     {
         internal static bool IsNull<T>(this T parameter)
         {
-            return null == parameter;
+            return parameter == null;
         }
 
         internal static void ValidateNotNull<T>(this T parameter, string name)
@@ -37,7 +41,6 @@
 
         internal static void ValidateNotNullForEach<T>(this IEnumerable<T> parameters, string name)
         {
-
             if (parameters.Any(t => t.IsNull()))
             {
                 throw new ArgumentException($"None of the elements in {name} can be null or empty.");
@@ -66,8 +69,6 @@
             {
                 throw new InvalidCastException($"Expected {name} to be of type {type}");
             }
-
         }
     }
 }
-

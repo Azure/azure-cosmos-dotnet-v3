@@ -156,16 +156,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         if (itemJObj.TryGetValue(path.Substring(1), out JToken propertyValue))
                         {
-                            EncryptionProperties encryptionProperties = new EncryptionProperties(
-                                        encryptionFormatVersion: 2,
-                                        clientEncryptionPolicy.PropertyEncryptionSetting[paths].EncryptionAlgorithm,
-                                        clientEncryptionPolicy.PropertyEncryptionSetting[paths].DataEncryptionKeyId,
-                                        propertyValue.ToObject<byte[]>(),
-                                        path,
-                                        clientEncryptionPolicy.PropertyEncryptionSetting[paths].PropertyDataType);
-
                             JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                            encryptionProperties,
+                            clientEncryptionPolicy.PropertyEncryptionSetting[paths],
+                            path,
+                            propertyValue.ToObject<byte[]>(),
                             encryptor,
                             diagnosticsContext,
                             cancellationToken);
@@ -179,39 +173,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     input.Dispose();
                 }
-            }
-
-            JToken token = itemJObj[Constants.EncryptedInfo];
-            if (token != null)
-            {
-                JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.EncryptedInfo);
-                JObject encryptionPropertiesJObj = null;
-                if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
-                {
-                    encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
-                }
-
-                if (encryptionPropertiesJObj == null)
-                {
-                    input.Position = 0;
-                    return input;
-                }
-
-                EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-
-                JObject plainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                    encryptionProperties,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                foreach (JProperty property in plainTextJObj.Properties())
-                {
-                    itemJObj.Add(property.Name, property.Value);
-                }
-
-                itemJObj.Remove(Constants.EncryptedInfo);
-                input.Dispose();
             }
 
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
@@ -234,16 +195,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (document.TryGetValue(path.Substring(1), out JToken propertyValue))
                     {
-                        EncryptionProperties encryptionProperties = new EncryptionProperties(
-                                    encryptionFormatVersion: 2,
-                                    clientEncryptionPolicy.PropertyEncryptionSetting[paths].EncryptionAlgorithm,
-                                    clientEncryptionPolicy.PropertyEncryptionSetting[paths].DataEncryptionKeyId,
-                                    propertyValue.ToObject<byte[]>(),
-                                    path,
-                                    clientEncryptionPolicy.PropertyEncryptionSetting[paths].PropertyDataType);
-
                         JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                        encryptionProperties,
+                        clientEncryptionPolicy.PropertyEncryptionSetting[paths],
+                        path,
+                        propertyValue.ToObject<byte[]>(),
                         encryptor,
                         diagnosticsContext,
                         cancellationToken);
@@ -255,42 +210,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
-            {
-                EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
-
-                JObject plainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                    encryptionProperties,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                document.Remove(Constants.EncryptedInfo);
-
-                foreach (JProperty property in plainTextJObj.Properties())
-                {
-                    document.Add(property.Name, property.Value);
-                }
-            }
-
             return document;
         }
 
         private static async Task<JObject> DecryptContentAsync(
-            EncryptionProperties encryptionProperties,
+            EncryptionSettings encryptionSettings,
+            string propertyName,
+            byte[] encryptedData,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (encryptionProperties.EncryptionFormatVersion != 2)
+            if (encryptionSettings.EncryptionFormatVersion != 2)
             {
-                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                throw new NotSupportedException($"Unknown encryption format version: {encryptionSettings.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             byte[] plainText = await encryptor.DecryptAsync(
-                encryptionProperties.EncryptedData,
-                encryptionProperties.DataEncryptionKeyId,
-                encryptionProperties.EncryptionAlgorithm,
+                encryptedData,
+                encryptionSettings.DataEncryptionKeyId,
+                encryptionSettings.EncryptionAlgorithm,
                 cancellationToken);
 
             if (plainText == null)
@@ -298,36 +237,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
             }
 
-            if (encryptionProperties.EncryptedPaths != null)
+            string val = null;
+            ISerializer serializer = encryptionSettings.GetSerializer();
+            if (serializer != null)
             {
-                string val = null;
-                if (encryptionProperties.Serializer != null)
-                {
-                    val = encryptionProperties.Serializer.Deserialize(plainText).ToString();
-                }
-                else
-                {
-                    val = Encoding.UTF8.GetString(plainText);
-                }
-
-                JObject plainTextJObj = new JObject();
-
-                string key = encryptionProperties.EncryptedPaths.Substring(1);
-                plainTextJObj.Add(key, val);
-                return plainTextJObj;
+                val = serializer.Deserialize(plainText).ToString();
             }
             else
             {
-                JObject plainTextJObj;
-                using (MemoryStream memoryStream = new MemoryStream(plainText))
-                using (StreamReader streamReader = new StreamReader(memoryStream))
-                using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
-                {
-                    plainTextJObj = JObject.Load(jsonTextReader);
-                }
-
-                return plainTextJObj;
+                val = Encoding.UTF8.GetString(plainText);
             }
+
+            JObject plainTextJObj = new JObject();
+
+            string key = propertyName.Substring(1);
+            plainTextJObj.Add(key, val);
+            return plainTextJObj;
         }
     }
 }

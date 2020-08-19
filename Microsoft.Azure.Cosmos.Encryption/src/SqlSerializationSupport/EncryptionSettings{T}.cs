@@ -22,10 +22,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Encryption Settings,sets the serializer to be used by Encryption with Default serializer
         /// </summary>
         /// <param name="dataEncryptionKeyId"> dataEncryptionKeyId </param>
+        /// <param name="encryptionFormatVersion"> Encryption Format Version </param>
         /// <param name="encryptionAlgorithm"> Encryption Algorithm Default: AEADAes256CbcHmacSha256Deterministic </param>
         /// <param name="isSqlCompatible"> isSqlCompatible </param>
-        public EncryptionSettings(string dataEncryptionKeyId, string encryptionAlgorithm = CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic, bool isSqlCompatible = true)
-            : this(dataEncryptionKeyId, isSqlCompatible ? GetDefaultSqlSerializer<T>() : GetDefaultSerializer<T>(), encryptionAlgorithm: encryptionAlgorithm)
+        public EncryptionSettings(string dataEncryptionKeyId, int encryptionFormatVersion = 2, string encryptionAlgorithm = CosmosEncryptionAlgorithm.AEADAes256CbcHmacSha256Deterministic, bool isSqlCompatible = true)
+            : this(dataEncryptionKeyId, encryptionFormatVersion: encryptionFormatVersion, isSqlCompatible ? GetDefaultSqlSerializer<T>() : GetDefaultSerializer<T>(), encryptionAlgorithm: encryptionAlgorithm)
         {
         }
 
@@ -33,11 +34,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Encryption Settings,sets the serializer to be used by Encryption.
         /// </summary>
         /// <param name="dataEncryptionKeyId"> DEK Id </param>
+        /// <param name="encryptionFormatVersion"> Encryption Format Version </param>
         /// <param name="dataType"> Data Type </param>
         /// <param name="serializer"> serializer </param>
         /// <param name="encryptionAlgorithm"> Encryption Algorithm </param>
-        public EncryptionSettings(string dataEncryptionKeyId, Serializer<T> serializer, string encryptionAlgorithm)
+        public EncryptionSettings(string dataEncryptionKeyId, int encryptionFormatVersion, Serializer<T> serializer, string encryptionAlgorithm)
         {
+            this.EncryptionFormatVersion = encryptionFormatVersion;
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.PropertyDataType = typeof(T);
             this.EncryptionAlgorithm = encryptionAlgorithm;

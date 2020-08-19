@@ -12,6 +12,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     public abstract class EncryptionSettings : IEquatable<EncryptionSettings>
     {
         /// <summary>
+        /// Gets or Sets Encryption Format Version
+        /// </summary>
+        public int EncryptionFormatVersion { get; set; }
+
+        /// <summary>
         /// Sets the serializer.
         /// </summary>
         /// <param name="serializer"> serializer </param>
@@ -49,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Type settingsType = typeof(EncryptionSettings<>).MakeGenericType(genericType);
             return (EncryptionSettings)Activator.CreateInstance(
                 settingsType,
-                new object[] { encryptionSettings.PropertyDataType, encryptionSettings.DataEncryptionKeyId, encryptionSettings.EncryptionAlgorithm, encryptionSettings.GetSerializer() });
+                new object[] { encryptionSettings.EncryptionFormatVersion, encryptionSettings.PropertyDataType, encryptionSettings.DataEncryptionKeyId, encryptionSettings.EncryptionAlgorithm, encryptionSettings.GetSerializer() });
         }
 
         /// <summary>

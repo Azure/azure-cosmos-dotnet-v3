@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="type"> DataType </param>
         /// <param name="serializer"> serializer </param>
-        public static void RegisterDefaultSerializer(Type type, ISerializer serializer)
+        public void RegisterDefaultSerializer(Type type, ISerializer serializer)
         {
             type.ValidateNotNull(nameof(type));
             serializer.ValidateNotNull(nameof(serializer));
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="type"> type </param>
         /// <param name="serializer"> serializer </param>
-        public static void RegisterDefaultSqlSerializer(Type type, ISqlSerializer serializer)
+        public void RegisterDefaultSqlSerializer(Type type, ISqlSerializer serializer)
         {
             type.ValidateNotNull(nameof(type));
             serializer.ValidateNotNull(nameof(serializer));
