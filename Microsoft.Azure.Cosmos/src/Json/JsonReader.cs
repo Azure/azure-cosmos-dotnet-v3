@@ -130,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <inheritdoc />
         public abstract ReadOnlyMemory<byte> GetBinaryValue();
 
+        /// <inheritdoc />
         public virtual void WriteCurrentToken(IJsonWriter writer)
         {
             if (writer == null)
@@ -277,7 +278,8 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        public void WriteAll(IJsonWriter writer)
+        /// <inheritdoc />
+        public virtual void WriteAll(IJsonWriter writer)
         {
             while (this.Read())
             {
