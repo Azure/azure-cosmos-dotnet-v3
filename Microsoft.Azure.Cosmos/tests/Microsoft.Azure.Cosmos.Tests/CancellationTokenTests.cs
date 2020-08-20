@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     public class CancellationTokenTests
     {
         [TestMethod]
-        [ExpectedException(typeof(OperationCanceledException))]
+        [ExpectedException(typeof(TaskCanceledException))]
         public async Task GatewayProcessMessageAsyncCancels()
         {
             using (CancellationTokenSource source = new CancellationTokenSource())
