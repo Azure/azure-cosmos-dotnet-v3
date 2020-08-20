@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.
         /// </summary>
-        private sealed class JsonBinaryWriter : JsonWriter
+        private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions
         {
             private const int MaxStackAllocSize = 4 * 1024;
 
@@ -592,6 +592,117 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberDouble);
                 this.binaryWriter.Write(value);
+            }
+
+            public void WriteRawJsonValue(
+                ReadOnlyMemory<byte> rawJsonValue,
+                bool isFieldName,
+                IReadOnlyJsonStringDictionary jsonStringDictionary)
+            {
+                if (this.IsSameStringDictionary(jsonStringDictionary))
+                {
+                    // Other that whether or not this is a field name, the type of the value does not matter here
+                    this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
+                    this.binaryWriter.Write(rawJsonValue.Span);
+                    if (!isFieldName)
+                    {
+                        this.bufferedContexts.Peek().Count++;
+                    }
+                }
+                else
+                {
+                    this.ForceRewriteRawJsonValue(rawJsonValue, isFieldName, jsonStringDictionary);
+                }
+            }
+
+            private void ForceRewriteRawJsonValue(
+                ReadOnlyMemory<byte> rawJsonValue,
+                bool isFieldName,
+                IReadOnlyJsonStringDictionary jsonStringDictionary)
+            {
+                byte typeMarker = rawJsonValue.Span[0];
+                if (!JsonBinaryEncoding.TypeMarker.IsSystemString(typeMarker) &&
+                    !JsonBinaryEncoding.TypeMarker.IsEmptyArray(typeMarker) &&
+                    !JsonBinaryEncoding.TypeMarker.IsEmptyObject(typeMarker))
+                {
+                    JsonNodeType nodeType = JsonBinaryEncoding.NodeTypes.GetNodeType(typeMarker);
+                    switch (nodeType)
+                    {
+                        case JsonNodeType.String:
+                            {
+                                if (!JsonBinaryEncoding.TryGetBufferedStringValue(
+                                Utf8Memory.UnsafeCreateNoValidation(rawJsonValue),
+                                jsonStringDictionary,
+                                out Utf8Memory bufferedStringValue))
+                                {
+                                    throw new InvalidOperationException("Excepted to get the buffered string value.");
+                                }
+
+                                if (isFieldName)
+                                {
+                                    this.WriteFieldName(bufferedStringValue.Span);
+                                }
+                                else
+                                {
+                                    this.WriteStringValue(bufferedStringValue.Span);
+                                }
+
+                                return;
+                            }
+
+                        case JsonNodeType.Array:
+                            {
+                                this.WriteArrayStart();
+
+                                foreach (ReadOnlyMemory<byte> arrayItem in JsonBinaryEncoding.Enumerator.GetArrayItems(rawJsonValue))
+                                {
+                                    this.ForceRewriteRawJsonValue(arrayItem, isFieldName, jsonStringDictionary);
+                                }
+
+                                this.WriteArrayEnd();
+
+                                return;
+                            }
+
+                        case JsonNodeType.Object:
+                            {
+                                this.WriteObjectStart();
+
+                                foreach (JsonBinaryEncoding.Enumerator.ObjectProperty property in JsonBinaryEncoding.Enumerator.GetObjectProperties(rawJsonValue))
+                                {
+                                    this.ForceRewriteRawJsonValue(property.Name, isFieldName: true, jsonStringDictionary);
+                                    this.ForceRewriteRawJsonValue(property.Value, isFieldName: false, jsonStringDictionary);
+                                }
+
+                                this.WriteObjectEnd();
+
+                                return;
+                            }
+                    }
+                }
+
+                // Other that whether or not this is a field name, the type of the value does not matter here
+                this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
+                this.binaryWriter.Write(rawJsonValue.Span);
+                if (!isFieldName)
+                {
+                    this.bufferedContexts.Peek().Count++;
+                }
+            }
+
+            private bool IsSameStringDictionary(IReadOnlyJsonStringDictionary jsonStringDictionary)
+            {
+                bool sameStringDictionary;
+                if (object.ReferenceEquals(this.jsonStringDictionary, jsonStringDictionary))
+                {
+                    sameStringDictionary = true;
+                }
+                else
+                {
+                    sameStringDictionary = this.jsonStringDictionary.Equals(jsonStringDictionary);
+                }
+
+                return sameStringDictionary;
             }
 
             private sealed class BeginOffsetAndCount

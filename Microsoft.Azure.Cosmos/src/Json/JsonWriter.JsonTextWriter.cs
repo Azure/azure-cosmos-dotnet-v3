@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// The user can also provide initial size to reserve string buffer, that will help reduce cost of reallocation.
         /// It provides error checking based on JSON grammar. It provides escaping for nine characters specified in JSON.
         /// </summary>
-        private sealed class JsonTextWriter : JsonWriter
+        private sealed class JsonTextWriter : JsonWriter, IJsonTextWriterExtensions
         {
             private const byte ValueSeperatorToken = (byte)':';
             private const byte MemberSeperatorToken = (byte)',';
@@ -308,6 +308,25 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.PrefixMemberSeparator();
                 this.jsonTextMemoryWriter.Write(BinaryTokenPrefix);
                 this.jsonTextMemoryWriter.WriteBinaryAsBase64(value);
+            }
+
+            public void WriteRawJsonValue(ReadOnlyMemory<byte> buffer, bool isFieldName)
+            {
+                // The token type here does not matter, we only need to know whether it is a field name
+                this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
+
+                this.PrefixMemberSeparator();
+
+                this.jsonTextMemoryWriter.Write(buffer.Span);
+
+                if (isFieldName)
+                {
+                    // no separator after property name
+                    this.firstValue = true;
+
+                    // Append value separator character
+                    this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
+                }
             }
 
             /// <inheritdoc />

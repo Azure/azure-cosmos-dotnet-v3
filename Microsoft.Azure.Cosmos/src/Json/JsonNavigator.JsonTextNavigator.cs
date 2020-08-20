@@ -5,10 +5,8 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -61,12 +59,12 @@ namespace Microsoft.Azure.Cosmos.Json
                                 buffer: buffer,
                                 jsonStringDictionary: null);
 
-                    if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
+                    if (!(jsonTextReader is IJsonTextReaderExtensions jsonTextReaderExtensions))
                     {
-                        throw new InvalidOperationException($"{jsonTextReader}'s serialization format must actually be {JsonSerializationFormat.Text}.");
+                        throw new InvalidOperationException($"{nameof(jsonTextReader)} needs to implement {nameof(IJsonTextReaderExtensions)}.");
                     }
 
-                    return Parser.Parse(jsonTextReader);
+                    return Parser.Parse(jsonTextReaderExtensions);
                 }
 
                 JsonTextNavigatorNode rootNode;
@@ -91,19 +89,10 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Text;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
-            public override IJsonNavigatorNode GetRootNode()
-            {
-                return this.rootNode;
-            }
+            public override IJsonNavigatorNode GetRootNode() => this.rootNode;
 
             /// <inheritdoc />
             public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
@@ -393,6 +382,33 @@ namespace Microsoft.Azure.Cosmos.Json
                 return objectNode.Properties;
             }
 
+            public override void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+            {
+                if (!(jsonNavigatorNode is JsonTextNavigatorNode textNavigatorNode))
+                {
+                    throw new ArgumentOutOfRangeException($"Expected {nameof(jsonNavigatorNode)} to be a {nameof(JsonTextNavigatorNode)}.");
+                }
+
+                bool sameEncoding = this.SerializationFormat == jsonWriter.SerializationFormat;
+                if (sameEncoding)
+                {
+                    bool isFieldName = textNavigatorNode.Type == JsonNodeType.FieldName;
+                    if (!(jsonWriter is IJsonTextWriterExtensions jsonTextWriter))
+                    {
+                        throw new InvalidOperationException($"Expected writer to implement: {nameof(IJsonBinaryWriterExtensions)}.");
+                    }
+
+                    jsonTextWriter.WriteRawJsonValue(
+                        JsonTextNavigator.GetNodeBuffer(textNavigatorNode),
+                        isFieldName);
+                }
+                else
+                {
+                    // TODO: we can optimize this to use private APIs in the future, but for now defaulting to public API.
+                    base.WriteNode(jsonNavigatorNode, jsonWriter);
+                }
+            }
+
             public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
             {
                 if (!(jsonNavigatorNode is JsonTextNavigatorNode jsonTextNavigatorNode))
@@ -400,25 +416,26 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(JsonTextNavigatorNode)}.");
                 }
 
-                ReadOnlyMemory<byte> buffer = jsonTextNavigatorNode switch
-                {
-                    LazyNode lazyNode => lazyNode.BufferedValue,
-                    ArrayNode arrayNode => arrayNode.BufferedValue,
-                    FalseNode falseNode => SingletonBuffers.False,
-                    StringNodeBase stringNodeBase => stringNodeBase.BufferedValue.Memory,
-                    NullNode nullNode => SingletonBuffers.Null,
-                    NumberNode numberNode => numberNode.BufferedToken,
-                    ObjectNode objectNode => objectNode.BufferedValue,
-                    TrueNode trueNode => SingletonBuffers.True,
-                    GuidNode guidNode => guidNode.BufferedToken,
-                    BinaryNode binaryNode => binaryNode.BufferedToken,
-                    IntegerNode intNode => intNode.BufferedToken,
-                    FloatNode floatNode => floatNode.BufferedToken,
-                    _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
-                };
-
+                ReadOnlyMemory<byte> buffer = JsonTextNavigator.GetNodeBuffer(jsonTextNavigatorNode);
                 return JsonReader.Create(JsonSerializationFormat.Text, buffer);
             }
+
+            private static ReadOnlyMemory<byte> GetNodeBuffer(JsonTextNavigatorNode jsonTextNavigatorNode) => jsonTextNavigatorNode switch
+            {
+                LazyNode lazyNode => lazyNode.BufferedValue,
+                ArrayNode arrayNode => arrayNode.BufferedValue,
+                FalseNode falseNode => SingletonBuffers.False,
+                StringNodeBase stringNodeBase => stringNodeBase.BufferedValue.Memory,
+                NullNode nullNode => SingletonBuffers.Null,
+                NumberNode numberNode => numberNode.BufferedToken,
+                ObjectNode objectNode => objectNode.BufferedValue,
+                TrueNode trueNode => SingletonBuffers.True,
+                GuidNode guidNode => guidNode.BufferedToken,
+                BinaryNode binaryNode => binaryNode.BufferedToken,
+                IntegerNode intNode => intNode.BufferedToken,
+                FloatNode floatNode => floatNode.BufferedToken,
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
+            };
 
             #region JsonTextParser
             /// <summary>
@@ -555,11 +572,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// <returns>JSON number AST node</returns>
                 private static NumberNode ParseNumberNode(IJsonTextReaderExtensions jsonTextReader)
                 {
-                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-                    {
-                        throw new InvalidOperationException("Failed to get the buffered raw json token.");
-                    }
-
+                    ReadOnlyMemory<byte> bufferedRawJsonToken = jsonTextReader.GetBufferedJsonToken().Memory;
                     NumberNode numberNode = NumberNode.Create(bufferedRawJsonToken);
 
                     // consume the number from the reader
@@ -568,13 +581,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     return numberNode;
                 }
 
-                private static IntegerNode ParseIntegerNode(IJsonReader jsonTextReader, JsonTokenType jsonTokenType)
+                private static IntegerNode ParseIntegerNode(IJsonTextReaderExtensions jsonTextReader, JsonTokenType jsonTokenType)
                 {
-                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-                    {
-                        throw new InvalidOperationException("Failed to get the buffered raw json token.");
-                    }
-
+                    ReadOnlyMemory<byte> bufferedRawJsonToken = jsonTextReader.GetBufferedJsonToken().Memory;
                     IntegerNode integerNode = jsonTokenType switch
                     {
                         JsonTokenType.Int8 => Int8Node.Create(bufferedRawJsonToken),
@@ -591,13 +600,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     return integerNode;
                 }
 
-                private static FloatNode ParseFloatNode(IJsonReader jsonTextReader, JsonTokenType jsonTokenType)
+                private static FloatNode ParseFloatNode(IJsonTextReaderExtensions jsonTextReader, JsonTokenType jsonTokenType)
                 {
-                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-                    {
-                        throw new InvalidOperationException("Failed to get the buffered raw json token.");
-                    }
-
+                    ReadOnlyMemory<byte> bufferedRawJsonToken = jsonTextReader.GetBufferedJsonToken().Memory;
                     FloatNode floatNode = jsonTokenType switch
                     {
                         JsonTokenType.Float32 => Float32Node.Create(bufferedRawJsonToken),
@@ -655,13 +660,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// </summary>
                 /// <param name="jsonTextReader">The reader to use as a lexer / tokenizer</param>
                 /// <returns>JSON property AST node</returns>
-                private static ObjectProperty ParsePropertyNode(IJsonReader jsonTextReader)
+                private static ObjectProperty ParsePropertyNode(IJsonTextReaderExtensions jsonTextReader)
                 {
-                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-                    {
-                        throw new InvalidOperationException("Failed to get the buffered raw json token.");
-                    }
-
+                    ReadOnlyMemory<byte> bufferedRawJsonToken = jsonTextReader.GetBufferedJsonToken().Memory;
                     FieldNameNode fieldName = FieldNameNode.Create(Utf8Memory.UnsafeCreateNoValidation(bufferedRawJsonToken));
 
                     // Consume the fieldname from the jsonreader
@@ -671,13 +672,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     return new ObjectProperty(fieldName, value);
                 }
 
-                private static GuidNode ParseGuidNode(IJsonReader jsonTextReader)
+                private static GuidNode ParseGuidNode(IJsonTextReaderExtensions jsonTextReader)
                 {
-                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-                    {
-                        throw new InvalidOperationException("Failed to get the buffered raw json token.");
-                    }
-
+                    ReadOnlyMemory<byte> bufferedRawJsonToken = jsonTextReader.GetBufferedJsonToken().Memory;
                     GuidNode node = GuidNode.Create(bufferedRawJsonToken);
 
                     // advance the reader forward.
@@ -685,13 +682,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     return node;
                 }
 
-                private static BinaryNode ParseBinaryNode(IJsonReader jsonTextReader)
+                private static BinaryNode ParseBinaryNode(IJsonTextReaderExtensions jsonTextReader)
                 {
-                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-                    {
-                        throw new InvalidOperationException("Failed to get the buffered raw json token.");
-                    }
-
+                    ReadOnlyMemory<byte> bufferedRawJsonToken = jsonTextReader.GetBufferedJsonToken().Memory;
                     BinaryNode node = BinaryNode.Create(bufferedRawJsonToken);
 
                     // advance the reader forward.
@@ -704,7 +697,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// </summary>
                 /// <param name="jsonTextReader">The reader to use as a lexer / tokenizer</param>
                 /// <returns>JSON AST node (type determined by the reader)</returns>
-                private static JsonTextNavigatorNode ParseNode(IJsonReader jsonTextReader)
+                private static JsonTextNavigatorNode ParseNode(IJsonTextReaderExtensions jsonTextReader)
                 {
                     JsonTextNavigatorNode node;
                     switch (jsonTextReader.CurrentTokenType)
