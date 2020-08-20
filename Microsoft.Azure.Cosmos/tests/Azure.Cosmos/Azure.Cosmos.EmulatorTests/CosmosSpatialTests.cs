@@ -196,18 +196,15 @@
         private Polygon GetPolygon()
         {
             Polygon polygon = new Polygon(
-                new[]
-                {
-                    new LinearRing(
-                        new[]
-                            {
-                                new Position(20, 20),
-                                new Position(20, 21),
-                                new Position(21, 21),
-                                new Position(21, 20),
-                                new Position(22, 20)
-                            })
-                },
+                new LinearRing(
+                    new[]
+                    {
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(22, 20)
+                    }),
                 new BoundingBox((0, 0), (40, 40)));
             return polygon;
         }
