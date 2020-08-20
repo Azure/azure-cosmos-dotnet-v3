@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors
                 return DocDbError.PartitionSplit;
             }
 
+            if (statusCode == HttpStatusCode.NotFound)
+            {
+                return subStatusCode == (int)SubStatusCodes.ReadSessionNotAvailable ? DocDbError.ReadSessionNotAvailable : DocDbError.PartitionNotFound;
+            }
+
             return DocDbError.Undefined;
         }
     }

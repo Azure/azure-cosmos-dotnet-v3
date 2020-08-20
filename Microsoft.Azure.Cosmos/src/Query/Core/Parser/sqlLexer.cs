@@ -21,7 +21,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
-    #if false
     using System;
     using System.IO;
     using Antlr4.Runtime;
@@ -563,5 +562,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         public static readonly ATN _ATN =
             new ATNDeserializer().Deserialize(_serializedATN);
     }
-#endif
 }
