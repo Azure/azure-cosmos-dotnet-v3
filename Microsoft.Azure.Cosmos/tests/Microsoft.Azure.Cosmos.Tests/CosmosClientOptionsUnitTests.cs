@@ -340,8 +340,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 webProxy: webProxy);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
-            DelegatingHandler handler = (DelegatingHandler) cosmosClient.DocumentClient.httpMessageHandler;
-            HttpClientHandler innerHandler = (HttpClientHandler)handler.InnerHandler;
+            HttpClientHandler innerHandler = (HttpClientHandler)cosmosClient.DocumentClient.httpMessageHandler;
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
         }
