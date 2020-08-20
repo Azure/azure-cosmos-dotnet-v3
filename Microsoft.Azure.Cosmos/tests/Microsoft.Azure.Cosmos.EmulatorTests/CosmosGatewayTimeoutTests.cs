@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using Moq;
+
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
@@ -38,17 +40,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     gatewayStore = (GatewayStoreModel)client.DocumentClient.GetStoreProxy(serviceRequest);
                 }
 
-                // Get the GatewayStoreClient
-                FieldInfo gatewayStoreClientProperty = gatewayStore.GetType().GetField("gatewayStoreClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                GatewayStoreClient storeClient = (GatewayStoreClient)gatewayStoreClientProperty.GetValue(gatewayStore);
-
+                CosmosHttpClientCore cosmosHttpClient = (CosmosHttpClientCore)client.ClientContext.CosmosHttpClient;
                 // Set the http request timeout to 10 ms to cause a timeout exception
                 HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
-                FieldInfo httpClientProperty = storeClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                httpClientProperty.SetValue(storeClient, httpClient);
+                FieldInfo httpClientProperty = cosmosHttpClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                httpClientProperty.SetValue(cosmosHttpClient, httpClient);
+
+                FieldInfo gatewayRequestTimeoutProperty = cosmosHttpClient.GetType().GetField("GatewayRequestTimeout", BindingFlags.NonPublic | BindingFlags.Static);
+                gatewayRequestTimeoutProperty.SetValue(cosmosHttpClient, TimeSpan.FromSeconds(1));
 
                 // Verify the failure has the required info
-                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
                 try
                 {
                     await client.CreateDatabaseAsync("TestGatewayTimeoutDb" + Guid.NewGuid().ToString());

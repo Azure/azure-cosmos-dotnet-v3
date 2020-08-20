@@ -155,6 +155,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
 
+        internal override CosmosHttpClient CosmosHttpClient => this.ThrowIfDisposed(this.httpClient);
+
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>
