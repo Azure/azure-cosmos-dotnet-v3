@@ -21,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.Query
         public async Task CheckConsistencyLevel()
         {
             FeedOptions fo = new FeedOptions();
-            var dcClient = new Mock<IDocumentQueryClient>();
+            Mock<IDocumentQueryClient> dcClient = new Mock<IDocumentQueryClient>();
             Expression<Func<int, int>> randomFunc = x => x * 2;
 
-            var cxt = new TestQueryExecutionContext(
+            TestQueryExecutionContext cxt = new TestQueryExecutionContext(
                 dcClient.Object, 
                 ResourceType.Document, 
                 typeof(TestQueryExecutionContext),

@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -25,30 +24,26 @@ namespace Azure.Cosmos.Test.Spatial
             string json = @"{
                     ""type"":""Polygon"",
                     ""coordinates"":[[[20,30], [30,30], [30,20], [20,20], [20, 30]], [[25,28], [25,25], [25, 28], [28,28], [25, 28]]],
-                    ""bbox"":[20, 20, 30, 30],
-                    ""extra"":1,
-                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
+                    ""bbox"":[20, 20, 30, 30]
+            }";
 
-            var polygon = JsonSerializer.Deserialize<Polygon>(json, this.restContractOptions);
+            Polygon polygon = JsonSerializer.Deserialize<Polygon>(json, this.restContractOptions);
 
-            Assert.AreEqual(2, polygon.Rings.Count);
-            Assert.AreEqual(5, polygon.Rings[0].Positions.Count);
-            Assert.AreEqual(new Position(20, 30), polygon.Rings[0].Positions[0]);
-            Assert.AreEqual(new Position(30, 20), polygon.Rings[0].Positions[2]);
+            Assert.AreEqual(2, polygon.Coordinates.Count);
+            Assert.AreEqual(5, polygon.Coordinates[0].Count);
+            Assert.AreEqual(new Position(20, 30), polygon.Coordinates[0][0]);
+            Assert.AreEqual(new Position(30, 20), polygon.Coordinates[0][2]);
 
-            Assert.AreEqual(new Position(20, 20), polygon.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), polygon.BoundingBox.Max);
-            Assert.AreEqual("hello", ((NamedCrs)polygon.Crs).Name);
-            Assert.AreEqual(1, polygon.AdditionalProperties.Count);
-            Assert.AreEqual(1L, polygon.AdditionalProperties["extra"]);
+            Assert.AreEqual((20, 20), polygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((30, 30), polygon.BoundingBox.NortheasertlyPoint);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
-            Assert.AreEqual(GeometryType.Polygon, geom.Type);
+            GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
+            Assert.AreEqual(GeoJsonType.Polygon, geom.Type);
 
             Assert.AreEqual(geom, polygon);
 
             string json1 = JsonSerializer.Serialize(polygon, this.restContractOptions);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            GeoJson geom1 = JsonSerializer.Deserialize<GeoJson>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -58,126 +53,54 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPolygonEqualsHashCode()
         {
-            var polygon1 =
+            Polygon polygon1 =
                 new Polygon(
-                    new[]
+                    new LinearRing(
+                        new[]
                         {
-                            new LinearRing(
-                                new[]
-                                    {
-                                        new Position(20, 20),
-                                        new Position(20, 21),
-                                        new Position(21, 21),
-                                        new Position(21, 20),
-                                        new Position(22, 20)
-                                    })
-                        },
-                    new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                            new Position(20, 20),
+                            new Position(20, 21),
+                            new Position(21, 21),
+                            new Position(21, 20),
+                            new Position(20, 20)
+                        }),
+                    new BoundingBox((0, 0), (40, 40)));
 
-            var polygon2 = new Polygon(
-                new[]
+            Polygon polygon2 = new Polygon(
+                new LinearRing(
+                    new[]
                     {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
+                new BoundingBox((0, 0), (40, 40)));
 
-            var polygon3 = new Polygon(
-                new[]
+            Polygon polygon3 = new Polygon(
+                new LinearRing(
+                    new[]
                     {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 22),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                        new Position(20, 20),
+                        new Position(20, 22),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
+                new BoundingBox((0, 0), (40, 40)));
 
-            var polygon4 = new Polygon(
-                new[]
+            Polygon polygon5 = new Polygon(
+                new LinearRing(
+                    new[]
                     {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
-
-            var polygon5 = new Polygon(
-                new[]
-                    {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                    Crs = Crs.Named("SomeCrs")
-                });
-
-            var polygon6 = new Polygon(
-                new[]
-                    {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs1")
-                });
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
+                new BoundingBox((0, 0), (40, 41)));
 
             Assert.AreEqual(polygon1, polygon2);
             Assert.AreEqual(polygon1.GetHashCode(), polygon2.GetHashCode());
@@ -185,14 +108,8 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreNotEqual(polygon1, polygon3);
             Assert.AreNotEqual(polygon1.GetHashCode(), polygon3.GetHashCode());
 
-            Assert.AreNotEqual(polygon1, polygon4);
-            Assert.AreNotEqual(polygon1.GetHashCode(), polygon4.GetHashCode());
-
             Assert.AreNotEqual(polygon1, polygon5);
             Assert.AreNotEqual(polygon1.GetHashCode(), polygon5.GetHashCode());
-
-            Assert.AreNotEqual(polygon1, polygon6);
-            Assert.AreNotEqual(polygon1.GetHashCode(), polygon6.GetHashCode());
         }
 
         /// <summary>
@@ -202,7 +119,7 @@ namespace Azure.Cosmos.Test.Spatial
         [ExpectedException(typeof(ArgumentNullException))]
         public void TestPolygonConstructorNullException()
         {
-            new Polygon((IList<Position>)null);
+            new Polygon(exteriorRing: null);
         }
 
         /// <summary>
@@ -211,32 +128,22 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPolygonConstructors()
         {
-            var polygon = new Polygon(
-                new[]
+            Polygon polygon = new Polygon(
+                new LinearRing(
+                    new[]
                     {
-                        new LinearRing(
-                            new[]
-                                {
-                                    new Position(20, 20),
-                                    new Position(20, 21),
-                                    new Position(21, 21),
-                                    new Position(21, 20),
-                                    new Position(22, 20)
-                                })
-                    },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                        new Position(20, 20),
+                        new Position(20, 21),
+                        new Position(21, 21),
+                        new Position(21, 20),
+                        new Position(20, 20)
+                    }),
+                new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(new Position(20, 20), polygon.Rings[0].Positions[0]);
+            Assert.AreEqual(new Position(20, 20), polygon.Coordinates[0][0]);
 
-            Assert.AreEqual(new Position(0, 0), polygon.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), polygon.BoundingBox.Max);
-            Assert.AreEqual("b", polygon.AdditionalProperties["a"]);
-            Assert.AreEqual("SomeCrs", ((NamedCrs)polygon.Crs).Name);
+            Assert.AreEqual((0, 0), polygon.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), polygon.BoundingBox.NortheasertlyPoint);
         }
     }
 }

@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Cosmos.Test.Spatial
+namespace Azure.Cosmos.Tests.Spatial
 {
     using System;
-    using System.Collections.Generic;
     using System.Text.Json;
     using Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -26,29 +25,24 @@ namespace Azure.Cosmos.Test.Spatial
                 @"{
                    ""type"":""LineString"",
                    ""coordinates"":[[20,30], [21,31]],
-                   ""bbox"":[20, 20, 30, 30],
-                   ""extra"":1,
-                   ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
+                   ""bbox"":[20, 20, 30, 30]
                   }";
-            var lineString = JsonSerializer.Deserialize<LineString>(json, this.restContractOptions);
+            LineString lineString = JsonSerializer.Deserialize<LineString>(json, this.restContractOptions);
 
-            Assert.AreEqual(2, lineString.Positions.Count);
-            Assert.AreEqual(new Position(20, 30), lineString.Positions[0]);
-            Assert.AreEqual(new Position(21, 31), lineString.Positions[1]);
+            Assert.AreEqual(2, lineString.Coordinates.Count);
+            Assert.AreEqual(new Position(20, 30), lineString.Coordinates[0]);
+            Assert.AreEqual(new Position(21, 31), lineString.Coordinates[1]);
 
-            Assert.AreEqual(new Position(20, 20), lineString.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), lineString.BoundingBox.Max);
-            Assert.AreEqual("hello", ((NamedCrs)lineString.Crs).Name);
-            Assert.AreEqual(1, lineString.AdditionalProperties.Count);
-            Assert.AreEqual(1L, lineString.AdditionalProperties["extra"]);
+            Assert.AreEqual((20, 20), lineString.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((30, 30), lineString.BoundingBox.NortheasertlyPoint);
 
-            var geom = JsonSerializer.Deserialize<Geometry>(json, this.restContractOptions);
-            Assert.AreEqual(GeometryType.LineString, geom.Type);
+            GeoJson geom = JsonSerializer.Deserialize<GeoJson>(json, this.restContractOptions);
+            Assert.AreEqual(GeoJsonType.LineString, geom.Type);
 
             Assert.AreEqual(geom, lineString);
 
             string json1 = JsonSerializer.Serialize(lineString, this.restContractOptions);
-            var geom1 = JsonSerializer.Deserialize<Geometry>(json1, this.restContractOptions);
+            GeoJson geom1 = JsonSerializer.Deserialize<GeoJson>(json1, this.restContractOptions);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -58,59 +52,29 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestLineStringEqualsHashCode()
         {
-            var lineString1 = new LineString(
+            LineString lineString1 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                new BoundingBox((0, 0), (40, 40)));
 
-            var lineString2 = new LineString(
+            LineString lineString2 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                new BoundingBox((0, 0), (40, 40)));
 
-            var lineString3 = new LineString(
+            LineString lineString3 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 41) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                new BoundingBox((0, 0), (40, 40)));
 
-            var lineString4 = new LineString(
+            LineString lineString4 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                new BoundingBox((0, 0), (40, 40)));
 
-            var lineString5 = new LineString(
+            LineString lineString5 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                new BoundingBox((0, 0), (40, 41)));
 
-            var lineString6 = new LineString(
+            LineString lineString6 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs1")
-                });
+                new BoundingBox((0, 0), (40, 40)));
 
             Assert.AreEqual(lineString1, lineString2);
             Assert.AreEqual(lineString1.GetHashCode(), lineString2.GetHashCode());
@@ -118,14 +82,8 @@ namespace Azure.Cosmos.Test.Spatial
             Assert.AreNotEqual(lineString1, lineString3);
             Assert.AreNotEqual(lineString1.GetHashCode(), lineString3.GetHashCode());
 
-            Assert.AreNotEqual(lineString1, lineString4);
-            Assert.AreNotEqual(lineString1.GetHashCode(), lineString4.GetHashCode());
-
             Assert.AreNotEqual(lineString1, lineString5);
             Assert.AreNotEqual(lineString1.GetHashCode(), lineString5.GetHashCode());
-
-            Assert.AreNotEqual(lineString1, lineString6);
-            Assert.AreNotEqual(lineString1.GetHashCode(), lineString6.GetHashCode());
         }
 
         /// <summary>
@@ -144,22 +102,15 @@ namespace Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestLineStringConstructors()
         {
-            var lineString = new LineString(
+            LineString lineString = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
-                new GeometryParams
-                {
-                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                    Crs = Crs.Named("SomeCrs")
-                });
+                new BoundingBox((0, 0), (40, 40)));
 
-            Assert.AreEqual(new Position(20, 30), lineString.Positions[0]);
-            Assert.AreEqual(new Position(30, 40), lineString.Positions[1]);
+            Assert.AreEqual(new Position(20, 30), lineString.Coordinates[0]);
+            Assert.AreEqual(new Position(30, 40), lineString.Coordinates[1]);
 
-            Assert.AreEqual(new Position(0, 0), lineString.BoundingBox.Min);
-            Assert.AreEqual(new Position(40, 40), lineString.BoundingBox.Max);
-            Assert.AreEqual("b", lineString.AdditionalProperties["a"]);
-            Assert.AreEqual("SomeCrs", ((NamedCrs)lineString.Crs).Name);
+            Assert.AreEqual((0, 0), lineString.BoundingBox.SouthwesterlyPoint);
+            Assert.AreEqual((40, 40), lineString.BoundingBox.NortheasertlyPoint);
         }
     }
 }

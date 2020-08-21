@@ -53,7 +53,8 @@ namespace Azure.Cosmos
             }
 
             writer.WriteStartArray();
-            foreach (double coordinate in position.Coordinates)
+
+            foreach (double coordinate in position)
             {
                 writer.WriteNumberValue(coordinate);
             }
@@ -73,6 +74,12 @@ namespace Azure.Cosmos
                 throw new JsonException(RMResources.SpatialInvalidPosition);
             }
 
+            int numCoordinates = root.GetArrayLength();
+            if (numCoordinates != 2 && numCoordinates != 3)
+            {
+                throw new JsonException(RMResources.SpatialInvalidPosition);
+            }
+
             List<double> coordinates = new List<double>(root.GetArrayLength());
             foreach (JsonElement item in root.EnumerateArray())
             {
@@ -84,7 +91,17 @@ namespace Azure.Cosmos
                 coordinates.Add(coordinate);
             }
 
-            return new Position(coordinates);
+            Position position;
+            if (numCoordinates == 2)
+            {
+                position = new Position(coordinates[0], coordinates[1]);
+            }
+            else
+            {
+                position = new Position(coordinates[0], coordinates[1], coordinates[2]);
+            }
+
+            return position;
         }
     }
 }

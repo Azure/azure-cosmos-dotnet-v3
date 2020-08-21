@@ -6,56 +6,43 @@ namespace Azure.Cosmos.Spatial
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    
+
     /// <summary>
     /// Geometry consisting of several points.
     /// </summary>
     /// <seealso cref="Point"/>.
+    /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.3"/>
     [DataContract]
-    internal sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
+    internal class MultiPoint : GeoJson, IEquatable<MultiPoint>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPoint" /> class.
         /// </summary>
-        /// <param name="points">List of <see cref="Position"/> representing individual points.</param>
-        public MultiPoint(IList<Position> points)
-            : this(points, new GeometryParams())
+        /// <param name="coordinates">List of <see cref="Position"/>.</param>
+        public MultiPoint(IReadOnlyList<Position> coordinates)
+            : this(coordinates, boundingBox: default)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPoint" /> class.
         /// </summary>
-        /// <param name="points">
-        /// List of <see cref="Position"/> representing individual points.
+        /// <param name="coordinates">
+        /// List of <see cref="Position"/>.
         /// </param>
-        /// <param name="geometryParams">
+        /// <param name="boundingBox">
         /// Additional geometry parameters.
         /// </param>
-        public MultiPoint(IList<Position> points, GeometryParams geometryParams)
-            : base(GeometryType.MultiPoint, geometryParams)
+        public MultiPoint(IReadOnlyList<Position> coordinates, BoundingBox boundingBox)
+            : base(boundingBox)
         {
-            if (points == null)
-            {
-                throw new ArgumentNullException("points");
-            }
-
-            this.Points = new ReadOnlyCollection<Position>(points);
+            this.Coordinates = coordinates ?? throw new ArgumentNullException("points");
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MultiPoint"/> class.
-        /// </summary>
-        /// <remarks>
-        /// This constructor is used only during deserialization.
-        /// </remarks>
-        internal MultiPoint()
-            : base(GeometryType.MultiPoint, new GeometryParams())
-        {
-        }
+        /// <inheritdoc/>
+        public override GeoJsonType Type => GeoJsonType.MultiPoint;
 
         /// <summary>
         /// Gets collections of <see cref="Position"/> representing individual points.
@@ -64,19 +51,7 @@ namespace Azure.Cosmos.Spatial
         /// Collections of <see cref="Position"/> representing individual points.
         /// </value>
         [DataMember(Name = "coordinates")]
-        public ReadOnlyCollection<Position> Points { get; private set; }
-
-        /// <summary>
-        /// Determines whether the specified <see cref="MultiPoint" /> is equal to the current <see cref="MultiPoint" />.
-        /// </summary>
-        /// <returns>
-        /// true if the specified object  is equal to the current object; otherwise, false.
-        /// </returns>
-        /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj)
-        {
-            return this.Equals(obj as MultiPoint);
-        }
+        public IReadOnlyList<Position> Coordinates { get; private set; }
 
         /// <summary>
         /// Serves as a hash function for the <see cref="MultiPoint" /> type.
@@ -86,8 +61,12 @@ namespace Azure.Cosmos.Spatial
         /// </returns>
         public override int GetHashCode()
         {
-            return this.Points.Aggregate(base.GetHashCode(), (current, point) => (current * 397) ^ point.GetHashCode());
+            return this.Coordinates.Aggregate(
+                base.GetHashCodeBase(),
+                (current, point) => (current * 397) ^ point.GetHashCode());
         }
+
+        public override bool Equals(GeoJson other) => other is MultiPoint multiPoint && this.Equals(multiPoint);
 
         /// <summary>
         /// Determines if this <see cref="MultiPoint"/> is equal to <paramref name="other" />.
@@ -96,7 +75,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(MultiPoint other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
@@ -106,7 +85,12 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return base.Equals(other) && this.Points.SequenceEqual(other.Points);
+            if (!base.EqualsBase(other))
+            {
+                return false;
+            }
+
+            return this.Coordinates.SequenceEqual(other.Coordinates);
         }
     }
 }

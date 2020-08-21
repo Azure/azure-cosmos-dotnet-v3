@@ -56,67 +56,51 @@ namespace Azure.Cosmos.Spatial
     /// ]]>        
     /// </code>
     /// </example>
+    /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.6"/>
     [DataContract]
-    internal sealed class Polygon : Geometry, IEquatable<Polygon>
+    internal class Polygon : GeoJson, IEquatable<Polygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class,
         /// from external ring (the polygon contains no holes) in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="externalRingPositions">
-        /// External polygon ring coordinates.
-        /// </param>
-        public Polygon(IList<Position> externalRingPositions)
-            : this(new[] { new LinearRing(externalRingPositions) }, new GeometryParams())
+        /// <param name="exteriorRing">The exterior ring bounds the surface.</param>
+        /// <param name="boundingBox">The bounding box.</param>
+        public Polygon(LinearRing exteriorRing, BoundingBox boundingBox = null)
+            : this(exteriorRing, interiorRings: null, boundingBox)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="rings">
-        /// <para>
-        /// Polygon rings.
-        /// </para>
-        /// <para>
-        /// First ring is external ring. Following rings define 'holes' in the polygon.
-        /// </para>
-        /// </param>
-        public Polygon(IList<LinearRing> rings)
-            : this(rings, new GeometryParams())
+        /// <param name="exteriorRing">The exterior ring bounds the surface.</param>
+        /// <param name="interiorRings">Holes within the surface.</param>
+        /// <param name="boundingBox">The bounding box.</param>
+        public Polygon(LinearRing exteriorRing, IReadOnlyList<LinearRing> interiorRings, BoundingBox boundingBox = null)
+            : base(boundingBox)
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="rings">
-        /// Polygon rings.
-        /// </param>
-        /// <param name="geometryParams">
-        /// Additional geometry parameters.
-        /// </param>
-        public Polygon(IList<LinearRing> rings, GeometryParams geometryParams)
-            : base(GeometryType.Polygon, geometryParams)
-        {
-            if (rings == null)
+            if (exteriorRing == null)
             {
-                throw new ArgumentNullException("rings");
+                throw new ArgumentNullException(nameof(exteriorRing));
             }
 
-            this.Rings = new ReadOnlyCollection<LinearRing>(rings);
+            if ((interiorRings != null) && interiorRings.Any(ring => ring == null))
+            {
+                throw new ArgumentException($"{nameof(interiorRings)} must not have any null rings.");
+            }
+
+            List<LinearRing> rings = new List<LinearRing>() { exteriorRing };
+            if (interiorRings != null)
+            {
+                rings.AddRange(interiorRings);
+            }
+
+            this.Coordinates = rings;
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Polygon"/> class in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// This constructor is used only during deserialization.
-        /// </remarks>
-        internal Polygon()
-            : base(GeometryType.Polygon, new GeometryParams())
-        {
-        }
+        /// <inheritdoc/>
+        public override GeoJsonType Type => GeoJsonType.Polygon;
 
         /// <summary>
         /// Gets the polygon rings in the Azure Cosmos DB service.
@@ -125,19 +109,11 @@ namespace Azure.Cosmos.Spatial
         /// Polygon rings.
         /// </value>
         [DataMember(Name = "coordinates")]
-        public ReadOnlyCollection<LinearRing> Rings { get; private set; }
+        public IReadOnlyList<LinearRing> Coordinates { get; }
 
-        /// <summary>
-        /// Determines whether the specified <see cref="Polygon" /> is equal to the current <see cref="Polygon" /> in the Azure Cosmos DB service.
-        /// </summary>
-        /// <returns>
-        /// true if the specified object is equal to the current object; otherwise, false.
-        /// </returns>
-        /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj)
-        {
-            return this.Equals(obj as Polygon);
-        }
+        public LinearRing ExteriorRing => this.Coordinates[0];
+
+        public IReadOnlyList<LinearRing> InteriorRings => this.Coordinates.Skip(1).ToList();
 
         /// <summary>
         /// Serves as a hash function for the <see cref="Polygon" /> type in the Azure Cosmos DB service.
@@ -149,9 +125,13 @@ namespace Azure.Cosmos.Spatial
         {
             unchecked
             {
-                return this.Rings.Aggregate(base.GetHashCode(), (current, value) => (current * 397) ^ value.GetHashCode());
+                return this.Coordinates.Aggregate(
+                    base.GetHashCodeBase(),
+                    (current, value) => (current * 397) ^ value.GetHashCode());
             }
         }
+
+        public override bool Equals(GeoJson other) => other is Polygon polygon && this.Equals(polygon);
 
         /// <summary>
         /// Determines if this <see cref="Polygon"/> is equal to the <paramref name="other" /> in the Azure Cosmos DB service.
@@ -160,7 +140,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Polygon other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
@@ -170,7 +150,12 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return base.Equals(other) && this.Rings.SequenceEqual(other.Rings);
+            if (!base.EqualsBase(other))
+            {
+                return false;
+            }
+
+            return this.Coordinates.SequenceEqual(other.Coordinates);
         }
     }
 }

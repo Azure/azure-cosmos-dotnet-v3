@@ -8,12 +8,13 @@ namespace Azure.Cosmos
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using Azure.Cosmos.Linq;
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
 
-    internal sealed class TextJsonGeometryValidationResultConverter : JsonConverter<GeometryValidationResult>
+    internal sealed class TextJsonGeometryValidationResultConverter : JsonConverter<IsValidDetailedResult>
     {
-        public override GeometryValidationResult Read(
+        public override IsValidDetailedResult Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -31,23 +32,29 @@ namespace Azure.Cosmos
             using JsonDocument json = JsonDocument.ParseValue(ref reader);
             JsonElement root = json.RootElement;
 
-            GeometryValidationResult geometryValidationResult = new GeometryValidationResult();
-            if (root.TryGetProperty(JsonEncodedStrings.Valid.EncodedUtf8Bytes, out JsonElement validElement))
+            if (!root.TryGetProperty(JsonEncodedStrings.Valid.EncodedUtf8Bytes, out JsonElement validElement))
             {
-                geometryValidationResult.IsValid = validElement.GetBoolean();
+                throw new InvalidOperationException("is valid needs to be provided.");
             }
 
+            bool isValid = validElement.GetBoolean();
+
+            string reason;
             if (root.TryGetProperty(JsonEncodedStrings.Reason.EncodedUtf8Bytes, out JsonElement reasonElement))
             {
-                geometryValidationResult.Reason = reasonElement.GetString();
+                reason = reasonElement.GetString();
+            }
+            else
+            {
+                reason = null;
             }
 
-            return geometryValidationResult;
+            return new IsValidDetailedResult(isValid, reason);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            GeometryValidationResult geometryValidationResult,
+            IsValidDetailedResult geometryValidationResult,
             JsonSerializerOptions options)
         {
             if (geometryValidationResult == null)

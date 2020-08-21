@@ -7,14 +7,15 @@ namespace Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
 
-    internal sealed class TextJsonGeometryConverter : JsonConverter<Geometry>
+    internal sealed class TextJsonGeometryConverter : JsonConverter<GeoJson>
     {
-        public override Geometry Read(
+        public override GeoJson Read(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options)
@@ -26,7 +27,7 @@ namespace Azure.Cosmos
 
         public override void Write(
             Utf8JsonWriter writer,
-            Geometry geometry,
+            GeoJson geometry,
             JsonSerializerOptions options)
         {
             TextJsonGeometryConverter.WritePropertyValues(writer, geometry, options);
@@ -34,7 +35,7 @@ namespace Azure.Cosmos
 
         public static void WritePropertyValues(
             Utf8JsonWriter writer,
-            Geometry geometry,
+            GeoJson geometry,
             JsonSerializerOptions options)
         {
             if (geometry == null)
@@ -45,90 +46,79 @@ namespace Azure.Cosmos
             writer.WriteStartObject();
             writer.WriteString(JsonEncodedStrings.Type, geometry.Type.ToString());
 
-            if (geometry.CrsForSerialization != null)
-            {
-                writer.WritePropertyName(JsonEncodedStrings.Crs);
-                TextJsonCrsConverter.WritePropertyValues(writer, geometry.CrsForSerialization, options);
-            }
-
             if (geometry.BoundingBox != null)
             {
                 writer.WritePropertyName(JsonEncodedStrings.BoundingBox);
                 TextJsonBoundingBoxConverter.WritePropertyValues(writer, geometry.BoundingBox, options);
             }
 
-            if (geometry.AdditionalProperties != null)
-            {
-                TextJsonObjectToPrimitiveConverter.SerializeDictionary(writer, geometry.AdditionalProperties, options);
-            }
-
             switch (geometry.Type)
             {
-                case GeometryType.Point:
+                case GeoJsonType.Point:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     Point point = geometry as Point;
-                    TextJsonPositionConverter.WritePropertyValues(writer, point.Position, options);
+                    TextJsonPositionConverter.WritePropertyValues(writer, point.Coordinates, options);
                     break;
-                case GeometryType.MultiPoint:
+                case GeoJsonType.MultiPoint:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiPoint multiPoint = geometry as MultiPoint;
                     writer.WriteStartArray();
-                    foreach (Position position in multiPoint.Points)
+                    foreach (Position position in multiPoint.Coordinates)
                     {
                         TextJsonPositionConverter.WritePropertyValues(writer, position, options);
                     }
 
                     writer.WriteEndArray();
                     break;
-                case GeometryType.LineString:
+                case GeoJsonType.LineString:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     LineString lineString = geometry as LineString;
                     writer.WriteStartArray();
-                    foreach (Position position in lineString.Positions)
+                    foreach (Position position in lineString.Coordinates)
                     {
                         TextJsonPositionConverter.WritePropertyValues(writer, position, options);
                     }
 
                     writer.WriteEndArray();
                     break;
-                case GeometryType.MultiLineString:
+                case GeoJsonType.MultiLineString:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiLineString multiLineString = geometry as MultiLineString;
                     writer.WriteStartArray();
-                    foreach (LineStringCoordinates lineCoordinates in multiLineString.LineStrings)
+                    foreach (LineStringCoordinates lineCoordinates in multiLineString.Coordinates)
                     {
                         TextJsonLineStringCoordinatesConverter.WritePropertyValues(writer, lineCoordinates, options);
                     }
 
                     writer.WriteEndArray();
                     break;
-                case GeometryType.Polygon:
+                case GeoJsonType.Polygon:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     Polygon polygon = geometry as Polygon;
                     writer.WriteStartArray();
-                    foreach (LinearRing linearRing in polygon.Rings)
+                    foreach (LinearRing linearRing in polygon.Coordinates)
                     {
                         TextJsonLinearRingConverter.WritePropertyValues(writer, linearRing, options);
                     }
 
                     writer.WriteEndArray();
                     break;
-                case GeometryType.MultiPolygon:
+                case GeoJsonType.MultiPolygon:
                     writer.WritePropertyName(JsonEncodedStrings.Coordinates);
                     MultiPolygon multiPolygon = geometry as MultiPolygon;
                     writer.WriteStartArray();
-                    foreach (PolygonCoordinates polygonCoordinates in multiPolygon.Polygons)
+                    foreach (PolygonCoordinates polygonCoordinates in multiPolygon.Coordinates)
                     {
                         TextJsonPolygonCoordinatesConverter.WritePropertyValues(writer, polygonCoordinates, options);
                     }
 
                     writer.WriteEndArray();
                     break;
-                case GeometryType.GeometryCollection:
+                case GeoJsonType.GeometryCollection:
                     writer.WritePropertyName(JsonEncodedStrings.Geometries);
                     GeometryCollection geometryCollection = geometry as GeometryCollection;
                     writer.WriteStartArray();
-                    foreach (Geometry geometryIn in geometryCollection.Geometries)
+                    foreach (GeoJson geometryIn in geometryCollection.Geometries)
                     {
                         TextJsonGeometryConverter.WritePropertyValues(writer, geometryIn, options);
                     }
@@ -140,7 +130,7 @@ namespace Azure.Cosmos
             writer.WriteEndObject();
         }
 
-        public static Geometry ReadProperty(
+        public static GeoJson ReadProperty(
             JsonElement root,
             JsonSerializerOptions options)
         {
@@ -156,19 +146,29 @@ namespace Azure.Cosmos
 
             if (!root.TryGetProperty(JsonEncodedStrings.Type.EncodedUtf8Bytes, out JsonElement typeElement)
                 || typeElement.ValueKind != JsonValueKind.String
-                || !Enum.TryParse(typeElement.GetString(), out GeometryType geometryType))
+                || !Enum.TryParse(typeElement.GetString(), out GeoJsonType geometryType))
             {
                 throw new JsonException(RMResources.SpatialInvalidGeometryType);
             }
 
-            GeometryParams geometryParams = TextJsonGeometryParamsJsonConverter.ReadProperty(root, options);
+            BoundingBox boundingBox;
+            if (root.TryGetProperty(
+                JsonEncodedStrings.BoundingBox.EncodedUtf8Bytes,
+                out JsonElement boundingBoxElement))
+            {
+                boundingBox = TextJsonBoundingBoxConverter.ReadProperty(boundingBoxElement);
+            }
+            else
+            {
+                boundingBox = null;
+            }
 
-            Geometry geometry = null;
+            GeoJson geometry = null;
             switch (geometryType)
             {
-                case GeometryType.GeometryCollection:
+                case GeoJsonType.GeometryCollection:
                     {
-                        List<Geometry> geometries = new List<Geometry>();
+                        List<GeoJson> geometries = new List<GeoJson>();
                         if (root.TryGetProperty(JsonEncodedStrings.Geometries.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             foreach (JsonElement jsonElement in coordinatesElement.EnumerateArray())
@@ -177,10 +177,10 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new GeometryCollection(geometries, geometryParams);
+                        geometry = new GeometryCollection(geometries, boundingBox);
                     }
                     break;
-                case GeometryType.LineString:
+                case GeoJsonType.LineString:
                     {
                         List<Position> positions = new List<Position>();
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
@@ -191,10 +191,10 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new LineString(positions, geometryParams);
+                        geometry = new LineString(positions, boundingBox);
                     }
                     break;
-                case GeometryType.MultiLineString:
+                case GeoJsonType.MultiLineString:
                     {
                         List<LineStringCoordinates> lines = new List<LineStringCoordinates>();
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
@@ -205,22 +205,22 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new MultiLineString(lines, geometryParams);
+                        geometry = new MultiLineString(lines, boundingBox);
                     }
                     break;
-                case GeometryType.Point:
+                case GeoJsonType.Point:
                     {
                         Position position = null;
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
                         {
                             position = TextJsonPositionConverter.ReadProperty(coordinatesElement);
-                            geometry = new Point(position, geometryParams);
+                            geometry = new Point(position, boundingBox);
                         }
 
-                        geometry = new Point(position, geometryParams);
+                        geometry = new Point(position, boundingBox);
                     }
                     break;
-                case GeometryType.MultiPoint:
+                case GeoJsonType.MultiPoint:
                     {
                         List<Position> positions = new List<Position>();
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
@@ -231,10 +231,10 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new MultiPoint(positions, geometryParams);
+                        geometry = new MultiPoint(positions, boundingBox);
                     }
                     break;
-                case GeometryType.Polygon:
+                case GeoJsonType.Polygon:
                     {
                         List<LinearRing> linearRings = new List<LinearRing>();
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
@@ -245,10 +245,10 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new Polygon(linearRings, geometryParams);
+                        geometry = new Polygon(linearRings.First(), linearRings.Skip(1).ToList(), boundingBox);
                     }
                     break;
-                case GeometryType.MultiPolygon:
+                case GeoJsonType.MultiPolygon:
                     {
                         List<PolygonCoordinates> polygonCoordinates = new List<PolygonCoordinates>();
                         if (root.TryGetProperty(JsonEncodedStrings.Coordinates.EncodedUtf8Bytes, out JsonElement coordinatesElement))
@@ -259,7 +259,7 @@ namespace Azure.Cosmos
                             }
                         }
 
-                        geometry = new MultiPolygon(polygonCoordinates, geometryParams);
+                        geometry = new MultiPolygon(polygonCoordinates, boundingBox);
                     }
                     break;
             }

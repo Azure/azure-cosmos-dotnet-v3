@@ -5,6 +5,7 @@
 namespace Azure.Cosmos.Spatial
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
@@ -15,32 +16,24 @@ namespace Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="MultiPolygon"/>
     [DataContract]
-    internal sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
+    internal sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>, IReadOnlyList<LinearRing>
     {
+        private readonly IReadOnlyList<LinearRing> rings;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PolygonCoordinates"/> class.
         /// </summary>
         /// <param name="rings">
         /// The rings of the polygon.
         /// </param>
-        public PolygonCoordinates(IList<LinearRing> rings)
+        public PolygonCoordinates(IReadOnlyList<LinearRing> rings)
         {
-            if (rings == null)
-            {
-                throw new ArgumentException("rings");
-            }
-
-            this.Rings = new ReadOnlyCollection<LinearRing>(rings);
+            this.rings = rings ?? throw new ArgumentException(nameof(rings));
         }
 
-        /// <summary>
-        /// Gets polygon rings.
-        /// </summary>
-        /// <value>
-        /// Rings of the polygon.
-        /// </value>
-        [DataMember(Name = "rings")]
-        public ReadOnlyCollection<LinearRing> Rings { get; private set; }
+        public int Count => this.rings.Count;
+
+        public LinearRing this[int index] => this.rings[index];
 
         /// <summary>
         /// Determines whether the specified <see cref="PolygonCoordinates"/> is equal to the current <see cref="PolygonCoordinates"/>.
@@ -64,7 +57,7 @@ namespace Azure.Cosmos.Spatial
         {
             unchecked
             {
-                return this.Rings.Aggregate(0, (current, value) => (current * 397) ^ value.GetHashCode());
+                return this.rings.Aggregate(0, (current, value) => (current * 397) ^ value.GetHashCode());
             }
         }
 
@@ -75,7 +68,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(PolygonCoordinates other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
@@ -85,7 +78,11 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return this.Rings.SequenceEqual(other.Rings);
+            return this.rings.SequenceEqual(other.rings);
         }
+
+        public IEnumerator<LinearRing> GetEnumerator() => this.rings.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }
 }

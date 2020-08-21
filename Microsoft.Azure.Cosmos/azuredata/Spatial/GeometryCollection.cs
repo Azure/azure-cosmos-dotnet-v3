@@ -13,17 +13,18 @@ namespace Azure.Cosmos.Spatial
     /// <summary>
     /// Represents a geometry consisting of other geometries.
     /// </summary>
+    /// <see link="https://tools.ietf.org/html/rfc7946#section-3.1.8"/>
     [DataContract]
-    internal sealed class GeometryCollection : Geometry, IEquatable<GeometryCollection>
+    internal class GeometryCollection : GeoJson, IEquatable<GeometryCollection>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="GeometryCollection"/> class. 
+        /// Initializes a new instance of the <see cref="GeometryCollection"/> class.
         /// </summary>
         /// <param name="geometries">
-        /// List of geometries.
+        /// Child geometries.
         /// </param>
-        public GeometryCollection(IList<Geometry> geometries)
-            : this(geometries, new GeometryParams())
+        public GeometryCollection(IReadOnlyList<GeoJson> geometries)
+            : this(geometries, boundingBox: default)
         {
         }
 
@@ -33,30 +34,17 @@ namespace Azure.Cosmos.Spatial
         /// <param name="geometries">
         /// Child geometries.
         /// </param>
-        /// <param name="geometryParams">
-        /// Additional geometry parameters.
+        /// <param name="boundingBox">
+        /// The bounding box.
         /// </param>
-        public GeometryCollection(IList<Geometry> geometries, GeometryParams geometryParams)
-            : base(GeometryType.GeometryCollection, geometryParams)
+        public GeometryCollection(IReadOnlyList<GeoJson> geometries, BoundingBox boundingBox)
+            : base(boundingBox)
         {
-            if (geometries == null)
-            {
-                throw new ArgumentNullException("geometries");
-            }
-
-            this.Geometries = new ReadOnlyCollection<Geometry>(geometries);
+            this.Geometries = new List<GeoJson>(geometries ?? throw new ArgumentNullException(nameof(geometries)));
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GeometryCollection"/> class.
-        /// </summary>
-        /// <remarks>
-        /// This constructor is used only during deserialization.
-        /// </remarks>
-        internal GeometryCollection()
-            : base(GeometryType.GeometryCollection, new GeometryParams())
-        {
-        }
+        /// <inheritdoc/>
+        public override GeoJsonType Type => GeoJsonType.GeometryCollection;
 
         /// <summary>
         /// Gets child geometries.
@@ -65,33 +53,19 @@ namespace Azure.Cosmos.Spatial
         /// Child geometries.
         /// </value>
         [DataMember(Name = "geometries")]
-        public ReadOnlyCollection<Geometry> Geometries { get; private set; }
+        public IReadOnlyList<GeoJson> Geometries { get; }
 
-        /// <summary>
-        /// Determines whether the specified <see cref="GeometryCollection" /> is equal to the current <see cref="GeometryCollection" />.
-        /// </summary>
-        /// <returns>
-        /// true if the specified object is equal to the current object; otherwise, false.
-        /// </returns>
-        /// <param name="obj">The object to compare with the current object. </param>
-        public override bool Equals(object obj)
-        {
-            return this.Equals(obj as GeometryCollection);
-        }
-
-        /// <summary>
-        /// Serves as a hash function for the <see cref="GeometryCollection" /> type.
-        /// </summary>
-        /// <returns>
-        /// A hash code for the current <see cref="GeometryCollection" />.
-        /// </returns>
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             unchecked
             {
-                return this.Geometries.Aggregate(base.GetHashCode(), (current, value) => (current * 397) ^ value.GetHashCode());
+                return this.Geometries.Aggregate(base.GetHashCodeBase(), (current, value) => (current * 397) ^ value.GetHashCode());
             }
         }
+
+        /// <inheritdoc/>
+        public override bool Equals(GeoJson other) => other is GeometryCollection geometryCollection && this.Equals(geometryCollection);
 
         /// <summary>
         /// Determines if this <see cref="GeometryCollection" /> is equal to the <paramref name="other" />.
@@ -100,7 +74,7 @@ namespace Azure.Cosmos.Spatial
         /// <returns><c>true</c> if geometry collections are equal. <c>false</c> otherwise.</returns>
         public bool Equals(GeometryCollection other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
@@ -110,7 +84,12 @@ namespace Azure.Cosmos.Spatial
                 return true;
             }
 
-            return base.Equals(other) && this.Geometries.SequenceEqual(other.Geometries);
+            if (!base.EqualsBase(other))
+            {
+                return false;
+            }
+
+            return this.Geometries.SequenceEqual(other.Geometries);
         }
     }
 }
