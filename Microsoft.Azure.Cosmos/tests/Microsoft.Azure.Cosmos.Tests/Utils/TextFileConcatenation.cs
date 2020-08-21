@@ -23,7 +23,7 @@
                     return File.ReadAllText(path);
                 }
             }
-            catch (IOException)
+            catch (FileNotFoundException)
             {
                 // try as a directory
                 path = path.Replace(".json", string.Empty);

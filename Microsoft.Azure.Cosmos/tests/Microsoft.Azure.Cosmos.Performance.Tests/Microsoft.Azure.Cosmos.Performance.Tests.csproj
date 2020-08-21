@@ -55,24 +55,24 @@
     <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\MsnCollection.json" Link="TestJsons\MsnCollection.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x00.txt" Link="TestJsons\NutritionData\x00.txt">
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x00.txt" Link="TestJsons\NutritionData\x00.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x01.txt" Link="TestJsons\NutritionData\x01.txt">
+    </None>
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x01.txt" Link="TestJsons\NutritionData\x01.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x02.txt" Link="TestJsons\NutritionData\x02.txt">
+    </None>
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x02.txt" Link="TestJsons\NutritionData\x02.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x03.txt" Link="TestJsons\NutritionData\x03.txt">
+    </None>
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x03.txt" Link="TestJsons\NutritionData\x03.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x04.txt" Link="TestJsons\NutritionData\x04.txt">
+    </None>
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x04.txt" Link="TestJsons\NutritionData\x04.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x05.txt" Link="TestJsons\NutritionData\x05.txt">
+    </None>
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\NutritionData\x05.txt" Link="TestJsons\NutritionData\x05.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
     <Content Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\runsCollection\x00.txt" Link="TestJsons\runsCollection\x00.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
