@@ -10,9 +10,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Web;
     using Documents.Client;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.IdentityModel.Tokens;
 
     [TestClass]
     public class CosmosAadTests
@@ -25,71 +28,175 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient())
             {
                 Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
-                await database.CreateContainerAsync(containerId, "/id");
+                Container container = await database.CreateContainerAsync(
+                    containerId,
+                    "/id");
             }
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            AadSimpleEmulatorTokenCredential simpleEmulatorTokenCredential = new AadSimpleEmulatorTokenCredential(authKey);
+            LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Gateway,
                 ConnectionProtocol = Protocol.Https
             };
 
-            using CosmosClient client = new CosmosClient(endpoint, simpleEmulatorTokenCredential, clientOptions);
-            DatabaseResponse responseDatabase = await client.GetDatabase(databaseId).ReadAsync();
-            //Assert.AreEqual(HttpStatusCode.NotFound, responseDatabase.StatusCode);
-            // AccountProperties response = await client.ReadAccountAsync();
+            using CosmosClient aadClient = new CosmosClient(
+                endpoint,
+                simpleEmulatorTokenCredential,
+                clientOptions);
 
+            Database aadDatabase = await aadClient.GetDatabase(databaseId).ReadAsync();
+            Container aadContainer = await aadDatabase.GetContainer(containerId).ReadContainerAsync();
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> itemResponse = await aadContainer.CreateItemAsync(
+                toDoActivity,
+                new PartitionKey(toDoActivity.id));
+
+            toDoActivity.cost = 42.42;
+            await aadContainer.ReplaceItemAsync(
+                toDoActivity,
+                toDoActivity.id,
+                new PartitionKey(toDoActivity.id));
+
+            await aadContainer.ReadItemAsync<ToDoActivity>(
+                toDoActivity.id,
+                new PartitionKey(toDoActivity.id));
+
+            await aadContainer.UpsertItemAsync(toDoActivity);
+
+            await aadContainer.DeleteItemAsync<ToDoActivity>(
+                toDoActivity.id,
+                new PartitionKey(toDoActivity.id));
         }
 
-        public class AadSimpleEmulatorTokenCredential : TokenCredential
+        [TestMethod]
+        public async Task AadMockRefreshTest()
         {
-            private const string AAD_HEADER_COSMOS_EMULATOR =
-                "{\"typ\":\"JWT\",\"alg\":\"RS256\",\"x5t\":\"CosmosEmulatorPrimaryMaster\",\"kid\":\"CosmosEmulatorPrimaryMaster\"}";
-
-            private static readonly string AadHeaderPart1Base64Encoded = Base64Encode(AAD_HEADER_COSMOS_EMULATOR);
-
-            private readonly string emulatorKeyBase64Encoded;
-
-            public AadSimpleEmulatorTokenCredential(string emulatorKey)
+            int getAadTokenCount = 0;
+            Action<TokenRequestContext, CancellationToken> GetAadTokenCallBack = (
+                context,
+                token) =>
             {
-                if (string.IsNullOrWhiteSpace(emulatorKey))
+                getAadTokenCount++;
+            };
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
+                authKey,
+                GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(1)
+            };
+
+            Assert.AreEqual(0, getAadTokenCount);
+            using CosmosClient aadClient = new CosmosClient(
+                endpoint,
+                simpleEmulatorTokenCredential,
+                clientOptions);
+
+            Assert.AreEqual(1, getAadTokenCount);
+
+            await aadClient.ReadAccountAsync();
+            await aadClient.ReadAccountAsync();
+            await aadClient.ReadAccountAsync();
+
+            // Should use cached token
+            Assert.AreEqual(1, getAadTokenCount);
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            Assert.AreEqual(2, getAadTokenCount);
+        }
+
+        [TestMethod]
+        public async Task AadMockRefreshRetryTest()
+        {
+            int getAadTokenCount = 0;
+            Action<TokenRequestContext, CancellationToken> GetAadTokenCallBack = (
+                context,
+                token) =>
+            {
+                getAadTokenCount++;
+                if (getAadTokenCount <= 2)
                 {
-                    throw new ArgumentNullException(nameof(emulatorKey));
+                    throw new RequestFailedException(
+                        408,
+                        "Test Failure");
                 }
+            };
 
-                this.emulatorKeyBase64Encoded = AadSimpleEmulatorTokenCredential.Base64Encode(emulatorKey);
-            }
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
+                authKey,
+                GetAadTokenCallBack);
 
-            public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext,
-                CancellationToken cancellationToken)
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                return new ValueTask<AccessToken>(this.GetEmulatorKeyBasedAadString());
-            }
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
 
-            public override AccessToken GetToken(TokenRequestContext requestContext,
-                CancellationToken cancellationToken)
+            Assert.AreEqual(0, getAadTokenCount);
+            using (CosmosClient aadClient = new CosmosClient(
+                endpoint,
+                simpleEmulatorTokenCredential,
+                clientOptions))
             {
-                return this.GetEmulatorKeyBasedAadString();
-            }
+                Assert.AreEqual(3, getAadTokenCount);
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                ResponseMessage responseMessage = await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
+                Assert.IsNotNull(responseMessage);
 
-            private AccessToken GetEmulatorKeyBasedAadString()
-            {
-                string epochSecond = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
-                DateTimeOffset expireDateTimeOffset = DateTimeOffset.UtcNow.Add(TimeSpan.FromHours(1));
-                string expireEpochSecond = expireDateTimeOffset.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
-                string part2 =
-                    $"{{\"aud\":\"https://localhost.localhost\",\"iss\":\"https://sts.fake-issuer.net/7b1999a1-dfd7-440e-8204-00170979b984\",\"iat\":{epochSecond},\"nbf\":{epochSecond},\"exp\":{expireEpochSecond},\"aio\":\"\",\"appid\":\"localhost\",\"appidacr\":\"1\",\"idp\":\"https://localhost:8081/\",\"oid\":\"96313034-4739-43cb-93cd-74193adbe5b6\",\"rh\":\"\",\"sub\":\"localhost\",\"tid\":\"EmulatorFederation\",\"uti\":\"\",\"ver\":\"1.0\",\"scp\":\"user_impersonation\",\"groups\":[\"7ce1d003-4cb3-4879-b7c5-74062a35c66e\",\"e99ff30c-c229-4c67-ab29-30a6aebc3e58\",\"5549bb62-c77b-4305-bda9-9ec66b85d9e4\",\"c44fd685-5c58-452c-aaf7-13ce75184f65\",\"be895215-eab5-43b7-9536-9ef8fe130330\"]}}";
-                string part2Encoded = Base64Encode(part2);
-                string token = AadHeaderPart1Base64Encoded + "." + part2Encoded + "." + this.emulatorKeyBase64Encoded;
-                return new AccessToken(token, expireDateTimeOffset);
+                // Should use cached token
+                Assert.AreEqual(3, getAadTokenCount);
             }
+        }
 
-            public static string Base64Encode(string plainText)
+        [TestMethod]
+        public async Task AadMockNegativeRefreshRetryTest()
+        {
+            int getAadTokenCount = 0;
+            string errorMessage = "Test Failure" + Guid.NewGuid();
+            Action<TokenRequestContext, CancellationToken> GetAadTokenCallBack = (
+                context,
+                token) =>
             {
-                byte[] plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-                return System.Convert.ToBase64String(plainTextBytes);
+                getAadTokenCount++;
+                throw new RequestFailedException(
+                    408,
+                    errorMessage);
+            };
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
+                authKey,
+                GetAadTokenCallBack);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                TokenCredentialBackgroundRefreshInterval = TimeSpan.FromSeconds(60)
+            };
+
+            Assert.AreEqual(0, getAadTokenCount);
+            using (CosmosClient aadClient = new CosmosClient(
+                endpoint,
+                simpleEmulatorTokenCredential,
+                clientOptions))
+            {
+                Assert.AreEqual(3, getAadTokenCount);
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                try
+                {
+                    ResponseMessage responseMessage =
+                        await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
+                    Assert.Fail("Should throw auth error.");
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    Assert.IsNotNull(ce.Message);
+                    Assert.IsTrue(ce.ToString().Contains(errorMessage));
+                }
             }
         }
     }

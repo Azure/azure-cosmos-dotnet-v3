@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -78,11 +80,13 @@ namespace Microsoft.Azure.Cosmos
         private async ValueTask<AccessToken> RefreshCachedTokenWithRetryHelperAsync(
             CosmosDiagnosticsContext diagnosticsContext)
         {
-            await this.semaphoreSlim.WaitAsync();
+            await this.semaphoreSlim.WaitAsync(this.cancellationToken);
             try
             {
-                Exception lastException = default;
-                for (int retry = 0; retry < 3; retry++)
+                List<Exception> exceptions = null;
+                Exception lastException;
+                int totalRetryCount = 3;
+                for (int retry = 0; retry < totalRetryCount; retry++)
                 {
                     if (this.cancellationToken.IsCancellationRequested)
                     {
@@ -102,34 +106,76 @@ namespace Microsoft.Azure.Cosmos
                             return this.cachedAccessToken;
                         }
                     }
+                    catch (RequestFailedException requestFailedException) 
+                    {
+                        diagnosticsContext.AddDiagnosticsInternal(
+                            new PointOperationStatistics(
+                                activityId: Trace.CorrelationManager.ActivityId.ToString(),
+                                statusCode: (HttpStatusCode)requestFailedException.Status,
+                                subStatusCode: SubStatusCodes.Unknown,
+                                responseTimeUtc: DateTime.UtcNow,
+                                requestCharge: default,
+                                errorMessage: requestFailedException.ToString(),
+                                method: default,
+                                requestUri: null,
+                                requestSessionToken: default,
+                                responseSessionToken: default));
+
+                        // Don't retry on auth failures
+                        if (requestFailedException.Status == 401 ||
+                            requestFailedException.Status == 403)
+                        {
+                            throw;
+                        }
+
+                        lastException = requestFailedException;
+                    }
                     catch (Exception exception)
                     {
                         diagnosticsContext.AddDiagnosticsInternal(
                             new PointOperationStatistics(
-                                Trace.CorrelationManager.ActivityId.ToString(),
-                                HttpStatusCode.InternalServerError,
-                                SubStatusCodes.Unknown,
-                                DateTime.UtcNow,
-                                default,
-                                exception.ToString(),
-                                default,
-                                default,
-                                default,
-                                default));
+                                activityId: Trace.CorrelationManager.ActivityId.ToString(),
+                                statusCode: HttpStatusCode.InternalServerError,
+                                subStatusCode: SubStatusCodes.Unknown,
+                                responseTimeUtc: DateTime.UtcNow,
+                                requestCharge: default,
+                                errorMessage: exception.ToString(),
+                                method: default,
+                                requestUri: default,
+                                requestSessionToken: default,
+                                responseSessionToken: default));
 
                         lastException = exception;
+                    }
 
-                        DefaultTrace.TraceError(
-                            $"TokenCredential.GetToken() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {exception}");
+                    DefaultTrace.TraceError(
+                        $"TokenCredential.GetToken() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
 
-                        await Task.Delay(TimeSpan.FromMilliseconds(100));
+                    try
+                    {
+                        //await Task.Delay(
+                        //    TimeSpan.FromMilliseconds(100),
+                        //    this.cancellationToken);
+
+                        if (exceptions == null)
+                        {
+                            exceptions = new List<Exception>(totalRetryCount);
+                        }
+
+                        exceptions.Add(lastException);
+                    }
+                    catch (Exception e)
+                    {
+                        string m = e.ToString();
+                        Console.WriteLine(m);
+                        throw;
                     }
                 }
 
                 throw CosmosExceptionFactory.CreateUnauthorizedException(
                     ClientResources.FailedToGetAadToken,
                     (int)SubStatusCodes.FailedToGetAadToken,
-                    lastException);
+                    exceptions.Count == 1 ? exceptions[0] : new AggregateException(exceptions));
             }
             finally
             {
