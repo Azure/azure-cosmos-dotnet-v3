@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ObjectDisposedException("TokenCredentialCache");
             }
 
-            if (this.cachedAccessToken.ExpiresOn > DateTime.UtcNow)
+            if (this.cachedAccessToken.ExpiresOn <= DateTime.UtcNow)
             {
                 await this.RefreshCachedTokenWithRetryHelperAsync(diagnosticsContext);
             }
@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
                             this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
                                 this.tokenRequestContext,
                                 this.cancellationToken);
+                            return this.cachedAccessToken;
                         }
                     }
                     catch (Exception exception)
