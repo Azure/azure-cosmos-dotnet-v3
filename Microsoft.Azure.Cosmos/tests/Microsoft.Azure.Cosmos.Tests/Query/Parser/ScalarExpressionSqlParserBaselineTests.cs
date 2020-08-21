@@ -380,8 +380,8 @@
 
                 // Negative
                 CreateInput(description: "Coalesce + Between", scalarExpression: "1 BETWEEN 3 ?? 4 AND 5 AND 6"),
-                CreateInput(description: "In + Between", scalarExpression: "SELECT 1 NOT BETWEEN 2 and 1 NOT IN (1, 2, 3)"),
-                CreateInput(description: "Nested BETWEEN", scalarExpression: "1 between 2 and 3 between 4 and 5"),
+                CreateInput(description: "In + Between", scalarExpression: "SELECT 1 NOT BETWEEN 2 AND 1 NOT IN (1, 2, 3)"),
+                CreateInput(description: "Nested BETWEEN", scalarExpression: "1 BETWEEN 2 AND 3 BETWEEN 4 AND 5"),
             };
 
             this.ExecuteTestSuite(inputs);

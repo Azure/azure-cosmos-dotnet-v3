@@ -14,68 +14,7 @@
       <Query><![CDATA[SELECT VALUE 42 ??]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. ---> Antlr4.Runtime.NoViableAltException: Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.
-   at Antlr4.Runtime.Atn.ParserATNSimulator.ExecATN(DFA dfa, DFAState s0, ITokenStream input, Int32 startIndex, ParserRuleContext outerContext)
-   at Antlr4.Runtime.Atn.ParserATNSimulator.AdaptivePredict(ITokenStream input, Int32 decision, ParserRuleContext outerContext)
-   at sqlParser.scalar_expression(Int32 _p) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 2086
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.scalar_expression(Int32 _p) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 2170
-   at sqlParser.scalar_expression(Int32 _p) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 2155
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.scalar_expression(Int32 _p) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 2170
-   at sqlParser.select_value_spec() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 643
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.select_value_spec() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 649
-   at sqlParser.selection() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 510
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.selection() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 543
-   at sqlParser.select_clause() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 372
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.select_clause() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 378
-   at sqlParser.sql_query() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 240
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.sql_query() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 296
-   at sqlParser.program() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 164
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.program() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 171
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.Parse(String text) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 38
-   --- End of inner exception stack trace ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.Parse(String text)
-   at Microsoft.Azure.Cosmos.Tests.Query.Parser.SqlParserBaselineTests.ExecuteTest(SqlParserBaselineTestInput input)
-   at Microsoft.Azure.Cosmos.Test.BaselineTest.BaselineTests`2.ExecuteTestSuite(IEnumerable`1 inputs, String testSuiteName)
-   at Microsoft.Azure.Cosmos.Tests.Query.Parser.ScalarExpressionSqlParserBaselineTests.Coalesce()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
-   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
-   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
-   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.<>c__DisplayClass30_4.<OnMessageReceived>b__4()
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot)
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-]]></Exception>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -84,64 +23,7 @@
       <Query><![CDATA[SELECT VALUE ?? 1337]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException: TryCatch resulted in an exception. ---> Antlr4.Runtime.NoViableAltException: Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.
-   at Antlr4.Runtime.Atn.ParserATNSimulator.ExecATN(DFA dfa, DFAState s0, ITokenStream input, Int32 startIndex, ParserRuleContext outerContext)
-   at Antlr4.Runtime.Atn.ParserATNSimulator.AdaptivePredict(ITokenStream input, Int32 decision, ParserRuleContext outerContext)
-   at sqlParser.scalar_expression(Int32 _p) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 2086
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.scalar_expression(Int32 _p) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 2170
-   at sqlParser.select_value_spec() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 643
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.select_value_spec() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 649
-   at sqlParser.selection() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 510
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.selection() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 543
-   at sqlParser.select_clause() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 372
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.select_clause() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 378
-   at sqlParser.sql_query() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 240
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.sql_query() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 296
-   at sqlParser.program() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 164
---- End of stack trace from previous location where exception was thrown ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.ThrowExceptionOnErrors.ReportError(Parser recognizer, RecognitionException e) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 76
-   at sqlParser.program() in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\sqlParser.cs:line 171
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.Parse(String text) in C:\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\Query\Core\Parser\SqlQueryParser.cs:line 38
-   --- End of inner exception stack trace ---
-   at Microsoft.Azure.Cosmos.Query.Core.Parser.SqlQueryParser.Monadic.Parse(String text)
-   at Microsoft.Azure.Cosmos.Tests.Query.Parser.SqlParserBaselineTests.ExecuteTest(SqlParserBaselineTestInput input)
-   at Microsoft.Azure.Cosmos.Test.BaselineTest.BaselineTests`2.ExecuteTestSuite(IEnumerable`1 inputs, String testSuiteName)
-   at Microsoft.Azure.Cosmos.Tests.Query.Parser.ScalarExpressionSqlParserBaselineTests.Coalesce()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Object[] arguments, Signature sig, Boolean constructor, Boolean wrapExceptions)
-   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Extensions.MethodInfoExtensions.InvokeAsSynchronousTask(MethodInfo methodInfo, Object classInstance, Object[] parameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternal(Object[] arguments)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.Invoke(Object[] arguments)
-   at Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute.Execute(ITestMethod testMethod)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.RunTestMethod()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodRunner.Execute()
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.UnitTestRunner.RunSingleTest(TestMethod testMethod, IDictionary`2 testRunParameters)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsWithTestRunner(IEnumerable`1 tests, IRunContext runContext, ITestExecutionRecorder testExecutionRecorder, String source, UnitTestRunner testRunner)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTestsInSource(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, String source, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.ExecuteTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, Boolean isDeploymentDone)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestExecutionManager.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle, TestRunCancellationToken runCancellationToken)
-   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.MSTestExecutor.RunTests(IEnumerable`1 tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestInternalWithExecutors(IEnumerable`1 executorUriExtensionMap, Int64 totalTests)
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTestsInternal()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.BaseRunTests.RunTests()
-   at Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Execution.ExecutionManager.StartTestRun(IEnumerable`1 tests, String package, String runSettings, TestExecutionContext testExecutionContext, ITestCaseEventsHandler testCaseEventsHandler, ITestRunEventsHandler runEventsHandler)
-   at Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.TestRequestHandler.<>c__DisplayClass30_4.<OnMessageReceived>b__4()
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.SafeProcessJob(T job)
-   at Microsoft.VisualStudio.TestPlatform.Utilities.JobQueue`1.BackgroundJobProcessor()
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& currentTaskSlot)
-   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
-]]></Exception>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
     </Output>
   </Result>
 </Results>

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
 {
+    using System;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
@@ -70,8 +71,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             }
             else
             {
+                Exception ex = this.ParseQueryMonad.Exception;
+                while (ex.InnerException != null)
+                {
+                    ex = ex.InnerException;
+                }
+
                 xmlWriter.WriteStartElement($"Exception");
-                xmlWriter.WriteCData(this.ParseQueryMonad.Exception.ToString());
+                xmlWriter.WriteCData(ex.Message);
                 xmlWriter.WriteEndElement();
             }
         }
