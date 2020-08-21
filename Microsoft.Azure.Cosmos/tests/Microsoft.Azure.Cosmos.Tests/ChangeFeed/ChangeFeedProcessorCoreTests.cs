@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(mock => mock.CreateObserver(), Times.Once);
 
             Mock.Get(observer.Object)
-                .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedObserverContext>((context)=>context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
+                .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedObserverContext>((context) => context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
         }
 
         [TestMethod]
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
             leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).Returns(Task.FromResult(Enumerable.Empty<DocumentServiceLease>()));
-            leaseContainer.Setup(l => l.GetAllLeasesAsync()).Returns(Task.FromResult((IReadOnlyList<DocumentServiceLease>)Enumerable.Empty<DocumentServiceLease>()));
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(new List<DocumentServiceLease>());
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(leaseContainer.Object);

@@ -18,38 +18,27 @@ namespace Microsoft.Azure.Cosmos
         private readonly IComputeHash authKeyHashFunction;
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
-        private readonly HttpMessageHandler messageHandler;
-        private Uri serviceEndpoint;
-        private ApiType apiType;
+        private readonly HttpClient httpClient;
+        private readonly Uri serviceEndpoint;
 
         public GatewayAccountReader(Uri serviceEndpoint,
-                                                 IComputeHash stringHMACSHA256Helper,
-                                                 bool hasResourceToken,
-                                                 string resourceToken,
-                                                 ConnectionPolicy connectionPolicy,
-                                                 ApiType apiType,
-                                                 HttpMessageHandler messageHandler = null)
+                IComputeHash stringHMACSHA256Helper,
+                bool hasResourceToken,
+                string resourceToken,
+                ConnectionPolicy connectionPolicy,
+                HttpClient httpClient)
         {
+            this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
             this.authKeyHashFunction = stringHMACSHA256Helper;
             this.hasAuthKeyResourceToken = hasResourceToken;
             this.authKeyResourceToken = resourceToken;
             this.connectionPolicy = connectionPolicy;
-            this.messageHandler = messageHandler;
-            this.apiType = apiType;
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
-            HttpClient httpClient = this.messageHandler == null ? new HttpClient() : new HttpClient(this.messageHandler);
-
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                    HttpConstants.Versions.CurrentVersion);
-
-            // Send client version.
-            httpClient.AddUserAgentHeader(this.connectionPolicy.UserAgentContainer);
-            httpClient.AddApiTypeHeader(this.apiType);
-
+            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
             string authorizationToken = string.Empty;
             if (this.hasAuthKeyResourceToken)
             {
@@ -59,22 +48,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Retrieve the document service properties.
                 string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-                httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
-
-                INameValueCollection headersCollection = new DictionaryNameValueCollection();
-                headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
+                headers.Set(HttpConstants.HttpHeaders.XDate, xDate);
 
                 authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     HttpConstants.HttpMethods.Get,
                     serviceEndpoint,
-                    headersCollection,
+                    headers,
                     this.authKeyHashFunction);
             }
 
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Authorization, authorizationToken);
-
-            using (HttpResponseMessage responseMessage = await httpClient.GetHttpAsync(
-            serviceEndpoint))
+            headers.Set(HttpConstants.HttpHeaders.Authorization, authorizationToken);
+            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(serviceEndpoint, headers))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

@@ -60,6 +60,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 closeReason = ChangeFeedObserverCloseReason.LeaseGone;
                 throw;
             }
+            catch (FeedNotFoundException)
+            {
+                closeReason = ChangeFeedObserverCloseReason.ResourceGone;
+                throw;
+            }
+            catch (FeedReadSessionNotAvailableException)
+            {
+                closeReason = ChangeFeedObserverCloseReason.ReadSessionNotAvailable;
+                throw;
+            }
             catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
             {
                 closeReason = ChangeFeedObserverCloseReason.Shutdown;

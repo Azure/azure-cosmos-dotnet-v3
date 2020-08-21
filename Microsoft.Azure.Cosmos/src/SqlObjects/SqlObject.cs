@@ -1,18 +1,22 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
-    internal abstract class SqlObject
-    {
-        protected SqlObject(SqlObjectKind kind)
-        {
-            this.Kind = kind;
-        }
+    using System;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-        public SqlObjectKind Kind
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract class SqlObject : IEquatable<SqlObject>
+    {
+        protected SqlObject()
         {
-            get;
         }
 
         public abstract void Accept(SqlObjectVisitor visitor);
@@ -21,26 +25,25 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public abstract TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input);
 
-        public override string ToString()
+        public override string ToString() => this.Serialize(prettyPrint: false);
+
+        public override int GetHashCode() => this.Accept(SqlObjectHasher.Singleton);
+
+        public override bool Equals(object obj)
         {
-            return this.Serialize(prettyPrint: false);
+            if (!(obj is SqlObject sqlObject))
+            {
+                return false;
+            }
+
+            return this.Equals(sqlObject);
         }
 
-        public override int GetHashCode()
-        {
-            return this.Accept(SqlObjectHasher.Singleton);
-        }
+        public bool Equals(SqlObject other) => SqlObject.Equals(this, other);
 
-        public string PrettyPrint()
-        {
-            return this.Serialize(prettyPrint: true);
-        }
+        public string PrettyPrint() => this.Serialize(prettyPrint: true);
 
-        public SqlObject GetObfuscatedObject()
-        {
-            SqlObjectObfuscator sqlObjectObfuscator = new SqlObjectObfuscator();
-            return this.Accept(sqlObjectObfuscator);
-        }
+        public SqlObject GetObfuscatedObject() => this.Accept(new SqlObjectObfuscator());
 
         private string Serialize(bool prettyPrint)
         {
@@ -48,5 +51,30 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Accept(sqlObjectTextSerializer);
             return sqlObjectTextSerializer.ToString();
         }
+
+        public static bool Equals(SqlObject first, SqlObject second)
+        {
+#if !DEBUG
+            if (object.ReferenceEquals(first, second))
+            {
+                return true;
+            }
+#else
+            if ((first is null) && (second is null))
+            {
+                return true;
+            }
+#endif
+
+            if ((first is null) || (second is null))
+            {
+                return false;
+            }
+
+            return first.Accept(SqlObjectEqualityVisitor.Singleton, second);
+        }
+
+        public static bool operator ==(SqlObject first, SqlObject second) => SqlObject.Equals(first, second);
+        public static bool operator !=(SqlObject first, SqlObject second) => !(first == second);
     }
 }

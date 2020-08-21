@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Net;
     using System.Threading;
@@ -96,6 +98,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             {
                 case DocDbError.PartitionSplit:
                     throw new FeedSplitException("Partition split.", lastContinuation);
+                case DocDbError.PartitionNotFound:
+                    throw new FeedNotFoundException("Partition not found.", lastContinuation);
+                case DocDbError.ReadSessionNotAvailable:
+                    throw new FeedReadSessionNotAvailableException("Read session not availalbe.", lastContinuation);
                 case DocDbError.Undefined:
                     throw new InvalidOperationException($"Undefined DocDbError for status code {statusCode} and substatus code {subStatusCode}");
                 default:

@@ -17,27 +17,30 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    class ChangeFeedRequestOptions : RequestOptions
+    sealed class ChangeFeedRequestOptions : RequestOptions
     {
-        internal const string IfNoneMatchAllHeaderValue = "*";
-        internal static readonly DateTime DateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
+        private int? pageSizeHint;
 
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The maximum number of items to be returned in the enumeration operation.
-        /// </value> 
-        public int? MaxItemCount { get; set; }
+        /// </value>
+        /// <remarks>This is just a hint to the server which can return less items per page.</remarks>
+        public int? PageSizeHint
+        {
+            get => this.pageSizeHint;
+            set
+            {
+                if (value.HasValue && (value.Value <= 0))
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(this.PageSizeHint)} must be a positive value.");
+                }
 
-        /// <summary>
-        /// Gets or sets a particular point in time to start to read the change feed.
-        /// </summary>
-        /// <remarks>
-        /// Only applies in the case where no FeedToken is provided or the FeedToken was never used in a previous iterator.
-        /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.ToUniversalTime().
-        /// </remarks>
-        public DateTime? StartTime { get; set; }
+                this.pageSizeHint = value;
+            }
+        }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -45,62 +48,50 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            // Check if no Continuation Token is present
-            if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
-            {
-                if (this.StartTime == null)
-                {
-                    request.Headers.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
-                }
-                else if (this.StartTime != null
-                    && this.StartTime != ChangeFeedRequestOptions.DateTimeStartFromBeginning)
-                {
-                    request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
-                }
-            }
-
-            ChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
-            request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+            Debug.Assert(request != null);
 
             base.PopulateRequestOptions(request);
-        }
 
-        internal static void FillPartitionKeyRangeId(RequestMessage request, string partitionKeyRangeId)
-        {
-            Debug.Assert(request != null);
-
-            if (!string.IsNullOrEmpty(partitionKeyRangeId))
+            if (this.PageSizeHint.HasValue)
             {
-                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(partitionKeyRangeId);
+                request.Headers.Add(
+                    HttpConstants.HttpHeaders.PageSize,
+                    this.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
             }
+
+            request.Headers.Add(
+                HttpConstants.HttpHeaders.A_IM,
+                HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
-        internal static void FillPartitionKey(RequestMessage request, PartitionKey partitionKey)
+        /// <summary>
+        /// IfMatchEtag is inherited from the base class but not used. 
+        /// </summary>
+        [Obsolete("IfMatchEtag is inherited from the base class but not used.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public new string IfMatchEtag
         {
-            Debug.Assert(request != null);
-
-            request.Headers.PartitionKey = partitionKey.ToJsonString();
+            get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfMatchEtag)} property.");
+            set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfMatchEtag)} property.");
         }
 
-        internal static void FillContinuationToken(RequestMessage request, string continuationToken)
+        /// <summary>
+        /// IfNoneMatchEtag is inherited from the base class but not used. 
+        /// </summary>
+        [Obsolete("IfNoneMatchEtag is inherited from the base class but not used.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public new string IfNoneMatchEtag
         {
-            Debug.Assert(request != null);
+            get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
+            set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
+        }
 
-            if (!string.IsNullOrWhiteSpace(continuationToken))
+        internal ChangeFeedRequestOptions Clone()
+        {
+            return new ChangeFeedRequestOptions()
             {
-                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                request.Headers.IfNoneMatch = continuationToken;
-            }
-        }
-
-        internal static void FillMaxItemCount(RequestMessage request, int? maxItemCount)
-        {
-            Debug.Assert(request != null);
-
-            if (maxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
-            }
+                PageSizeHint = this.pageSizeHint,
+            };
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
     using System.Buffers;
@@ -9,10 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.ServiceModel.Channels;
     using System.Text;
-    using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
@@ -75,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlArrayIteratorCollectionExpression sqlArrayIteratorCollectionExpression)
         {
-            sqlArrayIteratorCollectionExpression.Alias.Accept(this);
+            sqlArrayIteratorCollectionExpression.Identifier.Accept(this);
             this.writer.Write(" IN ");
             sqlArrayIteratorCollectionExpression.Collection.Accept(this);
         }
@@ -93,15 +90,15 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.writer.Write("(");
             sqlBetweenScalarExpression.Expression.Accept(this);
 
-            if (sqlBetweenScalarExpression.IsNot)
+            if (sqlBetweenScalarExpression.Not)
             {
                 this.writer.Write(" NOT");
             }
 
             this.writer.Write(" BETWEEN ");
-            sqlBetweenScalarExpression.LeftExpression.Accept(this);
+            sqlBetweenScalarExpression.StartInclusive.Accept(this);
             this.writer.Write(" AND ");
-            sqlBetweenScalarExpression.RightExpression.Accept(this);
+            sqlBetweenScalarExpression.EndInclusive.Accept(this);
             this.writer.Write(")");
         }
 
@@ -124,20 +121,20 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
         {
             this.writer.Write("(");
-            sqlCoalesceScalarExpression.LeftExpression.Accept(this);
+            sqlCoalesceScalarExpression.Left.Accept(this);
             this.writer.Write(" ?? ");
-            sqlCoalesceScalarExpression.RightExpression.Accept(this);
+            sqlCoalesceScalarExpression.Right.Accept(this);
             this.writer.Write(")");
         }
 
         public override void Visit(SqlConditionalScalarExpression sqlConditionalScalarExpression)
         {
             this.writer.Write('(');
-            sqlConditionalScalarExpression.ConditionExpression.Accept(this);
+            sqlConditionalScalarExpression.Condition.Accept(this);
             this.writer.Write(" ? ");
-            sqlConditionalScalarExpression.FirstExpression.Accept(this);
+            sqlConditionalScalarExpression.Consequent.Accept(this);
             this.writer.Write(" : ");
-            sqlConditionalScalarExpression.SecondExpression.Accept(this);
+            sqlConditionalScalarExpression.Alternative.Accept(this);
             this.writer.Write(')');
         }
 
@@ -145,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             this.writer.Write("EXISTS");
             this.WriteStartContext("(");
-            sqlExistsScalarExpression.SqlQuery.Accept(this);
+            sqlExistsScalarExpression.Subquery.Accept(this);
             this.WriteEndContext(")");
         }
 
@@ -213,8 +210,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             if (sqlIdentifierPathExpression.ParentPath != null)
             {
                 sqlIdentifierPathExpression.ParentPath.Accept(this);
-                this.writer.Write(".");
             }
+
+            this.writer.Write(".");
 
             sqlIdentifierPathExpression.Value.Accept(this);
         }
@@ -231,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlInScalarExpression sqlInScalarExpression)
         {
             this.writer.Write("(");
-            sqlInScalarExpression.Expression.Accept(this);
+            sqlInScalarExpression.Needle.Accept(this);
             if (sqlInScalarExpression.Not)
             {
                 this.writer.Write(" NOT");
@@ -239,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             this.writer.Write(" IN ");
 
-            int numberOfItems = sqlInScalarExpression.Items.Count();
+            int numberOfItems = sqlInScalarExpression.Haystack.Count();
             if (numberOfItems == 0)
             {
                 this.writer.Write("()");
@@ -247,21 +245,21 @@ namespace Microsoft.Azure.Cosmos.Sql
             else if (numberOfItems == 1)
             {
                 this.writer.Write("(");
-                sqlInScalarExpression.Items[0].Accept(this);
+                sqlInScalarExpression.Haystack[0].Accept(this);
                 this.writer.Write(")");
             }
             else
             {
                 this.WriteStartContext("(");
 
-                for (int i = 0; i < sqlInScalarExpression.Items.Count; i++)
+                for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
                 {
                     if (i > 0)
                     {
                         this.WriteDelimiter(",");
                     }
 
-                    sqlInScalarExpression.Items[i].Accept(this);
+                    sqlInScalarExpression.Haystack[i].Accept(this);
                 }
 
                 this.WriteEndContext(")");
@@ -271,34 +269,17 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlJoinCollectionExpression sqlJoinCollectionExpression)
         {
-            sqlJoinCollectionExpression.LeftExpression.Accept(this);
+            sqlJoinCollectionExpression.Left.Accept(this);
             this.WriteNewline();
             this.WriteTab();
             this.writer.Write(" JOIN ");
-            sqlJoinCollectionExpression.RightExpression.Accept(this);
+            sqlJoinCollectionExpression.Right.Accept(this);
         }
 
         public override void Visit(SqlLimitSpec sqlObject)
         {
             this.writer.Write("LIMIT ");
             sqlObject.LimitExpression.Accept(this);
-        }
-
-        public override void Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
-        {
-            this.writer.Write("[");
-
-            for (int i = 0; i < sqlLiteralArrayCollection.Items.Count; i++)
-            {
-                if (i > 0)
-                {
-                    this.writer.Write(", ");
-                }
-
-                sqlLiteralArrayCollection.Items[i].Accept(this);
-            }
-
-            this.writer.Write("]");
         }
 
         public override void Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
@@ -308,9 +289,9 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
         {
-            sqlMemberIndexerScalarExpression.MemberExpression.Accept(this);
+            sqlMemberIndexerScalarExpression.Member.Accept(this);
             this.writer.Write("[");
-            sqlMemberIndexerScalarExpression.IndexExpression.Accept(this);
+            sqlMemberIndexerScalarExpression.Indexer.Accept(this);
             this.writer.Write("]");
         }
 
@@ -373,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             sqlObjectProperty.Name.Accept(this);
             this.writer.Write(": ");
-            sqlObjectProperty.Expression.Accept(this);
+            sqlObjectProperty.Value.Accept(this);
         }
 
         public override void Visit(SqlOffsetLimitClause sqlObject)
@@ -438,13 +419,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
         {
-            if (sqlPropertyRefScalarExpression.MemberExpression != null)
+            if (sqlPropertyRefScalarExpression.Member != null)
             {
-                sqlPropertyRefScalarExpression.MemberExpression.Accept(this);
+                sqlPropertyRefScalarExpression.Member.Accept(this);
                 this.writer.Write(".");
             }
 
-            sqlPropertyRefScalarExpression.PropertyIdentifier.Accept(this);
+            sqlPropertyRefScalarExpression.Identifier.Accept(this);
         }
 
         public override void Visit(SqlQuery sqlQuery)

@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using System.Runtime.InteropServices;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -19,31 +21,72 @@ namespace Microsoft.Azure.Cosmos.Json
     {
         /// <summary>
         /// JsonNavigator that know how to navigate JSONs in text serialization.
-        /// Internally the navigator uses a <see cref="Parser"/> to from an AST of the JSON and the rest of the methods are just letting you traverse the materialized tree.
         /// </summary>
         private sealed class JsonTextNavigator : JsonNavigator
         {
-            private readonly JsonTextNode rootNode;
+            private static readonly Utf8Memory ReverseSoldius = Utf8Memory.Create("\\");
+
+            private static class SingletonBuffers
+            {
+                public static readonly ReadOnlyMemory<byte> True = Encoding.UTF8.GetBytes("true");
+                public static readonly ReadOnlyMemory<byte> False = Encoding.UTF8.GetBytes("false");
+                public static readonly ReadOnlyMemory<byte> Null = Encoding.UTF8.GetBytes("null");
+            }
+
+            private readonly JsonTextNavigatorNode rootNode;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JsonTextNavigator"/> class.
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
-            /// <param name="skipValidation">whether to skip validation or not.</param>
-            public JsonTextNavigator(
-                ReadOnlyMemory<byte> buffer,
-                bool skipValidation = false)
+            public JsonTextNavigator(ReadOnlyMemory<byte> buffer)
             {
-                IJsonReader jsonTextReader = JsonReader.Create(
-                    buffer: buffer,
-                    jsonStringDictionary: null,
-                    skipValidation: skipValidation);
-                if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
+                if (buffer.IsEmpty)
                 {
-                    throw new ArgumentException("jsonTextReader's serialization format must actually be text");
+                    throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
                 }
 
-                this.rootNode = Parser.Parse(jsonTextReader);
+                byte firstByte = buffer.Span[0];
+                byte lastByte = buffer.Span[buffer.Span.Length - 1];
+
+                bool objectRoot = (firstByte == '{') && (lastByte == '}');
+                bool arrayRoot = (firstByte == '[') && (lastByte == ']');
+
+                bool lazyInit = objectRoot || arrayRoot;
+
+                JsonTextNavigatorNode CreateRootNode()
+                {
+                    IJsonReader jsonTextReader = JsonReader.Create(
+                                buffer: buffer,
+                                jsonStringDictionary: null);
+
+                    if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
+                    {
+                        throw new InvalidOperationException($"{jsonTextReader}'s serialization format must actually be {JsonSerializationFormat.Text}.");
+                    }
+
+                    return Parser.Parse(jsonTextReader);
+                }
+
+                JsonTextNavigatorNode rootNode;
+                if (lazyInit)
+                {
+                    Lazy<JsonTextNavigatorNode> lazyNode = new Lazy<JsonTextNavigatorNode>(CreateRootNode);
+                    if (arrayRoot)
+                    {
+                        rootNode = new LazyArrayNode(lazyNode, buffer);
+                    }
+                    else
+                    {
+                        rootNode = new LazyObjectNode(lazyNode, buffer);
+                    }
+                }
+                else
+                {
+                    rootNode = CreateRootNode();
+                }
+
+                this.rootNode = rootNode;
             }
 
             /// <inheritdoc />
@@ -64,213 +107,167 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
             {
-                if (node == null)
-                {
-                    throw new ArgumentNullException("node");
-                }
-
-                if (!(node is JsonTextNode jsonTextNode))
+                if (!(node is JsonTextNavigatorNode jsonTextNavigatorNode))
                 {
                     throw new ArgumentException("node must actually be a text node.");
                 }
 
-                return jsonTextNode.JsonNodeType;
+                return jsonTextNavigatorNode.Type;
             }
 
             /// <inheritdoc />
-            public override Number64 GetNumber64Value(IJsonNavigatorNode numberNavigatorNode)
+            public override Number64 GetNumber64Value(IJsonNavigatorNode node)
             {
-                if (numberNavigatorNode == null)
+                if (!(node is NumberNode numberNode))
                 {
-                    throw new ArgumentNullException("numberNavigatorNode");
+                    throw new ArgumentException($"{node} was not of type: {nameof(NumberNode)}.");
                 }
 
-                if (!(numberNavigatorNode is NumberNode numberNode))
-                {
-                    throw new ArgumentException("numberNavigatorNode must actually be a number node.");
-                }
-
-                return numberNode.Value;
+                Number64 value = JsonTextParser.GetNumberValue(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
             public override bool TryGetBufferedStringValue(
-                IJsonNavigatorNode navigatorNode,
+                IJsonNavigatorNode node,
                 out Utf8Memory value)
             {
-                if (navigatorNode == null)
+                if (!(node is StringNodeBase stringNodeBase))
                 {
-                    throw new ArgumentNullException(nameof(navigatorNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(StringNodeBase)}.");
                 }
 
-                if (!(navigatorNode is StringNodeBase stringNode))
+                // TODO: consider cacheing whether or not the string is escaped in the node itself.
+                if (stringNodeBase.BufferedValue.Span.Contains(ReverseSoldius.Span))
                 {
-                    throw new ArgumentException($"{nameof(navigatorNode)} must actually be a number node.");
+                    // encountered escaped string that can't be returned
+                    value = default;
+                    return false;
                 }
 
-                // For text we materialize the strings into UTF-16, so we can't get the buffered UTF-8 string.
-                value = default;
-                return false;
+                // Just trim off the quotes
+                value = stringNodeBase.BufferedValue.Slice(start: 1, length: stringNodeBase.BufferedValue.Length - 2);
+                return true;
             }
 
             /// <inheritdoc />
-            public override string GetStringValue(IJsonNavigatorNode stringNode)
+            public override string GetStringValue(IJsonNavigatorNode node)
             {
-                if (stringNode == null)
+                if (!(node is StringNodeBase stringNodeBase))
                 {
-                    throw new ArgumentNullException("stringNode");
+                    throw new ArgumentException($"{node} was not of type: {nameof(StringNodeBase)}.");
                 }
 
-                if (!(stringNode is StringNodeBase stringValueNode))
-                {
-                    throw new ArgumentException("stringNode must actually be a number node.");
-                }
-
-                return stringValueNode.Value;
+                string value = JsonTextParser.GetStringValue(stringNodeBase.BufferedValue.Span.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
+            public override sbyte GetInt8Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is Int8Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(Int8Node)}.");
                 }
 
-                if (!(numberNode is Int8Node int8Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int8Node)} node.");
-                }
-
-                return int8Node.Value;
+                sbyte value = JsonTextParser.GetInt8Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override short GetInt16Value(IJsonNavigatorNode numberNode)
+            public override short GetInt16Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is Int16Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(Int16Node)}.");
                 }
 
-                if (!(numberNode is Int16Node int16Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int16Node)} node.");
-                }
-
-                return int16Node.Value;
+                short value = JsonTextParser.GetInt16Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override int GetInt32Value(IJsonNavigatorNode numberNode)
+            public override int GetInt32Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is Int32Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(Int32Node)}.");
                 }
 
-                if (!(numberNode is Int32Node int32Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int32Node)} node.");
-                }
-
-                return int32Node.Value;
+                int value = JsonTextParser.GetInt32Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override long GetInt64Value(IJsonNavigatorNode numberNode)
+            public override long GetInt64Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is Int64Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(Int64Node)}.");
                 }
 
-                if (!(numberNode is Int64Node int64Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int64Node)} node.");
-                }
-
-                return int64Node.Value;
+                long value = JsonTextParser.GetInt64Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override float GetFloat32Value(IJsonNavigatorNode numberNode)
+            public override float GetFloat32Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is Float32Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(Float32Node)}.");
                 }
 
-                if (!(numberNode is Float32Node float32Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(float32Node)} node.");
-                }
-
-                return float32Node.Value;
+                float value = JsonTextParser.GetFloat32Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override double GetFloat64Value(IJsonNavigatorNode numberNode)
+            public override double GetFloat64Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is Float64Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(Float64Node)}.");
                 }
 
-                if (!(numberNode is Float64Node float64Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(float64Node)} node.");
-                }
-
-                return float64Node.Value;
+                double value = JsonTextParser.GetFloat64Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
-            public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
+            public override uint GetUInt32Value(IJsonNavigatorNode node)
             {
-                if (numberNode == null)
+                if (!(node is UInt32Node numberNode))
                 {
-                    throw new ArgumentNullException(nameof(numberNode));
+                    throw new ArgumentException($"{node} was not of type: {nameof(UInt32Node)}.");
                 }
 
-                if (!(numberNode is UInt32Node uInt32Node))
-                {
-                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(uInt32Node)} node.");
-                }
-
-                return uInt32Node.Value;
+                uint value = JsonTextParser.GetUInt32Value(numberNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
             public override Guid GetGuidValue(IJsonNavigatorNode node)
             {
-                if (node == null)
-                {
-                    throw new ArgumentNullException(nameof(node));
-                }
-
                 if (!(node is GuidNode guidNode))
                 {
-                    throw new ArgumentException($"{nameof(node)} must actually be a {nameof(GuidNode)} node.");
+                    throw new ArgumentException($"{node} was not of type: {nameof(GuidNode)}.");
                 }
 
-                return guidNode.Value;
+                Guid value = JsonTextParser.GetGuidValue(guidNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode node)
             {
-                if (node == null)
-                {
-                    throw new ArgumentNullException(nameof(node));
-                }
-
                 if (!(node is BinaryNode binaryNode))
                 {
-                    throw new ArgumentException($"{nameof(node)} must actually be a {nameof(BinaryNode)} node.");
+                    throw new ArgumentException($"{node} was not of type: {nameof(BinaryNode)}.");
                 }
 
-                return binaryNode.Value;
+                ReadOnlyMemory<byte> value = JsonTextParser.GetBinaryValue(binaryNode.BufferedToken.Span);
+                return value;
             }
 
             /// <inheritdoc />
@@ -283,93 +280,92 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override int GetArrayItemCount(IJsonNavigatorNode arrayNavigatorNode)
+            public override int GetArrayItemCount(IJsonNavigatorNode node)
             {
-                if (arrayNavigatorNode == null)
+                if (node is LazyNode lazyNode)
                 {
-                    throw new ArgumentNullException("arrayNavigatorNode");
+                    node = lazyNode.Value;
                 }
 
-                if (!(arrayNavigatorNode is ArrayNode arrayNode))
+                if (!(node is ArrayNode arrayNode))
                 {
-                    throw new ArgumentException("arrayNavigatorNode must actually be an array node");
+                    throw new ArgumentException($"{node} was not of type: {nameof(ArrayNode)}.");
                 }
 
                 return arrayNode.Items.Count;
             }
 
             /// <inheritdoc />
-            public override IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNavigatorNode, int index)
+            public override IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode node, int index)
             {
-                if (arrayNavigatorNode == null)
+                if (node is LazyNode lazyNode)
                 {
-                    throw new ArgumentNullException("arrayNode");
+                    node = lazyNode.Value;
                 }
 
-                ArrayNode arrayNode = arrayNavigatorNode as ArrayNode;
-                if (arrayNode == null)
+                if (!(node is ArrayNode arrayNode))
                 {
-                    throw new ArgumentException("arrayNavigatorNode must actually be an array node");
+                    throw new ArgumentException($"{node} was not of type: {nameof(ArrayNode)}.");
                 }
 
                 return arrayNode.Items[index];
             }
 
             /// <inheritdoc />
-            public override IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode arrayNavigatorNode)
+            public override IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode node)
             {
-                if (arrayNavigatorNode == null)
+                if (node is LazyNode lazyNode)
                 {
-                    throw new ArgumentNullException("arrayNode");
+                    node = lazyNode.Value;
                 }
 
-                ArrayNode arrayNode = arrayNavigatorNode as ArrayNode;
-                if (arrayNode == null)
+                if (!(node is ArrayNode arrayNode))
                 {
-                    throw new ArgumentException("arrayNavigatorNode must actually be an array node");
+                    throw new ArgumentException($"{node} was not of type: {nameof(ArrayNode)}.");
                 }
 
                 return arrayNode.Items;
             }
 
             /// <inheritdoc />
-            public override int GetObjectPropertyCount(IJsonNavigatorNode objectNavigatorNode)
+            public override int GetObjectPropertyCount(IJsonNavigatorNode node)
             {
-                if (objectNavigatorNode == null)
+                if (node is LazyNode lazyNode)
                 {
-                    throw new ArgumentNullException("objectNode");
+                    node = lazyNode.Value;
                 }
 
-                if (!(objectNavigatorNode is ObjectNode objectNode))
+                if (!(node is ObjectNode objectNode))
                 {
-                    throw new ArgumentException("objectNavigatorNode must actually be an array node");
+                    throw new ArgumentException($"{node} was not of type: {nameof(ObjectNode)}.");
                 }
 
                 return objectNode.Properties.Count;
             }
 
             /// <inheritdoc />
-            public override bool TryGetObjectProperty(IJsonNavigatorNode objectNavigatorNode, string propertyName, out ObjectProperty objectProperty)
+            public override bool TryGetObjectProperty(IJsonNavigatorNode node, string propertyName, out ObjectProperty objectProperty)
             {
-                if (objectNavigatorNode == null)
+                if (node is LazyNode lazyNode)
                 {
-                    throw new ArgumentNullException("objectNavigatorNode");
+                    node = lazyNode.Value;
                 }
 
-                if (propertyName == null)
+                if (!(node is ObjectNode objectNode))
                 {
-                    throw new ArgumentNullException("propertyName");
+                    throw new ArgumentException($"{node} was not of type: {nameof(ObjectNode)}.");
                 }
 
-                if (!(objectNavigatorNode is ObjectNode objectNode))
-                {
-                    throw new ArgumentException("objectNavigatorNode must actually be an array node");
-                }
+                Utf8Memory propertyNameAsUtf8 = Utf8Memory.Create(propertyName);
 
-                IReadOnlyList<ObjectProperty> properties = ((ObjectNode)objectNode).Properties;
-                foreach (ObjectProperty property in properties)
+                foreach (ObjectProperty property in objectNode.Properties)
                 {
-                    if (this.GetStringValue(property.NameNode) == propertyName)
+                    if (!this.TryGetBufferedStringValue(property.NameNode, out Utf8Memory candidate))
+                    {
+                        throw new InvalidOperationException("Failed to get property name buffered value.");
+                    }
+
+                    if (propertyNameAsUtf8.Span == candidate.Span)
                     {
                         objectProperty = property;
                         return true;
@@ -381,16 +377,16 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNavigatorNode)
+            public override IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode node)
             {
-                if (objectNavigatorNode == null)
+                if (node is LazyNode lazyNode)
                 {
-                    throw new ArgumentNullException("objectNode");
+                    node = lazyNode.Value;
                 }
 
-                if (!(objectNavigatorNode is ObjectNode objectNode))
+                if (!(node is ObjectNode objectNode))
                 {
-                    throw new ArgumentException("objectNavigatorNode must actually be an array node");
+                    throw new ArgumentException($"{node} was not of type: {nameof(ObjectNode)}.");
                 }
 
                 return objectNode.Properties;
@@ -401,8 +397,77 @@ namespace Microsoft.Azure.Cosmos.Json
                 IJsonNavigatorNode jsonNode,
                 out ReadOnlyMemory<byte> bufferedRawJson)
             {
-                bufferedRawJson = default;
-                return false;
+                switch (jsonNode)
+                {
+                    case null:
+                        throw new ArgumentNullException(nameof(jsonNode));
+
+                    case NumberNode numberNode:
+                        bufferedRawJson = numberNode.BufferedToken;
+                        return true;
+
+                    case StringNodeBase stringNodeBase:
+                        bufferedRawJson = stringNodeBase.BufferedValue.Memory;
+                        return true;
+
+                    case ArrayNode arrayNode:
+                        bufferedRawJson = arrayNode.BufferedValue;
+                        return true;
+
+                    case ObjectNode objectNode:
+                        bufferedRawJson = objectNode.BufferedValue;
+                        return true;
+
+                    case IntegerNode integerNode:
+                        bufferedRawJson = integerNode.BufferedToken;
+                        return true;
+
+                    case FloatNode floatNode:
+                        bufferedRawJson = floatNode.BufferedToken;
+                        return true;
+
+                    case BinaryNode binaryNode:
+                        bufferedRawJson = binaryNode.BufferedToken;
+                        return true;
+
+                    case GuidNode guidNode:
+                        bufferedRawJson = guidNode.BufferedToken;
+                        return true;
+
+                    case LazyNode lazyNode:
+                        bufferedRawJson = lazyNode.BufferedValue;
+                        return true;
+
+                    default:
+                        throw new ArgumentOutOfRangeException($"Unknown {nameof(IJsonNavigatorNode)} type: {jsonNode.GetType()}.");
+                }
+            }
+
+            public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
+            {
+                if (!(jsonNavigatorNode is JsonTextNavigatorNode jsonTextNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(JsonTextNavigatorNode)}.");
+                }
+
+                ReadOnlyMemory<byte> buffer = jsonTextNavigatorNode switch
+                {
+                    LazyNode lazyNode => lazyNode.BufferedValue,
+                    ArrayNode arrayNode => arrayNode.BufferedValue,
+                    FalseNode falseNode => SingletonBuffers.False,
+                    StringNodeBase stringNodeBase => stringNodeBase.BufferedValue.Memory,
+                    NullNode nullNode => SingletonBuffers.Null,
+                    NumberNode numberNode => numberNode.BufferedToken,
+                    ObjectNode objectNode => objectNode.BufferedValue,
+                    TrueNode trueNode => SingletonBuffers.True,
+                    GuidNode guidNode => guidNode.BufferedToken,
+                    BinaryNode binaryNode => binaryNode.BufferedToken,
+                    IntegerNode intNode => intNode.BufferedToken,
+                    FloatNode floatNode => floatNode.BufferedToken,
+                    _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
+                };
+
+                return JsonReader.Create(JsonSerializationFormat.Text, buffer);
             }
 
             #region JsonTextParser
@@ -417,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// </summary>
                 /// <param name="jsonTextReader">The reader to use as a lexer / tokenizer</param>
                 /// <returns>The root node of a JSON AST from a jsonTextReader.</returns>
-                public static JsonTextNode Parse(IJsonReader jsonTextReader)
+                public static JsonTextNavigatorNode Parse(IJsonReader jsonTextReader)
                 {
                     if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
                     {
@@ -425,9 +490,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     // Read past the json object not started state.
-                    jsonTextReader.Read();
+                    if (!jsonTextReader.Read())
+                    {
+                        throw new InvalidOperationException("Failed to read from reader");
+                    }
 
-                    JsonTextNode rootNode = Parser.ParseNode(jsonTextReader);
+                    JsonTextNavigatorNode rootNode = Parser.ParseNode(jsonTextReader);
 
                     // Make sure that we are at the end of the file.
                     if (jsonTextReader.Read())
@@ -445,7 +513,17 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// <returns>JSON array AST node</returns>
                 private static ArrayNode ParseArrayNode(IJsonReader jsonTextReader)
                 {
-                    List<JsonTextNode> items = new List<JsonTextNode>();
+                    List<JsonTextNavigatorNode> items = new List<JsonTextNavigatorNode>();
+
+                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedArrayStartToken))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(bufferedArrayStartToken)}.");
+                    }
+
+                    if (!MemoryMarshal.TryGetArray(bufferedArrayStartToken, out ArraySegment<byte> startArrayArraySegment))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(startArrayArraySegment)}.");
+                    }
 
                     // consume the begin array token
                     jsonTextReader.Read();
@@ -455,10 +533,23 @@ namespace Microsoft.Azure.Cosmos.Json
                         items.Add(Parser.ParseNode(jsonTextReader));
                     }
 
+                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedArrayEndToken))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(bufferedArrayEndToken)}.");
+                    }
+
+                    if (!MemoryMarshal.TryGetArray(bufferedArrayEndToken, out ArraySegment<byte> endArrayArraySegment))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(endArrayArraySegment)}.");
+                    }
+
                     // consume the end array token
                     jsonTextReader.Read();
 
-                    return ArrayNode.Create(items);
+                    ReadOnlyMemory<byte> bufferedRawArray = startArrayArraySegment.Array;
+                    bufferedRawArray = bufferedRawArray.Slice(start: startArrayArraySegment.Offset, length: endArrayArraySegment.Offset - startArrayArraySegment.Offset + 1);
+
+                    return ArrayNode.Create(items, bufferedRawArray);
                 }
 
                 /// <summary>
@@ -470,6 +561,16 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     List<ObjectProperty> properties = new List<ObjectProperty>();
 
+                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedObjectStartToken))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(bufferedObjectStartToken)}.");
+                    }
+
+                    if (!MemoryMarshal.TryGetArray(bufferedObjectStartToken, out ArraySegment<byte> startObjectArraySegment))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(startObjectArraySegment)}.");
+                    }
+
                     // consume the begin object token
                     jsonTextReader.Read();
 
@@ -479,10 +580,23 @@ namespace Microsoft.Azure.Cosmos.Json
                         properties.Add(property);
                     }
 
+                    if (!jsonTextReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedObjectEndToken))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(bufferedObjectEndToken)}.");
+                    }
+
+                    if (!MemoryMarshal.TryGetArray(bufferedObjectEndToken, out ArraySegment<byte> endObjectArraySegment))
+                    {
+                        throw new InvalidOperationException($"Failed to get {nameof(endObjectArraySegment)}.");
+                    }
+
                     // consume the end object token
                     jsonTextReader.Read();
 
-                    return ObjectNode.Create(properties);
+                    ReadOnlyMemory<byte> bufferedRawObject = startObjectArraySegment.Array;
+                    bufferedRawObject = bufferedRawObject.Slice(start: startObjectArraySegment.Offset, length: endObjectArraySegment.Offset - startObjectArraySegment.Offset + 1);
+
+                    return ObjectNode.Create(properties, bufferedRawObject);
                 }
 
                 /// <summary>
@@ -497,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("Failed to get the buffered raw json token.");
                     }
 
-                    StringNode stringNode = StringNode.Create(bufferedRawJsonToken);
+                    StringNode stringNode = StringNode.Create(Utf8Memory.UnsafeCreateNoValidation(bufferedRawJsonToken));
 
                     // consume the string from the reader
                     jsonTextReader.Read();
@@ -643,12 +757,12 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("Failed to get the buffered raw json token.");
                     }
 
-                    FieldNameNode fieldName = FieldNameNode.Create(bufferedRawJsonToken);
+                    FieldNameNode fieldName = FieldNameNode.Create(Utf8Memory.UnsafeCreateNoValidation(bufferedRawJsonToken));
 
                     // Consume the fieldname from the jsonreader
                     jsonTextReader.Read();
 
-                    JsonTextNode value = Parser.ParseNode(jsonTextReader);
+                    JsonTextNavigatorNode value = Parser.ParseNode(jsonTextReader);
                     return new ObjectProperty(fieldName, value);
                 }
 
@@ -685,9 +799,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// </summary>
                 /// <param name="jsonTextReader">The reader to use as a lexer / tokenizer</param>
                 /// <returns>JSON AST node (type determined by the reader)</returns>
-                private static JsonTextNode ParseNode(IJsonReader jsonTextReader)
+                private static JsonTextNavigatorNode ParseNode(IJsonReader jsonTextReader)
                 {
-                    JsonTextNode node;
+                    JsonTextNavigatorNode node;
                     switch (jsonTextReader.CurrentTokenType)
                     {
                         case JsonTokenType.BeginArray:
@@ -744,44 +858,44 @@ namespace Microsoft.Azure.Cosmos.Json
             #endregion
 
             #region Nodes
-            private sealed class ArrayNode : JsonTextNode
+            private abstract class JsonTextNavigatorNode : IJsonNavigatorNode
             {
-                private static readonly ArrayNode Empty = new ArrayNode(new List<JsonTextNode>());
-                private readonly List<JsonTextNode> items;
-
-                private ArrayNode(List<JsonTextNode> items)
-                    : base(JsonNodeType.Array)
+                protected JsonTextNavigatorNode()
                 {
-                    this.items = items;
                 }
 
-                public IReadOnlyList<JsonTextNode> Items
-                {
-                    get
-                    {
-                        return this.items;
-                    }
-                }
-
-                public static ArrayNode Create(List<JsonTextNode> items)
-                {
-                    if (items.Count == 0)
-                    {
-                        return ArrayNode.Empty;
-                    }
-
-                    return new ArrayNode(items);
-                }
+                public abstract JsonNodeType Type { get; }
             }
 
-            private sealed class FalseNode : JsonTextNode
+            private sealed class ArrayNode : JsonTextNavigatorNode
+            {
+                private ArrayNode(
+                    IReadOnlyList<JsonTextNavigatorNode> items,
+                    ReadOnlyMemory<byte> bufferedValue)
+                {
+                    this.Items = items;
+                    this.BufferedValue = bufferedValue;
+                }
+
+                public IReadOnlyList<JsonTextNavigatorNode> Items { get; }
+                public ReadOnlyMemory<byte> BufferedValue { get; }
+
+                public override JsonNodeType Type => JsonNodeType.Array;
+
+                public static ArrayNode Create(
+                    IReadOnlyList<JsonTextNavigatorNode> items,
+                    ReadOnlyMemory<byte> bufferedValue) => new ArrayNode(items, bufferedValue);
+            }
+
+            private sealed class FalseNode : JsonTextNavigatorNode
             {
                 private static readonly FalseNode Instance = new FalseNode();
 
                 private FalseNode()
-                    : base(JsonNodeType.False)
                 {
                 }
+
+                public override JsonNodeType Type => JsonNodeType.False;
 
                 public static FalseNode Create()
                 {
@@ -791,19 +905,16 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private sealed class FieldNameNode : StringNodeBase
             {
-                private static readonly FieldNameNode Empty = new FieldNameNode(string.Empty);
+                private static readonly FieldNameNode Empty = new FieldNameNode(Utf8Memory.Empty);
 
-                private FieldNameNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(bufferedToken, false)
+                private FieldNameNode(Utf8Memory bufferedValue)
+                    : base(bufferedValue)
                 {
                 }
 
-                private FieldNameNode(string value)
-                    : base(value, true)
-                {
-                }
+                public override JsonNodeType Type => JsonNodeType.FieldName;
 
-                public static FieldNameNode Create(ReadOnlyMemory<byte> bufferedToken)
+                public static FieldNameNode Create(Utf8Memory bufferedToken)
                 {
                     if (bufferedToken.Length == 0)
                     {
@@ -815,27 +926,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private abstract class JsonTextNode : IJsonNavigatorNode
-            {
-                protected JsonTextNode(JsonNodeType jsonNodeType)
-                {
-                    this.JsonNodeType = jsonNodeType;
-                }
-
-                public JsonNodeType JsonNodeType
-                {
-                    get;
-                }
-            }
-
-            private sealed class NullNode : JsonTextNode
+            private sealed class NullNode : JsonTextNavigatorNode
             {
                 private static readonly NullNode Instance = new NullNode();
 
                 private NullNode()
-                    : base(JsonNodeType.Null)
                 {
                 }
+
+                public override JsonNodeType Type => JsonNodeType.Null;
 
                 public static NullNode Create()
                 {
@@ -843,7 +942,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private sealed class NumberNode : JsonTextNode
+            private sealed class NumberNode : JsonTextNavigatorNode
             {
                 private static readonly NumberNode[] LiteralNumberNodes = new NumberNode[]
                 {
@@ -857,27 +956,19 @@ namespace Microsoft.Azure.Cosmos.Json
                     new NumberNode(28), new NumberNode(29), new NumberNode(30), new NumberNode(31),
                 };
 
-                private readonly Lazy<Number64> value;
-
                 private NumberNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Number64)
                 {
-                    this.value = new Lazy<Number64>(() => JsonTextParser.GetNumberValue(bufferedToken.Span));
+                    this.BufferedToken = bufferedToken;
                 }
 
-                private NumberNode(Number64 value)
-                    : base(JsonNodeType.Number64)
+                private NumberNode(int value)
+                    : this(Encoding.UTF8.GetBytes(value.ToString()))
                 {
-                    this.value = new Lazy<Number64>(() => value);
                 }
 
-                public Number64 Value
-                {
-                    get
-                    {
-                        return this.value.Value;
-                    }
-                }
+                public ReadOnlyMemory<byte> BufferedToken { get; }
+
+                public override JsonNodeType Type => JsonNodeType.Number64;
 
                 public static NumberNode Create(ReadOnlyMemory<byte> bufferedToken)
                 {
@@ -910,48 +1001,36 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private sealed class ObjectNode : JsonTextNode
+            private sealed class ObjectNode : JsonTextNavigatorNode
             {
-                private static readonly ObjectNode Empty = new ObjectNode(new List<ObjectProperty>());
-                private readonly List<ObjectProperty> properties;
-
-                private ObjectNode(List<ObjectProperty> properties)
-                    : base(JsonNodeType.Object)
+                private ObjectNode(IReadOnlyList<ObjectProperty> properties, ReadOnlyMemory<byte> bufferedValue)
                 {
-                    this.properties = properties;
+                    this.Properties = properties;
+                    this.BufferedValue = bufferedValue;
                 }
 
-                public IReadOnlyList<ObjectProperty> Properties
-                {
-                    get { return this.properties; }
-                }
+                public IReadOnlyList<ObjectProperty> Properties { get; }
+                public ReadOnlyMemory<byte> BufferedValue { get; }
 
-                public static ObjectNode Create(List<ObjectProperty> properties)
-                {
-                    if (properties.Count == 0)
-                    {
-                        return ObjectNode.Empty;
-                    }
+                public override JsonNodeType Type => JsonNodeType.Object;
 
-                    return new ObjectNode(properties);
-                }
+                public static ObjectNode Create(
+                    IReadOnlyList<ObjectProperty> properties,
+                    ReadOnlyMemory<byte> bufferedValue) => new ObjectNode(properties, bufferedValue);
             }
 
             private sealed class StringNode : StringNodeBase
             {
-                private static readonly StringNode Empty = new StringNode(string.Empty);
+                private static readonly StringNode Empty = new StringNode(Utf8Memory.Empty);
 
-                private StringNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(bufferedToken, true)
+                private StringNode(Utf8Memory bufferedValue)
+                    : base(bufferedValue)
                 {
                 }
 
-                private StringNode(string value)
-                    : base(value, true)
-                {
-                }
+                public override JsonNodeType Type => JsonNodeType.String;
 
-                public static StringNode Create(ReadOnlyMemory<byte> bufferedToken)
+                public static StringNode Create(Utf8Memory bufferedToken)
                 {
                     if (bufferedToken.Length == 0)
                     {
@@ -963,38 +1042,26 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private abstract class StringNodeBase : JsonTextNode
+            private abstract class StringNodeBase : JsonTextNavigatorNode
             {
-                private readonly Lazy<string> value;
-
                 protected StringNodeBase(
-                    ReadOnlyMemory<byte> bufferedToken,
-                    bool isStringNode)
-                    : base(isStringNode ? JsonNodeType.String : JsonNodeType.FieldName)
+                    Utf8Memory bufferedValue)
                 {
-                    this.value = new Lazy<string>(() => JsonTextParser.GetStringValue(bufferedToken.Span));
+                    this.BufferedValue = bufferedValue;
                 }
 
-                protected StringNodeBase(string value, bool isStringNode)
-                    : base(isStringNode ? JsonNodeType.String : JsonNodeType.FieldName)
-                {
-                    this.value = new Lazy<string>(() => value);
-                }
-
-                public string Value
-                {
-                    get { return this.value.Value; }
-                }
+                public Utf8Memory BufferedValue { get; }
             }
 
-            private sealed class TrueNode : JsonTextNode
+            private sealed class TrueNode : JsonTextNavigatorNode
             {
                 private static readonly TrueNode Instance = new TrueNode();
 
                 private TrueNode()
-                    : base(JsonNodeType.True)
                 {
                 }
+
+                public override JsonNodeType Type => JsonNodeType.True;
 
                 public static TrueNode Create()
                 {
@@ -1002,271 +1069,177 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private abstract class IntegerNode : JsonTextNode
+            private abstract class IntegerNode : JsonTextNavigatorNode
             {
-                protected IntegerNode(JsonNodeType jsonNodeType)
-                    : base(jsonNodeType)
+                protected IntegerNode(ReadOnlyMemory<byte> bufferedToken)
                 {
+                    this.BufferedToken = bufferedToken;
                 }
+
+                public ReadOnlyMemory<byte> BufferedToken { get; }
             }
 
             private sealed class Int8Node : IntegerNode
             {
-                private readonly Lazy<sbyte> lazyValue;
-
                 private Int8Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Int8)
+                    : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<sbyte>(() =>
-                    {
-                        sbyte value = JsonTextParser.GetInt8Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public sbyte Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.Int8;
 
-                public static Int8Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new Int8Node(bufferedToken);
-                }
+                public static Int8Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int8Node(bufferedToken);
             }
 
             private sealed class Int16Node : IntegerNode
             {
-                private readonly Lazy<short> lazyValue;
-
                 private Int16Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Int16)
+                    : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<short>(() =>
-                    {
-                        short value = JsonTextParser.GetInt16Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public short Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.Int16;
 
-                public static Int16Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new Int16Node(bufferedToken);
-                }
+                public static Int16Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int16Node(bufferedToken);
             }
 
             private sealed class Int32Node : IntegerNode
             {
-                private readonly Lazy<int> lazyValue;
-
                 private Int32Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Int32)
+                    : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<int>(() =>
-                    {
-                        int value = JsonTextParser.GetInt32Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public int Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.Int32;
 
-                public static Int32Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new Int32Node(bufferedToken);
-                }
+                public static Int32Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int32Node(bufferedToken);
             }
 
             private sealed class Int64Node : IntegerNode
             {
-                private readonly Lazy<long> lazyValue;
-
                 private Int64Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Int64)
+                     : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<long>(() =>
-                    {
-                        long value = JsonTextParser.GetInt64Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public long Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.Int64;
 
-                public static Int64Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new Int64Node(bufferedToken);
-                }
+                public static Int64Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int64Node(bufferedToken);
             }
 
             private sealed class UInt32Node : IntegerNode
             {
-                private readonly Lazy<uint> lazyValue;
-
                 private UInt32Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.UInt32)
+                     : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<uint>(() =>
-                    {
-                        uint value = JsonTextParser.GetUInt32Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public uint Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.UInt32;
 
-                public static UInt32Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new UInt32Node(bufferedToken);
-                }
+                public static UInt32Node Create(ReadOnlyMemory<byte> bufferedToken) => new UInt32Node(bufferedToken);
             }
 
-            private abstract class FloatNode : JsonTextNode
+            private abstract class FloatNode : JsonTextNavigatorNode
             {
-                protected FloatNode(JsonNodeType jsonNodeType)
-                    : base(jsonNodeType)
+                protected FloatNode(ReadOnlyMemory<byte> bufferedToken)
                 {
+                    this.BufferedToken = bufferedToken;
                 }
+
+                public ReadOnlyMemory<byte> BufferedToken { get; }
             }
 
             private sealed class Float32Node : FloatNode
             {
-                private readonly Lazy<float> lazyValue;
-
                 private Float32Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Float32)
+                     : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<float>(() =>
-                    {
-                        float value = JsonTextParser.GetFloat32Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public float Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.Float32;
 
-                public static Float32Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new Float32Node(bufferedToken);
-                }
+                public static Float32Node Create(ReadOnlyMemory<byte> bufferedToken) => new Float32Node(bufferedToken);
             }
 
             private sealed class Float64Node : FloatNode
             {
-                private readonly Lazy<double> lazyValue;
-
                 private Float64Node(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Float64)
+                     : base(bufferedToken)
                 {
-                    this.lazyValue = new Lazy<double>(() =>
-                    {
-                        double value = JsonTextParser.GetFloat64Value(bufferedToken.Span);
-                        return value;
-                    });
                 }
 
-                public double Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public override JsonNodeType Type => JsonNodeType.Float64;
 
-                public static Float64Node Create(ReadOnlyMemory<byte> bufferedToken)
-                {
-                    return new Float64Node(bufferedToken);
-                }
+                public static Float64Node Create(ReadOnlyMemory<byte> bufferedToken) => new Float64Node(bufferedToken);
             }
 
-            private sealed class GuidNode : JsonTextNode
+            private sealed class GuidNode : JsonTextNavigatorNode
             {
-                private readonly Lazy<Guid> lazyValue;
-
                 private GuidNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Guid)
                 {
-                    this.lazyValue = new Lazy<Guid>(() =>
-                    {
-                        Guid value = JsonTextParser.GetGuidValue(bufferedToken.Span);
-                        return value;
-                    });
+                    this.BufferedToken = bufferedToken;
                 }
 
-                public Guid Value
-                {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
-                }
+                public ReadOnlyMemory<byte> BufferedToken { get; }
 
-                public static GuidNode Create(ReadOnlyMemory<byte> value)
-                {
-                    return new GuidNode(value);
-                }
+                public override JsonNodeType Type => JsonNodeType.Guid;
+
+                public static GuidNode Create(ReadOnlyMemory<byte> value) => new GuidNode(value);
             }
 
-            private sealed class BinaryNode : JsonTextNode
+            private sealed class BinaryNode : JsonTextNavigatorNode
             {
-                private readonly Lazy<ReadOnlyMemory<byte>> lazyValue;
-
                 private BinaryNode(ReadOnlyMemory<byte> bufferedToken)
-                    : base(JsonNodeType.Binary)
                 {
-                    this.lazyValue = new Lazy<ReadOnlyMemory<byte>>(() =>
-                    {
-                        return JsonTextParser.GetBinaryValue(bufferedToken.Span);
-                    });
+                    this.BufferedToken = bufferedToken;
                 }
 
-                public ReadOnlyMemory<byte> Value
+                public ReadOnlyMemory<byte> BufferedToken { get; }
+
+                public override JsonNodeType Type => JsonNodeType.Binary;
+
+                public static BinaryNode Create(ReadOnlyMemory<byte> value) => new BinaryNode(value);
+            }
+
+            private abstract class LazyNode : JsonTextNavigatorNode
+            {
+                private readonly Lazy<JsonTextNavigatorNode> lazyNode;
+
+                protected LazyNode(
+                    Lazy<JsonTextNavigatorNode> lazyNode,
+                    ReadOnlyMemory<byte> bufferedValue)
                 {
-                    get
-                    {
-                        return this.lazyValue.Value;
-                    }
+                    this.lazyNode = lazyNode;
+                    this.BufferedValue = bufferedValue;
                 }
 
-                public static BinaryNode Create(ReadOnlyMemory<byte> value)
+                public ReadOnlyMemory<byte> BufferedValue { get; }
+
+                public JsonTextNavigatorNode Value => this.lazyNode.Value;
+            }
+
+            private sealed class LazyArrayNode : LazyNode
+            {
+                public LazyArrayNode(
+                    Lazy<JsonTextNavigatorNode> lazyNode,
+                    ReadOnlyMemory<byte> bufferedValue)
+                    : base(lazyNode, bufferedValue)
                 {
-                    return new BinaryNode(value);
                 }
+
+                public override JsonNodeType Type => JsonNodeType.Array;
+            }
+
+            private sealed class LazyObjectNode : LazyNode
+            {
+                public LazyObjectNode(
+                    Lazy<JsonTextNavigatorNode> lazyNode,
+                    ReadOnlyMemory<byte> bufferedValue)
+                    : base(lazyNode, bufferedValue)
+                {
+                }
+
+                public override JsonNodeType Type => JsonNodeType.Object;
             }
             #endregion
         }

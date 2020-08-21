@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -17,67 +16,67 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class ContainerInternal : Container
     {
-        internal abstract Uri LinkUri { get; }
+        public abstract string LinkUri { get; }
 
-        internal abstract CosmosClientContext ClientContext { get; }
+        public abstract CosmosClientContext ClientContext { get; }
 
-        internal abstract BatchAsyncContainerExecutor BatchExecutor { get; }
+        public abstract BatchAsyncContainerExecutor BatchExecutor { get; }
 
-        internal abstract Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+        public abstract Task<ThroughputResponse> ReadThroughputIfExistsAsync(
            RequestOptions requestOptions,
            CancellationToken cancellationToken);
 
-        internal abstract Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+        public abstract Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             ThroughputProperties throughput,
             RequestOptions requestOptions,
             CancellationToken cancellationToken);
 
-        internal abstract Task<string> GetRIDAsync(CancellationToken cancellationToken);
+        public abstract Task<string> GetRIDAsync(CancellationToken cancellationToken);
 
-        internal abstract Task<Documents.PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(
+        public abstract Task<Documents.PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(
             CancellationToken cancellationToken);
 
-        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+        public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
-        internal abstract Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
+            CancellationToken cancellationToken = default(CancellationToken));
 
-        internal abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
+        public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
             CancellationToken cancellationToken);
 
-        internal abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
+        public abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
 
-        internal abstract Task<((Exception, PartitionedQueryExecutionInfo), (bool, QueryIterator))> TryExecuteQueryAsync(
+        public abstract Task<TryExecuteQueryResult> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         internal abstract FeedIterator GetStandByFeedIterator(
-            string continuationToken = default,
-            int? maxItemCount = default,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions requestOptions = default);
 
-        internal abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
+        public abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
             bool isContinuationExcpected,
             string continuationToken,
             FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions);
 
-        internal abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
+        public abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
             CancellationToken cancellation);
 
-        internal abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
+        public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Throw an exception if the partition key is null or empty string
         /// </summary>
-        internal static void ValidatePartitionKey(object partitionKey, RequestOptions requestOptions)
+        public static void ValidatePartitionKey(object partitionKey, RequestOptions requestOptions)
         {
             if (partitionKey != null)
             {
@@ -92,34 +91,34 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
+#if !INTERNAL
+        public abstract Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
 #if !PREVIEW
 
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
- 
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuationToken = null,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-      
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -136,5 +135,39 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 #endif
+
+        public abstract class TryExecuteQueryResult
+        {
+        }
+
+        public sealed class FailedToGetQueryPlanResult : TryExecuteQueryResult
+        {
+            public FailedToGetQueryPlanResult(Exception exception)
+            {
+                this.Exception = exception ?? throw new ArgumentNullException(nameof(exception));
+            }
+
+            public Exception Exception { get; }
+        }
+
+        public sealed class QueryPlanNotSupportedResult : TryExecuteQueryResult
+        {
+            public QueryPlanNotSupportedResult(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+            {
+                this.QueryPlan = partitionedQueryExecutionInfo ?? throw new ArgumentNullException(nameof(partitionedQueryExecutionInfo));
+            }
+
+            public PartitionedQueryExecutionInfo QueryPlan { get; }
+        }
+
+        public sealed class QueryPlanIsSupportedResult : TryExecuteQueryResult
+        {
+            public QueryPlanIsSupportedResult(QueryIterator queryIterator)
+            {
+                this.QueryIterator = queryIterator ?? throw new ArgumentNullException(nameof(queryIterator));
+            }
+
+            public QueryIterator QueryIterator { get; }
+        }
     }
 }

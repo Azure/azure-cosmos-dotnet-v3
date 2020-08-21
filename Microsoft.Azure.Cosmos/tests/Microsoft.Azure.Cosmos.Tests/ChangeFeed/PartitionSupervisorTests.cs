@@ -145,6 +145,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task RunObserver_ResourceGoneCloseReason_IfProcessorFailedWithPartitionNotFoundException()
+        {
+            Mock.Get(partitionProcessor)
+                .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new FeedNotFoundException("processorException", "12345"));
+
+            Exception exception = await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            Assert.AreEqual("processorException", exception.Message);
+
+            Mock.Get(observer)
+                .Verify(feedObserver => feedObserver
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                        ChangeFeedObserverCloseReason.ResourceGone));
+        }
+
+        [TestMethod]
+        public async Task RunObserver_ReadSessionNotAvailableCloseReason_IfProcessorFailedWithReadSessionNotAvailableException()
+        {
+            Mock.Get(partitionProcessor)
+                .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new FeedReadSessionNotAvailableException("processorException", "12345"));
+
+            Exception exception = await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            Assert.AreEqual("processorException", exception.Message);
+
+            Mock.Get(observer)
+                .Verify(feedObserver => feedObserver
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                        ChangeFeedObserverCloseReason.ReadSessionNotAvailable));
+        }
+
+        [TestMethod]
         public void Dispose_ShouldWork_WithoutRun()
         {
             try

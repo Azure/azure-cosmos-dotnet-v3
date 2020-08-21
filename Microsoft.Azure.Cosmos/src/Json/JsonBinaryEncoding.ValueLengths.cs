@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     switch (length)
                     {
                         case L1:
-                            length = TypeMarkerLength + OneByteLength + MemoryMarshal.Read<byte>(buffer.Slice(1));
+                            length = TypeMarkerLength + OneByteLength + buffer[1];
                             break;
                         case L2:
                             length = TypeMarkerLength + TwoByteLength + MemoryMarshal.Read<ushort>(buffer.Slice(1));
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             length = TypeMarkerLength + FourByteLength + MemoryMarshal.Read<uint>(buffer.Slice(1));
                             break;
                         case LC1:
-                            length = TypeMarkerLength + OneByteLength + OneByteCount + MemoryMarshal.Read<byte>(buffer.Slice(1));
+                            length = TypeMarkerLength + OneByteLength + OneByteCount + buffer[1];
                             break;
                         case LC2:
                             length = TypeMarkerLength + TwoByteLength + TwoByteCount + MemoryMarshal.Read<ushort>(buffer.Slice(1));

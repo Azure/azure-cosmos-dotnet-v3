@@ -16,19 +16,55 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Moq;
+    using System.Collections.ObjectModel;
+    using System.Collections.Generic;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using System.IO;
 
-    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
+    internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
-
-        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
-            DocumentClient documentClient = new MockDocumentClient();
+            Kind = PartitionKind.Hash,
+            Paths = new Collection<string>()
+            {
+                "/id"
+            }
+        };
+
+        string[] dummyHeaderNames;
+        private IComputeHash authKeyHashFunction;
+
+        public static CosmosClient CreateMockCosmosClient(
+            bool useCustomSerializer = false,
+            Action < CosmosClientBuilder> customizeClientBuilder = null)
+        {
+            MockDocumentClient documentClient = new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
             cosmosClientBuilder.WithConnectionModeDirect();
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
+
+            if (useCustomSerializer)
+            {
+                cosmosClientBuilder.WithSerializerOptions(
+                    new CosmosSerializationOptions()
+                    {
+                        IgnoreNullValues = true,
+                    });
+            }
+
+            documentClient.dummyHeaderNames = new string[100];
+            for (int i = 0; i < documentClient.dummyHeaderNames.Length; i++)
+            {
+                documentClient.dummyHeaderNames[i] = Guid.NewGuid().ToString();
+            }
+            documentClient.dummyHeaderNames[0] = HttpConstants.HttpHeaders.ActivityId;
+            documentClient.dummyHeaderNames[1] = HttpConstants.HttpHeaders.SessionToken;
+            documentClient.dummyHeaderNames[2] = HttpConstants.HttpHeaders.ConsistencyLevel;
+            documentClient.dummyHeaderNames[3] = HttpConstants.HttpHeaders.XDate;
 
             return cosmosClientBuilder.Build(documentClient);
         }
@@ -36,6 +72,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
+            this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
+
             this.Init();
         }
 
@@ -45,6 +83,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
+
+        public static string GenerateRandomKey()
+        {
+            int keyLength = 64;
+            byte[] randomEntries = new byte[keyLength];
+
+            Random r = new Random((int)DateTime.Now.Ticks);
+            r.NextBytes(randomEntries);
+
+            return Convert.ToBase64String(randomEntries);
+        }
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
@@ -58,28 +107,43 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out string payload) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
         {
-            payload = null;
-            return null;
+            // this is masterkey authZ
+            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
+            string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
+                    requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out AuthorizationHelper.ArrayOwner payload);
+            using (payload)
+            {
+                return authorization;
+            }
         }
 
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null);
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
+            containerProperties.PartitionKey = partitionKeyDefinition;
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(ContainerProperties.CreateWithResourceId("test")));
+                ).Returns(Task.FromResult(containerProperties));
+
+            this.collectionCache.Setup(x =>
+                x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerProperties));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
@@ -91,6 +155,20 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
 
+            List<PartitionKeyRange> result = new List<PartitionKeyRange>();
+            result.Add(new PartitionKeyRange()
+            {
+                MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                Id = "0"
+            }); 
+
+            this.partitionKeyRangeCache.Setup(
+                    m => m.TryGetOverlappingRangesAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<Documents.Routing.Range<string>>(),
+                        It.IsAny<bool>())
+                ).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
@@ -113,6 +191,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
+            mockServiceConfigReader.SetupGet(x => x.SystemReplicationPolicy).Returns(replicationPolicy);
+            mockServiceConfigReader.SetupGet(x => x.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Eventual);
 
             this.StoreModel = new ServerStoreModel(new StoreClient(
                         mockAddressCache.Object,
@@ -166,10 +246,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(), It.IsAny<DocumentServiceRequest>()))
+                    It.IsAny<Uri>(),
+                    It.Is<DocumentServiceRequest>(e => this.IsValidDsr(e))))
                     .Returns((Uri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
 
             return mockTransportClient.Object;
+        }
+
+        private bool IsValidDsr(DocumentServiceRequest dsr)
+        {
+            for (int i = 0; i < this.dummyHeaderNames.Length; i++)
+            {
+                _ = dsr.Headers[this.dummyHeaderNames[i]];
+            }
+
+            return true;
         }
 
         private IStoreModel GetMockGatewayStoreModel()

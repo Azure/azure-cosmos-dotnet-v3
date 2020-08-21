@@ -22,21 +22,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             FeedProcessorFactory partitionProcessorFactory,
             ChangeFeedLeaseOptions options)
         {
-            if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));
-            if (leaseManager == null) throw new ArgumentNullException(nameof(leaseManager));
-            if (options == null) throw new ArgumentNullException(nameof(options));
-            if (partitionProcessorFactory == null) throw new ArgumentNullException(nameof(partitionProcessorFactory));
-
-            this.observerFactory = observerFactory;
-            this.leaseManager = leaseManager;
-            this.changeFeedLeaseOptions = options;
-            this.partitionProcessorFactory = partitionProcessorFactory;
+            this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
+            this.leaseManager = leaseManager ?? throw new ArgumentNullException(nameof(leaseManager));
+            this.changeFeedLeaseOptions = options ?? throw new ArgumentNullException(nameof(options));
+            this.partitionProcessorFactory = partitionProcessorFactory ?? throw new ArgumentNullException(nameof(partitionProcessorFactory));
         }
 
         public override PartitionSupervisor Create(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
             FeedProcessing.ChangeFeedObserver changeFeedObserver = this.observerFactory.CreateObserver();
             FeedProcessing.FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver);

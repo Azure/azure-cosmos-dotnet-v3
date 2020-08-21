@@ -3,8 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -14,17 +15,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosString : CosmosElement
+    abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>, IComparable<CosmosString>
     {
         private sealed class EagerCosmosString : CosmosString
         {
             public EagerCosmosString(string value)
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
                 this.Value = value;
             }
 
@@ -37,15 +33,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                jsonWriter.WriteStringValue(this.Value);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteStringValue(this.Value);
         }
     }
 #if INTERNAL

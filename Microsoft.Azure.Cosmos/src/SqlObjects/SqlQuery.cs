@@ -1,27 +1,29 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal class SqlQuery : SqlObject
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlQuery : SqlObject
     {
-        protected SqlQuery(
+        private SqlQuery(
             SqlSelectClause selectClause,
             SqlFromClause fromClause,
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
             SqlOrderbyClause orderbyClause,
             SqlOffsetLimitClause offsetLimitClause)
-            : base(SqlObjectKind.Query)
         {
-            if (selectClause == null)
-            {
-                throw new ArgumentNullException($"{nameof(selectClause)} must not be null.");
-            }
-
-            this.SelectClause = selectClause;
+            this.SelectClause = selectClause ?? throw new ArgumentNullException(nameof(selectClause));
             this.FromClause = fromClause;
             this.WhereClause = whereClause;
             this.GroupByClause = groupByClause;
@@ -29,35 +31,23 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.OffsetLimitClause = offsetLimitClause;
         }
 
-        public SqlSelectClause SelectClause
-        {
-            get;
-        }
+        public SqlSelectClause SelectClause { get; }
 
-        public SqlFromClause FromClause
-        {
-            get;
-        }
+        public SqlFromClause FromClause { get; }
 
-        public SqlWhereClause WhereClause
-        {
-            get;
-        }
+        public SqlWhereClause WhereClause { get; }
 
-        public SqlGroupByClause GroupByClause
-        {
-            get;
-        }
+        public SqlGroupByClause GroupByClause { get; }
 
-        public SqlOrderbyClause OrderbyClause
-        {
-            get;
-        }
+        public SqlOrderbyClause OrderbyClause { get; }
 
-        public SqlOffsetLimitClause OffsetLimitClause
-        {
-            get;
-        }
+        public SqlOffsetLimitClause OffsetLimitClause { get; }
+
+        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
 
         public static SqlQuery Create(
             SqlSelectClause selectClause,
@@ -65,24 +55,12 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
             SqlOrderbyClause orderByClause,
-            SqlOffsetLimitClause offsetLimitClause)
-        {
-            return new SqlQuery(selectClause, fromClause, whereClause, groupByClause, orderByClause, offsetLimitClause);
-        }
-
-        public override void Accept(SqlObjectVisitor visitor)
-        {
-            visitor.Visit(this);
-        }
-
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
-        {
-            return visitor.Visit(this);
-        }
-
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
-        {
-            return visitor.Visit(this, input);
-        }
+            SqlOffsetLimitClause offsetLimitClause) => new SqlQuery(
+                selectClause,
+                fromClause,
+                whereClause,
+                groupByClause,
+                orderByClause,
+                offsetLimitClause);
     }
 }

@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: Tests ${{ parameters.BuildConfiguration }}
+  displayName: Tests Debug
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -22,10 +22,20 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} --configuration Debug /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CopyLocalLockFileAssemblies=true /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
+  - script: |
+      dotnet tool install -g dotnet-reportgenerator-globaltool
+      reportgenerator -reports:$(Build.SourcesDirectory)/Microsoft.Azure.Cosmos/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura
+    displayName: Create Code coverage report
+  - task: PublishCodeCoverageResults@1
+    displayName: 'Publish code coverage'
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'
+      reportDirectory: '$(Build.SourcesDirectory)/CodeCoverage'
       
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
@@ -40,9 +50,9 @@ jobs:
     displayName: Microsoft.Azure.Cosmos.PerformanceTests
     condition: succeeded()
     inputs:
-      command: build
+      command: run
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release --framework netcoreapp3.1 -- -j Short -f *MockedItemBenchmark* -m --iterationCount 1 --warmupCount 1
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests

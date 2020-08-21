@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 !this.alreadyRetried)
             {
                 await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
-                        this.cosmosQueryContext.ResourceLink.OriginalString,
+                        this.cosmosQueryContext.ResourceLink,
                         cancellationToken);
                 this.alreadyRetried = true;
                 this.currentCosmosQueryExecutionContext.Dispose();

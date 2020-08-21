@@ -2,6 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Net.Http;
+using Microsoft.Azure.Documents.Client;
+
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
@@ -26,7 +29,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                SendingRequestEventArgs = this.SendingRequestEventHandlerScriptsVerifier,
+            };
+
+            this.cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
 
             string containerName = Guid.NewGuid().ToString();
             ContainerResponse cosmosContainerResponse = await this.database
@@ -826,6 +836,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        private void SendingRequestEventHandlerScriptsVerifier(object sender, SendingRequestEventArgs e)
+        {
+            if (e.IsHttpRequest())
+            {
+                if (e.HttpRequest.RequestUri.OriginalString.Contains(Paths.StoredProceduresPathSegment))
+                {
+                    // Stored procedure execute validation should verify that the session token does exist.
+                    if (e.HttpRequest.Method == HttpMethod.Post &&
+                    !e.HttpRequest.RequestUri.OriginalString.EndsWith(Paths.StoredProceduresPathSegment))
+                    {
+                        Assert.IsTrue(e.HttpRequest.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
+                        return;
+                    }
+
+                    Assert.IsFalse(e.HttpRequest.Headers.Contains(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SessionToken));
+                }
+            }
         }
 
         private static void ValidateStoredProcedureSettings(string id, string body, StoredProcedureResponse cosmosResponse)

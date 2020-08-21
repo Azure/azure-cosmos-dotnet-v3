@@ -2,10 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 33
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 45
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -17,10 +19,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosInt64 : CosmosNumber
+    abstract partial class CosmosInt64 : CosmosNumber, IEquatable<CosmosInt64>, IComparable<CosmosInt64>
     {
         protected CosmosInt64()
-            : base(CosmosNumberType.Int64)
+            : base()
         {
         }
 
@@ -28,46 +30,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public abstract long GetValue();
 
-        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
 
-            cosmosNumberVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
 
-        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-            return cosmosNumberVisitor.Visit(this, input);
-        }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is CosmosInt64 cosmosInt64 && this.Equals(cosmosInt64);
 
-        public override void WriteTo(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
+        public bool Equals(CosmosInt64 cosmosInt64) => this.GetValue() == cosmosInt64.GetValue();
 
-            jsonWriter.WriteInt64Value(this.GetValue());
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 2562566505);
+
+        public int CompareTo(CosmosInt64 cosmosInt64) => this.GetValue().CompareTo(cosmosInt64.GetValue());
+
+        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteInt64Value(this.GetValue());
 
         public static CosmosInt64 Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosInt64(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosInt64(jsonNavigator, jsonNavigatorNode);
 
-        public static CosmosInt64 Create(long number)
-        {
-            return new EagerCosmosInt64(number);
-        }
+        public static CosmosInt64 Create(long number) => new EagerCosmosInt64(number);
     }
 }

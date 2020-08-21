@@ -3,8 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosString : CosmosElement
+    abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>, IComparable<CosmosString>
     {
         private sealed class LazyCosmosString : CosmosString
         {
@@ -24,16 +25,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public LazyCosmosString(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.String)
                 {
@@ -42,34 +33,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-                this.lazyString = new Lazy<string>(() =>
-                {
-                    return this.jsonNavigator.GetStringValue(this.jsonNavigatorNode);
-                });
+                this.lazyString = new Lazy<string>(() => this.jsonNavigator.GetStringValue(this.jsonNavigatorNode));
             }
 
-            public override string Value
-            {
-                get
-                {
-                    return this.lazyString.Value;
-                }
-            }
+            public override string Value => this.lazyString.Value;
 
-            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue)
-            {
-                return this.jsonNavigator.TryGetBufferedStringValue(this.jsonNavigatorNode, out bufferedValue);
-            }
+            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue) => this.jsonNavigator.TryGetBufferedStringValue(
+                this.jsonNavigatorNode,
+                out bufferedValue);
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
-                jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
-            }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
         }
     }
 #if INTERNAL

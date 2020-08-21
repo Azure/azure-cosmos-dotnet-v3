@@ -14,8 +14,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <remarks>
     /// It contains provisioned container throughput in measurement of request units per second in the Azure Cosmos service.
-    /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
     /// </remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput">Set throughput on resources</seealso>
     /// <example>
     /// The example below fetch the ThroughputProperties on testContainer.
     /// <code language="c#">
@@ -116,6 +117,16 @@ namespace Microsoft.Azure.Cosmos
             return new ThroughputProperties(OfferContentProperties.CreateAutoscaleOfferConent(
                 startingMaxThroughput: autoscaleMaxThroughput,
                 autoUpgradeMaxThroughputIncrementPercentage: null));
+        }
+
+        internal static ThroughputProperties CreateManualThroughput(int? throughput)
+        {
+            if (!throughput.HasValue)
+            {
+                return null;
+            }
+
+            return CreateManualThroughput(throughput.Value);
         }
 
         internal static ThroughputProperties CreateAutoscaleThroughput(

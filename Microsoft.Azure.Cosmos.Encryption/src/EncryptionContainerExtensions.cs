@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor)
         {
             return new EncryptionContainer(
-                container, 
+                container,
                 encryptor);
         }
 
@@ -43,12 +43,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = EncryptionContainerExtensions.ToEncryptionFeedIterator<ToDoActivity>(this.container, linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionFeedIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>
         public static FeedIterator<T> ToEncryptionFeedIterator<T>(
-            this Container container, 
+            this Container container,
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
@@ -58,10 +58,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator) encryptionContainer.ToEncryptionStreamIterator(
+                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(
                     query,
                     queryRequestOptions),
-                encryptionContainer.responseFactory);
+                encryptionContainer.ResponseFactory);
         }
 
         /// <summary>
@@ -79,12 +79,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = EncryptionContainerExtensions.ToEncryptionStreamIterator<ToDoActivity>(this.container, linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionStreamIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>
         public static FeedIterator ToEncryptionStreamIterator<T>(
-            this Container container, 
+            this Container container,
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                encryptionContainer.encryptor,
+                encryptionContainer.Encryptor,
                 decryptionResultHandler);
         }
     }
