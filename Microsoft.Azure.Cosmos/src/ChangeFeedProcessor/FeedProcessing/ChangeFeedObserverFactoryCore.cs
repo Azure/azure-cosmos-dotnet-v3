@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             IEnumerable<T> asEnumerable;
             try
             {
-                asEnumerable = this.serializerCore.FromFeedResponseStream<T>(changes, Documents.ResourceType.Document);
+                asEnumerable = this.serializerCore.FromFeedStream<T>(changes);
             }
             catch (Exception serializationException)
             {

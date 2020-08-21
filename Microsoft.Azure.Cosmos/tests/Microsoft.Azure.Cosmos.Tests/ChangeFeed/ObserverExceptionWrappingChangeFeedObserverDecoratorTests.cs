@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private bool ValidateStream(Stream stream)
         {
-            IEnumerable<MyDocument> asEnumerable = this.serializerCore.FromFeedResponseStream<MyDocument>(stream, Documents.ResourceType.Document);
+            IEnumerable<MyDocument> asEnumerable = this.serializerCore.FromFeedStream<MyDocument>(stream);
             return this.documents.SequenceEqual(asEnumerable, new MyDocument.Comparer());
         }
 

@@ -104,19 +104,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
+            FeedProcessorCore processor = new FeedProcessorCore(
                 mockObserver.Object,
                 mockIterator.Object,
                 FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                MockCosmosUtil.Serializer);
+                mockCheckpointer.Object);
 
             await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -127,19 +126,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
+            FeedProcessorCore processor = new FeedProcessorCore(
                 mockObserver.Object,
                 mockIterator.Object,
                 FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                MockCosmosUtil.Serializer);
+                mockCheckpointer.Object);
 
             await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
