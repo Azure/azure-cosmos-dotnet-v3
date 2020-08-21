@@ -333,6 +333,7 @@ namespace Microsoft.Azure.Cosmos
             // content is ensured to be seekable in caller.
             int resizerInitialCapacity = (int)content.Length;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             Result res = await content.ReadRecordIOAsync(
                 record =>
                 {
@@ -346,6 +347,7 @@ namespace Microsoft.Azure.Cosmos
                     return r;
                 },
                 resizer: new MemorySpanResizer<byte>(resizerInitialCapacity));
+#pragma warning restore CS0618 // Type or member is obsolete
 
             if (res != Result.Success)
             {
