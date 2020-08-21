@@ -26,6 +26,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+        private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+        {
+            Kind = PartitionKind.Hash,
+            Paths = new Collection<string>()
+            {
+                "/id"
+            }
+        };
+
         string[] dummyHeaderNames;
         private IComputeHash authKeyHashFunction;
 
@@ -126,13 +135,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null);
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
+            containerProperties.PartitionKey = partitionKeyDefinition;
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(ContainerProperties.CreateWithResourceId("test")));
+                ).Returns(Task.FromResult(containerProperties));
+
+            this.collectionCache.Setup(x =>
+                x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerProperties));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

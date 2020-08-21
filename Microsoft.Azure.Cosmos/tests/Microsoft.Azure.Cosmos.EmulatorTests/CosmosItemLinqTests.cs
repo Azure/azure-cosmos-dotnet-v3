@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestSearch(x => x.description.EndsWith("activity"), "ENDSWITH", false, 0);
             await TestSearch(x => x.description.EndsWith("AcTiViTy", StringComparison.OrdinalIgnoreCase), "ENDSWITH", true, 200);
 
-            await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "STRINGEQUALS", true, 200);
+            await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "StringEquals", true, 200);
 
             await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
             await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 200);

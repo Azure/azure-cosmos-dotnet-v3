@@ -5,10 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
     /// These are the indexing types available for indexing a path in the Azure Cosmos DB service.
-    /// </summary> 
-    /// <remarks>
-    /// For additional details, refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy.
-    /// </remarks>
+    /// </summary>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
     public enum IndexKind
     {
         /// <summary>

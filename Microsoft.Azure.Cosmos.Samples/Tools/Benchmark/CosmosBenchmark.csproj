@@ -4,7 +4,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>CosmosBenchmark</RootNamespace>
     <AssemblyName>CosmosBenchmark</AssemblyName>
-    <ServerGarbageCollection>true</ServerGarbageCollection>    
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
