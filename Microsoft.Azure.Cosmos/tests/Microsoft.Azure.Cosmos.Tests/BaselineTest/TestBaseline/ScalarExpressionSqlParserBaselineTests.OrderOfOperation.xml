@@ -1,0 +1,83 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Conditional > Coalese]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 ? 2 ?? 3 : 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (1 ? (2 ?? 3) : 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[property refs > binary]]></Description>
+      <Query><![CDATA[SELECT VALUE x + y.foo]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (x + y.foo)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[property refs > binary > logical and]]></Description>
+      <Query><![CDATA[SELECT VALUE c.name = 'John' AND c.age = 42]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((c.name = "John") AND (c.age = 42))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[unary > binary]]></Description>
+      <Query><![CDATA[SELECT VALUE -2 < 1]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (-2 < 1)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[propertyref > unary]]></Description>
+      <Query><![CDATA[SELECT VALUE NOT x.y.z]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (NOT x.y.z)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Conditional > PropertyRef]]></Description>
+      <Query><![CDATA[SELECT VALUE true ? {"x": 1} : {"x": 2}.x]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (true ? {"x": 1} : {"x": 2}.x)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Coalesce + Between]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 BETWEEN 3 ?? 4 AND 5 AND 6]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[In + Between]]></Description>
+      <Query><![CDATA[SELECT VALUE SELECT 1 NOT BETWEEN 2 AND 1 NOT IN (1, 2, 3)]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested BETWEEN]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 BETWEEN 2 AND 3 BETWEEN 4 AND 5]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>
