@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            return this.Utf8String.Equals(other.Utf8String);
+            return this.Utf8String.Span.Span.SequenceEqual(other.Utf8String.Span.Span);
         }
     }
 }
