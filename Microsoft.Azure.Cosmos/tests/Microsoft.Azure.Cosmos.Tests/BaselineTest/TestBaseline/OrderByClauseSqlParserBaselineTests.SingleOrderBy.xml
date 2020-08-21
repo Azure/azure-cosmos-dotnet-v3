@@ -1,0 +1,56 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Ascending]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1 asc]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multi Item Array]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1 DESC]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 DESC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Case Insensitive]]></Description>
+      <Query><![CDATA[SELECT * OrDeR By 1 DeSc]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 DESC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[No spaces]]></Description>
+      <Query><![CDATA[SELECT * ORDERBY 1]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Wrong Keyword]]></Description>
+      <Query><![CDATA[SELECT * ORER BY 1]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>
