@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
-            Func<ValueTask<HttpRequestMessage>> createRequestMessage,
+            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             CancellationToken cancellationToken);
 

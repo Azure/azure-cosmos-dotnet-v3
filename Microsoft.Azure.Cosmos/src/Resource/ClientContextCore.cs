@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
-        private readonly CosmosHttpClient httpClient;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -39,8 +38,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache,
-            CosmosHttpClient cosmosHttpClient)
+            BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -50,7 +48,6 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
-            this.httpClient = cosmosHttpClient;
         }
 
         internal static CosmosClientContext Create(
@@ -63,20 +60,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
-            ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy();
-            CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithClientOptions(
-                clientOptions.ApiType,
-                DocumentClientEventSource.Instance,
-                connectionPolicy.UserAgentContainer,
-                clientOptions);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
                cosmosClient.AccountKey,
+               sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                apitype: clientOptions.ApiType,
-               httpClient: cosmosHttpClient,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
-               connectionPolicy: connectionPolicy,
+               connectionPolicy: clientOptions.GetConnectionPolicy(),
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
@@ -134,8 +125,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                cosmosHttpClient: documentClient.httpClient);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
         /// <summary>
@@ -154,8 +144,6 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClientOptions ClientOptions => this.ThrowIfDisposed(this.clientOptions);
 
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
-
-        internal override CosmosHttpClient CosmosHttpClient => this.ThrowIfDisposed(this.httpClient);
 
         /// <summary>
         /// Generates the URI link for the resource

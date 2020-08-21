@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class CosmosHttpClientCore : CosmosHttpClient
+    internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
         private const int BackOffMultiplier = 2;
         private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
@@ -25,8 +25,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly ICommunicationEventSource eventSource;
 
         private bool disposedValue;
-
-        public override HttpMessageHandler HttpMessageHandler { get; }
 
         private CosmosHttpClientCore(
             HttpClient httpClient,
@@ -37,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = eventSource ?? throw new ArgumentNullException(nameof(eventSource));
             this.HttpMessageHandler = httpMessageHandler;
         }
+
+        public override HttpMessageHandler HttpMessageHandler { get; }
 
         public static CosmosHttpClient CreateWithConnectionPolicy(
             ApiType apiType,
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException($"{nameof(connectionPolicy.HttpClientFactory)} can not be set at the same time as {nameof(sendingRequestEventArgs)} or {nameof(ReceivedResponseEventArgs)}");
                 }
 
-                return Create(
+                return CosmosHttpClientCore.Create(
                     connectionPolicy.RequestTimeout,
                     connectionPolicy.UserAgentContainer,
                     apiType,
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy.HttpClientFactory);
             }
 
-            return Create(
+            return CosmosHttpClientCore.Create(
                 requestTimeout: connectionPolicy.RequestTimeout,
                 userAgentContainer: connectionPolicy.UserAgentContainer,
                 apiType: apiType,
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (clientOptions.HttpClientFactory != null)
             {
-                return Create(
+                return CosmosHttpClientCore.Create(
                     clientOptions.RequestTimeout,
                     userAgentContainer,
                     apiType,
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                     clientOptions.HttpClientFactory);
             }
 
-            return Create(
+            return CosmosHttpClientCore.Create(
                 requestTimeout: clientOptions.RequestTimeout,
                 userAgentContainer: userAgentContainer,
                 apiType: apiType,
@@ -237,19 +237,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
-            Func<ValueTask<HttpRequestMessage>> createRequestMessage,
+            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             CancellationToken cancellationToken)
         {
             return this.SendHttpAsync(
-                createRequestMessage,
+                createRequestMessageAsync,
                 HttpCompletionOption.ResponseContentRead,
                 resourceType,
                 cancellationToken);
         }
 
         private async Task<HttpResponseMessage> SendHttpAsync(
-            Func<ValueTask<HttpRequestMessage>> createRequestMessage,
+            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             HttpCompletionOption httpCompletionOption,
             ResourceType resourceType,
             CancellationToken cancellationToken)
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
 
             while (true)
             {
-                using (HttpRequestMessage requestMessage = await createRequestMessage())
+                using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces

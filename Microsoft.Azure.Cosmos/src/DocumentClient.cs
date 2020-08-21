@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
         private HttpClient mediaClient;
+        private CosmosHttpClient httpClient;
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
@@ -444,64 +445,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.transportClientHandlerFactory = transportClientHandlerFactory;
-            CosmosHttpClient cosmosHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
-                this.ApiType,
-                DocumentClientEventSource.Instance,
-                connectionPolicy ?? ConnectionPolicy.Default,
-                sendingRequestEventArgs,
-                receivedResponseEventArgs);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
                 connectionPolicy: connectionPolicy,
                 desiredConsistencyLevel: desiredConsistencyLevel,
-                httpClient: cosmosHttpClient,
-                sessionContainer: sessionContainer,
-                enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory);
-        }
-
-        internal DocumentClient(Uri serviceEndpoint,
-                              string authKeyOrResourceToken,
-                              CosmosHttpClient httpClient,
-                              ConnectionPolicy connectionPolicy = null,
-                              Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-                              JsonSerializerSettings serializerSettings = null,
-                              ApiType apitype = ApiType.None,
-                              ISessionContainer sessionContainer = null,
-                              bool? enableCpuMonitor = null,
-                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
-        {
-            if (authKeyOrResourceToken == null)
-            {
-                throw new ArgumentNullException("authKeyOrResourceToken");
-            }
-
-            if (serializerSettings != null)
-            {
-                this.serializerSettings = serializerSettings;
-            }
-
-            this.ApiType = apitype;
-
-            if (AuthorizationHelper.IsResourceToken(authKeyOrResourceToken))
-            {
-                this.hasAuthKeyResourceToken = true;
-                this.authKeyResourceToken = authKeyOrResourceToken;
-            }
-            else
-            {
-                this.authKeyHashFunction = new StringHMACSHA256Hash(authKeyOrResourceToken);
-            }
-
-            this.transportClientHandlerFactory = transportClientHandlerFactory;
-
-            this.Initialize(
-                serviceEndpoint: serviceEndpoint,
-                connectionPolicy: connectionPolicy,
-                desiredConsistencyLevel: desiredConsistencyLevel,
-                httpClient: httpClient,
+                handler: handler,
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory);
@@ -765,9 +714,19 @@ namespace Microsoft.Azure.Cosmos
             return this.partitionKeyRangeCache;
         }
 
-        internal CosmosHttpClient httpClient { get; private set; }
-
         internal GlobalAddressResolver AddressResolver { get; private set; }
+
+        internal event EventHandler<SendingRequestEventArgs> SendingRequest
+        {
+            add
+            {
+                this.sendingRequest += value;
+            }
+            remove
+            {
+                this.sendingRequest -= value;
+            }
+        }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
 
@@ -841,7 +800,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual void Initialize(Uri serviceEndpoint,
             ConnectionPolicy connectionPolicy = null,
             Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-            CosmosHttpClient httpClient = null,
+            HttpMessageHandler handler = null,
             ISessionContainer sessionContainer = null,
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null)
@@ -1080,11 +1039,17 @@ namespace Microsoft.Azure.Cosmos
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
 
-            this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            this.httpMessageHandler = httpClient.HttpMessageHandler;
-            if (httpClient.HttpMessageHandler != null)
+            this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                this.ApiType,
+                DocumentClientEventSource.Instance,
+                connectionPolicy,
+                this.sendingRequest,
+                this.receivedResponse);
+
+            this.httpMessageHandler = this.httpClient.HttpMessageHandler;
+            if (this.httpClient.HttpMessageHandler != null)
             {
-                this.mediaClient = new HttpClient(httpClient.HttpMessageHandler);
+                this.mediaClient = new HttpClient(this.httpClient.HttpMessageHandler);
             }
             else
             {

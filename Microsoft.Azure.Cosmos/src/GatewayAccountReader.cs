@@ -59,10 +59,10 @@ namespace Microsoft.Azure.Cosmos
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, authorizationToken);
             using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                serviceEndpoint,
-                headers,
-                ResourceType.DatabaseAccount,
-                default))
+                uri: serviceEndpoint,
+                additionalHeaders: headers,
+                resourceType: ResourceType.DatabaseAccount,
+                cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

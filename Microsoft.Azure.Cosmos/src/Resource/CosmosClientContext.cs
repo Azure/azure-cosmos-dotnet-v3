@@ -37,8 +37,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract string UserAgent { get; }
 
-        internal abstract CosmosHttpClient CosmosHttpClient { get; }
-
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerInternal container);
 

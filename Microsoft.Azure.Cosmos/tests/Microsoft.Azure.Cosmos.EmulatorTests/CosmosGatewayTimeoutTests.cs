@@ -40,7 +40,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     gatewayStore = (GatewayStoreModel)client.DocumentClient.GetStoreProxy(serviceRequest);
                 }
 
-                CosmosHttpClientCore cosmosHttpClient = (CosmosHttpClientCore)client.ClientContext.CosmosHttpClient;
+                DocumentClient documentClient = client.DocumentClient;
+                FieldInfo cosmosHttpClientProperty = client.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)cosmosHttpClientProperty.GetValue(documentClient);
+
                 // Set the http request timeout to 10 ms to cause a timeout exception
                 HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
                 FieldInfo httpClientProperty = cosmosHttpClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
