@@ -306,10 +306,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     return false;
                 }
 
+                // Remove the quotes.
                 value = Utf8Memory.UnsafeCreateNoValidation(
                     this.jsonTextBuffer.GetBufferedRawJsonToken(
-                        this.token.Start,
-                        this.token.End));
+                        this.token.Start + 1,
+                        this.token.End - 1));
                 return true;
             }
 

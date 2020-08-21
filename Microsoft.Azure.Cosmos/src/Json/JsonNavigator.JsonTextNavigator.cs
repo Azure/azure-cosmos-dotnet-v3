@@ -390,14 +390,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 bool sameEncoding = this.SerializationFormat == jsonWriter.SerializationFormat;
-                if (sameEncoding)
+                if (sameEncoding && jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
                 {
                     bool isFieldName = textNavigatorNode.Type == JsonNodeType.FieldName;
-                    if (!(jsonWriter is IJsonTextWriterExtensions jsonTextWriter))
-                    {
-                        throw new InvalidOperationException($"Expected writer to implement: {nameof(IJsonBinaryWriterExtensions)}.");
-                    }
-
                     jsonTextWriter.WriteRawJsonValue(
                         JsonTextNavigator.GetNodeBuffer(textNavigatorNode),
                         isFieldName);
@@ -552,11 +547,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// <returns>JSON string AST node</returns>
                 private static StringNode ParseStringNode(IJsonTextReaderExtensions jsonTextReader)
                 {
-                    if (!jsonTextReader.TryGetBufferedStringValue(out Utf8Memory bufferedStringValue))
-                    {
-                        bufferedStringValue = jsonTextReader.GetBufferedJsonToken();
-                    }
-
+                    Utf8Memory bufferedStringValue = jsonTextReader.GetBufferedJsonToken();
                     StringNode stringNode = StringNode.Create(bufferedStringValue);
 
                     // consume the string from the reader

@@ -692,17 +692,17 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private bool IsSameStringDictionary(IReadOnlyJsonStringDictionary jsonStringDictionary)
             {
-                bool sameStringDictionary;
                 if (object.ReferenceEquals(this.jsonStringDictionary, jsonStringDictionary))
                 {
-                    sameStringDictionary = true;
-                }
-                else
-                {
-                    sameStringDictionary = this.jsonStringDictionary.Equals(jsonStringDictionary);
+                    return true;
                 }
 
-                return sameStringDictionary;
+                if ((this.jsonStringDictionary != null) && (jsonStringDictionary != null))
+                {
+                    return this.jsonStringDictionary.Equals(jsonStringDictionary);
+                }
+
+                return false;
             }
 
             private sealed class BeginOffsetAndCount
