@@ -910,7 +910,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
             foreach ((SqlObject firstItem, SqlObject secondItem) in itemPairs)
             {
-                if (firstItem.Accept(SqlObjectEqualityVisitor.Singleton, secondItem))
+                if (!firstItem.Accept(SqlObjectEqualityVisitor.Singleton, secondItem))
                 {
                     return false;
                 }
