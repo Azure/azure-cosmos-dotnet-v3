@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Reflection;
     using System.Text;
     using BenchmarkDotNet.Attributes;
@@ -132,8 +133,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                string path = $"TestJsons/{name}.json";
-                string json = TextFileConcatenation.ReadMultipartFile(path);
+                string path = $"{name}.json";
+                string json = File.ReadAllText(path);
                 json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
 
                 ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
