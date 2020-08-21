@@ -208,8 +208,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [ExpectedException(typeof(NullReferenceException),
-        "ArgumentNullException Method should catch Null References sent back by GetKeyAsync")]
+        [ExpectedException(typeof(ArgumentException),
+        "ArgumentException Caught if KeyVault Responds with a Null Key")]
         public async Task ValidateKeyClientReturnsNullKeyVaultResponse()
         {
             CancellationToken cancellationToken = default;
