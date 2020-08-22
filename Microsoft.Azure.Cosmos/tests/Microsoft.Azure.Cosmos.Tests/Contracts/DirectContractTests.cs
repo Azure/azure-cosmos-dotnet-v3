@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Threading.Tasks.Extensions", new Version(4, 5, 2) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
                 { "Antlr4.Runtime.Standard", new Version(4, 8, 0) },
+                { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
