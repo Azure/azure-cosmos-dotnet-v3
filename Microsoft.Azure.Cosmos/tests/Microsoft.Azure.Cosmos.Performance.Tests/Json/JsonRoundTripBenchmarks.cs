@@ -1,13 +1,12 @@
-﻿
-namespace Microsoft.Azure.Cosmos.Json
+﻿namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Reflection;
     using System.Text;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tests.Json;
 
     [MemoryDiagnoser]
@@ -15,11 +14,22 @@ namespace Microsoft.Azure.Cosmos.Json
     {
         private static class Payloads
         {
-            public static readonly CurratedDocsPayload NutritionData;
-            static Payloads()
-            {
-                NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
-            }
+            //public static readonly CurratedDocsPayload CombinedScriptsData = CurratedDocsPayload.CreateFromCurratedDocs("CombinedScriptsData");
+            //public static readonly CurratedDocsPayload Countries = CurratedDocsPayload.CreateFromCurratedDocs("countries");
+            //public static readonly CurratedDocsPayload Devtestcoll = CurratedDocsPayload.CreateFromCurratedDocs("devtestcoll");
+            //public static readonly CurratedDocsPayload Lastfm = CurratedDocsPayload.CreateFromCurratedDocs("lastfm");
+            //public static readonly CurratedDocsPayload LogData = CurratedDocsPayload.CreateFromCurratedDocs("LogData");
+            //public static readonly CurratedDocsPayload MillionSong1KDocuments = CurratedDocsPayload.CreateFromCurratedDocs("MillionSong1KDocuments");
+            //public static readonly CurratedDocsPayload MsnCollection = CurratedDocsPayload.CreateFromCurratedDocs("MsnCollection");
+            public static readonly CurratedDocsPayload NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
+            //public static readonly CurratedDocsPayload RunsCollection = CurratedDocsPayload.CreateFromCurratedDocs("runsCollection");
+            //public static readonly CurratedDocsPayload StatesCommittees = CurratedDocsPayload.CreateFromCurratedDocs("states_committees");
+            //public static readonly CurratedDocsPayload StatesLegislators = CurratedDocsPayload.CreateFromCurratedDocs("states_legislators");
+            //public static readonly CurratedDocsPayload Store01C = CurratedDocsPayload.CreateFromCurratedDocs("store01C");
+            //public static readonly CurratedDocsPayload TicinoErrorBuckets = CurratedDocsPayload.CreateFromCurratedDocs("TicinoErrorBuckets");
+            //public static readonly CurratedDocsPayload TwitterData = CurratedDocsPayload.CreateFromCurratedDocs("twitter_data");
+            //public static readonly CurratedDocsPayload Ups1 = CurratedDocsPayload.CreateFromCurratedDocs("ups1");
+            //public static readonly CurratedDocsPayload XpertEvents = CurratedDocsPayload.CreateFromCurratedDocs("XpertEvents");
         }
 
 #if false
@@ -59,9 +69,9 @@ namespace Microsoft.Azure.Cosmos.Json
         [Benchmark]
         [ArgumentsSource(nameof(NavigatorToWriterArguments))]
         public void NavigatorToWriter(
-            CurratedDocsPayload payload,
-            SerializationFormat sourceFormat,
-            SerializationFormat destinationFormat)
+        CurratedDocsPayload payload,
+        SerializationFormat sourceFormat,
+        SerializationFormat destinationFormat)
         {
             IJsonNavigator navigator = sourceFormat switch
             {
@@ -121,20 +131,28 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                string path = $"{name}.json";
-                string json = File.ReadAllText(path);
-                json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
+                try
+                {
+                    string path = $"TestJsons/{name}.json";
+                    string json = TextFileConcatenation.ReadMultipartFile(path);
+                    json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
 
-                ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
-                ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
-                ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
+                    ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
+                    ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
+                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
 
-                return new CurratedDocsPayload(
-                    name: name,
-                    text: text,
-                    binary: binary,
-                    binaryWithDictionaryEncoding: (dictionaryEncodedBinary, jsonStringDictionary));
+                    return new CurratedDocsPayload(
+                        name: name,
+                        text: text,
+                        binary: binary,
+                        binaryWithDictionaryEncoding: (dictionaryEncodedBinary, jsonStringDictionary));
+                }
+                catch (Exception)
+                {
+                    // initializer can not throw exception:
+                    return default;
+                }
             }
 
             public override string ToString()

@@ -51,8 +51,13 @@
     <None Update="samplefeedpayload.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="TestJsons\NutritionData.json">
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\**\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestJsons\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+    <None Include="..\Microsoft.Azure.Cosmos.Tests\TestJsons\**\*.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestJsons\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 
