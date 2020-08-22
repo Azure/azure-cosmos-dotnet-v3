@@ -333,9 +333,8 @@ namespace Microsoft.Azure.Cosmos
             // content is ensured to be seekable in caller.
             int resizerInitialCapacity = (int)content.Length;
 
-#pragma warning disable CS0618 // Type or member is obsolete
             Result res = await content.ReadRecordIOAsync(
-                record =>
+                (Func<ReadOnlyMemory<byte>, Result>)(record =>
                 {
                     Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
                     if (r != Result.Success)
@@ -345,9 +344,8 @@ namespace Microsoft.Azure.Cosmos
 
                     results.Add(operationResult);
                     return r;
-                },
+                }),
                 resizer: new MemorySpanResizer<byte>(resizerInitialCapacity));
-#pragma warning restore CS0618 // Type or member is obsolete
 
             if (res != Result.Success)
             {
