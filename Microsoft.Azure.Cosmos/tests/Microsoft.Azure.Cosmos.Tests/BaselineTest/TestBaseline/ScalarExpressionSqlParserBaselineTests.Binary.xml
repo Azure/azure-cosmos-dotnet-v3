@@ -1,0 +1,335 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Add]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 + 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 + 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[And]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 AND 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 AND 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[BitwiseAnd]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 & 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 & 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[BitwiseOr]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 | 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 | 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[BitwiseXor]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 ^ 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 ^ 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Coalesce]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 ?? 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 ?? 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Divide]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 / 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 / 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Equal]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 = 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 = 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GreaterThan]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 > 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 > 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GreaterThanOrEqual]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 >= 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 >= 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LessThan]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 < 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 < 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LessThanOrEqual]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 <= 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 <= 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Modulo]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 % 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 % 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiply]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 * 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 * 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[NotEqual]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 != 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 != 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Or]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 OR 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 OR 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[StringConcat]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 || 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 || 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Subtract]]></Description>
+      <Query><![CDATA[SELECT VALUE (42 - 1337)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 - 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiplication, division, and remainder -> left to right]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 / 2 * 3 % 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((1 / 2) * 3) % 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Addition and subtraction -> left to right]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 + 2 - 3 + 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((1 + 2) - 3) + 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Relational operators -> left to right]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 < 2 <= 3 > 4 >= 5]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((((1 < 2) <= 3) > 4) >= 5)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Equality operators -> left to right]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 = 2 != 3 = 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((1 = 2) != 3) = 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Bitwise AND > Bitwise XOR (exclusive or) > Bitwise OR (inclusive or)]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 | 2 & 3 ^ 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (1 | ((2 & 3) ^ 4))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Logical AND > Logical OR]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 AND 2 OR 3 AND 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 AND 2) OR (3 AND 4))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Conditional-expression Right to left]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 ? 2 : 3 + 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (1 ? 2 : (3 + 4))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiplicative > Additive]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 + 2 * 3 - 4 / 5]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 + (2 * 3)) - (4 / 5))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Additive > Relational]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 + 2 < 2 + 3 <= 10 - 4 > 5 >= 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((((1 + 2) < (2 + 3)) <= (10 - 4)) > 5) >= 3)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Relational > Equality]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 > 2 = false AND 1 > 2 != true]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((1 > 2) = false) AND ((1 > 2) != true))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Equality > Bitwise AND]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 = 2 & 3 != 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 = 2) & (3 != 4))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Bitwise AND > Bitwise Exclusive OR]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 ^ 2 & 3 ^ 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 ^ (2 & 3)) ^ 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Bitwise Exclusive OR > Bitwise Inclusive OR]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 | 2 ^ 3 | 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 | (2 ^ 3)) | 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Bitwise Inclusive OR > Logical AND]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 AND 2 | 3 AND 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 AND (2 | 3)) AND 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Logical AND > Logical OR]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 OR 2 AND 3 OR 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 OR (2 AND 3)) OR 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Logical OR > String Concat]]></Description>
+      <Query><![CDATA[SELECT VALUE 1 || 2 OR 3 || 4]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 || (2 OR 3)) || 4)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing Right]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 +]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing Left]]></Description>
+      <Query><![CDATA[SELECT VALUE AND 1337]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Unknown Operator]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 # 1337]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>
