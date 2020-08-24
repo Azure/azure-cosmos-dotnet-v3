@@ -201,12 +201,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangeEPK_ToJsonFromJson()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
-            string representation = feedRangeEPK.ToJsonString();
+            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
+            string representation = feedRangeEpk.ToJsonString();
             FeedRangeEpk feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpk;
             Assert.IsNotNull(feedRangeEPKDeserialized);
-            Assert.AreEqual(FeedRangeEpk.Range.Min, feedRangeEPKDeserialized.Range.Min);
-            Assert.AreEqual(FeedRangeEpk.Range.Max, feedRangeEPKDeserialized.Range.Max);
+            Assert.AreEqual(feedRangeEpk.Range.Min, feedRangeEPKDeserialized.Range.Min);
+            Assert.AreEqual(feedRangeEpk.Range.Max, feedRangeEPKDeserialized.Range.Max);
         }
 
         [TestMethod]

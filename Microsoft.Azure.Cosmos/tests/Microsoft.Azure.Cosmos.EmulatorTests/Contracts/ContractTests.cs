@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using Microsoft.Azure.Documents;
     using System.IO;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -156,11 +157,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    FeedRange = feedRange,
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromBeginning(),
-                    MaxItemCount = 1
+                    PageSizeHint = 1
                 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.Beginning(feedRange),
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {
@@ -196,10 +197,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             {
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    From = ChangeFeedRequestOptions.StartFrom.CreateFromContinuation(continuation),
-                    MaxItemCount = 100
+                    PageSizeHint = 100
                 };
-                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
+                ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
+                    changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
                 {

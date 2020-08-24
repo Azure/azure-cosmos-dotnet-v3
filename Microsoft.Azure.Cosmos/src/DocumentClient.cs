@@ -1027,36 +1027,36 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             // ConnectionPolicy always overrides appconfig
-            if (this.ConnectionPolicy != null)
+            if (connectionPolicy != null)
             {
-                if (this.ConnectionPolicy.IdleTcpConnectionTimeout.HasValue)
+                if (connectionPolicy.IdleTcpConnectionTimeout.HasValue)
                 {
-                    this.idleConnectionTimeoutInSeconds = (int)this.ConnectionPolicy.IdleTcpConnectionTimeout.Value.TotalSeconds;
+                    this.idleConnectionTimeoutInSeconds = (int)connectionPolicy.IdleTcpConnectionTimeout.Value.TotalSeconds;
                 }
 
-                if (this.ConnectionPolicy.OpenTcpConnectionTimeout.HasValue)
+                if (connectionPolicy.OpenTcpConnectionTimeout.HasValue)
                 {
-                    this.openConnectionTimeoutInSeconds = (int)this.ConnectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
+                    this.openConnectionTimeoutInSeconds = (int)connectionPolicy.OpenTcpConnectionTimeout.Value.TotalSeconds;
                 }
 
-                if (this.ConnectionPolicy.MaxRequestsPerTcpConnection.HasValue)
+                if (connectionPolicy.MaxRequestsPerTcpConnection.HasValue)
                 {
-                    this.maxRequestsPerRntbdChannel = this.ConnectionPolicy.MaxRequestsPerTcpConnection.Value;
+                    this.maxRequestsPerRntbdChannel = connectionPolicy.MaxRequestsPerTcpConnection.Value;
                 }
 
-                if (this.ConnectionPolicy.MaxTcpPartitionCount.HasValue)
+                if (connectionPolicy.MaxTcpPartitionCount.HasValue)
                 {
-                    this.rntbdPartitionCount = this.ConnectionPolicy.MaxTcpPartitionCount.Value;
+                    this.rntbdPartitionCount = connectionPolicy.MaxTcpPartitionCount.Value;
                 }
 
-                if (this.ConnectionPolicy.MaxTcpConnectionsPerEndpoint.HasValue)
+                if (connectionPolicy.MaxTcpConnectionsPerEndpoint.HasValue)
                 {
-                    this.maxRntbdChannels = this.ConnectionPolicy.MaxTcpConnectionsPerEndpoint.Value;
+                    this.maxRntbdChannels = connectionPolicy.MaxTcpConnectionsPerEndpoint.Value;
                 }
 
-                if (this.ConnectionPolicy.PortReuseMode.HasValue)
+                if (connectionPolicy.PortReuseMode.HasValue)
                 {
-                    this.rntbdPortReuseMode = this.ConnectionPolicy.PortReuseMode.Value;
+                    this.rntbdPortReuseMode = connectionPolicy.PortReuseMode.Value;
                 }
             }
 
@@ -6392,23 +6392,25 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             out string payload) // unused, use token based upon what is passed in constructor 
         {
-            string token = ((ICosmosAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+            string authorizationToken = this.GetUserAuthorizationTokenCore(
                 resourceAddress,
                 resourceType,
                 requestVerb,
                 headers,
                 tokenType,
-                out MemoryStream stream);
-            if (stream != null)
+                out AuthorizationHelper.ArrayOwner arrayOwner);
+            using (arrayOwner)
             {
-                payload = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+                if (arrayOwner.Buffer.Count == 0)
+                {
+                    payload = null;
+                }
+                else
+                {
+                    payload = Encoding.UTF8.GetString(arrayOwner.Buffer.Array, arrayOwner.Buffer.Offset, (int)arrayOwner.Buffer.Count);
+                }
+                return authorizationToken;
             }
-            else
-            {
-                payload = null;
-            }
-
-            return token;
         }
 
         string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
@@ -6416,13 +6418,33 @@ namespace Microsoft.Azure.Cosmos
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out MemoryStream payload) // unused, use token based upon what is passed in constructor 
+            AuthorizationTokenType tokenType)
         {
-            payload = null;
+            string authorizationToken = this.GetUserAuthorizationTokenCore(
+                resourceAddress,
+                resourceType,
+                requestVerb,
+                headers,
+                tokenType,
+                out AuthorizationHelper.ArrayOwner arrayOwner);
+            using (arrayOwner)
+            {
+                return authorizationToken;
+            }
+        }
+
+        private string GetUserAuthorizationTokenCore(
+            string resourceAddress,
+            string resourceType,
+            string requestVerb,
+            INameValueCollection headers,
+            AuthorizationTokenType tokenType,
+            out AuthorizationHelper.ArrayOwner payload) // unused, use token based upon what is passed in constructor 
+        {
             if (this.hasAuthKeyResourceToken && this.resourceTokens == null)
             {
                 // If the input auth token is a resource token, then use it as a bearer-token.
+                payload = default;
                 return HttpUtility.UrlEncode(this.authKeyResourceToken);
             }
 
@@ -6484,6 +6506,7 @@ namespace Microsoft.Azure.Cosmos
                            CultureInfo.InvariantCulture, ClientResources.AuthTokenNotFound, resourceAddress));
                     }
 
+                    payload = default;
                     return HttpUtility.UrlEncode(resourceToken);
                 }
                 else
@@ -6554,6 +6577,7 @@ namespace Microsoft.Azure.Cosmos
                             CultureInfo.InvariantCulture, ClientResources.AuthTokenNotFound, resourceAddress));
                     }
 
+                    payload = default;
                     return HttpUtility.UrlEncode(resourceToken);
                 }
             }

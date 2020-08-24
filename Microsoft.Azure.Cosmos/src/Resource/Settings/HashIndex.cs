@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The data type for which this index should be applied.
         /// </value>
-        /// <remarks>Refer to <a href="http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy">Customizing the indexing policy of a collection</a> for valid ranges of values.</remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
         [JsonProperty(PropertyName = Constants.Properties.DataType)]
         [JsonConverter(typeof(StringEnumConverter))]
         public DataType DataType { get; set; }
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The precision for this particular index. Returns null, if not set.
         /// </value>
-        /// <remarks>Refer to <a href="http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy">Customizing the indexing policy of a collection</a> for valid ranges of values.</remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
         [JsonProperty(PropertyName = Constants.Properties.Precision,
             NullValueHandling = NullValueHandling.Ignore)]
         public short? Precision { get; set; }

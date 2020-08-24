@@ -1,0 +1,29 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Parens]]></Description>
+      <Query><![CDATA[SELECT VALUE ('John')]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE "John"]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Parens force order of operations]]></Description>
+      <Query><![CDATA[SELECT VALUE (1 + 2) * 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 + 2) * 3)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Mismatched]]></Description>
+      <Query><![CDATA[SELECT VALUE (('John')]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>

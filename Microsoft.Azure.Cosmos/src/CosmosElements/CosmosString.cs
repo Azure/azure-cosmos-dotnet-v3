@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosString : CosmosElement, IEquatable<CosmosString>, IComparable<CosmosString>
     {
+        public static CosmosString Empty = new EagerCosmosString(string.Empty);
+
         private const uint HashSeed = 3163568842;
 
         protected CosmosString()
