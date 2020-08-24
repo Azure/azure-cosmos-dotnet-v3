@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[basic]]></Description>
+      <Query><![CDATA[SELECT VALUE (SELECT *)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (SELECT *)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing right parens]]></Description>
+      <Query><![CDATA[SELECT VALUE (SELECT *]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing left parens]]></Description>
+      <Query><![CDATA[SELECT VALUE SELECT *)]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing both parens]]></Description>
+      <Query><![CDATA[SELECT VALUE SELECT *]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>

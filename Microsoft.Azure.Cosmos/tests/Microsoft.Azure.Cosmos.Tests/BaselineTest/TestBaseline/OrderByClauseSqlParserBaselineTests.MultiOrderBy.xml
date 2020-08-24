@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1, 2, 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 ASC, 2 ASC, 3 ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Only one sort order]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1, 2 DESC, 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 ASC, 2 DESC, 3 ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[All sort order]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1 ASC, 2 DESC, 3 ASC]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY 1 ASC, 2 DESC, 3 ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trailing comma]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY 1 ASC,]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>
