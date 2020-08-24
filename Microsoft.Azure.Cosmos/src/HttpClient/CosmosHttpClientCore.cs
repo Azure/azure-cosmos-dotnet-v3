@@ -42,9 +42,15 @@ namespace Microsoft.Azure.Cosmos
             ApiType apiType,
             ICommunicationEventSource eventSource,
             ConnectionPolicy connectionPolicy,
+            HttpMessageHandler httpMessageHandler,
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs)
         {
+            if (connectionPolicy == null)
+            {
+                throw new ArgumentNullException(nameof(connectionPolicy));
+            }
+
             Func<HttpClient> httpClientFactory = connectionPolicy.HttpClientFactory;
             if (httpClientFactory != null)
             {
@@ -54,115 +60,67 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException($"{nameof(connectionPolicy.HttpClientFactory)} can not be set at the same time as {nameof(sendingRequestEventArgs)} or {nameof(ReceivedResponseEventArgs)}");
                 }
 
-                return CosmosHttpClientCore.Create(
-                    connectionPolicy.RequestTimeout,
-                    connectionPolicy.UserAgentContainer,
-                    apiType,
-                    eventSource,
-                    connectionPolicy.HttpClientFactory);
+                HttpClient userHttpClient = httpClientFactory?.Invoke() ?? throw new ArgumentNullException(nameof(httpClientFactory));
+                return CosmosHttpClientCore.CreateHelper(
+                    httpClient: userHttpClient,
+                    httpMessageHandler: httpMessageHandler,
+                    requestTimeout: connectionPolicy.RequestTimeout,
+                    userAgentContainer: connectionPolicy.UserAgentContainer,
+                    apiType: apiType,
+                    eventSource: eventSource);
             }
 
-            return CosmosHttpClientCore.Create(
+            if (httpMessageHandler == null)
+            {
+                httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
+                        gatewayModeMaxConnectionLimit: connectionPolicy.MaxConnectionLimit,
+                        webProxy: null);
+            }
+
+            HttpClient httpClient;
+            if (sendingRequestEventArgs != null &&
+                receivedResponseEventArgs != null)
+            {
+                HttpMessageHandler httpMessageHandlerWrapper = CreateHttpMessageHandler(
+                    httpMessageHandler,
+                    sendingRequestEventArgs,
+                    receivedResponseEventArgs);
+
+                httpClient = new HttpClient(httpMessageHandlerWrapper);
+            }
+            else
+            {
+                httpClient = new HttpClient(httpMessageHandler);
+            }
+             
+            return CosmosHttpClientCore.CreateHelper(
+                httpClient: httpClient,
+                httpMessageHandler: httpMessageHandler,
                 requestTimeout: connectionPolicy.RequestTimeout,
                 userAgentContainer: connectionPolicy.UserAgentContainer,
                 apiType: apiType,
-                eventSource: eventSource,
-                gatewayModeMaxConnectionLimit: connectionPolicy.MaxConnectionLimit,
-                webProxy: null,
-                sendingRequestEventArgs: sendingRequestEventArgs,
-                receivedResponseEventArgs: receivedResponseEventArgs);
+                eventSource: eventSource);
         }
 
-        public static CosmosHttpClient CreateWithClientOptions(
-            ApiType apiType,
-            ICommunicationEventSource eventSource,
-            UserAgentContainer userAgentContainer,
-            CosmosClientOptions clientOptions)
-        {
-            if (clientOptions.HttpClientFactory != null &&
-                clientOptions.SendingRequestEventArgs != null)
-            {
-                throw new NotSupportedException("HttpClientFactory and SendingRequestEventArgs can not be used at the same time. Please add SendingRequestEventArgs as part of the HttpClientFactory.");
-            }
-
-            if (clientOptions.HttpClientFactory != null &&
-                clientOptions.WebProxy != null)
-            {
-                throw new NotSupportedException("HttpClientFactory and WebProxy can not be used at the same time. Please add WebProxy as part of the HttpClientFactory.");
-            }
-
-            if (clientOptions.HttpClientFactory != null)
-            {
-                return CosmosHttpClientCore.Create(
-                    clientOptions.RequestTimeout,
-                    userAgentContainer,
-                    apiType,
-                    eventSource,
-                    clientOptions.HttpClientFactory);
-            }
-
-            return CosmosHttpClientCore.Create(
-                requestTimeout: clientOptions.RequestTimeout,
-                userAgentContainer: userAgentContainer,
-                apiType: apiType,
-                eventSource: eventSource,
-                gatewayModeMaxConnectionLimit: clientOptions.GatewayModeMaxConnectionLimit,
-                webProxy: clientOptions.WebProxy,
-                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
-                receivedResponseEventArgs: null);
-        }
-
-        internal static CosmosHttpClient Create(
-            TimeSpan requestTimeout,
-            UserAgentContainer userAgentContainer,
-            ApiType apiType,
-            ICommunicationEventSource eventSource,
-            int gatewayModeMaxConnectionLimit,
-            IWebProxy webProxy,
-            EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
-            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs)
+        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy)
         {
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-            HttpMessageHandler httpMessageHandler = new HttpClientHandler
+            return new HttpClientHandler
             {
                 Proxy = webProxy,
                 MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
             };
-
-            if (sendingRequestEventArgs != null
-                || receivedResponseEventArgs != null)
-            {
-                httpMessageHandler = new HttpRequestMessageHandler(
-                    sendingRequestEventArgs,
-                    receivedResponseEventArgs,
-                    httpMessageHandler);
-            }
-
-            HttpClient httpClient = new HttpClient(httpMessageHandler);
-            return CreateHelper(
-               httpClient,
-               httpMessageHandler,
-               requestTimeout,
-               userAgentContainer,
-               apiType,
-               eventSource);
         }
 
-        internal static CosmosHttpClient Create(
-            TimeSpan requestTimeout,
-            UserAgentContainer userAgentContainer,
-            ApiType apiType,
-            ICommunicationEventSource eventSource,
-            Func<HttpClient> httpFactory)
+        private static HttpMessageHandler CreateHttpMessageHandler(
+            HttpMessageHandler innerHandler,
+            EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
+            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs)
         {
-            HttpClient httpClient = httpFactory?.Invoke() ?? throw new ArgumentNullException(nameof(httpFactory));
-            return CreateHelper(
-                httpClient,
-                httpMessageHandler: null,
-                requestTimeout,
-                userAgentContainer,
-                apiType,
-                eventSource);
+            return new HttpRequestMessageHandler(
+                sendingRequestEventArgs,
+                receivedResponseEventArgs,
+                innerHandler);
         }
 
         private static CosmosHttpClient CreateHelper(
@@ -364,7 +322,8 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest = sendingRequest;
                 this.receivedResponse = receivedResponse;
 
-                this.InnerHandler = innerHandler ?? new HttpClientHandler();
+                this.InnerHandler = innerHandler ?? throw new ArgumentNullException(
+                    $"innerHandler is null. This required for .NET core to limit the http connection. See {nameof(CreateHttpClientHandler)} ");
             }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,

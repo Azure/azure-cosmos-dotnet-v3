@@ -88,12 +88,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource = DocumentClientEventSource.Instance;
             }
 
-            return CosmosHttpClientCore.Create(
-                requestTimeout: ConnectionPolicy.Default.RequestTimeout,
-                userAgentContainer: ConnectionPolicy.Default.UserAgentContainer,
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                HttpClientFactory = httpClient
+            };
+
+            return CosmosHttpClientCore.CreateWithConnectionPolicy(
                 apiType: default,
                 eventSource: eventSource,
-                httpFactory: httpClient);
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
                 apiType: ApiType.None,
                 eventSource: DocumentClientEventSource.Instance,
                 connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
                 sendingRequestEventArgs: null,
                 receivedResponseEventArgs: null);
 
@@ -83,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
                 apiType: ApiType.None,
                 eventSource: DocumentClientEventSource.Instance,
                 connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
                 sendingRequestEventArgs: null,
                 receivedResponseEventArgs: null);
 

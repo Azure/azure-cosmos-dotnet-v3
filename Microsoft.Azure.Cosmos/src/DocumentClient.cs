@@ -142,8 +142,6 @@ namespace Microsoft.Azure.Cosmos
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
-        internal HttpMessageHandler httpMessageHandler;
-
         //Private state.
         private bool isSuccessfullyInitialized;
         private bool isDisposed;
@@ -151,7 +149,6 @@ namespace Microsoft.Azure.Cosmos
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
-        private HttpClient mediaClient;
         private CosmosHttpClient httpClient;
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
@@ -716,18 +713,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
-        internal event EventHandler<SendingRequestEventArgs> SendingRequest
-        {
-            add
-            {
-                this.sendingRequest += value;
-            }
-            remove
-            {
-                this.sendingRequest -= value;
-            }
-        }
-
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
 
         /// <summary>
@@ -1042,32 +1027,10 @@ namespace Microsoft.Azure.Cosmos
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
                 DocumentClientEventSource.Instance,
-                connectionPolicy,
+                this.ConnectionPolicy,
+                handler,
                 this.sendingRequest,
                 this.receivedResponse);
-
-            this.httpMessageHandler = this.httpClient.HttpMessageHandler;
-            if (this.httpClient.HttpMessageHandler != null)
-            {
-                this.mediaClient = new HttpClient(this.httpClient.HttpMessageHandler);
-            }
-            else
-            {
-                this.mediaClient = new HttpClient();
-            }
-
-            this.mediaClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            this.mediaClient.AddUserAgentHeader(this.ConnectionPolicy.UserAgentContainer);
-
-            this.mediaClient.AddApiTypeHeader(this.ApiType);
-
-            // Set requested API version header that can be used for
-            // version enforcement.
-            this.mediaClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            this.mediaClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept,
-                RuntimeConstants.MediaTypes.Any);
 
             if (sessionContainer != null)
             {
@@ -1080,8 +1043,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.retryPolicy = new RetryPolicy(this.GlobalEndpointManager, this.ConnectionPolicy);
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
-
-            this.mediaClient.Timeout = this.ConnectionPolicy.MediaRequestTimeout;
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
@@ -1411,12 +1372,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.AddressResolver.Dispose();
                 this.AddressResolver = null;
-            }
-
-            if (this.mediaClient != null)
-            {
-                this.mediaClient.Dispose();
-                this.mediaClient = null;
             }
 
             if (this.httpClient != null)

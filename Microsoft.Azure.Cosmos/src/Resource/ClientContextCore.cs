@@ -60,17 +60,21 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
+            HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
+                clientOptions.GatewayModeMaxConnectionLimit,
+                clientOptions.WebProxy);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
                cosmosClient.AccountKey,
-               sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                apitype: clientOptions.ApiType,
+               sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
                connectionPolicy: clientOptions.GetConnectionPolicy(),
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
+               handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
