@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
             /// <returns>Whether two parallel query items are equal.</returns>
             public bool Equals(CosmosElement x, CosmosElement y)
             {
-                return x == y;
+                return object.ReferenceEquals(x, y);
             }
 
             /// <summary>

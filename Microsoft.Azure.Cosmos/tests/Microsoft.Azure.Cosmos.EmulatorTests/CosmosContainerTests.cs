@@ -604,7 +604,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(CosmosException))]
         public async Task NegativePartitionedCreateDelete()
         {
             string containerName = Guid.NewGuid().ToString();
@@ -613,10 +612,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add("/users");
             partitionKeyDefinition.Paths.Add("/test");
 
-            ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
+            try
+            {
+                ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(settings);
 
-            Assert.Fail("Multiple partition keys should have caused an exception.");
+                Assert.Fail("Multiple partition keys should have caused an exception.");
+            }
+            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
         }
 
         [TestMethod]
@@ -1115,8 +1122,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNotNull(containerSettings.PartitionKeyPath);
             Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
-            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
-            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
+            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens[0].Count);
+            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0][0]);
 
             ContainerInternal containerCore = containerResponse.Container as ContainerInlineCore;
             Assert.IsNotNull(containerCore);

@@ -1,10 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>CosmosBenchmark</RootNamespace>
     <AssemblyName>CosmosBenchmark</AssemblyName>
-    <ServerGarbageCollection>true</ServerGarbageCollection>    
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
@@ -26,11 +27,11 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
-    <!-- UNCOMMENTING BELOW and REMOVING ABOVE condition above will enable run with latest V3 sources
-    
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="*" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />
-    -->
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
 </Project>

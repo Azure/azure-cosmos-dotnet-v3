@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <remarks>
     /// The requested Consistency Level must match or be weaker than that provisioned for the database account.
-    /// For more information on consistency levels, please see <see>http://azure.microsoft.com/documentation/articles/documentdb-consistency-levels/"</see> Consistency Levels article.
     /// </remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/consistency-levels"/>
     public enum ConsistencyLevel
     {
         /// <summary>

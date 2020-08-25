@@ -21,6 +21,48 @@ namespace Microsoft.Azure.Cosmos
     internal static class MurmurHash3
     {
         #region Hash32
+        /// <summary>MurmurHash3 32-bit implementation for strings.</summary>
+        /// <param name="value">The string to hash.</param>
+        /// <param name="seed">The seed to initialize with.</param>
+        /// <returns>The 32-bit hash.</returns>
+        public static uint Hash32(string value, uint seed)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            int size = Encoding.UTF8.GetMaxByteCount(value.Length);
+            Span<byte> span = size <= 256 ? stackalloc byte[size] : new byte[size];
+            int len = Encoding.UTF8.GetBytes(value, span);
+            return MurmurHash3.Hash32(span.Slice(0, len), seed);
+        }
+
+        /// <summary>MurmurHash3 32-bit implementation for booleans.</summary>
+        /// <param name="value">The data to hash.</param>
+        /// <param name="seed">The seed to initialize with.</param>
+        /// <returns>The 32-bit hash.</returns>
+        public static uint Hash32(bool value, uint seed)
+        {
+            // Ensure that a bool is ALWAYS a single byte encoding with 1 for true and 0 for false.
+            return MurmurHash3.Hash32((byte)(value ? 1 : 0), seed);
+        }
+
+        /// <summary>MurmurHash3 32-bit implementation.</summary>
+        /// <param name="value">The data to hash.</param>
+        /// <param name="seed">The seed to initialize with.</param>
+        /// <returns>The 32-bit hash.</returns>
+        public static unsafe uint Hash32<T>(T value, uint seed)
+            where T : unmanaged
+        {
+            ReadOnlySpan<T> span = new ReadOnlySpan<T>(&value, 1);
+            return MurmurHash3.Hash32(MemoryMarshal.AsBytes(span), seed);
+        }
+
+        /// <summary>MurmurHash3 32-bit implementation.</summary>
+        /// <param name="span">The data to hash.</param>
+        /// <param name="seed">The seed to initialize with.</param>
+        /// <returns>The 32-bit hash.</returns>
         public static unsafe uint Hash32(ReadOnlySpan<byte> span, uint seed)
         {
             if (!BitConverter.IsLittleEndian)

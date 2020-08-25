@@ -39,7 +39,8 @@ namespace CosmosBenchmark
                 config.Print();
 
                 Program program = new Program();
-                await program.ExecuteAsync(config, accountKey);
+
+                RunSummary runSummary = await program.ExecuteAsync(config, accountKey);
 
                 if (TelemetrySpan.IncludePercentile)
                 {
@@ -65,7 +66,7 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task ExecuteAsync(BenchmarkConfig config, string accountKey)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, string accountKey)
         {
             using (CosmosClient cosmosClient = config.CreateCosmosClient(accountKey))
             {
@@ -87,9 +88,10 @@ namespace CosmosBenchmark
                 Console.WriteLine();
 
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-                int numberOfItemsToInsert = config.ItemCount / taskCount;
+                int opsPerTask = config.ItemCount / taskCount;
 
                 // TBD: 2 clients SxS some overhead
+                RunSummary runSummary;
                 using (DocumentClient documentClient = config.CreateDocumentClient(accountKey))
                 {
                     Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(
@@ -98,8 +100,14 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
+                    if (config.DisableCoreSdkLogging)
+                    {
+                        // Do it after client initialization (HACK)
+                        Program.ClearCoreSdkListeners();
+                    }
+
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(config, benchmarkOperationFactory);
-                    await execution.ExecuteAsync(taskCount, numberOfItemsToInsert, config.TraceFailures, 0.01);
+                    runSummary = await execution.ExecuteAsync(taskCount, opsPerTask, config.TraceFailures, 0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -108,6 +116,39 @@ namespace CosmosBenchmark
                     Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                     await database.DeleteStreamAsync();
                 }
+
+                runSummary.WorkloadType = config.WorkloadType;
+                runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:HH-mm")}-{config.CommitId}";
+                runSummary.Commit = config.CommitId;
+                runSummary.CommitDate = config.CommitDate;
+                runSummary.CommitTime = config.CommitTime;
+
+                runSummary.Date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                runSummary.Time = DateTime.UtcNow.ToString("HH-mm");
+                runSummary.BranchName = config.BranchName;
+                runSummary.TotalOps = config.ItemCount;
+                runSummary.Concurrency = taskCount;
+                runSummary.Database = config.Database;
+                runSummary.Container = config.Container;
+                runSummary.AccountName = config.EndPoint;
+                runSummary.pk = config.ResultsPartitionKeyValue;
+
+                string consistencyLevel = config.ConsistencyLevel;
+                if (string.IsNullOrWhiteSpace(consistencyLevel))
+                {
+                    AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+                    consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
+                }
+                runSummary.ConsistencyLevel = consistencyLevel;
+
+
+                if (config.PublishResults)
+                {
+                    Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
+                    await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
+                }
+
+                return runSummary;
             }
         }
 
@@ -200,6 +241,14 @@ namespace CosmosBenchmark
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
             }
+        }
+
+        private static void ClearCoreSdkListeners()
+        {
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Clear();
         }
     }
 }

@@ -7,6 +7,7 @@
     using System.Reflection;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Json;
@@ -53,6 +54,8 @@
             TextStream,
         }
 
+        private readonly string accountEndpoint = string.Empty; // insert your endpoint here.
+        private readonly string accountKey = string.Empty; // insert your key here.
         private readonly CosmosClient client;
         private readonly Container container;
 
@@ -61,9 +64,14 @@
         /// </summary>
         public EndToEnd()
         {
+            if (string.IsNullOrEmpty(this.accountEndpoint) && string.IsNullOrEmpty(this.accountKey))
+            {
+                return;
+            }
+
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
-                accountEndpoint: "<YOUR ENDPOINT>",
-                authKeyOrResourceToken: "<YOUR KEY>");
+                accountEndpoint: this.accountEndpoint,
+                authKeyOrResourceToken: this.accountKey);
 
             this.client = clientBuilder.Build();
             Database db = this.client.CreateDatabaseIfNotExistsAsync("BenchmarkDB").Result;
@@ -113,10 +121,7 @@
         {
             ChangeFeedIteratorCore feedIterator = ((ContainerCore)this.container)
                 .GetChangeFeedStreamIterator(
-                    changeFeedRequestOptions: new ChangeFeedRequestOptions()
-                    {
-                        StartTime = DateTime.MinValue.ToUniversalTime()
-                    }) as ChangeFeedIteratorCore;
+                    ChangeFeedStartFrom.Beginning()) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults)
             {

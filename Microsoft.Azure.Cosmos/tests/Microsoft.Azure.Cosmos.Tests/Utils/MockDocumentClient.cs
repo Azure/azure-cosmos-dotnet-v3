@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.IO;
     using System.Net.Http;
     using System.Security;
     using System.Threading;
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
     using Newtonsoft.Json;
 
-    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
+    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider, ICosmosAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
@@ -140,6 +141,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             out string payload) /* unused, use token based upon what is passed in constructor */
         {
             payload = null;
+            return null;
+        }
+
+        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
+            string resourceAddress,
+            string resourceType,
+            string requestVerb,
+            INameValueCollection headers,
+            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+        {
             return null;
         }
 

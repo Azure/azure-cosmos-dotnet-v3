@@ -19,3048 +19,4009 @@
 // Ambiguous reference in cref attribute
 #pragma warning disable 419
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Parser
-{
-    #if false
-    using System;
-    using System.IO;
-    using Antlr4.Runtime;
-    using Antlr4.Runtime.Atn;
-    using Antlr4.Runtime.Misc;
-    using Antlr4.Runtime.Tree;
-    using Antlr4.Runtime.Dfa;
+using System;
+using System.IO;
+using Antlr4.Runtime;
+using Antlr4.Runtime.Atn;
+using Antlr4.Runtime.Misc;
+using Antlr4.Runtime.Tree;
+using DFA = Antlr4.Runtime.Dfa.DFA;
 
-    [System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
-    internal partial class sqlParser : Parser
-    {
-        protected static DFA[] decisionToDFA;
-        protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
-        public const int
-            T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, T__7 = 8, T__8 = 9,
-            T__9 = 10, T__10 = 11, T__11 = 12, T__12 = 13, T__13 = 14, T__14 = 15, T__15 = 16, T__16 = 17,
-            T__17 = 18, T__18 = 19, T__19 = 20, T__20 = 21, T__21 = 22, T__22 = 23, T__23 = 24,
-            T__24 = 25, T__25 = 26, T__26 = 27, K_AND = 28, K_ARRAY = 29, K_AS = 30, K_ASC = 31,
-            K_BETWEEN = 32, K_BY = 33, K_DESC = 34, K_DISTINCT = 35, K_EXISTS = 36, K_FALSE = 37,
-            K_FROM = 38, K_GROUP = 39, K_IN = 40, K_JOIN = 41, K_LIMIT = 42, K_NOT = 43, K_NULL = 44,
-            K_OFFSET = 45, K_OR = 46, K_ORDER = 47, K_SELECT = 48, K_TOP = 49, K_TRUE = 50, K_UDF = 51,
-            K_UNDEFINED = 52, K_VALUE = 53, K_WHERE = 54, WS = 55, NUMERIC_LITERAL = 56, STRING_LITERAL = 57,
-            IDENTIFIER = 58;
-        public const int
-            RULE_program = 0, RULE_sql_query = 1, RULE_select_clause = 2, RULE_top_spec = 3,
-            RULE_selection = 4, RULE_select_star_spec = 5, RULE_select_value_spec = 6,
-            RULE_select_list_spec = 7, RULE_select_item = 8, RULE_from_clause = 9,
-            RULE_collection_expression = 10, RULE_collection = 11, RULE_path_expression = 12,
-            RULE_where_clause = 13, RULE_group_by_clause = 14, RULE_order_by_clause = 15,
-            RULE_order_by_items = 16, RULE_order_by_item = 17, RULE_sort_order = 18,
-            RULE_offset_limit_clause = 19, RULE_offset_count = 20, RULE_limit_count = 21,
-            RULE_scalar_expression = 22, RULE_scalar_expression_list = 23, RULE_binary_operator = 24,
-            RULE_unary_operator = 25, RULE_object_propertty_list = 26, RULE_object_property = 27,
-            RULE_literal = 28;
-        public static readonly string[] ruleNames = {
+[System.CodeDom.Compiler.GeneratedCode("ANTLR", "4.7.2")]
+internal partial class sqlParser : Parser
+{
+    protected static DFA[] decisionToDFA;
+    protected static PredictionContextCache sharedContextCache = new PredictionContextCache();
+    public const int
+        T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, T__7 = 8, T__8 = 9,
+        T__9 = 10, T__10 = 11, T__11 = 12, T__12 = 13, T__13 = 14, T__14 = 15, T__15 = 16, T__16 = 17,
+        T__17 = 18, T__18 = 19, T__19 = 20, T__20 = 21, T__21 = 22, T__22 = 23, T__23 = 24,
+        T__24 = 25, T__25 = 26, T__26 = 27, K_AND = 28, K_ARRAY = 29, K_AS = 30, K_ASC = 31,
+        K_BETWEEN = 32, K_BY = 33, K_DESC = 34, K_DISTINCT = 35, K_EXISTS = 36, K_FALSE = 37,
+        K_FROM = 38, K_GROUP = 39, K_IN = 40, K_JOIN = 41, K_LIMIT = 42, K_NOT = 43, K_NULL = 44,
+        K_OFFSET = 45, K_OR = 46, K_ORDER = 47, K_SELECT = 48, K_TOP = 49, K_TRUE = 50, K_UDF = 51,
+        K_UNDEFINED = 52, K_VALUE = 53, K_WHERE = 54, WS = 55, NUMERIC_LITERAL = 56, STRING_LITERAL = 57,
+        IDENTIFIER = 58, PARAMETER = 59;
+    public const int
+        RULE_program = 0, RULE_sql_query = 1, RULE_select_clause = 2, RULE_top_spec = 3,
+        RULE_selection = 4, RULE_select_star_spec = 5, RULE_select_value_spec = 6,
+        RULE_select_list_spec = 7, RULE_select_item = 8, RULE_from_clause = 9,
+        RULE_collection_expression = 10, RULE_collection = 11, RULE_path_expression = 12,
+        RULE_where_clause = 13, RULE_group_by_clause = 14, RULE_order_by_clause = 15,
+        RULE_order_by_items = 16, RULE_order_by_item = 17, RULE_sort_order = 18,
+        RULE_offset_limit_clause = 19, RULE_offset_count = 20, RULE_limit_count = 21,
+        RULE_scalar_expression = 22, RULE_logical_scalar_expression = 23, RULE_in_scalar_expression = 24,
+        RULE_binary_scalar_expression = 25, RULE_multiplicative_operator = 26,
+        RULE_additive_operator = 27, RULE_relational_operator = 28, RULE_equality_operator = 29,
+        RULE_bitwise_and_operator = 30, RULE_bitwise_exclusive_or_operator = 31,
+        RULE_bitwise_inclusive_or_operator = 32, RULE_string_concat_operator = 33,
+        RULE_unary_scalar_expression = 34, RULE_unary_operator = 35, RULE_primary_expression = 36,
+        RULE_scalar_expression_list = 37, RULE_object_property_list = 38, RULE_object_property = 39,
+        RULE_literal = 40;
+    public static readonly string[] ruleNames = {
         "program", "sql_query", "select_clause", "top_spec", "selection", "select_star_spec",
         "select_value_spec", "select_list_spec", "select_item", "from_clause",
         "collection_expression", "collection", "path_expression", "where_clause",
         "group_by_clause", "order_by_clause", "order_by_items", "order_by_item",
         "sort_order", "offset_limit_clause", "offset_count", "limit_count", "scalar_expression",
-        "scalar_expression_list", "binary_operator", "unary_operator", "object_propertty_list",
+        "logical_scalar_expression", "in_scalar_expression", "binary_scalar_expression",
+        "multiplicative_operator", "additive_operator", "relational_operator",
+        "equality_operator", "bitwise_and_operator", "bitwise_exclusive_or_operator",
+        "bitwise_inclusive_or_operator", "string_concat_operator", "unary_scalar_expression",
+        "unary_operator", "primary_expression", "scalar_expression_list", "object_property_list",
         "object_property", "literal"
     };
 
-        private static readonly string[] _LiteralNames = {
-        null, "'*'", "','", "'('", "')'", "'.'", "'['", "']'", "'??'", "'?'",
-        "':'", "'{'", "'}'", "'+'", "'&'", "'|'", "'^'", "'/'", "'='", "'>'",
-        "'>='", "'<'", "'<='", "'%'", "'!='", "'||'", "'-'", "'~'", null, null,
-        null, null, null, null, null, null, null, "'false'", null, null, null,
-        null, null, null, "'null'", null, null, null, null, null, "'true'", null,
-        "'undefined'"
+    private static readonly string[] _LiteralNames = {
+        null, "'*'", "','", "'('", "')'", "'.'", "'['", "']'", "'?'", "':'", "'??'",
+        "'/'", "'%'", "'+'", "'-'", "'<'", "'>'", "'>='", "'<='", "'='", "'!='",
+        "'&'", "'^'", "'|'", "'||'", "'~'", "'{'", "'}'", null, null, null, null,
+        null, null, null, null, null, "'false'", null, null, null, null, null,
+        null, "'null'", null, null, null, null, null, "'true'", null, "'undefined'"
     };
-        private static readonly string[] _SymbolicNames = {
+    private static readonly string[] _SymbolicNames = {
         null, null, null, null, null, null, null, null, null, null, null, null,
         null, null, null, null, null, null, null, null, null, null, null, null,
         null, null, null, null, "K_AND", "K_ARRAY", "K_AS", "K_ASC", "K_BETWEEN",
         "K_BY", "K_DESC", "K_DISTINCT", "K_EXISTS", "K_FALSE", "K_FROM", "K_GROUP",
         "K_IN", "K_JOIN", "K_LIMIT", "K_NOT", "K_NULL", "K_OFFSET", "K_OR", "K_ORDER",
         "K_SELECT", "K_TOP", "K_TRUE", "K_UDF", "K_UNDEFINED", "K_VALUE", "K_WHERE",
-        "WS", "NUMERIC_LITERAL", "STRING_LITERAL", "IDENTIFIER"
+        "WS", "NUMERIC_LITERAL", "STRING_LITERAL", "IDENTIFIER", "PARAMETER"
     };
-        public static readonly IVocabulary DefaultVocabulary = new Vocabulary(_LiteralNames, _SymbolicNames);
+    public static readonly IVocabulary DefaultVocabulary = new Vocabulary(_LiteralNames, _SymbolicNames);
 
-        [NotNull]
-        public override IVocabulary Vocabulary
+    [NotNull]
+    public override IVocabulary Vocabulary
+    {
+        get
         {
-            get
-            {
-                return DefaultVocabulary;
-            }
+            return DefaultVocabulary;
         }
+    }
 
-        public override string GrammarFileName { get { return "sql.g4"; } }
+    public override string GrammarFileName { get { return "sql.g4"; } }
 
-        public override string[] RuleNames { get { return ruleNames; } }
+    public override string[] RuleNames { get { return ruleNames; } }
 
-        public override string SerializedAtn { get { return new string(_serializedATN); } }
+    public override string SerializedAtn { get { return new string(_serializedATN); } }
 
-        static sqlParser()
+    static sqlParser()
+    {
+        decisionToDFA = new DFA[_ATN.NumberOfDecisions];
+        for (int i = 0; i < _ATN.NumberOfDecisions; i++)
         {
-            decisionToDFA = new DFA[_ATN.NumberOfDecisions];
-            for (int i = 0; i < _ATN.NumberOfDecisions; i++)
-            {
-                decisionToDFA[i] = new DFA(_ATN.GetDecisionState(i), i);
-            }
+            decisionToDFA[i] = new DFA(_ATN.GetDecisionState(i), i);
         }
+    }
 
-        public sqlParser(ITokenStream input) : this(input, Console.Out, Console.Error) { }
+    public sqlParser(ITokenStream input) : this(input, Console.Out, Console.Error) { }
 
-        public sqlParser(ITokenStream input, TextWriter output, TextWriter errorOutput)
-        : base(input, output, errorOutput)
-        {
-            Interpreter = new ParserATNSimulator(this, _ATN, decisionToDFA, sharedContextCache);
-        }
+    public sqlParser(ITokenStream input, TextWriter output, TextWriter errorOutput)
+    : base(input, output, errorOutput)
+    {
+        Interpreter = new ParserATNSimulator(this, _ATN, decisionToDFA, sharedContextCache);
+    }
 
-        public partial class ProgramContext : ParserRuleContext
-        {
-            public Sql_queryContext sql_query()
-            {
-                return GetRuleContext<Sql_queryContext>(0);
-            }
-            public ITerminalNode Eof() { return GetToken(sqlParser.Eof, 0); }
-            public ProgramContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_program; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterProgram(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitProgram(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitProgram(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public ProgramContext program()
-        {
-            ProgramContext _localctx = new ProgramContext(Context, State);
-            EnterRule(_localctx, 0, RULE_program);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 58; sql_query();
-                    State = 59; Match(Eof);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Sql_queryContext : ParserRuleContext
-        {
-            public Select_clauseContext select_clause()
-            {
-                return GetRuleContext<Select_clauseContext>(0);
-            }
-            public From_clauseContext from_clause()
-            {
-                return GetRuleContext<From_clauseContext>(0);
-            }
-            public Where_clauseContext where_clause()
-            {
-                return GetRuleContext<Where_clauseContext>(0);
-            }
-            public Group_by_clauseContext group_by_clause()
-            {
-                return GetRuleContext<Group_by_clauseContext>(0);
-            }
-            public Order_by_clauseContext order_by_clause()
-            {
-                return GetRuleContext<Order_by_clauseContext>(0);
-            }
-            public Offset_limit_clauseContext offset_limit_clause()
-            {
-                return GetRuleContext<Offset_limit_clauseContext>(0);
-            }
-            public Sql_queryContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_sql_query; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSql_query(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSql_query(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSql_query(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
+    public partial class ProgramContext : ParserRuleContext
+    {
         public Sql_queryContext sql_query()
         {
-            Sql_queryContext _localctx = new Sql_queryContext(Context, State);
-            EnterRule(_localctx, 2, RULE_sql_query);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 61; select_clause();
-                    State = 63;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_FROM)
-                    {
-                        {
-                            State = 62; from_clause();
-                        }
-                    }
-
-                    State = 66;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_WHERE)
-                    {
-                        {
-                            State = 65; where_clause();
-                        }
-                    }
-
-                    State = 69;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_GROUP)
-                    {
-                        {
-                            State = 68; group_by_clause();
-                        }
-                    }
-
-                    State = 72;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_ORDER)
-                    {
-                        {
-                            State = 71; order_by_clause();
-                        }
-                    }
-
-                    State = 75;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_OFFSET)
-                    {
-                        {
-                            State = 74; offset_limit_clause();
-                        }
-                    }
-
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
+            return GetRuleContext<Sql_queryContext>(0);
         }
-
-        public partial class Select_clauseContext : ParserRuleContext
+        public ITerminalNode Eof() { return GetToken(sqlParser.Eof, 0); }
+        public ProgramContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
         {
-            public ITerminalNode K_SELECT() { return GetToken(sqlParser.K_SELECT, 0); }
-            public SelectionContext selection()
+        }
+        public override int RuleIndex { get { return RULE_program; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterProgram(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitProgram(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitProgram(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public ProgramContext program()
+    {
+        ProgramContext _localctx = new ProgramContext(Context, State);
+        EnterRule(_localctx, 0, RULE_program);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                return GetRuleContext<SelectionContext>(0);
-            }
-            public ITerminalNode K_DISTINCT() { return GetToken(sqlParser.K_DISTINCT, 0); }
-            public Top_specContext top_spec()
-            {
-                return GetRuleContext<Top_specContext>(0);
-            }
-            public Select_clauseContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_select_clause; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSelect_clause(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSelect_clause(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSelect_clause(this);
-                else return visitor.VisitChildren(this);
+                State = 82; sql_query();
+                State = 83; Match(Eof);
             }
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
 
-        [RuleVersion(0)]
+    public partial class Sql_queryContext : ParserRuleContext
+    {
         public Select_clauseContext select_clause()
         {
-            Select_clauseContext _localctx = new Select_clauseContext(Context, State);
-            EnterRule(_localctx, 4, RULE_select_clause);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 77; Match(K_SELECT);
-                    State = 79;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_DISTINCT)
-                    {
-                        {
-                            State = 78; Match(K_DISTINCT);
-                        }
-                    }
-
-                    State = 82;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_TOP)
-                    {
-                        {
-                            State = 81; top_spec();
-                        }
-                    }
-
-                    State = 84; selection();
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
+            return GetRuleContext<Select_clauseContext>(0);
         }
-
-        public partial class Top_specContext : ParserRuleContext
-        {
-            public ITerminalNode K_TOP() { return GetToken(sqlParser.K_TOP, 0); }
-            public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
-            public Top_specContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_top_spec; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterTop_spec(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitTop_spec(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitTop_spec(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Top_specContext top_spec()
-        {
-            Top_specContext _localctx = new Top_specContext(Context, State);
-            EnterRule(_localctx, 6, RULE_top_spec);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 86; Match(K_TOP);
-                    State = 87; Match(NUMERIC_LITERAL);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class SelectionContext : ParserRuleContext
-        {
-            public Select_star_specContext select_star_spec()
-            {
-                return GetRuleContext<Select_star_specContext>(0);
-            }
-            public Select_value_specContext select_value_spec()
-            {
-                return GetRuleContext<Select_value_specContext>(0);
-            }
-            public Select_list_specContext select_list_spec()
-            {
-                return GetRuleContext<Select_list_specContext>(0);
-            }
-            public SelectionContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_selection; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSelection(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSelection(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSelection(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public SelectionContext selection()
-        {
-            SelectionContext _localctx = new SelectionContext(Context, State);
-            EnterRule(_localctx, 8, RULE_selection);
-            try
-            {
-                State = 92;
-                ErrorHandler.Sync(this);
-                switch (TokenStream.LA(1))
-                {
-                    case T__0:
-                        EnterOuterAlt(_localctx, 1);
-                        {
-                            State = 89; select_star_spec();
-                        }
-                        break;
-                    case K_VALUE:
-                        EnterOuterAlt(_localctx, 2);
-                        {
-                            State = 90; select_value_spec();
-                        }
-                        break;
-                    case T__2:
-                    case T__5:
-                    case T__10:
-                    case T__12:
-                    case T__25:
-                    case T__26:
-                    case K_ARRAY:
-                    case K_EXISTS:
-                    case K_FALSE:
-                    case K_NOT:
-                    case K_NULL:
-                    case K_TRUE:
-                    case K_UDF:
-                    case K_UNDEFINED:
-                    case NUMERIC_LITERAL:
-                    case STRING_LITERAL:
-                    case IDENTIFIER:
-                        EnterOuterAlt(_localctx, 3);
-                        {
-                            State = 91; select_list_spec();
-                        }
-                        break;
-                    default:
-                        throw new NoViableAltException(this);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Select_star_specContext : ParserRuleContext
-        {
-            public Select_star_specContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_select_star_spec; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSelect_star_spec(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSelect_star_spec(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSelect_star_spec(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Select_star_specContext select_star_spec()
-        {
-            Select_star_specContext _localctx = new Select_star_specContext(Context, State);
-            EnterRule(_localctx, 10, RULE_select_star_spec);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 94; Match(T__0);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Select_value_specContext : ParserRuleContext
-        {
-            public ITerminalNode K_VALUE() { return GetToken(sqlParser.K_VALUE, 0); }
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public Select_value_specContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_select_value_spec; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSelect_value_spec(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSelect_value_spec(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSelect_value_spec(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Select_value_specContext select_value_spec()
-        {
-            Select_value_specContext _localctx = new Select_value_specContext(Context, State);
-            EnterRule(_localctx, 12, RULE_select_value_spec);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 96; Match(K_VALUE);
-                    State = 97; scalar_expression(0);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Select_list_specContext : ParserRuleContext
-        {
-            public Select_itemContext[] select_item()
-            {
-                return GetRuleContexts<Select_itemContext>();
-            }
-            public Select_itemContext select_item(int i)
-            {
-                return GetRuleContext<Select_itemContext>(i);
-            }
-            public Select_list_specContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_select_list_spec; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSelect_list_spec(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSelect_list_spec(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSelect_list_spec(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Select_list_specContext select_list_spec()
-        {
-            Select_list_specContext _localctx = new Select_list_specContext(Context, State);
-            EnterRule(_localctx, 14, RULE_select_list_spec);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 99; select_item();
-                    State = 104;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    while (_la == T__1)
-                    {
-                        {
-                            {
-                                State = 100; Match(T__1);
-                                State = 101; select_item();
-                            }
-                        }
-                        State = 106;
-                        ErrorHandler.Sync(this);
-                        _la = TokenStream.LA(1);
-                    }
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Select_itemContext : ParserRuleContext
-        {
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public ITerminalNode K_AS() { return GetToken(sqlParser.K_AS, 0); }
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public Select_itemContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_select_item; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSelect_item(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSelect_item(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSelect_item(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Select_itemContext select_item()
-        {
-            Select_itemContext _localctx = new Select_itemContext(Context, State);
-            EnterRule(_localctx, 16, RULE_select_item);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 107; scalar_expression(0);
-                    State = 110;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_AS)
-                    {
-                        {
-                            State = 108; Match(K_AS);
-                            State = 109; Match(IDENTIFIER);
-                        }
-                    }
-
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class From_clauseContext : ParserRuleContext
-        {
-            public ITerminalNode K_FROM() { return GetToken(sqlParser.K_FROM, 0); }
-            public Collection_expressionContext collection_expression()
-            {
-                return GetRuleContext<Collection_expressionContext>(0);
-            }
-            public From_clauseContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_from_clause; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterFrom_clause(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitFrom_clause(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitFrom_clause(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
         public From_clauseContext from_clause()
         {
-            From_clauseContext _localctx = new From_clauseContext(Context, State);
-            EnterRule(_localctx, 18, RULE_from_clause);
-            try
+            return GetRuleContext<From_clauseContext>(0);
+        }
+        public Where_clauseContext where_clause()
+        {
+            return GetRuleContext<Where_clauseContext>(0);
+        }
+        public Group_by_clauseContext group_by_clause()
+        {
+            return GetRuleContext<Group_by_clauseContext>(0);
+        }
+        public Order_by_clauseContext order_by_clause()
+        {
+            return GetRuleContext<Order_by_clauseContext>(0);
+        }
+        public Offset_limit_clauseContext offset_limit_clause()
+        {
+            return GetRuleContext<Offset_limit_clauseContext>(0);
+        }
+        public Sql_queryContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_sql_query; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSql_query(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSql_query(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSql_query(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Sql_queryContext sql_query()
+    {
+        Sql_queryContext _localctx = new Sql_queryContext(Context, State);
+        EnterRule(_localctx, 2, RULE_sql_query);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                EnterOuterAlt(_localctx, 1);
+                State = 85; select_clause();
+                State = 87;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_FROM)
                 {
-                    State = 112; Match(K_FROM);
-                    State = 113; collection_expression(0);
+                    {
+                        State = 86; from_clause();
+                    }
+                }
+
+                State = 90;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_WHERE)
+                {
+                    {
+                        State = 89; where_clause();
+                    }
+                }
+
+                State = 93;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_GROUP)
+                {
+                    {
+                        State = 92; group_by_clause();
+                    }
+                }
+
+                State = 96;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_ORDER)
+                {
+                    {
+                        State = 95; order_by_clause();
+                    }
+                }
+
+                State = 99;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_OFFSET)
+                {
+                    {
+                        State = 98; offset_limit_clause();
+                    }
+                }
+
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Select_clauseContext : ParserRuleContext
+    {
+        public ITerminalNode K_SELECT() { return GetToken(sqlParser.K_SELECT, 0); }
+        public SelectionContext selection()
+        {
+            return GetRuleContext<SelectionContext>(0);
+        }
+        public ITerminalNode K_DISTINCT() { return GetToken(sqlParser.K_DISTINCT, 0); }
+        public Top_specContext top_spec()
+        {
+            return GetRuleContext<Top_specContext>(0);
+        }
+        public Select_clauseContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_select_clause; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSelect_clause(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSelect_clause(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSelect_clause(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Select_clauseContext select_clause()
+    {
+        Select_clauseContext _localctx = new Select_clauseContext(Context, State);
+        EnterRule(_localctx, 4, RULE_select_clause);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 101; Match(K_SELECT);
+                State = 103;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_DISTINCT)
+                {
+                    {
+                        State = 102; Match(K_DISTINCT);
+                    }
+                }
+
+                State = 106;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_TOP)
+                {
+                    {
+                        State = 105; top_spec();
+                    }
+                }
+
+                State = 108; selection();
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Top_specContext : ParserRuleContext
+    {
+        public ITerminalNode K_TOP() { return GetToken(sqlParser.K_TOP, 0); }
+        public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
+        public ITerminalNode PARAMETER() { return GetToken(sqlParser.PARAMETER, 0); }
+        public Top_specContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_top_spec; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterTop_spec(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitTop_spec(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitTop_spec(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Top_specContext top_spec()
+    {
+        Top_specContext _localctx = new Top_specContext(Context, State);
+        EnterRule(_localctx, 6, RULE_top_spec);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 110; Match(K_TOP);
+                State = 111;
+                _la = TokenStream.LA(1);
+                if (!(_la == NUMERIC_LITERAL || _la == PARAMETER))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
 
-        public partial class Collection_expressionContext : ParserRuleContext
+    public partial class SelectionContext : ParserRuleContext
+    {
+        public Select_star_specContext select_star_spec()
         {
-            public Collection_expressionContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_collection_expression; } }
+            return GetRuleContext<Select_star_specContext>(0);
+        }
+        public Select_value_specContext select_value_spec()
+        {
+            return GetRuleContext<Select_value_specContext>(0);
+        }
+        public Select_list_specContext select_list_spec()
+        {
+            return GetRuleContext<Select_list_specContext>(0);
+        }
+        public SelectionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_selection; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSelection(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSelection(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSelection(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
 
-            public Collection_expressionContext() { }
-            public virtual void CopyFrom(Collection_expressionContext context)
-            {
-                base.CopyFrom(context);
-            }
-        }
-        public partial class JoinCollectionExpressionContext : Collection_expressionContext
+    [RuleVersion(0)]
+    public SelectionContext selection()
+    {
+        SelectionContext _localctx = new SelectionContext(Context, State);
+        EnterRule(_localctx, 8, RULE_selection);
+        try
         {
-            public Collection_expressionContext[] collection_expression()
+            State = 116;
+            ErrorHandler.Sync(this);
+            switch (TokenStream.LA(1))
             {
-                return GetRuleContexts<Collection_expressionContext>();
-            }
-            public Collection_expressionContext collection_expression(int i)
-            {
-                return GetRuleContext<Collection_expressionContext>(i);
-            }
-            public ITerminalNode K_JOIN() { return GetToken(sqlParser.K_JOIN, 0); }
-            public JoinCollectionExpressionContext(Collection_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterJoinCollectionExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitJoinCollectionExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitJoinCollectionExpression(this);
-                else return visitor.VisitChildren(this);
+                case T__0:
+                    EnterOuterAlt(_localctx, 1);
+                    {
+                        State = 113; select_star_spec();
+                    }
+                    break;
+                case K_VALUE:
+                    EnterOuterAlt(_localctx, 2);
+                    {
+                        State = 114; select_value_spec();
+                    }
+                    break;
+                case T__2:
+                case T__5:
+                case T__12:
+                case T__13:
+                case T__24:
+                case T__25:
+                case K_ARRAY:
+                case K_EXISTS:
+                case K_FALSE:
+                case K_NOT:
+                case K_NULL:
+                case K_TRUE:
+                case K_UDF:
+                case K_UNDEFINED:
+                case NUMERIC_LITERAL:
+                case STRING_LITERAL:
+                case IDENTIFIER:
+                case PARAMETER:
+                    EnterOuterAlt(_localctx, 3);
+                    {
+                        State = 115; select_list_spec();
+                    }
+                    break;
+                default:
+                    throw new NoViableAltException(this);
             }
         }
-        public partial class AliasedCollectionExpressionContext : Collection_expressionContext
+        catch (RecognitionException re)
         {
-            public CollectionContext collection()
-            {
-                return GetRuleContext<CollectionContext>(0);
-            }
-            public ITerminalNode K_AS() { return GetToken(sqlParser.K_AS, 0); }
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public AliasedCollectionExpressionContext(Collection_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterAliasedCollectionExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitAliasedCollectionExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitAliasedCollectionExpression(this);
-                else return visitor.VisitChildren(this);
-            }
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
         }
-        public partial class ArrayIteratorCollectionExpressionContext : Collection_expressionContext
+        finally
         {
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public ITerminalNode K_IN() { return GetToken(sqlParser.K_IN, 0); }
-            public CollectionContext collection()
-            {
-                return GetRuleContext<CollectionContext>(0);
-            }
-            public ArrayIteratorCollectionExpressionContext(Collection_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterArrayIteratorCollectionExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitArrayIteratorCollectionExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitArrayIteratorCollectionExpression(this);
-                else return visitor.VisitChildren(this);
-            }
+            ExitRule();
         }
+        return _localctx;
+    }
 
-        [RuleVersion(0)]
+    public partial class Select_star_specContext : ParserRuleContext
+    {
+        public Select_star_specContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_select_star_spec; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSelect_star_spec(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSelect_star_spec(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSelect_star_spec(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Select_star_specContext select_star_spec()
+    {
+        Select_star_specContext _localctx = new Select_star_specContext(Context, State);
+        EnterRule(_localctx, 10, RULE_select_star_spec);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 118; Match(T__0);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Select_value_specContext : ParserRuleContext
+    {
+        public ITerminalNode K_VALUE() { return GetToken(sqlParser.K_VALUE, 0); }
+        public Scalar_expressionContext scalar_expression()
+        {
+            return GetRuleContext<Scalar_expressionContext>(0);
+        }
+        public Select_value_specContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_select_value_spec; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSelect_value_spec(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSelect_value_spec(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSelect_value_spec(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Select_value_specContext select_value_spec()
+    {
+        Select_value_specContext _localctx = new Select_value_specContext(Context, State);
+        EnterRule(_localctx, 12, RULE_select_value_spec);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 120; Match(K_VALUE);
+                State = 121; scalar_expression(0);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Select_list_specContext : ParserRuleContext
+    {
+        public Select_itemContext[] select_item()
+        {
+            return GetRuleContexts<Select_itemContext>();
+        }
+        public Select_itemContext select_item(int i)
+        {
+            return GetRuleContext<Select_itemContext>(i);
+        }
+        public Select_list_specContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_select_list_spec; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSelect_list_spec(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSelect_list_spec(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSelect_list_spec(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Select_list_specContext select_list_spec()
+    {
+        Select_list_specContext _localctx = new Select_list_specContext(Context, State);
+        EnterRule(_localctx, 14, RULE_select_list_spec);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 123; select_item();
+                State = 128;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                while (_la == T__1)
+                {
+                    {
+                        {
+                            State = 124; Match(T__1);
+                            State = 125; select_item();
+                        }
+                    }
+                    State = 130;
+                    ErrorHandler.Sync(this);
+                    _la = TokenStream.LA(1);
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Select_itemContext : ParserRuleContext
+    {
+        public Scalar_expressionContext scalar_expression()
+        {
+            return GetRuleContext<Scalar_expressionContext>(0);
+        }
+        public ITerminalNode K_AS() { return GetToken(sqlParser.K_AS, 0); }
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public Select_itemContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_select_item; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSelect_item(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSelect_item(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSelect_item(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Select_itemContext select_item()
+    {
+        Select_itemContext _localctx = new Select_itemContext(Context, State);
+        EnterRule(_localctx, 16, RULE_select_item);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 131; scalar_expression(0);
+                State = 134;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_AS)
+                {
+                    {
+                        State = 132; Match(K_AS);
+                        State = 133; Match(IDENTIFIER);
+                    }
+                }
+
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class From_clauseContext : ParserRuleContext
+    {
+        public ITerminalNode K_FROM() { return GetToken(sqlParser.K_FROM, 0); }
         public Collection_expressionContext collection_expression()
         {
-            return collection_expression(0);
+            return GetRuleContext<Collection_expressionContext>(0);
         }
-
-        private Collection_expressionContext collection_expression(int _p)
+        public From_clauseContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
         {
-            ParserRuleContext _parentctx = Context;
-            int _parentState = State;
-            Collection_expressionContext _localctx = new Collection_expressionContext(Context, _parentState);
-            Collection_expressionContext _prevctx = _localctx;
-            int _startState = 20;
-            EnterRecursionRule(_localctx, 20, RULE_collection_expression, _p);
-            try
-            {
-                int _alt;
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 124;
-                    ErrorHandler.Sync(this);
-                    switch (Interpreter.AdaptivePredict(TokenStream, 11, Context))
-                    {
-                        case 1:
-                            {
-                                _localctx = new AliasedCollectionExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-
-                                State = 116; collection();
-                                State = 119;
-                                ErrorHandler.Sync(this);
-                                switch (Interpreter.AdaptivePredict(TokenStream, 10, Context))
-                                {
-                                    case 1:
-                                        {
-                                            State = 117; Match(K_AS);
-                                            State = 118; Match(IDENTIFIER);
-                                        }
-                                        break;
-                                }
-                            }
-                            break;
-                        case 2:
-                            {
-                                _localctx = new ArrayIteratorCollectionExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 121; Match(IDENTIFIER);
-                                State = 122; Match(K_IN);
-                                State = 123; collection();
-                            }
-                            break;
-                    }
-                    Context.Stop = TokenStream.LT(-1);
-                    State = 131;
-                    ErrorHandler.Sync(this);
-                    _alt = Interpreter.AdaptivePredict(TokenStream, 12, Context);
-                    while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
-                    {
-                        if (_alt == 1)
-                        {
-                            if (ParseListeners != null)
-                                TriggerExitRuleEvent();
-                            _prevctx = _localctx;
-                            {
-                                {
-                                    _localctx = new JoinCollectionExpressionContext(new Collection_expressionContext(_parentctx, _parentState));
-                                    PushNewRecursionContext(_localctx, _startState, RULE_collection_expression);
-                                    State = 126;
-                                    if (!(Precpred(Context, 1))) throw new FailedPredicateException(this, "Precpred(Context, 1)");
-                                    State = 127; Match(K_JOIN);
-                                    State = 128; collection_expression(2);
-                                }
-                            }
-                        }
-                        State = 133;
-                        ErrorHandler.Sync(this);
-                        _alt = Interpreter.AdaptivePredict(TokenStream, 12, Context);
-                    }
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                UnrollRecursionContexts(_parentctx);
-            }
-            return _localctx;
         }
-
-        public partial class CollectionContext : ParserRuleContext
+        public override int RuleIndex { get { return RULE_from_clause; } }
+        public override void EnterRule(IParseTreeListener listener)
         {
-            public CollectionContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_collection; } }
-
-            public CollectionContext() { }
-            public virtual void CopyFrom(CollectionContext context)
-            {
-                base.CopyFrom(context);
-            }
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterFrom_clause(this);
         }
-        public partial class InputPathCollectionContext : CollectionContext
+        public override void ExitRule(IParseTreeListener listener)
         {
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public Path_expressionContext path_expression()
-            {
-                return GetRuleContext<Path_expressionContext>(0);
-            }
-            public InputPathCollectionContext(CollectionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterInputPathCollection(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitInputPathCollection(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitInputPathCollection(this);
-                else return visitor.VisitChildren(this);
-            }
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitFrom_clause(this);
         }
-        public partial class SubqueryCollectionContext : CollectionContext
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
         {
-            public Sql_queryContext sql_query()
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitFrom_clause(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public From_clauseContext from_clause()
+    {
+        From_clauseContext _localctx = new From_clauseContext(Context, State);
+        EnterRule(_localctx, 18, RULE_from_clause);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                return GetRuleContext<Sql_queryContext>(0);
-            }
-            public SubqueryCollectionContext(CollectionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSubqueryCollection(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSubqueryCollection(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSubqueryCollection(this);
-                else return visitor.VisitChildren(this);
+                State = 136; Match(K_FROM);
+                State = 137; collection_expression(0);
             }
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
 
-        [RuleVersion(0)]
+    public partial class Collection_expressionContext : ParserRuleContext
+    {
+        public Collection_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_collection_expression; } }
+
+        public Collection_expressionContext() { }
+        public virtual void CopyFrom(Collection_expressionContext context)
+        {
+            base.CopyFrom(context);
+        }
+    }
+    public partial class JoinCollectionExpressionContext : Collection_expressionContext
+    {
+        public Collection_expressionContext[] collection_expression()
+        {
+            return GetRuleContexts<Collection_expressionContext>();
+        }
+        public Collection_expressionContext collection_expression(int i)
+        {
+            return GetRuleContext<Collection_expressionContext>(i);
+        }
+        public ITerminalNode K_JOIN() { return GetToken(sqlParser.K_JOIN, 0); }
+        public JoinCollectionExpressionContext(Collection_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterJoinCollectionExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitJoinCollectionExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitJoinCollectionExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class AliasedCollectionExpressionContext : Collection_expressionContext
+    {
         public CollectionContext collection()
         {
-            CollectionContext _localctx = new CollectionContext(Context, State);
-            EnterRule(_localctx, 22, RULE_collection);
-            try
+            return GetRuleContext<CollectionContext>(0);
+        }
+        public ITerminalNode K_AS() { return GetToken(sqlParser.K_AS, 0); }
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public AliasedCollectionExpressionContext(Collection_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterAliasedCollectionExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitAliasedCollectionExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitAliasedCollectionExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ArrayIteratorCollectionExpressionContext : Collection_expressionContext
+    {
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public ITerminalNode K_IN() { return GetToken(sqlParser.K_IN, 0); }
+        public CollectionContext collection()
+        {
+            return GetRuleContext<CollectionContext>(0);
+        }
+        public ArrayIteratorCollectionExpressionContext(Collection_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterArrayIteratorCollectionExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitArrayIteratorCollectionExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitArrayIteratorCollectionExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Collection_expressionContext collection_expression()
+    {
+        return collection_expression(0);
+    }
+
+    private Collection_expressionContext collection_expression(int _p)
+    {
+        ParserRuleContext _parentctx = Context;
+        int _parentState = State;
+        Collection_expressionContext _localctx = new Collection_expressionContext(Context, _parentState);
+        Collection_expressionContext _prevctx = _localctx;
+        int _startState = 20;
+        EnterRecursionRule(_localctx, 20, RULE_collection_expression, _p);
+        try
+        {
+            int _alt;
+            EnterOuterAlt(_localctx, 1);
             {
-                State = 142;
+                State = 148;
                 ErrorHandler.Sync(this);
-                switch (TokenStream.LA(1))
+                switch (Interpreter.AdaptivePredict(TokenStream, 11, Context))
                 {
-                    case IDENTIFIER:
-                        _localctx = new InputPathCollectionContext(_localctx);
-                        EnterOuterAlt(_localctx, 1);
+                    case 1:
                         {
-                            State = 134; Match(IDENTIFIER);
-                            State = 136;
+                            _localctx = new AliasedCollectionExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+
+                            State = 140; collection();
+                            State = 143;
                             ErrorHandler.Sync(this);
-                            switch (Interpreter.AdaptivePredict(TokenStream, 13, Context))
+                            switch (Interpreter.AdaptivePredict(TokenStream, 10, Context))
                             {
                                 case 1:
                                     {
-                                        State = 135; path_expression(0);
+                                        State = 141; Match(K_AS);
+                                        State = 142; Match(IDENTIFIER);
                                     }
                                     break;
                             }
                         }
                         break;
-                    case T__2:
-                        _localctx = new SubqueryCollectionContext(_localctx);
-                        EnterOuterAlt(_localctx, 2);
+                    case 2:
                         {
-                            State = 138; Match(T__2);
-                            State = 139; sql_query();
-                            State = 140; Match(T__3);
+                            _localctx = new ArrayIteratorCollectionExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 145; Match(IDENTIFIER);
+                            State = 146; Match(K_IN);
+                            State = 147; collection();
                         }
                         break;
-                    default:
-                        throw new NoViableAltException(this);
+                }
+                Context.Stop = TokenStream.LT(-1);
+                State = 155;
+                ErrorHandler.Sync(this);
+                _alt = Interpreter.AdaptivePredict(TokenStream, 12, Context);
+                while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+                {
+                    if (_alt == 1)
+                    {
+                        if (ParseListeners != null)
+                            TriggerExitRuleEvent();
+                        _prevctx = _localctx;
+                        {
+                            {
+                                _localctx = new JoinCollectionExpressionContext(new Collection_expressionContext(_parentctx, _parentState));
+                                PushNewRecursionContext(_localctx, _startState, RULE_collection_expression);
+                                State = 150;
+                                if (!(Precpred(Context, 1))) throw new FailedPredicateException(this, "Precpred(Context, 1)");
+                                State = 151; Match(K_JOIN);
+                                State = 152; collection_expression(2);
+                            }
+                        }
+                    }
+                    State = 157;
+                    ErrorHandler.Sync(this);
+                    _alt = Interpreter.AdaptivePredict(TokenStream, 12, Context);
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            UnrollRecursionContexts(_parentctx);
+        }
+        return _localctx;
+    }
 
-        public partial class Path_expressionContext : ParserRuleContext
+    public partial class CollectionContext : ParserRuleContext
+    {
+        public CollectionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
         {
-            public Path_expressionContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_path_expression; } }
+        }
+        public override int RuleIndex { get { return RULE_collection; } }
 
-            public Path_expressionContext() { }
-            public virtual void CopyFrom(Path_expressionContext context)
-            {
-                base.CopyFrom(context);
-            }
-        }
-        public partial class StringPathExpressionContext : Path_expressionContext
+        public CollectionContext() { }
+        public virtual void CopyFrom(CollectionContext context)
         {
-            public Path_expressionContext path_expression()
-            {
-                return GetRuleContext<Path_expressionContext>(0);
-            }
-            public ITerminalNode STRING_LITERAL() { return GetToken(sqlParser.STRING_LITERAL, 0); }
-            public StringPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterStringPathExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitStringPathExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitStringPathExpression(this);
-                else return visitor.VisitChildren(this);
-            }
+            base.CopyFrom(context);
         }
-        public partial class EpsilonPathExpressionContext : Path_expressionContext
-        {
-            public EpsilonPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterEpsilonPathExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitEpsilonPathExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitEpsilonPathExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class IdentifierPathExpressionContext : Path_expressionContext
-        {
-            public Path_expressionContext path_expression()
-            {
-                return GetRuleContext<Path_expressionContext>(0);
-            }
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public IdentifierPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterIdentifierPathExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitIdentifierPathExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitIdentifierPathExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class NumberPathExpressionContext : Path_expressionContext
-        {
-            public Path_expressionContext path_expression()
-            {
-                return GetRuleContext<Path_expressionContext>(0);
-            }
-            public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
-            public NumberPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterNumberPathExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitNumberPathExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitNumberPathExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
+    }
+    public partial class InputPathCollectionContext : CollectionContext
+    {
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
         public Path_expressionContext path_expression()
         {
-            return path_expression(0);
+            return GetRuleContext<Path_expressionContext>(0);
         }
-
-        private Path_expressionContext path_expression(int _p)
+        public InputPathCollectionContext(CollectionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
         {
-            ParserRuleContext _parentctx = Context;
-            int _parentState = State;
-            Path_expressionContext _localctx = new Path_expressionContext(Context, _parentState);
-            Path_expressionContext _prevctx = _localctx;
-            int _startState = 24;
-            EnterRecursionRule(_localctx, 24, RULE_path_expression, _p);
-            try
-            {
-                int _alt;
-                EnterOuterAlt(_localctx, 1);
-                {
-                    {
-                        _localctx = new EpsilonPathExpressionContext(_localctx);
-                        Context = _localctx;
-                        _prevctx = _localctx;
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterInputPathCollection(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitInputPathCollection(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitInputPathCollection(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class SubqueryCollectionContext : CollectionContext
+    {
+        public Sql_queryContext sql_query()
+        {
+            return GetRuleContext<Sql_queryContext>(0);
+        }
+        public SubqueryCollectionContext(CollectionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSubqueryCollection(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSubqueryCollection(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSubqueryCollection(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
 
-                    }
-                    Context.Stop = TokenStream.LT(-1);
-                    State = 158;
-                    ErrorHandler.Sync(this);
-                    _alt = Interpreter.AdaptivePredict(TokenStream, 16, Context);
-                    while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+    [RuleVersion(0)]
+    public CollectionContext collection()
+    {
+        CollectionContext _localctx = new CollectionContext(Context, State);
+        EnterRule(_localctx, 22, RULE_collection);
+        try
+        {
+            State = 166;
+            ErrorHandler.Sync(this);
+            switch (TokenStream.LA(1))
+            {
+                case IDENTIFIER:
+                    _localctx = new InputPathCollectionContext(_localctx);
+                    EnterOuterAlt(_localctx, 1);
                     {
-                        if (_alt == 1)
-                        {
-                            if (ParseListeners != null)
-                                TriggerExitRuleEvent();
-                            _prevctx = _localctx;
-                            {
-                                State = 156;
-                                ErrorHandler.Sync(this);
-                                switch (Interpreter.AdaptivePredict(TokenStream, 15, Context))
-                                {
-                                    case 1:
-                                        {
-                                            _localctx = new IdentifierPathExpressionContext(new Path_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_path_expression);
-                                            State = 145;
-                                            if (!(Precpred(Context, 4))) throw new FailedPredicateException(this, "Precpred(Context, 4)");
-                                            State = 146; Match(T__4);
-                                            State = 147; Match(IDENTIFIER);
-                                        }
-                                        break;
-                                    case 2:
-                                        {
-                                            _localctx = new NumberPathExpressionContext(new Path_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_path_expression);
-                                            State = 148;
-                                            if (!(Precpred(Context, 3))) throw new FailedPredicateException(this, "Precpred(Context, 3)");
-                                            State = 149; Match(T__5);
-                                            State = 150; Match(NUMERIC_LITERAL);
-                                            State = 151; Match(T__6);
-                                        }
-                                        break;
-                                    case 3:
-                                        {
-                                            _localctx = new StringPathExpressionContext(new Path_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_path_expression);
-                                            State = 152;
-                                            if (!(Precpred(Context, 2))) throw new FailedPredicateException(this, "Precpred(Context, 2)");
-                                            State = 153; Match(T__5);
-                                            State = 154; Match(STRING_LITERAL);
-                                            State = 155; Match(T__6);
-                                        }
-                                        break;
-                                }
-                            }
-                        }
+                        State = 158; Match(IDENTIFIER);
                         State = 160;
                         ErrorHandler.Sync(this);
-                        _alt = Interpreter.AdaptivePredict(TokenStream, 16, Context);
-                    }
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                UnrollRecursionContexts(_parentctx);
-            }
-            return _localctx;
-        }
-
-        public partial class Where_clauseContext : ParserRuleContext
-        {
-            public ITerminalNode K_WHERE() { return GetToken(sqlParser.K_WHERE, 0); }
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public Where_clauseContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_where_clause; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterWhere_clause(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitWhere_clause(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitWhere_clause(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Where_clauseContext where_clause()
-        {
-            Where_clauseContext _localctx = new Where_clauseContext(Context, State);
-            EnterRule(_localctx, 26, RULE_where_clause);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 161; Match(K_WHERE);
-                    State = 162; scalar_expression(0);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Group_by_clauseContext : ParserRuleContext
-        {
-            public ITerminalNode K_GROUP() { return GetToken(sqlParser.K_GROUP, 0); }
-            public ITerminalNode K_BY() { return GetToken(sqlParser.K_BY, 0); }
-            public Scalar_expression_listContext scalar_expression_list()
-            {
-                return GetRuleContext<Scalar_expression_listContext>(0);
-            }
-            public Group_by_clauseContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_group_by_clause; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterGroup_by_clause(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitGroup_by_clause(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitGroup_by_clause(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Group_by_clauseContext group_by_clause()
-        {
-            Group_by_clauseContext _localctx = new Group_by_clauseContext(Context, State);
-            EnterRule(_localctx, 28, RULE_group_by_clause);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 164; Match(K_GROUP);
-                    State = 165; Match(K_BY);
-                    State = 166; scalar_expression_list();
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Order_by_clauseContext : ParserRuleContext
-        {
-            public ITerminalNode K_ORDER() { return GetToken(sqlParser.K_ORDER, 0); }
-            public ITerminalNode K_BY() { return GetToken(sqlParser.K_BY, 0); }
-            public Order_by_itemsContext order_by_items()
-            {
-                return GetRuleContext<Order_by_itemsContext>(0);
-            }
-            public Order_by_clauseContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_order_by_clause; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterOrder_by_clause(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitOrder_by_clause(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitOrder_by_clause(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Order_by_clauseContext order_by_clause()
-        {
-            Order_by_clauseContext _localctx = new Order_by_clauseContext(Context, State);
-            EnterRule(_localctx, 30, RULE_order_by_clause);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 168; Match(K_ORDER);
-                    State = 169; Match(K_BY);
-                    State = 170; order_by_items();
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Order_by_itemsContext : ParserRuleContext
-        {
-            public Order_by_itemContext[] order_by_item()
-            {
-                return GetRuleContexts<Order_by_itemContext>();
-            }
-            public Order_by_itemContext order_by_item(int i)
-            {
-                return GetRuleContext<Order_by_itemContext>(i);
-            }
-            public Order_by_itemsContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_order_by_items; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterOrder_by_items(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitOrder_by_items(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitOrder_by_items(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Order_by_itemsContext order_by_items()
-        {
-            Order_by_itemsContext _localctx = new Order_by_itemsContext(Context, State);
-            EnterRule(_localctx, 32, RULE_order_by_items);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 172; order_by_item();
-                    State = 177;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    while (_la == T__1)
-                    {
+                        switch (Interpreter.AdaptivePredict(TokenStream, 13, Context))
                         {
+                            case 1:
+                                {
+                                    State = 159; path_expression(0);
+                                }
+                                break;
+                        }
+                    }
+                    break;
+                case T__2:
+                    _localctx = new SubqueryCollectionContext(_localctx);
+                    EnterOuterAlt(_localctx, 2);
+                    {
+                        State = 162; Match(T__2);
+                        State = 163; sql_query();
+                        State = 164; Match(T__3);
+                    }
+                    break;
+                default:
+                    throw new NoViableAltException(this);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Path_expressionContext : ParserRuleContext
+    {
+        public Path_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_path_expression; } }
+
+        public Path_expressionContext() { }
+        public virtual void CopyFrom(Path_expressionContext context)
+        {
+            base.CopyFrom(context);
+        }
+    }
+    public partial class StringPathExpressionContext : Path_expressionContext
+    {
+        public Path_expressionContext path_expression()
+        {
+            return GetRuleContext<Path_expressionContext>(0);
+        }
+        public ITerminalNode STRING_LITERAL() { return GetToken(sqlParser.STRING_LITERAL, 0); }
+        public StringPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterStringPathExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitStringPathExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitStringPathExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class EpsilonPathExpressionContext : Path_expressionContext
+    {
+        public EpsilonPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterEpsilonPathExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitEpsilonPathExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitEpsilonPathExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class IdentifierPathExpressionContext : Path_expressionContext
+    {
+        public Path_expressionContext path_expression()
+        {
+            return GetRuleContext<Path_expressionContext>(0);
+        }
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public IdentifierPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterIdentifierPathExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitIdentifierPathExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitIdentifierPathExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class NumberPathExpressionContext : Path_expressionContext
+    {
+        public Path_expressionContext path_expression()
+        {
+            return GetRuleContext<Path_expressionContext>(0);
+        }
+        public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
+        public NumberPathExpressionContext(Path_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterNumberPathExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitNumberPathExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitNumberPathExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Path_expressionContext path_expression()
+    {
+        return path_expression(0);
+    }
+
+    private Path_expressionContext path_expression(int _p)
+    {
+        ParserRuleContext _parentctx = Context;
+        int _parentState = State;
+        Path_expressionContext _localctx = new Path_expressionContext(Context, _parentState);
+        Path_expressionContext _prevctx = _localctx;
+        int _startState = 24;
+        EnterRecursionRule(_localctx, 24, RULE_path_expression, _p);
+        try
+        {
+            int _alt;
+            EnterOuterAlt(_localctx, 1);
+            {
+                {
+                    _localctx = new EpsilonPathExpressionContext(_localctx);
+                    Context = _localctx;
+                    _prevctx = _localctx;
+
+                }
+                Context.Stop = TokenStream.LT(-1);
+                State = 182;
+                ErrorHandler.Sync(this);
+                _alt = Interpreter.AdaptivePredict(TokenStream, 16, Context);
+                while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+                {
+                    if (_alt == 1)
+                    {
+                        if (ParseListeners != null)
+                            TriggerExitRuleEvent();
+                        _prevctx = _localctx;
+                        {
+                            State = 180;
+                            ErrorHandler.Sync(this);
+                            switch (Interpreter.AdaptivePredict(TokenStream, 15, Context))
                             {
-                                State = 173; Match(T__1);
-                                State = 174; order_by_item();
+                                case 1:
+                                    {
+                                        _localctx = new IdentifierPathExpressionContext(new Path_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_path_expression);
+                                        State = 169;
+                                        if (!(Precpred(Context, 4))) throw new FailedPredicateException(this, "Precpred(Context, 4)");
+                                        State = 170; Match(T__4);
+                                        State = 171; Match(IDENTIFIER);
+                                    }
+                                    break;
+                                case 2:
+                                    {
+                                        _localctx = new NumberPathExpressionContext(new Path_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_path_expression);
+                                        State = 172;
+                                        if (!(Precpred(Context, 3))) throw new FailedPredicateException(this, "Precpred(Context, 3)");
+                                        State = 173; Match(T__5);
+                                        State = 174; Match(NUMERIC_LITERAL);
+                                        State = 175; Match(T__6);
+                                    }
+                                    break;
+                                case 3:
+                                    {
+                                        _localctx = new StringPathExpressionContext(new Path_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_path_expression);
+                                        State = 176;
+                                        if (!(Precpred(Context, 2))) throw new FailedPredicateException(this, "Precpred(Context, 2)");
+                                        State = 177; Match(T__5);
+                                        State = 178; Match(STRING_LITERAL);
+                                        State = 179; Match(T__6);
+                                    }
+                                    break;
                             }
                         }
-                        State = 179;
-                        ErrorHandler.Sync(this);
-                        _la = TokenStream.LA(1);
                     }
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Order_by_itemContext : ParserRuleContext
-        {
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public Sort_orderContext sort_order()
-            {
-                return GetRuleContext<Sort_orderContext>(0);
-            }
-            public Order_by_itemContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_order_by_item; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterOrder_by_item(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitOrder_by_item(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitOrder_by_item(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Order_by_itemContext order_by_item()
-        {
-            Order_by_itemContext _localctx = new Order_by_itemContext(Context, State);
-            EnterRule(_localctx, 34, RULE_order_by_item);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 180; scalar_expression(0);
-                    State = 182;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    if (_la == K_ASC || _la == K_DESC)
-                    {
-                        {
-                            State = 181; sort_order();
-                        }
-                    }
-
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Sort_orderContext : ParserRuleContext
-        {
-            public ITerminalNode K_ASC() { return GetToken(sqlParser.K_ASC, 0); }
-            public ITerminalNode K_DESC() { return GetToken(sqlParser.K_DESC, 0); }
-            public Sort_orderContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_sort_order; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSort_order(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSort_order(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSort_order(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Sort_orderContext sort_order()
-        {
-            Sort_orderContext _localctx = new Sort_orderContext(Context, State);
-            EnterRule(_localctx, 36, RULE_sort_order);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
                     State = 184;
-                    _la = TokenStream.LA(1);
-                    if (!(_la == K_ASC || _la == K_DESC))
-                    {
-                        ErrorHandler.RecoverInline(this);
-                    }
-                    else
-                    {
-                        ErrorHandler.ReportMatch(this);
-                        Consume();
-                    }
+                    ErrorHandler.Sync(this);
+                    _alt = Interpreter.AdaptivePredict(TokenStream, 16, Context);
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            UnrollRecursionContexts(_parentctx);
+        }
+        return _localctx;
+    }
 
-        public partial class Offset_limit_clauseContext : ParserRuleContext
-        {
-            public ITerminalNode K_OFFSET() { return GetToken(sqlParser.K_OFFSET, 0); }
-            public Offset_countContext offset_count()
-            {
-                return GetRuleContext<Offset_countContext>(0);
-            }
-            public ITerminalNode K_LIMIT() { return GetToken(sqlParser.K_LIMIT, 0); }
-            public Limit_countContext limit_count()
-            {
-                return GetRuleContext<Limit_countContext>(0);
-            }
-            public Offset_limit_clauseContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_offset_limit_clause; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterOffset_limit_clause(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitOffset_limit_clause(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitOffset_limit_clause(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Offset_limit_clauseContext offset_limit_clause()
-        {
-            Offset_limit_clauseContext _localctx = new Offset_limit_clauseContext(Context, State);
-            EnterRule(_localctx, 38, RULE_offset_limit_clause);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 186; Match(K_OFFSET);
-                    State = 187; offset_count();
-                    State = 188; Match(K_LIMIT);
-                    State = 189; limit_count();
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Offset_countContext : ParserRuleContext
-        {
-            public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
-            public Offset_countContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_offset_count; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterOffset_count(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitOffset_count(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitOffset_count(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Offset_countContext offset_count()
-        {
-            Offset_countContext _localctx = new Offset_countContext(Context, State);
-            EnterRule(_localctx, 40, RULE_offset_count);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 191; Match(NUMERIC_LITERAL);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Limit_countContext : ParserRuleContext
-        {
-            public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
-            public Limit_countContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_limit_count; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterLimit_count(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitLimit_count(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitLimit_count(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public Limit_countContext limit_count()
-        {
-            Limit_countContext _localctx = new Limit_countContext(Context, State);
-            EnterRule(_localctx, 42, RULE_limit_count);
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 193; Match(NUMERIC_LITERAL);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class Scalar_expressionContext : ParserRuleContext
-        {
-            public Scalar_expressionContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_scalar_expression; } }
-
-            public Scalar_expressionContext() { }
-            public virtual void CopyFrom(Scalar_expressionContext context)
-            {
-                base.CopyFrom(context);
-            }
-        }
-        public partial class LiteralScalarExpressionContext : Scalar_expressionContext
-        {
-            public LiteralContext literal()
-            {
-                return GetRuleContext<LiteralContext>(0);
-            }
-            public LiteralScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterLiteralScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitLiteralScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitLiteralScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class BetweenScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext[] scalar_expression()
-            {
-                return GetRuleContexts<Scalar_expressionContext>();
-            }
-            public Scalar_expressionContext scalar_expression(int i)
-            {
-                return GetRuleContext<Scalar_expressionContext>(i);
-            }
-            public ITerminalNode K_BETWEEN() { return GetToken(sqlParser.K_BETWEEN, 0); }
-            public ITerminalNode K_AND() { return GetToken(sqlParser.K_AND, 0); }
-            public ITerminalNode K_NOT() { return GetToken(sqlParser.K_NOT, 0); }
-            public BetweenScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterBetweenScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitBetweenScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitBetweenScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class ObjectCreateScalarExpressionContext : Scalar_expressionContext
-        {
-            public Object_propertty_listContext object_propertty_list()
-            {
-                return GetRuleContext<Object_propertty_listContext>(0);
-            }
-            public ObjectCreateScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterObjectCreateScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitObjectCreateScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitObjectCreateScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class InScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public ITerminalNode K_IN() { return GetToken(sqlParser.K_IN, 0); }
-            public Scalar_expression_listContext scalar_expression_list()
-            {
-                return GetRuleContext<Scalar_expression_listContext>(0);
-            }
-            public ITerminalNode K_NOT() { return GetToken(sqlParser.K_NOT, 0); }
-            public InScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterInScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitInScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitInScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class ArrayCreateScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expression_listContext scalar_expression_list()
-            {
-                return GetRuleContext<Scalar_expression_listContext>(0);
-            }
-            public ArrayCreateScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterArrayCreateScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitArrayCreateScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitArrayCreateScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class MemberIndexerScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext[] scalar_expression()
-            {
-                return GetRuleContexts<Scalar_expressionContext>();
-            }
-            public Scalar_expressionContext scalar_expression(int i)
-            {
-                return GetRuleContext<Scalar_expressionContext>(i);
-            }
-            public MemberIndexerScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterMemberIndexerScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitMemberIndexerScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitMemberIndexerScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class SubqueryScalarExpressionContext : Scalar_expressionContext
-        {
-            public Sql_queryContext sql_query()
-            {
-                return GetRuleContext<Sql_queryContext>(0);
-            }
-            public SubqueryScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterSubqueryScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitSubqueryScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitSubqueryScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class PropertyRefScalarExpressionBaseContext : Scalar_expressionContext
-        {
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public PropertyRefScalarExpressionBaseContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterPropertyRefScalarExpressionBase(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitPropertyRefScalarExpressionBase(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitPropertyRefScalarExpressionBase(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class CoalesceScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext[] scalar_expression()
-            {
-                return GetRuleContexts<Scalar_expressionContext>();
-            }
-            public Scalar_expressionContext scalar_expression(int i)
-            {
-                return GetRuleContext<Scalar_expressionContext>(i);
-            }
-            public CoalesceScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterCoalesceScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitCoalesceScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitCoalesceScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class ConditionalScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext[] scalar_expression()
-            {
-                return GetRuleContexts<Scalar_expressionContext>();
-            }
-            public Scalar_expressionContext scalar_expression(int i)
-            {
-                return GetRuleContext<Scalar_expressionContext>(i);
-            }
-            public ConditionalScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterConditionalScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitConditionalScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitConditionalScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class FunctionCallScalarExpressionContext : Scalar_expressionContext
-        {
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public ITerminalNode K_UDF() { return GetToken(sqlParser.K_UDF, 0); }
-            public Scalar_expression_listContext scalar_expression_list()
-            {
-                return GetRuleContext<Scalar_expression_listContext>(0);
-            }
-            public FunctionCallScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterFunctionCallScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitFunctionCallScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitFunctionCallScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class ArrayScalarExpressionContext : Scalar_expressionContext
-        {
-            public ITerminalNode K_ARRAY() { return GetToken(sqlParser.K_ARRAY, 0); }
-            public Sql_queryContext sql_query()
-            {
-                return GetRuleContext<Sql_queryContext>(0);
-            }
-            public ArrayScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterArrayScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitArrayScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitArrayScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class ExistsScalarExpressionContext : Scalar_expressionContext
-        {
-            public ITerminalNode K_EXISTS() { return GetToken(sqlParser.K_EXISTS, 0); }
-            public Sql_queryContext sql_query()
-            {
-                return GetRuleContext<Sql_queryContext>(0);
-            }
-            public ExistsScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterExistsScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitExistsScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitExistsScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class UnaryScalarExpressionContext : Scalar_expressionContext
-        {
-            public Unary_operatorContext unary_operator()
-            {
-                return GetRuleContext<Unary_operatorContext>(0);
-            }
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public UnaryScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterUnaryScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitUnaryScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitUnaryScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class BinaryScalarExpressionContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext[] scalar_expression()
-            {
-                return GetRuleContexts<Scalar_expressionContext>();
-            }
-            public Scalar_expressionContext scalar_expression(int i)
-            {
-                return GetRuleContext<Scalar_expressionContext>(i);
-            }
-            public Binary_operatorContext binary_operator()
-            {
-                return GetRuleContext<Binary_operatorContext>(0);
-            }
-            public BinaryScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterBinaryScalarExpression(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitBinaryScalarExpression(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitBinaryScalarExpression(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-        public partial class PropertyRefScalarExpressionRecursiveContext : Scalar_expressionContext
-        {
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
-            public PropertyRefScalarExpressionRecursiveContext(Scalar_expressionContext context) { CopyFrom(context); }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterPropertyRefScalarExpressionRecursive(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitPropertyRefScalarExpressionRecursive(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitPropertyRefScalarExpressionRecursive(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
+    public partial class Where_clauseContext : ParserRuleContext
+    {
+        public ITerminalNode K_WHERE() { return GetToken(sqlParser.K_WHERE, 0); }
         public Scalar_expressionContext scalar_expression()
         {
-            return scalar_expression(0);
+            return GetRuleContext<Scalar_expressionContext>(0);
         }
-
-        private Scalar_expressionContext scalar_expression(int _p)
+        public Where_clauseContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
         {
-            ParserRuleContext _parentctx = Context;
-            int _parentState = State;
-            Scalar_expressionContext _localctx = new Scalar_expressionContext(Context, _parentState);
-            Scalar_expressionContext _prevctx = _localctx;
-            int _startState = 44;
-            EnterRecursionRule(_localctx, 44, RULE_scalar_expression, _p);
-            int _la;
-            try
-            {
-                int _alt;
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 235;
-                    ErrorHandler.Sync(this);
-                    switch (Interpreter.AdaptivePredict(TokenStream, 23, Context))
-                    {
-                        case 1:
-                            {
-                                _localctx = new ArrayCreateScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-
-                                State = 196; Match(T__5);
-                                State = 198;
-                                ErrorHandler.Sync(this);
-                                _la = TokenStream.LA(1);
-                                if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__2) | (1L << T__5) | (1L << T__10) | (1L << T__12) | (1L << T__25) | (1L << T__26) | (1L << K_ARRAY) | (1L << K_EXISTS) | (1L << K_FALSE) | (1L << K_NOT) | (1L << K_NULL) | (1L << K_TRUE) | (1L << K_UDF) | (1L << K_UNDEFINED) | (1L << NUMERIC_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER))) != 0))
-                                {
-                                    {
-                                        State = 197; scalar_expression_list();
-                                    }
-                                }
-
-                                State = 200; Match(T__6);
-                            }
-                            break;
-                        case 2:
-                            {
-                                _localctx = new ArrayScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 201; Match(K_ARRAY);
-                                State = 202; Match(T__2);
-                                State = 203; sql_query();
-                                State = 204; Match(T__3);
-                            }
-                            break;
-                        case 3:
-                            {
-                                _localctx = new ExistsScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 206; Match(K_EXISTS);
-                                State = 207; Match(T__2);
-                                State = 208; sql_query();
-                                State = 209; Match(T__3);
-                            }
-                            break;
-                        case 4:
-                            {
-                                _localctx = new FunctionCallScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 213;
-                                ErrorHandler.Sync(this);
-                                _la = TokenStream.LA(1);
-                                if (_la == K_UDF)
-                                {
-                                    {
-                                        State = 211; Match(K_UDF);
-                                        State = 212; Match(T__4);
-                                    }
-                                }
-
-                                State = 215; Match(IDENTIFIER);
-                                State = 216; Match(T__2);
-                                State = 218;
-                                ErrorHandler.Sync(this);
-                                _la = TokenStream.LA(1);
-                                if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__2) | (1L << T__5) | (1L << T__10) | (1L << T__12) | (1L << T__25) | (1L << T__26) | (1L << K_ARRAY) | (1L << K_EXISTS) | (1L << K_FALSE) | (1L << K_NOT) | (1L << K_NULL) | (1L << K_TRUE) | (1L << K_UDF) | (1L << K_UNDEFINED) | (1L << NUMERIC_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER))) != 0))
-                                {
-                                    {
-                                        State = 217; scalar_expression_list();
-                                    }
-                                }
-
-                                State = 220; Match(T__3);
-                            }
-                            break;
-                        case 5:
-                            {
-                                _localctx = new LiteralScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 221; literal();
-                            }
-                            break;
-                        case 6:
-                            {
-                                _localctx = new ObjectCreateScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 222; Match(T__10);
-                                State = 224;
-                                ErrorHandler.Sync(this);
-                                _la = TokenStream.LA(1);
-                                if (_la == STRING_LITERAL)
-                                {
-                                    {
-                                        State = 223; object_propertty_list();
-                                    }
-                                }
-
-                                State = 226; Match(T__11);
-                            }
-                            break;
-                        case 7:
-                            {
-                                _localctx = new PropertyRefScalarExpressionBaseContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 227; Match(IDENTIFIER);
-                            }
-                            break;
-                        case 8:
-                            {
-                                _localctx = new SubqueryScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 228; Match(T__2);
-                                State = 229; sql_query();
-                                State = 230; Match(T__3);
-                            }
-                            break;
-                        case 9:
-                            {
-                                _localctx = new UnaryScalarExpressionContext(_localctx);
-                                Context = _localctx;
-                                _prevctx = _localctx;
-                                State = 232; unary_operator();
-                                State = 233; scalar_expression(1);
-                            }
-                            break;
-                    }
-                    Context.Stop = TokenStream.LT(-1);
-                    State = 278;
-                    ErrorHandler.Sync(this);
-                    _alt = Interpreter.AdaptivePredict(TokenStream, 27, Context);
-                    while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
-                    {
-                        if (_alt == 1)
-                        {
-                            if (ParseListeners != null)
-                                TriggerExitRuleEvent();
-                            _prevctx = _localctx;
-                            {
-                                State = 276;
-                                ErrorHandler.Sync(this);
-                                switch (Interpreter.AdaptivePredict(TokenStream, 26, Context))
-                                {
-                                    case 1:
-                                        {
-                                            _localctx = new BetweenScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 237;
-                                            if (!(Precpred(Context, 14))) throw new FailedPredicateException(this, "Precpred(Context, 14)");
-                                            State = 239;
-                                            ErrorHandler.Sync(this);
-                                            _la = TokenStream.LA(1);
-                                            if (_la == K_NOT)
-                                            {
-                                                {
-                                                    State = 238; Match(K_NOT);
-                                                }
-                                            }
-
-                                            State = 241; Match(K_BETWEEN);
-                                            State = 242; scalar_expression(0);
-                                            State = 243; Match(K_AND);
-                                            State = 244; scalar_expression(15);
-                                        }
-                                        break;
-                                    case 2:
-                                        {
-                                            _localctx = new BinaryScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 246;
-                                            if (!(Precpred(Context, 13))) throw new FailedPredicateException(this, "Precpred(Context, 13)");
-                                            State = 247; binary_operator();
-                                            State = 248; scalar_expression(14);
-                                        }
-                                        break;
-                                    case 3:
-                                        {
-                                            _localctx = new CoalesceScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 250;
-                                            if (!(Precpred(Context, 12))) throw new FailedPredicateException(this, "Precpred(Context, 12)");
-                                            State = 251; Match(T__7);
-                                            State = 252; scalar_expression(13);
-                                        }
-                                        break;
-                                    case 4:
-                                        {
-                                            _localctx = new ConditionalScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 253;
-                                            if (!(Precpred(Context, 11))) throw new FailedPredicateException(this, "Precpred(Context, 11)");
-                                            State = 254; Match(T__8);
-                                            State = 255; scalar_expression(0);
-                                            State = 256; Match(T__9);
-                                            State = 257; scalar_expression(12);
-                                        }
-                                        break;
-                                    case 5:
-                                        {
-                                            _localctx = new InScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 259;
-                                            if (!(Precpred(Context, 8))) throw new FailedPredicateException(this, "Precpred(Context, 8)");
-                                            State = 261;
-                                            ErrorHandler.Sync(this);
-                                            _la = TokenStream.LA(1);
-                                            if (_la == K_NOT)
-                                            {
-                                                {
-                                                    State = 260; Match(K_NOT);
-                                                }
-                                            }
-
-                                            State = 263; Match(K_IN);
-                                            State = 264; Match(T__2);
-                                            State = 265; scalar_expression_list();
-                                            State = 266; Match(T__3);
-                                        }
-                                        break;
-                                    case 6:
-                                        {
-                                            _localctx = new MemberIndexerScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 268;
-                                            if (!(Precpred(Context, 6))) throw new FailedPredicateException(this, "Precpred(Context, 6)");
-                                            State = 269; Match(T__5);
-                                            State = 270; scalar_expression(0);
-                                            State = 271; Match(T__6);
-                                        }
-                                        break;
-                                    case 7:
-                                        {
-                                            _localctx = new PropertyRefScalarExpressionRecursiveContext(new Scalar_expressionContext(_parentctx, _parentState));
-                                            PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
-                                            State = 273;
-                                            if (!(Precpred(Context, 3))) throw new FailedPredicateException(this, "Precpred(Context, 3)");
-                                            State = 274; Match(T__4);
-                                            State = 275; Match(IDENTIFIER);
-                                        }
-                                        break;
-                                }
-                            }
-                        }
-                        State = 280;
-                        ErrorHandler.Sync(this);
-                        _alt = Interpreter.AdaptivePredict(TokenStream, 27, Context);
-                    }
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                UnrollRecursionContexts(_parentctx);
-            }
-            return _localctx;
         }
-
-        public partial class Scalar_expression_listContext : ParserRuleContext
+        public override int RuleIndex { get { return RULE_where_clause; } }
+        public override void EnterRule(IParseTreeListener listener)
         {
-            public Scalar_expressionContext[] scalar_expression()
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterWhere_clause(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitWhere_clause(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitWhere_clause(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Where_clauseContext where_clause()
+    {
+        Where_clauseContext _localctx = new Where_clauseContext(Context, State);
+        EnterRule(_localctx, 26, RULE_where_clause);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                return GetRuleContexts<Scalar_expressionContext>();
-            }
-            public Scalar_expressionContext scalar_expression(int i)
-            {
-                return GetRuleContext<Scalar_expressionContext>(i);
-            }
-            public Scalar_expression_listContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_scalar_expression_list; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterScalar_expression_list(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitScalar_expression_list(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitScalar_expression_list(this);
-                else return visitor.VisitChildren(this);
+                State = 185; Match(K_WHERE);
+                State = 186; scalar_expression(0);
             }
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
 
-        [RuleVersion(0)]
+    public partial class Group_by_clauseContext : ParserRuleContext
+    {
+        public ITerminalNode K_GROUP() { return GetToken(sqlParser.K_GROUP, 0); }
+        public ITerminalNode K_BY() { return GetToken(sqlParser.K_BY, 0); }
         public Scalar_expression_listContext scalar_expression_list()
         {
-            Scalar_expression_listContext _localctx = new Scalar_expression_listContext(Context, State);
-            EnterRule(_localctx, 46, RULE_scalar_expression_list);
-            int _la;
-            try
+            return GetRuleContext<Scalar_expression_listContext>(0);
+        }
+        public Group_by_clauseContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_group_by_clause; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterGroup_by_clause(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitGroup_by_clause(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitGroup_by_clause(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Group_by_clauseContext group_by_clause()
+    {
+        Group_by_clauseContext _localctx = new Group_by_clauseContext(Context, State);
+        EnterRule(_localctx, 28, RULE_group_by_clause);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                EnterOuterAlt(_localctx, 1);
+                State = 188; Match(K_GROUP);
+                State = 189; Match(K_BY);
+                State = 190; scalar_expression_list();
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Order_by_clauseContext : ParserRuleContext
+    {
+        public ITerminalNode K_ORDER() { return GetToken(sqlParser.K_ORDER, 0); }
+        public ITerminalNode K_BY() { return GetToken(sqlParser.K_BY, 0); }
+        public Order_by_itemsContext order_by_items()
+        {
+            return GetRuleContext<Order_by_itemsContext>(0);
+        }
+        public Order_by_clauseContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_order_by_clause; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterOrder_by_clause(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitOrder_by_clause(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitOrder_by_clause(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Order_by_clauseContext order_by_clause()
+    {
+        Order_by_clauseContext _localctx = new Order_by_clauseContext(Context, State);
+        EnterRule(_localctx, 30, RULE_order_by_clause);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 192; Match(K_ORDER);
+                State = 193; Match(K_BY);
+                State = 194; order_by_items();
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Order_by_itemsContext : ParserRuleContext
+    {
+        public Order_by_itemContext[] order_by_item()
+        {
+            return GetRuleContexts<Order_by_itemContext>();
+        }
+        public Order_by_itemContext order_by_item(int i)
+        {
+            return GetRuleContext<Order_by_itemContext>(i);
+        }
+        public Order_by_itemsContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_order_by_items; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterOrder_by_items(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitOrder_by_items(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitOrder_by_items(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Order_by_itemsContext order_by_items()
+    {
+        Order_by_itemsContext _localctx = new Order_by_itemsContext(Context, State);
+        EnterRule(_localctx, 32, RULE_order_by_items);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 196; order_by_item();
+                State = 201;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                while (_la == T__1)
                 {
-                    State = 281; scalar_expression(0);
-                    State = 286;
-                    ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    while (_la == T__1)
                     {
                         {
+                            State = 197; Match(T__1);
+                            State = 198; order_by_item();
+                        }
+                    }
+                    State = 203;
+                    ErrorHandler.Sync(this);
+                    _la = TokenStream.LA(1);
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Order_by_itemContext : ParserRuleContext
+    {
+        public Scalar_expressionContext scalar_expression()
+        {
+            return GetRuleContext<Scalar_expressionContext>(0);
+        }
+        public Sort_orderContext sort_order()
+        {
+            return GetRuleContext<Sort_orderContext>(0);
+        }
+        public Order_by_itemContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_order_by_item; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterOrder_by_item(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitOrder_by_item(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitOrder_by_item(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Order_by_itemContext order_by_item()
+    {
+        Order_by_itemContext _localctx = new Order_by_itemContext(Context, State);
+        EnterRule(_localctx, 34, RULE_order_by_item);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 204; scalar_expression(0);
+                State = 206;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_ASC || _la == K_DESC)
+                {
+                    {
+                        State = 205; sort_order();
+                    }
+                }
+
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Sort_orderContext : ParserRuleContext
+    {
+        public ITerminalNode K_ASC() { return GetToken(sqlParser.K_ASC, 0); }
+        public ITerminalNode K_DESC() { return GetToken(sqlParser.K_DESC, 0); }
+        public Sort_orderContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_sort_order; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSort_order(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSort_order(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSort_order(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Sort_orderContext sort_order()
+    {
+        Sort_orderContext _localctx = new Sort_orderContext(Context, State);
+        EnterRule(_localctx, 36, RULE_sort_order);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 208;
+                _la = TokenStream.LA(1);
+                if (!(_la == K_ASC || _la == K_DESC))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Offset_limit_clauseContext : ParserRuleContext
+    {
+        public ITerminalNode K_OFFSET() { return GetToken(sqlParser.K_OFFSET, 0); }
+        public Offset_countContext offset_count()
+        {
+            return GetRuleContext<Offset_countContext>(0);
+        }
+        public ITerminalNode K_LIMIT() { return GetToken(sqlParser.K_LIMIT, 0); }
+        public Limit_countContext limit_count()
+        {
+            return GetRuleContext<Limit_countContext>(0);
+        }
+        public Offset_limit_clauseContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_offset_limit_clause; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterOffset_limit_clause(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitOffset_limit_clause(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitOffset_limit_clause(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Offset_limit_clauseContext offset_limit_clause()
+    {
+        Offset_limit_clauseContext _localctx = new Offset_limit_clauseContext(Context, State);
+        EnterRule(_localctx, 38, RULE_offset_limit_clause);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 210; Match(K_OFFSET);
+                State = 211; offset_count();
+                State = 212; Match(K_LIMIT);
+                State = 213; limit_count();
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Offset_countContext : ParserRuleContext
+    {
+        public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
+        public ITerminalNode PARAMETER() { return GetToken(sqlParser.PARAMETER, 0); }
+        public Offset_countContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_offset_count; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterOffset_count(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitOffset_count(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitOffset_count(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Offset_countContext offset_count()
+    {
+        Offset_countContext _localctx = new Offset_countContext(Context, State);
+        EnterRule(_localctx, 40, RULE_offset_count);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 215;
+                _la = TokenStream.LA(1);
+                if (!(_la == NUMERIC_LITERAL || _la == PARAMETER))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Limit_countContext : ParserRuleContext
+    {
+        public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
+        public ITerminalNode PARAMETER() { return GetToken(sqlParser.PARAMETER, 0); }
+        public Limit_countContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_limit_count; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterLimit_count(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitLimit_count(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitLimit_count(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Limit_countContext limit_count()
+    {
+        Limit_countContext _localctx = new Limit_countContext(Context, State);
+        EnterRule(_localctx, 42, RULE_limit_count);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 217;
+                _la = TokenStream.LA(1);
+                if (!(_la == NUMERIC_LITERAL || _la == PARAMETER))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Scalar_expressionContext : ParserRuleContext
+    {
+        public Scalar_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_scalar_expression; } }
+
+        public Scalar_expressionContext() { }
+        public virtual void CopyFrom(Scalar_expressionContext context)
+        {
+            base.CopyFrom(context);
+        }
+    }
+    public partial class LogicalScalarExpressionContext : Scalar_expressionContext
+    {
+        public Logical_scalar_expressionContext logical_scalar_expression()
+        {
+            return GetRuleContext<Logical_scalar_expressionContext>(0);
+        }
+        public LogicalScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterLogicalScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitLogicalScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitLogicalScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ConditionalScalarExpressionContext : Scalar_expressionContext
+    {
+        public Scalar_expressionContext[] scalar_expression()
+        {
+            return GetRuleContexts<Scalar_expressionContext>();
+        }
+        public Scalar_expressionContext scalar_expression(int i)
+        {
+            return GetRuleContext<Scalar_expressionContext>(i);
+        }
+        public ConditionalScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterConditionalScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitConditionalScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitConditionalScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class CoalesceScalarExpressionContext : Scalar_expressionContext
+    {
+        public Scalar_expressionContext[] scalar_expression()
+        {
+            return GetRuleContexts<Scalar_expressionContext>();
+        }
+        public Scalar_expressionContext scalar_expression(int i)
+        {
+            return GetRuleContext<Scalar_expressionContext>(i);
+        }
+        public CoalesceScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterCoalesceScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitCoalesceScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitCoalesceScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class BetweenScalarExpressionContext : Scalar_expressionContext
+    {
+        public Binary_scalar_expressionContext[] binary_scalar_expression()
+        {
+            return GetRuleContexts<Binary_scalar_expressionContext>();
+        }
+        public Binary_scalar_expressionContext binary_scalar_expression(int i)
+        {
+            return GetRuleContext<Binary_scalar_expressionContext>(i);
+        }
+        public ITerminalNode K_BETWEEN() { return GetToken(sqlParser.K_BETWEEN, 0); }
+        public ITerminalNode K_AND() { return GetToken(sqlParser.K_AND, 0); }
+        public ITerminalNode K_NOT() { return GetToken(sqlParser.K_NOT, 0); }
+        public BetweenScalarExpressionContext(Scalar_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterBetweenScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitBetweenScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitBetweenScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Scalar_expressionContext scalar_expression()
+    {
+        return scalar_expression(0);
+    }
+
+    private Scalar_expressionContext scalar_expression(int _p)
+    {
+        ParserRuleContext _parentctx = Context;
+        int _parentState = State;
+        Scalar_expressionContext _localctx = new Scalar_expressionContext(Context, _parentState);
+        Scalar_expressionContext _prevctx = _localctx;
+        int _startState = 44;
+        EnterRecursionRule(_localctx, 44, RULE_scalar_expression, _p);
+        int _la;
+        try
+        {
+            int _alt;
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 230;
+                ErrorHandler.Sync(this);
+                switch (Interpreter.AdaptivePredict(TokenStream, 20, Context))
+                {
+                    case 1:
+                        {
+                            _localctx = new LogicalScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+
+                            State = 220; logical_scalar_expression();
+                        }
+                        break;
+                    case 2:
+                        {
+                            _localctx = new BetweenScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 221; binary_scalar_expression(0);
+                            State = 223;
+                            ErrorHandler.Sync(this);
+                            _la = TokenStream.LA(1);
+                            if (_la == K_NOT)
                             {
-                                State = 282; Match(T__1);
-                                State = 283; scalar_expression(0);
+                                {
+                                    State = 222; Match(K_NOT);
+                                }
+                            }
+
+                            State = 225; Match(K_BETWEEN);
+                            State = 226; binary_scalar_expression(0);
+                            State = 227; Match(K_AND);
+                            State = 228; binary_scalar_expression(0);
+                        }
+                        break;
+                }
+                Context.Stop = TokenStream.LT(-1);
+                State = 243;
+                ErrorHandler.Sync(this);
+                _alt = Interpreter.AdaptivePredict(TokenStream, 22, Context);
+                while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+                {
+                    if (_alt == 1)
+                    {
+                        if (ParseListeners != null)
+                            TriggerExitRuleEvent();
+                        _prevctx = _localctx;
+                        {
+                            State = 241;
+                            ErrorHandler.Sync(this);
+                            switch (Interpreter.AdaptivePredict(TokenStream, 21, Context))
+                            {
+                                case 1:
+                                    {
+                                        _localctx = new ConditionalScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
+                                        State = 232;
+                                        if (!(Precpred(Context, 4))) throw new FailedPredicateException(this, "Precpred(Context, 4)");
+                                        State = 233; Match(T__7);
+                                        State = 234; scalar_expression(0);
+                                        State = 235; Match(T__8);
+                                        State = 236; scalar_expression(5);
+                                    }
+                                    break;
+                                case 2:
+                                    {
+                                        _localctx = new CoalesceScalarExpressionContext(new Scalar_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_scalar_expression);
+                                        State = 238;
+                                        if (!(Precpred(Context, 3))) throw new FailedPredicateException(this, "Precpred(Context, 3)");
+                                        State = 239; Match(T__9);
+                                        State = 240; scalar_expression(4);
+                                    }
+                                    break;
                             }
                         }
-                        State = 288;
-                        ErrorHandler.Sync(this);
-                        _la = TokenStream.LA(1);
                     }
+                    State = 245;
+                    ErrorHandler.Sync(this);
+                    _alt = Interpreter.AdaptivePredict(TokenStream, 22, Context);
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
-
-        public partial class Binary_operatorContext : ParserRuleContext
+        catch (RecognitionException re)
         {
-            public ITerminalNode K_AND() { return GetToken(sqlParser.K_AND, 0); }
-            public ITerminalNode K_OR() { return GetToken(sqlParser.K_OR, 0); }
-            public Binary_operatorContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            UnrollRecursionContexts(_parentctx);
+        }
+        return _localctx;
+    }
+
+    public partial class Logical_scalar_expressionContext : ParserRuleContext
+    {
+        public Binary_scalar_expressionContext binary_scalar_expression()
+        {
+            return GetRuleContext<Binary_scalar_expressionContext>(0);
+        }
+        public In_scalar_expressionContext in_scalar_expression()
+        {
+            return GetRuleContext<In_scalar_expressionContext>(0);
+        }
+        public Logical_scalar_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_logical_scalar_expression; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterLogical_scalar_expression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitLogical_scalar_expression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitLogical_scalar_expression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Logical_scalar_expressionContext logical_scalar_expression()
+    {
+        Logical_scalar_expressionContext _localctx = new Logical_scalar_expressionContext(Context, State);
+        EnterRule(_localctx, 46, RULE_logical_scalar_expression);
+        try
+        {
+            State = 248;
+            ErrorHandler.Sync(this);
+            switch (Interpreter.AdaptivePredict(TokenStream, 23, Context))
             {
-            }
-            public override int RuleIndex { get { return RULE_binary_operator; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterBinary_operator(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitBinary_operator(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitBinary_operator(this);
-                else return visitor.VisitChildren(this);
+                case 1:
+                    EnterOuterAlt(_localctx, 1);
+                    {
+                        State = 246; binary_scalar_expression(0);
+                    }
+                    break;
+                case 2:
+                    EnterOuterAlt(_localctx, 2);
+                    {
+                        State = 247; in_scalar_expression();
+                    }
+                    break;
             }
         }
-
-        [RuleVersion(0)]
-        public Binary_operatorContext binary_operator()
+        catch (RecognitionException re)
         {
-            Binary_operatorContext _localctx = new Binary_operatorContext(Context, State);
-            EnterRule(_localctx, 48, RULE_binary_operator);
-            int _la;
-            try
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class In_scalar_expressionContext : ParserRuleContext
+    {
+        public Binary_scalar_expressionContext binary_scalar_expression()
+        {
+            return GetRuleContext<Binary_scalar_expressionContext>(0);
+        }
+        public ITerminalNode K_IN() { return GetToken(sqlParser.K_IN, 0); }
+        public Scalar_expression_listContext scalar_expression_list()
+        {
+            return GetRuleContext<Scalar_expression_listContext>(0);
+        }
+        public ITerminalNode K_NOT() { return GetToken(sqlParser.K_NOT, 0); }
+        public In_scalar_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_in_scalar_expression; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterIn_scalar_expression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitIn_scalar_expression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitIn_scalar_expression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public In_scalar_expressionContext in_scalar_expression()
+    {
+        In_scalar_expressionContext _localctx = new In_scalar_expressionContext(Context, State);
+        EnterRule(_localctx, 48, RULE_in_scalar_expression);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                EnterOuterAlt(_localctx, 1);
+                State = 250; binary_scalar_expression(0);
+                State = 252;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                if (_la == K_NOT)
                 {
-                    State = 289;
-                    _la = TokenStream.LA(1);
-                    if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__12) | (1L << T__13) | (1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17) | (1L << T__18) | (1L << T__19) | (1L << T__20) | (1L << T__21) | (1L << T__22) | (1L << T__23) | (1L << T__24) | (1L << T__25) | (1L << K_AND) | (1L << K_OR))) != 0)))
                     {
-                        ErrorHandler.RecoverInline(this);
-                    }
-                    else
-                    {
-                        ErrorHandler.ReportMatch(this);
-                        Consume();
+                        State = 251; Match(K_NOT);
                     }
                 }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
 
-        public partial class Unary_operatorContext : ParserRuleContext
+                State = 254; Match(K_IN);
+                State = 255; scalar_expression_list();
+            }
+        }
+        catch (RecognitionException re)
         {
-            public ITerminalNode K_NOT() { return GetToken(sqlParser.K_NOT, 0); }
-            public Unary_operatorContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Binary_scalar_expressionContext : ParserRuleContext
+    {
+        public Unary_scalar_expressionContext unary_scalar_expression()
+        {
+            return GetRuleContext<Unary_scalar_expressionContext>(0);
+        }
+        public Binary_scalar_expressionContext[] binary_scalar_expression()
+        {
+            return GetRuleContexts<Binary_scalar_expressionContext>();
+        }
+        public Binary_scalar_expressionContext binary_scalar_expression(int i)
+        {
+            return GetRuleContext<Binary_scalar_expressionContext>(i);
+        }
+        public Multiplicative_operatorContext multiplicative_operator()
+        {
+            return GetRuleContext<Multiplicative_operatorContext>(0);
+        }
+        public Additive_operatorContext additive_operator()
+        {
+            return GetRuleContext<Additive_operatorContext>(0);
+        }
+        public Relational_operatorContext relational_operator()
+        {
+            return GetRuleContext<Relational_operatorContext>(0);
+        }
+        public Equality_operatorContext equality_operator()
+        {
+            return GetRuleContext<Equality_operatorContext>(0);
+        }
+        public Bitwise_and_operatorContext bitwise_and_operator()
+        {
+            return GetRuleContext<Bitwise_and_operatorContext>(0);
+        }
+        public Bitwise_exclusive_or_operatorContext bitwise_exclusive_or_operator()
+        {
+            return GetRuleContext<Bitwise_exclusive_or_operatorContext>(0);
+        }
+        public Bitwise_inclusive_or_operatorContext bitwise_inclusive_or_operator()
+        {
+            return GetRuleContext<Bitwise_inclusive_or_operatorContext>(0);
+        }
+        public ITerminalNode K_AND() { return GetToken(sqlParser.K_AND, 0); }
+        public ITerminalNode K_OR() { return GetToken(sqlParser.K_OR, 0); }
+        public String_concat_operatorContext string_concat_operator()
+        {
+            return GetRuleContext<String_concat_operatorContext>(0);
+        }
+        public Binary_scalar_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_binary_scalar_expression; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterBinary_scalar_expression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitBinary_scalar_expression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitBinary_scalar_expression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Binary_scalar_expressionContext binary_scalar_expression()
+    {
+        return binary_scalar_expression(0);
+    }
+
+    private Binary_scalar_expressionContext binary_scalar_expression(int _p)
+    {
+        ParserRuleContext _parentctx = Context;
+        int _parentState = State;
+        Binary_scalar_expressionContext _localctx = new Binary_scalar_expressionContext(Context, _parentState);
+        Binary_scalar_expressionContext _prevctx = _localctx;
+        int _startState = 50;
+        EnterRecursionRule(_localctx, 50, RULE_binary_scalar_expression, _p);
+        try
+        {
+            int _alt;
+            EnterOuterAlt(_localctx, 1);
             {
-            }
-            public override int RuleIndex { get { return RULE_unary_operator; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterUnary_operator(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitUnary_operator(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitUnary_operator(this);
-                else return visitor.VisitChildren(this);
+                {
+                    State = 258; unary_scalar_expression();
+                }
+                Context.Stop = TokenStream.LT(-1);
+                State = 300;
+                ErrorHandler.Sync(this);
+                _alt = Interpreter.AdaptivePredict(TokenStream, 26, Context);
+                while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+                {
+                    if (_alt == 1)
+                    {
+                        if (ParseListeners != null)
+                            TriggerExitRuleEvent();
+                        _prevctx = _localctx;
+                        {
+                            State = 298;
+                            ErrorHandler.Sync(this);
+                            switch (Interpreter.AdaptivePredict(TokenStream, 25, Context))
+                            {
+                                case 1:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 260;
+                                        if (!(Precpred(Context, 10))) throw new FailedPredicateException(this, "Precpred(Context, 10)");
+                                        State = 261; multiplicative_operator();
+                                        State = 262; binary_scalar_expression(11);
+                                    }
+                                    break;
+                                case 2:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 264;
+                                        if (!(Precpred(Context, 9))) throw new FailedPredicateException(this, "Precpred(Context, 9)");
+                                        State = 265; additive_operator();
+                                        State = 266; binary_scalar_expression(10);
+                                    }
+                                    break;
+                                case 3:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 268;
+                                        if (!(Precpred(Context, 8))) throw new FailedPredicateException(this, "Precpred(Context, 8)");
+                                        State = 269; relational_operator();
+                                        State = 270; binary_scalar_expression(9);
+                                    }
+                                    break;
+                                case 4:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 272;
+                                        if (!(Precpred(Context, 7))) throw new FailedPredicateException(this, "Precpred(Context, 7)");
+                                        State = 273; equality_operator();
+                                        State = 274; binary_scalar_expression(8);
+                                    }
+                                    break;
+                                case 5:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 276;
+                                        if (!(Precpred(Context, 6))) throw new FailedPredicateException(this, "Precpred(Context, 6)");
+                                        State = 277; bitwise_and_operator();
+                                        State = 278; binary_scalar_expression(7);
+                                    }
+                                    break;
+                                case 6:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 280;
+                                        if (!(Precpred(Context, 5))) throw new FailedPredicateException(this, "Precpred(Context, 5)");
+                                        State = 281; bitwise_exclusive_or_operator();
+                                        State = 282; binary_scalar_expression(6);
+                                    }
+                                    break;
+                                case 7:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 284;
+                                        if (!(Precpred(Context, 4))) throw new FailedPredicateException(this, "Precpred(Context, 4)");
+                                        State = 285; bitwise_inclusive_or_operator();
+                                        State = 286; binary_scalar_expression(5);
+                                    }
+                                    break;
+                                case 8:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 288;
+                                        if (!(Precpred(Context, 3))) throw new FailedPredicateException(this, "Precpred(Context, 3)");
+                                        State = 289; Match(K_AND);
+                                        State = 290; binary_scalar_expression(4);
+                                    }
+                                    break;
+                                case 9:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 291;
+                                        if (!(Precpred(Context, 2))) throw new FailedPredicateException(this, "Precpred(Context, 2)");
+                                        State = 292; Match(K_OR);
+                                        State = 293; binary_scalar_expression(3);
+                                    }
+                                    break;
+                                case 10:
+                                    {
+                                        _localctx = new Binary_scalar_expressionContext(_parentctx, _parentState);
+                                        PushNewRecursionContext(_localctx, _startState, RULE_binary_scalar_expression);
+                                        State = 294;
+                                        if (!(Precpred(Context, 1))) throw new FailedPredicateException(this, "Precpred(Context, 1)");
+                                        State = 295; string_concat_operator();
+                                        State = 296; binary_scalar_expression(2);
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    State = 302;
+                    ErrorHandler.Sync(this);
+                    _alt = Interpreter.AdaptivePredict(TokenStream, 26, Context);
+                }
             }
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            UnrollRecursionContexts(_parentctx);
+        }
+        return _localctx;
+    }
 
-        [RuleVersion(0)]
+    public partial class Multiplicative_operatorContext : ParserRuleContext
+    {
+        public Multiplicative_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_multiplicative_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterMultiplicative_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitMultiplicative_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitMultiplicative_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Multiplicative_operatorContext multiplicative_operator()
+    {
+        Multiplicative_operatorContext _localctx = new Multiplicative_operatorContext(Context, State);
+        EnterRule(_localctx, 52, RULE_multiplicative_operator);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 303;
+                _la = TokenStream.LA(1);
+                if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__0) | (1L << T__10) | (1L << T__11))) != 0)))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Additive_operatorContext : ParserRuleContext
+    {
+        public Additive_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_additive_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterAdditive_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitAdditive_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitAdditive_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Additive_operatorContext additive_operator()
+    {
+        Additive_operatorContext _localctx = new Additive_operatorContext(Context, State);
+        EnterRule(_localctx, 54, RULE_additive_operator);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 305;
+                _la = TokenStream.LA(1);
+                if (!(_la == T__12 || _la == T__13))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Relational_operatorContext : ParserRuleContext
+    {
+        public Relational_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_relational_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterRelational_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitRelational_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitRelational_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Relational_operatorContext relational_operator()
+    {
+        Relational_operatorContext _localctx = new Relational_operatorContext(Context, State);
+        EnterRule(_localctx, 56, RULE_relational_operator);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 307;
+                _la = TokenStream.LA(1);
+                if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__14) | (1L << T__15) | (1L << T__16) | (1L << T__17))) != 0)))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Equality_operatorContext : ParserRuleContext
+    {
+        public Equality_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_equality_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterEquality_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitEquality_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitEquality_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Equality_operatorContext equality_operator()
+    {
+        Equality_operatorContext _localctx = new Equality_operatorContext(Context, State);
+        EnterRule(_localctx, 58, RULE_equality_operator);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 309;
+                _la = TokenStream.LA(1);
+                if (!(_la == T__18 || _la == T__19))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Bitwise_and_operatorContext : ParserRuleContext
+    {
+        public Bitwise_and_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_bitwise_and_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterBitwise_and_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitBitwise_and_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitBitwise_and_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Bitwise_and_operatorContext bitwise_and_operator()
+    {
+        Bitwise_and_operatorContext _localctx = new Bitwise_and_operatorContext(Context, State);
+        EnterRule(_localctx, 60, RULE_bitwise_and_operator);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 311; Match(T__20);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Bitwise_exclusive_or_operatorContext : ParserRuleContext
+    {
+        public Bitwise_exclusive_or_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_bitwise_exclusive_or_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterBitwise_exclusive_or_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitBitwise_exclusive_or_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitBitwise_exclusive_or_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Bitwise_exclusive_or_operatorContext bitwise_exclusive_or_operator()
+    {
+        Bitwise_exclusive_or_operatorContext _localctx = new Bitwise_exclusive_or_operatorContext(Context, State);
+        EnterRule(_localctx, 62, RULE_bitwise_exclusive_or_operator);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 313; Match(T__21);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Bitwise_inclusive_or_operatorContext : ParserRuleContext
+    {
+        public Bitwise_inclusive_or_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_bitwise_inclusive_or_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterBitwise_inclusive_or_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitBitwise_inclusive_or_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitBitwise_inclusive_or_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Bitwise_inclusive_or_operatorContext bitwise_inclusive_or_operator()
+    {
+        Bitwise_inclusive_or_operatorContext _localctx = new Bitwise_inclusive_or_operatorContext(Context, State);
+        EnterRule(_localctx, 64, RULE_bitwise_inclusive_or_operator);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 315; Match(T__22);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class String_concat_operatorContext : ParserRuleContext
+    {
+        public String_concat_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_string_concat_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterString_concat_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitString_concat_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitString_concat_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public String_concat_operatorContext string_concat_operator()
+    {
+        String_concat_operatorContext _localctx = new String_concat_operatorContext(Context, State);
+        EnterRule(_localctx, 66, RULE_string_concat_operator);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 317; Match(T__23);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Unary_scalar_expressionContext : ParserRuleContext
+    {
+        public Primary_expressionContext primary_expression()
+        {
+            return GetRuleContext<Primary_expressionContext>(0);
+        }
         public Unary_operatorContext unary_operator()
         {
-            Unary_operatorContext _localctx = new Unary_operatorContext(Context, State);
-            EnterRule(_localctx, 50, RULE_unary_operator);
-            int _la;
-            try
+            return GetRuleContext<Unary_operatorContext>(0);
+        }
+        public Unary_scalar_expressionContext unary_scalar_expression()
+        {
+            return GetRuleContext<Unary_scalar_expressionContext>(0);
+        }
+        public Unary_scalar_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_unary_scalar_expression; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterUnary_scalar_expression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitUnary_scalar_expression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitUnary_scalar_expression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Unary_scalar_expressionContext unary_scalar_expression()
+    {
+        Unary_scalar_expressionContext _localctx = new Unary_scalar_expressionContext(Context, State);
+        EnterRule(_localctx, 68, RULE_unary_scalar_expression);
+        try
+        {
+            State = 323;
+            ErrorHandler.Sync(this);
+            switch (TokenStream.LA(1))
             {
-                EnterOuterAlt(_localctx, 1);
+                case T__2:
+                case T__5:
+                case T__25:
+                case K_ARRAY:
+                case K_EXISTS:
+                case K_FALSE:
+                case K_NULL:
+                case K_TRUE:
+                case K_UDF:
+                case K_UNDEFINED:
+                case NUMERIC_LITERAL:
+                case STRING_LITERAL:
+                case IDENTIFIER:
+                case PARAMETER:
+                    EnterOuterAlt(_localctx, 1);
+                    {
+                        State = 319; primary_expression(0);
+                    }
+                    break;
+                case T__12:
+                case T__13:
+                case T__24:
+                case K_NOT:
+                    EnterOuterAlt(_localctx, 2);
+                    {
+                        State = 320; unary_operator();
+                        State = 321; unary_scalar_expression();
+                    }
+                    break;
+                default:
+                    throw new NoViableAltException(this);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Unary_operatorContext : ParserRuleContext
+    {
+        public ITerminalNode K_NOT() { return GetToken(sqlParser.K_NOT, 0); }
+        public Unary_operatorContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_unary_operator; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterUnary_operator(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitUnary_operator(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitUnary_operator(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Unary_operatorContext unary_operator()
+    {
+        Unary_operatorContext _localctx = new Unary_operatorContext(Context, State);
+        EnterRule(_localctx, 70, RULE_unary_operator);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 325;
+                _la = TokenStream.LA(1);
+                if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__12) | (1L << T__13) | (1L << T__24) | (1L << K_NOT))) != 0)))
                 {
-                    State = 291;
-                    _la = TokenStream.LA(1);
-                    if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__12) | (1L << T__25) | (1L << T__26) | (1L << K_NOT))) != 0)))
-                    {
-                        ErrorHandler.RecoverInline(this);
-                    }
-                    else
-                    {
-                        ErrorHandler.ReportMatch(this);
-                        Consume();
-                    }
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
-
-        public partial class Object_propertty_listContext : ParserRuleContext
+        catch (RecognitionException re)
         {
-            public Object_propertyContext[] object_property()
-            {
-                return GetRuleContexts<Object_propertyContext>();
-            }
-            public Object_propertyContext object_property(int i)
-            {
-                return GetRuleContext<Object_propertyContext>(i);
-            }
-            public Object_propertty_listContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_object_propertty_list; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterObject_propertty_list(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitObject_propertty_list(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitObject_propertty_list(this);
-                else return visitor.VisitChildren(this);
-            }
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
         }
-
-        [RuleVersion(0)]
-        public Object_propertty_listContext object_propertty_list()
+        finally
         {
-            Object_propertty_listContext _localctx = new Object_propertty_listContext(Context, State);
-            EnterRule(_localctx, 52, RULE_object_propertty_list);
-            int _la;
-            try
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Primary_expressionContext : ParserRuleContext
+    {
+        public Primary_expressionContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_primary_expression; } }
+
+        public Primary_expressionContext() { }
+        public virtual void CopyFrom(Primary_expressionContext context)
+        {
+            base.CopyFrom(context);
+        }
+    }
+    public partial class SubqueryScalarExpressionContext : Primary_expressionContext
+    {
+        public Sql_queryContext sql_query()
+        {
+            return GetRuleContext<Sql_queryContext>(0);
+        }
+        public SubqueryScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterSubqueryScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitSubqueryScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitSubqueryScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class PropertyRefScalarExpressionBaseContext : Primary_expressionContext
+    {
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public PropertyRefScalarExpressionBaseContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterPropertyRefScalarExpressionBase(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitPropertyRefScalarExpressionBase(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitPropertyRefScalarExpressionBase(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class FunctionCallScalarExpressionContext : Primary_expressionContext
+    {
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public ITerminalNode K_UDF() { return GetToken(sqlParser.K_UDF, 0); }
+        public Scalar_expression_listContext scalar_expression_list()
+        {
+            return GetRuleContext<Scalar_expression_listContext>(0);
+        }
+        public FunctionCallScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterFunctionCallScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitFunctionCallScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitFunctionCallScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class LiteralScalarExpressionContext : Primary_expressionContext
+    {
+        public LiteralContext literal()
+        {
+            return GetRuleContext<LiteralContext>(0);
+        }
+        public LiteralScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterLiteralScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitLiteralScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitLiteralScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ObjectCreateScalarExpressionContext : Primary_expressionContext
+    {
+        public Object_property_listContext object_property_list()
+        {
+            return GetRuleContext<Object_property_listContext>(0);
+        }
+        public ObjectCreateScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterObjectCreateScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitObjectCreateScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitObjectCreateScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ParenthesizedScalarExperessionContext : Primary_expressionContext
+    {
+        public Scalar_expressionContext scalar_expression()
+        {
+            return GetRuleContext<Scalar_expressionContext>(0);
+        }
+        public ParenthesizedScalarExperessionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterParenthesizedScalarExperession(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitParenthesizedScalarExperession(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitParenthesizedScalarExperession(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ParameterRefScalarExpressionContext : Primary_expressionContext
+    {
+        public ITerminalNode PARAMETER() { return GetToken(sqlParser.PARAMETER, 0); }
+        public ParameterRefScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterParameterRefScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitParameterRefScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitParameterRefScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ArrayCreateScalarExpressionContext : Primary_expressionContext
+    {
+        public Scalar_expression_listContext scalar_expression_list()
+        {
+            return GetRuleContext<Scalar_expression_listContext>(0);
+        }
+        public ArrayCreateScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterArrayCreateScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitArrayCreateScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitArrayCreateScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ExistsScalarExpressionContext : Primary_expressionContext
+    {
+        public ITerminalNode K_EXISTS() { return GetToken(sqlParser.K_EXISTS, 0); }
+        public Sql_queryContext sql_query()
+        {
+            return GetRuleContext<Sql_queryContext>(0);
+        }
+        public ExistsScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterExistsScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitExistsScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitExistsScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class ArrayScalarExpressionContext : Primary_expressionContext
+    {
+        public ITerminalNode K_ARRAY() { return GetToken(sqlParser.K_ARRAY, 0); }
+        public Sql_queryContext sql_query()
+        {
+            return GetRuleContext<Sql_queryContext>(0);
+        }
+        public ArrayScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterArrayScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitArrayScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitArrayScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class MemberIndexerScalarExpressionContext : Primary_expressionContext
+    {
+        public Primary_expressionContext primary_expression()
+        {
+            return GetRuleContext<Primary_expressionContext>(0);
+        }
+        public Scalar_expressionContext scalar_expression()
+        {
+            return GetRuleContext<Scalar_expressionContext>(0);
+        }
+        public MemberIndexerScalarExpressionContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterMemberIndexerScalarExpression(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitMemberIndexerScalarExpression(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitMemberIndexerScalarExpression(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+    public partial class PropertyRefScalarExpressionRecursiveContext : Primary_expressionContext
+    {
+        public Primary_expressionContext primary_expression()
+        {
+            return GetRuleContext<Primary_expressionContext>(0);
+        }
+        public ITerminalNode IDENTIFIER() { return GetToken(sqlParser.IDENTIFIER, 0); }
+        public PropertyRefScalarExpressionRecursiveContext(Primary_expressionContext context) { CopyFrom(context); }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterPropertyRefScalarExpressionRecursive(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitPropertyRefScalarExpressionRecursive(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitPropertyRefScalarExpressionRecursive(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Primary_expressionContext primary_expression()
+    {
+        return primary_expression(0);
+    }
+
+    private Primary_expressionContext primary_expression(int _p)
+    {
+        ParserRuleContext _parentctx = Context;
+        int _parentState = State;
+        Primary_expressionContext _localctx = new Primary_expressionContext(Context, _parentState);
+        Primary_expressionContext _prevctx = _localctx;
+        int _startState = 72;
+        EnterRecursionRule(_localctx, 72, RULE_primary_expression, _p);
+        int _la;
+        try
+        {
+            int _alt;
+            EnterOuterAlt(_localctx, 1);
             {
-                EnterOuterAlt(_localctx, 1);
+                State = 369;
+                ErrorHandler.Sync(this);
+                switch (Interpreter.AdaptivePredict(TokenStream, 32, Context))
                 {
-                    State = 293; object_property();
-                    State = 298;
+                    case 1:
+                        {
+                            _localctx = new PropertyRefScalarExpressionBaseContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+
+                            State = 328; Match(IDENTIFIER);
+                        }
+                        break;
+                    case 2:
+                        {
+                            _localctx = new ParameterRefScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 329; Match(PARAMETER);
+                        }
+                        break;
+                    case 3:
+                        {
+                            _localctx = new LiteralScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 330; literal();
+                        }
+                        break;
+                    case 4:
+                        {
+                            _localctx = new ArrayCreateScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 331; Match(T__5);
+                            State = 333;
+                            ErrorHandler.Sync(this);
+                            _la = TokenStream.LA(1);
+                            if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__2) | (1L << T__5) | (1L << T__12) | (1L << T__13) | (1L << T__24) | (1L << T__25) | (1L << K_ARRAY) | (1L << K_EXISTS) | (1L << K_FALSE) | (1L << K_NOT) | (1L << K_NULL) | (1L << K_TRUE) | (1L << K_UDF) | (1L << K_UNDEFINED) | (1L << NUMERIC_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER) | (1L << PARAMETER))) != 0))
+                            {
+                                {
+                                    State = 332; scalar_expression_list();
+                                }
+                            }
+
+                            State = 335; Match(T__6);
+                        }
+                        break;
+                    case 5:
+                        {
+                            _localctx = new ObjectCreateScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 336; Match(T__25);
+                            State = 338;
+                            ErrorHandler.Sync(this);
+                            _la = TokenStream.LA(1);
+                            if (_la == STRING_LITERAL)
+                            {
+                                {
+                                    State = 337; object_property_list();
+                                }
+                            }
+
+                            State = 340; Match(T__26);
+                        }
+                        break;
+                    case 6:
+                        {
+                            _localctx = new FunctionCallScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 343;
+                            ErrorHandler.Sync(this);
+                            _la = TokenStream.LA(1);
+                            if (_la == K_UDF)
+                            {
+                                {
+                                    State = 341; Match(K_UDF);
+                                    State = 342; Match(T__4);
+                                }
+                            }
+
+                            State = 345; Match(IDENTIFIER);
+                            State = 346; Match(T__2);
+                            State = 348;
+                            ErrorHandler.Sync(this);
+                            _la = TokenStream.LA(1);
+                            if ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << T__2) | (1L << T__5) | (1L << T__12) | (1L << T__13) | (1L << T__24) | (1L << T__25) | (1L << K_ARRAY) | (1L << K_EXISTS) | (1L << K_FALSE) | (1L << K_NOT) | (1L << K_NULL) | (1L << K_TRUE) | (1L << K_UDF) | (1L << K_UNDEFINED) | (1L << NUMERIC_LITERAL) | (1L << STRING_LITERAL) | (1L << IDENTIFIER) | (1L << PARAMETER))) != 0))
+                            {
+                                {
+                                    State = 347; scalar_expression_list();
+                                }
+                            }
+
+                            State = 350; Match(T__3);
+                        }
+                        break;
+                    case 7:
+                        {
+                            _localctx = new ParenthesizedScalarExperessionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 351; Match(T__2);
+                            State = 352; scalar_expression(0);
+                            State = 353; Match(T__3);
+                        }
+                        break;
+                    case 8:
+                        {
+                            _localctx = new SubqueryScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 355; Match(T__2);
+                            State = 356; sql_query();
+                            State = 357; Match(T__3);
+                        }
+                        break;
+                    case 9:
+                        {
+                            _localctx = new ExistsScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 359; Match(K_EXISTS);
+                            State = 360; Match(T__2);
+                            State = 361; sql_query();
+                            State = 362; Match(T__3);
+                        }
+                        break;
+                    case 10:
+                        {
+                            _localctx = new ArrayScalarExpressionContext(_localctx);
+                            Context = _localctx;
+                            _prevctx = _localctx;
+                            State = 364; Match(K_ARRAY);
+                            State = 365; Match(T__2);
+                            State = 366; sql_query();
+                            State = 367; Match(T__3);
+                        }
+                        break;
+                }
+                Context.Stop = TokenStream.LT(-1);
+                State = 381;
+                ErrorHandler.Sync(this);
+                _alt = Interpreter.AdaptivePredict(TokenStream, 34, Context);
+                while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+                {
+                    if (_alt == 1)
+                    {
+                        if (ParseListeners != null)
+                            TriggerExitRuleEvent();
+                        _prevctx = _localctx;
+                        {
+                            State = 379;
+                            ErrorHandler.Sync(this);
+                            switch (Interpreter.AdaptivePredict(TokenStream, 33, Context))
+                            {
+                                case 1:
+                                    {
+                                        _localctx = new PropertyRefScalarExpressionRecursiveContext(new Primary_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_primary_expression);
+                                        State = 371;
+                                        if (!(Precpred(Context, 4))) throw new FailedPredicateException(this, "Precpred(Context, 4)");
+                                        State = 372; Match(T__4);
+                                        State = 373; Match(IDENTIFIER);
+                                    }
+                                    break;
+                                case 2:
+                                    {
+                                        _localctx = new MemberIndexerScalarExpressionContext(new Primary_expressionContext(_parentctx, _parentState));
+                                        PushNewRecursionContext(_localctx, _startState, RULE_primary_expression);
+                                        State = 374;
+                                        if (!(Precpred(Context, 3))) throw new FailedPredicateException(this, "Precpred(Context, 3)");
+                                        State = 375; Match(T__5);
+                                        State = 376; scalar_expression(0);
+                                        State = 377; Match(T__6);
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    State = 383;
                     ErrorHandler.Sync(this);
-                    _la = TokenStream.LA(1);
-                    while (_la == T__1)
+                    _alt = Interpreter.AdaptivePredict(TokenStream, 34, Context);
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            UnrollRecursionContexts(_parentctx);
+        }
+        return _localctx;
+    }
+
+    public partial class Scalar_expression_listContext : ParserRuleContext
+    {
+        public Scalar_expressionContext[] scalar_expression()
+        {
+            return GetRuleContexts<Scalar_expressionContext>();
+        }
+        public Scalar_expressionContext scalar_expression(int i)
+        {
+            return GetRuleContext<Scalar_expressionContext>(i);
+        }
+        public Scalar_expression_listContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_scalar_expression_list; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterScalar_expression_list(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitScalar_expression_list(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitScalar_expression_list(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Scalar_expression_listContext scalar_expression_list()
+    {
+        Scalar_expression_listContext _localctx = new Scalar_expression_listContext(Context, State);
+        EnterRule(_localctx, 74, RULE_scalar_expression_list);
+        try
+        {
+            int _alt;
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 384; scalar_expression(0);
+                State = 389;
+                ErrorHandler.Sync(this);
+                _alt = Interpreter.AdaptivePredict(TokenStream, 35, Context);
+                while (_alt != 2 && _alt != global::Antlr4.Runtime.Atn.ATN.INVALID_ALT_NUMBER)
+                {
+                    if (_alt == 1)
                     {
                         {
                             {
-                                State = 294; Match(T__1);
-                                State = 295; object_property();
+                                State = 385; Match(T__1);
+                                State = 386; scalar_expression(0);
                             }
                         }
-                        State = 300;
-                        ErrorHandler.Sync(this);
-                        _la = TokenStream.LA(1);
                     }
+                    State = 391;
+                    ErrorHandler.Sync(this);
+                    _alt = Interpreter.AdaptivePredict(TokenStream, 35, Context);
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
-
-        public partial class Object_propertyContext : ParserRuleContext
+        catch (RecognitionException re)
         {
-            public ITerminalNode STRING_LITERAL() { return GetToken(sqlParser.STRING_LITERAL, 0); }
-            public Scalar_expressionContext scalar_expression()
-            {
-                return GetRuleContext<Scalar_expressionContext>(0);
-            }
-            public Object_propertyContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_object_property; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterObject_property(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitObject_property(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitObject_property(this);
-                else return visitor.VisitChildren(this);
-            }
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
         }
-
-        [RuleVersion(0)]
-        public Object_propertyContext object_property()
+        finally
         {
-            Object_propertyContext _localctx = new Object_propertyContext(Context, State);
-            EnterRule(_localctx, 54, RULE_object_property);
-            try
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class Object_property_listContext : ParserRuleContext
+    {
+        public Object_propertyContext[] object_property()
+        {
+            return GetRuleContexts<Object_propertyContext>();
+        }
+        public Object_propertyContext object_property(int i)
+        {
+            return GetRuleContext<Object_propertyContext>(i);
+        }
+        public Object_property_listContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_object_property_list; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterObject_property_list(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitObject_property_list(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitObject_property_list(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public Object_property_listContext object_property_list()
+    {
+        Object_property_listContext _localctx = new Object_property_listContext(Context, State);
+        EnterRule(_localctx, 76, RULE_object_property_list);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
             {
-                EnterOuterAlt(_localctx, 1);
+                State = 392; object_property();
+                State = 397;
+                ErrorHandler.Sync(this);
+                _la = TokenStream.LA(1);
+                while (_la == T__1)
                 {
-                    State = 301; Match(STRING_LITERAL);
-                    State = 302; Match(T__9);
-                    State = 303; scalar_expression(0);
-                }
-            }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
-        }
-
-        public partial class LiteralContext : ParserRuleContext
-        {
-            public ITerminalNode STRING_LITERAL() { return GetToken(sqlParser.STRING_LITERAL, 0); }
-            public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
-            public ITerminalNode K_TRUE() { return GetToken(sqlParser.K_TRUE, 0); }
-            public ITerminalNode K_FALSE() { return GetToken(sqlParser.K_FALSE, 0); }
-            public ITerminalNode K_NULL() { return GetToken(sqlParser.K_NULL, 0); }
-            public ITerminalNode K_UNDEFINED() { return GetToken(sqlParser.K_UNDEFINED, 0); }
-            public LiteralContext(ParserRuleContext parent, int invokingState)
-                : base(parent, invokingState)
-            {
-            }
-            public override int RuleIndex { get { return RULE_literal; } }
-            public override void EnterRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.EnterLiteral(this);
-            }
-            public override void ExitRule(IParseTreeListener listener)
-            {
-                IsqlListener typedListener = listener as IsqlListener;
-                if (typedListener != null) typedListener.ExitLiteral(this);
-            }
-            public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
-            {
-                IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
-                if (typedVisitor != null) return typedVisitor.VisitLiteral(this);
-                else return visitor.VisitChildren(this);
-            }
-        }
-
-        [RuleVersion(0)]
-        public LiteralContext literal()
-        {
-            LiteralContext _localctx = new LiteralContext(Context, State);
-            EnterRule(_localctx, 56, RULE_literal);
-            int _la;
-            try
-            {
-                EnterOuterAlt(_localctx, 1);
-                {
-                    State = 305;
+                    {
+                        {
+                            State = 393; Match(T__1);
+                            State = 394; object_property();
+                        }
+                    }
+                    State = 399;
+                    ErrorHandler.Sync(this);
                     _la = TokenStream.LA(1);
-                    if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << K_FALSE) | (1L << K_NULL) | (1L << K_TRUE) | (1L << K_UNDEFINED) | (1L << NUMERIC_LITERAL) | (1L << STRING_LITERAL))) != 0)))
-                    {
-                        ErrorHandler.RecoverInline(this);
-                    }
-                    else
-                    {
-                        ErrorHandler.ReportMatch(this);
-                        Consume();
-                    }
                 }
             }
-            catch (RecognitionException re)
-            {
-                _localctx.exception = re;
-                ErrorHandler.ReportError(this, re);
-                ErrorHandler.Recover(this, re);
-            }
-            finally
-            {
-                ExitRule();
-            }
-            return _localctx;
         }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
 
-        public override bool Sempred(RuleContext _localctx, int ruleIndex, int predIndex)
+    public partial class Object_propertyContext : ParserRuleContext
+    {
+        public ITerminalNode STRING_LITERAL() { return GetToken(sqlParser.STRING_LITERAL, 0); }
+        public Scalar_expressionContext scalar_expression()
         {
-            switch (ruleIndex)
-            {
-                case 10: return collection_expression_sempred((Collection_expressionContext)_localctx, predIndex);
-                case 12: return path_expression_sempred((Path_expressionContext)_localctx, predIndex);
-                case 22: return scalar_expression_sempred((Scalar_expressionContext)_localctx, predIndex);
-            }
-            return true;
+            return GetRuleContext<Scalar_expressionContext>(0);
         }
-        private bool collection_expression_sempred(Collection_expressionContext _localctx, int predIndex)
+        public Object_propertyContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
         {
-            switch (predIndex)
-            {
-                case 0: return Precpred(Context, 1);
-            }
-            return true;
         }
-        private bool path_expression_sempred(Path_expressionContext _localctx, int predIndex)
+        public override int RuleIndex { get { return RULE_object_property; } }
+        public override void EnterRule(IParseTreeListener listener)
         {
-            switch (predIndex)
-            {
-                case 1: return Precpred(Context, 4);
-                case 2: return Precpred(Context, 3);
-                case 3: return Precpred(Context, 2);
-            }
-            return true;
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterObject_property(this);
         }
-        private bool scalar_expression_sempred(Scalar_expressionContext _localctx, int predIndex)
+        public override void ExitRule(IParseTreeListener listener)
         {
-            switch (predIndex)
-            {
-                case 4: return Precpred(Context, 14);
-                case 5: return Precpred(Context, 13);
-                case 6: return Precpred(Context, 12);
-                case 7: return Precpred(Context, 11);
-                case 8: return Precpred(Context, 8);
-                case 9: return Precpred(Context, 6);
-                case 10: return Precpred(Context, 3);
-            }
-            return true;
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitObject_property(this);
         }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitObject_property(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
 
-        private static char[] _serializedATN = {
+    [RuleVersion(0)]
+    public Object_propertyContext object_property()
+    {
+        Object_propertyContext _localctx = new Object_propertyContext(Context, State);
+        EnterRule(_localctx, 78, RULE_object_property);
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 400; Match(STRING_LITERAL);
+                State = 401; Match(T__8);
+                State = 402; scalar_expression(0);
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public partial class LiteralContext : ParserRuleContext
+    {
+        public ITerminalNode STRING_LITERAL() { return GetToken(sqlParser.STRING_LITERAL, 0); }
+        public ITerminalNode NUMERIC_LITERAL() { return GetToken(sqlParser.NUMERIC_LITERAL, 0); }
+        public ITerminalNode K_TRUE() { return GetToken(sqlParser.K_TRUE, 0); }
+        public ITerminalNode K_FALSE() { return GetToken(sqlParser.K_FALSE, 0); }
+        public ITerminalNode K_NULL() { return GetToken(sqlParser.K_NULL, 0); }
+        public ITerminalNode K_UNDEFINED() { return GetToken(sqlParser.K_UNDEFINED, 0); }
+        public LiteralContext(ParserRuleContext parent, int invokingState)
+            : base(parent, invokingState)
+        {
+        }
+        public override int RuleIndex { get { return RULE_literal; } }
+        public override void EnterRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.EnterLiteral(this);
+        }
+        public override void ExitRule(IParseTreeListener listener)
+        {
+            IsqlListener typedListener = listener as IsqlListener;
+            if (typedListener != null) typedListener.ExitLiteral(this);
+        }
+        public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor)
+        {
+            IsqlVisitor<TResult> typedVisitor = visitor as IsqlVisitor<TResult>;
+            if (typedVisitor != null) return typedVisitor.VisitLiteral(this);
+            else return visitor.VisitChildren(this);
+        }
+    }
+
+    [RuleVersion(0)]
+    public LiteralContext literal()
+    {
+        LiteralContext _localctx = new LiteralContext(Context, State);
+        EnterRule(_localctx, 80, RULE_literal);
+        int _la;
+        try
+        {
+            EnterOuterAlt(_localctx, 1);
+            {
+                State = 404;
+                _la = TokenStream.LA(1);
+                if (!((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << K_FALSE) | (1L << K_NULL) | (1L << K_TRUE) | (1L << K_UNDEFINED) | (1L << NUMERIC_LITERAL) | (1L << STRING_LITERAL))) != 0)))
+                {
+                    ErrorHandler.RecoverInline(this);
+                }
+                else
+                {
+                    ErrorHandler.ReportMatch(this);
+                    Consume();
+                }
+            }
+        }
+        catch (RecognitionException re)
+        {
+            _localctx.exception = re;
+            ErrorHandler.ReportError(this, re);
+            ErrorHandler.Recover(this, re);
+        }
+        finally
+        {
+            ExitRule();
+        }
+        return _localctx;
+    }
+
+    public override bool Sempred(RuleContext _localctx, int ruleIndex, int predIndex)
+    {
+        switch (ruleIndex)
+        {
+            case 10: return collection_expression_sempred((Collection_expressionContext)_localctx, predIndex);
+            case 12: return path_expression_sempred((Path_expressionContext)_localctx, predIndex);
+            case 22: return scalar_expression_sempred((Scalar_expressionContext)_localctx, predIndex);
+            case 25: return binary_scalar_expression_sempred((Binary_scalar_expressionContext)_localctx, predIndex);
+            case 36: return primary_expression_sempred((Primary_expressionContext)_localctx, predIndex);
+        }
+        return true;
+    }
+    private bool collection_expression_sempred(Collection_expressionContext _localctx, int predIndex)
+    {
+        switch (predIndex)
+        {
+            case 0: return Precpred(Context, 1);
+        }
+        return true;
+    }
+    private bool path_expression_sempred(Path_expressionContext _localctx, int predIndex)
+    {
+        switch (predIndex)
+        {
+            case 1: return Precpred(Context, 4);
+            case 2: return Precpred(Context, 3);
+            case 3: return Precpred(Context, 2);
+        }
+        return true;
+    }
+    private bool scalar_expression_sempred(Scalar_expressionContext _localctx, int predIndex)
+    {
+        switch (predIndex)
+        {
+            case 4: return Precpred(Context, 4);
+            case 5: return Precpred(Context, 3);
+        }
+        return true;
+    }
+    private bool binary_scalar_expression_sempred(Binary_scalar_expressionContext _localctx, int predIndex)
+    {
+        switch (predIndex)
+        {
+            case 6: return Precpred(Context, 10);
+            case 7: return Precpred(Context, 9);
+            case 8: return Precpred(Context, 8);
+            case 9: return Precpred(Context, 7);
+            case 10: return Precpred(Context, 6);
+            case 11: return Precpred(Context, 5);
+            case 12: return Precpred(Context, 4);
+            case 13: return Precpred(Context, 3);
+            case 14: return Precpred(Context, 2);
+            case 15: return Precpred(Context, 1);
+        }
+        return true;
+    }
+    private bool primary_expression_sempred(Primary_expressionContext _localctx, int predIndex)
+    {
+        switch (predIndex)
+        {
+            case 16: return Precpred(Context, 4);
+            case 17: return Precpred(Context, 3);
+        }
+        return true;
+    }
+
+    private static char[] _serializedATN = {
         '\x3', '\x608B', '\xA72A', '\x8133', '\xB9ED', '\x417C', '\x3BE7', '\x7786',
-        '\x5964', '\x3', '<', '\x136', '\x4', '\x2', '\t', '\x2', '\x4', '\x3',
+        '\x5964', '\x3', '=', '\x199', '\x4', '\x2', '\t', '\x2', '\x4', '\x3',
         '\t', '\x3', '\x4', '\x4', '\t', '\x4', '\x4', '\x5', '\t', '\x5', '\x4',
         '\x6', '\t', '\x6', '\x4', '\a', '\t', '\a', '\x4', '\b', '\t', '\b',
         '\x4', '\t', '\t', '\t', '\x4', '\n', '\t', '\n', '\x4', '\v', '\t', '\v',
@@ -3071,260 +4032,342 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         '\x16', '\t', '\x16', '\x4', '\x17', '\t', '\x17', '\x4', '\x18', '\t',
         '\x18', '\x4', '\x19', '\t', '\x19', '\x4', '\x1A', '\t', '\x1A', '\x4',
         '\x1B', '\t', '\x1B', '\x4', '\x1C', '\t', '\x1C', '\x4', '\x1D', '\t',
-        '\x1D', '\x4', '\x1E', '\t', '\x1E', '\x3', '\x2', '\x3', '\x2', '\x3',
-        '\x2', '\x3', '\x3', '\x3', '\x3', '\x5', '\x3', '\x42', '\n', '\x3',
-        '\x3', '\x3', '\x5', '\x3', '\x45', '\n', '\x3', '\x3', '\x3', '\x5',
-        '\x3', 'H', '\n', '\x3', '\x3', '\x3', '\x5', '\x3', 'K', '\n', '\x3',
-        '\x3', '\x3', '\x5', '\x3', 'N', '\n', '\x3', '\x3', '\x4', '\x3', '\x4',
-        '\x5', '\x4', 'R', '\n', '\x4', '\x3', '\x4', '\x5', '\x4', 'U', '\n',
-        '\x4', '\x3', '\x4', '\x3', '\x4', '\x3', '\x5', '\x3', '\x5', '\x3',
-        '\x5', '\x3', '\x6', '\x3', '\x6', '\x3', '\x6', '\x5', '\x6', '_', '\n',
-        '\x6', '\x3', '\a', '\x3', '\a', '\x3', '\b', '\x3', '\b', '\x3', '\b',
-        '\x3', '\t', '\x3', '\t', '\x3', '\t', '\a', '\t', 'i', '\n', '\t', '\f',
-        '\t', '\xE', '\t', 'l', '\v', '\t', '\x3', '\n', '\x3', '\n', '\x3', '\n',
-        '\x5', '\n', 'q', '\n', '\n', '\x3', '\v', '\x3', '\v', '\x3', '\v', '\x3',
-        '\f', '\x3', '\f', '\x3', '\f', '\x3', '\f', '\x5', '\f', 'z', '\n', '\f',
-        '\x3', '\f', '\x3', '\f', '\x3', '\f', '\x5', '\f', '\x7F', '\n', '\f',
-        '\x3', '\f', '\x3', '\f', '\x3', '\f', '\a', '\f', '\x84', '\n', '\f',
-        '\f', '\f', '\xE', '\f', '\x87', '\v', '\f', '\x3', '\r', '\x3', '\r',
-        '\x5', '\r', '\x8B', '\n', '\r', '\x3', '\r', '\x3', '\r', '\x3', '\r',
-        '\x3', '\r', '\x5', '\r', '\x91', '\n', '\r', '\x3', '\xE', '\x3', '\xE',
-        '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE',
-        '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE',
-        '\a', '\xE', '\x9F', '\n', '\xE', '\f', '\xE', '\xE', '\xE', '\xA2', '\v',
-        '\xE', '\x3', '\xF', '\x3', '\xF', '\x3', '\xF', '\x3', '\x10', '\x3',
-        '\x10', '\x3', '\x10', '\x3', '\x10', '\x3', '\x11', '\x3', '\x11', '\x3',
-        '\x11', '\x3', '\x11', '\x3', '\x12', '\x3', '\x12', '\x3', '\x12', '\a',
-        '\x12', '\xB2', '\n', '\x12', '\f', '\x12', '\xE', '\x12', '\xB5', '\v',
-        '\x12', '\x3', '\x13', '\x3', '\x13', '\x5', '\x13', '\xB9', '\n', '\x13',
-        '\x3', '\x14', '\x3', '\x14', '\x3', '\x15', '\x3', '\x15', '\x3', '\x15',
-        '\x3', '\x15', '\x3', '\x15', '\x3', '\x16', '\x3', '\x16', '\x3', '\x17',
-        '\x3', '\x17', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x5', '\x18',
-        '\xC9', '\n', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
+        '\x1D', '\x4', '\x1E', '\t', '\x1E', '\x4', '\x1F', '\t', '\x1F', '\x4',
+        ' ', '\t', ' ', '\x4', '!', '\t', '!', '\x4', '\"', '\t', '\"', '\x4',
+        '#', '\t', '#', '\x4', '$', '\t', '$', '\x4', '%', '\t', '%', '\x4', '&',
+        '\t', '&', '\x4', '\'', '\t', '\'', '\x4', '(', '\t', '(', '\x4', ')',
+        '\t', ')', '\x4', '*', '\t', '*', '\x3', '\x2', '\x3', '\x2', '\x3', '\x2',
+        '\x3', '\x3', '\x3', '\x3', '\x5', '\x3', 'Z', '\n', '\x3', '\x3', '\x3',
+        '\x5', '\x3', ']', '\n', '\x3', '\x3', '\x3', '\x5', '\x3', '`', '\n',
+        '\x3', '\x3', '\x3', '\x5', '\x3', '\x63', '\n', '\x3', '\x3', '\x3',
+        '\x5', '\x3', '\x66', '\n', '\x3', '\x3', '\x4', '\x3', '\x4', '\x5',
+        '\x4', 'j', '\n', '\x4', '\x3', '\x4', '\x5', '\x4', 'm', '\n', '\x4',
+        '\x3', '\x4', '\x3', '\x4', '\x3', '\x5', '\x3', '\x5', '\x3', '\x5',
+        '\x3', '\x6', '\x3', '\x6', '\x3', '\x6', '\x5', '\x6', 'w', '\n', '\x6',
+        '\x3', '\a', '\x3', '\a', '\x3', '\b', '\x3', '\b', '\x3', '\b', '\x3',
+        '\t', '\x3', '\t', '\x3', '\t', '\a', '\t', '\x81', '\n', '\t', '\f',
+        '\t', '\xE', '\t', '\x84', '\v', '\t', '\x3', '\n', '\x3', '\n', '\x3',
+        '\n', '\x5', '\n', '\x89', '\n', '\n', '\x3', '\v', '\x3', '\v', '\x3',
+        '\v', '\x3', '\f', '\x3', '\f', '\x3', '\f', '\x3', '\f', '\x5', '\f',
+        '\x92', '\n', '\f', '\x3', '\f', '\x3', '\f', '\x3', '\f', '\x5', '\f',
+        '\x97', '\n', '\f', '\x3', '\f', '\x3', '\f', '\x3', '\f', '\a', '\f',
+        '\x9C', '\n', '\f', '\f', '\f', '\xE', '\f', '\x9F', '\v', '\f', '\x3',
+        '\r', '\x3', '\r', '\x5', '\r', '\xA3', '\n', '\r', '\x3', '\r', '\x3',
+        '\r', '\x3', '\r', '\x3', '\r', '\x5', '\r', '\xA9', '\n', '\r', '\x3',
+        '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3',
+        '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3', '\xE', '\x3',
+        '\xE', '\x3', '\xE', '\a', '\xE', '\xB7', '\n', '\xE', '\f', '\xE', '\xE',
+        '\xE', '\xBA', '\v', '\xE', '\x3', '\xF', '\x3', '\xF', '\x3', '\xF',
+        '\x3', '\x10', '\x3', '\x10', '\x3', '\x10', '\x3', '\x10', '\x3', '\x11',
+        '\x3', '\x11', '\x3', '\x11', '\x3', '\x11', '\x3', '\x12', '\x3', '\x12',
+        '\x3', '\x12', '\a', '\x12', '\xCA', '\n', '\x12', '\f', '\x12', '\xE',
+        '\x12', '\xCD', '\v', '\x12', '\x3', '\x13', '\x3', '\x13', '\x5', '\x13',
+        '\xD1', '\n', '\x13', '\x3', '\x14', '\x3', '\x14', '\x3', '\x15', '\x3',
+        '\x15', '\x3', '\x15', '\x3', '\x15', '\x3', '\x15', '\x3', '\x16', '\x3',
+        '\x16', '\x3', '\x17', '\x3', '\x17', '\x3', '\x18', '\x3', '\x18', '\x3',
+        '\x18', '\x3', '\x18', '\x5', '\x18', '\xE2', '\n', '\x18', '\x3', '\x18',
+        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x5', '\x18',
+        '\xE9', '\n', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
         '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
-        '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x5',
-        '\x18', '\xD8', '\n', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18',
-        '\x5', '\x18', '\xDD', '\n', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
-        '\x18', '\x3', '\x18', '\x5', '\x18', '\xE3', '\n', '\x18', '\x3', '\x18',
-        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18',
-        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x5', '\x18', '\xEE', '\n',
-        '\x18', '\x3', '\x18', '\x3', '\x18', '\x5', '\x18', '\xF2', '\n', '\x18',
-        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18',
-        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18',
-        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18',
-        '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18',
-        '\x5', '\x18', '\x108', '\n', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
-        '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
-        '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3', '\x18', '\x3',
-        '\x18', '\a', '\x18', '\x117', '\n', '\x18', '\f', '\x18', '\xE', '\x18',
-        '\x11A', '\v', '\x18', '\x3', '\x19', '\x3', '\x19', '\x3', '\x19', '\a',
-        '\x19', '\x11F', '\n', '\x19', '\f', '\x19', '\xE', '\x19', '\x122', '\v',
-        '\x19', '\x3', '\x1A', '\x3', '\x1A', '\x3', '\x1B', '\x3', '\x1B', '\x3',
-        '\x1C', '\x3', '\x1C', '\x3', '\x1C', '\a', '\x1C', '\x12B', '\n', '\x1C',
-        '\f', '\x1C', '\xE', '\x1C', '\x12E', '\v', '\x1C', '\x3', '\x1D', '\x3',
-        '\x1D', '\x3', '\x1D', '\x3', '\x1D', '\x3', '\x1E', '\x3', '\x1E', '\x3',
-        '\x1E', '\x2', '\x5', '\x16', '\x1A', '.', '\x1F', '\x2', '\x4', '\x6',
-        '\b', '\n', '\f', '\xE', '\x10', '\x12', '\x14', '\x16', '\x18', '\x1A',
-        '\x1C', '\x1E', ' ', '\"', '$', '&', '(', '*', ',', '.', '\x30', '\x32',
-        '\x34', '\x36', '\x38', ':', '\x2', '\x6', '\x4', '\x2', '!', '!', '$',
-        '$', '\x6', '\x2', '\x3', '\x3', '\xF', '\x1C', '\x1E', '\x1E', '\x30',
-        '\x30', '\x5', '\x2', '\xF', '\xF', '\x1C', '\x1D', '-', '-', '\a', '\x2',
-        '\'', '\'', '.', '.', '\x34', '\x34', '\x36', '\x36', ':', ';', '\x2',
-        '\x144', '\x2', '<', '\x3', '\x2', '\x2', '\x2', '\x4', '?', '\x3', '\x2',
-        '\x2', '\x2', '\x6', 'O', '\x3', '\x2', '\x2', '\x2', '\b', 'X', '\x3',
-        '\x2', '\x2', '\x2', '\n', '^', '\x3', '\x2', '\x2', '\x2', '\f', '`',
-        '\x3', '\x2', '\x2', '\x2', '\xE', '\x62', '\x3', '\x2', '\x2', '\x2',
-        '\x10', '\x65', '\x3', '\x2', '\x2', '\x2', '\x12', 'm', '\x3', '\x2',
-        '\x2', '\x2', '\x14', 'r', '\x3', '\x2', '\x2', '\x2', '\x16', '~', '\x3',
-        '\x2', '\x2', '\x2', '\x18', '\x90', '\x3', '\x2', '\x2', '\x2', '\x1A',
-        '\x92', '\x3', '\x2', '\x2', '\x2', '\x1C', '\xA3', '\x3', '\x2', '\x2',
-        '\x2', '\x1E', '\xA6', '\x3', '\x2', '\x2', '\x2', ' ', '\xAA', '\x3',
-        '\x2', '\x2', '\x2', '\"', '\xAE', '\x3', '\x2', '\x2', '\x2', '$', '\xB6',
-        '\x3', '\x2', '\x2', '\x2', '&', '\xBA', '\x3', '\x2', '\x2', '\x2', '(',
-        '\xBC', '\x3', '\x2', '\x2', '\x2', '*', '\xC1', '\x3', '\x2', '\x2',
-        '\x2', ',', '\xC3', '\x3', '\x2', '\x2', '\x2', '.', '\xED', '\x3', '\x2',
-        '\x2', '\x2', '\x30', '\x11B', '\x3', '\x2', '\x2', '\x2', '\x32', '\x123',
-        '\x3', '\x2', '\x2', '\x2', '\x34', '\x125', '\x3', '\x2', '\x2', '\x2',
-        '\x36', '\x127', '\x3', '\x2', '\x2', '\x2', '\x38', '\x12F', '\x3', '\x2',
-        '\x2', '\x2', ':', '\x133', '\x3', '\x2', '\x2', '\x2', '<', '=', '\x5',
-        '\x4', '\x3', '\x2', '=', '>', '\a', '\x2', '\x2', '\x3', '>', '\x3',
-        '\x3', '\x2', '\x2', '\x2', '?', '\x41', '\x5', '\x6', '\x4', '\x2', '@',
-        '\x42', '\x5', '\x14', '\v', '\x2', '\x41', '@', '\x3', '\x2', '\x2',
-        '\x2', '\x41', '\x42', '\x3', '\x2', '\x2', '\x2', '\x42', '\x44', '\x3',
-        '\x2', '\x2', '\x2', '\x43', '\x45', '\x5', '\x1C', '\xF', '\x2', '\x44',
-        '\x43', '\x3', '\x2', '\x2', '\x2', '\x44', '\x45', '\x3', '\x2', '\x2',
-        '\x2', '\x45', 'G', '\x3', '\x2', '\x2', '\x2', '\x46', 'H', '\x5', '\x1E',
-        '\x10', '\x2', 'G', '\x46', '\x3', '\x2', '\x2', '\x2', 'G', 'H', '\x3',
-        '\x2', '\x2', '\x2', 'H', 'J', '\x3', '\x2', '\x2', '\x2', 'I', 'K', '\x5',
-        ' ', '\x11', '\x2', 'J', 'I', '\x3', '\x2', '\x2', '\x2', 'J', 'K', '\x3',
-        '\x2', '\x2', '\x2', 'K', 'M', '\x3', '\x2', '\x2', '\x2', 'L', 'N', '\x5',
-        '(', '\x15', '\x2', 'M', 'L', '\x3', '\x2', '\x2', '\x2', 'M', 'N', '\x3',
-        '\x2', '\x2', '\x2', 'N', '\x5', '\x3', '\x2', '\x2', '\x2', 'O', 'Q',
-        '\a', '\x32', '\x2', '\x2', 'P', 'R', '\a', '%', '\x2', '\x2', 'Q', 'P',
-        '\x3', '\x2', '\x2', '\x2', 'Q', 'R', '\x3', '\x2', '\x2', '\x2', 'R',
-        'T', '\x3', '\x2', '\x2', '\x2', 'S', 'U', '\x5', '\b', '\x5', '\x2',
-        'T', 'S', '\x3', '\x2', '\x2', '\x2', 'T', 'U', '\x3', '\x2', '\x2', '\x2',
-        'U', 'V', '\x3', '\x2', '\x2', '\x2', 'V', 'W', '\x5', '\n', '\x6', '\x2',
-        'W', '\a', '\x3', '\x2', '\x2', '\x2', 'X', 'Y', '\a', '\x33', '\x2',
-        '\x2', 'Y', 'Z', '\a', ':', '\x2', '\x2', 'Z', '\t', '\x3', '\x2', '\x2',
-        '\x2', '[', '_', '\x5', '\f', '\a', '\x2', '\\', '_', '\x5', '\xE', '\b',
-        '\x2', ']', '_', '\x5', '\x10', '\t', '\x2', '^', '[', '\x3', '\x2', '\x2',
-        '\x2', '^', '\\', '\x3', '\x2', '\x2', '\x2', '^', ']', '\x3', '\x2',
-        '\x2', '\x2', '_', '\v', '\x3', '\x2', '\x2', '\x2', '`', '\x61', '\a',
-        '\x3', '\x2', '\x2', '\x61', '\r', '\x3', '\x2', '\x2', '\x2', '\x62',
-        '\x63', '\a', '\x37', '\x2', '\x2', '\x63', '\x64', '\x5', '.', '\x18',
-        '\x2', '\x64', '\xF', '\x3', '\x2', '\x2', '\x2', '\x65', 'j', '\x5',
-        '\x12', '\n', '\x2', '\x66', 'g', '\a', '\x4', '\x2', '\x2', 'g', 'i',
-        '\x5', '\x12', '\n', '\x2', 'h', '\x66', '\x3', '\x2', '\x2', '\x2', 'i',
-        'l', '\x3', '\x2', '\x2', '\x2', 'j', 'h', '\x3', '\x2', '\x2', '\x2',
-        'j', 'k', '\x3', '\x2', '\x2', '\x2', 'k', '\x11', '\x3', '\x2', '\x2',
-        '\x2', 'l', 'j', '\x3', '\x2', '\x2', '\x2', 'm', 'p', '\x5', '.', '\x18',
-        '\x2', 'n', 'o', '\a', ' ', '\x2', '\x2', 'o', 'q', '\a', '<', '\x2',
-        '\x2', 'p', 'n', '\x3', '\x2', '\x2', '\x2', 'p', 'q', '\x3', '\x2', '\x2',
-        '\x2', 'q', '\x13', '\x3', '\x2', '\x2', '\x2', 'r', 's', '\a', '(', '\x2',
-        '\x2', 's', 't', '\x5', '\x16', '\f', '\x2', 't', '\x15', '\x3', '\x2',
-        '\x2', '\x2', 'u', 'v', '\b', '\f', '\x1', '\x2', 'v', 'y', '\x5', '\x18',
-        '\r', '\x2', 'w', 'x', '\a', ' ', '\x2', '\x2', 'x', 'z', '\a', '<', '\x2',
-        '\x2', 'y', 'w', '\x3', '\x2', '\x2', '\x2', 'y', 'z', '\x3', '\x2', '\x2',
-        '\x2', 'z', '\x7F', '\x3', '\x2', '\x2', '\x2', '{', '|', '\a', '<', '\x2',
-        '\x2', '|', '}', '\a', '*', '\x2', '\x2', '}', '\x7F', '\x5', '\x18',
-        '\r', '\x2', '~', 'u', '\x3', '\x2', '\x2', '\x2', '~', '{', '\x3', '\x2',
-        '\x2', '\x2', '\x7F', '\x85', '\x3', '\x2', '\x2', '\x2', '\x80', '\x81',
-        '\f', '\x3', '\x2', '\x2', '\x81', '\x82', '\a', '+', '\x2', '\x2', '\x82',
-        '\x84', '\x5', '\x16', '\f', '\x4', '\x83', '\x80', '\x3', '\x2', '\x2',
-        '\x2', '\x84', '\x87', '\x3', '\x2', '\x2', '\x2', '\x85', '\x83', '\x3',
-        '\x2', '\x2', '\x2', '\x85', '\x86', '\x3', '\x2', '\x2', '\x2', '\x86',
-        '\x17', '\x3', '\x2', '\x2', '\x2', '\x87', '\x85', '\x3', '\x2', '\x2',
-        '\x2', '\x88', '\x8A', '\a', '<', '\x2', '\x2', '\x89', '\x8B', '\x5',
-        '\x1A', '\xE', '\x2', '\x8A', '\x89', '\x3', '\x2', '\x2', '\x2', '\x8A',
-        '\x8B', '\x3', '\x2', '\x2', '\x2', '\x8B', '\x91', '\x3', '\x2', '\x2',
-        '\x2', '\x8C', '\x8D', '\a', '\x5', '\x2', '\x2', '\x8D', '\x8E', '\x5',
-        '\x4', '\x3', '\x2', '\x8E', '\x8F', '\a', '\x6', '\x2', '\x2', '\x8F',
-        '\x91', '\x3', '\x2', '\x2', '\x2', '\x90', '\x88', '\x3', '\x2', '\x2',
-        '\x2', '\x90', '\x8C', '\x3', '\x2', '\x2', '\x2', '\x91', '\x19', '\x3',
-        '\x2', '\x2', '\x2', '\x92', '\xA0', '\b', '\xE', '\x1', '\x2', '\x93',
-        '\x94', '\f', '\x6', '\x2', '\x2', '\x94', '\x95', '\a', '\a', '\x2',
-        '\x2', '\x95', '\x9F', '\a', '<', '\x2', '\x2', '\x96', '\x97', '\f',
-        '\x5', '\x2', '\x2', '\x97', '\x98', '\a', '\b', '\x2', '\x2', '\x98',
-        '\x99', '\a', ':', '\x2', '\x2', '\x99', '\x9F', '\a', '\t', '\x2', '\x2',
-        '\x9A', '\x9B', '\f', '\x4', '\x2', '\x2', '\x9B', '\x9C', '\a', '\b',
-        '\x2', '\x2', '\x9C', '\x9D', '\a', ';', '\x2', '\x2', '\x9D', '\x9F',
-        '\a', '\t', '\x2', '\x2', '\x9E', '\x93', '\x3', '\x2', '\x2', '\x2',
-        '\x9E', '\x96', '\x3', '\x2', '\x2', '\x2', '\x9E', '\x9A', '\x3', '\x2',
-        '\x2', '\x2', '\x9F', '\xA2', '\x3', '\x2', '\x2', '\x2', '\xA0', '\x9E',
-        '\x3', '\x2', '\x2', '\x2', '\xA0', '\xA1', '\x3', '\x2', '\x2', '\x2',
-        '\xA1', '\x1B', '\x3', '\x2', '\x2', '\x2', '\xA2', '\xA0', '\x3', '\x2',
-        '\x2', '\x2', '\xA3', '\xA4', '\a', '\x38', '\x2', '\x2', '\xA4', '\xA5',
-        '\x5', '.', '\x18', '\x2', '\xA5', '\x1D', '\x3', '\x2', '\x2', '\x2',
-        '\xA6', '\xA7', '\a', ')', '\x2', '\x2', '\xA7', '\xA8', '\a', '#', '\x2',
-        '\x2', '\xA8', '\xA9', '\x5', '\x30', '\x19', '\x2', '\xA9', '\x1F', '\x3',
-        '\x2', '\x2', '\x2', '\xAA', '\xAB', '\a', '\x31', '\x2', '\x2', '\xAB',
-        '\xAC', '\a', '#', '\x2', '\x2', '\xAC', '\xAD', '\x5', '\"', '\x12',
-        '\x2', '\xAD', '!', '\x3', '\x2', '\x2', '\x2', '\xAE', '\xB3', '\x5',
-        '$', '\x13', '\x2', '\xAF', '\xB0', '\a', '\x4', '\x2', '\x2', '\xB0',
-        '\xB2', '\x5', '$', '\x13', '\x2', '\xB1', '\xAF', '\x3', '\x2', '\x2',
-        '\x2', '\xB2', '\xB5', '\x3', '\x2', '\x2', '\x2', '\xB3', '\xB1', '\x3',
-        '\x2', '\x2', '\x2', '\xB3', '\xB4', '\x3', '\x2', '\x2', '\x2', '\xB4',
-        '#', '\x3', '\x2', '\x2', '\x2', '\xB5', '\xB3', '\x3', '\x2', '\x2',
-        '\x2', '\xB6', '\xB8', '\x5', '.', '\x18', '\x2', '\xB7', '\xB9', '\x5',
-        '&', '\x14', '\x2', '\xB8', '\xB7', '\x3', '\x2', '\x2', '\x2', '\xB8',
-        '\xB9', '\x3', '\x2', '\x2', '\x2', '\xB9', '%', '\x3', '\x2', '\x2',
-        '\x2', '\xBA', '\xBB', '\t', '\x2', '\x2', '\x2', '\xBB', '\'', '\x3',
-        '\x2', '\x2', '\x2', '\xBC', '\xBD', '\a', '/', '\x2', '\x2', '\xBD',
-        '\xBE', '\x5', '*', '\x16', '\x2', '\xBE', '\xBF', '\a', ',', '\x2', '\x2',
-        '\xBF', '\xC0', '\x5', ',', '\x17', '\x2', '\xC0', ')', '\x3', '\x2',
-        '\x2', '\x2', '\xC1', '\xC2', '\a', ':', '\x2', '\x2', '\xC2', '+', '\x3',
-        '\x2', '\x2', '\x2', '\xC3', '\xC4', '\a', ':', '\x2', '\x2', '\xC4',
-        '-', '\x3', '\x2', '\x2', '\x2', '\xC5', '\xC6', '\b', '\x18', '\x1',
-        '\x2', '\xC6', '\xC8', '\a', '\b', '\x2', '\x2', '\xC7', '\xC9', '\x5',
-        '\x30', '\x19', '\x2', '\xC8', '\xC7', '\x3', '\x2', '\x2', '\x2', '\xC8',
-        '\xC9', '\x3', '\x2', '\x2', '\x2', '\xC9', '\xCA', '\x3', '\x2', '\x2',
-        '\x2', '\xCA', '\xEE', '\a', '\t', '\x2', '\x2', '\xCB', '\xCC', '\a',
-        '\x1F', '\x2', '\x2', '\xCC', '\xCD', '\a', '\x5', '\x2', '\x2', '\xCD',
-        '\xCE', '\x5', '\x4', '\x3', '\x2', '\xCE', '\xCF', '\a', '\x6', '\x2',
-        '\x2', '\xCF', '\xEE', '\x3', '\x2', '\x2', '\x2', '\xD0', '\xD1', '\a',
-        '&', '\x2', '\x2', '\xD1', '\xD2', '\a', '\x5', '\x2', '\x2', '\xD2',
-        '\xD3', '\x5', '\x4', '\x3', '\x2', '\xD3', '\xD4', '\a', '\x6', '\x2',
-        '\x2', '\xD4', '\xEE', '\x3', '\x2', '\x2', '\x2', '\xD5', '\xD6', '\a',
-        '\x35', '\x2', '\x2', '\xD6', '\xD8', '\a', '\a', '\x2', '\x2', '\xD7',
-        '\xD5', '\x3', '\x2', '\x2', '\x2', '\xD7', '\xD8', '\x3', '\x2', '\x2',
-        '\x2', '\xD8', '\xD9', '\x3', '\x2', '\x2', '\x2', '\xD9', '\xDA', '\a',
-        '<', '\x2', '\x2', '\xDA', '\xDC', '\a', '\x5', '\x2', '\x2', '\xDB',
-        '\xDD', '\x5', '\x30', '\x19', '\x2', '\xDC', '\xDB', '\x3', '\x2', '\x2',
-        '\x2', '\xDC', '\xDD', '\x3', '\x2', '\x2', '\x2', '\xDD', '\xDE', '\x3',
-        '\x2', '\x2', '\x2', '\xDE', '\xEE', '\a', '\x6', '\x2', '\x2', '\xDF',
-        '\xEE', '\x5', ':', '\x1E', '\x2', '\xE0', '\xE2', '\a', '\r', '\x2',
-        '\x2', '\xE1', '\xE3', '\x5', '\x36', '\x1C', '\x2', '\xE2', '\xE1', '\x3',
-        '\x2', '\x2', '\x2', '\xE2', '\xE3', '\x3', '\x2', '\x2', '\x2', '\xE3',
-        '\xE4', '\x3', '\x2', '\x2', '\x2', '\xE4', '\xEE', '\a', '\xE', '\x2',
-        '\x2', '\xE5', '\xEE', '\a', '<', '\x2', '\x2', '\xE6', '\xE7', '\a',
-        '\x5', '\x2', '\x2', '\xE7', '\xE8', '\x5', '\x4', '\x3', '\x2', '\xE8',
-        '\xE9', '\a', '\x6', '\x2', '\x2', '\xE9', '\xEE', '\x3', '\x2', '\x2',
-        '\x2', '\xEA', '\xEB', '\x5', '\x34', '\x1B', '\x2', '\xEB', '\xEC', '\x5',
-        '.', '\x18', '\x3', '\xEC', '\xEE', '\x3', '\x2', '\x2', '\x2', '\xED',
-        '\xC5', '\x3', '\x2', '\x2', '\x2', '\xED', '\xCB', '\x3', '\x2', '\x2',
-        '\x2', '\xED', '\xD0', '\x3', '\x2', '\x2', '\x2', '\xED', '\xD7', '\x3',
-        '\x2', '\x2', '\x2', '\xED', '\xDF', '\x3', '\x2', '\x2', '\x2', '\xED',
-        '\xE0', '\x3', '\x2', '\x2', '\x2', '\xED', '\xE5', '\x3', '\x2', '\x2',
-        '\x2', '\xED', '\xE6', '\x3', '\x2', '\x2', '\x2', '\xED', '\xEA', '\x3',
-        '\x2', '\x2', '\x2', '\xEE', '\x118', '\x3', '\x2', '\x2', '\x2', '\xEF',
-        '\xF1', '\f', '\x10', '\x2', '\x2', '\xF0', '\xF2', '\a', '-', '\x2',
-        '\x2', '\xF1', '\xF0', '\x3', '\x2', '\x2', '\x2', '\xF1', '\xF2', '\x3',
-        '\x2', '\x2', '\x2', '\xF2', '\xF3', '\x3', '\x2', '\x2', '\x2', '\xF3',
-        '\xF4', '\a', '\"', '\x2', '\x2', '\xF4', '\xF5', '\x5', '.', '\x18',
-        '\x2', '\xF5', '\xF6', '\a', '\x1E', '\x2', '\x2', '\xF6', '\xF7', '\x5',
-        '.', '\x18', '\x11', '\xF7', '\x117', '\x3', '\x2', '\x2', '\x2', '\xF8',
-        '\xF9', '\f', '\xF', '\x2', '\x2', '\xF9', '\xFA', '\x5', '\x32', '\x1A',
-        '\x2', '\xFA', '\xFB', '\x5', '.', '\x18', '\x10', '\xFB', '\x117', '\x3',
-        '\x2', '\x2', '\x2', '\xFC', '\xFD', '\f', '\xE', '\x2', '\x2', '\xFD',
-        '\xFE', '\a', '\n', '\x2', '\x2', '\xFE', '\x117', '\x5', '.', '\x18',
-        '\xF', '\xFF', '\x100', '\f', '\r', '\x2', '\x2', '\x100', '\x101', '\a',
-        '\v', '\x2', '\x2', '\x101', '\x102', '\x5', '.', '\x18', '\x2', '\x102',
-        '\x103', '\a', '\f', '\x2', '\x2', '\x103', '\x104', '\x5', '.', '\x18',
-        '\xE', '\x104', '\x117', '\x3', '\x2', '\x2', '\x2', '\x105', '\x107',
-        '\f', '\n', '\x2', '\x2', '\x106', '\x108', '\a', '-', '\x2', '\x2', '\x107',
-        '\x106', '\x3', '\x2', '\x2', '\x2', '\x107', '\x108', '\x3', '\x2', '\x2',
-        '\x2', '\x108', '\x109', '\x3', '\x2', '\x2', '\x2', '\x109', '\x10A',
-        '\a', '*', '\x2', '\x2', '\x10A', '\x10B', '\a', '\x5', '\x2', '\x2',
-        '\x10B', '\x10C', '\x5', '\x30', '\x19', '\x2', '\x10C', '\x10D', '\a',
-        '\x6', '\x2', '\x2', '\x10D', '\x117', '\x3', '\x2', '\x2', '\x2', '\x10E',
-        '\x10F', '\f', '\b', '\x2', '\x2', '\x10F', '\x110', '\a', '\b', '\x2',
-        '\x2', '\x110', '\x111', '\x5', '.', '\x18', '\x2', '\x111', '\x112',
-        '\a', '\t', '\x2', '\x2', '\x112', '\x117', '\x3', '\x2', '\x2', '\x2',
-        '\x113', '\x114', '\f', '\x5', '\x2', '\x2', '\x114', '\x115', '\a', '\a',
-        '\x2', '\x2', '\x115', '\x117', '\a', '<', '\x2', '\x2', '\x116', '\xEF',
-        '\x3', '\x2', '\x2', '\x2', '\x116', '\xF8', '\x3', '\x2', '\x2', '\x2',
-        '\x116', '\xFC', '\x3', '\x2', '\x2', '\x2', '\x116', '\xFF', '\x3', '\x2',
-        '\x2', '\x2', '\x116', '\x105', '\x3', '\x2', '\x2', '\x2', '\x116', '\x10E',
-        '\x3', '\x2', '\x2', '\x2', '\x116', '\x113', '\x3', '\x2', '\x2', '\x2',
-        '\x117', '\x11A', '\x3', '\x2', '\x2', '\x2', '\x118', '\x116', '\x3',
-        '\x2', '\x2', '\x2', '\x118', '\x119', '\x3', '\x2', '\x2', '\x2', '\x119',
-        '/', '\x3', '\x2', '\x2', '\x2', '\x11A', '\x118', '\x3', '\x2', '\x2',
-        '\x2', '\x11B', '\x120', '\x5', '.', '\x18', '\x2', '\x11C', '\x11D',
-        '\a', '\x4', '\x2', '\x2', '\x11D', '\x11F', '\x5', '.', '\x18', '\x2',
-        '\x11E', '\x11C', '\x3', '\x2', '\x2', '\x2', '\x11F', '\x122', '\x3',
-        '\x2', '\x2', '\x2', '\x120', '\x11E', '\x3', '\x2', '\x2', '\x2', '\x120',
-        '\x121', '\x3', '\x2', '\x2', '\x2', '\x121', '\x31', '\x3', '\x2', '\x2',
-        '\x2', '\x122', '\x120', '\x3', '\x2', '\x2', '\x2', '\x123', '\x124',
-        '\t', '\x3', '\x2', '\x2', '\x124', '\x33', '\x3', '\x2', '\x2', '\x2',
-        '\x125', '\x126', '\t', '\x4', '\x2', '\x2', '\x126', '\x35', '\x3', '\x2',
-        '\x2', '\x2', '\x127', '\x12C', '\x5', '\x38', '\x1D', '\x2', '\x128',
-        '\x129', '\a', '\x4', '\x2', '\x2', '\x129', '\x12B', '\x5', '\x38', '\x1D',
-        '\x2', '\x12A', '\x128', '\x3', '\x2', '\x2', '\x2', '\x12B', '\x12E',
-        '\x3', '\x2', '\x2', '\x2', '\x12C', '\x12A', '\x3', '\x2', '\x2', '\x2',
-        '\x12C', '\x12D', '\x3', '\x2', '\x2', '\x2', '\x12D', '\x37', '\x3',
-        '\x2', '\x2', '\x2', '\x12E', '\x12C', '\x3', '\x2', '\x2', '\x2', '\x12F',
-        '\x130', '\a', ';', '\x2', '\x2', '\x130', '\x131', '\a', '\f', '\x2',
-        '\x2', '\x131', '\x132', '\x5', '.', '\x18', '\x2', '\x132', '\x39', '\x3',
-        '\x2', '\x2', '\x2', '\x133', '\x134', '\t', '\x5', '\x2', '\x2', '\x134',
-        ';', '\x3', '\x2', '\x2', '\x2', ' ', '\x41', '\x44', 'G', 'J', 'M', 'Q',
-        'T', '^', 'j', 'p', 'y', '~', '\x85', '\x8A', '\x90', '\x9E', '\xA0',
-        '\xB3', '\xB8', '\xC8', '\xD7', '\xDC', '\xE2', '\xED', '\xF1', '\x107',
-        '\x116', '\x118', '\x120', '\x12C',
+        '\x18', '\a', '\x18', '\xF4', '\n', '\x18', '\f', '\x18', '\xE', '\x18',
+        '\xF7', '\v', '\x18', '\x3', '\x19', '\x3', '\x19', '\x5', '\x19', '\xFB',
+        '\n', '\x19', '\x3', '\x1A', '\x3', '\x1A', '\x5', '\x1A', '\xFF', '\n',
+        '\x1A', '\x3', '\x1A', '\x3', '\x1A', '\x3', '\x1A', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3',
+        '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\x3', '\x1B', '\a',
+        '\x1B', '\x12D', '\n', '\x1B', '\f', '\x1B', '\xE', '\x1B', '\x130', '\v',
+        '\x1B', '\x3', '\x1C', '\x3', '\x1C', '\x3', '\x1D', '\x3', '\x1D', '\x3',
+        '\x1E', '\x3', '\x1E', '\x3', '\x1F', '\x3', '\x1F', '\x3', ' ', '\x3',
+        ' ', '\x3', '!', '\x3', '!', '\x3', '\"', '\x3', '\"', '\x3', '#', '\x3',
+        '#', '\x3', '$', '\x3', '$', '\x3', '$', '\x3', '$', '\x5', '$', '\x146',
+        '\n', '$', '\x3', '%', '\x3', '%', '\x3', '&', '\x3', '&', '\x3', '&',
+        '\x3', '&', '\x3', '&', '\x3', '&', '\x5', '&', '\x150', '\n', '&', '\x3',
+        '&', '\x3', '&', '\x3', '&', '\x5', '&', '\x155', '\n', '&', '\x3', '&',
+        '\x3', '&', '\x3', '&', '\x5', '&', '\x15A', '\n', '&', '\x3', '&', '\x3',
+        '&', '\x3', '&', '\x5', '&', '\x15F', '\n', '&', '\x3', '&', '\x3', '&',
+        '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&',
+        '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&',
+        '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x5', '&',
+        '\x174', '\n', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3', '&', '\x3',
+        '&', '\x3', '&', '\x3', '&', '\x3', '&', '\a', '&', '\x17E', '\n', '&',
+        '\f', '&', '\xE', '&', '\x181', '\v', '&', '\x3', '\'', '\x3', '\'', '\x3',
+        '\'', '\a', '\'', '\x186', '\n', '\'', '\f', '\'', '\xE', '\'', '\x189',
+        '\v', '\'', '\x3', '(', '\x3', '(', '\x3', '(', '\a', '(', '\x18E', '\n',
+        '(', '\f', '(', '\xE', '(', '\x191', '\v', '(', '\x3', ')', '\x3', ')',
+        '\x3', ')', '\x3', ')', '\x3', '*', '\x3', '*', '\x3', '*', '\x2', '\a',
+        '\x16', '\x1A', '.', '\x34', 'J', '+', '\x2', '\x4', '\x6', '\b', '\n',
+        '\f', '\xE', '\x10', '\x12', '\x14', '\x16', '\x18', '\x1A', '\x1C', '\x1E',
+        ' ', '\"', '$', '&', '(', '*', ',', '.', '\x30', '\x32', '\x34', '\x36',
+        '\x38', ':', '<', '>', '@', '\x42', '\x44', '\x46', 'H', 'J', 'L', 'N',
+        'P', 'R', '\x2', '\n', '\x4', '\x2', ':', ':', '=', '=', '\x4', '\x2',
+        '!', '!', '$', '$', '\x4', '\x2', '\x3', '\x3', '\r', '\xE', '\x3', '\x2',
+        '\xF', '\x10', '\x3', '\x2', '\x11', '\x14', '\x3', '\x2', '\x15', '\x16',
+        '\x5', '\x2', '\xF', '\x10', '\x1B', '\x1B', '-', '-', '\a', '\x2', '\'',
+        '\'', '.', '.', '\x34', '\x34', '\x36', '\x36', ':', ';', '\x2', '\x1A6',
+        '\x2', 'T', '\x3', '\x2', '\x2', '\x2', '\x4', 'W', '\x3', '\x2', '\x2',
+        '\x2', '\x6', 'g', '\x3', '\x2', '\x2', '\x2', '\b', 'p', '\x3', '\x2',
+        '\x2', '\x2', '\n', 'v', '\x3', '\x2', '\x2', '\x2', '\f', 'x', '\x3',
+        '\x2', '\x2', '\x2', '\xE', 'z', '\x3', '\x2', '\x2', '\x2', '\x10', '}',
+        '\x3', '\x2', '\x2', '\x2', '\x12', '\x85', '\x3', '\x2', '\x2', '\x2',
+        '\x14', '\x8A', '\x3', '\x2', '\x2', '\x2', '\x16', '\x96', '\x3', '\x2',
+        '\x2', '\x2', '\x18', '\xA8', '\x3', '\x2', '\x2', '\x2', '\x1A', '\xAA',
+        '\x3', '\x2', '\x2', '\x2', '\x1C', '\xBB', '\x3', '\x2', '\x2', '\x2',
+        '\x1E', '\xBE', '\x3', '\x2', '\x2', '\x2', ' ', '\xC2', '\x3', '\x2',
+        '\x2', '\x2', '\"', '\xC6', '\x3', '\x2', '\x2', '\x2', '$', '\xCE', '\x3',
+        '\x2', '\x2', '\x2', '&', '\xD2', '\x3', '\x2', '\x2', '\x2', '(', '\xD4',
+        '\x3', '\x2', '\x2', '\x2', '*', '\xD9', '\x3', '\x2', '\x2', '\x2', ',',
+        '\xDB', '\x3', '\x2', '\x2', '\x2', '.', '\xE8', '\x3', '\x2', '\x2',
+        '\x2', '\x30', '\xFA', '\x3', '\x2', '\x2', '\x2', '\x32', '\xFC', '\x3',
+        '\x2', '\x2', '\x2', '\x34', '\x103', '\x3', '\x2', '\x2', '\x2', '\x36',
+        '\x131', '\x3', '\x2', '\x2', '\x2', '\x38', '\x133', '\x3', '\x2', '\x2',
+        '\x2', ':', '\x135', '\x3', '\x2', '\x2', '\x2', '<', '\x137', '\x3',
+        '\x2', '\x2', '\x2', '>', '\x139', '\x3', '\x2', '\x2', '\x2', '@', '\x13B',
+        '\x3', '\x2', '\x2', '\x2', '\x42', '\x13D', '\x3', '\x2', '\x2', '\x2',
+        '\x44', '\x13F', '\x3', '\x2', '\x2', '\x2', '\x46', '\x145', '\x3', '\x2',
+        '\x2', '\x2', 'H', '\x147', '\x3', '\x2', '\x2', '\x2', 'J', '\x173',
+        '\x3', '\x2', '\x2', '\x2', 'L', '\x182', '\x3', '\x2', '\x2', '\x2',
+        'N', '\x18A', '\x3', '\x2', '\x2', '\x2', 'P', '\x192', '\x3', '\x2',
+        '\x2', '\x2', 'R', '\x196', '\x3', '\x2', '\x2', '\x2', 'T', 'U', '\x5',
+        '\x4', '\x3', '\x2', 'U', 'V', '\a', '\x2', '\x2', '\x3', 'V', '\x3',
+        '\x3', '\x2', '\x2', '\x2', 'W', 'Y', '\x5', '\x6', '\x4', '\x2', 'X',
+        'Z', '\x5', '\x14', '\v', '\x2', 'Y', 'X', '\x3', '\x2', '\x2', '\x2',
+        'Y', 'Z', '\x3', '\x2', '\x2', '\x2', 'Z', '\\', '\x3', '\x2', '\x2',
+        '\x2', '[', ']', '\x5', '\x1C', '\xF', '\x2', '\\', '[', '\x3', '\x2',
+        '\x2', '\x2', '\\', ']', '\x3', '\x2', '\x2', '\x2', ']', '_', '\x3',
+        '\x2', '\x2', '\x2', '^', '`', '\x5', '\x1E', '\x10', '\x2', '_', '^',
+        '\x3', '\x2', '\x2', '\x2', '_', '`', '\x3', '\x2', '\x2', '\x2', '`',
+        '\x62', '\x3', '\x2', '\x2', '\x2', '\x61', '\x63', '\x5', ' ', '\x11',
+        '\x2', '\x62', '\x61', '\x3', '\x2', '\x2', '\x2', '\x62', '\x63', '\x3',
+        '\x2', '\x2', '\x2', '\x63', '\x65', '\x3', '\x2', '\x2', '\x2', '\x64',
+        '\x66', '\x5', '(', '\x15', '\x2', '\x65', '\x64', '\x3', '\x2', '\x2',
+        '\x2', '\x65', '\x66', '\x3', '\x2', '\x2', '\x2', '\x66', '\x5', '\x3',
+        '\x2', '\x2', '\x2', 'g', 'i', '\a', '\x32', '\x2', '\x2', 'h', 'j', '\a',
+        '%', '\x2', '\x2', 'i', 'h', '\x3', '\x2', '\x2', '\x2', 'i', 'j', '\x3',
+        '\x2', '\x2', '\x2', 'j', 'l', '\x3', '\x2', '\x2', '\x2', 'k', 'm', '\x5',
+        '\b', '\x5', '\x2', 'l', 'k', '\x3', '\x2', '\x2', '\x2', 'l', 'm', '\x3',
+        '\x2', '\x2', '\x2', 'm', 'n', '\x3', '\x2', '\x2', '\x2', 'n', 'o', '\x5',
+        '\n', '\x6', '\x2', 'o', '\a', '\x3', '\x2', '\x2', '\x2', 'p', 'q', '\a',
+        '\x33', '\x2', '\x2', 'q', 'r', '\t', '\x2', '\x2', '\x2', 'r', '\t',
+        '\x3', '\x2', '\x2', '\x2', 's', 'w', '\x5', '\f', '\a', '\x2', 't', 'w',
+        '\x5', '\xE', '\b', '\x2', 'u', 'w', '\x5', '\x10', '\t', '\x2', 'v',
+        's', '\x3', '\x2', '\x2', '\x2', 'v', 't', '\x3', '\x2', '\x2', '\x2',
+        'v', 'u', '\x3', '\x2', '\x2', '\x2', 'w', '\v', '\x3', '\x2', '\x2',
+        '\x2', 'x', 'y', '\a', '\x3', '\x2', '\x2', 'y', '\r', '\x3', '\x2', '\x2',
+        '\x2', 'z', '{', '\a', '\x37', '\x2', '\x2', '{', '|', '\x5', '.', '\x18',
+        '\x2', '|', '\xF', '\x3', '\x2', '\x2', '\x2', '}', '\x82', '\x5', '\x12',
+        '\n', '\x2', '~', '\x7F', '\a', '\x4', '\x2', '\x2', '\x7F', '\x81', '\x5',
+        '\x12', '\n', '\x2', '\x80', '~', '\x3', '\x2', '\x2', '\x2', '\x81',
+        '\x84', '\x3', '\x2', '\x2', '\x2', '\x82', '\x80', '\x3', '\x2', '\x2',
+        '\x2', '\x82', '\x83', '\x3', '\x2', '\x2', '\x2', '\x83', '\x11', '\x3',
+        '\x2', '\x2', '\x2', '\x84', '\x82', '\x3', '\x2', '\x2', '\x2', '\x85',
+        '\x88', '\x5', '.', '\x18', '\x2', '\x86', '\x87', '\a', ' ', '\x2', '\x2',
+        '\x87', '\x89', '\a', '<', '\x2', '\x2', '\x88', '\x86', '\x3', '\x2',
+        '\x2', '\x2', '\x88', '\x89', '\x3', '\x2', '\x2', '\x2', '\x89', '\x13',
+        '\x3', '\x2', '\x2', '\x2', '\x8A', '\x8B', '\a', '(', '\x2', '\x2', '\x8B',
+        '\x8C', '\x5', '\x16', '\f', '\x2', '\x8C', '\x15', '\x3', '\x2', '\x2',
+        '\x2', '\x8D', '\x8E', '\b', '\f', '\x1', '\x2', '\x8E', '\x91', '\x5',
+        '\x18', '\r', '\x2', '\x8F', '\x90', '\a', ' ', '\x2', '\x2', '\x90',
+        '\x92', '\a', '<', '\x2', '\x2', '\x91', '\x8F', '\x3', '\x2', '\x2',
+        '\x2', '\x91', '\x92', '\x3', '\x2', '\x2', '\x2', '\x92', '\x97', '\x3',
+        '\x2', '\x2', '\x2', '\x93', '\x94', '\a', '<', '\x2', '\x2', '\x94',
+        '\x95', '\a', '*', '\x2', '\x2', '\x95', '\x97', '\x5', '\x18', '\r',
+        '\x2', '\x96', '\x8D', '\x3', '\x2', '\x2', '\x2', '\x96', '\x93', '\x3',
+        '\x2', '\x2', '\x2', '\x97', '\x9D', '\x3', '\x2', '\x2', '\x2', '\x98',
+        '\x99', '\f', '\x3', '\x2', '\x2', '\x99', '\x9A', '\a', '+', '\x2', '\x2',
+        '\x9A', '\x9C', '\x5', '\x16', '\f', '\x4', '\x9B', '\x98', '\x3', '\x2',
+        '\x2', '\x2', '\x9C', '\x9F', '\x3', '\x2', '\x2', '\x2', '\x9D', '\x9B',
+        '\x3', '\x2', '\x2', '\x2', '\x9D', '\x9E', '\x3', '\x2', '\x2', '\x2',
+        '\x9E', '\x17', '\x3', '\x2', '\x2', '\x2', '\x9F', '\x9D', '\x3', '\x2',
+        '\x2', '\x2', '\xA0', '\xA2', '\a', '<', '\x2', '\x2', '\xA1', '\xA3',
+        '\x5', '\x1A', '\xE', '\x2', '\xA2', '\xA1', '\x3', '\x2', '\x2', '\x2',
+        '\xA2', '\xA3', '\x3', '\x2', '\x2', '\x2', '\xA3', '\xA9', '\x3', '\x2',
+        '\x2', '\x2', '\xA4', '\xA5', '\a', '\x5', '\x2', '\x2', '\xA5', '\xA6',
+        '\x5', '\x4', '\x3', '\x2', '\xA6', '\xA7', '\a', '\x6', '\x2', '\x2',
+        '\xA7', '\xA9', '\x3', '\x2', '\x2', '\x2', '\xA8', '\xA0', '\x3', '\x2',
+        '\x2', '\x2', '\xA8', '\xA4', '\x3', '\x2', '\x2', '\x2', '\xA9', '\x19',
+        '\x3', '\x2', '\x2', '\x2', '\xAA', '\xB8', '\b', '\xE', '\x1', '\x2',
+        '\xAB', '\xAC', '\f', '\x6', '\x2', '\x2', '\xAC', '\xAD', '\a', '\a',
+        '\x2', '\x2', '\xAD', '\xB7', '\a', '<', '\x2', '\x2', '\xAE', '\xAF',
+        '\f', '\x5', '\x2', '\x2', '\xAF', '\xB0', '\a', '\b', '\x2', '\x2', '\xB0',
+        '\xB1', '\a', ':', '\x2', '\x2', '\xB1', '\xB7', '\a', '\t', '\x2', '\x2',
+        '\xB2', '\xB3', '\f', '\x4', '\x2', '\x2', '\xB3', '\xB4', '\a', '\b',
+        '\x2', '\x2', '\xB4', '\xB5', '\a', ';', '\x2', '\x2', '\xB5', '\xB7',
+        '\a', '\t', '\x2', '\x2', '\xB6', '\xAB', '\x3', '\x2', '\x2', '\x2',
+        '\xB6', '\xAE', '\x3', '\x2', '\x2', '\x2', '\xB6', '\xB2', '\x3', '\x2',
+        '\x2', '\x2', '\xB7', '\xBA', '\x3', '\x2', '\x2', '\x2', '\xB8', '\xB6',
+        '\x3', '\x2', '\x2', '\x2', '\xB8', '\xB9', '\x3', '\x2', '\x2', '\x2',
+        '\xB9', '\x1B', '\x3', '\x2', '\x2', '\x2', '\xBA', '\xB8', '\x3', '\x2',
+        '\x2', '\x2', '\xBB', '\xBC', '\a', '\x38', '\x2', '\x2', '\xBC', '\xBD',
+        '\x5', '.', '\x18', '\x2', '\xBD', '\x1D', '\x3', '\x2', '\x2', '\x2',
+        '\xBE', '\xBF', '\a', ')', '\x2', '\x2', '\xBF', '\xC0', '\a', '#', '\x2',
+        '\x2', '\xC0', '\xC1', '\x5', 'L', '\'', '\x2', '\xC1', '\x1F', '\x3',
+        '\x2', '\x2', '\x2', '\xC2', '\xC3', '\a', '\x31', '\x2', '\x2', '\xC3',
+        '\xC4', '\a', '#', '\x2', '\x2', '\xC4', '\xC5', '\x5', '\"', '\x12',
+        '\x2', '\xC5', '!', '\x3', '\x2', '\x2', '\x2', '\xC6', '\xCB', '\x5',
+        '$', '\x13', '\x2', '\xC7', '\xC8', '\a', '\x4', '\x2', '\x2', '\xC8',
+        '\xCA', '\x5', '$', '\x13', '\x2', '\xC9', '\xC7', '\x3', '\x2', '\x2',
+        '\x2', '\xCA', '\xCD', '\x3', '\x2', '\x2', '\x2', '\xCB', '\xC9', '\x3',
+        '\x2', '\x2', '\x2', '\xCB', '\xCC', '\x3', '\x2', '\x2', '\x2', '\xCC',
+        '#', '\x3', '\x2', '\x2', '\x2', '\xCD', '\xCB', '\x3', '\x2', '\x2',
+        '\x2', '\xCE', '\xD0', '\x5', '.', '\x18', '\x2', '\xCF', '\xD1', '\x5',
+        '&', '\x14', '\x2', '\xD0', '\xCF', '\x3', '\x2', '\x2', '\x2', '\xD0',
+        '\xD1', '\x3', '\x2', '\x2', '\x2', '\xD1', '%', '\x3', '\x2', '\x2',
+        '\x2', '\xD2', '\xD3', '\t', '\x3', '\x2', '\x2', '\xD3', '\'', '\x3',
+        '\x2', '\x2', '\x2', '\xD4', '\xD5', '\a', '/', '\x2', '\x2', '\xD5',
+        '\xD6', '\x5', '*', '\x16', '\x2', '\xD6', '\xD7', '\a', ',', '\x2', '\x2',
+        '\xD7', '\xD8', '\x5', ',', '\x17', '\x2', '\xD8', ')', '\x3', '\x2',
+        '\x2', '\x2', '\xD9', '\xDA', '\t', '\x2', '\x2', '\x2', '\xDA', '+',
+        '\x3', '\x2', '\x2', '\x2', '\xDB', '\xDC', '\t', '\x2', '\x2', '\x2',
+        '\xDC', '-', '\x3', '\x2', '\x2', '\x2', '\xDD', '\xDE', '\b', '\x18',
+        '\x1', '\x2', '\xDE', '\xE9', '\x5', '\x30', '\x19', '\x2', '\xDF', '\xE1',
+        '\x5', '\x34', '\x1B', '\x2', '\xE0', '\xE2', '\a', '-', '\x2', '\x2',
+        '\xE1', '\xE0', '\x3', '\x2', '\x2', '\x2', '\xE1', '\xE2', '\x3', '\x2',
+        '\x2', '\x2', '\xE2', '\xE3', '\x3', '\x2', '\x2', '\x2', '\xE3', '\xE4',
+        '\a', '\"', '\x2', '\x2', '\xE4', '\xE5', '\x5', '\x34', '\x1B', '\x2',
+        '\xE5', '\xE6', '\a', '\x1E', '\x2', '\x2', '\xE6', '\xE7', '\x5', '\x34',
+        '\x1B', '\x2', '\xE7', '\xE9', '\x3', '\x2', '\x2', '\x2', '\xE8', '\xDD',
+        '\x3', '\x2', '\x2', '\x2', '\xE8', '\xDF', '\x3', '\x2', '\x2', '\x2',
+        '\xE9', '\xF5', '\x3', '\x2', '\x2', '\x2', '\xEA', '\xEB', '\f', '\x6',
+        '\x2', '\x2', '\xEB', '\xEC', '\a', '\n', '\x2', '\x2', '\xEC', '\xED',
+        '\x5', '.', '\x18', '\x2', '\xED', '\xEE', '\a', '\v', '\x2', '\x2', '\xEE',
+        '\xEF', '\x5', '.', '\x18', '\a', '\xEF', '\xF4', '\x3', '\x2', '\x2',
+        '\x2', '\xF0', '\xF1', '\f', '\x5', '\x2', '\x2', '\xF1', '\xF2', '\a',
+        '\f', '\x2', '\x2', '\xF2', '\xF4', '\x5', '.', '\x18', '\x6', '\xF3',
+        '\xEA', '\x3', '\x2', '\x2', '\x2', '\xF3', '\xF0', '\x3', '\x2', '\x2',
+        '\x2', '\xF4', '\xF7', '\x3', '\x2', '\x2', '\x2', '\xF5', '\xF3', '\x3',
+        '\x2', '\x2', '\x2', '\xF5', '\xF6', '\x3', '\x2', '\x2', '\x2', '\xF6',
+        '/', '\x3', '\x2', '\x2', '\x2', '\xF7', '\xF5', '\x3', '\x2', '\x2',
+        '\x2', '\xF8', '\xFB', '\x5', '\x34', '\x1B', '\x2', '\xF9', '\xFB', '\x5',
+        '\x32', '\x1A', '\x2', '\xFA', '\xF8', '\x3', '\x2', '\x2', '\x2', '\xFA',
+        '\xF9', '\x3', '\x2', '\x2', '\x2', '\xFB', '\x31', '\x3', '\x2', '\x2',
+        '\x2', '\xFC', '\xFE', '\x5', '\x34', '\x1B', '\x2', '\xFD', '\xFF', '\a',
+        '-', '\x2', '\x2', '\xFE', '\xFD', '\x3', '\x2', '\x2', '\x2', '\xFE',
+        '\xFF', '\x3', '\x2', '\x2', '\x2', '\xFF', '\x100', '\x3', '\x2', '\x2',
+        '\x2', '\x100', '\x101', '\a', '*', '\x2', '\x2', '\x101', '\x102', '\x5',
+        'L', '\'', '\x2', '\x102', '\x33', '\x3', '\x2', '\x2', '\x2', '\x103',
+        '\x104', '\b', '\x1B', '\x1', '\x2', '\x104', '\x105', '\x5', '\x46',
+        '$', '\x2', '\x105', '\x12E', '\x3', '\x2', '\x2', '\x2', '\x106', '\x107',
+        '\f', '\f', '\x2', '\x2', '\x107', '\x108', '\x5', '\x36', '\x1C', '\x2',
+        '\x108', '\x109', '\x5', '\x34', '\x1B', '\r', '\x109', '\x12D', '\x3',
+        '\x2', '\x2', '\x2', '\x10A', '\x10B', '\f', '\v', '\x2', '\x2', '\x10B',
+        '\x10C', '\x5', '\x38', '\x1D', '\x2', '\x10C', '\x10D', '\x5', '\x34',
+        '\x1B', '\f', '\x10D', '\x12D', '\x3', '\x2', '\x2', '\x2', '\x10E', '\x10F',
+        '\f', '\n', '\x2', '\x2', '\x10F', '\x110', '\x5', ':', '\x1E', '\x2',
+        '\x110', '\x111', '\x5', '\x34', '\x1B', '\v', '\x111', '\x12D', '\x3',
+        '\x2', '\x2', '\x2', '\x112', '\x113', '\f', '\t', '\x2', '\x2', '\x113',
+        '\x114', '\x5', '<', '\x1F', '\x2', '\x114', '\x115', '\x5', '\x34', '\x1B',
+        '\n', '\x115', '\x12D', '\x3', '\x2', '\x2', '\x2', '\x116', '\x117',
+        '\f', '\b', '\x2', '\x2', '\x117', '\x118', '\x5', '>', ' ', '\x2', '\x118',
+        '\x119', '\x5', '\x34', '\x1B', '\t', '\x119', '\x12D', '\x3', '\x2',
+        '\x2', '\x2', '\x11A', '\x11B', '\f', '\a', '\x2', '\x2', '\x11B', '\x11C',
+        '\x5', '@', '!', '\x2', '\x11C', '\x11D', '\x5', '\x34', '\x1B', '\b',
+        '\x11D', '\x12D', '\x3', '\x2', '\x2', '\x2', '\x11E', '\x11F', '\f',
+        '\x6', '\x2', '\x2', '\x11F', '\x120', '\x5', '\x42', '\"', '\x2', '\x120',
+        '\x121', '\x5', '\x34', '\x1B', '\a', '\x121', '\x12D', '\x3', '\x2',
+        '\x2', '\x2', '\x122', '\x123', '\f', '\x5', '\x2', '\x2', '\x123', '\x124',
+        '\a', '\x1E', '\x2', '\x2', '\x124', '\x12D', '\x5', '\x34', '\x1B', '\x6',
+        '\x125', '\x126', '\f', '\x4', '\x2', '\x2', '\x126', '\x127', '\a', '\x30',
+        '\x2', '\x2', '\x127', '\x12D', '\x5', '\x34', '\x1B', '\x5', '\x128',
+        '\x129', '\f', '\x3', '\x2', '\x2', '\x129', '\x12A', '\x5', '\x44', '#',
+        '\x2', '\x12A', '\x12B', '\x5', '\x34', '\x1B', '\x4', '\x12B', '\x12D',
+        '\x3', '\x2', '\x2', '\x2', '\x12C', '\x106', '\x3', '\x2', '\x2', '\x2',
+        '\x12C', '\x10A', '\x3', '\x2', '\x2', '\x2', '\x12C', '\x10E', '\x3',
+        '\x2', '\x2', '\x2', '\x12C', '\x112', '\x3', '\x2', '\x2', '\x2', '\x12C',
+        '\x116', '\x3', '\x2', '\x2', '\x2', '\x12C', '\x11A', '\x3', '\x2', '\x2',
+        '\x2', '\x12C', '\x11E', '\x3', '\x2', '\x2', '\x2', '\x12C', '\x122',
+        '\x3', '\x2', '\x2', '\x2', '\x12C', '\x125', '\x3', '\x2', '\x2', '\x2',
+        '\x12C', '\x128', '\x3', '\x2', '\x2', '\x2', '\x12D', '\x130', '\x3',
+        '\x2', '\x2', '\x2', '\x12E', '\x12C', '\x3', '\x2', '\x2', '\x2', '\x12E',
+        '\x12F', '\x3', '\x2', '\x2', '\x2', '\x12F', '\x35', '\x3', '\x2', '\x2',
+        '\x2', '\x130', '\x12E', '\x3', '\x2', '\x2', '\x2', '\x131', '\x132',
+        '\t', '\x4', '\x2', '\x2', '\x132', '\x37', '\x3', '\x2', '\x2', '\x2',
+        '\x133', '\x134', '\t', '\x5', '\x2', '\x2', '\x134', '\x39', '\x3', '\x2',
+        '\x2', '\x2', '\x135', '\x136', '\t', '\x6', '\x2', '\x2', '\x136', ';',
+        '\x3', '\x2', '\x2', '\x2', '\x137', '\x138', '\t', '\a', '\x2', '\x2',
+        '\x138', '=', '\x3', '\x2', '\x2', '\x2', '\x139', '\x13A', '\a', '\x17',
+        '\x2', '\x2', '\x13A', '?', '\x3', '\x2', '\x2', '\x2', '\x13B', '\x13C',
+        '\a', '\x18', '\x2', '\x2', '\x13C', '\x41', '\x3', '\x2', '\x2', '\x2',
+        '\x13D', '\x13E', '\a', '\x19', '\x2', '\x2', '\x13E', '\x43', '\x3',
+        '\x2', '\x2', '\x2', '\x13F', '\x140', '\a', '\x1A', '\x2', '\x2', '\x140',
+        '\x45', '\x3', '\x2', '\x2', '\x2', '\x141', '\x146', '\x5', 'J', '&',
+        '\x2', '\x142', '\x143', '\x5', 'H', '%', '\x2', '\x143', '\x144', '\x5',
+        '\x46', '$', '\x2', '\x144', '\x146', '\x3', '\x2', '\x2', '\x2', '\x145',
+        '\x141', '\x3', '\x2', '\x2', '\x2', '\x145', '\x142', '\x3', '\x2', '\x2',
+        '\x2', '\x146', 'G', '\x3', '\x2', '\x2', '\x2', '\x147', '\x148', '\t',
+        '\b', '\x2', '\x2', '\x148', 'I', '\x3', '\x2', '\x2', '\x2', '\x149',
+        '\x14A', '\b', '&', '\x1', '\x2', '\x14A', '\x174', '\a', '<', '\x2',
+        '\x2', '\x14B', '\x174', '\a', '=', '\x2', '\x2', '\x14C', '\x174', '\x5',
+        'R', '*', '\x2', '\x14D', '\x14F', '\a', '\b', '\x2', '\x2', '\x14E',
+        '\x150', '\x5', 'L', '\'', '\x2', '\x14F', '\x14E', '\x3', '\x2', '\x2',
+        '\x2', '\x14F', '\x150', '\x3', '\x2', '\x2', '\x2', '\x150', '\x151',
+        '\x3', '\x2', '\x2', '\x2', '\x151', '\x174', '\a', '\t', '\x2', '\x2',
+        '\x152', '\x154', '\a', '\x1C', '\x2', '\x2', '\x153', '\x155', '\x5',
+        'N', '(', '\x2', '\x154', '\x153', '\x3', '\x2', '\x2', '\x2', '\x154',
+        '\x155', '\x3', '\x2', '\x2', '\x2', '\x155', '\x156', '\x3', '\x2', '\x2',
+        '\x2', '\x156', '\x174', '\a', '\x1D', '\x2', '\x2', '\x157', '\x158',
+        '\a', '\x35', '\x2', '\x2', '\x158', '\x15A', '\a', '\a', '\x2', '\x2',
+        '\x159', '\x157', '\x3', '\x2', '\x2', '\x2', '\x159', '\x15A', '\x3',
+        '\x2', '\x2', '\x2', '\x15A', '\x15B', '\x3', '\x2', '\x2', '\x2', '\x15B',
+        '\x15C', '\a', '<', '\x2', '\x2', '\x15C', '\x15E', '\a', '\x5', '\x2',
+        '\x2', '\x15D', '\x15F', '\x5', 'L', '\'', '\x2', '\x15E', '\x15D', '\x3',
+        '\x2', '\x2', '\x2', '\x15E', '\x15F', '\x3', '\x2', '\x2', '\x2', '\x15F',
+        '\x160', '\x3', '\x2', '\x2', '\x2', '\x160', '\x174', '\a', '\x6', '\x2',
+        '\x2', '\x161', '\x162', '\a', '\x5', '\x2', '\x2', '\x162', '\x163',
+        '\x5', '.', '\x18', '\x2', '\x163', '\x164', '\a', '\x6', '\x2', '\x2',
+        '\x164', '\x174', '\x3', '\x2', '\x2', '\x2', '\x165', '\x166', '\a',
+        '\x5', '\x2', '\x2', '\x166', '\x167', '\x5', '\x4', '\x3', '\x2', '\x167',
+        '\x168', '\a', '\x6', '\x2', '\x2', '\x168', '\x174', '\x3', '\x2', '\x2',
+        '\x2', '\x169', '\x16A', '\a', '&', '\x2', '\x2', '\x16A', '\x16B', '\a',
+        '\x5', '\x2', '\x2', '\x16B', '\x16C', '\x5', '\x4', '\x3', '\x2', '\x16C',
+        '\x16D', '\a', '\x6', '\x2', '\x2', '\x16D', '\x174', '\x3', '\x2', '\x2',
+        '\x2', '\x16E', '\x16F', '\a', '\x1F', '\x2', '\x2', '\x16F', '\x170',
+        '\a', '\x5', '\x2', '\x2', '\x170', '\x171', '\x5', '\x4', '\x3', '\x2',
+        '\x171', '\x172', '\a', '\x6', '\x2', '\x2', '\x172', '\x174', '\x3',
+        '\x2', '\x2', '\x2', '\x173', '\x149', '\x3', '\x2', '\x2', '\x2', '\x173',
+        '\x14B', '\x3', '\x2', '\x2', '\x2', '\x173', '\x14C', '\x3', '\x2', '\x2',
+        '\x2', '\x173', '\x14D', '\x3', '\x2', '\x2', '\x2', '\x173', '\x152',
+        '\x3', '\x2', '\x2', '\x2', '\x173', '\x159', '\x3', '\x2', '\x2', '\x2',
+        '\x173', '\x161', '\x3', '\x2', '\x2', '\x2', '\x173', '\x165', '\x3',
+        '\x2', '\x2', '\x2', '\x173', '\x169', '\x3', '\x2', '\x2', '\x2', '\x173',
+        '\x16E', '\x3', '\x2', '\x2', '\x2', '\x174', '\x17F', '\x3', '\x2', '\x2',
+        '\x2', '\x175', '\x176', '\f', '\x6', '\x2', '\x2', '\x176', '\x177',
+        '\a', '\a', '\x2', '\x2', '\x177', '\x17E', '\a', '<', '\x2', '\x2', '\x178',
+        '\x179', '\f', '\x5', '\x2', '\x2', '\x179', '\x17A', '\a', '\b', '\x2',
+        '\x2', '\x17A', '\x17B', '\x5', '.', '\x18', '\x2', '\x17B', '\x17C',
+        '\a', '\t', '\x2', '\x2', '\x17C', '\x17E', '\x3', '\x2', '\x2', '\x2',
+        '\x17D', '\x175', '\x3', '\x2', '\x2', '\x2', '\x17D', '\x178', '\x3',
+        '\x2', '\x2', '\x2', '\x17E', '\x181', '\x3', '\x2', '\x2', '\x2', '\x17F',
+        '\x17D', '\x3', '\x2', '\x2', '\x2', '\x17F', '\x180', '\x3', '\x2', '\x2',
+        '\x2', '\x180', 'K', '\x3', '\x2', '\x2', '\x2', '\x181', '\x17F', '\x3',
+        '\x2', '\x2', '\x2', '\x182', '\x187', '\x5', '.', '\x18', '\x2', '\x183',
+        '\x184', '\a', '\x4', '\x2', '\x2', '\x184', '\x186', '\x5', '.', '\x18',
+        '\x2', '\x185', '\x183', '\x3', '\x2', '\x2', '\x2', '\x186', '\x189',
+        '\x3', '\x2', '\x2', '\x2', '\x187', '\x185', '\x3', '\x2', '\x2', '\x2',
+        '\x187', '\x188', '\x3', '\x2', '\x2', '\x2', '\x188', 'M', '\x3', '\x2',
+        '\x2', '\x2', '\x189', '\x187', '\x3', '\x2', '\x2', '\x2', '\x18A', '\x18F',
+        '\x5', 'P', ')', '\x2', '\x18B', '\x18C', '\a', '\x4', '\x2', '\x2', '\x18C',
+        '\x18E', '\x5', 'P', ')', '\x2', '\x18D', '\x18B', '\x3', '\x2', '\x2',
+        '\x2', '\x18E', '\x191', '\x3', '\x2', '\x2', '\x2', '\x18F', '\x18D',
+        '\x3', '\x2', '\x2', '\x2', '\x18F', '\x190', '\x3', '\x2', '\x2', '\x2',
+        '\x190', 'O', '\x3', '\x2', '\x2', '\x2', '\x191', '\x18F', '\x3', '\x2',
+        '\x2', '\x2', '\x192', '\x193', '\a', ';', '\x2', '\x2', '\x193', '\x194',
+        '\a', '\v', '\x2', '\x2', '\x194', '\x195', '\x5', '.', '\x18', '\x2',
+        '\x195', 'Q', '\x3', '\x2', '\x2', '\x2', '\x196', '\x197', '\t', '\t',
+        '\x2', '\x2', '\x197', 'S', '\x3', '\x2', '\x2', '\x2', '\'', 'Y', '\\',
+        '_', '\x62', '\x65', 'i', 'l', 'v', '\x82', '\x88', '\x91', '\x96', '\x9D',
+        '\xA2', '\xA8', '\xB6', '\xB8', '\xCB', '\xD0', '\xE1', '\xE8', '\xF3',
+        '\xF5', '\xFA', '\xFE', '\x12C', '\x12E', '\x145', '\x14F', '\x154', '\x159',
+        '\x15E', '\x173', '\x17D', '\x17F', '\x187', '\x18F',
     };
 
-        public static readonly ATN _ATN =
-            new ATNDeserializer().Deserialize(_serializedATN);
-    }
-#endif
+    public static readonly ATN _ATN =
+        new ATNDeserializer().Deserialize(_serializedATN);
+
+
 }

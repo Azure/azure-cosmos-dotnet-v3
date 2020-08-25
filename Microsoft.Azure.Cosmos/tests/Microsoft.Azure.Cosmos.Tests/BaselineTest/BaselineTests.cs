@@ -124,8 +124,8 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
                 }
             }
 
-            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
-            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 30, 0)).Take(100).ToArray());
+            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 30, 0)).Take(100).ToArray());
 
             bool matched = baselineText.Equals(outputText);
             if (!matched)

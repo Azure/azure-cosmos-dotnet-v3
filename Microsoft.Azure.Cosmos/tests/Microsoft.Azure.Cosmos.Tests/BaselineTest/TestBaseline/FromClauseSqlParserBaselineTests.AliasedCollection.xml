@@ -1,0 +1,92 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: (SELECT * FROM c) + useAlias: False]]></Description>
+      <Query><![CDATA[SELECT * FROM (SELECT * FROM c) ]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM (SELECT * FROM c)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: (SELECT * FROM c) + useAlias: True]]></Description>
+      <Query><![CDATA[SELECT * FROM (SELECT * FROM c) AS asdf]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM (SELECT * FROM c) AS asdf]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c + useAlias: False]]></Description>
+      <Query><![CDATA[SELECT * FROM c ]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c + useAlias: True]]></Description>
+      <Query><![CDATA[SELECT * FROM c AS asdf]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c AS asdf]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.age + useAlias: False]]></Description>
+      <Query><![CDATA[SELECT * FROM c.age ]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c.age]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.age + useAlias: True]]></Description>
+      <Query><![CDATA[SELECT * FROM c.age AS asdf]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c.age AS asdf]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.arr[5] + useAlias: False]]></Description>
+      <Query><![CDATA[SELECT * FROM c.arr[5] ]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c.arr[5]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.arr[5] + useAlias: True]]></Description>
+      <Query><![CDATA[SELECT * FROM c.arr[5] AS asdf]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c.arr[5] AS asdf]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.blah['asdf'] + useAlias: False]]></Description>
+      <Query><![CDATA[SELECT * FROM c.blah['asdf'] ]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c.blah["asdf"]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.blah['asdf'] + useAlias: True]]></Description>
+      <Query><![CDATA[SELECT * FROM c.blah['asdf'] AS asdf]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c.blah["asdf"] AS asdf]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>

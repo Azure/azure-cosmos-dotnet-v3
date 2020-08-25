@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ICommunicationEventSource eventSource;
         private HttpClient httpClient;
         private JsonSerializerSettings SerializerSettings;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
             HttpClient httpClient,
@@ -161,10 +162,6 @@ namespace Microsoft.Azure.Cosmos
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            // ensure there is no local ActivityId, since in Gateway mode ActivityId
-            // should always come from message headers
-            Trace.CorrelationManager.ActivityId = Guid.Empty;
-
             bool isNameBased = false;
             bool isFeed = false;
             string resourceTypeString;
@@ -296,6 +293,11 @@ namespace Microsoft.Azure.Cosmos
             else if (request.OperationType == OperationType.Delete)
             {
                 httpMethod = HttpMethod.Delete;
+            }
+            else if (request.OperationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                httpMethod = httpPatchMethod;
             }
             else
             {
