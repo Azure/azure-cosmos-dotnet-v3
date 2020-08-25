@@ -163,10 +163,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (scalarExpression.Member != null)
                 {
                     SqlScalarExpression replMember = scalarExpression.Member.Accept(this, input);
-                    return SqlPropertyRefScalarExpression.Create(replMember, scalarExpression.Identifer);
+                    return SqlPropertyRefScalarExpression.Create(replMember, scalarExpression.Identifier);
                 }
 
-                if (scalarExpression.Identifer.Value != input.toReplace.Value)
+                if (scalarExpression.Identifier.Value != input.toReplace.Value)
                 {
                     return scalarExpression;
                 }
