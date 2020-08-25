@@ -17,7 +17,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE StringEquals(root["StringField"], "STR", true) 
+SELECT VALUE STRINGEQUALS(root["StringField"], "STR", true) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

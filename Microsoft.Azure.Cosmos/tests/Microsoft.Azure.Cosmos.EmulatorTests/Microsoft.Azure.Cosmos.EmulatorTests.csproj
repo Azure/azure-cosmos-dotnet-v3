@@ -156,9 +156,6 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestStringCompareTo.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpecialMethods.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpatialFunctions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
