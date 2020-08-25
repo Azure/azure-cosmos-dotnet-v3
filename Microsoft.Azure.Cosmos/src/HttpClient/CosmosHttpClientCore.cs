@@ -77,22 +77,17 @@ namespace Microsoft.Azure.Cosmos
                         webProxy: null);
             }
 
-            HttpClient httpClient;
-            if (sendingRequestEventArgs != null &&
+            if (sendingRequestEventArgs != null ||
                 receivedResponseEventArgs != null)
             {
-                HttpMessageHandler httpMessageHandlerWrapper = CreateHttpMessageHandler(
+                httpMessageHandler = CreateHttpMessageHandler(
                     httpMessageHandler,
                     sendingRequestEventArgs,
                     receivedResponseEventArgs);
+            }
 
-                httpClient = new HttpClient(httpMessageHandlerWrapper);
-            }
-            else
-            {
-                httpClient = new HttpClient(httpMessageHandler);
-            }
-             
+            HttpClient httpClient = new HttpClient(httpMessageHandler);
+
             return CosmosHttpClientCore.CreateHelper(
                 httpClient: httpClient,
                 httpMessageHandler: httpMessageHandler,
