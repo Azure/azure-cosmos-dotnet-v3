@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
-        private const int BackOffMultiplier = 2;
         private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
@@ -201,89 +200,57 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        private async Task<HttpResponseMessage> SendHttpAsync(
+        private Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             HttpCompletionOption httpCompletionOption,
             ResourceType resourceType,
             CancellationToken cancellationToken)
         {
-            int attemptCount = 0;
-            TimeSpan currentBackOffSeconds = TimeSpan.FromSeconds(1);
-            DateTime startTimeUtc = DateTime.UtcNow;
-
-            while (true)
+            Func<HttpMethod> getHttpMethod = null;
+            Func<Task<HttpResponseMessage>> funcDelegate = async () =>
             {
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
+                    getHttpMethod = () => requestMessage.Method;
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
 
                     Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
-                    this.eventSource.Request(requestedActivityId, localGuid, requestMessage.RequestUri.ToString(),
-                        resourceType.ToResourceTypeString(), requestMessage.Headers);
+                    this.eventSource.Request(
+                        requestedActivityId,
+                        localGuid,
+                        requestMessage.RequestUri.ToString(),
+                        resourceType.ToResourceTypeString(),
+                        requestMessage.Headers);
 
-                    TimeSpan durationTimeSpan;
-                    Exception retryException;
-                    try
+                    HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
+                            requestMessage,
+                            httpCompletionOption,
+                            cancellationToken);
+
+                    DateTime receivedTimeUtc = DateTime.UtcNow;
+                    TimeSpan durationTimeSpan = receivedTimeUtc - sendTimeUtc;
+
+                    Guid activityId = Guid.Empty;
+                    if (responseMessage.Headers.TryGetValues(
+                        HttpConstants.HttpHeaders.ActivityId,
+                        out IEnumerable<string> headerValues) && headerValues.Any())
                     {
-                        HttpResponseMessage responseMessage =
-                            await this.httpClient.SendAsync(requestMessage, httpCompletionOption, cancellationToken);
-
-                        DateTime receivedTimeUtc = DateTime.UtcNow;
-                        durationTimeSpan = receivedTimeUtc - sendTimeUtc;
-
-                        Guid activityId = Guid.Empty;
-                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId,
-                            out IEnumerable<string> headerValues) && headerValues.Any())
-                        {
-                            activityId = new Guid(headerValues.First());
-                        }
-
-                        this.eventSource.Response(
-                            activityId,
-                            localGuid,
-                            (short)responseMessage.StatusCode,
-                            durationTimeSpan.TotalMilliseconds,
-                            responseMessage.Headers);
-
-                        return responseMessage;
-                    }
-                    // HttpClient can throw operation canceled exceptions. Only do retries when the user did not cancel the operation.
-                    catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
-                    {
-                        // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                        durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
-                        string message =
-                            $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId};";
-                        retryException = CosmosExceptionFactory.CreateRequestTimeoutException(
-                            message,
-                            innerException: ex);
-                    }
-                    // Retry all web exceptions on get as there is no possible conflicts or race conditions
-                    catch (WebException webException) when (requestMessage.Method == HttpMethod.Get || WebExceptionUtility.IsWebExceptionRetriable(webException))
-                    {
-                        retryException = webException;
+                        activityId = new Guid(headerValues.First());
                     }
 
-                    // Don't penalize first retry with delay.
-                    if (attemptCount++ > 1)
-                    {
-                        TimeSpan totalDurationWithRetries = DateTime.UtcNow - startTimeUtc;
-                        TimeSpan remainingSeconds = CosmosHttpClientCore.GatewayRequestTimeout - totalDurationWithRetries;
-                        if (remainingSeconds <= TimeSpan.Zero)
-                        {
-                            throw retryException;
-                        }
+                    this.eventSource.Response(
+                        activityId,
+                        localGuid,
+                        (short)responseMessage.StatusCode,
+                        durationTimeSpan.TotalMilliseconds,
+                        responseMessage.Headers);
 
-                        TimeSpan backOffTime = currentBackOffSeconds < remainingSeconds
-                            ? currentBackOffSeconds
-                            : remainingSeconds;
-                        
-                        currentBackOffSeconds = TimeSpan.FromSeconds(currentBackOffSeconds.TotalSeconds * CosmosHttpClientCore.BackOffMultiplier);
-                        await Task.Delay(backOffTime, cancellationToken);
-                    }
+                    return responseMessage;
                 }
-            }
+            };
+
+            return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(funcDelegate, new TransientHttpClientRetryPolicy(getHttpMethod, this.httpClient.Timeout), cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
