@@ -206,12 +206,12 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             CancellationToken cancellationToken)
         {
-            Func<HttpMethod> getHttpMethod = null;
+            HttpMethod httpMethod = null;
             Func<Task<HttpResponseMessage>> funcDelegate = async () =>
             {
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
-                    getHttpMethod = () => requestMessage.Method;
+                    httpMethod = requestMessage.Method;
                     DateTime sendTimeUtc = DateTime.UtcNow;
                     Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
 
@@ -250,7 +250,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(funcDelegate, new TransientHttpClientRetryPolicy(getHttpMethod, this.httpClient.Timeout), cancellationToken);
+            HttpMethod GetHttpMethod() => httpMethod;
+            return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
+                callbackMethod: funcDelegate,
+                retryPolicy: new TransientHttpClientRetryPolicy(GetHttpMethod, this.httpClient.Timeout),
+                cancellationToken: cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

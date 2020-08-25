@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan gatewayRequestTimeout)
         {
             this.startDateTimeUtc = DateTime.UtcNow;
-            this.getHttpMethod = getHttpMethod;
+            this.getHttpMethod = getHttpMethod ?? throw new ArgumentNullException(nameof(this.getHttpMethod));
             this.gatewayRequestTimeout = gatewayRequestTimeout;
         }
 
