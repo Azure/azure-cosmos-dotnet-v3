@@ -26,7 +26,7 @@
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 
-    <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
+    <ItemGroup>
         <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
     </ItemGroup>
 </Project>

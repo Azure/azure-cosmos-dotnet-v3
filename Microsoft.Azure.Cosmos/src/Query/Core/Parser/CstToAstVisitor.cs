@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.Contracts;
     using Antlr4.Runtime.Tree;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
