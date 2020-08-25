@@ -681,12 +681,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         return true;
                     }
 
-                    if (!scalarExpression.LeftExpression.Accept(this))
+                    if (!scalarExpression.Left.Accept(this))
                     {
                         return false;
                     }
 
-                    if (!scalarExpression.RightExpression.Accept(this))
+                    if (!scalarExpression.Right.Accept(this))
                     {
                         return false;
                     }

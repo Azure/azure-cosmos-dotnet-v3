@@ -92,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             SqlBinaryScalarExpression scalarExpression,
             CosmosElement document)
         {
-            CosmosElement left = scalarExpression.LeftExpression.Accept(this, document);
-            CosmosElement right = scalarExpression.RightExpression.Accept(this, document);
+            CosmosElement left = scalarExpression.Left.Accept(this, document);
+            CosmosElement right = scalarExpression.Right.Accept(this, document);
 
             CosmosElement result;
             switch (scalarExpression.OperatorKind)

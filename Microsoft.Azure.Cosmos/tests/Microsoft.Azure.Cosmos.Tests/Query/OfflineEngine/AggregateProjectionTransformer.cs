@@ -108,8 +108,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     return SqlBinaryScalarExpression.Create(
                         sqlBinaryScalarExpression.OperatorKind,
-                        sqlBinaryScalarExpression.LeftExpression.Accept(this),
-                        sqlBinaryScalarExpression.RightExpression.Accept(this));
+                        sqlBinaryScalarExpression.Left.Accept(this),
+                        sqlBinaryScalarExpression.Right.Accept(this));
                 }
 
                 public override SqlScalarExpression Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
