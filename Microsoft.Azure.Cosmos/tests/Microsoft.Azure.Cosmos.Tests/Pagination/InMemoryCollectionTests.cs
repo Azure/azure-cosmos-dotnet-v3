@@ -13,9 +13,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     {
         internal override IDocumentContainer CreateDocumentContainer(
             PartitionKeyDefinition partitionKeyDefinition,
-            FlakyDocumentContainer.FailureConfigs failureConfigs = null) => new DocumentContainer(
-                new FlakyDocumentContainer(
-                    new InMemoryContainer(partitionKeyDefinition),
-                    failureConfigs));
+            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
+        {
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            if(failureConfigs != null)
+            {
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+            }
+
+            return new DocumentContainer(monadicDocumentContainer);
+        }
     }
 }

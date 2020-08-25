@@ -168,9 +168,13 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            InMemoryContainer inMemoryCollection = new InMemoryContainer(partitionKeyDefinition);
-            FlakyDocumentContainer flakyDocumentContainer = new FlakyDocumentContainer(inMemoryCollection, failureConfigs);
-            DocumentContainer documentContainer = new DocumentContainer(flakyDocumentContainer);
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            if (failureConfigs != null)
+            {
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+            }
+
+            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
             if (!this.singlePartition)
             {
@@ -192,7 +196,7 @@
                 //await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
                 while (true)
                 {
-                    TryCatch<Record> monadicCreateRecord = await inMemoryCollection.MonadicCreateItemAsync(item, cancellationToken: default);
+                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
                     if (monadicCreateRecord.Succeeded)
                     {
                         break;

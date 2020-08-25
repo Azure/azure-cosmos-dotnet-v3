@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 FullRange,
                 cancellationToken);
 
-        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
+        public async Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
             CancellationToken cancellationToken)
         {
@@ -78,32 +78,59 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     ranges.Add(CreateRangeFromId(id));
                 }
 
-                return Task.FromResult(TryCatch<List<PartitionKeyRange>>.FromResult(ranges));
+                return TryCatch<List<PartitionKeyRange>>.FromResult(ranges);
             }
 
             if (!int.TryParse(partitionKeyRange.Id, out int partitionKeyRangeId))
             {
-                return Task.FromResult(
-                    TryCatch<List<PartitionKeyRange>>.FromException(
-                        new FormatException(
-                            $"PartitionKeyRangeId: {partitionKeyRange.Id} is not an integer.")));
+                return TryCatch<List<PartitionKeyRange>>.FromException(
+                    new FormatException(
+                        $"PartitionKeyRangeId: {partitionKeyRange.Id} is not an integer."));
             }
 
             if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
             {
-                return Task.FromResult(
-                    TryCatch<List<PartitionKeyRange>>.FromException(
+                // This range has no children (base case)
+                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
+                {
+                    return TryCatch<List<PartitionKeyRange>>.FromException(
                         new KeyNotFoundException(
-                            $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist.")));
+                            $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist."));
+                }
+
+                List<PartitionKeyRange> singleRange = new List<PartitionKeyRange>()
+                {
+                    CreateRangeFromId(partitionKeyRangeId),
+                };
+
+                return TryCatch<List<PartitionKeyRange>>.FromResult(singleRange);
             }
 
-            List<PartitionKeyRange> childRanges = new List<PartitionKeyRange>()
+            // Recurse on the left and right child.
+            PartitionKeyRange left = new PartitionKeyRange()
             {
-                CreateRangeFromId(children.left),
-                CreateRangeFromId(children.right),
+                Id = children.left.ToString(),
             };
 
-            return Task.FromResult(TryCatch<List<PartitionKeyRange>>.FromResult(childRanges));
+            PartitionKeyRange right = new PartitionKeyRange()
+            {
+                Id = children.right.ToString(),
+            };
+
+            TryCatch<List<PartitionKeyRange>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, cancellationToken);
+            if (tryGetLeftRanges.Failed)
+            {
+                return tryGetLeftRanges;
+            }
+
+            TryCatch<List<PartitionKeyRange>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, cancellationToken);
+            if (tryGetRightRanges.Failed)
+            {
+                return tryGetRightRanges;
+            }
+
+            List<PartitionKeyRange> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
+            return TryCatch<List<PartitionKeyRange>>.FromResult(overlappingRanges);
         }
 
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
@@ -164,7 +191,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CosmosElement candidatePartitionKey = GetPartitionKeyFromPayload(
                     candidate.Payload,
                     this.partitionKeyDefinition);
-                bool partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
+
+                bool partitionKeyMatches;
+                if (candidatePartitionKey is null && partitionKey is null)
+                {
+                    partitionKeyMatches = true;
+                }
+                else if((candidatePartitionKey != null) && (partitionKey != null))
+                {
+                    partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
+                }
+                else
+                {
+                    partitionKeyMatches = false;
+                }
 
                 if (identifierMatches && partitionKeyMatches)
                 {
