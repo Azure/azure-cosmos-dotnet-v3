@@ -1546,14 +1546,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(verb));
             }
 
-            string payload;
-            string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+            (string authorization, string payload) = await ((IAuthorizationTokenProvider)this).GetUserAuthorizationAsync(
                 request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 verb,
                 request.Headers,
-                AuthorizationTokenType.PrimaryMasterKey,
-                out payload);
+                AuthorizationTokenType.PrimaryMasterKey);
 
             // Unit-test hook
             if (testAuthorization != null)
@@ -6384,13 +6382,12 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+        public ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out string payload) // unused, use token based upon what is passed in constructor 
+            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
         {
             string authorizationToken = this.GetUserAuthorizationTokenCore(
                 resourceAddress,
@@ -6403,13 +6400,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (arrayOwner.Buffer.Count == 0)
                 {
-                    payload = null;
+                    return new ValueTask<(string token, string payload)>((authorizationToken, null));
                 }
                 else
                 {
-                    payload = Encoding.UTF8.GetString(arrayOwner.Buffer.Array, arrayOwner.Buffer.Offset, (int)arrayOwner.Buffer.Count);
+                    string payload = Encoding.UTF8.GetString(arrayOwner.Buffer.Array, arrayOwner.Buffer.Offset, (int)arrayOwner.Buffer.Count);
+                    return new ValueTask<(string token, string payload)>((authorizationToken, payload));
                 }
-                return authorizationToken;
             }
         }
 
@@ -6583,7 +6580,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
+        async Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
             DocumentServiceRequest request,
             string federationId,
             string verb,
@@ -6591,15 +6588,12 @@ namespace Microsoft.Azure.Cosmos
         {
             request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
-            request.Headers[HttpConstants.HttpHeaders.Authorization] = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+            request.Headers[HttpConstants.HttpHeaders.Authorization] = (await ((IAuthorizationTokenProvider)this).GetUserAuthorizationAsync(
                 resourceId ?? request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 verb,
                 request.Headers,
-                request.RequestAuthorizationTokenType,
-                payload: out _);
-
-            return Task.FromResult(0);
+                request.RequestAuthorizationTokenType)).token;
         }
 
         #endregion

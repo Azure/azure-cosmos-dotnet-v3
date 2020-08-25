@@ -16,7 +16,6 @@
     <FileVersion>$(ClientVersion)</FileVersion>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
     <Title>Microsoft Azure Cosmos DB Client library</Title>
@@ -41,10 +40,6 @@
     <NoWarn>NU5125</NoWarn>
     <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="RuntimePerfCounters.cs" />
@@ -77,9 +72,8 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <!--<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />-->
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -127,7 +121,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+      <DefineConstants>$(DefineConstants);TRACE;NETSTANDARD20;DOCDBCLIENT;COSMOSCLIENT;CODE_ANALYSIS;NETSTANDARD2_0</DefineConstants>
+      <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
     <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
     <LangVersion>8.0</LangVersion>

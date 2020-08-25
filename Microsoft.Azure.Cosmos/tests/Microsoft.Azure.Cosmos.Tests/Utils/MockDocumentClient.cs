@@ -132,16 +132,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Task.FromResult((IDictionary<string, object>)queryEngineConfiguration);
         }
 
-        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+        public ValueTask<(string token, string payload)> GetUserAuthorizationAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            out string payload) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
         {
-            payload = null;
-            return null;
+            return (null, null);
         }
 
         string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(

@@ -411,13 +411,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-            string token = this.tokenProvider.GetUserAuthorizationToken(
+            (string token, string _) = await this.tokenProvider.GetUserAuthorizationAsync(
                 resourceAddress,
                 resourceTypeToSign,
                 HttpConstants.HttpMethods.Get,
                 headers,
-                AuthorizationTokenType.PrimaryMasterKey,
-                payload: out _);
+                AuthorizationTokenType.PrimaryMasterKey);
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
 
@@ -463,35 +462,33 @@ namespace Microsoft.Azure.Cosmos.Routing
             string resourceTypeToSign = PathsHelper.GetResourcePath(ResourceType.Document);
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-            string token = null;
+            (string token, string payload) response = default;
             try
             {
-                token = this.tokenProvider.GetUserAuthorizationToken(
+                response = await this.tokenProvider.GetUserAuthorizationAsync(
                     collectionRid,
                     resourceTypeToSign,
                     HttpConstants.HttpMethods.Get,
                     headers,
-                    AuthorizationTokenType.PrimaryMasterKey,
-                    payload: out _);
+                    AuthorizationTokenType.PrimaryMasterKey);
             }
             catch (UnauthorizedException)
             {
             }
 
-            if (token == null && request != null && request.IsNameBased)
+            if (response.token == null && request != null && request.IsNameBased)
             {
                 // User doesn't have rid based resource token. Maybe he has name based.
                 string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
-                token = this.tokenProvider.GetUserAuthorizationToken(
-                        collectionAltLink,
-                        resourceTypeToSign,
-                        HttpConstants.HttpMethods.Get,
-                        headers,
-                        AuthorizationTokenType.PrimaryMasterKey,
-                        payload: out _);
+                response = await this.tokenProvider.GetUserAuthorizationAsync(
+                    collectionAltLink,
+                    resourceTypeToSign,
+                    HttpConstants.HttpMethods.Get,
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
             }
 
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+            headers.Set(HttpConstants.HttpHeaders.Authorization, response.token);
 
             Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 

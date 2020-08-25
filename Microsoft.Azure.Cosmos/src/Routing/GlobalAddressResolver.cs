@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
