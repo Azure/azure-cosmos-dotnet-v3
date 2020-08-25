@@ -73,12 +73,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The content of the resource as a Stream.
         /// </value>
-        public virtual Stream ResourceStream { get; internal set; }
+        public virtual Stream ResourceStream { get; set; }
 
         /// <summary>
         /// In case the operation is rate limited, indicates the time post which a retry can be attempted.
         /// </summary>
-        public virtual TimeSpan RetryAfter { get; internal set; }
+        public virtual TimeSpan RetryAfter { get; set; }
 
         /// <summary>
         /// Request charge in request units for the operation.

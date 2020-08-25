@@ -18,13 +18,23 @@ namespace Microsoft.Azure.Cosmos.Common
     /// </summary>
     /// <typeparam name="TKey">Type of keys.</typeparam>
     /// <typeparam name="TValue">Type of values.</typeparam>
-    internal sealed class AsyncCache<TKey, TValue>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    sealed class AsyncCache<TKey, TValue>
     {
         private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
 
         private ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncCache{TKey, TValue}"/> class.
+        /// </summary>
+        /// <param name="valueEqualityComparer"></param>
+        /// <param name="keyEqualityComparer"></param>
         public AsyncCache(IEqualityComparer<TValue> valueEqualityComparer, IEqualityComparer<TKey> keyEqualityComparer = null)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
@@ -32,11 +42,17 @@ namespace Microsoft.Azure.Cosmos.Common
             this.valueEqualityComparer = valueEqualityComparer;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncCache{TKey, TValue}"/> class.
+        /// </summary>
         public AsyncCache()
             : this(EqualityComparer<TValue>.Default)
         {
         }
 
+        /// <summary>
+        /// Gets an ICollection that contains the keys of the AsyncCache.
+        /// </summary>
         public ICollection<TKey> Keys
         {
             get
@@ -45,6 +61,11 @@ namespace Microsoft.Azure.Cosmos.Common
             }
         }
 
+        /// <summary>
+        /// Set a Key and Value Pair.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         public void Set(TKey key, TValue value)
         {
             AsyncLazy<TValue> lazyValue = new AsyncLazy<TValue>(value);
@@ -147,6 +168,10 @@ namespace Microsoft.Azure.Cosmos.Common
             return await generator;
         }
 
+        /// <summary>
+        /// Attempts to remove the value associated with the key.
+        /// </summary>
+        /// <param name="key"> Key </param>
         public void Remove(TKey key)
         {
             AsyncLazy<TValue> initialLazyValue;
@@ -158,6 +183,11 @@ namespace Microsoft.Azure.Cosmos.Common
             }
         }
 
+        /// <summary>
+        /// Attempts to remove the value associated with the key if the associated Task is Completed.
+        /// </summary>
+        /// <param name="key"> Key </param>
+        /// <returns> True if Operation Succeeds </returns>
         public bool TryRemoveIfCompleted(TKey key)
         {
             AsyncLazy<TValue> initialLazyValue;
@@ -199,6 +229,9 @@ namespace Microsoft.Azure.Cosmos.Common
             return default(TValue);
         }
 
+        /// <summary>
+        /// Removes all keys and values from the AsyncCache.
+        /// </summary>
         public void Clear()
         {
             ConcurrentDictionary<TKey, AsyncLazy<TValue>> newValues = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);

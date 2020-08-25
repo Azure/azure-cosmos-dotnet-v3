@@ -1137,10 +1137,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Action<DecryptionResult> DecryptionResultHandler = null)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                continuationToken: null,
+                changeFeedStartFrom: ChangeFeedStartFrom.Beginning(),
                 new EncryptionChangeFeedRequestOptions()
                 {
-                    StartTime = DateTime.MinValue.ToUniversalTime(),
                     DecryptionResultHandler = DecryptionResultHandler
                 });
 
