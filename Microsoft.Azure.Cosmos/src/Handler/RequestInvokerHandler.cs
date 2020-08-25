@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public RequestInvokerHandler(
             CosmosClient client,
@@ -119,6 +121,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 disposeDiagnosticContext = true;
             }
 
+            // This is needed for query where a single
+            // user request might span multiple backend requests.
+            // This will still have a single request id for retry scenarios
+            ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
+            Debug.Assert(activityScope == null || (activityScope != null &&
+                         (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan)),
+                "There should be an activity id already set");
+
             try
             {
                 HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
@@ -168,6 +178,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     request.Headers.IsUpsert = bool.TrueString;
                 }
+                else if (operationType == OperationType.Patch)
+                {
+                    request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+                }
 
                 requestEnricher?.Invoke(request);
                 return await this.SendAsync(request, cancellationToken);
@@ -178,6 +192,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     diagnosticsContext.GetOverallScope().Dispose();
                 }
+
+                activityScope?.Dispose();
             }
         }
 
@@ -207,6 +223,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else if (operationType == OperationType.Delete)
             {
                 return HttpMethod.Delete;
+            }
+            else if (operationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                return httpPatchMethod;
             }
             else
             {

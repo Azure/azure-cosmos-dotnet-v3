@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -23,7 +24,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                SendingRequestEventArgs = this.SendingRequestEventHandlerTriggersVerifier,
+            };
+
+            this.cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
+
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
@@ -252,6 +261,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Delete existing trigger
                 await scripts.DeleteTriggerAsync(cosmosTrigger.Id);
+            }
+        }
+
+        private void SendingRequestEventHandlerTriggersVerifier(object sender, Microsoft.Azure.Documents.SendingRequestEventArgs e)
+        {
+            if (e.IsHttpRequest())
+            {
+                if (e.HttpRequest.RequestUri.OriginalString.Contains(Microsoft.Azure.Documents.Paths.TriggersPathSegment))
+                {
+                    Assert.IsFalse(e.HttpRequest.Headers.Contains(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SessionToken));
+                }
             }
         }
 

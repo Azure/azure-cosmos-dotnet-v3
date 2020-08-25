@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 hashCode = CombineHashes(hashCode, sqlPropertyRefScalarExpression.Member.Accept(this));
             }
 
-            hashCode = CombineHashes(hashCode, sqlPropertyRefScalarExpression.Identifer.Accept(this));
+            hashCode = CombineHashes(hashCode, sqlPropertyRefScalarExpression.Identifier.Accept(this));
             return hashCode;
         }
 

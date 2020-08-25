@@ -1860,7 +1860,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<SqlIdentifier> identifiers = new List<SqlIdentifier>();
             while (true)
             {
-                identifiers.Add(propRef.Identifer);
+                identifiers.Add(propRef.Identifier);
                 SqlScalarExpression parent = propRef.Member;
                 if (parent == null)
                 {
@@ -1909,7 +1909,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (parent is SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
                 {
-                    literals.Add(SqlStringLiteral.Create(sqlPropertyRefScalarExpression.Identifer.Value));
+                    literals.Add(SqlStringLiteral.Create(sqlPropertyRefScalarExpression.Identifier.Value));
                     break;
                 }
 

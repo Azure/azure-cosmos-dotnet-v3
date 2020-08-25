@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 this.writer.Write(".");
             }
 
-            sqlPropertyRefScalarExpression.Identifer.Accept(this);
+            sqlPropertyRefScalarExpression.Identifier.Accept(this);
         }
 
         public override void Visit(SqlQuery sqlQuery)

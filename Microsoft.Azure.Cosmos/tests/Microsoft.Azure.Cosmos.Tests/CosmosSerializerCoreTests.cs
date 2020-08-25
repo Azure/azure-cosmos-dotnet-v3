@@ -90,6 +90,35 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidatePatchOperationSerialization()
+        {
+            int toCount = 0;
+            int fromCount = 0;
+
+            CosmosSerializerHelper serializerHelper = new CosmosSerializerHelper(
+                null,
+                (input) => fromCount++,
+                (input) => toCount++);
+
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.CreateRemoveOperation("/removePath")
+            };
+
+            Assert.AreEqual(0, toCount);
+
+            // custom serializer is not used since operation type is Remove, which doesnt have "value" param to serialize
+            using (Stream stream = serializerCore.ToStream(patch)) { }
+            Assert.AreEqual(0, toCount);
+
+            patch.Add(PatchOperation.CreateAddOperation("/addPath", "addValue"));
+            // custom serializer is used since there is Add operation type also
+            using (Stream stream = serializerCore.ToStream(patch)) { }
+            Assert.AreEqual(1, toCount);
+        }
+
+        [TestMethod]
         public void ValidateCustomSerializerNotUsedForInternalTypes()
         {
             CosmosSerializerHelper serializerHelper = new CosmosSerializerHelper(

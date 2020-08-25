@@ -18,4 +18,6 @@ Microsoft.Azure.Cosmos.Samples @khdang @sboshra @bchong95 @kirankumarkolli @j82w
 # Order is important; the last matching pattern takes the most precedence
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirillg @kirankumarkolli @j82w @ealsur @FabianMeiswinkel
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Contracts @kirillg @kirankumarkolli @j82w @ealsur @FabianMeiswinkel
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @kirillg @kirankumarkolli
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetSDKAPI.json @Azure/azure-cosmosdb-lt
+Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/DotNetPreviewSDKAPI.json @Azure/azure-cosmosdb-lt
+CODEOWNERS @kirillg @kirankumarkolli @ramrajprabu

@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             return SqlPropertyRefScalarExpression.Create(
                 sqlPropertyRefScalarExpression.Member?.Accept(this) as SqlScalarExpression,
-                sqlPropertyRefScalarExpression.Identifer.Accept(this) as SqlIdentifier);
+                sqlPropertyRefScalarExpression.Identifier.Accept(this) as SqlIdentifier);
         }
 
         public override SqlObject Visit(SqlQuery sqlQuery)

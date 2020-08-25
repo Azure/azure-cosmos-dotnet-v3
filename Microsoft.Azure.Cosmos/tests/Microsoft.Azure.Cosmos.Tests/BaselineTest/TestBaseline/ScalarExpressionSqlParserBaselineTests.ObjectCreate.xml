@@ -1,0 +1,65 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Empty Object]]></Description>
+      <Query><![CDATA[SELECT VALUE {}]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single Property]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : 42 }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": 42}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiple Property]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop1' : 42, 'prop2' : 1337 }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop1' : 42, 'prop2": 1337}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing Close Brace]]></Description>
+      <Query><![CDATA[SELECT VALUE {]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[trailing delimiter]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : 42, }]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[delimiter but no properties]]></Description>
+      <Query><![CDATA[SELECT VALUE { , }]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[non string property name]]></Description>
+      <Query><![CDATA[SELECT VALUE { 23 : 42, }]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>
