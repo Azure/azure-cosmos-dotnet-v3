@@ -1,0 +1,47 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * OFFSET 10 LIMIT 10]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * OFFSET 10 LIMIT 10]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Parameters]]></Description>
+      <Query><![CDATA[SELECT * OFFSET @OFFSETCOUNT LIMIT @LIMITCOUNT]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * OFFSET @OFFSETCOUNT LIMIT @LIMITCOUNT]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Non integer or paramter count]]></Description>
+      <Query><![CDATA[SELECT * OFFSET 'asdf' LIMIT 10]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Offset without limit]]></Description>
+      <Query><![CDATA[SELECT * OFFSET 10]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Limit without offset]]></Description>
+      <Query><![CDATA[SELECT * LIMIT 10]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>
