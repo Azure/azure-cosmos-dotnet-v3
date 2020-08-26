@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
             int resizerInitialCapacity = (int)content.Length;
 
             Result res = await content.ReadRecordIOAsync(
-                record =>
+                (Func<ReadOnlyMemory<byte>, Result>)(record =>
                 {
                     Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
                     if (r != Result.Success)
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
 
                     results.Add(operationResult);
                     return r;
-                },
+                }),
                 resizer: new MemorySpanResizer<byte>(resizerInitialCapacity));
 
             if (res != Result.Success)

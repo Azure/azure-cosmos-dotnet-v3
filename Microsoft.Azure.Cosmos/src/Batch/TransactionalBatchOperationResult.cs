@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
-        internal static Result ReadOperationResult(Memory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
+        internal static Result ReadOperationResult(ReadOnlyMemory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
             RowBuffer row = new RowBuffer(input.Length);
             if (!row.ReadFrom(

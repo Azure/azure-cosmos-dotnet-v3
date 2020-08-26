@@ -97,12 +97,13 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Numerics.Vectors", new Version(4, 5, 0) },
                 { "Newtonsoft.Json", new Version(10, 0, 2) },
                 { "System.Configuration.ConfigurationManager", new Version(4, 5, 0) },
-                { "System.Memory", new Version(4, 5, 1) },
+                { "System.Memory", new Version(4, 5, 3) },
                 { "System.Buffers", new Version(4, 5, 1) },
-                { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 1) },
-                { "System.Threading.Tasks.Extensions", new Version(4, 5, 1) },
+                { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 2) },
+                { "System.Threading.Tasks.Extensions", new Version(4, 5, 2) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
                 { "Antlr4.Runtime.Standard", new Version(4, 8, 0) },
+                { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             // Dependency version should match
             foreach (KeyValuePair<string, Version> e in allDependencies)
             {
-                Assert.AreEqual(e.Value, projDependencies[e.Key]);
+                Assert.AreEqual(e.Value, projDependencies[e.Key], e.Key);
             }
 
             CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);
