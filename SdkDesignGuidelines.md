@@ -13,10 +13,8 @@ Public contract changes must go through an API review. Please create a github is
 
 ### Request options
 Request options should not be sealed.
-
 1. This allows internal teams to extend and add custom properties to request options which they can later access in lower layers of the SDK.
 2. Request options only has public properties, so there is no concern with users extending the type.
-
 
 ### Central SDK
 The V3 SDK follow the [central SDK .NET guidelines](https://azure.github.io/azure-sdk/dotnet_introduction.html) where possible. V3 SDK was released before these guidelines existed so it does not have the same types. Consistency with the current V3 public API is more important than follow the central SDK .NET guidelines as it provides a better user experience.
