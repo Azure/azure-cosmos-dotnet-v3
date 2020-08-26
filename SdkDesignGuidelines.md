@@ -11,6 +11,9 @@ Public contract changes must go through an API review. Please create a github is
 3. Dependencies including nuget package version
 4. Behavioral changes. For example trying to convert the default serializer from Newtonsoft to System.Text.Json. 
 
+### Unit testing
+All public APIs should support unit testing. Mocking should be supported on all public contracts where it is required to for unit testing scenarios.
+
 ### Request options
 Request options should not be sealed.
 1. This allows internal teams to extend and add custom properties to request options which they can later access in lower layers of the SDK.
