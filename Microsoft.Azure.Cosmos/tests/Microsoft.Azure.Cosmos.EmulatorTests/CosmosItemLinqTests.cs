@@ -743,16 +743,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(expectedResults, await queryable.CountAsync());
             }
 
-            await TestSearch(x => x.description.StartsWith("create"), "StartsWith", false, 0);
-            await TestSearch(x => x.description.StartsWith("cReAtE", StringComparison.OrdinalIgnoreCase), "StartsWith", true, 200);
+            await TestSearch(x => x.description.StartsWith("create"), "STARTSWITH", false, 0);
+            await TestSearch(x => x.description.StartsWith("cReAtE", StringComparison.OrdinalIgnoreCase), "STARTSWITH", true, 200);
 
-            await TestSearch(x => x.description.EndsWith("activity"), "EndsWith", false, 0);
-            await TestSearch(x => x.description.EndsWith("AcTiViTy", StringComparison.OrdinalIgnoreCase), "EndsWith", true, 200);
+            await TestSearch(x => x.description.EndsWith("activity"), "ENDSWITH", false, 0);
+            await TestSearch(x => x.description.EndsWith("AcTiViTy", StringComparison.OrdinalIgnoreCase), "ENDSWITH", true, 200);
 
             await TestSearch(x => x.description.Equals("createrandomtodoactivity", StringComparison.OrdinalIgnoreCase), "StringEquals", true, 200);
 
-            await TestSearch(x => x.description.Contains("todo"), "Contains", false, 0);
-            await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "Contains", true, 200);
+            await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
+            await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 200);
 
         }
 

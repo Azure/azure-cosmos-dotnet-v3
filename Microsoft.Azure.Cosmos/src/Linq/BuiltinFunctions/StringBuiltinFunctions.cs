@@ -299,7 +299,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression right = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
                     SqlScalarExpression caseInsensitive = SqlStringWithComparisonVisitor.GetCaseInsensitiveExpression(methodCallExpression.Arguments[1]);
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("STRINGEQUALS", left, right, caseInsensitive);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(
+                        SqlFunctionCallScalarExpression.Names.StringEquals,
+                        left,
+                        right,
+                        caseInsensitive);
                 }
 
                 return null;

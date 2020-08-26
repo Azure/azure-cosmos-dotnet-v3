@@ -223,6 +223,9 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpecialMethods.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
