@@ -51,6 +51,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Contracts
         }
 
         [TestMethod]
+        public void VerifyAllRequestOptionsCanBeExtended()
+        {
+            // The following classes are public, but not meant to be mocked.
+            HashSet<string> nonMockableClasses = new HashSet<string>()
+            {
+#if PREVIEW
+                nameof(ChangeFeedRequestOptions)
+#endif
+            };
+
+            // All request options should not be sealed to allow compute to extend them.
+            IEnumerable<Type> sealedRequestOptions = from t in Assembly.GetAssembly(typeof(CosmosClient)).GetTypes()
+                where
+                    t.IsClass &&
+                    t.Namespace == "Microsoft.Azure.Cosmos" &&
+                    t.IsPublic &&
+                    !nonMockableClasses.Contains(t.Name) &&
+                    t.Name.EndsWith("RequestOptions") &&
+                    t.IsSealed
+                select t;
+
+            Assert.IsFalse(sealedRequestOptions.Any(), $"RequestOptions should not be sealed: {string.Join(";", "sealedRequestOptions")}");
+        }
+
+        [TestMethod]
         public void VerifyAllPublicClassesCanBeMocked()
         {
             // The following classes are public, but not meant to be mocked.
