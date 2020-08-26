@@ -7,37 +7,22 @@
     {
         public int CompareTo(PathToken other)
         {
-            switch (this)
+            return this switch
             {
-                case IntegerPathToken integerPathToken1:
-                    switch (other)
-                    {
-                        case IntegerPathToken integerPathToken2:
-                            return integerPathToken1.Index.CompareTo(integerPathToken2.Index);
-
-                        case StringPathToken stringPathToken2:
-                            return -1;
-
-                        default:
-                            throw new InvalidEnumArgumentException($"{nameof(other)}");
-                    }
-
-                case StringPathToken stringPathToken1:
-                    switch (other)
-                    {
-                        case IntegerPathToken integerPathToken2:
-                            return 1;
-
-                        case StringPathToken stringPathToken2:
-                            return stringPathToken1.PropertyName.CompareTo(stringPathToken2.PropertyName);
-
-                        default:
-                            throw new InvalidEnumArgumentException($"{nameof(other)}");
-                    }
-
-                default:
-                    throw new InvalidEnumArgumentException($"this");
-            }
+                IntegerPathToken integerPathToken1 => other switch
+                {
+                    IntegerPathToken integerPathToken2 => integerPathToken1.Index.CompareTo(integerPathToken2.Index),
+                    StringPathToken stringPathToken2 => -1,
+                    _ => throw new InvalidEnumArgumentException($"{nameof(other)}"),
+                },
+                StringPathToken stringPathToken1 => other switch
+                {
+                    IntegerPathToken integerPathToken2 => 1,
+                    StringPathToken stringPathToken2 => stringPathToken1.PropertyName.CompareTo(stringPathToken2.PropertyName),
+                    _ => throw new InvalidEnumArgumentException($"{nameof(other)}"),
+                },
+                _ => throw new InvalidEnumArgumentException($"this"),
+            };
         }
 
         public bool Equals(PathToken other)
@@ -52,37 +37,22 @@
                 return true;
             }
 
-            switch (this)
+            return this switch
             {
-                case IntegerPathToken integerPathToken1:
-                    switch (other)
-                    {
-                        case IntegerPathToken integerPathToken2:
-                            return integerPathToken1.Index.Equals(integerPathToken2.Index);
-
-                        case StringPathToken stringPathToken2:
-                            return false;
-
-                        default:
-                            throw new InvalidEnumArgumentException($"{nameof(other)}");
-                    }
-
-                case StringPathToken stringPathToken1:
-                    switch (other)
-                    {
-                        case IntegerPathToken integerPathToken2:
-                            return false;
-
-                        case StringPathToken stringPathToken2:
-                            return stringPathToken1.PropertyName.Equals(stringPathToken2.PropertyName);
-
-                        default:
-                            throw new InvalidEnumArgumentException($"{nameof(other)}");
-                    }
-
-                default:
-                    throw new InvalidEnumArgumentException($"this");
-            }
+                IntegerPathToken integerPathToken1 => other switch
+                {
+                    IntegerPathToken integerPathToken2 => integerPathToken1.Index.Equals(integerPathToken2.Index),
+                    StringPathToken stringPathToken2 => false,
+                    _ => throw new InvalidEnumArgumentException($"{nameof(other)}"),
+                },
+                StringPathToken stringPathToken1 => other switch
+                {
+                    IntegerPathToken integerPathToken2 => false,
+                    StringPathToken stringPathToken2 => stringPathToken1.PropertyName.Equals(stringPathToken2.PropertyName),
+                    _ => throw new InvalidEnumArgumentException($"{nameof(other)}"),
+                },
+                _ => throw new InvalidEnumArgumentException($"this"),
+            };
         }
 
         public override bool Equals(object obj)
@@ -97,17 +67,12 @@
 
         public override int GetHashCode()
         {
-            switch (this)
+            return this switch
             {
-                case IntegerPathToken integerPathToken:
-                    return integerPathToken.Index.GetHashCode();
-
-                case StringPathToken stringPathToken:
-                    return stringPathToken.PropertyName.GetHashCode();
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(PathToken)} type: {this.GetType()}.");
-            }
+                IntegerPathToken integerPathToken => integerPathToken.Index.GetHashCode(),
+                StringPathToken stringPathToken => stringPathToken.PropertyName.GetHashCode(),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(PathToken)} type: {this.GetType()}."),
+            };
         }
 
         public static implicit operator PathToken(int index) => new IntegerPathToken(index);

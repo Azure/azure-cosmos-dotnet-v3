@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            var tryCreateGroupByComponent = executionEnvironment switch
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateGroupByComponent = executionEnvironment switch
             {
                 ExecutionEnvironment.Client => await ClientGroupByDocumentQueryExecutionComponent.TryCreateAsync(
                                        continuationToken,

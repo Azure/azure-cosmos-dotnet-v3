@@ -4,6 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+#if INTERNAL
+    using System.Collections.Generic;
+#endif
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -215,9 +218,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <returns>The transactional batch instance with the operation added.</returns>
         public abstract TransactionalBatch PatchItem(
-                string id,
-                IReadOnlyList<PatchOperation> patchOperations,
-                TransactionalBatchItemRequestOptions requestOptions = null);
+            string id,
+            IReadOnlyList<PatchOperation> patchOperations,
+            TransactionalBatchItemRequestOptions requestOptions = null);
 #endif
 
         /// <summary>

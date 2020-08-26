@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     ""bbox"":[20, 20, 30, 30],
                     ""extra"":1, 
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
 
             Assert.AreEqual(2, point.Position.Coordinates.Count);
             Assert.AreEqual(20.232323232323232, point.Position.Longitude);
@@ -42,13 +42,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, point.AdditionalProperties.Count);
             Assert.AreEqual(1L, point.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.Point, geom.Type);
 
             Assert.AreEqual(geom, point);
 
             string json1 = JsonConvert.SerializeObject(point);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPointEqualsHashCode()
         {
-            var point1 = new Point(
+            Point point1 = new Point(
                 new Position(20, 30),
                 new GeometryParams
                 {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var point2 = new Point(
+            Point point2 = new Point(
                 new Position(20, 30),
                 new GeometryParams
                 {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var point3 = new Point(
+            Point point3 = new Point(
                 new Position(20, 31),
                 new GeometryParams
                 {
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var point4 = new Point(
+            Point point4 = new Point(
                 new Position(20, 31),
                 new GeometryParams
                 {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var point5 = new Point(
+            Point point5 = new Point(
                 new Position(20, 30),
                 new GeometryParams
                 {
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var point6 = new Point(
+            Point point6 = new Point(
                 new Position(20, 30),
                 new GeometryParams
                 {
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPointConstructors()
         {
-            var point = new Point(
+            Point point = new Point(
                 new Position(20, 30),
                 new GeometryParams
                 {

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
 
             for (uint i = 0; i < numCollections; i++)
             {
-                var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129 + i).DocumentCollectionId.ToString();
+                string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129 + i).DocumentCollectionId.ToString();
                 string collectionFullname = "dbs/db1/colls/collName_" + i;
 
                 for (int j = 0; j < numPartitionKeyRangeIds; j++)
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls1/collName";
 
             sessionContainer.SetSessionToken(
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos
                 new DictionaryNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#101#4=90#5=1" } }
             );
 
-            var collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            string collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionResourceId2, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
             {
                 ISessionToken token = sessionContainer.ResolvePartitionLocalSessionToken(request, "range_1");
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             sessionContainer.SetSessionToken(
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos
                 new DictionaryNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#100#4=90#5=1" } }
             );
 
-            var collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            string collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
             string collectionFullname2 = "dbs/db1/colls/collName2";
 
             sessionContainer.SetSessionToken(
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -500,7 +500,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
             string collectionFullname2 = "dbs/db1/colls/collName2";
 
@@ -537,8 +537,8 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
-            var collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -608,8 +608,8 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
-            var collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId2 = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -647,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.ReadFeed, collectionFullname1 + "/docs/42", ResourceType.Collection, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId1 = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname1 = "dbs/db1/colls/collName1";
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, collectionFullname1 + "/docs/42", ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, null))
@@ -737,7 +737,7 @@ namespace Microsoft.Azure.Cosmos
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
 
-            var collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string collectionResourceId = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
             string collectionFullname = "dbs/db1/colls/collName";
 
             sessionContainer.SetSessionToken(

@@ -1544,10 +1544,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document1.SetPropertyValue("field1", 1);
             await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
-            var query = client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c", new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery();
+            IDocumentQuery<dynamic> query = client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c", new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery();
             await query.ExecuteNextAsync();
             await query.ExecuteNextAsync();
-            var result = await query.ExecuteNextAsync();
+            DocumentFeedResponse<dynamic> result = await query.ExecuteNextAsync();
             Assert.AreEqual("2", result.SessionToken.Split(':')[0], result.SessionToken);
 
             DocumentClient otherClient = TestCommon.CreateClient(false);

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            var tryCreateAggregate = executionEnvironment switch
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateAggregate = executionEnvironment switch
             {
                 ExecutionEnvironment.Client => await ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
                                        aggregates,

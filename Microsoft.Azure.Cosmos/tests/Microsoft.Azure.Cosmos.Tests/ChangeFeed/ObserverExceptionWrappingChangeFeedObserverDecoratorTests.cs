@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             this.changeFeedObserverContext = Mock.Of<ChangeFeedObserverContext>();
             this.observerWrapper = new FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument>(this.observer.Object);
 
-            var document = new MyDocument();
+            MyDocument document = new MyDocument();
             this.documents = new List<MyDocument> { document };
         }
 

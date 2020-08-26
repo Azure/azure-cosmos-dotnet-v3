@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static ConnectionMode GetTargetConnectionMode(ConnectionModes connectionMode)
         {
-            var targetConnectionMode = connectionMode switch
+            ConnectionMode targetConnectionMode = connectionMode switch
             {
                 ConnectionModes.Gateway => ConnectionMode.Gateway,
                 ConnectionModes.Direct => ConnectionMode.Direct,

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             DistinctQueryType distinctQueryType,
             CosmosElement distinctMapContinuationToken)
         {
-            var tryCreateDistinctMap = distinctQueryType switch
+            TryCatch<DistinctMap> tryCreateDistinctMap = distinctQueryType switch
             {
                 DistinctQueryType.None => throw new ArgumentException("distinctQueryType can not be None. This part of code is not supposed to be reachable. Please contact support to resolve this issue."),
                 DistinctQueryType.Unordered => UnorderdDistinctMap.TryCreate(distinctMapContinuationToken),

@@ -6,11 +6,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
+    using System.Linq;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Text;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Spatial;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class SpatialTests
@@ -147,9 +154,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             DataContractSerializer dataContractSerializer = new DataContractSerializer(obj.GetType());
 
 
-            using (var stream = new MemoryStream())
+            using (MemoryStream stream = new MemoryStream())
             {
-                var writer = new StreamWriter(stream);
+                StreamWriter writer = new StreamWriter(stream);
                 writer.Write(serialized);
                 writer.Flush();
                 stream.Position = 0;

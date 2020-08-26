@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.currentVersionUTF8 = HttpConstants.Versions.CurrentVersionUTF8;
 
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidatePageSizeHttps()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidatePageSize(client);
             this.ValidatePageSize(client);
         }
@@ -68,14 +68,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidatePageSizeRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidatePageSize(client);
         }
 
         [TestMethod]
         public void ValidatePageSizeGatway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidatePageSize(client);
         }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
@@ -135,19 +135,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
             // Valid page size
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.PageSize, "20");
-            var response = this.ReadDatabaseFeedRequest(client, headers);
+            DocumentServiceResponse response = this.ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
 
             headers = new DictionaryNameValueCollection();
             headers.Add("pageSize", "20");
-            var result = this.ReadFeedScript(client, headers);
+            StoredProcedureResponse<string> result = this.ReadFeedScript(client, headers);
             Assert.IsTrue(result.StatusCode == HttpStatusCode.OK);
 
             // dynamic page size
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Supported value
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Eventual.ToString());
-            var response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
+            DocumentServiceResponse response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
         }
 
@@ -215,21 +215,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("brchon")]
         public void ValidateJsonSerializationFormatGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidateJsonSerializationFormat(client);
         }
 
         [TestMethod]
         public void ValidateJsonSerializationFormatRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidateJsonSerializationFormat(client);
         }
 
         [TestMethod]
         public void ValidateJsonSerializationFormatHttps()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidateJsonSerializationFormat(client);
         }
 
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
             }
 
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Text
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.JsonText.ToString());
-            var response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
+            DocumentServiceResponse response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
             }
 
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Text
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.JsonText.ToString());
-            var response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
+            DocumentServiceResponse response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
@@ -325,14 +325,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateIndexingDirectiveGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidateIndexingDirective(client);
         }
         [TestMethod]
         public void ValidateIndexingDirectiveRntbd()
         {
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            var client = TestCommon.CreateClient(true, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(true, Protocol.Tcp);
             this.ValidateIndexingDirective(client);
         }
 
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateIndexingDirectiveHttps()
         {
             //var client = TestCommon.CreateClient(false, Protocol.Https);
-            var client = TestCommon.CreateClient(true, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(true, Protocol.Https);
             this.ValidateIndexingDirective(client);
         }
 
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
@@ -371,40 +371,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
             // Valid Indexing Directive
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.IndexingDirective, IndexingDirective.Exclude.ToString());
-            var response = this.CreateDocumentRequest(client, headers);
+            DocumentServiceResponse response = this.CreateDocumentRequest(client, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.Created);
 
             headers = new DictionaryNameValueCollection();
             headers.Add("indexAction", "\"exclude\"");
-            var result = this.CreateDocumentScript(client, headers);
+            StoredProcedureResponse<string> result = this.CreateDocumentScript(client, headers);
             Assert.IsTrue(result.StatusCode == HttpStatusCode.OK, "Invalid status code");
         }
 
         [TestMethod]
         public void ValidateEnableScanInQueryGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidateEnableScanInQuery(client);
         }
 
         [TestMethod]
         public void ValidateEnableScanInQueryRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidateEnableScanInQuery(client);
         }
 
         [TestMethod]
         public void ValidateEnableScanInQueryHttps()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidateEnableScanInQuery(client);
         }
 
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                var response = this.ReadDatabaseFeedRequest(client, headers);
+                DocumentServiceResponse response = this.ReadDatabaseFeedRequest(client, headers);
                 if (isHttps)
                 {
                     Assert.Fail("Should throw an exception");
@@ -429,28 +429,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
             // Valid boolean
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, "true");
-            var response2 = this.ReadDatabaseFeedRequest(client, headers);
+            DocumentServiceResponse response2 = this.ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
         }
 
         [TestMethod]
         public void ValidateEnableLowPrecisionOrderByGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidateEnableLowPrecisionOrderBy(client);
         }
 
         [TestMethod]
         public void ValidateEnableLowPrecisionOrderByRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidateEnableLowPrecisionOrderBy(client);
         }
 
@@ -458,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public void ValidateEnableLowPrecisionOrderByHttps()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidateEnableLowPrecisionOrderBy(client, true);
         }
 
@@ -468,10 +468,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, "Not a boolean");
 
-            var document = this.CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
+            Document document = this.CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
             try
             {
-                var response = this.ReadDocumentRequest(client, document, headers);
+                DocumentServiceResponse response = this.ReadDocumentRequest(client, document, headers);
                 if (isHttps)
                 {
                     Assert.Fail("Should throw an exception");
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
@@ -492,28 +492,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document = this.CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, "true");
-            var response2 = this.ReadDocumentRequest(client, document, headers);
+            DocumentServiceResponse response2 = this.ReadDocumentRequest(client, document, headers);
             Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
         }
 
         [TestMethod]
         public void ValidateEmitVerboseTracesInQueryGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidateEmitVerboseTracesInQuery(client);
         }
 
         [TestMethod]
         public void ValidateEmitVerboseTracesInQueryRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidateEmitVerboseTracesInQuery(client);
         }
 
         [TestMethod]
         public void ValidateEmitVerboseTracesInQueryHttps()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidateEmitVerboseTracesInQuery(client, true);
         }
 
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                var response = this.ReadDatabaseFeedRequest(client, headers);
+                DocumentServiceResponse response = this.ReadDatabaseFeedRequest(client, headers);
                 if (isHttps)
                 {
                     Assert.Fail("Should throw an exception");
@@ -538,35 +538,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
             // Valid boolean
             headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, "true");
-            var response2 = this.ReadDatabaseFeedRequest(client, headers);
+            DocumentServiceResponse response2 = this.ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
         }
 
         [TestMethod]
         public void ValidateIfNonMatchGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             this.ValidateIfNonMatch(client);
 
         }
         [TestMethod]
         public void ValidateIfNonMatchHttps()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidateIfNonMatch(client);
         }
 
         [TestMethod]
         public void ValidateIfNonMatchRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidateIfNonMatch(client);
         }
 
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CollectionAssert.AreEqual(expectedUserAgentUTF8, userAgentContainer.UserAgentUTF8);
 
             userAgentContainer.Suffix = suffix;
-            var expectedUserAgent = new TestUserAgentContainer().BaseUserAgent + suffix;
+            string expectedUserAgent = new TestUserAgentContainer().BaseUserAgent + suffix;
             Assert.AreEqual(expectedUserAgent, userAgentContainer.UserAgent);
 
             expectedUserAgentUTF8 = Encoding.UTF8.GetBytes(expectedUserAgent);
@@ -615,10 +615,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                Database db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
-                var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                DocumentCollection coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
+                Document doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
                 client = TestCommon.CreateClient(true);
                 doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
@@ -681,16 +681,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database db = null;
             try
             {
-                var dbResource = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result;
+                ResourceResponse<Database> dbResource = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result;
                 db = dbResource.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                var docResult = client.CreateDocumentAsync(coll, new Document() { Id = Guid.NewGuid().ToString() }).Result;
+                DocumentCollection coll = client.CreateDocumentCollectionAsync(db, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                ResourceResponse<Document> docResult = client.CreateDocumentAsync(coll, new Document() { Id = Guid.NewGuid().ToString() }).Result;
                 long nCurrentGlobalCommittedLSN = -1;
                 long nNumberOfReadRegions = 0;
                 for (uint i = 0; i < 3; i++)
                 {
                     client.LockClient(i);
-                    var readResult = client.ReadDocumentAsync(docResult.Resource).Result;
+                    ResourceResponse<Document> readResult = client.ReadDocumentAsync(docResult.Resource).Result;
                     nCurrentGlobalCommittedLSN = long.Parse(readResult.ResponseHeaders[WFConstants.BackendHeaders.GlobalCommittedLSN], CultureInfo.InvariantCulture);
                     nNumberOfReadRegions = long.Parse(readResult.ResponseHeaders[WFConstants.BackendHeaders.NumberOfReadRegions], CultureInfo.InvariantCulture);
 
@@ -707,17 +707,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateCollectionIndexProgressHeaders()
         {
-            using (var client = TestCommon.CreateClient(true))
+            using (DocumentClient client = TestCommon.CreateClient(true))
             {
                 await this.ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
 
-            using (var client = TestCommon.CreateClient(false, Protocol.Https))
+            using (DocumentClient client = TestCommon.CreateClient(false, Protocol.Https))
             {
                 await this.ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
 
-            using (var client = TestCommon.CreateClient(false, Protocol.Tcp))
+            using (DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp))
             {
                 await this.ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
@@ -726,15 +726,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateExcludeSystemProperties()
         {
-            var client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(true);
             await this.ValidateExcludeSystemProperties(client);
         }
 
         private async Task ValidateExcludeSystemProperties(DocumentClient client)
         {
-            var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+            Database db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
+            DocumentCollection coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
 
             //CASE 1. insert document with system properties excluded
             Document doc1 = await client.CreateDocumentAsync(
@@ -858,7 +858,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     options = new RequestOptions { PopulateQuotaInfo = true };
                 }
 
-                var consistentCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
+                DocumentCollection consistentCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
                 if (isElasticCollection)
                 {
                     consistentCollection.PartitionKey = pkd;
@@ -867,7 +867,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 consistentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 consistentCollection = (await client.CreateDocumentCollectionAsync(db, consistentCollection)).Resource;
 
-                var noneIndexCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
+                DocumentCollection noneIndexCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
                 if (isElasticCollection)
                 {
                     noneIndexCollection.PartitionKey = pkd;
@@ -877,13 +877,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 noneIndexCollection.IndexingPolicy.IndexingMode = IndexingMode.None;
                 noneIndexCollection = (await client.CreateDocumentCollectionAsync(db, noneIndexCollection)).Resource;
 
-                var doc = new Document() { Id = Guid.NewGuid().ToString() };
+                Document doc = new Document() { Id = Guid.NewGuid().ToString() };
                 await client.CreateDocumentAsync(consistentCollection, doc);
                 await client.CreateDocumentAsync(noneIndexCollection, doc);
 
                 // Consistent-indexing collection.
                 {
-                    var collectionResponse = await client.ReadDocumentCollectionAsync(consistentCollection, options);
+                    ResourceResponse<DocumentCollection> collectionResponse = await client.ReadDocumentCollectionAsync(consistentCollection, options);
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading consistent collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -894,7 +894,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // None-indexing collection.
                 {
-                    var collectionResponse = await client.ReadDocumentCollectionAsync(noneIndexCollection, options);
+                    ResourceResponse<DocumentCollection> collectionResponse = await client.ReadDocumentCollectionAsync(noneIndexCollection, options);
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading none-index collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -906,7 +906,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Consistent -> Consistent.
                 for (int i = 0; i < 100; ++i)
                 {
-                    var document = new Document();
+                    Document document = new Document();
                     for (int k = 0; k < 100; ++k)
                     {
                         document.SetPropertyValue(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -922,10 +922,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (isElasticCollection)
                 {
-                    foreach (var collection in new DocumentCollection[] { consistentCollection, noneIndexCollection })
+                    foreach (DocumentCollection collection in new DocumentCollection[] { consistentCollection, noneIndexCollection })
                     {
                         // Do not expect index progress headers for elastic collection when the PopulateQuotaInfo header is not specified.
-                        var collectionResponse = await client.ReadDocumentCollectionAsync(collection);
+                        ResourceResponse<DocumentCollection> collectionResponse = await client.ReadDocumentCollectionAsync(collection);
                         Assert.IsNull(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress]);
                         Assert.IsNull(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionLazyIndexingProgress]);
                         Assert.AreEqual(-1, collectionResponse.LazyIndexingProgress);
@@ -942,22 +942,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateIfNonMatch(DocumentClient client)
         {
             // Valid if-match
-            var document = this.CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
-            var headers = new DictionaryNameValueCollection();
+            Document document = this.CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
+            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, document.ETag);
-            var response = this.ReadDocumentRequest(client, document, headers);
+            DocumentServiceResponse response = this.ReadDocumentRequest(client, document, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.NotModified, "Invalid status code");
 
             // validateInvalidIfMatch
             AccessCondition condition = new AccessCondition() { Type = AccessConditionType.IfMatch, Condition = "invalid etag" };
             try
             {
-                var replacedDoc = client.ReplaceDocumentAsync(document.SelfLink, document, new RequestOptions() { AccessCondition = condition }).Result.Resource;
+                Document replacedDoc = client.ReplaceDocumentAsync(document.SelfLink, document, new RequestOptions() { AccessCondition = condition }).Result.Resource;
                 Assert.Fail("should not reach here");
             }
             catch (Exception ex)
             {
-                var innerException = ex.InnerException as DocumentClientException;
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.PreconditionFailed, "Invalid status code");
             }
         }
@@ -980,7 +980,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string queryText = JsonConvert.SerializeObject(sqlQuerySpec);
             request.Body = new MemoryStream(Encoding.UTF8.GetBytes(queryText));
 
-            var response = client.ExecuteQueryAsync(request, null).Result;
+            DocumentServiceResponse response = client.ExecuteQueryAsync(request, null).Result;
             return response;
         }
 
@@ -1028,22 +1028,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private DocumentServiceResponse ReadDocumentFeedRequestSinglePartition(DocumentClient client, string collectionId, INameValueCollection headers)
         {
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.ReadFeed, collectionId, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey, headers);
-            var response = client.ReadFeedAsync(request, null).Result;
+            DocumentServiceResponse response = client.ReadFeedAsync(request, null).Result;
             return response;
         }
 
         private DocumentServiceResponse ReadDatabaseFeedRequest(DocumentClient client, INameValueCollection headers)
         {
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.ReadFeed, null, ResourceType.Database, AuthorizationTokenType.PrimaryMasterKey, headers);
-            var response = client.ReadFeedAsync(request, null).Result;
+            DocumentServiceResponse response = client.ReadFeedAsync(request, null).Result;
             return response;
         }
 
         private StoredProcedureResponse<string> ReadFeedScript(DocumentClient client, INameValueCollection headers)
         {
             var headersIterator = headers.AllKeys().SelectMany(headers.GetValues, (k, v) => new { key = k, value = v });
-            var scriptOptions = "{";
-            var headerIndex = 0;
+            string scriptOptions = "{";
+            int headerIndex = 0;
             foreach (var header in headersIterator)
             {
                 if (headerIndex != 0)
@@ -1057,7 +1057,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             scriptOptions += "}";
 
-            var script = @"function() {
+            string script = @"function() {
                 var client = getContext().getCollection();
                 function callback(err, docFeed, responseOptions) {
                     if(err) throw 'Error while reading documents';
@@ -1073,11 +1073,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
                 }).Result;
-            var sproc = new StoredProcedure() { Id = Guid.NewGuid().ToString(), Body = script };
-            var createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
+            StoredProcedure sproc = new StoredProcedure() { Id = Guid.NewGuid().ToString(), Body = script };
+            StoredProcedure createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
             RequestOptions requestOptions = new RequestOptions();
             requestOptions.PartitionKey = new PartitionKey("test");
-            var result = client.ExecuteStoredProcedureAsync<string>(createdSproc, requestOptions).Result;
+            StoredProcedureResponse<string> result = client.ExecuteStoredProcedureAsync<string>(createdSproc, requestOptions).Result;
             return result;
         }
 
@@ -1091,19 +1091,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
                 }).Result;
-            var document = new Document() { Id = Guid.NewGuid().ToString() };
+            Document document = new Document() { Id = Guid.NewGuid().ToString() };
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Create, collection.SelfLink, document, ResourceType.Document, AuthorizationTokenType.Invalid, headers, SerializationFormattingPolicy.None);
             PartitionKey partitionKey = new PartitionKey(document.Id);
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.InternalKey.ToJsonString());
-            var response = client.CreateAsync(request, null).Result;
+            DocumentServiceResponse response = client.CreateAsync(request, null).Result;
             return response;
         }
 
         private StoredProcedureResponse<string> CreateDocumentScript(DocumentClient client, INameValueCollection headers)
         {
             var headersIterator = headers.AllKeys().SelectMany(headers.GetValues, (k, v) => new { key = k, value = v });
-            var scriptOptions = "{";
-            var headerIndex = 0;
+            string scriptOptions = "{";
+            int headerIndex = 0;
             foreach (var header in headersIterator)
             {
                 if (headerIndex != 0)
@@ -1116,9 +1116,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             scriptOptions += "}";
-            var guid = Guid.NewGuid().ToString();
+            string guid = Guid.NewGuid().ToString();
 
-            var script = @" function() {
+            string script = @" function() {
                 var client = getContext().getCollection();                
                 client.createDocument(client.getSelfLink(), { id: ""TestDoc"" }," + scriptOptions + @", function(err, docCreated, options) { 
                    if(err) throw new Error('Error while creating document: ' + err.message); 
@@ -1135,11 +1135,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
                 }).Result;
-            var sproc = new StoredProcedure() { Id = Guid.NewGuid().ToString(), Body = script };
-            var createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
+            StoredProcedure sproc = new StoredProcedure() { Id = Guid.NewGuid().ToString(), Body = script };
+            StoredProcedure createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
             RequestOptions requestOptions = new RequestOptions();
             requestOptions.PartitionKey = new PartitionKey("TestDoc");
-            var result = client.ExecuteStoredProcedureAsync<string>(createdSproc, requestOptions).Result;
+            StoredProcedureResponse<string> result = client.ExecuteStoredProcedureAsync<string>(createdSproc, requestOptions).Result;
             return result;
         }
 
@@ -1147,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, doc.SelfLink, AuthorizationTokenType.PrimaryMasterKey, headers);
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, new PartitionKey(doc.Id).InternalKey.ToJsonString());
-            var retrievedDocResponse = client.ReadAsync(request, null).Result;
+            DocumentServiceResponse retrievedDocResponse = client.ReadAsync(request, null).Result;
             return retrievedDocResponse;
         }
 

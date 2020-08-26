@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_AllOtherOwnersEqualTargetCount_ReturnsEmpty()
         {
             EqualPartitionsBalancingStrategy strategy = this.CreateStrategy();
-            var allLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 4).Select(index => this.CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 3).Select(index => this.CreateLease(ownerSelf, "B" + index.ToString())));
             List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static DocumentServiceLease CreateLease(string owner, string partitionId, DateTime timestamp)
         {
-            var lease = Mock.Of<DocumentServiceLease>();
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease).Setup(l => l.Owner).Returns(owner);
             Mock.Get(lease).Setup(l => l.CurrentLeaseToken).Returns(partitionId);
             Mock.Get(lease).Setup(l => l.Timestamp).Returns(timestamp);

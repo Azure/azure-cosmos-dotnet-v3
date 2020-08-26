@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DocumentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(collectionSelfLink);
                 readFeedCount++;
 
-                foreach (var doc in response)
+                foreach (dynamic doc in response)
                 {
                     await client.ReadDocumentAsync(doc.SelfLink);
                     readCount++;

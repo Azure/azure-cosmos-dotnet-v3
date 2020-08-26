@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (this.requestOptionsFactory == null)
                 throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
 
-            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
+            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
             return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
         }
     }

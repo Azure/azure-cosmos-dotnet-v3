@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestInvalidJson()
         {
             string json = @"{""type"":""Poi}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestNullCoordinates()
         {
             string json = @"{""type"":""Point"",""coordinates"":null}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestNullType()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestNullTypeGeometry()
         {
             string json = @"{""type"":null, ""coordinates"":[20, 30]}";
-            var point = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry point = JsonConvert.DeserializeObject<Geometry>(json);
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestBoundingBoxWithNonEvenNumberOfCoordinates()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0, 0, 5, 5]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestBoundingBoxWithNotEnoughCoordinates()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":[0, 0]}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
         }
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         public void TestNullBoundingBox()
         {
             string json = @"{""type"":""Point"", ""coordinates"":[20, 30], ""bbox"":null}";
-            var point = JsonConvert.DeserializeObject<Point>(json);
+            Point point = JsonConvert.DeserializeObject<Point>(json);
             Assert.IsNull(point.BoundingBox);
         }
 

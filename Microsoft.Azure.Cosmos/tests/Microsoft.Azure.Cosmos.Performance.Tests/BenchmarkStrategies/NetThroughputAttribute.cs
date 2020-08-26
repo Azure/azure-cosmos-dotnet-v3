@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
                     throw new ArgumentOutOfRangeException("selectedFramework", "Not implementad BenchmarkFrameworks value.");
                 }
 
-                var job = Job.Default.With(toolchain).WithGcServer(true);
+                Job job = Job.Default.With(toolchain).WithGcServer(true);
 
                 if (invocationCount >= 0)
                 {

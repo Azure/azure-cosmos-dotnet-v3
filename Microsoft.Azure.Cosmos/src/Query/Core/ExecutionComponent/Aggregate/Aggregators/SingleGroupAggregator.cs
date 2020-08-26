@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     AggregateOperator aggregateOperator,
                     CosmosElement continuationToken)
                 {
-                    var tryCreateAggregator = aggregateOperator switch
+                    TryCatch<IAggregator> tryCreateAggregator = aggregateOperator switch
                     {
                         AggregateOperator.Average => AverageAggregator.TryCreate(continuationToken),
                         AggregateOperator.Count => CountAggregator.TryCreate(continuationToken),

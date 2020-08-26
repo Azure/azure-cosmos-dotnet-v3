@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            var tryCreateDistinctDocumentQueryExecutionComponent = executionEnvironment switch
+            TryCatch<IDocumentQueryExecutionComponent> tryCreateDistinctDocumentQueryExecutionComponent = executionEnvironment switch
             {
                 ExecutionEnvironment.Client => await ClientDistinctDocumentQueryExecutionComponent.TryCreateAsync(
                                        requestContinuation,
