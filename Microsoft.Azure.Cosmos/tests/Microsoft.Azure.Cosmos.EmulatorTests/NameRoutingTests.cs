@@ -621,12 +621,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 #endif
         [TestMethod]
-        public void VerifyGatewayNameIdCacheRefreshDirectGateway()
+        public async Task VerifyGatewayNameIdCacheRefreshDirectGateway()
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
             // Ignoring it until this is fixed
             CosmosClient client = TestCommon.CreateCosmosClient(true);
-            this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client).Wait();
+            await this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client);
         }
 
         enum FabircServiceReuseType

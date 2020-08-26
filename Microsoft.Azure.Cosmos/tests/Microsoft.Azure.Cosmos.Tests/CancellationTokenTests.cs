@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     public class CancellationTokenTests
     {
         [TestMethod]
-        [ExpectedException(typeof(TaskCanceledException))]
+        [ExpectedException(typeof(OperationCanceledException))]
         public async Task GatewayProcessMessageAsyncCancels()
         {
             using (CancellationTokenSource source = new CancellationTokenSource())
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [ExpectedException(typeof(TaskCanceledException))]
+        [ExpectedException(typeof(OperationCanceledException))]
         public async Task GatewayProcessMessageAsyncCancelsOnDeadline()
         {
             // Cancellation deadline is before Request timeout

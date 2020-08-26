@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             if (sendingRequestEventArgs != null ||
                 receivedResponseEventArgs != null)
             {
-                httpMessageHandler = CreateHttpMessageHandler(
+                httpMessageHandler = CosmosHttpClientCore.CreateHttpMessageHandler(
                     httpMessageHandler,
                     sendingRequestEventArgs,
                     receivedResponseEventArgs);
