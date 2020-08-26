@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         private async Task<List<PartitionKeyRange>> EnumPartitionKeyRangesAsync()
         {
             string containerUri = this.container.LinkUri.ToString();
-            string partitionKeyRangesPath = string.Format(CultureInfo.InvariantCulture, "{0}/pkranges", containerUri);
+            _ = string.Format(CultureInfo.InvariantCulture, "{0}/pkranges", containerUri);
 
             IDocumentFeedResponse<PartitionKeyRange> response = null;
             List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>();

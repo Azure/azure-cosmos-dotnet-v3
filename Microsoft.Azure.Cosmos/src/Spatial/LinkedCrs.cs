@@ -25,12 +25,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         internal LinkedCrs(string href, string hrefType = null)
             : base(CrsType.Linked)
         {
-            if (href == null)
-            {
-                throw new ArgumentNullException("href");
-            }
-
-            this.Href = href;
+            this.Href = href ?? throw new ArgumentNullException("href");
             this.HrefType = hrefType;
         }
 

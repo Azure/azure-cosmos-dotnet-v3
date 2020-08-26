@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     public sealed class AzureKeyVaultKeyWrapMetadata : EncryptionKeyWrapMetadata
     {
+#pragma warning disable SA1401 // Fields should be private
         internal static string TypeConstant = "akv";
+#pragma warning restore SA1401 // Fields should be private
 
         /// <summary>
         /// Creates a new instance of metadata that the Azure Key Vault can use to wrap and unwrap keys.

@@ -5,15 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Text;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Common;
-    using Collections;
-    using Client;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 

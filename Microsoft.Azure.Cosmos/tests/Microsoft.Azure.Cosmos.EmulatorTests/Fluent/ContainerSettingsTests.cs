@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/user";
             int timeToLivetimeToLiveInSeconds = 10;
 
-            ContainerResponse containerResponse = null;
+            ContainerResponse containerResponse;
             try
             {
                 containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)

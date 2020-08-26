@@ -34,10 +34,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
-
             this.clientContext = clientContext;
-            this.container = container;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.changeFeedOptions = options;
         }
@@ -54,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             string firstNotModifiedKeyRangeId = null;
             string currentKeyRangeId;
@@ -153,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
             ResponseMessage response,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
             {

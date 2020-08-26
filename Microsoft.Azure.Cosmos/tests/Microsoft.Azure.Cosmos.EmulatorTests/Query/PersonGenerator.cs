@@ -24,17 +24,13 @@
         private static City GetRandomCity(Random rand)
         {
             int index = rand.Next(0, 3);
-            switch (index)
+            return index switch
             {
-                case 0:
-                    return City.LosAngeles;
-                case 1:
-                    return City.NewYork;
-                case 2:
-                    return City.Seattle;
-            }
-
-            return City.LosAngeles;
+                0 => City.LosAngeles,
+                1 => City.NewYork,
+                2 => City.Seattle,
+                _ => City.LosAngeles,
+            };
         }
 
         private static double GetRandomIncome(Random rand)
@@ -72,41 +68,17 @@
             int age = PersonGenerator.GetRandomAge(rand);
             Pet pet = PersonGenerator.GetRandomPet(rand);
             Guid guid = Guid.NewGuid();
-
-            object mixedTypeField;
-            switch (rand.Next(0, 7))
+            object mixedTypeField = (rand.Next(0, 7)) switch
             {
-                case 0:
-                    mixedTypeField = name;
-                    break;
-
-                case 1:
-                    mixedTypeField = city;
-                    break;
-
-                case 2:
-                    mixedTypeField = income;
-                    break;
-
-                case 3:
-                    mixedTypeField = children;
-                    break;
-
-                case 4:
-                    mixedTypeField = age;
-                    break;
-
-                case 5:
-                    mixedTypeField = pet;
-                    break;
-
-                case 6:
-                    mixedTypeField = guid;
-                    break;
-
-                default:
-                    throw new ArgumentException();
-            }
+                0 => name,
+                1 => city,
+                2 => income,
+                3 => children,
+                4 => age,
+                5 => pet,
+                6 => guid,
+                _ => throw new ArgumentException(),
+            };
             return new Person(name, city, income, children, age, pet, guid, mixedTypeField);
         }
     }

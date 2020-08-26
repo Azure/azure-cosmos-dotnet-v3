@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Buffers.Text;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Common utility class for JsonTextReader and JsonTextNavigator.

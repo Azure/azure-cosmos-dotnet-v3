@@ -35,13 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// The parameter expression to be used as this query's alias.
         /// </summary>
-        public ParameterExpression Alias
-        {
-            get
-            {
-                return this.alias.Value;
-            }
-        }
+        public ParameterExpression Alias => this.alias.Value;
 
         private readonly Func<string, ParameterExpression> aliasCreatorFunc;
 
@@ -184,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             selectClause = SqlSelectClause.Create(selectClause.SelectSpec, selectClause.TopSpec ?? this.topSpec, selectClause.HasDistinct);
             SqlOffsetLimitClause offsetLimitClause = (this.offsetSpec != null) ?
                 SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(SqlNumberLiteral.Create(int.MaxValue))) :
-                offsetLimitClause = default(SqlOffsetLimitClause);
+                offsetLimitClause = default;
             SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, /*GroupBy*/ null, this.orderByClause, offsetLimitClause);
             return result;
         }

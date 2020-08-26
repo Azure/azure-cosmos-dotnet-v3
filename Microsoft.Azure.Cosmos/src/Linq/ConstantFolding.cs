@@ -100,17 +100,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static MemberBinding FoldBinding(MemberBinding inputExpression)
         {
-            switch (inputExpression.BindingType)
+            return inputExpression.BindingType switch
             {
-                case MemberBindingType.Assignment:
-                    return ConstantFolding.FoldMemberAssignment((MemberAssignment)inputExpression);
-                case MemberBindingType.MemberBinding:
-                    return ConstantFolding.FoldMemberMemberBinding((MemberMemberBinding)inputExpression);
-                case MemberBindingType.ListBinding:
-                    return ConstantFolding.FoldMemberListBinding((MemberListBinding)inputExpression);
-                default:
-                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentUICulture, "Unhandled binding type '{0}'", inputExpression.BindingType));
-            }
+                MemberBindingType.Assignment => ConstantFolding.FoldMemberAssignment((MemberAssignment)inputExpression),
+                MemberBindingType.MemberBinding => ConstantFolding.FoldMemberMemberBinding((MemberMemberBinding)inputExpression),
+                MemberBindingType.ListBinding => ConstantFolding.FoldMemberListBinding((MemberListBinding)inputExpression),
+                _ => throw new DocumentQueryException(string.Format(CultureInfo.CurrentUICulture, "Unhandled binding type '{0}'", inputExpression.BindingType)),
+            };
         }
 
         public static ElementInit FoldElementInitializer(ElementInit inputExpression)

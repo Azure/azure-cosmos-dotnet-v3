@@ -558,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                     ReadOnlySpan<(OrderByColumn orderByColumn, CosmosElement orderByItem)> columnAndItemPrefix = columnAndItems.Span.Slice(start: 0, length: prefixLength);
 
                     bool lastPrefix = prefixLength == numOrderByItems;
-                    bool firstPrefix = prefixLength == 1;
+                    _ = prefixLength == 1;
 
                     CosmosOrderByItemQueryExecutionContext.AppendToBuilders(builders, "(");
 

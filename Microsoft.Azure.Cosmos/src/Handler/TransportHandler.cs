@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -19,12 +18,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public TransportHandler(CosmosClient client)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         public override async Task<ResponseMessage> SendAsync(

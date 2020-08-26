@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
-    using System.IO;
     using System.Security;
     using System.Security.Cryptography;
 
@@ -14,8 +13,8 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly String base64EncodedKey;
         private readonly byte[] keyBytes;
+        private readonly ConcurrentQueue<HMACSHA256> hmacPool;
         private SecureString secureString;
-        private ConcurrentQueue<HMACSHA256> hmacPool;
 
         public StringHMACSHA256Hash(String base64EncodedKey)
         {

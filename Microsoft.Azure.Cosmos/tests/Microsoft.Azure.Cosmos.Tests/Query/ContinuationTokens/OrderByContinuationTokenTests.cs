@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

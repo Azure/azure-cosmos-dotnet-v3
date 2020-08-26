@@ -22,13 +22,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <param name="checkpointFrequency">Defined <see cref="CheckpointFrequency"/></param>
         public CheckpointerObserverFactory(ChangeFeedObserverFactory<T> observerFactory, CheckpointFrequency checkpointFrequency)
         {
-            if (observerFactory == null)
-                throw new ArgumentNullException(nameof(observerFactory));
-            if (checkpointFrequency == null)
-                throw new ArgumentNullException(nameof(checkpointFrequency));
-
-            this.observerFactory = observerFactory;
-            this.checkpointFrequency = checkpointFrequency;
+            this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
+            this.checkpointFrequency = checkpointFrequency ?? throw new ArgumentNullException(nameof(checkpointFrequency));
         }
 
         /// <summary>

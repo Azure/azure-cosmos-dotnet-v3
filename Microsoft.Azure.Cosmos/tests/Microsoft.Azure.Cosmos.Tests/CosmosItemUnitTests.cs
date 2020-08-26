@@ -10,13 +10,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
-    using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -172,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             //null should return null
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(
                 MockCosmosUtil.Serializer.ToStream(new { pk = (object)null }),
-                default(CancellationToken));
+                default);
             Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
         }
 
@@ -755,8 +751,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
-                response.Content = request.Content;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 

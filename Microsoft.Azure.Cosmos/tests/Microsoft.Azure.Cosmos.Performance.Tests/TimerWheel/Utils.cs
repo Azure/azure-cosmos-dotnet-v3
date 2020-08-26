@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
     internal static class TimerUtilities
     {
-        private static Random random = new Random();
+        private static readonly Random random = new Random();
         public static IReadOnlyList<int> GenerateTimeoutList(
             int count,
             int maxTimeoutValue,

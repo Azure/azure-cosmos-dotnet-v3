@@ -282,33 +282,16 @@
                     "SELECT * FROM t")).Single();
 
                 Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
-
-                string query;
-                switch (args.Name)
+                string query = args.Name switch
                 {
-                    case "Guid":
-                        query = $"SELECT * FROM T WHERE T.Guid = '{(Guid)args.Value}'";
-                        break;
-                    case "Enum":
-                        query = $"SELECT * FROM T WHERE T.Enum = '{(HttpStatusCode)args.Value}'";
-                        break;
-                    case "DateTime":
-                        query = $"SELECT * FROM T WHERE T.DateTime = '{(DateTime)args.Value}'";
-                        break;
-                    case "CustomEnum":
-                        query = $"SELECT * FROM T WHERE T.CustomEnum = '{(HttpStatusCode)args.Value}'";
-                        break;
-                    case "ResourceId":
-                        query = $"SELECT * FROM T WHERE T.ResourceId = '{(string)args.Value}'";
-                        break;
-                    case "CustomDateTime":
-                        query = $"SELECT * FROM T WHERE T.CustomDateTime = '{(DateTime)args.Value}'";
-                        break;
-                    default:
-                        query = null;
-                        break;
-                }
-
+                    "Guid" => $"SELECT * FROM T WHERE T.Guid = '{(Guid)args.Value}'",
+                    "Enum" => $"SELECT * FROM T WHERE T.Enum = '{(HttpStatusCode)args.Value}'",
+                    "DateTime" => $"SELECT * FROM T WHERE T.DateTime = '{(DateTime)args.Value}'",
+                    "CustomEnum" => $"SELECT * FROM T WHERE T.CustomEnum = '{(HttpStatusCode)args.Value}'",
+                    "ResourceId" => $"SELECT * FROM T WHERE T.ResourceId = '{(string)args.Value}'",
+                    "CustomDateTime" => $"SELECT * FROM T WHERE T.CustomDateTime = '{(DateTime)args.Value}'",
+                    _ => null,
+                };
                 returnedDoc = (await container.GetItemQueryIterator<SpecialPropertyDocument>(
                     query,
                     requestOptions: new QueryRequestOptions()

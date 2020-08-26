@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
             this.bodyStream = new MemoryStream(approximateTotalLength + (operationSerializationOverheadOverEstimateInBytes * materializedCount));
             this.operationResizableWriteBuffer = new MemorySpanResizer<byte>(estimatedMaxOperationLength + operationSerializationOverheadOverEstimateInBytes);
 
-            Result r = await this.bodyStream.WriteRecordIOAsync(default(Segment), this.WriteOperation);
+            Result r = await this.bodyStream.WriteRecordIOAsync(default, this.WriteOperation);
             Debug.Assert(r == Result.Success, "Failed to serialize batch request");
 
             this.bodyStream.Position = 0;
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
                     this.shouldDeleteLastWrittenRecord = true;
                 }
 
-                buffer = default(ReadOnlyMemory<byte>);
+                buffer = default;
                 return Result.Success;
             }
 
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (index >= this.operations.Count)
             {
-                buffer = default(ReadOnlyMemory<byte>);
+                buffer = default;
                 return Result.Success;
             }
 

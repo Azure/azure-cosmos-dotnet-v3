@@ -233,25 +233,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            Container container;
-            switch (collectionType)
+            Container container = collectionType switch
             {
-                case CollectionTypes.NonPartitioned:
-                    container = await this.CreateNonPartitionedContainerAsync(indexingPolicy);
-                    break;
-
-                case CollectionTypes.SinglePartition:
-                    container = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
-                    break;
-
-                case CollectionTypes.MultiPartition:
-                    container = await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
-            }
-
+                CollectionTypes.NonPartitioned => await this.CreateNonPartitionedContainerAsync(indexingPolicy),
+                CollectionTypes.SinglePartition => await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy),
+                CollectionTypes.MultiPartition => await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy),
+                _ => throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}"),
+            };
             List<CosmosObject> insertedDocuments = new List<CosmosObject>();
             foreach (string document in documents)
             {
@@ -444,33 +432,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         continue;
                     }
 
-                    Task<(Container, IReadOnlyList<CosmosObject>)> createContainerTask;
-                    switch (collectionType)
+                    Task<(Container, IReadOnlyList<CosmosObject>)> createContainerTask = collectionType switch
                     {
-                        case CollectionTypes.NonPartitioned:
-                            createContainerTask = this.CreateNonPartitionedContainerAndIngestDocumentsAsync(
-                                documents,
-                                indexingPolicy);
-                            break;
-
-                        case CollectionTypes.SinglePartition:
-                            createContainerTask = this.CreateSinglePartitionContainerAndIngestDocumentsAsync(
-                                documents,
-                                partitionKey,
-                                indexingPolicy);
-                            break;
-
-                        case CollectionTypes.MultiPartition:
-                            createContainerTask = this.CreateMultiPartitionContainerAndIngestDocumentsAsync(
-                                documents,
-                                partitionKey,
-                                indexingPolicy);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
-                    }
-
+                        CollectionTypes.NonPartitioned => this.CreateNonPartitionedContainerAndIngestDocumentsAsync(
+                                                       documents,
+                                                       indexingPolicy),
+                        CollectionTypes.SinglePartition => this.CreateSinglePartitionContainerAndIngestDocumentsAsync(
+        documents,
+        partitionKey,
+        indexingPolicy),
+                        CollectionTypes.MultiPartition => this.CreateMultiPartitionContainerAndIngestDocumentsAsync(
+        documents,
+        partitionKey,
+        indexingPolicy),
+                        _ => throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}"),
+                    };
                     collectionsAndDocuments.Add(await createContainerTask);
                 }
 
@@ -525,48 +501,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static ConnectionMode GetTargetConnectionMode(ConnectionModes connectionMode)
         {
-            ConnectionMode targetConnectionMode;
-            switch (connectionMode)
+            var targetConnectionMode = connectionMode switch
             {
-                case ConnectionModes.Gateway:
-                    targetConnectionMode = ConnectionMode.Gateway;
-                    break;
-
-                case ConnectionModes.Direct:
-                    targetConnectionMode = ConnectionMode.Direct;
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
-            }
-
+                ConnectionModes.Gateway => ConnectionMode.Gateway,
+                ConnectionModes.Direct => ConnectionMode.Direct,
+                _ => throw new ArgumentException($"Unexpected connection mode: {connectionMode}"),
+            };
             return targetConnectionMode;
         }
 
         internal CosmosClient CreateDefaultCosmosClient(ConnectionMode connectionMode)
         {
-            switch (connectionMode)
+            return connectionMode switch
             {
-                case ConnectionMode.Gateway:
-                    return this.GatewayClient;
-                case ConnectionMode.Direct:
-                    return this.Client;
-                default:
-                    throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
-            }
+                ConnectionMode.Gateway => this.GatewayClient,
+                ConnectionMode.Direct => this.Client,
+                _ => throw new ArgumentException($"Unexpected connection mode: {connectionMode}"),
+            };
         }
 
         internal CosmosClient CreateNewCosmosClient(ConnectionMode connectionMode)
         {
-            switch (connectionMode)
+            return connectionMode switch
             {
-                case ConnectionMode.Gateway:
-                    return TestCommon.CreateCosmosClient(true);
-                case ConnectionMode.Direct:
-                    return TestCommon.CreateCosmosClient(false);
-                default:
-                    throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
-            }
+                ConnectionMode.Gateway => TestCommon.CreateCosmosClient(true),
+                ConnectionMode.Direct => TestCommon.CreateCosmosClient(false),
+                _ => throw new ArgumentException($"Unexpected connection mode: {connectionMode}"),
+            };
         }
 
         internal static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(

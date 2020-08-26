@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -25,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using JsonReader = Json.JsonReader;
-    using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
 
     [TestClass]
@@ -360,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                    await testContainer.GetNonePartitionKeyValueAsync(default);
                     Assert.Fail();
                 }
                 catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -378,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                await testContainer.GetNonePartitionKeyValueAsync(default);
             }
 
             // expected once post create 
@@ -388,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRIDAsync(default(CancellationToken));
+                await testContainer.GetRIDAsync(default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -399,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRoutingMapAsync(default(CancellationToken));
+                await testContainer.GetRoutingMapAsync(default);
                 expected = count;
             }
 
@@ -1940,7 +1938,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate, bool isQuery)
         {
-            Func<Container, HttpStatusCode, Task> operation = null;
+            Func<Container, HttpStatusCode, Task> operation;
             if (isQuery)
             {
                 operation = ExecuteQueryAsync;

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Net;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KeyVaultKeyUriProperties"/> class.

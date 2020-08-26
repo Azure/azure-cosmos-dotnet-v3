@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -70,33 +69,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            TryCatch<IDocumentQueryExecutionComponent> tryCreateAggregate;
-            switch (executionEnvironment)
+            var tryCreateAggregate = executionEnvironment switch
             {
-                case ExecutionEnvironment.Client:
-                    tryCreateAggregate = await ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
-                        aggregates,
-                        aliasToAggregateType,
-                        orderedAliases,
-                        hasSelectValue,
-                        continuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    tryCreateAggregate = await ComputeAggregateDocumentQueryExecutionComponent.TryCreateAsync(
-                        aggregates,
-                        aliasToAggregateType,
-                        orderedAliases,
-                        hasSelectValue,
-                        continuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
-            }
-
+                ExecutionEnvironment.Client => await ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                                       aggregates,
+                                       aliasToAggregateType,
+                                       orderedAliases,
+                                       hasSelectValue,
+                                       continuationToken,
+                                       tryCreateSourceAsync),
+                ExecutionEnvironment.Compute => await ComputeAggregateDocumentQueryExecutionComponent.TryCreateAsync(
+aggregates,
+aliasToAggregateType,
+orderedAliases,
+hasSelectValue,
+continuationToken,
+tryCreateSourceAsync),
+                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
+            };
             return tryCreateAggregate;
         }
 

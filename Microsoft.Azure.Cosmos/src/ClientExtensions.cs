@@ -16,26 +16,24 @@ namespace Microsoft.Azure.Cosmos
         public static async Task<HttpResponseMessage> GetAsync(this HttpClient client,
             Uri uri,
             INameValueCollection additionalHeaders = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (uri == null) throw new ArgumentNullException("uri");
 
             // GetAsync doesn't let clients to pass in additional headers. So, we are
             // internally using SendAsync and add the additional headers to requestMessage. 
-            using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri))
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (additionalHeaders != null)
             {
-                if (additionalHeaders != null)
+                foreach (string header in additionalHeaders)
                 {
-                    foreach (string header in additionalHeaders)
+                    if (GatewayStoreClient.IsAllowedRequestHeader(header))
                     {
-                        if (GatewayStoreClient.IsAllowedRequestHeader(header))
-                        {
-                            requestMessage.Headers.TryAddWithoutValidation(header, additionalHeaders[header]);
-                        }
+                        requestMessage.Headers.TryAddWithoutValidation(header, additionalHeaders[header]);
                     }
                 }
-                return await client.SendHttpAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             }
+            return await client.SendHttpAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         }
 
         public static Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)

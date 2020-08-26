@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
-        private HttpClient httpClient;
-        private JsonSerializerSettings SerializerSettings;
+        private readonly HttpClient httpClient;
+        private readonly JsonSerializerSettings SerializerSettings;
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
@@ -65,14 +65,14 @@ namespace Microsoft.Azure.Cosmos
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default(CancellationToken)))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
             }
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(requestMessage, cancellationToken);
         }
@@ -162,13 +162,8 @@ namespace Microsoft.Azure.Cosmos
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-
             string resourceLink = responseMessage.RequestMessage.RequestUri.LocalPath;
-            if (!PathsHelper.TryParsePathSegments(resourceLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased))
+            if (!PathsHelper.TryParsePathSegments(resourceLink, out _, out _, out string resourceIdOrFullName, out _))
             {
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
@@ -208,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                String message = await responseMessage.Content.ReadAsStringAsync();
+                _ = await responseMessage.Content.ReadAsStringAsync();
                 return new DocumentClientException(
                     message: context.ToString(),
                     innerException: null,
@@ -270,7 +265,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             Uri physicalAddress)
         {
-            HttpMethod httpMethod = HttpMethod.Head;
+            _ = HttpMethod.Head;
+            HttpMethod httpMethod;
             if (request.OperationType == OperationType.Create ||
                 request.OperationType == OperationType.Upsert ||
                 request.OperationType == OperationType.Query ||
@@ -393,9 +389,8 @@ namespace Microsoft.Azure.Cosmos
                         DateTime receivedTimeUtc = DateTime.UtcNow;
                         durationTimeSpan = receivedTimeUtc - sendTimeUtc;
 
-                        IEnumerable<string> headerValues;
                         Guid activityId = Guid.Empty;
-                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out headerValues) &&
+                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out IEnumerable<string> headerValues) &&
                             headerValues.Count() != 0)
                         {
                             activityId = new Guid(headerValues.First());

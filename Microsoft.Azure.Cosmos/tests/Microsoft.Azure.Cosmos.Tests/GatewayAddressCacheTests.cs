@@ -25,12 +25,12 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayAddressCacheTests
     {
         private const string DatabaseAccountApiEndpoint = "https://endpoint.azure.com";
-        private Mock<IAuthorizationTokenProvider> mockTokenProvider;
-        private Mock<IServiceConfigurationReader> mockServiceConfigReader;
-        private int targetReplicaSetSize = 4;
-        private PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
-        private ServiceIdentity serviceIdentity;
-        private Uri serviceName;
+        private readonly Mock<IAuthorizationTokenProvider> mockTokenProvider;
+        private readonly Mock<IServiceConfigurationReader> mockServiceConfigReader;
+        private readonly int targetReplicaSetSize = 4;
+        private readonly PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
+        private readonly ServiceIdentity serviceIdentity;
+        private readonly Uri serviceName;
 
         public GatewayAddressCacheTests()
         {
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
             public override void Post(SendOrPostCallback d, object state)
             {
                 lock (this.locker)

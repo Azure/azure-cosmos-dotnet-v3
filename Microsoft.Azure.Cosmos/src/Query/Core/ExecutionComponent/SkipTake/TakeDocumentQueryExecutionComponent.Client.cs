@@ -163,23 +163,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
                 string updatedContinuationToken;
                 if (!this.IsDone && (sourcePage.DisallowContinuationTokenMessage == null))
                 {
-                    switch (this.takeEnum)
+                    updatedContinuationToken = this.takeEnum switch
                     {
-                        case TakeEnum.Limit:
-                            updatedContinuationToken = new LimitContinuationToken(
-                                limit: this.takeCount,
-                                sourceToken: sourcePage.ContinuationToken).ToString();
-                            break;
-
-                        case TakeEnum.Top:
-                            updatedContinuationToken = new TopContinuationToken(
-                                top: this.takeCount,
-                                sourceToken: sourcePage.ContinuationToken).ToString();
-                            break;
-
-                        default:
-                            throw new ArgumentOutOfRangeException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}.");
-                    }
+                        TakeEnum.Limit => new LimitContinuationToken(
+                                                       limit: this.takeCount,
+                                                       sourceToken: sourcePage.ContinuationToken).ToString(),
+                        TakeEnum.Top => new TopContinuationToken(
+top: this.takeCount,
+sourceToken: sourcePage.ContinuationToken).ToString(),
+                        _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}."),
+                    };
                 }
                 else
                 {

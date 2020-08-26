@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private class CustomSerializer : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
 
             public override T FromStream<T>(Stream stream)
             {

@@ -20,25 +20,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestHandler documentFeedHandler,
             RequestHandler pointOperationHandler)
         {
-            if (documentFeedHandler == null)
-            {
-                throw new ArgumentNullException(nameof(documentFeedHandler));
-            }
-
-            if (pointOperationHandler == null)
-            {
-                throw new ArgumentNullException(nameof(pointOperationHandler));
-            }
-
-            this.documentFeedHandler = documentFeedHandler;
-            this.pointOperationHandler = pointOperationHandler;
+            this.documentFeedHandler = documentFeedHandler ?? throw new ArgumentNullException(nameof(documentFeedHandler));
+            this.pointOperationHandler = pointOperationHandler ?? throw new ArgumentNullException(nameof(pointOperationHandler));
         }
 
         public override Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            RequestHandler targetHandler = null;
+            RequestHandler targetHandler;
             if (request.IsPartitionKeyRangeHandlerRequired)
             {
                 targetHandler = this.documentFeedHandler;

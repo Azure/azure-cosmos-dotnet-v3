@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         internal NamedCrs(string name)
             : base(CrsType.Named)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
-            this.Name = name;
+            this.Name = name ?? throw new ArgumentNullException("name");
         }
 
         /// <summary>

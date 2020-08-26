@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -62,13 +61,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void OperationKindMatchesDirect()
         {
-            AssertEnums<Cosmos.OperationKind, Documents.OperationKind>();
+            this.AssertEnums<Cosmos.OperationKind, OperationKind>();
         }
 
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
+            this.AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -242,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void PartitionKeyDefinitionVersionValuesTest()
         {
-            AssertEnums<Cosmos.PartitionKeyDefinitionVersion, Documents.PartitionKeyDefinitionVersion>();
+            this.AssertEnums<Cosmos.PartitionKeyDefinitionVersion, PartitionKeyDefinitionVersion>();
         }
 
         [TestMethod]

@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
-    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
 

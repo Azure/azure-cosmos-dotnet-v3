@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -35,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Uri databaseUri;
         private Uri collectionUri;
         private Uri partitionedCollectionUri;
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         internal abstract DocumentClient CreateDocumentClient(
             Uri hostUri,
@@ -123,15 +122,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestDateParseHandlingOnReadDocument()
         {
             const string jsonProperty = "jsonString";
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             // Verify round-trip create and read document
             RequestOptions applyRequestOptions = this.ApplyRequestOptions(new RequestOptions(), serializerSettings);
@@ -160,15 +157,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestDateParseHandlingOnDocumentQuery()
         {
             const string jsonProperty = "jsonString";
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             FeedOptions options = this.ApplyFeedOptions(new FeedOptions() { EnableCrossPartitionQuery = true }, serializerSettings);
 
@@ -184,15 +179,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             const string jsonProperty = "jsonString";
 
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             // Verify with stored procedure
             StoredProcedure storedProcedure = new StoredProcedure();
@@ -588,7 +581,7 @@ function bulkImport(docs) {
         private class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-            private JsonSerializer serializer;
+            private readonly JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
                 this.serializer = JsonSerializer.Create(jsonSerializerSettings);
@@ -728,7 +721,7 @@ function bulkImport(docs) {
                 JsonSerializer serializer)
             {
                 return reader.TokenType == JsonToken.Null
-                    ? default(TSource)
+                    ? default
                     : this.Deserializer(serializer.Deserialize<TDestination>(reader));
             }
         }
@@ -1005,7 +998,7 @@ function bulkImport(docs) {
                 JsonSerializer jsonSerializer)
             {
                 return jsonReader.Value == null
-                    ? default(TSource)
+                    ? default
                     : this.Deserializer((string)jsonReader.Value);
             }
         }

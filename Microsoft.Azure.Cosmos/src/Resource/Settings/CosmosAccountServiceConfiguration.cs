@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosAccountServiceConfiguration(Func<Task<AccountProperties>> accountPropertiesTaskFunc)
         {
-            if (accountPropertiesTaskFunc == null)
-            {
-                throw new ArgumentNullException(nameof(accountPropertiesTaskFunc));
-            }
-
-            this.accountPropertiesTaskFunc = accountPropertiesTaskFunc;
+            this.accountPropertiesTaskFunc = accountPropertiesTaskFunc ?? throw new ArgumentNullException(nameof(accountPropertiesTaskFunc));
         }
 
         public IDictionary<string, object> QueryEngineConfiguration => this.AccountProperties.QueryEngineConfiguration;

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     using System.Linq;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using OfflineEngine;
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;

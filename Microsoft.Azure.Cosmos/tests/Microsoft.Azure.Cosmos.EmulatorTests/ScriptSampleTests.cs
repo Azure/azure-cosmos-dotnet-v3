@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             doc = (dynamic)this.client.CreateDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Result.Resource;
 
             // 2. Create with same uid -- conflict.
-            AssertThrows(
+            this.AssertThrows(
                 () => this.client.CreateDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait(),
                 typeof(DocumentClientException),
                 "Create with same email didn't throw");
@@ -77,26 +77,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // 3. Replace, change uid.
             doc.Uid = "nik";
             this.client.ReplaceDocumentAsync(doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("nik");
+            this.ValidateReadMetadoc("nik");
 
             // 4. Replace, change other property (id). Metadoc stays the same as unique property is not changed.
             doc.Id = "TestUniqueConstraintSample_2";
             this.client.ReplaceDocumentAsync(doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("nik");
+            this.ValidateReadMetadoc("nik");
 
             // 5. Upsert, change uid.
             doc.Uid = "cam";
             this.client.UpsertDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("cam");
+            this.ValidateReadMetadoc("cam");
 
             // 6. Upsert, change other.
             doc.Other = "cam";
             this.client.UpsertDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait();
-            ValidateReadMetadoc("cam");
+            this.ValidateReadMetadoc("cam");
 
             // 7. Upsert, new id causes insert which would cause another doc with same value of unique property.
             doc.Id = "TestUniqueConstraintSample_3";
-            AssertThrows(
+            this.AssertThrows(
                 () => this.client.UpsertDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Wait(),
                 typeof(DocumentClientException),
                 "Create with same email didn't throw");
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             doc.Id = "TestUniqueConstraintSample_2";
             this.client.DeleteDocumentAsync(doc.SelfLink, triggerRequestOptions).Wait();
 
-            ValidateReadMetadoc("lion");
+            this.ValidateReadMetadoc("lion");
         }
 
         private void ValidateReadMetadoc(string expectedUid)

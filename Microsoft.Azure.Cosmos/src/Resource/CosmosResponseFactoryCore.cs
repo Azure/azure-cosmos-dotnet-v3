@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (responseMessage.Content == null)
             {
-                return default(T);
+                return default;
             }
 
             return this.serializerCore.FromStream<T>(responseMessage.Content);

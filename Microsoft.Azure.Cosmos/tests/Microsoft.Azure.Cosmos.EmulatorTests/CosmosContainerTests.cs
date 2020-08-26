@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -1062,7 +1061,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TimeToLivePropertyPath = "/creationDate",
             };
 
-            ContainerResponse containerResponse = null;
+            ContainerResponse containerResponse;
             try
             {
                 containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);

@@ -36,17 +36,13 @@ namespace Microsoft.Azure.Cosmos
 
         public static string FromIndexingDirective(IndexingDirective directive)
         {
-            switch (directive)
+            return directive switch
             {
-                case IndexingDirective.Default:
-                    return IndexingDirectiveStrings.Default;
-                case IndexingDirective.Exclude:
-                    return IndexingDirectiveStrings.Exclude;
-                case IndexingDirective.Include:
-                    return IndexingDirectiveStrings.Include;
-                default:
-                    throw new ArgumentException(string.Format("Missing indexing directive string for {0}", directive));
-            }
+                IndexingDirective.Default => IndexingDirectiveStrings.Default,
+                IndexingDirective.Exclude => IndexingDirectiveStrings.Exclude,
+                IndexingDirective.Include => IndexingDirectiveStrings.Include,
+                _ => throw new ArgumentException(string.Format("Missing indexing directive string for {0}", directive)),
+            };
         }
     }
 }

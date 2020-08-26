@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -689,21 +688,15 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            switch (this.ConsistencyLevel.Value)
+            return this.ConsistencyLevel.Value switch
             {
-                case Cosmos.ConsistencyLevel.BoundedStaleness:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.ConsistentPrefix:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.Eventual:
-                    return Documents.ConsistencyLevel.Eventual;
-                case Cosmos.ConsistencyLevel.Session:
-                    return Documents.ConsistencyLevel.Session;
-                case Cosmos.ConsistencyLevel.Strong:
-                    return Documents.ConsistencyLevel.Strong;
-                default:
-                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
-            }
+                Cosmos.ConsistencyLevel.BoundedStaleness => Documents.ConsistencyLevel.BoundedStaleness,
+                Cosmos.ConsistencyLevel.ConsistentPrefix => Documents.ConsistencyLevel.BoundedStaleness,
+                Cosmos.ConsistencyLevel.Eventual => Documents.ConsistencyLevel.Eventual,
+                Cosmos.ConsistencyLevel.Session => Documents.ConsistencyLevel.Session,
+                Cosmos.ConsistencyLevel.Strong => Documents.ConsistencyLevel.Strong,
+                _ => throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}"),
+            };
         }
 
         internal static string GetAccountEndpoint(string connectionString)

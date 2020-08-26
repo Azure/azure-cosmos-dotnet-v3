@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.

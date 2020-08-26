@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="CancellationToken"/>  scenarios.

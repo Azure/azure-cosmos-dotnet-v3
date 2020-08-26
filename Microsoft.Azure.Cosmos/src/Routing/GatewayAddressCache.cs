@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private const string AddressResolutionBatchSize = "AddressResolutionBatchSize";
         private const int DefaultBatchSize = 50;
-
-        private readonly Uri serviceEndpoint;
         private readonly Uri addressEndpoint;
 
         private readonly AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
@@ -43,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
-        private HttpClient httpClient;
+        private readonly HttpClient httpClient;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
-            this.serviceEndpoint = serviceEndpoint;
+            this.ServiceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
             this.serverPartitionAddressCache = new AsyncCache<PartitionKeyRangeIdentity, PartitionAddressInformation>();
             this.suboptimalServerPartitionTimestamps = new ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime>();
@@ -79,13 +77,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
         }
 
-        public Uri ServiceEndpoint
-        {
-            get
-            {
-                return this.serviceEndpoint;
-            }
-        }
+        public Uri ServiceEndpoint { get; }
 
         [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
         [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
@@ -104,14 +96,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
 #endif
-                int userSpecifiedBatchSize = 0;
-                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out userSpecifiedBatchSize))
+#endif
+                if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out int userSpecifiedBatchSize))
                 {
                     batchSize = userSpecifiedBatchSize;
                 }
 #if NETSTANDARD20
             }
-#endif  
 #endif
 
             string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),
@@ -172,8 +163,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return (await this.ResolveMasterAsync(request, forceRefreshPartitionAddresses)).Item2;
                 }
 
-                DateTime suboptimalServerPartitionTimestamp;
-                if (this.suboptimalServerPartitionTimestamps.TryGetValue(partitionKeyRangeIdentity, out suboptimalServerPartitionTimestamp))
+                if (this.suboptimalServerPartitionTimestamps.TryGetValue(partitionKeyRangeIdentity, out DateTime suboptimalServerPartitionTimestamp))
                 {
                     bool forceRefreshDueToSuboptimalPartitionReplicaSet =
                         DateTime.UtcNow.Subtract(suboptimalServerPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds);
@@ -198,8 +188,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken,
                         forceRefresh: true);
 
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
                 else
                 {
@@ -228,8 +217,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     (ex.StatusCode == HttpStatusCode.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone))
                 {
                     //remove from suboptimal cache in case the the collection+pKeyRangeId combo is gone.
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
 
                     return null;
                 }
@@ -240,8 +228,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (forceRefreshPartitionAddresses)
                 {
-                    DateTime ignoreDateTime;
-                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
+                    this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out DateTime ignoreDateTime);
                 }
 
                 throw;
@@ -258,22 +245,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             List<Task> tasks = new List<Task>();
-            HashSet<PartitionKeyRangeIdentity> pkRangeIds;
-            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out pkRangeIds))
+            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIds)
                 {
                     DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
                        pkRangeId.CollectionRid,
                        pkRangeId.PartitionKeyRangeId,
-                       this.serviceEndpoint);
+                       this.ServiceEndpoint);
 
                     tasks.Add(this.serverPartitionAddressCache.RemoveAsync(pkRangeId));
                 }
 
                 // remove the server key from the map since we are updating the addresses
-                HashSet<PartitionKeyRangeIdentity> ignorePkRanges;
-                this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out ignorePkRanges);
+                this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out _);
             }
 
             return Task.WhenAll(tasks);
@@ -576,32 +561,22 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static Protocol ProtocolFromString(string protocol)
         {
-            switch (protocol.ToLowerInvariant())
+            return (protocol.ToLowerInvariant()) switch
             {
-                case RuntimeConstants.Protocols.HTTPS:
-                    return Protocol.Https;
-
-                case RuntimeConstants.Protocols.RNTBD:
-                    return Protocol.Tcp;
-
-                default:
-                    throw new ArgumentOutOfRangeException("protocol");
-            }
+                RuntimeConstants.Protocols.HTTPS => Protocol.Https,
+                RuntimeConstants.Protocols.RNTBD => Protocol.Tcp,
+                _ => throw new ArgumentOutOfRangeException("protocol"),
+            };
         }
 
         private static string ProtocolString(Protocol protocol)
         {
-            switch ((int)protocol)
+            return ((int)protocol) switch
             {
-                case (int)Protocol.Https:
-                    return RuntimeConstants.Protocols.HTTPS;
-
-                case (int)Protocol.Tcp:
-                    return RuntimeConstants.Protocols.RNTBD;
-
-                default:
-                    throw new ArgumentOutOfRangeException("protocol");
-            }
+                (int)Protocol.Https => RuntimeConstants.Protocols.HTTPS,
+                (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
+                _ => throw new ArgumentOutOfRangeException("protocol"),
+            };
         }
     }
 }

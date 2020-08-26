@@ -48,12 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedOptions feedOptions,
             object partitionKey = null)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException("client");
-            }
-
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException("client");
             this.resourceTypeEnum = resourceTypeEnum;
             this.resourceType = resourceType;
             this.documentsFeedOrDatabaseLink = documentsFeedOrDatabaseLink;
@@ -146,28 +141,16 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
         }
 
-        public Type ElementType
-        {
-            get { return typeof(T); }
-        }
+        public Type ElementType => typeof(T);
 
         public Expression Expression { get; }
 
-        public IQueryProvider Provider
-        {
-            get { return this.queryProvider; }
-        }
+        public IQueryProvider Provider => this.queryProvider;
 
         /// <summary>
         /// Gets a value indicating whether there are additional results to retrieve. 
         /// </summary>
-        public bool HasMoreResults
-        {
-            get
-            {
-                return this.queryExecutionContext == null || !this.queryExecutionContext.IsDone;
-            }
-        }
+        public bool HasMoreResults => this.queryExecutionContext == null || !this.queryExecutionContext.IsDone;
 
         /// <summary>
         /// Gets the unique ID for this instance of DocumentQuery used to correlate all activityIds generated when fetching from a partition collection.

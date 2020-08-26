@@ -6,11 +6,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -179,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity document = new ToDoActivity()
             {
                 id = Guid.NewGuid().ToString(),
-                description = default(string),
+                description = default,
                 status = "TBD",
                 taskNum = 42,
                 cost = double.MaxValue

@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     internal static class SqlInterpreter
     {
@@ -444,12 +443,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             public WholeCollectionGrouping(IEnumerable<CosmosElement> collection)
             {
-                if (collection == null)
-                {
-                    throw new ArgumentNullException(nameof(collection));
-                }
-
-                this.collection = collection;
+                this.collection = collection ?? throw new ArgumentNullException(nameof(collection));
                 this.Key = null;
             }
 

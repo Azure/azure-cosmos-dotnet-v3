@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
-    using System;
     using BenchmarkDotNet.Running;
 
     class Program

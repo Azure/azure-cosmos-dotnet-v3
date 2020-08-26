@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseTimeSpanField(ReadOnlySpan<byte> corpus, out TimeSpan timeSpan, out int bytesConsumed)
         {
-            (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
+            (BackendMetricsTokenizer.TokenType? tokenType, _) = BackendMetricsTokenizer.Read(corpus);
             if (!tokenType.HasValue || (tokenType.Value != BackendMetricsTokenizer.TokenType.EqualsDelimiter))
             {
                 timeSpan = default;
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseLongField(ReadOnlySpan<byte> corpus, out long value, out int bytesConsumed)
         {
-            (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
+            (BackendMetricsTokenizer.TokenType? tokenType, _) = BackendMetricsTokenizer.Read(corpus);
             if (!tokenType.HasValue || (tokenType.Value != BackendMetricsTokenizer.TokenType.EqualsDelimiter))
             {
                 value = default;
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseDoubleField(ReadOnlySpan<byte> corpus, out double value, out int bytesConsumed)
         {
-            (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
+            (BackendMetricsTokenizer.TokenType? tokenType, _) = BackendMetricsTokenizer.Read(corpus);
             if (!tokenType.HasValue || (tokenType.Value != BackendMetricsTokenizer.TokenType.EqualsDelimiter))
             {
                 value = default;

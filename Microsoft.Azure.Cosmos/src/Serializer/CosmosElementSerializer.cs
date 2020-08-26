@@ -230,13 +230,11 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
         private static string GetRootNodeName(ResourceType resourceType)
         {
-            switch (resourceType)
+            return resourceType switch
             {
-                case Documents.ResourceType.Collection:
-                    return "DocumentCollections";
-                default:
-                    return resourceType.ToResourceTypeString() + "s";
-            }
+                Documents.ResourceType.Collection => "DocumentCollections",
+                _ => resourceType.ToResourceTypeString() + "s",
+            };
         }
     }
 }

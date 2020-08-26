@@ -9,9 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             EventHandler<ReceivedResponseEventArgs> receivedResponse;
             sendingRequest = this.SendingRequestEventHandler;
             receivedResponse = this.ReceivedRequestEventHandler;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         {
             EventHandler<SendingRequestEventArgs> sendingRequest = null;
             EventHandler<ReceivedResponseEventArgs> receivedResponse = null;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {

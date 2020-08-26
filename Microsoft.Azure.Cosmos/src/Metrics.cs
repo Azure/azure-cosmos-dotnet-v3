@@ -22,21 +22,9 @@ namespace Microsoft.Azure.Cosmos
             private set;
         }
 
-        public long ElapsedMilliseconds
-        {
-            get
-            {
-                return this.stopwatch.ElapsedMilliseconds;
-            }
-        }
+        public long ElapsedMilliseconds => this.stopwatch.ElapsedMilliseconds;
 
-        public double AverageElapsedMilliseconds
-        {
-            get
-            {
-                return (double)this.ElapsedMilliseconds / this.Count;
-            }
-        }
+        public double AverageElapsedMilliseconds => (double)this.ElapsedMilliseconds / this.Count;
 
         public void Start()
         {

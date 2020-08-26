@@ -56,12 +56,7 @@ namespace Microsoft.Azure.Cosmos
             }
             internal set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                this.spatialTypesInternal = value;
+                this.spatialTypesInternal = value ?? throw new ArgumentNullException();
             }
         }
 

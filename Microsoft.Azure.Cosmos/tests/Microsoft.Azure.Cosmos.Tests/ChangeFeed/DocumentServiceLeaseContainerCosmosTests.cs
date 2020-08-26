@@ -4,15 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.Tests;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -20,13 +16,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
-        private static DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
+        private static readonly DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
         {
             ContainerNamePrefix = "prefix",
             HostName = "host"
         };
 
-        private static List<DocumentServiceLeaseCore> allLeases = new List<DocumentServiceLeaseCore>()
+        private static readonly List<DocumentServiceLeaseCore> allLeases = new List<DocumentServiceLeaseCore>()
         {
             new DocumentServiceLeaseCore()
             {

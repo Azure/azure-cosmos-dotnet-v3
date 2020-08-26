@@ -361,8 +361,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CancellationToken cancellationToken)
         {
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
-
-            bool getLazyFeedResponse = queryInfo.HasTop;
+            _ = queryInfo.HasTop;
 
             // We need to compute the optimal initial page size for order-by queries
             long optimalPageSize = inputParameters.MaxItemCount;

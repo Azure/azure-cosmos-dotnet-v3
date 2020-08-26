@@ -806,11 +806,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             int failureCount = 0;
             Database databaseForRestrictedUser = clientForRestrictedUser.GetDatabase(EncryptionTests.database.Id);
             Container containerForRestrictedUser = databaseForRestrictedUser.GetContainer(EncryptionTests.itemContainer.Id);
-            Action<DecryptionResult> errorHandler = (decryptionErrorDetails) =>
+            void errorHandler(DecryptionResult decryptionErrorDetails)
             {
                 Assert.AreEqual(decryptionErrorDetails.Exception.Message, $"The CosmosDataEncryptionKeyProvider was not initialized.");
                 failureCount++;
-            };
+            }
             Container encryptionContainerForRestrictedUser = containerForRestrictedUser.WithEncryptor(encryptor);
 
             await EncryptionTests.PerformForbiddenOperationAsync(() =>

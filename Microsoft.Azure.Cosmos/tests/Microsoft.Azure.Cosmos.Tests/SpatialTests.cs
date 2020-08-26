@@ -6,18 +6,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
-    using System.Linq;
-    using System.Reflection;
     using System.Runtime.Serialization;
     using System.Text;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class SpatialTests

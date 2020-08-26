@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Runtime.CompilerServices;
     using System.Security;
     using System.Text;
     using System.Threading;
@@ -174,10 +173,10 @@ namespace Microsoft.Azure.Cosmos
         private DocumentClientEventSource eventSource;
         internal Task initializeTask;
 
-        private JsonSerializerSettings serializerSettings;
+        private readonly JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
-        private Func<TransportClient, TransportClient> transportClientHandlerFactory;
+        private readonly Func<TransportClient, TransportClient> transportClientHandlerFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -631,17 +630,12 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (ResourceToken resourceToken in resourceTokens)
             {
-                bool isNameBasedRequest = false;
-                bool isFeedRequest = false;
-                string resourceTypeString;
-                string resourceIdOrFullName;
-                if (!PathsHelper.TryParsePathSegments(resourceToken.ResourceLink, out isFeedRequest, out resourceTypeString, out resourceIdOrFullName, out isNameBasedRequest))
+                if (!PathsHelper.TryParsePathSegments(resourceToken.ResourceLink, out bool isFeedRequest, out string resourceTypeString, out string resourceIdOrFullName, out bool isNameBasedRequest))
                 {
                     throw new ArgumentException(RMResources.BadUrl, "resourceToken.ResourceLink");
                 }
 
-                List<PartitionKeyAndResourceTokenPair> tokenList;
-                if (!this.resourceTokens.TryGetValue(resourceIdOrFullName, out tokenList))
+                if (!this.resourceTokens.TryGetValue(resourceIdOrFullName, out List<PartitionKeyAndResourceTokenPair> tokenList))
                 {
                     tokenList = new List<PartitionKeyAndResourceTokenPair>();
                     this.resourceTokens.Add(resourceIdOrFullName, tokenList);
@@ -783,7 +777,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public Task OpenAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task OpenAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.InlineIfPossibleAsync(() => this.OpenPrivateInlineAsync(cancellationToken), null, cancellationToken);
         }
@@ -864,8 +858,7 @@ namespace Microsoft.Azure.Cosmos
                 string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
                 if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
-                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out int maxConcurrentConnectionOpenRequestOverrideInt))
                     {
                         this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
@@ -874,8 +867,7 @@ namespace Microsoft.Azure.Cosmos
                 string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
                 {
-                    int openConnectionTimeoutInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out int openConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -884,8 +876,7 @@ namespace Microsoft.Azure.Cosmos
                 string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
                 {
-                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out int idleConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -894,8 +885,7 @@ namespace Microsoft.Azure.Cosmos
                 string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
                 if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
                 {
-                    int timerPoolGranularityInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
+                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out int timerPoolGranularityInSecondsOverrideInt))
                     {
                         // timeoutgranularity specified should be greater than min(5 seconds)
                         if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
@@ -908,8 +898,7 @@ namespace Microsoft.Azure.Cosmos
                 string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
                 if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
                 {
-                    bool enableRntbdChannel = false;
-                    if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                    if (bool.TryParse(enableRntbdChannelOverrideString, out bool enableRntbdChannel))
                     {
                         this.enableRntbdChannel = enableRntbdChannel;
                     }
@@ -1015,8 +1004,7 @@ namespace Microsoft.Azure.Cosmos
                 string enableAuthFailureTracesString = System.Configuration.ConfigurationManager.AppSettings[EnableAuthFailureTracesConfig];
                 if (!string.IsNullOrEmpty(enableAuthFailureTracesString))
                 {
-                    bool enableAuthFailureTracesFlag = false;
-                    if (bool.TryParse(enableAuthFailureTracesString, out enableAuthFailureTracesFlag))
+                    if (bool.TryParse(enableAuthFailureTracesString, out bool enableAuthFailureTracesFlag))
                     {
                         this.enableAuthFailureTraces = enableAuthFailureTracesFlag;
                     }
@@ -1233,8 +1221,7 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                SessionContainer container = value as SessionContainer;
-                if (container == null)
+                if (!(value is SessionContainer container))
                 {
                     throw new ArgumentNullException("value");
                 }
@@ -1248,8 +1235,7 @@ namespace Microsoft.Azure.Cosmos
                         this.ServiceEndpoint.Host));
                 }
 
-                SessionContainer currentSessionContainer = this.sessionContainer as SessionContainer;
-                if (currentSessionContainer == null)
+                if (!(this.sessionContainer is SessionContainer currentSessionContainer))
                 {
                     throw new ArgumentNullException(nameof(currentSessionContainer));
                 }
@@ -1270,9 +1256,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal string GetSessionToken(string collectionLink)
         {
-            SessionContainer sessionContainerInternal = this.sessionContainer as SessionContainer;
-
-            if (sessionContainerInternal == null)
+            if (!(this.sessionContainer is SessionContainer sessionContainerInternal))
             {
                 throw new ArgumentNullException(nameof(sessionContainerInternal));
             }
@@ -1306,24 +1290,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current write endpoint chosen based on availability and preference from the Azure Cosmos DB service.
         /// </summary>
-        public Uri WriteEndpoint
-        {
-            get
-            {
-                return this.GlobalEndpointManager.WriteEndpoints.FirstOrDefault();
-            }
-        }
+        public Uri WriteEndpoint => this.GlobalEndpointManager.WriteEndpoints.FirstOrDefault();
 
         /// <summary>
         /// Gets the current read endpoint chosen based on availability and preference from the Azure Cosmos DB service.
         /// </summary>
-        public Uri ReadEndpoint
-        {
-            get
-            {
-                return this.GlobalEndpointManager.ReadEndpoints.FirstOrDefault();
-            }
-        }
+        public Uri ReadEndpoint => this.GlobalEndpointManager.ReadEndpoints.FirstOrDefault();
 
         /// <summary>
         /// Gets the Connection policy used by the client from the Azure Cosmos DB service.
@@ -1342,15 +1314,10 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>
         [Obsolete]
-        public IDictionary<string, string> ResourceTokens
-        {
-            get
-            {
+        public IDictionary<string, string> ResourceTokens =>
                 // NOTE: if DocumentClient was created using construction taking permission feed and there
                 // are duplicate resource links, we will choose arbitrary token for it here.
-                return (this.resourceTokens != null) ? this.resourceTokens.ToDictionary(pair => pair.Key, pair => pair.Value.First().ResourceToken) : null;
-            }
-        }
+                (this.resourceTokens != null) ? this.resourceTokens.ToDictionary(pair => pair.Key, pair => pair.Value.First().ResourceToken) : null;
 
         /// <summary>
         /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
@@ -1546,14 +1513,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(verb));
             }
 
-            string payload;
             string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
                 request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 verb,
                 request.Headers,
                 AuthorizationTokenType.PrimaryMasterKey,
-                out payload);
+                out string payload);
 
             // Unit-test hook
             if (testAuthorization != null)
@@ -1960,7 +1926,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<Document>> CreateDocumentAsync(string documentsFeedOrDatabaseLink,
             object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             // This call is to just run CreateDocumentInlineAsync in a SynchronizationContext aware environment
             return TaskHelper.InlineIfPossible(() => this.CreateDocumentInlineAsync(documentsFeedOrDatabaseLink, document, options, disableAutomaticIdGeneration, cancellationToken), null, cancellationToken);
@@ -2241,14 +2207,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("targetDocumentCollection");
             }
 
-            bool isFeed;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-            bool isNameBased;
-
             string dbsId;
             string databaseLink = PathsHelper.GetDatabasePath(sourceDocumentCollectionLink);
-            if (PathsHelper.TryParsePathSegments(databaseLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
+            if (PathsHelper.TryParsePathSegments(databaseLink, out bool isFeed, out _, out string resourceIdOrFullName, out bool isNameBased) && isNameBased && !isFeed)
             {
                 string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 dbsId = segments[segments.Length - 1];
@@ -2259,7 +2220,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string sourceCollId;
-            if (PathsHelper.TryParsePathSegments(sourceDocumentCollectionLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
+            if (PathsHelper.TryParsePathSegments(sourceDocumentCollectionLink, out isFeed, out _, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
                 string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 sourceCollId = segments[segments.Length - 1];
@@ -2857,7 +2818,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDocumentPrivateAsync(documentLink, options, retryPolicyInstance, cancellationToken), retryPolicyInstance, cancellationToken);
@@ -3332,7 +3293,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default)
         {
             // This call is to just run ReplaceDocumentInlineAsync in a SynchronizationContext aware environment
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentInlineAsync(documentLink, document, options, cancellationToken), null, cancellationToken);
@@ -3407,7 +3368,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentPrivateAsync(
@@ -3930,7 +3891,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
@@ -4012,7 +3973,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
@@ -5210,7 +5171,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default)
         {
             return TaskHelper.InlineIfPossible(() => this.ReadDocumentFeedInlineAsync(documentsLink, options, cancellationToken), null, cancellationToken);
         }
@@ -5585,7 +5546,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, params dynamic[] procedureParams)
         {
-            return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureLink, null, default(CancellationToken), procedureParams);
+            return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureLink, null, default, procedureParams);
         }
 
         /// <summary>
@@ -5624,7 +5585,7 @@ namespace Microsoft.Azure.Cosmos
                     storedProcedureLink,
                     options,
                     retryPolicyInstance,
-                    default(CancellationToken),
+                    default,
                     procedureParams),
                 retryPolicyInstance);
         }
@@ -5902,7 +5863,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> UpsertDocumentAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> UpsertDocumentAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default)
         {
             // This call is to just run UpsertDocumentInlineAsync in a SynchronizationContext aware environment
             return TaskHelper.InlineIfPossible(() => this.UpsertDocumentInlineAsync(documentsFeedOrDatabaseLink, document, options, disableAutomaticIdGeneration, cancellationToken), null, cancellationToken);
@@ -6369,8 +6330,7 @@ namespace Microsoft.Azure.Cosmos
         private bool TryGetResourceToken(string resourceAddress, PartitionKeyInternal partitionKey, out string resourceToken)
         {
             resourceToken = null;
-            List<PartitionKeyAndResourceTokenPair> partitionKeyTokenPairs;
-            bool isPartitionKeyAndTokenPairListAvailable = this.resourceTokens.TryGetValue(resourceAddress, out partitionKeyTokenPairs);
+            bool isPartitionKeyAndTokenPairListAvailable = this.resourceTokens.TryGetValue(resourceAddress, out List<PartitionKeyAndResourceTokenPair> partitionKeyTokenPairs);
             if (isPartitionKeyAndTokenPairListAvailable)
             {
                 PartitionKeyAndResourceTokenPair partitionKeyTokenPair = partitionKeyTokenPairs.FirstOrDefault(pair => pair.PartitionKey.Contains(partitionKey));
@@ -6559,9 +6519,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (KeyValuePair<string, List<PartitionKeyAndResourceTokenPair>> pair in this.resourceTokens)
                         {
-                            ResourceId tokenRid;
                             if (!PathsHelper.IsNameBased(pair.Key) &&
-                                ResourceId.TryParse(pair.Key, out tokenRid) &&
+                                ResourceId.TryParse(pair.Key, out ResourceId tokenRid) &&
                                 tokenRid.DocumentCollectionId.Equals(resourceId))
                             {
                                 resourceToken = pair.Value[0].ResourceToken;
@@ -6608,7 +6567,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> CreateAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6621,7 +6580,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> UpdateAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6634,7 +6593,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> ReadAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6647,7 +6606,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> ReadFeedAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6660,7 +6619,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> DeleteAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6673,7 +6632,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> ExecuteProcedureAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6686,7 +6645,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> ExecuteQueryAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6699,7 +6658,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<DocumentServiceResponse> UpsertAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicy,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -6736,11 +6695,10 @@ namespace Microsoft.Azure.Cosmos
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
             await this.EnsureValidClientAsync();
-            GatewayStoreModel gatewayModel = this.GatewayStoreModel as GatewayStoreModel;
-            if (gatewayModel != null)
+            if (this.GatewayStoreModel is GatewayStoreModel gatewayModel)
             {
                 using (HttpRequestMessage request = new HttpRequestMessage())
                 {

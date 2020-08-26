@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 {
     using System;
     using System.Linq;
-    using System.Collections.Generic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
 

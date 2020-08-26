@@ -20,25 +20,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
             NamedWriteDelegate namedWriteDelegate,
             BenchmarkSerializationFormat benchmarkSerializationFormat)
         {
-            IJsonWriter jsonWriter;
-            switch (benchmarkSerializationFormat)
+            IJsonWriter jsonWriter = benchmarkSerializationFormat switch
             {
-                case BenchmarkSerializationFormat.Text:
-                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                    break;
-
-                case BenchmarkSerializationFormat.Binary:
-                    jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
-                    break;
-
-                case BenchmarkSerializationFormat.Newtonsoft:
-                    jsonWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'.");
-            }
-
+                BenchmarkSerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
+                BenchmarkSerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
+                BenchmarkSerializationFormat.Newtonsoft => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(BenchmarkSerializationFormat)}: '{benchmarkSerializationFormat}'."),
+            };
             jsonWriter.WriteArrayStart();
 
             for (int i = 0; i < 2000000; i++)

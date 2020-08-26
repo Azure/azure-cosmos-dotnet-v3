@@ -5,8 +5,6 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// JsonNavigator interface for classes that can navigate jsons.

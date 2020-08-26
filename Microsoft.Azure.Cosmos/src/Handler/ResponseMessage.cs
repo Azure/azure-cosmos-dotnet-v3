@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
@@ -166,10 +165,10 @@ namespace Microsoft.Azure.Cosmos
             string resourceLink = this.RequestMessage?.RequestUriString;
             if (PathsHelper.TryParsePathSegments(
                 resourceLink,
-                out bool isFeed,
-                out string resourceTypeString,
+                out _,
+                out _,
                 out string resourceIdOrFullName,
-                out bool isNameBased))
+                out _))
             {
                 Debug.Assert(resourceIdOrFullName != null);
                 return resourceIdOrFullName;

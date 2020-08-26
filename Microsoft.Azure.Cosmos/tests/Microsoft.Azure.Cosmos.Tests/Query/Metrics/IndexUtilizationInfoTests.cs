@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 {
-    using System;
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Collections.Generic;
@@ -15,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         private static readonly IndexUtilizationData data = new IndexUtilizationData(
                 nameof(IndexUtilizationData.FilterExpression),
                 nameof(IndexUtilizationData.IndexDocumentExpression),
-                default(bool),
-                default(bool));
+                default,
+                default);
 
         internal static readonly IndexUtilizationInfo MockIndexUtilizationInfo = new IndexUtilizationInfo(
             new List<IndexUtilizationData>() { data },

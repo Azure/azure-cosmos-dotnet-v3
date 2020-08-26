@@ -486,9 +486,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (Exception ex)
             {
-                DocumentClientException dbcDbExp = ex as DocumentClientException;
-
-                if (dbcDbExp == null)
+                if (!(ex is DocumentClientException dbcDbExp))
                 {
                     Assert.Fail($"Action did not throw DocumentClientException. Actual exception {ex.GetType()}");
                 }

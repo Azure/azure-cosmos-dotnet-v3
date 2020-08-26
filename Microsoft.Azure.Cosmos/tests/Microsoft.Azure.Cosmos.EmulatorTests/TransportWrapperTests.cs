@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Stopwatch watch = Stopwatch.StartNew();
 
                     // Artifically burning some CPU to generate CPU load history
-                    CpuLoadHistory cpuLoadHistory = null;
+                    CpuLoadHistory cpuLoadHistory;
                     while ((cpuLoadHistory = this.cpuMonitor.GetCpuLoad()) == null ||
                         cpuLoadHistory.ToString() == emptyCpuLoadHistoryText)
                     {

@@ -181,11 +181,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             outBuffer[0] = this.algorithmVersion;
             Buffer.BlockCopy(iv, 0, outBuffer, ivStartIndex, iv.Length);
 
-            AesCryptoServiceProvider aesAlg;
-
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
-            if (!this.cryptoProviderPool.TryDequeue(out aesAlg))
+            if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))
             {
                 aesAlg = new AesCryptoServiceProvider();
 
@@ -335,11 +333,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert((count + offset) <= cipherText.Length);
 
             byte[] plainText;
-            AesCryptoServiceProvider aesAlg;
 
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
-            if (!this.cryptoProviderPool.TryDequeue(out aesAlg))
+            if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))
             {
                 aesAlg = new AesCryptoServiceProvider();
 

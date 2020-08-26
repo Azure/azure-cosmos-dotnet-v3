@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary> 
     internal sealed class SubtreeEvaluator : ExpressionVisitor
     {
-        private HashSet<Expression> candidates;
+        private readonly HashSet<Expression> candidates;
 
         public SubtreeEvaluator(HashSet<Expression> candidates)
         {

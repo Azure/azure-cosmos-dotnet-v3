@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         {
             string numberString;
             object value = this.reader.Value;
-            if (value is double doubleValue)
+            if (value is double)
             {
                 numberString = ((double)value).ToString("R");
             }

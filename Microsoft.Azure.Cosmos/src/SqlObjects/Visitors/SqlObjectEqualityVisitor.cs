@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override bool Visit(SqlNullLiteral first, SqlObject secondAsObject)
         {
-            if (!(secondAsObject is SqlNullLiteral second))
+            if (!(secondAsObject is SqlNullLiteral))
             {
                 return false;
             }
@@ -753,7 +753,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override bool Visit(SqlSelectStarSpec first, SqlObject secondAsObject)
         {
-            if (!(secondAsObject is SqlSelectStarSpec second))
+            if (!(secondAsObject is SqlSelectStarSpec))
             {
                 return false;
             }
@@ -873,7 +873,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override bool Visit(SqlUndefinedLiteral first, SqlObject secondAsObject)
         {
-            if (!(secondAsObject is SqlUndefinedLiteral second))
+            if (!(secondAsObject is SqlUndefinedLiteral))
             {
                 return false;
             }

@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         public QueryExecutionContextWithException(Exception exception)
         {
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
-            this.exception = exception;
+            this.exception = exception ?? throw new ArgumentNullException(nameof(exception));
         }
 
         public override bool IsDone => this.returnedErrorResponse;

@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -422,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -480,7 +478,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -566,7 +564,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
@@ -806,7 +804,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {
@@ -875,7 +873,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {

@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
@@ -72,31 +70,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            TryCatch<IDocumentQueryExecutionComponent> tryCreateGroupByComponent;
-            switch (executionEnvironment)
+            var tryCreateGroupByComponent = executionEnvironment switch
             {
-                case ExecutionEnvironment.Client:
-                    tryCreateGroupByComponent = await ClientGroupByDocumentQueryExecutionComponent.TryCreateAsync(
-                        continuationToken,
-                        tryCreateSourceAsync,
-                        groupByAliasToAggregateType,
-                        orderedAliases,
-                        hasSelectValue);
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    tryCreateGroupByComponent = await ComputeGroupByDocumentQueryExecutionComponent.TryCreateAsync(
-                        continuationToken,
-                        tryCreateSourceAsync,
-                        groupByAliasToAggregateType,
-                        orderedAliases,
-                        hasSelectValue);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}");
-            }
-
+                ExecutionEnvironment.Client => await ClientGroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                                       continuationToken,
+                                       tryCreateSourceAsync,
+                                       groupByAliasToAggregateType,
+                                       orderedAliases,
+                                       hasSelectValue),
+                ExecutionEnvironment.Compute => await ComputeGroupByDocumentQueryExecutionComponent.TryCreateAsync(
+continuationToken,
+tryCreateSourceAsync,
+groupByAliasToAggregateType,
+orderedAliases,
+hasSelectValue),
+                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
+            };
             return tryCreateGroupByComponent;
         }
 

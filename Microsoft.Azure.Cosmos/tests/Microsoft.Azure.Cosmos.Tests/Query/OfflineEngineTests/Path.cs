@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Path class which will represent a path in a document tree.
@@ -66,10 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             this.delimiter = delimiter;
         }
 
-        public int Length
-        {
-            get { return this.tokens.Count(); }
-        }
+        public int Length => this.tokens.Count();
 
         public static Path CreateFromString(string stringPath, string delimiter = ".")
         {

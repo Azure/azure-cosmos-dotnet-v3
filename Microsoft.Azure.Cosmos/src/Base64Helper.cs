@@ -29,8 +29,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 nativeBytes = Marshal.AllocCoTaskMem(secureStringLength);
-                uint actualLength = 0;
-                Base64Helper.ParseStringToIntPtr(secureString, nativeBytes, secureStringLength, out actualLength);
+                Base64Helper.ParseStringToIntPtr(secureString, nativeBytes, secureStringLength, out uint actualLength);
 
                 bytes = nativeBytes;
                 bytesLength = actualLength;
@@ -47,7 +46,6 @@ namespace Microsoft.Azure.Cosmos
                     Marshal.FreeCoTaskMem(nativeBytes);
                 }
 
-                nativeBytes = IntPtr.Zero;
                 bytes = IntPtr.Zero;
                 bytesLength = 0;
 
@@ -107,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     // Ensure space in the byte buffer attempting to write to it.
-                    if (currentWriteOffset + (nBits / 8) > (allocationSize))
+                    if (currentWriteOffset + (nBits / 8) > allocationSize)
                     {
                         throw new ArgumentException("allocationSize");
                     }
@@ -129,7 +127,6 @@ namespace Microsoft.Azure.Cosmos
                 if (unmanagedString != IntPtr.Zero)
                 {
                     Marshal.ZeroFreeCoTaskMemAnsi(unmanagedString);
-                    unmanagedString = IntPtr.Zero;
                 }
             }
         }

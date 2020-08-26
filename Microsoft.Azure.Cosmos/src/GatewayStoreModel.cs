@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings);
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
             GatewayStoreModel.ApplySessionToken(
                 request,
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default)
         {
             AccountProperties databaseAccount = null;
 
@@ -90,8 +90,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long longValue;
-                IEnumerable<string> headerValues;
-                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out headerValues) &&
+                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out IEnumerable<string> headerValues) &&
                     (headerValues.Count() != 0))
                 {
                     if (long.TryParse(headerValues.First(), out longValue))

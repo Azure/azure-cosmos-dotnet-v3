@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Newtonsoft.Json.Linq;
 
     internal static class BuiltinFunctionEvaluator
     {

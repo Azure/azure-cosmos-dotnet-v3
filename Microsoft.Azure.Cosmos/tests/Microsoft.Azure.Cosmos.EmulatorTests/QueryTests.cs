@@ -731,8 +731,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new FeedOptions() { SessionToken = sessionTokenBeforeReplication, EnableCrossPartitionQuery = true });
 
                 Assert.AreEqual(1, documentIdQuery.AsEnumerable().Count());
-
-                string sessionTokenAfterReplication = null;
                 int maxRetryCount = 5;
                 for (int retryCounter = 1; retryCounter < maxRetryCount; retryCounter++)
                 {
@@ -743,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     myDocument.Title = "TestSessionTokenControlThroughFeedOptions";
                     response = this.client.CreateDocumentAsync(collection.SelfLink, myDocument).Result;
 
-                    sessionTokenAfterReplication = response.SessionToken;
+                    string sessionTokenAfterReplication = response.SessionToken;
                     Assert.IsNotNull(sessionTokenAfterReplication);
 
                     if (!string.Equals(sessionTokenAfterReplication, sessionTokenBeforeReplication))
@@ -1611,7 +1609,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 coll,
                 "SELECT * FROM r",
                 new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 }).AsDocumentQuery();
-            DocumentFeedResponse<dynamic> resultSeq = null;
+            DocumentFeedResponse<dynamic> resultSeq;
             while (true)
             {
                 resultSeq = await seqQuery.ExecuteNextAsync();
@@ -1627,7 +1625,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 coll,
                 "SELECT * FROM r",
                 new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1, MaxDegreeOfParallelism = 1 }).AsDocumentQuery();
-            DocumentFeedResponse<dynamic> resultParallel = null;
+            DocumentFeedResponse<dynamic> resultParallel;
             while (true)
             {
                 resultParallel = await parallelQuery.ExecuteNextAsync();
@@ -2189,9 +2187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (AggregateException e)
             {
-                DocumentClientException exception = e.InnerException as DocumentClientException;
-
-                if (exception == null)
+                if (!(e.InnerException is DocumentClientException exception))
                 {
                     throw e;
                 }
@@ -2215,9 +2211,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (AggregateException e)
             {
-                DocumentClientException exception = e.InnerException as DocumentClientException;
-
-                if (exception == null)
+                if (!(e.InnerException is DocumentClientException exception))
                 {
                     throw e;
                 }
@@ -2321,7 +2315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     List<Document> retrievedDocuments = new List<Document>();
 
-                    string continuationToken = default(string);
+                    string continuationToken = default;
                     bool hasMoreResults;
 
                     do
@@ -2394,21 +2388,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             collection = new DocumentCollection { Id = collection.Id, SelfLink = collection.SelfLink };
 
             // Higher probability to get consistent indexing mode.
-            switch (random.Next(4))
+            collection.IndexingPolicy.IndexingMode = (random.Next(4)) switch
             {
-                case 0:
-                    collection.IndexingPolicy.IndexingMode = IndexingMode.None;
-                    break;
-
-                case 1:
-                    collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
-                    break;
-
-                default:
-                    collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                    break;
-            }
-
+                0 => IndexingMode.None,
+                1 => IndexingMode.Lazy,
+                _ => IndexingMode.Consistent,
+            };
             if (collection.IndexingPolicy.IndexingMode == IndexingMode.None)
             {
                 collection.IndexingPolicy.Automatic = false;
@@ -2485,7 +2470,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int retries = 0;
             do
             {
-                Exception exception = null;
+                Exception exception;
                 try
                 {
                     await action();

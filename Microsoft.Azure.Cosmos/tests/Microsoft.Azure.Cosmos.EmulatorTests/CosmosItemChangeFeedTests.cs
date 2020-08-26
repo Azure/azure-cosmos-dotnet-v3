@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -237,7 +236,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int iterations = 0;
             await this.CreateRandomItems(this.Container, expected, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            string continuationToken = null;
             int count = 0;
             while (true)
             {
@@ -246,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    continuationToken = responseMessage.Headers.ContinuationToken;
+                    string continuationToken = responseMessage.Headers.ContinuationToken;
                     Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     if (responseMessage.IsSuccessStatusCode)
                     {

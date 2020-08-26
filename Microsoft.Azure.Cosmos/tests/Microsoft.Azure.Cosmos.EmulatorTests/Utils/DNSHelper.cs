@@ -12,8 +12,7 @@ namespace Microsoft.Azure.Cosmos.Utils
     {
         public static Uri GetResolvedUri(string endpoint)
         {
-            Uri endpointAsUri;
-            if(!Uri.TryCreate(endpoint, UriKind.Absolute, out endpointAsUri))
+            if (!Uri.TryCreate(endpoint, UriKind.Absolute, out Uri endpointAsUri))
             {
                 return null;
             }

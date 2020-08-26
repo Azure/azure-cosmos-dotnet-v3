@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="RequestMessage"/>
     public class Headers : IEnumerable
     {
-        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<Headers>();
+        private static readonly KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<Headers>();
 
         private readonly Lazy<CosmosMessageHeadersInternal> messageHeaders;
 
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
                 return value;
             }
 
-            return default(string);
+            return default;
         }
 
         /// <summary>
@@ -346,8 +346,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static SubStatusCodes GetSubStatusCodes(string value)
         {
-            uint nSubStatus = 0;
-            if (uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+            if (uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint nSubStatus))
             {
                 return (SubStatusCodes)nSubStatus;
             }
@@ -357,8 +356,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static TimeSpan? GetRetryAfter(string value)
         {
-            long retryIntervalInMilliseconds = 0;
-            if (long.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out retryIntervalInMilliseconds))
+            if (long.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out long retryIntervalInMilliseconds))
             {
                 return TimeSpan.FromMilliseconds(retryIntervalInMilliseconds);
             }

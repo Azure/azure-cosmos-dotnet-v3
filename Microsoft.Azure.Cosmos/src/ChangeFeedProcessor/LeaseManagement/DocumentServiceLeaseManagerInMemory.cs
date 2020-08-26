@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            this.container.TryRemove(lease.CurrentLeaseToken, out DocumentServiceLease removedLease);
+            this.container.TryRemove(lease.CurrentLeaseToken, out _);
             return Task.CompletedTask;
         }
 

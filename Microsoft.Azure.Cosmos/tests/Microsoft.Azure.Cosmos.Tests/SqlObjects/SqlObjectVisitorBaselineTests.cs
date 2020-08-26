@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
 {
     using System;
     using System.Collections.Generic;
-    using System.Data.SqlTypes;
     using System.Globalization;
     using System.Linq;
     using System.Text.RegularExpressions;
@@ -1371,12 +1370,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             SqlObject sqlObject)
             : base(description)
         {
-            if (sqlObject == null)
-            {
-                throw new ArgumentNullException($"{nameof(sqlObject)} must not be null.");
-            }
-
-            this.SqlObject = sqlObject;
+            this.SqlObject = sqlObject ?? throw new ArgumentNullException($"{nameof(sqlObject)} must not be null.");
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -1401,25 +1395,10 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             string obfuscatedQuery,
             int hashCode)
         {
-            if (textOutput == null)
-            {
-                throw new ArgumentNullException(nameof(textOutput));
-            }
-
-            if (prettyPrint == null)
-            {
-                throw new ArgumentNullException(nameof(prettyPrint));
-            }
-
-            if (obfuscatedQuery == null)
-            {
-                throw new ArgumentNullException(nameof(obfuscatedQuery));
-            }
-
-            this.TextOutput = textOutput;
-            this.PrettyPrint = prettyPrint;
+            this.TextOutput = textOutput ?? throw new ArgumentNullException(nameof(textOutput));
+            this.PrettyPrint = prettyPrint ?? throw new ArgumentNullException(nameof(prettyPrint));
             this.HashCode = hashCode;
-            this.ObfusctedQuery = obfuscatedQuery;
+            this.ObfusctedQuery = obfuscatedQuery ?? throw new ArgumentNullException(nameof(obfuscatedQuery));
         }
 
         public string TextOutput { get; }

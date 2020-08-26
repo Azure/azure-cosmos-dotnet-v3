@@ -23,8 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public EqualPartitionsBalancingStrategy(string hostName, int minPartitionCount, int maxPartitionCount, TimeSpan leaseExpirationInterval)
         {
-            if (hostName == null) throw new ArgumentNullException(nameof(hostName));
-            this.hostName = hostName;
+            this.hostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
             this.minPartitionCount = minPartitionCount;
             this.maxPartitionCount = maxPartitionCount;
             this.leaseExpirationInterval = leaseExpirationInterval;
@@ -87,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private static KeyValuePair<string, int> FindWorkerWithMostPartitions(Dictionary<string, int> workerToPartitionCount)
         {
-            KeyValuePair<string, int> workerToStealFrom = default(KeyValuePair<string, int>);
+            KeyValuePair<string, int> workerToStealFrom = default;
             foreach (KeyValuePair<string, int> kvp in workerToPartitionCount)
             {
                 if (workerToStealFrom.Value <= kvp.Value)
@@ -138,9 +137,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 }
                 else
                 {
-                    var count = 0;
                     string assignedTo = lease.Owner;
-                    if (workerToPartitionCount.TryGetValue(assignedTo, out count))
+                    if (workerToPartitionCount.TryGetValue(assignedTo, out int count))
                     {
                         workerToPartitionCount[assignedTo] = count + 1;
                     }

@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("databaseUri");
             }
+
             return this.CreateDocumentCollectionAsync(databaseUri.OriginalString, documentCollection, options);
         }
 

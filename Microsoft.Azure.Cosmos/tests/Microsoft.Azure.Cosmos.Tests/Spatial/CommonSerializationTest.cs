@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Test.Spatial
 {
-    using System;
 
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Spatial.Converters;

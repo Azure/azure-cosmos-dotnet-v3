@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Cosmos
         private static readonly TimeSpan batchTimeout = TimeSpan.FromMilliseconds(100);
 
         private readonly object dispatchLimiter = new object();
+        private readonly SemaphoreSlim limiter;
+        private readonly BatchPartitionMetric oldPartitionMetric;
+        private readonly BatchPartitionMetric partitionMetric;
         private readonly int maxBatchOperationCount;
         private readonly int maxBatchByteSize;
         private readonly BatchAsyncBatcherExecuteDelegate executor;
@@ -41,13 +44,9 @@ namespace Microsoft.Azure.Cosmos
 
         private TimerWheelTimer congestionControlTimer;
         private Task congestionControlTask;
-        private SemaphoreSlim limiter;
 
         private int congestionDegreeOfConcurrency = 1;
         private long congestionWaitTimeInMilliseconds = 1000;
-        private BatchPartitionMetric oldPartitionMetric;
-        private BatchPartitionMetric partitionMetric;
-
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
             int maxBatchByteSize,
@@ -68,26 +67,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(maxBatchByteSize));
             }
 
-            if (executor == null)
-            {
-                throw new ArgumentNullException(nameof(executor));
-            }
-
-            if (retrier == null)
-            {
-                throw new ArgumentNullException(nameof(retrier));
-            }
-
-            if (serializerCore == null)
-            {
-                throw new ArgumentNullException(nameof(serializerCore));
-            }
-
-            if (limiter == null)
-            {
-                throw new ArgumentNullException(nameof(limiter));
-            }
-
             if (maxDegreeOfConcurrency < 1)
             {
                 throw new ArgumentNullException(nameof(maxDegreeOfConcurrency));
@@ -95,14 +74,14 @@ namespace Microsoft.Azure.Cosmos
 
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.maxBatchByteSize = maxBatchByteSize;
-            this.executor = executor;
-            this.retrier = retrier;
+            this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this.retrier = retrier ?? throw new ArgumentNullException(nameof(retrier));
             this.timerWheel = timerWheel;
-            this.serializerCore = serializerCore;
+            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
 
-            this.limiter = limiter;
+            this.limiter = limiter ?? throw new ArgumentNullException(nameof(limiter));
             this.oldPartitionMetric = new BatchPartitionMetric();
             this.partitionMetric = new BatchPartitionMetric();
             this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         internal static readonly ClientSideMetrics MockClientSideMetrics = new ClientSideMetrics(
             retries: 1,
             requestCharge: 2,
-            fetchExecutionRanges: new List<FetchExecutionRange>() { new FetchExecutionRange("asdf", "asdf", default(DateTime), default(DateTime), 42, 42) });
+            fetchExecutionRanges: new List<FetchExecutionRange>() { new FetchExecutionRange("asdf", "asdf", default, default, 42, 42) });
 
         [TestMethod]
         public void TestAccumulator()

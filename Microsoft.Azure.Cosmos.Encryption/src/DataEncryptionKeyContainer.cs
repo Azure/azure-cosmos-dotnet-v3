@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Wraps the raw data encryption key (after unwrapping using the old metadata if needed) using the provided
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             EncryptionKeyWrapMetadata newWrapMetadata,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
@@ -180,6 +180,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public abstract Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

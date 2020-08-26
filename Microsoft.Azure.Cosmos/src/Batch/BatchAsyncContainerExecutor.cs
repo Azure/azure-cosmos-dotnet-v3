@@ -52,11 +52,6 @@ namespace Microsoft.Azure.Cosmos
             int maxServerRequestOperationCount,
             int maxServerRequestBodyLength)
         {
-            if (cosmosContainer == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosContainer));
-            }
-
             if (maxServerRequestOperationCount < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxServerRequestOperationCount));
@@ -67,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(maxServerRequestBodyLength));
             }
 
-            this.cosmosContainer = cosmosContainer;
+            this.cosmosContainer = cosmosContainer ?? throw new ArgumentNullException(nameof(cosmosContainer));
             this.cosmosClientContext = cosmosClientContext;
             this.maxServerRequestBodyLength = maxServerRequestBodyLength;
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
@@ -78,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (operation == null)
             {
@@ -113,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual async Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (itemRequestOptions != null)
             {
@@ -196,8 +191,7 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
             PartitionKeyDefinition partitionKeyDefinition = await this.cosmosContainer.GetPartitionKeyDefinitionAsync(cancellationToken);
             CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
-
-            Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkObj) == null, "EPK is not supported");
+            Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out _) == null, "EPK is not supported");
             Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.GetPartitionKeyInternalAsync(operation, cancellationToken);
             operation.PartitionKeyJson = partitionKeyInternal.ToJsonString();
             string effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);

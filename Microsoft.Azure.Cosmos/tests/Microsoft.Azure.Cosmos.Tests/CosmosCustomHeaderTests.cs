@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosCustomHeaderTests
     {
         private string property;
-        private Action<string> setter;
-        private Func<string> getter;
+        private readonly Action<string> setter;
+        private readonly Func<string> getter;
         public CosmosCustomHeaderTests()
         {
             this.setter = (string value) => { this.property = value; };

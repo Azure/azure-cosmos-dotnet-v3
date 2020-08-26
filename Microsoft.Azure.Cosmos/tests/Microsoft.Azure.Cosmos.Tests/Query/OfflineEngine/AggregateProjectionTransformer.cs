@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Transforms a projection with an aggregate to be rewritten with the result.

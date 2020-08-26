@@ -5,10 +5,6 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Globalization;
-    using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     //Internal Test hooks.
@@ -22,8 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void LockClient(this DocumentClient client, uint replicaIndex)
         {
             client.initializeTask.Wait();
-            ServerStoreModel serverStoreModel = (client.StoreModel as ServerStoreModel);
-            if (serverStoreModel != null)
+            if (client.StoreModel is ServerStoreModel serverStoreModel)
             {
                 serverStoreModel.DefaultReplicaIndex = replicaIndex;
             }
@@ -32,8 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static void ForceAddressRefresh(this DocumentClient client, bool forceAddressRefresh)
         {
             client.initializeTask.Wait();
-            ServerStoreModel serverStoreModel = (client.StoreModel as ServerStoreModel);
-            if (serverStoreModel != null)
+            if (client.StoreModel is ServerStoreModel serverStoreModel)
             {
                 serverStoreModel.ForceAddressRefresh = forceAddressRefresh;
             }

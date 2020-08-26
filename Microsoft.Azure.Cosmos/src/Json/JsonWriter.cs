@@ -53,17 +53,14 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonStringDictionary jsonStringDictionary = null,
             int initalCapacity = 256)
         {
-            switch (jsonSerializationFormat)
+            return jsonSerializationFormat switch
             {
-                case JsonSerializationFormat.Text:
-                    return new JsonTextWriter(initalCapacity);
-                case JsonSerializationFormat.Binary:
-                    return new JsonBinaryWriter(
-                        jsonStringDictionary,
-                        serializeCount: false);
-                default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, RMResources.UnexpectedJsonSerializationFormat, jsonSerializationFormat));
-            }
+                JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
+                JsonSerializationFormat.Binary => new JsonBinaryWriter(
+jsonStringDictionary,
+serializeCount: false),
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, RMResources.UnexpectedJsonSerializationFormat, jsonSerializationFormat)),
+            };
         }
 
         /// <inheritdoc />

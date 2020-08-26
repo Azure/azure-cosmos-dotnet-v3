@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class SerializableNameValueCollection : JsonSerializable
     {
-        private Lazy<NameValueCollection> lazyCollection;
+        private readonly Lazy<NameValueCollection> lazyCollection;
 
         public SerializableNameValueCollection()
         {
@@ -28,13 +28,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [JsonIgnore]
-        public NameValueCollection Collection
-        {
-            get
-            {
-                return this.lazyCollection.Value;
-            }
-        }
+        public NameValueCollection Collection => this.lazyCollection.Value;
 
         // Helper methods
         public static string SaveToString(SerializableNameValueCollection nameValueCollection)
@@ -89,8 +83,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (KeyValuePair<string, JToken> pair in this.propertyBag)
                 {
-                    JValue value = pair.Value as JValue;
-                    if (value != null)
+                    if (pair.Value is JValue value)
                     {
                         collection.Add(pair.Key, value.ToString());
                     }

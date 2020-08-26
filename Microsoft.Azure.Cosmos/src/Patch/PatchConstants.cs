@@ -25,19 +25,14 @@ namespace Microsoft.Azure.Cosmos
 
         public static string ToEnumMemberString(this PatchOperationType patchOperationType)
         {
-            switch (patchOperationType)
+            return patchOperationType switch
             {
-                case PatchOperationType.Add:
-                    return PatchConstants.OperationTypeNames.Add;
-                case PatchOperationType.Remove:
-                    return PatchConstants.OperationTypeNames.Remove;
-                case PatchOperationType.Replace:
-                    return PatchConstants.OperationTypeNames.Replace;
-                case PatchOperationType.Set:
-                    return PatchConstants.OperationTypeNames.Set;
-                default:
-                    throw new ArgumentException($"Unknown Patch operation type '{patchOperationType}'.");
-            }
+                PatchOperationType.Add => PatchConstants.OperationTypeNames.Add,
+                PatchOperationType.Remove => PatchConstants.OperationTypeNames.Remove,
+                PatchOperationType.Replace => PatchConstants.OperationTypeNames.Replace,
+                PatchOperationType.Set => PatchConstants.OperationTypeNames.Set,
+                _ => throw new ArgumentException($"Unknown Patch operation type '{patchOperationType}'."),
+            };
         }
     }
 }

@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
                 pointOperationHandler: this.transportHandler);
 
             current.InnerHandler = routerHandler;
-            current = current.InnerHandler;
+            _ = current.InnerHandler;
 
             return root;
         }

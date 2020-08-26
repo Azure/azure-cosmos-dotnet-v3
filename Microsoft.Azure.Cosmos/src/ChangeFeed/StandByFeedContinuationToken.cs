@@ -67,10 +67,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
         {
             if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
-            if (pkRangeCacheDelegate == null) throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
-
             this.containerRid = containerRid;
-            this.pkRangeCacheDelegate = pkRangeCacheDelegate;
+            this.pkRangeCacheDelegate = pkRangeCacheDelegate ?? throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
             this.inputContinuationToken = initialStandByFeedContinuationToken;
         }
 

@@ -91,34 +91,22 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public static int? GetSystemStringId(Utf8Span buffer)
             {
-                switch (buffer.Length)
+                return buffer.Length switch
                 {
-                    case 2:
-                        return GetSystemStringIdLength2(buffer.Span);
-                    case 12:
-                        return GetSystemStringIdLength12(buffer.Span);
-                    case 5:
-                        return GetSystemStringIdLength5(buffer.Span);
-                    case 4:
-                        return GetSystemStringIdLength4(buffer.Span);
-                    case 3:
-                        return GetSystemStringIdLength3(buffer.Span);
-                    case 11:
-                        return GetSystemStringIdLength11(buffer.Span);
-                    case 8:
-                        return GetSystemStringIdLength8(buffer.Span);
-                    case 18:
-                        return GetSystemStringIdLength18(buffer.Span);
-                    case 10:
-                        return GetSystemStringIdLength10(buffer.Span);
-                    case 15:
-                        return GetSystemStringIdLength15(buffer.Span);
-                    case 7:
-                        return GetSystemStringIdLength7(buffer.Span);
-                    case 17:
-                        return GetSystemStringIdLength17(buffer.Span);
-                }
-                return null;
+                    2 => GetSystemStringIdLength2(buffer.Span),
+                    12 => GetSystemStringIdLength12(buffer.Span),
+                    5 => GetSystemStringIdLength5(buffer.Span),
+                    4 => GetSystemStringIdLength4(buffer.Span),
+                    3 => GetSystemStringIdLength3(buffer.Span),
+                    11 => GetSystemStringIdLength11(buffer.Span),
+                    8 => GetSystemStringIdLength8(buffer.Span),
+                    18 => GetSystemStringIdLength18(buffer.Span),
+                    10 => GetSystemStringIdLength10(buffer.Span),
+                    15 => GetSystemStringIdLength15(buffer.Span),
+                    7 => GetSystemStringIdLength7(buffer.Span),
+                    17 => GetSystemStringIdLength17(buffer.Span),
+                    _ => null,
+                };
             }
 
             private static int? GetSystemStringIdLength2(ReadOnlySpan<byte> buffer)

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Linq;
     using System.Runtime.Serialization;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
     using BaselineTest;
     using Microsoft.Azure.Cosmos.Linq;

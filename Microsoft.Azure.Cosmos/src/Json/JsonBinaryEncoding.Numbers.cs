@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>The number value from the binary reader.</returns>
         public static Number64 GetNumberValue(ReadOnlySpan<byte> numberToken)
         {
-            if (!JsonBinaryEncoding.TryGetNumberValue(numberToken, out Number64 number64, out int bytesConsumed))
+            if (!JsonBinaryEncoding.TryGetNumberValue(numberToken, out Number64 number64, out _))
             {
                 throw new JsonNotNumberTokenException();
             }

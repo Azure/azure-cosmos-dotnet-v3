@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified);
             }
 
-            bool isPointOperation = this.OperationType != OperationType.ReadFeed;
+            _ = this.OperationType != OperationType.ReadFeed;
             if (!pkExists && !epkExists && this.OperationType.IsPointOperation())
             {
                 throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);

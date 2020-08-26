@@ -20,10 +20,7 @@
         /// </summary>
         internal class TestKeyClient : KeyClient
         {
-            Uri vaultUri { get; }
-            TokenCredential credential { get; }
-
-            Dictionary<string, string> keyinfo = new Dictionary<string, string>
+            private readonly Dictionary<string, string> keyinfo = new Dictionary<string, string>
             {
                 {"testkey1","Recoverable"},
                 {"testkey2","nothingset"}               
@@ -35,14 +32,8 @@
             /// <param name="vaultUri"> Key Vault Uri </param>
             /// <param name="credential"> Token Credentials </param>
             internal TestKeyClient(Uri vaultUri, TokenCredential credential)
+                : base(vaultUri, credential)
             {
-                if( vaultUri == null || credential == null)
-                {
-                    throw new ArgumentNullException("Value is null.");
-                }
-
-                this.vaultUri = vaultUri;
-                this.credential = credential;
             }
 
             /// <summary>
@@ -99,11 +90,8 @@
         /// </summary>
         internal class TestCryptographyClient : CryptographyClient
         {
-            Uri keyId { get; }
-            TokenCredential credential { get; }
-
-            byte[] secretkey = new byte[16] { 0x12, 0x10, 0x20, 0x40, 060, 0x23, 0x12, 0x19, 0x22, 0x10, 0x09, 0x12, 0x99, 0x12, 0x11, 0x22 };
-            byte[] iv = new byte[16] { 0x99, 0x99, 0x88, 0x88, 0x77, 0x77, 0x66, 0x66, 0x55, 0x55, 0x44, 0x44, 0x33, 0x33, 0x22, 0x22 };
+            readonly byte[] secretkey = new byte[16] { 0x12, 0x10, 0x20, 0x40, 060, 0x23, 0x12, 0x19, 0x22, 0x10, 0x09, 0x12, 0x99, 0x12, 0x11, 0x22 };
+            readonly byte[] iv = new byte[16] { 0x99, 0x99, 0x88, 0x88, 0x77, 0x77, 0x66, 0x66, 0x55, 0x55, 0x44, 0x44, 0x33, 0x33, 0x22, 0x22 };
 
             /// <summary>
             /// Initializes a new instance of the TestCryptographyClient class for the specified keyid.
@@ -111,13 +99,8 @@
             /// <param name="keyid"></param>
             /// <param name="credential"></param>
             internal TestCryptographyClient(Uri keyid, TokenCredential credential)
+                : base(keyid, credential)
             {
-                if( keyid == null || credential == null)
-                {
-                    throw new ArgumentNullException("Value is null.");
-                }
-                this.keyId = keyid;
-                this.credential = credential;
             }
 
             /// <summary>
@@ -138,7 +121,7 @@
                 byte[] wrappedKey = this.Encrypt(key, this.secretkey, this.iv);
 
                 // simulate a null wrapped key
-                if (this.keyId.ToString().Contains(KeyVaultTestConstants.ValidateNullWrappedKey))
+                if (this.KeyId.ToString().Contains(KeyVaultTestConstants.ValidateNullWrappedKey))
                 {
                     wrappedKey = null;
                 }
@@ -166,7 +149,7 @@
                 byte[] unwrappedKey = this.Decrypt(encryptedKey, this.secretkey, this.iv);
 
                 // simulate a null unwrapped key.
-                if (this.keyId.ToString().Contains(KeyVaultTestConstants.ValidateNullUnwrappedKey))
+                if (this.KeyId.ToString().Contains(KeyVaultTestConstants.ValidateNullUnwrappedKey))
                 {
                     unwrappedKey = null;
                 }

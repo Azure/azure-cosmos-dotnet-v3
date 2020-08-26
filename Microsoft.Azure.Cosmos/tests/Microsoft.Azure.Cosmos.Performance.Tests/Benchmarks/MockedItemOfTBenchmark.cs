@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
 
     public class MockedItemOfTBenchmark : IItemBenchmark

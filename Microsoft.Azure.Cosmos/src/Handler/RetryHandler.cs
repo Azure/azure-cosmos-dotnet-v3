@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public RetryHandler(CosmosClient client)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SpatialTest
     {
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         private class SpatialSampleClass
         {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestDistanceAndWithin()
         {
-            await TestDistanceAndWithin(true);
+            await this.TestDistanceAndWithin(true);
         }
 
         [TestMethod]
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestDistanceAndWithinUsingIndex()
         {
-            await TestDistanceAndWithin(false);
+            await this.TestDistanceAndWithin(false);
         }
 
         private async Task TestDistanceAndWithin(bool allowScan)

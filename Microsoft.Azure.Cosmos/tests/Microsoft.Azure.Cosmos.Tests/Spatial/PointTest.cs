@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
     using System.Collections.Generic;
 
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Newtonsoft.Json;

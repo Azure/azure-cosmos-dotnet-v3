@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System.IO;
-    using System.Text;
 
     /// <summary>
     /// Extends <see cref="CosmosDiagnostics"/> to expose internal APIs.

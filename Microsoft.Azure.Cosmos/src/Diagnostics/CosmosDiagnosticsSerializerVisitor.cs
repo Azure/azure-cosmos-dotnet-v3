@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
 

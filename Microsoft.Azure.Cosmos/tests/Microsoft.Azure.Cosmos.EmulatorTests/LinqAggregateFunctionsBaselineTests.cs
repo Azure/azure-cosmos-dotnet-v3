@@ -586,12 +586,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             internal LinqAggregateInput(string description, Expression<Func<bool, object>> expr)
                 : base(description)
             {
-                if (expr == null)
-                {
-                    throw new ArgumentNullException($"{nameof(expr)} must not be null.");
-                }
-
-                this.expression = expr;
+                this.expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)

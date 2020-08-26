@@ -7,11 +7,8 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Buffers;
     using System.Buffers.Text;
     using System.Globalization;
-    using System.Linq;
     using System.Numerics;
     using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -104,22 +101,10 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Text;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
-            public override long CurrentLength
-            {
-                get
-                {
-                    return this.jsonTextMemoryWriter.Position;
-                }
-            }
+            public override long CurrentLength => this.jsonTextMemoryWriter.Position;
 
             /// <inheritdoc />
             public override void WriteObjectStart()
@@ -704,7 +689,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void WriteBinaryAsBase64(ReadOnlySpan<byte> binary)
                 {
                     this.EnsureRemainingBufferSpace(Base64.GetMaxEncodedToUtf8Length(binary.Length));
-                    Base64.EncodeToUtf8(binary, this.Cursor, out int bytesConsumed, out int bytesWritten);
+                    Base64.EncodeToUtf8(binary, this.Cursor, out _, out int bytesWritten);
 
                     this.Position += bytesWritten;
                 }

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ServicePointAccessor
     {
         // WebAssembly detection
-        private static bool IsBrowser = RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"));
+        private static readonly bool IsBrowser = RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"));
 
         private readonly ServicePoint servicePoint;
 

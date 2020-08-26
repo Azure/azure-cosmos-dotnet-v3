@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -150,27 +149,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     return TryCatch<IAggregator>.FromException(tryCreateMinMaxContinuationToken.Exception);
                 }
 
-                switch (tryCreateMinMaxContinuationToken.Result.Type)
+                globalMinMax = tryCreateMinMaxContinuationToken.Result.Type switch
                 {
-                    case MinMaxContinuationToken.MinMaxContinuationTokenType.MinValue:
-                        globalMinMax = ItemComparer.MinValue;
-                        break;
-
-                    case MinMaxContinuationToken.MinMaxContinuationTokenType.MaxValue:
-                        globalMinMax = ItemComparer.MaxValue;
-                        break;
-
-                    case MinMaxContinuationToken.MinMaxContinuationTokenType.Undefined:
-                        globalMinMax = MinMaxAggregator.Undefined;
-                        break;
-
-                    case MinMaxContinuationToken.MinMaxContinuationTokenType.Value:
-                        globalMinMax = tryCreateMinMaxContinuationToken.Result.Value;
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException($"Unknown {nameof(MinMaxContinuationToken.MinMaxContinuationTokenType)}: {tryCreateMinMaxContinuationToken.Result.Type}");
-                }
+                    MinMaxContinuationToken.MinMaxContinuationTokenType.MinValue => ItemComparer.MinValue,
+                    MinMaxContinuationToken.MinMaxContinuationTokenType.MaxValue => ItemComparer.MaxValue,
+                    MinMaxContinuationToken.MinMaxContinuationTokenType.Undefined => MinMaxAggregator.Undefined,
+                    MinMaxContinuationToken.MinMaxContinuationTokenType.Value => tryCreateMinMaxContinuationToken.Result.Value,
+                    _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(MinMaxContinuationToken.MinMaxContinuationTokenType)}: {tryCreateMinMaxContinuationToken.Result.Type}"),
+                };
             }
             else
             {
@@ -391,23 +377,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 public static CosmosString ConvertEnumToCosmosString(MinMaxContinuationTokenType type)
                 {
-                    switch (type)
+                    return type switch
                     {
-                        case MinMaxContinuationTokenType.MinValue:
-                            return EnumToCosmosString.MinValueCosmosString;
-
-                        case MinMaxContinuationTokenType.MaxValue:
-                            return EnumToCosmosString.MaxValueCosmosString;
-
-                        case MinMaxContinuationTokenType.Undefined:
-                            return EnumToCosmosString.UndefinedCosmosString;
-
-                        case MinMaxContinuationTokenType.Value:
-                            return EnumToCosmosString.ValueCosmosString;
-
-                        default:
-                            throw new ArgumentOutOfRangeException($"Unknown {nameof(MinMaxContinuationTokenType)}: {type}");
-                    }
+                        MinMaxContinuationTokenType.MinValue => EnumToCosmosString.MinValueCosmosString,
+                        MinMaxContinuationTokenType.MaxValue => EnumToCosmosString.MaxValueCosmosString,
+                        MinMaxContinuationTokenType.Undefined => EnumToCosmosString.UndefinedCosmosString,
+                        MinMaxContinuationTokenType.Value => EnumToCosmosString.ValueCosmosString,
+                        _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(MinMaxContinuationTokenType)}: {type}"),
+                    };
                 }
             }
 

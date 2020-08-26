@@ -51,12 +51,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         public Point(Position position, GeometryParams geometryParams)
             : base(GeometryType.Point, geometryParams)
         {
-            if (position == null)
-            {
-                throw new ArgumentNullException("position");
-            }
-
-            this.Position = position;
+            this.Position = position ?? throw new ArgumentNullException("position");
         }
 
         /// <summary>

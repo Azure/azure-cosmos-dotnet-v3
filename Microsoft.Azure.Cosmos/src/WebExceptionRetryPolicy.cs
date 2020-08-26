@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         private const int initialBackoffSeconds = 1;
         private const int backoffMultiplier = 2;
 
-        private Stopwatch durationTimer = new Stopwatch();
+        private readonly Stopwatch durationTimer = new Stopwatch();
         private int attemptCount = 1;
 
         // Don't penalise first retry with delay.
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         public WebExceptionRetryPolicy()
         {
-            durationTimer.Start();
+            this.durationTimer.Start();
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Don't penalise first retry with delay.
-            if (attemptCount++ > 1)
+            if (this.attemptCount++ > 1)
             {
                 int remainingSeconds = WebExceptionRetryPolicy.waitTimeInSeconds - this.durationTimer.Elapsed.Seconds;
                 if (remainingSeconds <= 0)

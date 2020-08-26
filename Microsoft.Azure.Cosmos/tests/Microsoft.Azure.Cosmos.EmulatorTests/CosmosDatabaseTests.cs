@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -444,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int? throughput = null,
             bool databaseExists = false)
         {
-            DatabaseResponse response = null;
+            DatabaseResponse response;
             if (databaseExists)
             {
                 response = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(

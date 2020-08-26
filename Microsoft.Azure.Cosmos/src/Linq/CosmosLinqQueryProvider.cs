@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
@@ -110,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public Task<Response<TResult>> ExecuteAggregateAsync<TResult>(
             Expression expression,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             CosmosLinqQuery<TResult> cosmosLINQQuery = (CosmosLinqQuery<TResult>)Activator.CreateInstance(

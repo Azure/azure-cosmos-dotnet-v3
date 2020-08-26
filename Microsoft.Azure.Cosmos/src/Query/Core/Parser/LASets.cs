@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         private List<List<Edge>> EnterState(Edge t)
         {
             int here = ++this.entryValue;
-            int index_on_transition = t.indexAtTransition;
+            _ = t.indexAtTransition;
             int token_index = t.index;
             ATNState state = t.to;
             IToken input_token = this.input[token_index];
@@ -611,11 +611,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             q.Reverse();
             List<IToken>.Enumerator ei = this.input.GetEnumerator();
             List<Edge>.Enumerator eq = q.GetEnumerator();
-            bool fei = false;
-            bool feq = false;
             for (; ; )
             {
-                fei = ei.MoveNext();
+                bool fei = ei.MoveNext();
                 IToken v = ei.Current;
                 if (!fei)
                 {
@@ -625,48 +623,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 bool empty = true;
                 for (; empty;)
                 {
-                    feq = eq.MoveNext();
+                    bool feq = eq.MoveNext();
                     if (!feq)
                     {
                         break;
                     }
 
                     Edge x = eq.Current;
-                    switch (x.type)
+                    empty = x.type switch
                     {
-                        case TransitionType.RULE:
-                            empty = true;
-                            break;
-                        case TransitionType.PREDICATE:
-                            empty = true;
-                            break;
-                        case TransitionType.ACTION:
-                            empty = true;
-                            break;
-                        case TransitionType.ATOM:
-                            empty = false;
-                            break;
-                        case TransitionType.EPSILON:
-                            empty = true;
-                            break;
-                        case TransitionType.INVALID:
-                            empty = true;
-                            break;
-                        case TransitionType.NOT_SET:
-                            empty = false;
-                            break;
-                        case TransitionType.PRECEDENCE:
-                            empty = true;
-                            break;
-                        case TransitionType.SET:
-                            empty = false;
-                            break;
-                        case TransitionType.WILDCARD:
-                            empty = false;
-                            break;
-                        default:
-                            throw new Exception();
-                    }
+                        TransitionType.RULE => true,
+                        TransitionType.PREDICATE => true,
+                        TransitionType.ACTION => true,
+                        TransitionType.ATOM => false,
+                        TransitionType.EPSILON => true,
+                        TransitionType.INVALID => true,
+                        TransitionType.NOT_SET => false,
+                        TransitionType.PRECEDENCE => true,
+                        TransitionType.SET => false,
+                        TransitionType.WILDCARD => false,
+                        _ => throw new Exception(),
+                    };
                 }
                 Edge w = eq.Current;
                 if (w == null && v == null)

@@ -26,9 +26,8 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     internal class StoredProcedureResponse<TValue> : IStoredProcedureResponse<TValue>
     {
-        private DocumentServiceResponse response;
-        private TValue responseBody;
-        private JsonSerializerSettings serializerSettings;
+        private readonly DocumentServiceResponse response;
+        private readonly JsonSerializerSettings serializerSettings;
 
         /// <summary>
         /// Constructor exposed for mocking purposes in Azure Cosmos DB service.
@@ -47,11 +46,11 @@ namespace Microsoft.Azure.Cosmos
                 // load resource
                 if (typeof(TValue) == typeof(Document) || typeof(Document).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
+                    this.Response = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
                 }
                 else if (typeof(TValue) == typeof(Attachment) || typeof(Attachment).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
+                    this.Response = Documents.Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
                 }
                 else
                 {
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                     string responseString = responseReader.ReadToEnd();
                     try
                     {
-                        this.responseBody = (TValue)JsonConvert.DeserializeObject(responseString, typeof(TValue), this.serializerSettings);
+                        this.Response = (TValue)JsonConvert.DeserializeObject(responseString, typeof(TValue), this.serializerSettings);
                     }
                     catch (JsonException ex)
                     {
@@ -89,13 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// The Activity ID of the request.
         /// </value>
         /// <remarks>Every request is traced with a globally unique ID. Include activity ID in tracing application failures and when contacting Azure Cosmos DB support</remarks>
-        public string ActivityId
-        {
-            get
-            {
-                return this.response.Headers[HttpConstants.HttpHeaders.ActivityId];
-            }
-        }
+        public string ActivityId => this.response.Headers[HttpConstants.HttpHeaders.ActivityId];
 
         /// <summary>
         /// Gets the token for use with session consistency requests from the Azure Cosmos DB service.
@@ -103,13 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The token for use with session consistency requests.
         /// </value>
-        public string SessionToken
-        {
-            get
-            {
-                return this.response.Headers[HttpConstants.HttpHeaders.SessionToken];
-            }
-        }
+        public string SessionToken => this.response.Headers[HttpConstants.HttpHeaders.SessionToken];
 
         /// <summary>
         /// Gets the output from stored procedure console.log() statements.
@@ -118,49 +105,25 @@ namespace Microsoft.Azure.Cosmos
         /// Output from console.log() statements in a stored procedure.
         /// </value>
         /// <seealso cref="StoredProcedureRequestOptions.EnableScriptLogging"/>
-        public string ScriptLog
-        {
-            get
-            {
-                return Helpers.GetScriptLogHeader(this.response.Headers);
-            }
-        }
+        public string ScriptLog => Helpers.GetScriptLogHeader(this.response.Headers);
 
         /// <summary>
         /// Gets the request completion status code from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The request completion status code</value>
-        public HttpStatusCode StatusCode
-        {
-            get
-            {
-                return this.response.StatusCode;
-            }
-        }
+        public HttpStatusCode StatusCode => this.response.StatusCode;
 
         /// <summary>
         /// Gets the delimited string containing the quota of each resource type within the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The delimited string containing the number of used units per resource type within the collection.</value>
-        public string MaxResourceQuota
-        {
-            get
-            {
-                return this.response.Headers[HttpConstants.HttpHeaders.MaxResourceQuota];
-            }
-        }
+        public string MaxResourceQuota => this.response.Headers[HttpConstants.HttpHeaders.MaxResourceQuota];
 
         /// <summary>
         /// Gets the delimited string containing the usage of each resource type within the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The delimited string containing the number of used units per resource type within the collection.</value>
-        public string CurrentResourceQuotaUsage
-        {
-            get
-            {
-                return this.response.Headers[HttpConstants.HttpHeaders.CurrentResourceQuotaUsage];
-            }
-        }
+        public string CurrentResourceQuotaUsage => this.response.Headers[HttpConstants.HttpHeaders.CurrentResourceQuotaUsage];
 
         /// <summary>
         /// Gets the number of normalized Azure Cosmos DB request units (RUs) charged from Azure Cosmos DB service.
@@ -168,16 +131,10 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The number of normalized Azure Cosmos DB request units (RUs) charged.
         /// </value>
-        public double RequestCharge
-        {
-            get
-            {
-                return Helpers.GetHeaderValueDouble(
+        public double RequestCharge => Helpers.GetHeaderValueDouble(
                     this.response.Headers,
                     HttpConstants.HttpHeaders.RequestCharge,
                     0);
-            }
-        }
 
         /// <summary>
         /// Gets the headers associated with the response from the Azure Cosmos DB service.
@@ -189,42 +146,21 @@ namespace Microsoft.Azure.Cosmos
         /// Provides access to all HTTP response headers returned from the 
         /// Azure Cosmos DB API.
         /// </remarks>
-        public NameValueCollection ResponseHeaders
-        {
-            get
-            {
-                return this.response.ResponseHeaders;
-            }
-        }
+        public NameValueCollection ResponseHeaders => this.response.ResponseHeaders;
 
-        internal INameValueCollection Headers
-        {
-            get { return this.response.Headers; }
-        }
+        internal INameValueCollection Headers => this.response.Headers;
 
         /// <summary>
         /// Gets the response of a stored procedure, serialized into the given type from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The response of a stored procedure, serialized into the given type.</value>
-        public TValue Response
-        {
-            get
-            {
-                return this.responseBody;
-            }
-        }
+        public TValue Response { get; }
 
         /// <summary>
         /// Gets the clientside request statics for execution of stored procedure.
         /// </summary>
         /// <value>The clientside request statics for execution of stored procedure.</value>
-        internal IClientSideRequestStatistics RequestStatistics
-        {
-            get
-            {
-                return this.response.RequestStats;
-            }
-        }
+        internal IClientSideRequestStatistics RequestStatistics => this.response.RequestStats;
 
         /// <summary>
         /// Gets the resource implicitly from Azure Cosmos DB service.
@@ -233,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The returned resource.</returns>
         public static implicit operator TValue(StoredProcedureResponse<TValue> source)
         {
-            return source.responseBody;
+            return source.Response;
         }
     }
 }

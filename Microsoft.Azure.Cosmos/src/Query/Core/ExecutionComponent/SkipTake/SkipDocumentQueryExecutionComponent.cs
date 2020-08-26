@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -32,36 +31,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             CosmosElement continuationToken,
             Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
-            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreate;
-            switch (executionEnvironment)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreate = executionEnvironment switch
             {
-                case ExecutionEnvironment.Client:
-                    tryCreate = ClientSkipDocumentQueryExecutionComponent.TryCreateAsync(
-                        offsetCount,
-                        continuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    tryCreate = ComputeSkipDocumentQueryExecutionComponent.TryCreateAsync(
-                        offsetCount,
-                        continuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}");
-            }
-
+                ExecutionEnvironment.Client => ClientSkipDocumentQueryExecutionComponent.TryCreateAsync(
+                                       offsetCount,
+                                       continuationToken,
+                                       tryCreateSourceAsync),
+                ExecutionEnvironment.Compute => ComputeSkipDocumentQueryExecutionComponent.TryCreateAsync(
+offsetCount,
+continuationToken,
+tryCreateSourceAsync),
+                _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
+            };
             return tryCreate;
         }
 
-        public override bool IsDone
-        {
-            get
-            {
-                return this.Source.IsDone;
-            }
-        }
+        public override bool IsDone => this.Source.IsDone;
     }
 }

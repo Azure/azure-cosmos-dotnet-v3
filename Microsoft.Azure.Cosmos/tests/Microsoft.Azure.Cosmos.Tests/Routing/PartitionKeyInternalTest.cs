@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;

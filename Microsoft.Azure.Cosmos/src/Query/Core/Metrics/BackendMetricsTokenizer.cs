@@ -92,28 +92,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static (TokenType? tokenType, ReadOnlyMemory<byte> tokenBuffer) GetTokenType(ReadOnlySpan<byte> buffer)
         {
-            switch (buffer.Length)
+            return buffer.Length switch
             {
-                case 20:
-                    return GetTokenTypeLength20(buffer);
-                case 19:
-                    return GetTokenTypeLength19(buffer);
-                case 21:
-                    return GetTokenTypeLength21(buffer);
-                case 29:
-                    return GetTokenTypeLength29(buffer);
-                case 18:
-                    return GetTokenTypeLength18(buffer);
-                case 30:
-                    return GetTokenTypeLength30(buffer);
-                case 25:
-                    return GetTokenTypeLength25(buffer);
-                case 22:
-                    return GetTokenTypeLength22(buffer);
-                case 27:
-                    return GetTokenTypeLength27(buffer);
-            }
-            return (default, default);
+                20 => GetTokenTypeLength20(buffer),
+                19 => GetTokenTypeLength19(buffer),
+                21 => GetTokenTypeLength21(buffer),
+                29 => GetTokenTypeLength29(buffer),
+                18 => GetTokenTypeLength18(buffer),
+                30 => GetTokenTypeLength30(buffer),
+                25 => GetTokenTypeLength25(buffer),
+                22 => GetTokenTypeLength22(buffer),
+                27 => GetTokenTypeLength27(buffer),
+                _ => (default, default),
+            };
         }
 
         private static (TokenType? tokenType, ReadOnlyMemory<byte> tokenBuffer) GetTokenTypeLength20(ReadOnlySpan<byte> buffer)

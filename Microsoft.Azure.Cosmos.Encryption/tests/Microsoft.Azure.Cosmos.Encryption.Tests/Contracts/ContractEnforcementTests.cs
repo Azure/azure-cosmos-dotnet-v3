@@ -1,8 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
-    using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    
+
     [TestCategory("Windows")]
     [TestCategory("UpdateContract")]
     [TestClass]

@@ -34,8 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(headerName)}: {headerName ?? "null"}; {nameof(value)}: {value ?? "null"}");
             }
 
-            CosmosCustomHeader knownHeader;
-            if (this.knownHeaders.TryGetValue(headerName, out knownHeader))
+            if (this.knownHeaders.TryGetValue(headerName, out CosmosCustomHeader knownHeader))
             {
                 knownHeader.Set(value);
                 return;
@@ -62,8 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(headerName));
             }
 
-            CosmosCustomHeader knownHeader;
-            if (this.knownHeaders.TryGetValue(headerName, out knownHeader))
+            if (this.knownHeaders.TryGetValue(headerName, out CosmosCustomHeader knownHeader))
             {
                 value = knownHeader.Get();
                 return true;
@@ -80,8 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(headerName));
             }
 
-            CosmosCustomHeader knownHeader;
-            if (this.knownHeaders.TryGetValue(headerName, out knownHeader))
+            if (this.knownHeaders.TryGetValue(headerName, out CosmosCustomHeader knownHeader))
             {
                 knownHeader.Set(null);
                 return;
@@ -94,8 +91,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                string value;
-                if (!this.TryGetValue(headerName, out value))
+                if (!this.TryGetValue(headerName, out string value))
                 {
                     return null;
                 }
@@ -115,8 +111,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(key));
             }
 
-            CosmosCustomHeader knownHeader;
-            if (this.knownHeaders.TryGetValue(key, out knownHeader))
+            if (this.knownHeaders.TryGetValue(key, out CosmosCustomHeader knownHeader))
             {
                 knownHeader.Set(value);
                 return;
@@ -244,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (string.IsNullOrEmpty(value))
             {
-                return default(T);
+                return default;
             }
 
             if (typeof(T) == typeof(double))

@@ -83,17 +83,12 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
-            switch (jsonSerializationFormat)
+            return jsonSerializationFormat switch
             {
-                case JsonSerializationFormat.Binary:
-                    return new JsonBinaryReader(buffer, jsonStringDictionary);
-
-                case JsonSerializationFormat.Text:
-                    return new JsonTextReader(buffer);
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}.");
-            }
+                JsonSerializationFormat.Binary => new JsonBinaryReader(buffer, jsonStringDictionary),
+                JsonSerializationFormat.Text => new JsonTextReader(buffer),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}."),
+            };
         }
 
         /// <inheritdoc />

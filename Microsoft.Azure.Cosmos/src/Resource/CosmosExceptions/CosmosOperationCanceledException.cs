@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
-    using System.Threading;
 
     /// <summary>
     /// The exception that is thrown in a thread upon cancellation of an operation that
@@ -36,18 +35,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnostics diagnostics)
             : base(originalException.CancellationToken)
         {
-            if (originalException == null)
-            {
-                throw new ArgumentNullException(nameof(originalException));
-            }
-
-            if (diagnostics == null)
-            {
-                throw new ArgumentNullException(nameof(diagnostics));
-            }
-
-            this.originalException = originalException;
-            this.Diagnostics = diagnostics;
+            this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
+            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
 
         /// <inheritdoc/>

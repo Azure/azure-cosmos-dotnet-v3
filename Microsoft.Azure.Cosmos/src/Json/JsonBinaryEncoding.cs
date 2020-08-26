@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Json
             out T fixedWidthValue)
             where T : struct
         {
-            fixedWidthValue = default(T);
+            fixedWidthValue = default;
             int sizeofType = Marshal.SizeOf(fixedWidthValue);
             if (token.Length < 1 + sizeofType)
             {

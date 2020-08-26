@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public DocumentQueryClient(DocumentClient innerClient)
         {
-            if (innerClient == null)
-            {
-                throw new ArgumentNullException("innerClient");
-            }
-
-            this.innerClient = innerClient;
+            this.innerClient = innerClient ?? throw new ArgumentNullException("innerClient");
             this.semaphore = new SemaphoreSlim(1, 1);
         }
 
@@ -53,34 +48,13 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        IRetryPolicyFactory IDocumentQueryClient.ResetSessionTokenRetryPolicy
-        {
-            get
-            {
-                return this.innerClient.ResetSessionTokenRetryPolicy;
-            }
-        }
+        IRetryPolicyFactory IDocumentQueryClient.ResetSessionTokenRetryPolicy => this.innerClient.ResetSessionTokenRetryPolicy;
 
-        Uri IDocumentQueryClient.ServiceEndpoint
-        {
-            get
-            {
-                return this.innerClient.ReadEndpoint;
-            }
-        }
+        Uri IDocumentQueryClient.ServiceEndpoint => this.innerClient.ReadEndpoint;
 
-        ConnectionMode IDocumentQueryClient.ConnectionMode
-        {
-            get
-            {
-                return this.innerClient.ConnectionPolicy.ConnectionMode;
-            }
-        }
+        ConnectionMode IDocumentQueryClient.ConnectionMode => this.innerClient.ConnectionPolicy.ConnectionMode;
 
-        Action<IQueryable> IDocumentQueryClient.OnExecuteScalarQueryCallback
-        {
-            get { return this.innerClient.OnExecuteScalarQueryCallback; }
-        }
+        Action<IQueryable> IDocumentQueryClient.OnExecuteScalarQueryCallback => this.innerClient.OnExecuteScalarQueryCallback;
 
         async Task<CollectionCache> IDocumentQueryClient.GetCollectionCacheAsync()
         {

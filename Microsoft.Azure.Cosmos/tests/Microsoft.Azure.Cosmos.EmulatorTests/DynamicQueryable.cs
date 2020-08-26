@@ -150,10 +150,8 @@ namespace System.Linq.Dynamic
     {
         public DynamicProperty(string name, Type type)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (type == null) throw new ArgumentNullException("type");
-            this.Name = name;
-            this.Type = type;
+            this.Name = name ?? throw new ArgumentNullException("name");
+            this.Type = type ?? throw new ArgumentNullException("type");
         }
 
         public string Name { get; }
@@ -245,10 +243,10 @@ namespace System.Linq.Dynamic
 
         static ClassFactory() { }  // Trigger lazy initialization of static fields
 
-        ModuleBuilder module;
-        Dictionary<Signature, Type> classes;
+        readonly ModuleBuilder module;
+        readonly Dictionary<Signature, Type> classes;
         int classCount;
-        ReaderWriterLock rwLock;
+        readonly ReaderWriterLock rwLock;
 
         private ClassFactory()
         {
@@ -612,26 +610,24 @@ namespace System.Linq.Dynamic
         static readonly string keywordNew = "new";
 
         static Dictionary<string, object> keywords;
-
-        Dictionary<string, object> symbols;
+        readonly Dictionary<string, object> symbols;
         IDictionary<string, object> externals;
-        Dictionary<Expression, string> literals;
+        readonly Dictionary<Expression, string> literals;
         ParameterExpression it;
-        string text;
+        readonly string text;
         int textPos;
-        int textLen;
+        readonly int textLen;
         char ch;
         Token token;
 
         public ExpressionParser(ParameterExpression[] parameters, string expression, object[] values)
         {
-            if (expression == null) throw new ArgumentNullException("expression");
             if (keywords == null) keywords = CreateKeywords();
             this.symbols = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             this.literals = new Dictionary<Expression, string>();
             if (parameters != null) this.ProcessParameters(parameters);
             if (values != null) this.ProcessValues(values);
-            this.text = expression;
+            this.text = expression ?? throw new ArgumentNullException("expression");
             this.textLen = this.text.Length;
             this.SetTextPos(0);
             this.NextToken();
@@ -949,21 +945,15 @@ namespace System.Linq.Dynamic
 
         Expression ParsePrimaryStart()
         {
-            switch (this.token.id)
+            return this.token.id switch
             {
-                case TokenId.Identifier:
-                    return this.ParseIdentifier();
-                case TokenId.StringLiteral:
-                    return this.ParseStringLiteral();
-                case TokenId.IntegerLiteral:
-                    return this.ParseIntegerLiteral();
-                case TokenId.RealLiteral:
-                    return this.ParseRealLiteral();
-                case TokenId.OpenParen:
-                    return this.ParseParenExpression();
-                default:
-                    throw this.ParseError(Res.ExpressionExpected);
-            }
+                TokenId.Identifier => this.ParseIdentifier(),
+                TokenId.StringLiteral => this.ParseStringLiteral(),
+                TokenId.IntegerLiteral => this.ParseIntegerLiteral(),
+                TokenId.RealLiteral => this.ParseRealLiteral(),
+                TokenId.OpenParen => this.ParseParenExpression(),
+                _ => throw this.ParseError(Res.ExpressionExpected),
+            };
         }
 
         Expression ParseStringLiteral()
@@ -1361,17 +1351,14 @@ namespace System.Linq.Dynamic
             }
             else
             {
-                switch (this.FindIndexer(expr.Type, args, out MethodBase mb))
+                return (this.FindIndexer(expr.Type, args, out MethodBase mb)) switch
                 {
-                    case 0:
-                        throw this.ParseError(errorPos, Res.NoApplicableIndexer,
-                            GetTypeName(expr.Type));
-                    case 1:
-                        return Expression.Call(expr, (MethodInfo)mb, args);
-                    default:
-                        throw this.ParseError(errorPos, Res.AmbiguousIndexerInvocation,
-                            GetTypeName(expr.Type));
-                }
+                    0 => throw this.ParseError(errorPos, Res.NoApplicableIndexer,
+                                               GetTypeName(expr.Type)),
+                    1 => Expression.Call(expr, (MethodInfo)mb, args),
+                    _ => throw this.ParseError(errorPos, Res.AmbiguousIndexerInvocation,
+GetTypeName(expr.Type)),
+                };
             }
         }
 

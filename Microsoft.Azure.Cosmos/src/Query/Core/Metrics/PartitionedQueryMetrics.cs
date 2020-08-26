@@ -50,35 +50,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Gets the count.
         /// </summary>
-        public int Count
-        {
-            get
-            {
-                return this.partitionedQueryMetrics.Count;
-            }
-        }
+        public int Count => this.partitionedQueryMetrics.Count;
 
         /// <summary>
         /// Gets the keys.
         /// </summary>
-        public IEnumerable<string> Keys
-        {
-            get
-            {
-                return this.partitionedQueryMetrics.Keys;
-            }
-        }
+        public IEnumerable<string> Keys => this.partitionedQueryMetrics.Keys;
 
         /// <summary>
         /// Gets the values.
         /// </summary>
-        public IEnumerable<QueryMetrics> Values
-        {
-            get
-            {
-                return this.partitionedQueryMetrics.Values;
-            }
-        }
+        public IEnumerable<QueryMetrics> Values => this.partitionedQueryMetrics.Values;
 
         /// <summary>
         /// Gets the QueryMetrics corresponding to the key.

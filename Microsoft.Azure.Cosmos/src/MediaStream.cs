@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class MediaStream : Stream
     {
-        private HttpResponseMessage responseMessage;
-        private Stream contentStream;
+        private readonly HttpResponseMessage responseMessage;
+        private readonly Stream contentStream;
         private bool isDisposed;
 
         public MediaStream(HttpResponseMessage responseMessage, Stream contentStream)
@@ -23,45 +23,15 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = false;
         }
 
-        public override bool CanRead
-        {
-            get
-            {
-                return this.contentStream.CanRead;
-            }
-        }
+        public override bool CanRead => this.contentStream.CanRead;
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return this.contentStream.CanSeek;
-            }
-        }
+        public override bool CanSeek => this.contentStream.CanSeek;
 
-        public override bool CanTimeout
-        {
-            get
-            {
-                return this.contentStream.CanTimeout;
-            }
-        }
+        public override bool CanTimeout => this.contentStream.CanTimeout;
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return this.contentStream.CanWrite;
-            }
-        }
+        public override bool CanWrite => this.contentStream.CanWrite;
 
-        public override long Length
-        {
-            get
-            {
-                return this.contentStream.Length;
-            }
-        }
+        public override long Length => this.contentStream.Length;
 
         public override int ReadTimeout
         {

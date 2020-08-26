@@ -154,12 +154,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
             internal LinqExpressionInput(string description, Expression expr, string errorMsg = null)
                 : base(description)
             {
-                if (expr == null)
-                {
-                    throw new ArgumentNullException($"{nameof(expr)} must not be null.");
-                }
-
-                this.expression = expr;
+                this.expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
                 this.errorMessage = errorMsg;
             }
 

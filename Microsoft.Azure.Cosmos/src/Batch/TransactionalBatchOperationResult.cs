@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Ensure the mandatory fields were populated
-            if (batchOperationResult.StatusCode == default(HttpStatusCode))
+            if (batchOperationResult.StatusCode == default)
             {
                 return Result.Failure;
             }

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
 
     public class PreProcessingTestHandler : RequestHandler
     {

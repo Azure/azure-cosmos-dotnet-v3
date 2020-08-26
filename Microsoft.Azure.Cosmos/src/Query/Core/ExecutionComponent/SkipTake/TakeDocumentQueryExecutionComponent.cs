@@ -27,27 +27,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             CosmosElement requestContinuationToken,
             Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
-            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateComponentAsync;
-            switch (executionEnvironment)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateComponentAsync = executionEnvironment switch
             {
-                case ExecutionEnvironment.Client:
-                    tryCreateComponentAsync = ClientTakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
-                        limitCount,
-                        requestContinuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    tryCreateComponentAsync = ComputeTakeDocumentQueryExecutionComponent.TryCreateAsync(
-                        limitCount,
-                        requestContinuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
-            }
-
+                ExecutionEnvironment.Client => ClientTakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
+                                       limitCount,
+                                       requestContinuationToken,
+                                       tryCreateSourceAsync),
+                ExecutionEnvironment.Compute => ComputeTakeDocumentQueryExecutionComponent.TryCreateAsync(
+limitCount,
+requestContinuationToken,
+tryCreateSourceAsync),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
+            };
             return tryCreateComponentAsync;
         }
 
@@ -57,36 +48,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             CosmosElement requestContinuationToken,
             Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
-            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateComponentAsync;
-            switch (executionEnvironment)
+            Task<TryCatch<IDocumentQueryExecutionComponent>> tryCreateComponentAsync = executionEnvironment switch
             {
-                case ExecutionEnvironment.Client:
-                    tryCreateComponentAsync = ClientTakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
-                        topCount,
-                        requestContinuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    tryCreateComponentAsync = ComputeTakeDocumentQueryExecutionComponent.TryCreateAsync(
-                        topCount,
-                        requestContinuationToken,
-                        tryCreateSourceAsync);
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
-            }
-
+                ExecutionEnvironment.Client => ClientTakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
+                                       topCount,
+                                       requestContinuationToken,
+                                       tryCreateSourceAsync),
+                ExecutionEnvironment.Compute => ComputeTakeDocumentQueryExecutionComponent.TryCreateAsync(
+topCount,
+requestContinuationToken,
+tryCreateSourceAsync),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
+            };
             return tryCreateComponentAsync;
         }
 
-        public override bool IsDone
-        {
-            get
-            {
-                return this.Source.IsDone || this.takeCount <= 0;
-            }
-        }
+        public override bool IsDone => this.Source.IsDone || this.takeCount <= 0;
     }
 }

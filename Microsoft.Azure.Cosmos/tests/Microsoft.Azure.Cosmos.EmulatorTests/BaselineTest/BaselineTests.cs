@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.Text.RegularExpressions;
     using System.Xml;
     using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using System.Text;
     using Newtonsoft.Json;
 
@@ -164,18 +163,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             /// <param name="output">The output.</param>
             public BaselineTestResult(BaselineTestInput input, BaselineTestOutput output)
             {
-                if (input == null)
-                {
-                    throw new ArgumentNullException($"{nameof(input)} must not be null.");
-                }
-
-                if (output == null)
-                {
-                    throw new ArgumentNullException($"{nameof(output)} must not be null.");
-                }
-
-                this.Input = input;
-                this.Output = output;
+                this.Input = input ?? throw new ArgumentNullException($"{nameof(input)} must not be null.");
+                this.Output = output ?? throw new ArgumentNullException($"{nameof(output)} must not be null.");
             }
 
             /// <summary>
@@ -213,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         public class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-            private JsonSerializer serializer;
+            private readonly JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
                 this.serializer = JsonSerializer.Create(jsonSerializerSettings);

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json.Interop;
 
     public abstract class JsonMicroBenchmarksBase

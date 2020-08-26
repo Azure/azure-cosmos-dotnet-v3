@@ -350,8 +350,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     string name = kvp.Key;
                     JToken value1 = kvp.Value;
 
-                    JToken value2;
-                    if (jObject2.TryGetValue(name, out value2))
+                    if (jObject2.TryGetValue(name, out JToken value2))
                     {
                         deepEquals &= this.Equals(value1, value2);
                     }

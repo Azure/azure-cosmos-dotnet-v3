@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
@@ -65,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public async Task<byte[]> UnwrapKeyAsync(
             byte[] wrappedKey,
             KeyVaultKeyUriProperties keyVaultUriProperties,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             UnwrapResult keyOpResult;
 
@@ -99,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public async Task<byte[]> WrapKeyAsync(
             byte[] key,
             KeyVaultKeyUriProperties keyVaultUriProperties,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             WrapResult keyOpResult;
 
@@ -130,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Whether The Customer has the correct Deletion Level. </returns>
         public async Task<bool> ValidatePurgeProtectionAndSoftDeleteSettingsAsync(
             KeyVaultKeyUriProperties keyVaultUriProperties,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             KeyClient akvClient = await this.GetAkvClientAsync(keyVaultUriProperties, cancellationToken);
             try

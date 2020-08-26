@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
-    using System.Diagnostics.CodeAnalysis;
     using System.Net;
     using System.Runtime.ExceptionServices;
     using System.Threading;
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IDocumentClientInternal owner;
         private readonly object refreshLock;
         private readonly AsyncCache<string, AccountProperties> databaseAccountCache;
-        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+        private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private bool isRefreshing;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
@@ -75,35 +74,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif
         }
 
-        public ReadOnlyCollection<Uri> ReadEndpoints
-        {
-            get
-            {
-                return this.locationCache.ReadEndpoints;
-            }
-        }
+        public ReadOnlyCollection<Uri> ReadEndpoints => this.locationCache.ReadEndpoints;
 
-        public ReadOnlyCollection<Uri> WriteEndpoints
-        {
-            get
-            {
-                return this.locationCache.WriteEndpoints;
-            }
-        }
+        public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
-        public int PreferredLocationCount
-        {
-            get
-            {
-                return this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
-            }
-        }
+        public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint, IList<string> locations, Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
         {
-            ExceptionDispatchInfo capturedException = null;
-
+            ExceptionDispatchInfo capturedException;
             try
             {
                 AccountProperties databaseAccount = await getDatabaseAccountFn(defaultEndpoint);
@@ -250,8 +230,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.locationCache.OnDatabaseAccountRead(databaseAccount);
             }
 
-            bool canRefreshInBackground = false;
-            if (this.locationCache.ShouldRefreshEndpoints(out canRefreshInBackground))
+            if (this.locationCache.ShouldRefreshEndpoints(out bool canRefreshInBackground))
             {
                 if (databaseAccount == null && !canRefreshInBackground)
                 {
@@ -323,8 +302,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static bool IsNonRetriableException(Exception exception)
         {
-            DocumentClientException dce = exception as DocumentClientException;
-            if (dce != null && dce.StatusCode == HttpStatusCode.Unauthorized)
+            if (exception is DocumentClientException dce && dce.StatusCode == HttpStatusCode.Unauthorized)
             {
                 return true;
             }

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -90,13 +89,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Text;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
             public override IJsonNavigatorNode GetRootNode()
@@ -646,32 +639,15 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("Failed to get the buffered raw json token.");
                     }
 
-                    IntegerNode integerNode;
-                    switch (jsonTokenType)
+                    IntegerNode integerNode = jsonTokenType switch
                     {
-                        case JsonTokenType.Int8:
-                            integerNode = Int8Node.Create(bufferedRawJsonToken);
-                            break;
-
-                        case JsonTokenType.Int16:
-                            integerNode = Int16Node.Create(bufferedRawJsonToken);
-                            break;
-
-                        case JsonTokenType.Int32:
-                            integerNode = Int32Node.Create(bufferedRawJsonToken);
-                            break;
-
-                        case JsonTokenType.Int64:
-                            integerNode = Int64Node.Create(bufferedRawJsonToken);
-                            break;
-
-                        case JsonTokenType.UInt32:
-                            integerNode = UInt32Node.Create(bufferedRawJsonToken);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonTokenType}");
-                    }
+                        JsonTokenType.Int8 => Int8Node.Create(bufferedRawJsonToken),
+                        JsonTokenType.Int16 => Int16Node.Create(bufferedRawJsonToken),
+                        JsonTokenType.Int32 => Int32Node.Create(bufferedRawJsonToken),
+                        JsonTokenType.Int64 => Int64Node.Create(bufferedRawJsonToken),
+                        JsonTokenType.UInt32 => UInt32Node.Create(bufferedRawJsonToken),
+                        _ => throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonTokenType}"),
+                    };
 
                     // consume the integer from the reader
                     jsonTextReader.Read();
@@ -686,19 +662,12 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("Failed to get the buffered raw json token.");
                     }
 
-                    FloatNode floatNode;
-                    switch (jsonTokenType)
+                    FloatNode floatNode = jsonTokenType switch
                     {
-                        case JsonTokenType.Float32:
-                            floatNode = Float32Node.Create(bufferedRawJsonToken);
-                            break;
-
-                        case JsonTokenType.Float64:
-                            floatNode = Float64Node.Create(bufferedRawJsonToken);
-                            break;
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonTokenType}");
-                    }
+                        JsonTokenType.Float32 => Float32Node.Create(bufferedRawJsonToken),
+                        JsonTokenType.Float64 => Float64Node.Create(bufferedRawJsonToken),
+                        _ => throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonTokenType}"),
+                    };
 
                     // consume the float from the reader
                     jsonTextReader.Read();

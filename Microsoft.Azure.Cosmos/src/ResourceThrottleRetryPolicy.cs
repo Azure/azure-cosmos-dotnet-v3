@@ -96,9 +96,8 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<ShouldRetryResult> ShouldRetryInternalAsync(TimeSpan? retryAfter)
         {
-            TimeSpan retryDelay = TimeSpan.Zero;
             if (this.currentAttemptCount < this.maxAttemptCount &&
-                this.CheckIfRetryNeeded(retryAfter, out retryDelay))
+                this.CheckIfRetryNeeded(retryAfter, out TimeSpan retryDelay))
             {
                 this.currentAttemptCount++;
                 DefaultTrace.TraceWarning(
@@ -119,8 +118,7 @@ namespace Microsoft.Azure.Cosmos
 
         private string GetExceptionMessage(Exception exception)
         {
-            DocumentClientException dce = exception as DocumentClientException;
-            if (dce != null && dce.StatusCode != null && (int)dce.StatusCode < (int)StatusCodes.InternalServerError)
+            if (exception is DocumentClientException dce && dce.StatusCode != null && (int)dce.StatusCode < (int)StatusCodes.InternalServerError)
             {
                 // for client related errors, don't print out the whole call stack.
                 // simply return the message to prevent CPU overhead on ToString() 

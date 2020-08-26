@@ -165,11 +165,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         // Figure out what partition you are going to based on the range from the continuation token
                         // If token is null then just start at partitionKeyRangeId "0"
-                        List<CompositeContinuationToken> suppliedTokens;
                         Range<string> rangeFromContinuationToken =
                             this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(
                                 request.Headers,
-                                out suppliedTokens);
+                                out List<CompositeContinuationToken> suppliedTokens);
                         Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>> queryRoutingInfo =
                             await this.TryGetTargetPartitionKeyRangeAsync(
                                 request,
@@ -278,8 +277,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            IReadOnlyList<Range<string>> providedRanges;
-            if (!this.providedRangesCache.TryGetValue(collection.ResourceId, out providedRanges))
+            if (!this.providedRangesCache.TryGetValue(collection.ResourceId, out IReadOnlyList<Range<string>> providedRanges))
             {
                 if (this.ShouldExecuteQueryRequest)
                 {

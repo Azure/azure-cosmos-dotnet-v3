@@ -5,8 +5,6 @@
     using System.IO;
     using System.Text;
     using BenchmarkDotNet.Attributes;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Newtonsoft.Json;
 
     [MemoryDiagnoser]
@@ -30,8 +28,7 @@
 
             public override bool Equals(object obj)
             {
-                ToDoActivity input = obj as ToDoActivity;
-                if (input == null)
+                if (!(obj is ToDoActivity input))
                 {
                     return false;
                 }

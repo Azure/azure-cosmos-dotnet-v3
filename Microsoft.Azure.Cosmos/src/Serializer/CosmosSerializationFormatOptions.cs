@@ -32,24 +32,9 @@ namespace Microsoft.Azure.Cosmos
             CreateCustomNavigator createCustomNavigator,
             CreateCustomWriter createCustomWriter)
         {
-            if (contentSerializationFormat == null)
-            {
-                throw new ArgumentNullException(nameof(contentSerializationFormat));
-            }
-
-            if (createCustomNavigator == null)
-            {
-                throw new ArgumentNullException(nameof(createCustomNavigator));
-            }
-
-            if (createCustomWriter == null)
-            {
-                throw new ArgumentNullException(nameof(createCustomWriter));
-            }
-
-            this.ContentSerializationFormat = contentSerializationFormat;
-            this.CreateCustomNavigatorCallback = createCustomNavigator;
-            this.CreateCustomWriterCallback = createCustomWriter;
+            this.ContentSerializationFormat = contentSerializationFormat ?? throw new ArgumentNullException(nameof(contentSerializationFormat));
+            this.CreateCustomNavigatorCallback = createCustomNavigator ?? throw new ArgumentNullException(nameof(createCustomNavigator));
+            this.CreateCustomWriterCallback = createCustomWriter ?? throw new ArgumentNullException(nameof(createCustomWriter));
         }
     }
 }

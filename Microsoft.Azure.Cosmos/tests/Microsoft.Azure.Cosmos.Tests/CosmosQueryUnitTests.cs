@@ -15,13 +15,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -191,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
             {
-                QueryResponseCore response = await component.DrainAsync(1, default(CancellationToken));
+                QueryResponseCore response = await component.DrainAsync(1, default);
                 Assert.AreEqual(setupContext.response, response);
             }
         }

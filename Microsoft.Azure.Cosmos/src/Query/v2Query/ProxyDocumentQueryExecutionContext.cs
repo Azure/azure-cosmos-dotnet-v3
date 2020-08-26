@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly Guid correlatedActivityId;
 
-        private IDocumentQueryExecutionContext innerExecutionContext;
+        private readonly IDocumentQueryExecutionContext innerExecutionContext;
 
         private ProxyDocumentQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,
@@ -94,10 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 correlatedActivityId);
         }
 
-        public bool IsDone
-        {
-            get { return this.innerExecutionContext.IsDone; }
-        }
+        public bool IsDone => this.innerExecutionContext.IsDone;
 
         public void Dispose()
         {
@@ -111,8 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            Error error = null;
-
+            Error error;
             try
             {
                 return await this.innerExecutionContext.ExecuteNextFeedResponseAsync(token);
@@ -132,13 +128,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             DefaultDocumentQueryExecutionContext queryExecutionContext =
                 (DefaultDocumentQueryExecutionContext)this.innerExecutionContext;
-
-            List<PartitionKeyRange> partitionKeyRanges =
+            _ =
                 await
-                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(collection.ResourceId,
+                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(this.collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
-
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
+            _ = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, this.correlatedActivityId);
             // Devnote this will get replace by the new v3 to v2 logic
             throw new NotSupportedException("v2 query excution context is currently not supported.");
 

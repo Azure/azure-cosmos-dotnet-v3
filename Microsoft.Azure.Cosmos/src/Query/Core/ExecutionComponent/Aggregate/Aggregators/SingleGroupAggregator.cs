@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -309,33 +307,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     AggregateOperator aggregateOperator,
                     CosmosElement continuationToken)
                 {
-                    TryCatch<IAggregator> tryCreateAggregator;
-                    switch (aggregateOperator)
+                    var tryCreateAggregator = aggregateOperator switch
                     {
-                        case AggregateOperator.Average:
-                            tryCreateAggregator = AverageAggregator.TryCreate(continuationToken);
-                            break;
-
-                        case AggregateOperator.Count:
-                            tryCreateAggregator = CountAggregator.TryCreate(continuationToken);
-                            break;
-
-                        case AggregateOperator.Max:
-                            tryCreateAggregator = MinMaxAggregator.TryCreateMaxAggregator(continuationToken);
-                            break;
-
-                        case AggregateOperator.Min:
-                            tryCreateAggregator = MinMaxAggregator.TryCreateMinAggregator(continuationToken);
-                            break;
-
-                        case AggregateOperator.Sum:
-                            tryCreateAggregator = SumAggregator.TryCreate(continuationToken);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(AggregateOperator)}: {aggregateOperator}.");
-                    }
-
+                        AggregateOperator.Average => AverageAggregator.TryCreate(continuationToken),
+                        AggregateOperator.Count => CountAggregator.TryCreate(continuationToken),
+                        AggregateOperator.Max => MinMaxAggregator.TryCreateMaxAggregator(continuationToken),
+                        AggregateOperator.Min => MinMaxAggregator.TryCreateMinAggregator(continuationToken),
+                        AggregateOperator.Sum => SumAggregator.TryCreate(continuationToken),
+                        _ => throw new ArgumentException($"Unknown {nameof(AggregateOperator)}: {aggregateOperator}."),
+                    };
                     return tryCreateAggregator.Try<AggregateValue>((aggregator) => new AggregateAggregateValue(aggregator));
                 }
             }

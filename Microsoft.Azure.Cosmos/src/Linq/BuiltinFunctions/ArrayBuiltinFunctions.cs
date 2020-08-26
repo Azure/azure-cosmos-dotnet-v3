@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (methodCallExpression.Arguments.Count == 1)
                 {
-                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
+                    _ = new List<SqlScalarExpression>();
                     SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_LENGTH", array);
@@ -178,8 +178,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
+            if (ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
             {
                 return visitor.Visit(methodCallExpression, context);
             }

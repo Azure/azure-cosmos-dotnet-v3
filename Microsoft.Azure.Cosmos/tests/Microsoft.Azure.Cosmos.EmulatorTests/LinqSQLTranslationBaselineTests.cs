@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
-    using System.Net;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]

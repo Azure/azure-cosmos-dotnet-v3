@@ -19,18 +19,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             ContainerInternal container)
         {
-            if (clientContext == null)
-            {
-                throw new ArgumentNullException(nameof(clientContext));
-            }
-
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.container = container;
-            this.ClientContext = clientContext;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.ClientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         protected CosmosClientContext ClientContext { get; }
@@ -39,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (conflict == null)
             {
@@ -135,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (cosmosConflict == null)
             {
@@ -199,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return default(T);
+            return default;
         }
     }
 }

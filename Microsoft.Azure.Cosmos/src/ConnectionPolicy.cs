@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ConnectionPolicy
     {
-        internal UserAgentContainer UserAgentContainer;
         private const int defaultRequestTimeout = 10;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
@@ -25,8 +24,10 @@ namespace Microsoft.Azure.Cosmos
 
         private static ConnectionPolicy defaultPolicy;
 
+        private readonly ObservableCollection<string> preferredLocations;
+        public UserAgentContainer UserAgentContainer;
+
         private Protocol connectionProtocol;
-        private ObservableCollection<string> preferredLocations;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -257,13 +258,7 @@ namespace Microsoft.Azure.Cosmos
         /// If <see cref="EnableEndpointDiscovery"/> is set to false, the value of this property is ignored.
         /// </para>
         /// </remarks>
-        public Collection<string> PreferredLocations
-        {
-            get
-            {
-                return this.preferredLocations;
-            }
-        }
+        public Collection<string> PreferredLocations => this.preferredLocations;
 
         /// <summary>
         /// Gets or sets the flag to enable endpoint discovery for geo-replicated database accounts in the Azure Cosmos DB service.

@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            RequestOptions requestOptions = itemRequestOptions as RequestOptions;
             TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions();
             batchItemRequestOptions.IndexingDirective = itemRequestOptions.IndexingDirective;
             batchItemRequestOptions.IfMatchEtag = itemRequestOptions.IfMatchEtag;

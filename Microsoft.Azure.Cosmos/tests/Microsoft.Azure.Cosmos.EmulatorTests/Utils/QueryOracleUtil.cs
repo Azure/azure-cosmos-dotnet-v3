@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -43,8 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public object GetValue(uint id)
         {
-            object value;
-            if (this.valueDict.TryGetValue(id, out value))
+            if (this.valueDict.TryGetValue(id, out object value))
             {
                 return value;
             }
@@ -104,8 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             IComparable value1 = this.field.GetValue(pair1.Key) as IComparable;
             IComparable value2 = this.field.GetValue(pair2.Key) as IComparable;
 
-            int cmp = 0;
-
+            int cmp;
             if (value1 == null && value2 == null)
                 cmp = 0;
             else if (value1 == null)
@@ -137,23 +134,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     {
         public static string ComparisonToString(Comparison comparison)
         {
-            switch (comparison)
+            return comparison switch
             {
-                case Comparison.Comparison_Equal:
-                    return "=";
-                case Comparison.Comparison_NotEqual:
-                    return "!=";
-                case Comparison.Comparison_Greater:
-                    return ">";
-                case Comparison.Comparison_GreaterOrEqual:
-                    return ">=";
-                case Comparison.Comparison_Less:
-                    return "<";
-                case Comparison.Comparison_LessOrEqual:
-                    return "<=";
-                default:
-                    return null;
-            }
+                Comparison.Comparison_Equal => "=",
+                Comparison.Comparison_NotEqual => "!=",
+                Comparison.Comparison_Greater => ">",
+                Comparison.Comparison_GreaterOrEqual => ">=",
+                Comparison.Comparison_Less => "<",
+                Comparison.Comparison_LessOrEqual => "<=",
+                _ => null,
+            };
         }
 
         public static Comparison StringToComparison(string comparison)
@@ -446,8 +436,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
             // Get String
             StringBuilder filterBuffer = new StringBuilder(strFilter.Length * 2);
-            uint resultSize;
-            errorCode = NativeMethods.GetString(this.pFilterNode, filterBuffer, (uint)filterBuffer.Capacity, out resultSize);
+            errorCode = NativeMethods.GetString(this.pFilterNode, filterBuffer, (uint)filterBuffer.Capacity, out uint resultSize);
 
             if (errorCode == DISP_E_BUFFERTOOSMALL)
             {
@@ -496,8 +485,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public bool Evaluate(string document)
         {
-            bool result;
-            uint errorCode = NativeMethods.Evaluate(this.pFilterNode, document, out result);
+            uint errorCode = NativeMethods.Evaluate(this.pFilterNode, document, out bool result);
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
             if (exception != null) throw exception;
 
@@ -611,8 +599,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public bool Validate(IEnumerable<string> results, Query query)
         {
-            bool valid;
-            this.Validate(results, query, out valid);
+            this.Validate(results, query, out bool valid);
             return valid;
         }
 
@@ -684,8 +671,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 }
                 numberOfQueries++;
 
-                bool valid;
-                IEnumerable<string> expected = this.Validate(queriedDocuments, query, out valid);
+                IEnumerable<string> expected = this.Validate(queriedDocuments, query, out bool valid);
                 if (!valid)
                 {
                     System.Diagnostics.Trace.TraceInformation(
@@ -874,17 +860,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         {
             Func<int, int> durationLambda = i =>
             {
-                switch (i % 3)
+                return (i % 3) switch
                 {
-                    case 0:
-                        return 7;
-                    case 1:
-                        return 30;
-                    case 2:
-                        return 60;
-                }
-
-                return 0;
+                    0 => 7,
+                    1 => 30,
+                    2 => 60,
+                    _ => 0,
+                };
             };
 
             for (int i = 0; i < Math.Ceiling(numberOfQueries / 3.0); ++i)

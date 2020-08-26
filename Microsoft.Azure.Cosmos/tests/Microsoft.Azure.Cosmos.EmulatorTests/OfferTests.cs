@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class OfferTests
     {
 
-        private PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
         private readonly struct TestCase
         {

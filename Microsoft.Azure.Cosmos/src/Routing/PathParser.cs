@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal sealed class PathParser
     {
-        private static char segmentSeparator = '/';
-        private static string errorMessageFormat = "Invalid path, failed at {0}";
+        private static readonly char segmentSeparator = '/';
+        private static readonly string errorMessageFormat = "Invalid path, failed at {0}";
 
         /// <summary>
         /// Extract parts from path
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private static string GetToken(string path, ref int currentIndex)
         {
             int newIndex = path.IndexOf(segmentSeparator, currentIndex);
-            string token = null;
+            string token;
             if (newIndex == -1)
             {
                 token = path.Substring(currentIndex);

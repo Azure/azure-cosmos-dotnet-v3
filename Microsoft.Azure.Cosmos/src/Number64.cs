@@ -54,37 +54,13 @@ namespace Microsoft.Azure.Cosmos
             this.doubleValue = null;
         }
 
-        public bool IsInteger
-        {
-            get
-            {
-                return this.longValue.HasValue;
-            }
-        }
+        public bool IsInteger => this.longValue.HasValue;
 
-        public bool IsDouble
-        {
-            get
-            {
-                return this.doubleValue.HasValue;
-            }
-        }
+        public bool IsDouble => this.doubleValue.HasValue;
 
-        public bool IsInfinity
-        {
-            get
-            {
-                return !this.IsInteger && double.IsInfinity(this.doubleValue.Value);
-            }
-        }
+        public bool IsInfinity => !this.IsInteger && double.IsInfinity(this.doubleValue.Value);
 
-        public bool IsNaN
-        {
-            get
-            {
-                return !this.IsInteger && double.IsNaN(this.doubleValue.Value);
-            }
-        }
+        public bool IsNaN => !this.IsInteger && double.IsNaN(this.doubleValue.Value);
 
         public override string ToString()
         {

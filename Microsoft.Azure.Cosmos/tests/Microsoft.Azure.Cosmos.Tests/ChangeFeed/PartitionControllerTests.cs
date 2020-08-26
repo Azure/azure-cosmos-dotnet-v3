@@ -28,100 +28,100 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         public PartitionControllerTests()
         {
-            lease = Mock.Of<DocumentServiceLease>();
-            Mock.Get(lease)
+            this.lease = Mock.Of<DocumentServiceLease>();
+            Mock.Get(this.lease)
                 .Setup(l => l.CurrentLeaseToken)
                 .Returns("partitionId");
 
-            partitionProcessor = MockPartitionProcessor();
-            leaseRenewer = MockRenewer();
-            observer = MockObserver();
-            partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(lease) == new PartitionSupervisorCore<MyDocument>(lease, observer, partitionProcessor, leaseRenewer));
+            this.partitionProcessor = MockPartitionProcessor();
+            this.leaseRenewer = MockRenewer();
+            this.observer = MockObserver();
+            this.partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(this.lease) == new PartitionSupervisorCore<MyDocument>(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
-            leaseManager = Mock.Of<DocumentServiceLeaseManager>();
-            Mock.Get(leaseManager).Reset(); // Reset implicit/by default setup of properties.
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.AcquireAsync(lease))
-                .ReturnsAsync(lease);
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.ReleaseAsync(lease))
+            this.leaseManager = Mock.Of<DocumentServiceLeaseManager>();
+            Mock.Get(this.leaseManager).Reset(); // Reset implicit/by default setup of properties.
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
+                .ReturnsAsync(this.lease);
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
                 .Returns(Task.CompletedTask);
             var leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
-            synchronizer = Mock.Of<PartitionSynchronizer>();
-            sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+            this.synchronizer = Mock.Of<PartitionSynchronizer>();
+            this.sut = new PartitionControllerCore(leaseContainer, this.leaseManager, this.partitionSupervisorFactory, this.synchronizer);
         }
 
         [TestInitialize]
         public async Task Setup()
         {
-            await sut.InitializeAsync().ConfigureAwait(false);
+            await this.sut.InitializeAsync().ConfigureAwait(false);
         }
 
         [TestCleanup]
         public async Task CleanUp()
         {
-            await sut.ShutdownAsync().ConfigureAwait(false);
+            await this.sut.ShutdownAsync().ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .VerifyAll();
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .VerifyAll();
 
-            Mock.Get(synchronizer)
+            Mock.Get(this.synchronizer)
                 .VerifyAll();
         }
 
         [TestMethod]
         public async Task AddLease_ShouldAcquireLease_WhenCalled()
         {
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
-                .Verify(manager => manager.AcquireAsync(lease), Times.Once);
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.AcquireAsync(this.lease), Times.Once);
         }
 
         [TestMethod]
         public async Task AddLease_ShouldRunObserver_WhenCalled()
         {
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
         public async Task AddLease_ShouldntReleaseLease_WhenCalled()
         {
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
         public async Task AddLease_ShouldIgnorePartitionObserving_IfDuplicateLease()
         {
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
             FeedProcessor processorDuplicate = MockPartitionProcessor();
-            Mock.Get(partitionSupervisorFactory)
-                .Setup(f => f.Create(lease))
-                .Returns(new PartitionSupervisorCore<MyDocument>(lease, observer, processorDuplicate, leaseRenewer));
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(new PartitionSupervisorCore<MyDocument>(this.lease, this.observer, processorDuplicate, this.leaseRenewer));
 
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
-                .Verify(manager => manager.AcquireAsync(lease), Times.Once);
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.AcquireAsync(this.lease), Times.Once);
 
-            Mock.Get(leaseManager)
-                .Verify(manager => manager.UpdatePropertiesAsync(lease), Times.Once);
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.UpdatePropertiesAsync(this.lease), Times.Once);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Never);
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(processorDuplicate)
                 .Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -130,25 +130,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task AddLease_ShouldNotRelease_IfUpdateLeasePropertiesThrows()
         {
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Reset();
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.UpdatePropertiesAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.UpdatePropertiesAsync(this.lease))
                 .Throws(new NullReferenceException());
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.ReleaseAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
                 .Returns(Task.CompletedTask);
 
-            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => sut.AddOrUpdateLeaseAsync(lease)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Never);
         }
 
@@ -160,14 +160,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Setup(l => l.CurrentLeaseToken)
                 .Returns("partitionId2");
 
-            Mock.Get(partitionSupervisorFactory)
+            Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(lease2))
-                .Returns(new PartitionSupervisorCore<MyDocument>(lease2, observer, MockPartitionProcessor(), leaseRenewer));
+                .Returns(new PartitionSupervisorCore<MyDocument>(lease2, this.observer, MockPartitionProcessor(), this.leaseRenewer));
 
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
-            await sut.AddOrUpdateLeaseAsync(lease2).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(lease2).ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Verify(manager => manager.AcquireAsync(lease2), Times.Once);
         }
 
@@ -180,12 +180,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns("partitionId2");
 
             FeedProcessor partitionProcessor2 = MockPartitionProcessor();
-            Mock.Get(partitionSupervisorFactory)
+            Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(lease2))
-                .Returns(new PartitionSupervisorCore<MyDocument>(lease2, observer, partitionProcessor2, leaseRenewer));
+                .Returns(new PartitionSupervisorCore<MyDocument>(lease2, this.observer, partitionProcessor2, this.leaseRenewer));
 
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
-            await sut.AddOrUpdateLeaseAsync(lease2).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(lease2).ConfigureAwait(false);
 
             Mock.Get(partitionProcessor2)
                 .Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -194,98 +194,98 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task Shutdown_ShouldWork_WithoutLeases()
         {
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Reset();
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            await sut.ShutdownAsync().ConfigureAwait(false);
+            await this.sut.ShutdownAsync().ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Never);
         }
 
         [TestMethod]
         public async Task Controller_ShouldReleasesLease_IfObserverExits()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            Mock.Get(partitionSupervisorFactory)
-                .Setup(f => f.Create(lease))
-                .Returns(new PartitionSupervisorCore<MyDocument>(lease, observer, partitionProcessor, leaseRenewer));
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(new PartitionSupervisorCore<MyDocument>(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
-            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
             await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Once);
         }
 
         [TestMethod]
         public async Task AddLease_ShouldFail_IfLeaseAcquireThrows()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Reset();
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.AcquireAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
                 .Throws(new NullReferenceException());
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.ReleaseAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
                 .Returns(Task.CompletedTask);
 
-            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => sut.AddOrUpdateLeaseAsync(lease)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
         }
 
         [TestMethod]
         public async Task AddLease_ShouldReleaseLease_IfLeaseAcquireThrows()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Reset();
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.AcquireAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
                 .Throws(new NullReferenceException());
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.ReleaseAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
                 .Returns(Task.CompletedTask);
 
-            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => sut.AddOrUpdateLeaseAsync(lease)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Once);
         }
 
         [TestMethod]
         public async Task AddLease_ShouldntRunObserver_IfLeaseAcquireThrows()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            Mock.Get(leaseManager)
+            Mock.Get(this.leaseManager)
                 .Reset();
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.AcquireAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.AcquireAsync(this.lease))
                 .Throws(new NullReferenceException());
 
-            Mock.Get(leaseManager)
-                .Setup(manager => manager.ReleaseAsync(lease))
+            Mock.Get(this.leaseManager)
+                .Setup(manager => manager.ReleaseAsync(this.lease))
                 .Returns(Task.CompletedTask);
 
-            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => sut.AddOrUpdateLeaseAsync(lease)).ConfigureAwait(false);
+            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
 
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Verify(processor => processor.RunAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
 

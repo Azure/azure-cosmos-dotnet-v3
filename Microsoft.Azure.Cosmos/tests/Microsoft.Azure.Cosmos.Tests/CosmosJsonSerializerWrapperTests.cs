@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             public override T FromStream<T>(Stream stream)
             {
-                return default(T);
+                return default;
             }
 
             public override Stream ToStream<T>(T input)

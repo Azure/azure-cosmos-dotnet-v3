@@ -43,26 +43,16 @@ namespace Microsoft.Azure.Cosmos
                     string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
             }
 
-            IndexKind indexKind = IndexKind.Hash;
-            if (Enum.TryParse(indexKindToken.Value<string>(), out indexKind))
+            if (Enum.TryParse(indexKindToken.Value<string>(), out IndexKind indexKind))
             {
-                object index = null;
-                switch (indexKind)
+                object index = indexKind switch
                 {
-                    case IndexKind.Hash:
-                        index = new HashIndex();
-                        break;
-                    case IndexKind.Range:
-                        index = new RangeIndex();
-                        break;
-                    case IndexKind.Spatial:
-                        index = new SpatialIndex();
-                        break;
-                    default:
-                        throw new JsonSerializationException(
-                            string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKind));
-                }
-
+                    IndexKind.Hash => new HashIndex(),
+                    IndexKind.Range => new RangeIndex(),
+                    IndexKind.Spatial => new SpatialIndex(),
+                    _ => throw new JsonSerializationException(
+                        string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKind)),
+                };
                 serializer.Populate(indexToken.CreateReader(), index);
                 return index;
             }
@@ -73,13 +63,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanWrite => false;
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {

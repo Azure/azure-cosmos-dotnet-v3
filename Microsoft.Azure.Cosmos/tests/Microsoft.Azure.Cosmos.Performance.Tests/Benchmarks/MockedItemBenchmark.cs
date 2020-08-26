@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
-    using BenchmarkDotNet.Columns;
-    using BenchmarkDotNet.Configs;
 
     public enum ScenarioType
     {
@@ -33,13 +31,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             set;
         }
 
-        private IItemBenchmark CurrentBenchmark
-        {
-            get
-            {
-                return MockedItemBenchmark.IterParameters[(int)this.Type];
-            }
-        }
+        private IItemBenchmark CurrentBenchmark => MockedItemBenchmark.IterParameters[(int)this.Type];
 
         [Benchmark]
         public async Task CreateItem()

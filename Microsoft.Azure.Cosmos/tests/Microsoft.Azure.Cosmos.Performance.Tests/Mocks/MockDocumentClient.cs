@@ -18,8 +18,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Moq;
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using System.IO;
 
     internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
@@ -36,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         };
 
         string[] dummyHeaderNames;
-        private IComputeHash authKeyHashFunction;
+        private readonly IComputeHash authKeyHashFunction;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,

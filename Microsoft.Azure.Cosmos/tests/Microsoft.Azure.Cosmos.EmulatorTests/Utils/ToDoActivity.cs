@@ -24,8 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public override bool Equals(Object obj)
         {
-            ToDoActivity input = obj as ToDoActivity;
-            if (input == null)
+            if (!(obj is ToDoActivity input))
             {
                 return false;
             }

@@ -2475,8 +2475,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 };
                 client.createDocument(client.getSelfLink(), { id: 'testDoc' + output, title : 'My Book'}, {}, callback); }";
 
-            StoredProcedureExecuteResponse<int> scriptResponse = null;
-            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
+            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out StoredProcedureExecuteResponse<int> scriptResponse, "My Book");
 
             IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
             int totalHit = linqQueryable.Where(book => book.Title == "My Book").Count();
@@ -2561,15 +2560,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 throw new NotImplementedException();
             }
 
-            public int Count
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public int Count => throw new NotImplementedException();
 
-            public bool IsReadOnly
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public bool IsReadOnly => throw new NotImplementedException();
 
             public bool Remove(IFooItem item)
             {
@@ -2641,15 +2634,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 throw new NotImplementedException();
             }
 
-            public int Count
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public int Count => throw new NotImplementedException();
 
-            public bool IsReadOnly
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public bool IsReadOnly => throw new NotImplementedException();
 
             public bool Remove(string item)
             {

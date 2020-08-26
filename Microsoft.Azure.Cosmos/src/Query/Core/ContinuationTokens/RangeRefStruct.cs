@@ -14,18 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public RangeRefStruct(string min, string max)
         {
-            if (min == null)
-            {
-                throw new ArgumentNullException(nameof(min));
-            }
-
-            if (max == null)
-            {
-                throw new ArgumentNullException(nameof(max));
-            }
-
-            this.Min = min;
-            this.Max = max;
+            this.Min = min ?? throw new ArgumentNullException(nameof(min));
+            this.Max = max ?? throw new ArgumentNullException(nameof(max));
         }
 
         public string Min { get; }

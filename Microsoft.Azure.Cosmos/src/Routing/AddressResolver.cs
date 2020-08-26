@@ -316,7 +316,6 @@ namespace Microsoft.Azure.Cosmos
                 if (!collectionCacheIsUptoDate)
                 {
                     request.ForceNameCacheRefresh = true;
-                    collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
                     if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
@@ -333,7 +332,6 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
-                    collectionRoutingMapCacheIsUptoDate = true;
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: routingMap,
@@ -444,7 +442,6 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange range;
             string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
 
-            object effectivePartitionKeyStringObject = null;
             if (partitionKeyString != null)
             {
                 range = this.TryResolveServerPartitionByPartitionKey(
@@ -456,7 +453,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (request.Properties != null && request.Properties.TryGetValue(
                 WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                out effectivePartitionKeyStringObject))
+                out object effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
                 if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
@@ -733,18 +730,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionAddressInformation addresses,
                 ServiceIdentity serviceIdentity)
             {
-                if (addresses == null)
-                {
-                    throw new ArgumentNullException("addresses");
-                }
-
-                if (serviceIdentity == null)
-                {
-                    throw new ArgumentNullException("serviceIdentity");
-                }
-
-                this.Addresses = addresses;
-                this.TargetServiceIdentity = serviceIdentity;
+                this.Addresses = addresses ?? throw new ArgumentNullException("addresses");
+                this.TargetServiceIdentity = serviceIdentity ?? throw new ArgumentNullException("serviceIdentity");
             }
 
             public ResolutionResult(
@@ -752,18 +739,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionAddressInformation addresses,
                 ServiceIdentity serviceIdentity)
             {
-                if (targetPartitionKeyRange == null)
-                {
-                    throw new ArgumentNullException("targetPartitionKeyRange");
-                }
-
-                if (addresses == null)
-                {
-                    throw new ArgumentNullException("addresses");
-                }
-
-                this.TargetPartitionKeyRange = targetPartitionKeyRange;
-                this.Addresses = addresses;
+                this.TargetPartitionKeyRange = targetPartitionKeyRange ?? throw new ArgumentNullException("targetPartitionKeyRange");
+                this.Addresses = addresses ?? throw new ArgumentNullException("addresses");
                 this.TargetServiceIdentity = serviceIdentity;
             }
         }

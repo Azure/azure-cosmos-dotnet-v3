@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Timers
 #nullable enable
     internal sealed class TimerWheelTimerCore : TimerWheelTimer
     {
-        private static object completedObject = new object();
+        private static readonly object completedObject = new object();
         private readonly TaskCompletionSource<object> taskCompletionSource;
         private readonly Object memberLock;
         private readonly TimerWheel timerWheel;
