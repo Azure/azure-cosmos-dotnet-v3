@@ -65,16 +65,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
         public void Dispose()
         {
             this.Stop();
-
-            this.canRunTaskSemaphoreSlim.Dispose();
-            this.tokenSource.Dispose();
         }
 
         public void Stop()
         {
             this.isStopped = true;
-            this.tokenSource.Cancel();
             this.delayedTasks.Clear();
+
+            if (this.CurrentRunningTaskCount == 0)
+            {
+                try
+                {
+                    this.canRunTaskSemaphoreSlim.Dispose();
+                }
+                catch (Exception)
+                {
+                }
+
+                try
+                {
+                    this.tokenSource.Dispose();
+                }
+                catch (Exception)
+                {
+                }
+            }
         }
 
         public bool TryQueueTask(IComparableTask comparableTask, TimeSpan delay = default)
@@ -122,31 +137,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
 
         private async Task ScheduleAsync()
         {
-            while (!this.isStopped)
+            try
             {
-                await this.ExecuteComparableTaskAsync(await this.taskQueue.TakeAsync(this.CancellationToken));
+                while (!this.isStopped)
+                {
+                    await this.ExecuteComparableTaskAsync(await this.taskQueue.TakeAsync(this.CancellationToken));
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception e)
+            {
+                Extensions.TraceException(e);
             }
         }
 
         private async Task ExecuteComparableTaskAsync(IComparableTask comparableTask)
         {
+            this.CancellationToken.ThrowIfCancellationRequested();
             await this.canRunTaskSemaphoreSlim.WaitAsync(this.CancellationToken);
 
+            try
+            {
 #pragma warning disable 4014
-            // Schedule execution on current .NET task scheduler.
-            // Compute gateway uses custom task scheduler to track tenant resource utilization.
-            // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
-            // Task.Factory.StartNew() allows specifying task scheduler to use.
-            Task.Factory
-                .StartNewOnCurrentTaskSchedulerAsync(
-                    function: () => comparableTask
-                    .StartAsync(this.CancellationToken)
+                // Schedule execution on current .NET task scheduler.
+                // Compute gateway uses custom task scheduler to track tenant resource utilization.
+                // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
+                // Task.Factory.StartNew() allows specifying task scheduler to use.
+                Task.Factory
+                    .StartNewOnCurrentTaskSchedulerAsync(
+                        () => comparableTask.StartAsync(this.CancellationToken),
+                        this.CancellationToken)
                     .ContinueWith((antecendent) =>
                     {
-                        // Observing the exception.
-                        Exception exception = antecendent.Exception;
-                        Extensions.TraceException(exception);
-
                         // Semaphore.Release can also throw an exception.
                         try
                         {
@@ -156,15 +180,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
                         {
                             Extensions.TraceException(releaseException);
                         }
-                    }, TaskScheduler.Current),
-                    cancellationToken: this.CancellationToken)
-                .ContinueWith((antecendent) =>
-                {
-                    // StartNew can have a task cancelled exception
-                    Exception exception = antecendent.Exception;
-                    Extensions.TraceException(exception);
-                });
+
+                        if (this.isStopped &&
+                            this.CurrentRunningTaskCount == 0)
+                        {
+                            try
+                            {
+                                this.canRunTaskSemaphoreSlim.Dispose();
+                            }
+                            catch (Exception)
+                            {
+                            }
+
+                            try
+                            {
+                                this.tokenSource.Dispose();
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        // StartNew can have a task cancelled exception
+                        Exception exception = antecendent.Exception;
+                        Extensions.TraceException(exception);
+                    });
 #pragma warning restore 4014
+            }
+            catch (Exception e)
+            {
+                // Semaphore.Release can also throw an exception.
+                try
+                {
+                    this.canRunTaskSemaphoreSlim.Release();
+                }
+                catch (Exception releaseException)
+                {
+                    Extensions.TraceException(releaseException);
+                }
+
+                Extensions.TraceException(e);
+                throw;
+            }
         }
     }
 }

@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 // Prefetch if necessary, and populate consume queue.
                 if (this.CanPrefetch)
                 {
-                    this.TryScheduleFetch(itemProducerTree);
+                    this.TryScheduleFetch(itemProducerTree, cancellationToken);
                 }
 
                 itemProducerTrees.Add(itemProducerTree);
@@ -568,13 +568,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// Tries to schedule a fetch from the document producer tree.
         /// </summary>
         /// <param name="itemProducerTree">The document producer tree to schedule a fetch for.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Whether or not the fetch was successfully scheduled.</returns>
-        private bool TryScheduleFetch(ItemProducerTree itemProducerTree)
+        private bool TryScheduleFetch(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
         {
             return this.comparableTaskScheduler.TryQueueTask(
                 new ItemProducerTreeComparableTask(
                     itemProducerTree,
-                    this.fetchPrioirtyFunction),
+                    this.fetchPrioirtyFunction,
+                    cancellationToken),
                 default);
         }
 
@@ -616,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 long expectedResponseSize = Math.Min(producer.PageSize, 4 * 1024 * 1024);
                 if (this.CanPrefetch && this.FreeItemSpace > expectedResponseSize)
                 {
-                    this.TryScheduleFetch(producer);
+                    this.TryScheduleFetch(producer, token);
                 }
             }
         }
@@ -779,16 +781,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             private readonly ItemProducerTree producer;
 
             /// <summary>
+            /// The cancellation token to use for the task.
+            /// </summary>
+            private readonly CancellationToken cancellationToken;
+
+            /// <summary>
             /// Initializes a new instance of the ItemProducerTreeComparableTask class.
             /// </summary>
             /// <param name="producer">The producer to fetch from.</param>
             /// <param name="taskPriorityFunction">The callback to determine the fetch priority of the document producer.</param>
+            /// <param name="cancellationToken">The cancellation token.</param>
             public ItemProducerTreeComparableTask(
                 ItemProducerTree producer,
-                Func<ItemProducerTree, int> taskPriorityFunction)
+                Func<ItemProducerTree, int> taskPriorityFunction,
+                CancellationToken cancellationToken)
                 : base(taskPriorityFunction(producer))
             {
                 this.producer = producer;
+                this.cancellationToken = cancellationToken;
             }
 
             /// <summary>
@@ -798,7 +808,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {
-                return this.producer.BufferMoreDocumentsAsync(token);
+                if (token.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(token);
+                }
+
+                if (this.cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(token);
+                }
+
+                // 'token'' here is not passed. That allows the prefetch tasks to continue until the query's token is cancelled.
+                return this.producer.BufferMoreDocumentsAsync(this.cancellationToken);
             }
 
             /// <summary>

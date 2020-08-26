@@ -94,7 +94,11 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge => this.Headers?.RequestCharge ?? 0;
+        public virtual double RequestCharge
+        {
+            get => this.Headers?.RequestCharge ?? 0;
+            internal set => throw new NotSupportedException();
+        }
 
         /// <summary>
         /// Gets the amount of time to wait before retrying this or any other request within Cosmos container or collection due to throttling.
