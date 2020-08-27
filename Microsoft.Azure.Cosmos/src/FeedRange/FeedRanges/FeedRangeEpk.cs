@@ -24,12 +24,7 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedRangeEpk(Documents.Routing.Range<string> range)
         {
-            if (range == null)
-            {
-                throw new ArgumentNullException(nameof(range));
-            }
-
-            this.Range = range;
+            this.Range = range ?? throw new ArgumentNullException(nameof(range));
         }
 
         public Documents.Routing.Range<string> Range { get; }

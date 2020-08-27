@@ -198,5 +198,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return new PartitionKeyHash(hash);
             }
         }
+
+        public static bool operator ==(PartitionKeyHash left, PartitionKeyHash right) => left.Equals(right);
+
+        public static bool operator !=(PartitionKeyHash left, PartitionKeyHash right) => !(left == right);
+
+        public static bool operator <(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) < 0;
+
+        public static bool operator <=(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) <= 0;
+
+        public static bool operator >(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) > 0;
+
+        public static bool operator >=(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) >= 0;
     }
 }
