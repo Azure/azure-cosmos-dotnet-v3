@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -101,16 +102,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 #else
         internal
 #endif
-        static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> namedParameters)
+        static QueryDefinition ToQueryDefinition<T>(
+            this IQueryable<T> query,
+            IReadOnlyDictionary<object, string> namedParameters)
         {
             if (namedParameters == null)
             {
-                throw new ArgumentException("namedParameters dictionary cannot be empty for this overload, please use ToQueryDefinition<T>(IQueryable<T> query) instead", nameof(namedParameters));
+                throw new ArgumentException($"{nameof(namedParameters)} dictionary cannot be empty for this overload, please use ToQueryDefinition<T>(IQueryable<T> query) instead");
             }
 
             if (query is CosmosLinqQuery<T> linqQuery)
             {
-                return linqQuery.ToQueryDefinition(namedParameters);
+                return linqQuery.ToQueryDefinition(namedParameters.ToImmutableDictionary());
             }
 
             throw new ArgumentException("ToQueryDefinition is only supported on Cosmos LINQ query operations", nameof(query));

@@ -429,23 +429,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int taskNum = 100;
             bool valid = true;
 
-
             // Passing incorrect boolean value, generating queryDefinition, updating parameter and verifying new result
             valid = false;
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == camelCase)
+            IQueryable<ToDoActivity> queryable = linqQueryable
+                .Where(item => item.CamelCase == camelCase)
                .Where(item => item.description == description)
                .Where(item => item.taskNum < taskNum)
                .Where(item => item.valid == valid)
                .SelectMany(item => item.children)
                .Where(child => child == child1);
-            Dictionary<object, string> parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
-            parameters.Add(description, "@param2");
-            parameters.Add(taskNum, "@param3");
-            parameters.Add(valid, "@param4");
-            parameters.Add(child1, "@param5");
-            QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
+            Dictionary<object, string> parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" },
+                { description, "@param2" },
+                { taskNum, "@param3" },
+                { valid, "@param4" },
+                { child1, "@param5" }
+            };
+            QueryDefinition queryDefinition = queryable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -458,19 +460,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Passing incorrect string value, generating queryDefinition, updating parameter and verifying new result
             description = "wrongDescription";
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
-            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+            queryable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == description)
                .Where(item => item.taskNum < 100)
                .Where(item => item.valid == true)
                .SelectMany(item => item.children)
                .Where(child => child == child1);
-            parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
-            parameters.Add(description, "@param2");
-            parameters.Add(taskNum, "@param3");
-            parameters.Add(valid, "@param4");
-            parameters.Add(child1, "@param5");
-            queryDefinition = queriable.ToQueryDefinition(parameters);
+            parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" },
+                { description, "@param2" },
+                { taskNum, "@param3" },
+                { valid, "@param4" },
+                { child1, "@param5" }
+            };
+            queryDefinition = queryable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -483,19 +487,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Passing incorrect number value, generating queryDefinition, updating parameter and verifying new result
             taskNum = 10;
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
-            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+            queryable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == "CreateRandomToDoActivity")
                .Where(item => item.taskNum < taskNum)
                .Where(item => item.valid == true)
                .SelectMany(item => item.children)
                .Where(child => child == child1);
-            parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
-            parameters.Add(description, "@param2");
-            parameters.Add(taskNum, "@param3");
-            parameters.Add(valid, "@param4");
-            parameters.Add(child1, "@param5");
-            queryDefinition = queriable.ToQueryDefinition(parameters);
+            parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" },
+                { description, "@param2" },
+                { taskNum, "@param3" },
+                { valid, "@param4" },
+                { child1, "@param5" }
+            };
+            queryDefinition = queryable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -507,19 +513,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Passing incorrect object value, generating queryDefinition, updating parameter and verifying new result
             child1.taskNum = 40;
-            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+            queryable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == "CreateRandomToDoActivity")
                .Where(item => item.taskNum < taskNum)
                .Where(item => item.valid == true)
                .SelectMany(item => item.children)
                .Where(child => child == child1);
-            parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
-            parameters.Add(description, "@param2");
-            parameters.Add(taskNum, "@param3");
-            parameters.Add(valid, "@param4");
-            parameters.Add(child1, "@param5");
-            queryDefinition = queriable.ToQueryDefinition(parameters);
+            parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" },
+                { description, "@param2" },
+                { taskNum, "@param3" },
+                { valid, "@param4" },
+                { child1, "@param5" }
+            };
+            queryDefinition = queryable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -543,8 +551,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IQueryable<ToDoActivity> queriable = linqQueryable
                .Where(item => item.CamelCase == camelCase)
                .Where(item => item.description != camelCase);
-            Dictionary<object, string> parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
+            Dictionary<object, string> parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" }
+            };
             QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(1, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -563,9 +573,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
             queriable = linqQueryable
                .Where(item => item.children == children);
-            parameters = new Dictionary<object, string>();
-            parameters.Add(child1, "@param1");
-            parameters.Add(child2, "@param2");
+            parameters = new Dictionary<object, string>
+            {
+                { child1, "@param1" },
+                { child2, "@param2" }
+            };
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -584,10 +596,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .OrderBy(item => item.taskNum)
                 .Skip(5)
                 .Take(4);
-            parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
-            parameters.Add(5, "@param2");
-            parameters.Add(4, "@param3");
+            parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" },
+                { 5, "@param2" },
+                { 4, "@param3" }
+            };
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(4, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
@@ -601,8 +615,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             camelCase = "\b\n";
             queriable = linqQueryable
                 .Where(item => item.CamelCase != camelCase);
-            parameters = new Dictionary<object, string>();
-            parameters.Add(camelCase, "@param1");
+            parameters = new Dictionary<object, string>
+            {
+                { camelCase, "@param1" }
+            };
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual("\b\n", queryDefinition.ToSqlQuerySpec().Parameters[0].Value);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
@@ -688,21 +704,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                .Where(item => item.booleanValue == booleanValue)
                .SelectMany(item => item.children)
                .Where(ch => ch == child);
-            Dictionary<object, string> parameters = new Dictionary<object, string>();
-            parameters.Add(id, "@param1");
-            parameters.Add(stringValue, "@Param2");
-            parameters.Add((int)sbyteValue, "@param3"); // Linq converts sbyte to int32, therefore adding int in cast
-            parameters.Add((int)byteValue, "@param4");  // Linq converts byte to int32, therefore adding int in cast
-            parameters.Add((int)shortValue, "@param5"); // Linq converts short to int32, therefore adding int in cast
-            parameters.Add(uintValue, "@param6");
-            parameters.Add(longValue, "@param7");
-            parameters.Add(ulongValue, "@Param8");
-            parameters.Add(floatValue, "@param9");
-            parameters.Add(doubleValue, "@param10");
-            parameters.Add(decimaleValue, "@param11");
-            parameters.Add(booleanValue, "@param12");
-            parameters.Add(child, "@param13");
-            parameters.Add((int)ushortValue, "@param15"); // Linq converts ushort to int32, therefore adding int in cast
+            Dictionary<object, string> parameters = new Dictionary<object, string>
+            {
+                { id, "@param1" },
+                { stringValue, "@Param2" },
+                { (int)sbyteValue, "@param3" }, // Linq converts sbyte to int32, therefore adding int in cast
+                { (int)byteValue, "@param4" },  // Linq converts byte to int32, therefore adding int in cast
+                { (int)shortValue, "@param5" }, // Linq converts short to int32, therefore adding int in cast
+                { uintValue, "@param6" },
+                { longValue, "@param7" },
+                { ulongValue, "@Param8" },
+                { floatValue, "@param9" },
+                { doubleValue, "@param10" },
+                { decimaleValue, "@param11" },
+                { booleanValue, "@param12" },
+                { child, "@param13" },
+                { (int)ushortValue, "@param15" } // Linq converts ushort to int32, therefore adding int in cast
+            };
 
             QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
@@ -731,8 +749,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 IQueryable<ToDoActivity> queryable = linqQueryable.Where(expression);
 
-                Dictionary<object, string> parameters = new Dictionary<object, string>();
-                parameters.Add(searchString, "@param1");
+                Dictionary<object, string> parameters = new Dictionary<object, string>
+                {
+                    { searchString, "@param1" }
+                };
 
                 QueryDefinition queryDefinition = queryable.ToQueryDefinition(parameters);
 
