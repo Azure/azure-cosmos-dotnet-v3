@@ -1,0 +1,1075 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="BadRequest" xml:space="preserve">
+    <value>One of the input values is invalid.</value>
+  </data>
+  <data name="BadUrl" xml:space="preserve">
+    <value>Request url is invalid.</value>
+  </data>
+  <data name="RemoveWriteRegionNotSupported" xml:space="preserve">
+    <value>Cannot remove write region for account {0}. Please issue delete on the account to remove write region</value>
+  </data>
+  <data name="DocumentServiceUnavailable" xml:space="preserve">
+    <value>Service is currently unavailable, please retry after a while. If this problem persists please contact support.</value>
+  </data>
+  <data name="CrossPartitionContinuationAndIndex" xml:space="preserve">
+    <value>Value specified in the "{0}" header is incompatible with value specified in the "{1}" header of the request.</value>
+  </data>
+  <data name="DeserializationError" xml:space="preserve">
+    <value>Error occurred while deserializing content '{0}'.</value>
+  </data>
+  <data name="EndpointNotFound" xml:space="preserve">
+    <value>Unable to retrieve address of endpoint '{0}' from the address '{1}'</value>
+  </data>
+  <data name="EntityAlreadyExists" xml:space="preserve">
+    <value>Entity with the specified id already exists in the system.</value>
+  </data>
+  <data name="Forbidden" xml:space="preserve">
+    <value>Request is blocked by your Cosmos DB account firewall settings.</value>
+  </data>
+  <data name="ClientPublicIpInfo" xml:space="preserve">
+    <value>client IP {0} through public internet</value>
+  </data>
+  <data name="ClientVnetInfo" xml:space="preserve">
+    <value>client VNET through {0}</value>
+  </data>
+  <data name="ForbiddenClientIpAddress" xml:space="preserve">
+    <value>Request originated from {0}. This is blocked by your Cosmos DB account firewall settings.</value>
+  </data>
+  <data name="Gone" xml:space="preserve">
+    <value>The requested resource is no longer available at the server.</value>
+  </data>
+  <data name="InsufficientPermissions" xml:space="preserve">
+    <value>Insufficient permissions provided in the authorization header for the corresponding request. Please retry with another authorization header.</value>
+  </data>
+  <data name="InternalServerError" xml:space="preserve">
+    <value>Unknown server error occurred when processing this request.</value>
+  </data>
+  <data name="InvalidAuthHeaderFormat" xml:space="preserve">
+    <value>Authorization header doesn't confirm to the required format. Please verify and try again.</value>
+  </data>
+  <data name="InvalidBackendResponse" xml:space="preserve">
+    <value>The backend response was not in the correct format.</value>
+  </data>
+  <data name="InvalidDateHeader" xml:space="preserve">
+    <value>The input date header is invalid format. Please pass in RFC 1123 style date format.</value>
+  </data>
+  <data name="InvalidHeaderValue" xml:space="preserve">
+    <value>Value '{0}' specified for the header '{1}' is invalid. </value>
+  </data>
+  <data name="InvalidProxyCommand" xml:space="preserve">
+    <value>Command is not supported by backend</value>
+  </data>
+  <data name="InvalidQuery" xml:space="preserve">
+    <value>Query '{0}' specified is either invalid or unsupported.</value>
+  </data>
+  <data name="InvalidQueryValue" xml:space="preserve">
+    <value>Value '{0}' specified for the query '{1}' is invalid.</value>
+  </data>
+  <data name="InvalidResourceID" xml:space="preserve">
+    <value>Failed to parse the value '{0}' as ResourceId.</value>
+  </data>
+  <data name="InvalidResourceUrlQuery" xml:space="preserve">
+    <value>The value '{0}' specified  for query '{1}' is invalid.</value>
+  </data>
+  <data name="InvalidStalenessPolicy" xml:space="preserve">
+    <value>Staleness Policy specified is invalid. Ensure both MaxPrefix and MaxStalenessIntervalInSeconds are both 0 or both not zero.</value>
+  </data>
+  <data name="InvalidUrl" xml:space="preserve">
+    <value>Request url is invalid.</value>
+  </data>
+  <data name="MethodNotAllowed" xml:space="preserve">
+    <value>The requested verb is not supported.</value>
+  </data>
+  <data name="MismatchToken" xml:space="preserve">
+    <value>The input authorization token can't serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign: '{0}'</value>
+  </data>
+  <data name="MissingAuthHeader" xml:space="preserve">
+    <value>Required Header authorization is missing. Ensure a valid Authorization token is passed.</value>
+  </data>
+  <data name="MissingProperty" xml:space="preserve">
+    <value>Required property {0} is not specified in the request.</value>
+  </data>
+  <data name="MissingRequiredHeader" xml:space="preserve">
+    <value>Required header '{0}' is not specified in the request.</value>
+  </data>
+  <data name="MissingRequiredQuery" xml:space="preserve">
+    <value>Required query variable '{0}' is not specified in the request.</value>
+  </data>
+  <data name="NegativeInteger" xml:space="preserve">
+    <value>Property '{0}' integer value must be greater than or equal to zero.</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Entity with the specified id does not exist in the system. More info: https://aka.ms/cosmosdb-tsg-not-found</value>
+  </data>
+  <data name="PartitionIsFull" xml:space="preserve">
+    <value>Selected partition is full, please try insert in different partition.</value>
+  </data>
+  <data name="PositiveInteger" xml:space="preserve">
+    <value>Property '{0}' integer value must be greater than zero.</value>
+  </data>
+  <data name="PreconditionFailed" xml:space="preserve">
+    <value>Operation cannot be performed because one of the specified precondition is not met.</value>
+  </data>
+  <data name="PrimaryNotFound" xml:space="preserve">
+    <value>Unable to resolve primary endpoint for partition {0} for service {1}.</value>
+  </data>
+  <data name="PropertyNotFound" xml:space="preserve">
+    <value>Property '{0}' is not found in the document.</value>
+  </data>
+  <data name="ReadQuorumNotMet" xml:space="preserve">
+    <value>Read Quorum size of {0} is not met for the request.</value>
+  </data>
+  <data name="ReplicaAtIndexNotAvailable" xml:space="preserve">
+    <value>Replica at index '{0}' is currently unavailable.</value>
+  </data>
+  <data name="RequestConsistencyLevelNotSupported" xml:space="preserve">
+    <value>Consistency Level '{0}'  requested via header '{1}' is not supported by this service endpoint. Please contact the service administrator.</value>
+  </data>
+  <data name="RequestEntityTooLarge" xml:space="preserve">
+    <value>The size of the response exceeded the maximum allowed size, limit the  response size by specifying smaller value for '{0}' header.</value>
+  </data>
+  <data name="RequestTimeout" xml:space="preserve">
+    <value>Request timed out. More info: https://aka.ms/cosmosdb-tsg-request-timeout</value>
+  </data>
+  <data name="RetryWith" xml:space="preserve">
+    <value>Retry the request.</value>
+  </data>
+  <data name="RequestTooLarge" xml:space="preserve">
+    <value>The size of the request exceeded the maximum allowed size.</value>
+  </data>
+  <data name="SecondariesNotFound" xml:space="preserve">
+    <value>Unable to resolve secondary endpoint for partition {0} for service {1}.</value>
+  </data>
+  <data name="ServiceUnavailable" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable</value>
+  </data>
+  <data name="InvalidTokenTimeRange" xml:space="preserve">
+    <value>The authorization token is not valid at the current time. Please create another token and retry (token start time: {0}, token expiry time: {1}, current server time: {2}).</value>
+  </data>
+  <data name="TooManyRequests" xml:space="preserve">
+    <value>The request rate is too large. Please retry after sometime.</value>
+  </data>
+  <data name="Unauthorized" xml:space="preserve">
+    <value>Unable to authenticate the request. The request requires valid user authentication.</value>
+  </data>
+  <data name="UnexpectedConsistencyLevel" xml:space="preserve">
+    <value>Operation not permitted as consistency level is set to {0}. Expected {1}.</value>
+  </data>
+  <data name="UnsupportedProtocol" xml:space="preserve">
+    <value>Value '{0}' specified for protocol is unsupported.</value>
+  </data>
+  <data name="IdGenerationFailed" xml:space="preserve">
+    <value>Failed to generate id for resourceType = {0}, partitionIndex = {1}, serviceIndex = {2}, partitionCount = {3}.</value>
+  </data>
+  <data name="GatewayTimedout" xml:space="preserve">
+    <value>Attempt to process the request timed out at remote server.</value>
+  </data>
+  <data name="InsufficientResourceTokens" xml:space="preserve">
+    <value>Unable to continue without atleast a single token in the resource tokens input collection.</value>
+  </data>
+  <data name="MissingDateForAuthorization" xml:space="preserve">
+    <value>Authorization token mandates Date headers. Please pass in RFC 1123 style date format.</value>
+  </data>
+  <data name="InvalidResourceIdBatchSize" xml:space="preserve">
+    <value>Value for {0} should be greater than 0</value>
+  </data>
+  <data name="OperationRequestedStatusIsInvalid" xml:space="preserve">
+    <value>Requested Operation Status = {0} is invalid.</value>
+  </data>
+  <data name="UnsupportedHints" xml:space="preserve">
+    <value>Indexing Hints are not supported in this deployment. </value>
+  </data>
+  <data name="UnsupportedRootPolicyChange" xml:space="preserve">
+    <value>Changing Root Indexing Policy is not supported in this deployment.</value>
+  </data>
+  <data name="InvalidCharacterInResourceName" xml:space="preserve">
+    <value>The resource name presented contains invalid character '{0}'.</value>
+  </data>
+  <data name="InvalidSpaceEndingInResourceName" xml:space="preserve">
+    <value>The resource name can't end with space.</value>
+  </data>
+  <data name="InvalidConsistencyLevel" xml:space="preserve">
+    <value>ConsistencyLevel {0} specified in the request is invalid when service is configured with consistency level {1}. Ensure the request consistency level is not stronger than the service consistency level.</value>
+  </data>
+  <data name="InvalidResourceType" xml:space="preserve">
+    <value>Requested ResourceType {0} passed as generic argument should be same as the one specified by ResourceType member {1}</value>
+  </data>
+  <data name="InvalidPrivateLinkServiceConnections" xml:space="preserve">
+    <value>Only one manualPrivateLinkServiceConnection or one privateLinkServiceConnection is supported</value>
+  </data>
+  <data name="InvalidPrivateLinkServiceProxies" xml:space="preserve">
+    <value>Only one privateLinkServiceProxy is supported</value>
+  </data>
+  <data name="InvalidGroupIdCount" xml:space="preserve">
+    <value>Only one groupId is supported</value>
+  </data>
+  <data name="InvalidGroupId" xml:space="preserve">
+    <value>GroupId {0} is not supported</value>
+  </data>
+  <data name="InvalidMaxStalenessInterval" xml:space="preserve">
+    <value>MaxStalenessInterval should be greater than or equal to {0} sec and less than or equal to {1} sec</value>
+  </data>
+  <data name="InvalidLocations" xml:space="preserve">
+    <value>List of supplied locations is invalid</value>
+  </data>
+  <data name="InvalidFailoverPriority" xml:space="preserve">
+    <value>Failover priority value {0} supplied for region {1} is invalid</value>
+  </data>
+  <data name="UnknownResourceKind" xml:space="preserve">
+    <value>Resource kind {0} is unknown</value>
+  </data>
+  <data name="InvalidResourceKind" xml:space="preserve">
+    <value>Resource kind {0} is invalid</value>
+  </data>
+  <data name="UnknownResourceType" xml:space="preserve">
+    <value>Resource type {0} is unknown</value>
+  </data>
+  <data name="InvalidResourceUrlPath" xml:space="preserve">
+    <value>Resource Url path {0} is invalid.</value>
+  </data>
+  <data name="UnableToFindFreeConnection" xml:space="preserve">
+    <value>Unable to find free connection</value>
+  </data>
+  <data name="UnexpectedOperator" xml:space="preserve">
+    <value>Unexpected operator {0} .</value>
+  </data>
+  <data name="StarSlashArgumentError" xml:space="preserve">
+    <value>Star and slash should have no arguments.</value>
+  </data>
+  <data name="InvalidOwnerResourceType" xml:space="preserve">
+    <value>Resource {0} is invalid for adding owner resource record</value>
+  </data>
+  <data name="ArgumentRequired" xml:space="preserve">
+    <value>{0} should have {1} argument.</value>
+  </data>
+  <data name="NoGraftPoint" xml:space="preserve">
+    <value>No graft point</value>
+  </data>
+  <data name="StringArgumentNullOrEmpty" xml:space="preserve">
+    <value>String agument {0} is null or empty</value>
+  </data>
+  <data name="UnsupportedTokenType" xml:space="preserve">
+    <value>Unsupported token type {0}</value>
+  </data>
+  <data name="UnsupportedEntityType" xml:space="preserve">
+    <value>Unsupported entity type {0}</value>
+  </data>
+  <data name="MessageIdHeaderMissing" xml:space="preserve">
+    <value>Cannot find messageId header</value>
+  </data>
+  <data name="UnsupportedKeyType" xml:space="preserve">
+    <value>Key type {0} is unsupported</value>
+  </data>
+  <data name="InvalidUseSystemKey" xml:space="preserve">
+    <value>System key can only access replica root</value>
+  </data>
+  <data name="DuplicateCorrelationIdGenerated" xml:space="preserve">
+    <value>Duplicate correlation id generated</value>
+  </data>
+  <data name="CorrelationIDNotFoundInResponse" xml:space="preserve">
+    <value>Correlation ID not found in response</value>
+  </data>
+  <data name="ChannelClosed" xml:space="preserve">
+    <value>Channel is closed</value>
+  </data>
+  <data name="InvalidMaxStalenessPrefix" xml:space="preserve">
+    <value>MaxStalenessPrefix should be greater than or equal to {0} and less than or equal to {1}</value>
+  </data>
+  <data name="BadGateway" xml:space="preserve">
+    <value>Invalid response from upstream server or upstream server request failed.</value>
+  </data>
+  <data name="ResourceTypeNotSupported" xml:space="preserve">
+    <value>Resource type {0} is not supported by ResourceIdPartitioner</value>
+  </data>
+  <data name="InvalidEnumValue" xml:space="preserve">
+    <value>Invalid value {0} passed for enum {1}</value>
+  </data>
+  <data name="ServiceNotFound" xml:space="preserve">
+    <value>Service at index {0} not found.</value>
+  </data>
+  <data name="ServiceReservedBitsOutOfRange" xml:space="preserve">
+    <value>Service reserved bits can not be more than 24. Otherwise it overlaps with the collection/user multiplexing bit</value>
+  </data>
+  <data name="NamingPropertyNotFound" xml:space="preserve">
+    <value>NamingProperty {0} not found</value>
+  </data>
+  <data name="ResourceIdPolicyNotSupported" xml:space="preserve">
+    <value>ResourceIdPolicy {0} is not supported</value>
+  </data>
+  <data name="InvalidVersionFormat" xml:space="preserve">
+    <value>Invalid version format for {0}. Input Version {1}</value>
+  </data>
+  <data name="DateTimeConverterInvalidDateTime" xml:space="preserve">
+    <value>Expecting DateTime value.</value>
+  </data>
+  <data name="DateTimeConverterInvalidReaderValue" xml:space="preserve">
+    <value>Expecting reader to read Integer</value>
+  </data>
+  <data name="DateTimeConveterInvalidReaderDoubleValue" xml:space="preserve">
+    <value>Expecting reader value to be compatible with double conversion.</value>
+  </data>
+  <data name="ProvisionLimit" xml:space="preserve">
+    <value>Reached the pre-approved storage limit for the database account. Please contact Azure support to increase this limit.</value>
+  </data>
+  <data name="DatabaseAccountNotFound" xml:space="preserve">
+    <value>Database Account {0} does not exist</value>
+  </data>
+  <data name="InvalidReplicationAndConsistencyCombination" xml:space="preserve">
+    <value>Strong consistency level cannot be specified with async replication. Either change the replication policy 'AsyncReplication' to false or relax the consistency level.</value>
+  </data>
+  <data name="UnexpectedResourceType" xml:space="preserve">
+    <value>ResourceType {0} is unexpected.</value>
+  </data>
+  <data name="InvalidPermissionMode" xml:space="preserve">
+    <value>The permission mode provided in the authorization token doesn't provide sufficient permissions.</value>
+  </data>
+  <data name="ResourceIdNotValid" xml:space="preserve">
+    <value>ResourceId {0} of type {1} is not a valid resource Id.</value>
+  </data>
+  <data name="InvalidOfferType" xml:space="preserve">
+    <value>OfferType {0} specified in the request is invalid. Please refer to offer documentation and specify a valid offer type.</value>
+  </data>
+  <data name="InvalidAPIVersion" xml:space="preserve">
+    <value>Invalid API version. Ensure a valid x-ms-version header value is passed. Please update to the latest version of Azure Cosmos DB SDK.</value>
+  </data>
+  <data name="UnsupportedRegion" xml:space="preserve">
+    <value>The requested region '{0}' is not supported.</value>
+  </data>
+  <data name="UnsupportedSparkClusterRegion" xml:space="preserve">
+    <value>The requested region '{0}' is not supported for spark cluster creation.</value>
+  </data>
+  <data name="ServiceWithResourceIdNotFound" xml:space="preserve">
+    <value>Could not find service hosting DocumentCollection with ResourceId {0}</value>
+  </data>
+  <data name="ExceptionMessage" xml:space="preserve">
+    <value>Message: {0}</value>
+  </data>
+  <data name="ExceptionMessageAddRequestUri" xml:space="preserve">
+    <value>{0}, Request URI: {1}, RequestStats: {2}, SDK: {3}</value>
+  </data>
+  <data name="ExceptionMessageAddIpAddress" xml:space="preserve">
+    <value>{0}, Local IP: {1}</value>
+  </data>
+  <data name="UnsupportedRollbackKind" xml:space="preserve">
+    <value>The requested rollback kind '{0}' is not supported.</value>
+  </data>
+  <data name="UnsupportedSystemKeyKind" xml:space="preserve">
+    <value>Federation system key kind {0} is invalid</value>
+  </data>
+  <data name="PropertyCannotBeNull" xml:space="preserve">
+    <value>Property {0} can not be assigned to null.</value>
+  </data>
+  <data name="InvalidIndexKindValue" xml:space="preserve">
+    <value>The specified value {0} of the index kind is invalid.</value>
+  </data>
+  <data name="InvalidIndexSpecFormat" xml:space="preserve">
+    <value>The index spec format is invalid.</value>
+  </data>
+  <data name="InvalidDocumentCollection" xml:space="preserve">
+    <value>The specified document collection is invalid.</value>
+  </data>
+  <data name="InvalidPageSize" xml:space="preserve">
+    <value>The input PageSize {0} is invalid. Ensure to pass a valid page size which must be a positive integer or -1 for a dynamic page size.</value>
+  </data>
+  <data name="InvalidIndexTransformationProgressValues" xml:space="preserve">
+    <value>Received invalid index transformation progress values from all the replicas.</value>
+  </data>
+  <data name="InvalidTarget" xml:space="preserve">
+    <value>Target for the request is invalid</value>
+  </data>
+  <data name="MissingPartitionKeyValue" xml:space="preserve">
+    <value>PartitionKey value must be supplied for this operation.</value>
+  </data>
+  <data name="UnsupportedPartitionKeyComponentValue" xml:space="preserve">
+    <value>Unsupported PartitionKey value component '{0}'. Numeric, string, bool, null, Undefined are the only supported types.</value>
+  </data>
+  <data name="UnableToDeserializePartitionKeyValue" xml:space="preserve">
+    <value>Cannot deserialize PartitionKey value '{0}'</value>
+  </data>
+  <data name="CrossPartitionQueryDisabled" xml:space="preserve">
+    <value>Cross partition query is required but disabled. Please set x-ms-documentdb-query-enablecrosspartition to true, specify x-ms-documentdb-partitionkey, or revise your query to avoid this exception.</value>
+  </data>
+  <data name="TooFewPartitionKeyComponents" xml:space="preserve">
+    <value>PartitionKey has fewer components than defined the collection resource.</value>
+  </data>
+  <data name="InvalidPartitionKey" xml:space="preserve">
+    <value>Partition key {0} is invalid.</value>
+  </data>
+  <data name="InvalidSubPartitionKeyVersion" xml:space="preserve">
+    <value>Subpartitioning is only supported for Hash V2. </value>
+  </data>
+  <data name="InvalidSubPartitionKeyLength" xml:space="preserve">
+    <value>Subpartitioning is only supported for atmost 3 partition paths </value>
+  </data>
+  <data name="InvalidOfferThroughput" xml:space="preserve">
+    <value>The value of offer throughput specified is invalid. Please enter valid positive integer.</value>
+  </data>
+  <data name="InvalidOfferCRUDForServerless" xml:space="preserve">
+    <value>Reading or replacing offers is not supported for serverless accounts.</value>
+  </data>
+  <data name="InvalidNonPartitionedOfferThroughput" xml:space="preserve">
+    <value>The value of offer throughput specified exceeded supported maximum throughput for Fixed size container. Please enter value less than {0}.</value>
+  </data>
+  <data name="InsufficientPartitionedDataForOfferThroughput" xml:space="preserve">
+    <value>For containers migrated from fixed to unlimited, scale operation can be performed only if the container has documents populated with partition key. Please retry the throughput scale operation after populating documents with partition key.</value>
+  </data>
+  <data name="UnSupportedOfferThroughput" xml:space="preserve">
+    <value>The value of offer throughput specified is invalid. Please specify a value between {0} and {1} inclusive in increments of {2}. Please contact https://azure.microsoft.com/support to request limit increases beyond {1} RU/s.</value>
+  </data>
+  <data name="MaximumRULimitExceeded" xml:space="preserve">
+    <value>Current maximum throughput per collection is {0}. Please contact Azure support to increase it.</value>
+  </data>
+  <data name="InvalidScriptResource" xml:space="preserve">
+    <value>Script request has invalid body.</value>
+  </data>
+  <data name="UpsertsForScriptsWithMultiplePartitionsAreNotSupported" xml:space="preserve">
+    <value>Upserts for scripts in collections with multiple partitions are not supported.</value>
+  </data>
+  <data name="ScriptRenameInMultiplePartitionsIsNotSupported" xml:space="preserve">
+    <value>Changing id of a script in collections with multiple partitions is not supported.</value>
+  </data>
+  <data name="OfferTypeAndThroughputCannotBeSpecifiedBoth" xml:space="preserve">
+    <value>Offer type and throughput cannot both be specified.</value>
+  </data>
+  <data name="OfferThroughputAndAutoPilotSettingsCannotBeSpecifiedBoth" xml:space="preserve">
+    <value>Offer throughput and autopilot settings cannot both be specified.</value>
+  </data>
+  <data name="AutoPilotTierAndAutoPilotSettingsCannotBeSpecifiedBoth" xml:space="preserve">
+    <value>Autopilot tier and AutoPilotSettings cannot both be specified.</value>
+  </data>
+  <data name="AutopilotAutoUpgradeUnsupportedNonPartitionedCollection" xml:space="preserve">
+    <value>Autopilot autoupgrade is not supported for non-partitioned collections.</value>
+  </data>
+  <data name="CollectionThroughputCannotBeMoreThan" xml:space="preserve">
+    <value>Throughput of this collection cannot be more than {0}, as was provisioned during collection creation time.</value>
+  </data>
+  <data name="InvalidSessionToken" xml:space="preserve">
+    <value>The session token provided '{0}' is invalid.</value>
+  </data>
+  <data name="UnsupportedCrossPartitionQuery" xml:space="preserve">
+    <value>The provided cross partition query can not be directly served by the gateway. This is a first chance (internal) exception that all newer clients will know how to handle gracefully. This exception is traced, but unless you see it bubble up as an exception (which only happens on older SDK clients), then you can safely ignore this message.</value>
+  </data>
+  <data name="UnsupportedProgram" xml:space="preserve">
+    <value>Program requires to run in 64 bit for elastic query feature to work. Please switch your program to 64 bit or use Gateway connectivity mode.</value>
+  </data>
+  <data name="PartitionKeyRangeIdAbsentInContext" xml:space="preserve">
+    <value>PartitionKeyRangeId is absent in the context.</value>
+  </data>
+  <data name="SpatialBoundingBoxInvalidCoordinates" xml:space="preserve">
+    <value>Bounding box must have an even number of coordinates and more than 3.</value>
+  </data>
+  <data name="SpatialExtensionMethodsNotImplemented" xml:space="preserve">
+    <value>Spatial operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.</value>
+  </data>
+  <data name="SpatialFailedToDeserializeCrs" xml:space="preserve">
+    <value>Coordinate Reference System specified in GeoJSON is invalid.</value>
+  </data>
+  <data name="SpatialInvalidGeometryType" xml:space="preserve">
+    <value>Failed to deserialize Geometry object because 'type' property is either absent or has invalid value.</value>
+  </data>
+  <data name="SpatialInvalidPosition" xml:space="preserve">
+    <value>Spatial position must have at least two coordinates.</value>
+  </data>
+  <data name="MustHaveNonZeroPreferredRegionWhenAutomaticFailoverDisabled" xml:space="preserve">
+    <value>Atleast single region must be specified in PreferredLocation list when automatic failover is disabled.</value>
+  </data>
+  <data name="MoreThanOneBackupIntervalCapability" xml:space="preserve">
+    <value>This account already has one backup interval capability.</value>
+  </data>
+  <data name="MoreThanOneBackupRetentionCapability" xml:space="preserve">
+    <value>This account already has one backup retention capability.</value>
+  </data>
+  <data name="UnsupportedOfferVersion" xml:space="preserve">
+    <value>The supplied offer version {0} is not supported. Please specify either a blank version, 'V1' or 'V2'.</value>
+  </data>
+  <data name="UnexpectedOfferVersion" xml:space="preserve">
+    <value>Unexpected offer version {0} from store.</value>
+  </data>
+  <data name="UnsupportedV1OfferVersion" xml:space="preserve">
+    <value>The Offer Version 'V1' is not supported since the associated collection is already a partitioned collection. Please use offer version 'V2'.</value>
+  </data>
+  <data name="UnSupportedOfferThroughputWithTwoRanges" xml:space="preserve">
+    <value>The value of offer throughput specified is invalid. Please specify a value between {0} and {1}, or between {2} and {3} inclusive in increments of {4}. Please contact https://azure.microsoft.com/support to request limit increases beyond {3} RU/s.</value>
+  </data>
+  <data name="UnsupportedOfferTypeWithV2Offer" xml:space="preserve">
+    <value>Offer type is not supported with Offer version 'V2' and above.</value>
+  </data>
+  <data name="PartitionKeyMismatch" xml:space="preserve">
+    <value>Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document.</value>
+  </data>
+  <data name="InvalidOfferV2Input" xml:space="preserve">
+    <value>The required field Content is missing in Offer version v2.</value>
+  </data>
+  <data name="IncompleteRoutingMap" xml:space="preserve">
+    <value>Routing map is not complete.</value>
+  </data>
+  <data name="ReadSessionNotAvailable" xml:space="preserve">
+    <value>The read session is not available for the input session token.</value>
+  </data>
+  <data name="UnsupportedCrossPartitionOrderByQueryOnMixedTypes" xml:space="preserve">
+    <value>Cannot execute cross partition order-by queries on mix types. Consider using IS_STRING/IS_NUMBER to get around this exception. Expect type: {0}. Actual type: {1}. Item value: {2}.</value>
+  </data>
+  <data name="DocumentQueryExecutionContextIsDone" xml:space="preserve">
+    <value>Document Query Execution Context is done.</value>
+  </data>
+  <data name="IsForceDeleteFederationAllowed" xml:space="preserve">
+    <value>Not allowed to force delete federation in this environment.</value>
+  </data>
+  <data name="InvalidPartitionKeyRangeIdHeader" xml:space="preserve">
+    <value>x-ms-documentdb-partitionkeyrangeid header contains invalid value '{0}'.</value>
+  </data>
+  <data name="UnexpectedOperationTypeForRoutingRequest" xml:space="preserve">
+    <value>Unexpected operation type {0} for routing requests for multiple partitions.</value>
+  </data>
+  <data name="PartitionKeyRangeNotFound" xml:space="preserve">
+    <value>PartitionKeyRange with id '{0}' in collection '{1}' doesn't exist.</value>
+  </data>
+  <data name="OfferReplaceWithSpecifiedVersionsNotSupported" xml:space="preserve">
+    <value>Cannot replace an offer with version {0} with version {1}</value>
+  </data>
+  <data name="IpAddressBlockedByPolicy" xml:space="preserve">
+    <value>IpAddress {0} is blocked by Policy</value>
+  </data>
+  <data name="CollectionCreateTopologyConflict" xml:space="preserve">
+    <value>Collection create request conflicted with ongoing add region or failover operation. Ensure to complete region configuration before creating collection.</value>
+  </data>
+  <data name="InvalidContinuationToken" xml:space="preserve">
+    <value>Invalid Continuation Token</value>
+  </data>
+  <data name="PartitionKeyRangeIdOrPartitionKeyMustBeSpecified" xml:space="preserve">
+    <value>For partitioned collection, either ChangeFeedOptions.PartitionKeyRangeId or ChangeFeedOptions.PartitionKey must be specified.</value>
+  </data>
+  <data name="CannotOfflineWriteRegionWithNoReadRegions" xml:space="preserve">
+    <value>Cannot offline a write region that has zero read regions configured. There needs to be atleast one read region to failover to.</value>
+  </data>
+  <data name="UnsupportedCrossPartitionQueryWithAggregate" xml:space="preserve">
+    <value>Cross partition query with aggregate functions is not supported.</value>
+  </data>
+  <data name="UnsupportedQueryWithFullResultAggregate" xml:space="preserve">
+    <value>Query that expects full results from aggregate functions is not supported.</value>
+  </data>
+  <data name="InvalidResponseContinuationTokenLimit" xml:space="preserve">
+    <value>The input continuation token size limit {0} is invalid. Please pass in a valid continuation token size limit which must be a positive integer.</value>
+  </data>
+  <data name="TooManyPartitionKeyComponents" xml:space="preserve">
+    <value>PartitionKey has more components than defined the collection resource.</value>
+  </data>
+  <data name="ChangeFeedOptionsStartTimeWithUnspecifiedDateTimeKind" xml:space="preserve">
+    <value>StartTime cannot have DateTimeKind.Unspecified.</value>
+  </data>
+  <data name="FederationEntityNotFound" xml:space="preserve">
+    <value>Federation {0} in region {1} is not found</value>
+  </data>
+  <data name="InvalidOfferIsRUPerMinuteThroughputEnabled" xml:space="preserve">
+    <value>The value of offer IsRUPerMinuteThroughputEnabled specified is invalid. Please specify a boolean value.</value>
+  </data>
+  <data name="WriteRegionAutomaticFailoverNotEnabled" xml:space="preserve">
+    <value>Cannot offline write region when automatic failover is not enabled</value>
+  </data>
+  <data name="WriteRegionDoesNotExist" xml:space="preserve">
+    <value>Cannot add additional regions, since database account provision failed.</value>
+  </data>
+  <data name="GlobalStrongWriteBarrierNotMet" xml:space="preserve">
+    <value>Global Strong write barrier has not been met for the request.</value>
+  </data>
+  <data name="BadClientMongo" xml:space="preserve">
+    <value>At this time, only write operations made from the MongoDB SDKs are supported. Modifications to MongoDB collections using other SDKs is temporarily blocked.</value>
+  </data>
+  <data name="JsonMissingClosingQuote" xml:space="preserve">
+    <value>Missing a closing quote (") in JSON.</value>
+  </data>
+  <data name="JsonNotFieldnameToken" xml:space="preserve">
+    <value>Encountered a value that was not a JSON field name.</value>
+  </data>
+  <data name="JsonInvalidParameter" xml:space="preserve">
+    <value>Invalid parameter in JSON.</value>
+  </data>
+  <data name="JsonNumberTooLong" xml:space="preserve">
+    <value>Encountered a number that was too long for a JSON number.</value>
+  </data>
+  <data name="JsonMissingNameSeparator" xml:space="preserve">
+    <value>Missing a name separator (":") in JSON.</value>
+  </data>
+  <data name="JsonUnexpectedToken" xml:space="preserve">
+    <value>Encountered an unexpected JSON token.</value>
+  </data>
+  <data name="JsonUnexpectedEndArray" xml:space="preserve">
+    <value>Read a JSON end array ("]") symbol without a matching JSON start array symbol ("[").</value>
+  </data>
+  <data name="JsonUnexpectedEndObject" xml:space="preserve">
+    <value>Read a JSON end object ("}") symbol without a matching JSON start object symbol ("{").</value>
+  </data>
+  <data name="JsonInvalidToken" xml:space="preserve">
+    <value>Encountered an element that is not a valid JSON value (false / null / true / object / array / number / string)</value>
+  </data>
+  <data name="JsonUnexpectedNameSeparator" xml:space="preserve">
+    <value>Read a JSON name separator (":") symbol without a corresponding field name.</value>
+  </data>
+  <data name="JsonUnexpectedValueSeparator" xml:space="preserve">
+    <value>Read a JSON name separator (",") symbol without a preceding JSON value.</value>
+  </data>
+  <data name="JsonMissingEndObject" xml:space="preserve">
+    <value>Missing an end object ("}") symbol in JSON.</value>
+  </data>
+  <data name="JsonMissingEndArray" xml:space="preserve">
+    <value>Missing an end array ("]") symbol in JSON.</value>
+  </data>
+  <data name="JsonNotStringToken" xml:space="preserve">
+    <value>Encountered a value that was not a JSON string.</value>
+  </data>
+  <data name="JsonMaxNestingExceeded" xml:space="preserve">
+    <value>Exceeded the maximum level of nesting for JSON.</value>
+  </data>
+  <data name="JsonInvalidEscapedCharacter" xml:space="preserve">
+    <value>Invalid escape character in JSON.</value>
+  </data>
+  <data name="JsonInvalidUnicodeEscape" xml:space="preserve">
+    <value>Invalid Unicode escape sequence in JSON.</value>
+  </data>
+  <data name="JsonInvalidStringCharacter" xml:space="preserve">
+    <value>Invalid string character in JSON.</value>
+  </data>
+  <data name="JsonInvalidNumber" xml:space="preserve">
+    <value>Invalid number in JSON.</value>
+  </data>
+  <data name="JsonNotNumberToken" xml:space="preserve">
+    <value>Encountered a value that was not a JSON number.</value>
+  </data>
+  <data name="JsonNumberOutOfRange" xml:space="preserve">
+    <value>Encountered a number that exceeded the range for JSON numbers.</value>
+  </data>
+  <data name="JsonMissingProperty" xml:space="preserve">
+    <value>Missing a JSON property.</value>
+  </data>
+  <data name="JsonPropertyAlreadyAdded" xml:space="preserve">
+    <value>Encountered a JSON property name after another JSON property name.</value>
+  </data>
+  <data name="JsonObjectNotStarted" xml:space="preserve">
+    <value>Tried to write a JSON object end symbol ("}") without first opening with a JSON object start symbol ("{").</value>
+  </data>
+  <data name="JsonArrayNotStarted" xml:space="preserve">
+    <value>Tried to write a JSON end array (“]“) symbol without a matching array start symbol (“[“).</value>
+  </data>
+  <data name="JsonPropertyArrayOrObjectNotStarted" xml:space="preserve">
+    <value>Either a JSON property array or object was not started.</value>
+  </data>
+  <data name="JsonNotComplete" xml:space="preserve">
+    <value>Encountered a JSON property name without a corresponding property value</value>
+  </data>
+  <data name="UnexpectedJsonTokenType" xml:space="preserve">
+    <value>Failed to register JsonTokenType: {0}</value>
+  </data>
+  <data name="UnexpectedJsonSerializationFormat" xml:space="preserve">
+    <value>Unexpected JsonSerializationFormat: {0}</value>
+  </data>
+  <data name="FeatureNotSupportedOnSubscription" xml:space="preserve">
+    <value>{0} is not supported for the target subscription</value>
+  </data>
+  <data name="PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified" xml:space="preserve">
+    <value>PartitionKey and PartitionKeyRangeId cannot be specified at the same time in ChangeFeedOptions.</value>
+  </data>
+  <data name="FeatureNotSupportedForMultiRegionAccount" xml:space="preserve">
+    <value>Feature {0} is not supported for Multi-region Account</value>
+  </data>
+  <data name="FeatureNotSupportedInRegion" xml:space="preserve">
+    <value>Feature {0} is not supported in {1} region</value>
+  </data>
+  <data name="GlobalAndWriteRegionMisMatch" xml:space="preserve">
+    <value>Database and Write Location are not matching</value>
+  </data>
+  <data name="EmptyVirtualNetworkResourceGuid" xml:space="preserve">
+    <value>Empty Virtual Network Resource Guid</value>
+  </data>
+  <data name="EmptyVirtualNetworkRulesSpecified" xml:space="preserve">
+    <value>Specified Virtual Network Rules list is empty</value>
+  </data>
+  <data name="InvalidAPIVersionForFeature" xml:space="preserve">
+    <value>Invalid API version for {0}. Ensure a valid x-ms-version header value is passed. Please update to the latest version of Azure Cosmos DB SDK.</value>
+  </data>
+  <data name="InvalidAudienceKind" xml:space="preserve">
+    <value>AudienceKind is Invalid</value>
+  </data>
+  <data name="InvalidAudienceResourceType" xml:space="preserve">
+    <value>Invalid Audience Resource Type</value>
+  </data>
+  <data name="UnorderedDistinctQueryContinuationToken" xml:space="preserve">
+    <value>Distict query requires a matching order by in order to return a continuation token.
+If you would like to serve this query through continuation tokens, then please rewrite the query in the form 'SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah' and please make sure that there is a range index on 'c.blah'.</value>
+  </data>
+  <data name="DatabaseCreateTopologyConflict" xml:space="preserve">
+    <value>Database create request conflicted with ongoing add region or failover operation. Ensure to complete region configuration before creating collection..</value>
+  </data>
+  <data name="InvalidDatabase" xml:space="preserve">
+    <value>The specified document collection is invalid..</value>
+  </data>
+  <data name="OfferReplaceTopologyConflict" xml:space="preserve">
+    <value>Offer replace request conflicted.</value>
+  </data>
+  <data name="InvalidOfferIsAutoScaleEnabled" xml:space="preserve">
+    <value>The value of offer IsAutoScaleEnabled specified is invalid. Please specify a boolean value.</value>
+  </data>
+  <data name="InvalidOfferAutoScaleMode" xml:space="preserve">
+    <value>The value of OfferAutoScaleMode specified is invalid. Please specify a valid auto scale mode.</value>
+  </data>
+  <data name="OfferAutopilotNotSupportedForNonPartitionedCollections" xml:space="preserve">
+    <value>Autopilot of non-partitioned collections is not supported. Please specify a partition key.</value>
+  </data>
+  <data name="UnauthorizedRequestForAutoScale" xml:space="preserve">
+    <value>Unauthorized Auto-Scale Request.</value>
+  </data>
+  <data name="AutoScaleSettingChangeWithUserAuthIsDisallowed" xml:space="preserve">
+    <value>Auto-Scale Setting Change With User Auth Is Disallowed.</value>
+  </data>
+  <data name="InvalidRegionsInSessionToken" xml:space="preserve">
+    <value>Compared session tokens '{0}' and '{1}' has unexpected regions. </value>
+  </data>
+  <data name="CannotSpecifyPKRangeForNonPartitionedResource" xml:space="preserve">
+    <value>Cannot specify partition key range or partition key for resource that is not partitioned.</value>
+  </data>
+  <data name="InvalidConflictResolutionMode" xml:space="preserve">
+    <value>Invalid mode '{0}' for setting '{1}'. Mode expected is '{2}'.</value>
+  </data>
+  <data name="InvalidStorageServiceMediaIndex" xml:space="preserve">
+    <value>Storage Service index {0} for media account {1} must be within byte range (inclusive).</value>
+  </data>
+  <data name="UnauthorizedOfferReplaceRequest" xml:space="preserve">
+    <value>Unauthorized Offer Replace Request.</value>
+  </data>
+  <data name="ApiTypeForbidden" xml:space="preserve">
+    <value>{0} api is not supported for this database account</value>
+  </data>
+  <data name="InvalidEnableMultipleWriteLocations" xml:space="preserve">
+    <value>Cannot enable 'enableMultipleWriteLocations' without also enabling 'canEnableMultipleWriteLocations'.</value>
+  </data>
+  <data name="InvalidSwitchOffCanEnableMultipleWriteLocations" xml:space="preserve">
+    <value>Cannot disable 'canEnableMultipleWriteLocations' flag once it has been enabled.</value>
+  </data>
+  <data name="InvalidSwitchOnCanEnableMultipleWriteLocations" xml:space="preserve">
+    <value>Cannot enable 'canEnableMultipleWriteLocations' flag once account has been created with it disabled.</value>
+  </data>
+  <data name="TransportExceptionMessage" xml:space="preserve">
+    <value>A client transport error occurred: {0}</value>
+  </data>
+  <data name="ConnectFailedTransportError" xml:space="preserve">
+    <value>Failed to connect to the remote endpoint.</value>
+  </data>
+  <data name="DnsResolutionFailedTransportError" xml:space="preserve">
+    <value>DNS resolution failed.</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>The resource that is being accessed is locked.</value>
+  </data>
+  <data name="UnknownTransportError" xml:space="preserve">
+    <value>An unknown client transport error has occurred.</value>
+  </data>
+  <data name="ChannelMultiplexerClosedTransportError" xml:space="preserve">
+    <value>The channel multiplexer has shut down.</value>
+  </data>
+  <data name="ReceiveFailedTransportError" xml:space="preserve">
+    <value>Failed to read the server response.</value>
+  </data>
+  <data name="ConnectionBrokenTransportError" xml:space="preserve">
+    <value>The connection failed.</value>
+  </data>
+  <data name="ReceiveStreamClosedTransportError" xml:space="preserve">
+    <value>The remote system closed the connection.</value>
+  </data>
+  <data name="SendFailedTransportError" xml:space="preserve">
+    <value>Sending the request failed.</value>
+  </data>
+  <data name="SslNegotiationFailedTransportError" xml:space="preserve">
+    <value>SSL negotiation failed.</value>
+  </data>
+  <data name="ServerResponseBodyTooLargeError" xml:space="preserve">
+    <value>The response body length is too large. Body length: {0} bytes. Connection: {1}</value>
+  </data>
+  <data name="ServerResponseHeaderTooLargeError" xml:space="preserve">
+    <value>The response total header length is too large. Header length: {0} bytes. Connection: {1}</value>
+  </data>
+  <data name="ServerResponseInvalidHeaderLengthError" xml:space="preserve">
+    <value>Invalid response total header length. Expected {0} bytes. Received {1} bytes. Connection: {2}</value>
+  </data>
+  <data name="ServerResponseTransportRequestIdMissingError" xml:space="preserve">
+    <value>The transport request ID is missing from the server response.</value>
+  </data>
+  <data name="ChannelOpenFailedTransportError" xml:space="preserve">
+    <value>The transport client failed to open a connection. See the inner exception for details.</value>
+  </data>
+  <data name="ChannelOpenTimeoutTransportError" xml:space="preserve">
+    <value>The transport client timed out when opening a connection. See the inner exception for details.</value>
+  </data>
+  <data name="ConnectTimeoutTransportError" xml:space="preserve">
+    <value>The connection attempt timed out.</value>
+  </data>
+  <data name="DnsResolutionTimeoutTransportError" xml:space="preserve">
+    <value>DNS resolution timed out.</value>
+  </data>
+  <data name="ReceiveTimeoutTransportError" xml:space="preserve">
+    <value>The request timed out while waiting for a server response.</value>
+  </data>
+  <data name="RequestTimeoutTransportError" xml:space="preserve">
+    <value>The request timed out. See the inner exception for details.</value>
+  </data>
+  <data name="SendLockTimeoutTransportError" xml:space="preserve">
+    <value>Acquiring the send stream lock timed out.</value>
+  </data>
+  <data name="SendTimeoutTransportError" xml:space="preserve">
+    <value>Sending the request timed out.</value>
+  </data>
+  <data name="SslNegotiationTimeoutTransportError" xml:space="preserve">
+    <value>SSL negotiation timed out.</value>
+  </data>
+  <data name="TransportNegotiationTimeoutTransportError" xml:space="preserve">
+    <value>The transport protocol negotiation timed out. See the inner exception for details.</value>
+  </data>
+  <data name="CorsAllowedOriginsEmptyList" xml:space="preserve">
+    <value>Invalid CORS rule. At least one allowed origin is required.</value>
+  </data>
+  <data name="CorsTooManyRules" xml:space="preserve">
+    <value>Invalid CORS rules. Only one rule is supported.</value>
+  </data>
+  <data name="CorsAllowedOriginsMalformedUri" xml:space="preserve">
+    <value>Invalid CORS rule. The origin '{0}' is not a well formed origin..</value>
+  </data>
+  <data name="CorsAllowedOriginsWildcardsNotSupported" xml:space="preserve">
+    <value>Invalid CORS rule. Wildcards are not supported.</value>
+  </data>
+  <data name="CorsAllowedOriginsInvalidPath" xml:space="preserve">
+    <value>InvalidCORS rule. The origin '{0}' is an invalid origin. A valid rigin should not include a uri path.</value>
+  </data>
+  <data name="ClientUnavailable" xml:space="preserve">
+    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. Please check for client resource starvation issues and verify connectivity between client and server.</value>
+  </data>
+  <data name="ClientCpuOverload" xml:space="preserve">
+    <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request.</value>
+  </data>
+  <data name="PartitionKeyAndEffectivePartitionKeyBothSpecified" xml:space="preserve">
+    <value>Either PartitionKey or EffectivePartitionKey are expected.</value>
+  </data>
+  <data name="UnexpectedPartitionKeyRangeId" xml:space="preserve">
+    <value>PartitionKeyRangeId is not expected.</value>
+  </data>
+  <data name="ZoneRedundantAccountsNotSupportedInLocation" xml:space="preserve">
+    <value>Zone Redundant Accounts are not supported in {0} Location yet. Please try other locations.</value>
+  </data>
+  <data name="EnableAnalyticsStorageAndEnableServerlessNotSupported" xml:space="preserve">
+    <value>Serverless accounts do not support analytics storage(i.e. EnableAnalyticsStorage=true).</value>
+  </data>
+  <data name="EnableMultipleWriteLocationsAndEnableServerlessNotSupported" xml:space="preserve">
+    <value>Serverless accounts do not support multiple write locations(i.e. EnableMultipleWriteLocations=true).</value>
+  </data>
+  <data name="EnableMultipleWriteLocationsBeforeAddingRegion" xml:space="preserve">
+    <value>"Availability Zone on a multi region account requires multi master to be enabled. Please enable Multi-Master on the database account to proceed."</value>
+  </data>
+  <data name="EnableMultiRegionAndEnableServerlessNotSupported" xml:space="preserve">
+    <value>Serverless accounts do not support multiple regions.</value>
+  </data>
+  <data name="DataPlaneOperationNotAllowed" xml:space="preserve">
+    <value>"Operation '{0}' on resource '{1}' is not allowed through Azure Cosmos DB endpoint. Please switch on such operations for your account, or perform this operation through Azure Resource Manager, Azure Portal, Azure CLI or Azure Powershell"</value>
+  </data>
+  <data name="ConnectionIsBusy" xml:space="preserve">
+    <value>Connection is too busy. Please retry after sometime or open more connections.</value>
+  </data>
+  <data name="InvalidCapabilityCombination" xml:space="preserve">
+    <value>"{0} capability cannot be specified with {1} ."</value>
+  </data>
+  <data name="UnsupportedCapabilityForKind" xml:space="preserve">
+    <value>"{0} capability is not allowed with kind={1}"</value>
+  </data>
+  <data name="UnsupportedCapabilityUpdate" xml:space="preserve">
+    <value>"Update of {0} capability is not allowed."</value>
+  </data>
+  <data name="OfferAutopilotNotSupportedOnSharedThroughputDatabase" xml:space="preserve">
+    <value>Autopilot is currently not supported on shared throughput database.</value>
+  </data>
+  <data name="EnableMultipleWriteLocationsAndStrongConsistencyNotSupported" xml:space="preserve">
+    <value>Accounts configured with default consistency level as 'Strong' cannot be enabled for multiple write locations(i.e. EnableMultipleWriteLocations=true). Consider relaxing default consistency level of the account to enable multiple write locations.</value>
+  </data>
+  <data name="EnableMultipleWriteLocationsNotModified" xml:space="preserve">
+    <value>This account already has EnableMultipleWriteLocations flag set to {0}".</value>
+  </data>
+  <data name="InvalidGremlinPartitionKey" xml:space="preserve">
+    <value>Partition key path {0} is invalid for Gremlin API. The path cannot be '/id', '/label' or a nested path such as '/key/path'.</value>
+  </data>
+  <data name="InvalidUpdateMaxthroughputEverProvisioned" xml:space="preserve">
+    <value>Please provide non-negative value for UpdateMaxthroughputEverProvisioned.</value>
+  </data>
+  <data name="UnExpectedResourceKindToReEncrypt" xml:space="preserve">
+    <value>Provided Resource Kind {0} to ReEncrypt is not expected</value>
+  </data>
+  <data name="StorageAnalyticsNotEnabled" xml:space="preserve">
+    <value>Storage analytics is not enabled for this account. Ensure storage analytics is enabled before retrying.</value>
+  </data>
+  <data name="CollectionCreateInProgress" xml:space="preserve">
+    <value>Collection is not yet available for read. Please retry in some time.</value>
+  </data>
+  <data name="FreeTierAppliedBefore" xml:space="preserve">
+    <value>Free tier has already been applied to another Azure Cosmos DB account in this subscription. To apply free tier to this account, you can select another subscription for this account or delete the existing free tier account. You can have up to one free tier account per subscription.</value>
+  </data>
+  <data name="FreeTierNotSupportedForInternalSubscription" xml:space="preserve">
+    <value>Free tier is not supported for Internal subscriptions.</value>
+  </data>
+  <data name="FreeTierUpdateNotSupported" xml:space="preserve">
+    <value>Cannot update FreeTier property for existing account.</value>
+  </data>
+  <data name="AadAuthDisabled" xml:space="preserve">
+    <value>AAD Authentication is disabled for this account. Please contact Azure Support [https://azure.microsoft.com/support] to enable it.</value>
+  </data>
+  <data name="AadAuthNotAvailable" xml:space="preserve">
+    <value>Failed to validate AAD identity since the authenticator is unavailable.</value>
+  </data>
+  <data name="AadAuthPublicKeysFailedToUpdate" xml:space="preserve">
+    <value>Failed to update the AAD Public Keys with value {0}. Exception: {1}.</value>
+  </data>
+  <data name="UnderscoreIdIndexRequiredForMongo" xml:space="preserve">
+    <value>Missing '_id' index while creating a MongoDB api collection.</value>
+  </data>
+  <data name="InvalidMongoPartitionKey" xml:space="preserve">
+    <value>Partition key path {0} is invalid for MongoDB API.</value>
+  </data>
+  <data name="MissingSchemaPolicyOnContainer" xml:space="preserve">
+    <value>"The create request is not allowed since it does not specify the schema for container '{0}'.</value>
+  </data>
+  <data name="CannotRemoveSchemaPolicyFromContainer" xml:space="preserve">
+    <value>The container replace request is not allowed since it removes the schema policy from the container {0}.</value>
+  </data>
+  <data name="InvalidTypeSystemPolicy" xml:space="preserve">
+    <value>Invalid type system '{0}' specified for container {1}.</value>
+  </data>
+  <data name="MissingTypeSystemPolicy" xml:space="preserve">
+    <value>Type system must be specified for the container {0}.</value>
+  </data>
+  <data name="MongoClientAutoUpgradeNotSupported" xml:space="preserve">
+    <value>Auto upgrade policy is not supported for MongDB resources.</value>
+  </data>
+  <data name="InvalidPolicyType" xml:space="preserve">
+    <value>Policy type is invalid.</value>
+  </data>
+  <data name="UpdateToAutoscaleThroughputNotAllowed" xml:space="preserve">
+    <value>Updating offer to autoscale throughput is not allowed. Please invoke migration API to migrate this offer.</value>
+  </data>
+  <data name="UpdateToManualThroughputNotAllowed" xml:space="preserve">
+    <value>Updating offer to manually provisioned throughput is not allowed. Please invoke migration API to migrate this offer.</value>
+  </data>
+  <data name="ResourceIdCannotBeEmpty" xml:space="preserve">
+    <value>Resource id cannot be empty.</value>
+  </data>
+</root>
