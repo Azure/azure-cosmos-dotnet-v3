@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
         private string timeToLivePropertyPath;
+        private ClientEncryptionPolicy clientEncryptionPolicy;
         private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
 
         /// <summary>
@@ -124,6 +125,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// <see cref="ContainerProperties.ClientEncryptionPolicy"/> will be applied to all the items in the container as the default ClientEncryptionPolicy
+        /// </summary>
+        /// <param name="clientEncryptionPolicy"> Encryption Policy for the Container. </param>
+        /// <returns> An instance of the current Fluent builder. </returns>
+        public T WithClientEncryptionPolicy(ClientEncryptionPolicy clientEncryptionPolicy)
+        {
+            if (clientEncryptionPolicy == null)
+            {
+                throw new ArgumentNullException(nameof(clientEncryptionPolicy));
+            }
+
+            this.clientEncryptionPolicy = clientEncryptionPolicy;
+            return (T)this;
+        }
+
+        /// <summary>
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
@@ -145,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #pragma warning disable 0612
                 containerProperties.TimeToLivePropertyPath = this.timeToLivePropertyPath;
 #pragma warning restore 0612
+            }
+
+            if (this.clientEncryptionPolicy != null)
+            {
+                containerProperties.ClientEncryptionPolicy = this.clientEncryptionPolicy;
             }
 
             if (this.partitionKeyDefinitionVersion.HasValue)

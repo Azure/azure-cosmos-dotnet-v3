@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         string value = null;
                         byte[] plainText;
 
+                        // In Sync with Always Protected Model
                         if (encryptionOptions.Serializer != null)
                         {
                             plainText = encryptionOptions.Serializer.Serialize(propertyValue.ToObject(encryptionOptions.PropertyDataType));
@@ -148,16 +149,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
             }
 
-            if (clientEncryptionPolicy.PropertyEncryptionSetting != null)
+            if (clientEncryptionPolicy != null && clientEncryptionPolicy.ClientEncryptionSetting != null)
             {
-                foreach (List<string> paths in clientEncryptionPolicy.PropertyEncryptionSetting.Keys)
+                Dictionary<List<string>, KeyValuePair<List<string>, PropertyEncryptionSetting>> encryptionPolicy = clientEncryptionPolicy.ClientEncryptionSetting.ToDictionary(kvp => kvp.Key);
+
+                foreach (List<string> paths in encryptionPolicy.Keys)
                 {
                     foreach (string path in paths)
                     {
                         if (itemJObj.TryGetValue(path.Substring(1), out JToken propertyValue))
                         {
                             JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                            clientEncryptionPolicy.PropertyEncryptionSetting[paths],
+                            encryptionPolicy[paths].Value,
                             path,
                             propertyValue.ToObject<byte[]>(),
                             encryptor,
@@ -189,22 +192,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            foreach (List<string> paths in clientEncryptionPolicy.PropertyEncryptionSetting.Keys)
+            if (clientEncryptionPolicy != null && clientEncryptionPolicy.ClientEncryptionSetting != null)
             {
-                foreach (string path in paths)
+                Dictionary<List<string>, KeyValuePair<List<string>, PropertyEncryptionSetting>> encryptionPolicy = clientEncryptionPolicy.ClientEncryptionSetting.ToDictionary(kvp => kvp.Key);
+
+                foreach (List<string> paths in encryptionPolicy.Keys)
                 {
-                    if (document.TryGetValue(path.Substring(1), out JToken propertyValue))
+                    foreach (string path in paths)
                     {
-                        JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
-                        clientEncryptionPolicy.PropertyEncryptionSetting[paths],
-                        path,
-                        propertyValue.ToObject<byte[]>(),
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                        foreach (JProperty property in propPlainTextJObj.Properties())
+                        if (document.TryGetValue(path.Substring(1), out JToken propertyValue))
                         {
-                            document[property.Name] = property.Value;
+                            JObject propPlainTextJObj = await PropertyEncryptionProcessor.DecryptContentAsync(
+                            encryptionPolicy[paths].Value,
+                            path,
+                            propertyValue.ToObject<byte[]>(),
+                            encryptor,
+                            diagnosticsContext,
+                            cancellationToken);
+                            foreach (JProperty property in propPlainTextJObj.Properties())
+                            {
+                                document[property.Name] = property.Value;
+                            }
                         }
                     }
                 }
@@ -214,22 +222,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         private static async Task<JObject> DecryptContentAsync(
-            EncryptionSettings encryptionSettings,
+            PropertyEncryptionSetting propertyEncryptionSetting,
             string propertyName,
             byte[] encryptedData,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (encryptionSettings.EncryptionFormatVersion != 2)
+            if (propertyEncryptionSetting.EncryptionFormatVersion != 2)
             {
-                throw new NotSupportedException($"Unknown encryption format version: {encryptionSettings.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+                throw new NotSupportedException($"Unknown encryption format version: {propertyEncryptionSetting.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
             byte[] plainText = await encryptor.DecryptAsync(
                 encryptedData,
-                encryptionSettings.DataEncryptionKeyId,
-                encryptionSettings.EncryptionAlgorithm,
+                propertyEncryptionSetting.DataEncryptionKeyId,
+                propertyEncryptionSetting.EncryptionAlgorithm,
                 cancellationToken);
 
             if (plainText == null)
@@ -238,9 +246,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             string val = null;
-            ISerializer serializer = encryptionSettings.GetSerializer();
+
+            ISerializer serializer = EncryptionSerializer.GetEncryptionSerializer(
+                propertyEncryptionSetting.PropertyDataType,
+                propertyEncryptionSetting.IsSqlCompatible).GetSerializer();
+
             if (serializer != null)
             {
+                // In Sync with Always Protected Model
                 val = serializer.Deserialize(plainText).ToString();
             }
             else

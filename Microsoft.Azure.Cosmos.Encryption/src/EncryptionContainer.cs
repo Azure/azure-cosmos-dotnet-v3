@@ -45,16 +45,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (clientEncryptionPolicy != null)
             {
                 List<EncryptionOptions> propertyEncryptionOptions = new List<EncryptionOptions>();
-                foreach (KeyValuePair<List<string>, EncryptionSettings> entry in clientEncryptionPolicy.PropertyEncryptionSetting)
+                foreach (KeyValuePair<List<string>, PropertyEncryptionSetting> entry in clientEncryptionPolicy.ClientEncryptionSetting)
                 {
-                    EncryptionSettings encryptionSettings = entry.Value;
+                    PropertyEncryptionSetting propertyEncryptionSetting = entry.Value;
                     propertyEncryptionOptions.Add(
                         new EncryptionOptions()
                         {
-                            DataEncryptionKeyId = encryptionSettings.DataEncryptionKeyId,
-                            EncryptionAlgorithm = encryptionSettings.EncryptionAlgorithm,
-                            Serializer = encryptionSettings.GetSerializer(),
-                            PropertyDataType = encryptionSettings.PropertyDataType,
+                            DataEncryptionKeyId = propertyEncryptionSetting.DataEncryptionKeyId,
+                            EncryptionAlgorithm = propertyEncryptionSetting.EncryptionAlgorithm,
+                            Serializer = EncryptionSerializer.GetEncryptionSerializer(
+                                propertyEncryptionSetting.PropertyDataType,
+                                propertyEncryptionSetting.IsSqlCompatible).GetSerializer(),
+                            PropertyDataType = propertyEncryptionSetting.PropertyDataType,
                             PathsToEncrypt = entry.Key,
                         });
                 }
@@ -124,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
             {
-                if (this.propertyEncryptionOptions != null && this.clientEncryptionPolicy != null && this.clientEncryptionPolicy.PropertyEncryptionSetting.Count != 0)
+                if (this.propertyEncryptionOptions != null && this.clientEncryptionPolicy != null)
                 {
                     streamPayload = await PropertyEncryptionProcessor.EncryptAsync(
                     streamPayload,
@@ -742,8 +744,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+           ChangeFeedStartFrom changeFeedStartFrom = null,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             Action<DecryptionResult> decryptionResultHandler;
             if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
@@ -757,94 +759,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return new EncryptionFeedIterator(
                 this.container.GetChangeFeedStreamIterator(
-                    continuationToken,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                decryptionResultHandler);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            Action<DecryptionResult> decryptionResultHandler;
-            if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
-            {
-                decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
-            }
-            else
-            {
-                decryptionResultHandler = null;
-            }
-
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    feedRange,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                decryptionResultHandler);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            Action<DecryptionResult> decryptionResultHandler;
-            if (changeFeedRequestOptions is EncryptionChangeFeedRequestOptions encryptionChangeFeedRequestOptions)
-            {
-                decryptionResultHandler = encryptionChangeFeedRequestOptions.DecryptionResultHandler;
-            }
-            else
-            {
-                decryptionResultHandler = null;
-            }
-
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    partitionKey,
+                    changeFeedStartFrom,
                     changeFeedRequestOptions),
                 this.Encryptor,
                 decryptionResultHandler);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuationToken = null,
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    continuationToken,
+                    changeFeedStartFrom,
                     changeFeedRequestOptions),
                 this.ResponseFactory);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    feedRange,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    partitionKey,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
-        {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -901,12 +830,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             try
             {
-                return await PropertyEncryptionProcessor.DecryptAsync(
-                      input,
-                      this.Encryptor,
-                      diagnosticsContext,
-                      this.clientEncryptionPolicy,
-                      cancellationToken);
+                if (this.clientEncryptionPolicy != null)
+                {
+                    return await PropertyEncryptionProcessor.DecryptAsync(
+                          input,
+                          this.Encryptor,
+                          diagnosticsContext,
+                          this.clientEncryptionPolicy,
+                          cancellationToken);
+                }
+                else
+                {
+                    return await EncryptionProcessor.DecryptAsync(
+                        input,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
             }
             catch (Exception exception)
             {
@@ -931,6 +871,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 input.Position = 0;
                 return input;
             }
+        }
+
+        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(FeedRange feedRange, CancellationToken cancellationToken = default)
+        {
+            return await this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
     }
 }

@@ -71,6 +71,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
+        [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private ClientEncryptionPolicy clientEncryptionPolicyInternal;
+
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
 
@@ -326,6 +329,27 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// JSON path used for Client Container Encryption Policy
+        /// </summary>
+        [JsonIgnore]
+        public ClientEncryptionPolicy ClientEncryptionPolicy
+        {
+            get
+            {
+                if (this.clientEncryptionPolicyInternal == null)
+                {
+                    this.clientEncryptionPolicyInternal = new ClientEncryptionPolicy();
+                }
+
+                return this.clientEncryptionPolicyInternal;
+            }
+            set
+            {
+                this.clientEncryptionPolicyInternal = value;
+            }
+        }
+        
 #if INTERNAL || SUBPARTITIONING
         /// <summary>
         /// JSON path used for containers partitioning
