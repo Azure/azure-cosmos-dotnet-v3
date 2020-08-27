@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedRange GetFeedRange()
         {
-            if (this.FeedRange is FeedRangePartitionKeyRange)
+            if (!(this.FeedRange is FeedRangeEpk))
             {
                 return this.FeedRange;
             }

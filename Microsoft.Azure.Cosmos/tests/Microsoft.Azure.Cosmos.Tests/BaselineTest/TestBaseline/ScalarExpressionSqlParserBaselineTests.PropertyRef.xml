@@ -1,0 +1,47 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[root]]></Description>
+      <Query><![CDATA[SELECT VALUE c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT VALUE c.arr]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE c.arr]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayIndex]]></Description>
+      <Query><![CDATA[SELECT VALUE c.arr[2]]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE c.arr[2]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[StringIndex]]></Description>
+      <Query><![CDATA[SELECT VALUE c.arr['asdf']]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE c.arr["asdf"]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[number with dot notation]]></Description>
+      <Query><![CDATA[SELECT VALUE c.2]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>

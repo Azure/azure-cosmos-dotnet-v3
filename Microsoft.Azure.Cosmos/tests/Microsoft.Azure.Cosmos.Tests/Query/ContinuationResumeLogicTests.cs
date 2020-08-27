@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Query
+﻿namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -11,6 +11,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.PartitionMapper;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
 
     [TestClass]
     public class ContinuationResumeLogicTests

@@ -1,0 +1,65 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Regular Betweeen]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 BETWEEN 15 AND 1337]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 BETWEEN 15 AND 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[NOT Betweeen]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 NOT BETWEEN 15 AND 1337]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 NOT BETWEEN 15 AND 1337)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing Betweeen]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 15 AND 1337]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[NOT + Missing between]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 NOT 15 AND 1337]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing end range]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 BETWEEN 15 AND ]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing start range]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 BETWEEN AND 1337]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing needle]]></Description>
+      <Query><![CDATA[SELECT VALUE BETWEEN 15 AND 1337]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>

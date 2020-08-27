@@ -546,6 +546,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal override FeedIterator GetStandByFeedIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions requestOptions = null)
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
@@ -553,6 +554,7 @@ namespace Microsoft.Azure.Cosmos
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
                 container: this,
+                changeFeedStartFrom: changeFeedStartFrom,
                 options: cosmosQueryRequestOptions);
         }
 

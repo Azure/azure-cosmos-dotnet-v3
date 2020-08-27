@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         SqlQuery sqlQuery;
                         using (cosmosQueryContext.CreateDiagnosticScope("QueryParsing"))
                         {
-                            parsed = QueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
+                            parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
                         }
 
                         if (parsed)
