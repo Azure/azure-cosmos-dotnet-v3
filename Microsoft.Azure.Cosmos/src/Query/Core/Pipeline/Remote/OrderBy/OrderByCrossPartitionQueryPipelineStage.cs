@@ -109,7 +109,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 
                     if (uninitializedEnumerator.Current.Failed)
                     {
-                        //TODO HANDLE SPLIT
+                        if (IsSplitException(uninitializedEnumerator.Current.Exception))
+                        {
+                            // Handle split
+                            throw new NotImplementedException();
+                        }
+
                         this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
                         this.Current = TryCatch<QueryPage>.FromException(uninitializedEnumerator.Current.Exception);
                     }
@@ -169,7 +174,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 
                     if (filterMonad.Failed)
                     {
-                        //TODO HANDLE SPLIT
+                        if (IsSplitException(filterMonad.Exception))
+                        {
+                            // Handle split
+                            throw new NotImplementedException();
+                        }
+
                         this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
                         return true;
                     }
@@ -199,6 +209,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                     }
                     else
                     {
+                        if (monadicQueryByPage.Failed)
+                        {
+                            // Handle split
+                            throw new NotImplementedException();
+                        }
                         this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
                     }
 
