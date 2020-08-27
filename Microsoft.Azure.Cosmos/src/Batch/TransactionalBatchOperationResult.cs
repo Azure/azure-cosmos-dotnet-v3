@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// In case the operation is rate limited, indicates the time post which a retry can be attempted.
         /// </summary>
-        public virtual TimeSpan RetryAfter { get; set; }
+        public virtual TimeSpan RetryAfter { get; internal set; }
 
         /// <summary>
         /// Request charge in request units for the operation.
