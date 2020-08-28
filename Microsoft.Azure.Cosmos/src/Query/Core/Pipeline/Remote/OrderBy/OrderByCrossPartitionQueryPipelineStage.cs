@@ -84,191 +84,205 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 
         public ValueTask DisposeAsync() => default;
 
-        public async ValueTask<bool> MoveNextAsync()
+        private async ValueTask<bool> MoveNextAsync_Initialize_FromBeginningAsync(
+            OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
+            OrderByContinuationToken token)
         {
-            if (this.uninitializedEnumeratorsAndTokens.Count != 0)
+            if (token != null)
             {
-                (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
-                if (token is null)
+                throw new ArgumentException(nameof(token));
+            }
+
+            // We need to prime the page
+            if (!await uninitializedEnumerator.MoveNextAsync())
+            {
+                // No more documents, so just return an empty page
+                this.Current = TryCatch<QueryPage>.FromResult(
+                    new QueryPage(
+                        documents: EmptyPage,
+                        requestCharge: 0,
+                        activityId: string.Empty,
+                        responseLengthInBytes: 0,
+                        cosmosQueryExecutionInfo: default,
+                        disallowContinuationTokenMessage: default,
+                        state: this.state));
+                return true;
+            }
+
+            if (uninitializedEnumerator.Current.Failed)
+            {
+                if (IsSplitException(uninitializedEnumerator.Current.Exception))
                 {
-                    // We need to prime the page
-                    if (!await uninitializedEnumerator.MoveNextAsync())
+                    return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token);
+                }
+
+                this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                this.Current = TryCatch<QueryPage>.FromException(uninitializedEnumerator.Current.Exception);
+            }
+            else
+            {
+                if (!uninitializedEnumerator.Current.Result.Enumerator.MoveNext())
+                {
+                    // Page was empty
+                    if (uninitializedEnumerator.State != null)
                     {
-                        // No more documents, so just return an empty page
+                        this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
+                    }
+
+                    if ((this.uninitializedEnumeratorsAndTokens.Count == 0) && (this.enumerators.Count == 0))
+                    {
+                        // Query did not match any results. We need to emit a fake empty page with null continuation
                         this.Current = TryCatch<QueryPage>.FromResult(
                             new QueryPage(
                                 documents: EmptyPage,
                                 requestCharge: 0,
-                                activityId: string.Empty,
+                                activityId: Guid.NewGuid().ToString(),
                                 responseLengthInBytes: 0,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
-                                state: this.state));
+                                state: null));
                         return true;
                     }
-
-                    if (uninitializedEnumerator.Current.Failed)
-                    {
-                        if (IsSplitException(uninitializedEnumerator.Current.Exception))
-                        {
-                            IEnumerable<PartitionKeyRange> childRanges = await this.documentContainer.GetChildRangeAsync(
-                                uninitializedEnumerator.Range,
-                                cancellationToken: default);
-                            foreach (PartitionKeyRange childRange in childRanges)
-                            {
-                                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
-                                    this.documentContainer,
-                                    uninitializedEnumerator.SqlQuerySpec,
-                                    childRange,
-                                    uninitializedEnumerator.PageSize,
-                                    uninitializedEnumerator.Filter,
-                                    state: uninitializedEnumerator.StartOfPageState);
-                                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
-                            }
-
-                            // Recursively retry
-                            return await this.MoveNextAsync();
-                        }
-
-                        this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
-                        this.Current = TryCatch<QueryPage>.FromException(uninitializedEnumerator.Current.Exception);
-                    }
-                    else
-                    {
-                        if (!uninitializedEnumerator.Current.Result.Enumerator.MoveNext())
-                        {
-                            // Page was empty
-                            if (uninitializedEnumerator.State != null)
-                            {
-                                this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
-                            }
-
-                            if ((this.uninitializedEnumeratorsAndTokens.Count == 0) && (this.enumerators.Count == 0))
-                            {
-                                // Query did not match any results. We need to emit a fake empty page with null continuation
-                                this.Current = TryCatch<QueryPage>.FromResult(
-                                    new QueryPage(
-                                        documents: EmptyPage,
-                                        requestCharge: 0,
-                                        activityId: Guid.NewGuid().ToString(),
-                                        responseLengthInBytes: 0,
-                                        cosmosQueryExecutionInfo: default,
-                                        disallowContinuationTokenMessage: default,
-                                        state: null));
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            this.enumerators.Enqueue(uninitializedEnumerator);
-                        }
-
-                        QueryPage page = uninitializedEnumerator.Current.Result.Page;
-                        // Just return an empty page with the stats
-                        this.Current = TryCatch<QueryPage>.FromResult(
-                            new QueryPage(
-                                documents: EmptyPage,
-                                requestCharge: page.RequestCharge,
-                                activityId: page.ActivityId,
-                                responseLengthInBytes: page.ResponseLengthInBytes,
-                                cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
-                                disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
-                                state: this.state));
-                    }
-
-                    return true;
                 }
                 else
                 {
-                    // We need to actually filter the enumerator
-                    TryCatch<(bool, TryCatch<OrderByQueryPage>)> filterMonad = await FilterNextAsync(
-                        uninitializedEnumerator,
-                        this.sortOrders,
-                        token,
-                        cancellationToken: default);
+                    this.enumerators.Enqueue(uninitializedEnumerator);
+                }
 
-                    if (filterMonad.Failed)
-                    {
-                        if (IsSplitException(filterMonad.Exception))
-                        {
-                            IEnumerable<PartitionKeyRange> childRanges = await this.documentContainer.GetChildRangeAsync(
-                                uninitializedEnumerator.Range,
-                                cancellationToken: default);
-                            foreach (PartitionKeyRange childRange in childRanges)
-                            {
-                                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
-                                    this.documentContainer,
-                                    uninitializedEnumerator.SqlQuerySpec,
-                                    childRange,
-                                    uninitializedEnumerator.PageSize,
-                                    uninitializedEnumerator.Filter,
-                                    state: uninitializedEnumerator.StartOfPageState);
-                                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
-                            }
+                QueryPage page = uninitializedEnumerator.Current.Result.Page;
+                // Just return an empty page with the stats
+                this.Current = TryCatch<QueryPage>.FromResult(
+                    new QueryPage(
+                        documents: EmptyPage,
+                        requestCharge: page.RequestCharge,
+                        activityId: page.ActivityId,
+                        responseLengthInBytes: page.ResponseLengthInBytes,
+                        cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                        state: this.state));
+            }
 
-                            // Recursively retry
-                            return await this.MoveNextAsync();
-                        }
+            return true;
+        }
 
-                        this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
-                        return true;
-                    }
+        private async ValueTask<bool> MoveNextAsync_Iniialize_FilterAsync(
+            OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
+            OrderByContinuationToken token)
+        {
+            if (token == null)
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
 
-                    (bool doneFiltering, TryCatch<OrderByQueryPage> monadicQueryByPage) = filterMonad.Result;
-                    if (doneFiltering)
-                    {
-                        if (uninitializedEnumerator.Current.Result.Enumerator.Current != null)
-                        {
-                            this.enumerators.Enqueue(uninitializedEnumerator);
-                        }
-                        else if ((this.uninitializedEnumeratorsAndTokens.Count == 0) && (this.enumerators.Count == 0))
-                        {
-                            // Query did not match any results.
-                            // We need to emit a fake empty page with null continuation
-                            this.Current = TryCatch<QueryPage>.FromResult(
-                                new QueryPage(
-                                    documents: EmptyPage,
-                                    requestCharge: 0,
-                                    activityId: Guid.NewGuid().ToString(),
-                                    responseLengthInBytes: 0,
-                                    cosmosQueryExecutionInfo: default,
-                                    disallowContinuationTokenMessage: default,
-                                    state: null));
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        if (monadicQueryByPage.Failed)
-                        {
-                            // Handle split
-                            throw new NotImplementedException();
-                        }
-                        this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
-                    }
+            TryCatch<(bool, TryCatch<OrderByQueryPage>)> filterMonad = await FilterNextAsync(
+                    uninitializedEnumerator,
+                    this.sortOrders,
+                    token,
+                    cancellationToken: default);
 
-                    QueryPage page = uninitializedEnumerator.Current.Result.Page;
-                    // Just return an empty page with the stats
+            if (filterMonad.Failed)
+            {
+                if (IsSplitException(filterMonad.Exception))
+                {
+                    return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token);
+                }
+
+                this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
+                return true;
+            }
+
+            (bool doneFiltering, TryCatch<OrderByQueryPage> monadicQueryByPage) = filterMonad.Result;
+            if (doneFiltering)
+            {
+                if (uninitializedEnumerator.Current.Result.Enumerator.Current != null)
+                {
+                    this.enumerators.Enqueue(uninitializedEnumerator);
+                }
+                else if ((this.uninitializedEnumeratorsAndTokens.Count == 0) && (this.enumerators.Count == 0))
+                {
+                    // Query did not match any results.
+                    // We need to emit a fake empty page with null continuation
                     this.Current = TryCatch<QueryPage>.FromResult(
                         new QueryPage(
                             documents: EmptyPage,
-                            requestCharge: page.RequestCharge,
-                            activityId: page.ActivityId,
-                            responseLengthInBytes: page.ResponseLengthInBytes,
-                            cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
-                            disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
-                            state: this.state));
-
+                            requestCharge: 0,
+                            activityId: Guid.NewGuid().ToString(),
+                            responseLengthInBytes: 0,
+                            cosmosQueryExecutionInfo: default,
+                            disallowContinuationTokenMessage: default,
+                            state: null));
                     return true;
                 }
             }
-
-            if (this.enumerators.Count == 0)
+            else
             {
-                // Finished draining.
-                return false;
+                if (monadicQueryByPage.Failed)
+                {
+                    if (IsSplitException(filterMonad.Exception))
+                    {
+                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token);
+                    }
+                }
+
+                this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
             }
 
+            QueryPage page = uninitializedEnumerator.Current.Result.Page;
+            // Just return an empty page with the stats
+            this.Current = TryCatch<QueryPage>.FromResult(
+                new QueryPage(
+                    documents: EmptyPage,
+                    requestCharge: page.RequestCharge,
+                    activityId: page.ActivityId,
+                    responseLengthInBytes: page.ResponseLengthInBytes,
+                    cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                    disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                    state: this.state));
+
+            return true;
+        }
+
+        private async ValueTask<bool> MoveNextAsync_InitializeAsync_HandleSplitAsync(
+            OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
+            OrderByContinuationToken token)
+        {
+            IEnumerable<PartitionKeyRange> childRanges = await this.documentContainer.GetChildRangeAsync(
+                        uninitializedEnumerator.Range,
+                        cancellationToken: default);
+            foreach (PartitionKeyRange childRange in childRanges)
+            {
+                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                    this.documentContainer,
+                    uninitializedEnumerator.SqlQuerySpec,
+                    childRange,
+                    uninitializedEnumerator.PageSize,
+                    uninitializedEnumerator.Filter,
+                    state: uninitializedEnumerator.StartOfPageState);
+                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+            }
+
+            // Recursively retry
+            return await this.MoveNextAsync();
+        }
+
+        private ValueTask<bool> MoveNextAsync_InitializeAsync()
+        {
+            (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
+            ValueTask<bool> task;
+            if (token is null)
+            {
+                task = this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator, token);
+            }
+            else
+            {
+                task = this.MoveNextAsync_Iniialize_FilterAsync(uninitializedEnumerator, token);
+            }
+
+            return task;
+        }
+
+        private ValueTask<bool> MoveNextAsync_DrainPageAsync()
+        {
             OrderByQueryPartitionRangePageAsyncEnumerator currentEnumerator = default;
             OrderByQueryResult orderByQueryResult = default;
 
@@ -296,6 +310,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                 this.enumerators.Enqueue(currentEnumerator);
             }
 
+            // Create the continuation token.
             string continuationTokenString;
             if ((this.enumerators.Count == 0) && (this.uninitializedEnumeratorsAndTokens.Count == 0))
             {
@@ -331,7 +346,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
                     state: this.state));
-            return true;
+            return new ValueTask<bool>(true);
+        }
+
+        public ValueTask<bool> MoveNextAsync()
+        {
+            if (this.uninitializedEnumeratorsAndTokens.Count != 0)
+            {
+                return this.MoveNextAsync_InitializeAsync();
+            }
+
+            if (this.enumerators.Count == 0)
+            {
+                // Finished draining.
+                return new ValueTask<bool>(false);
+            }
+
+            return this.MoveNextAsync_DrainPageAsync();
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
