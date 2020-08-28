@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             { WFConstants.BackendHeaders.TransactionCommit, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddTransactionCompletionFlag(value, rntbdRequest) },
             { WFConstants.BackendHeaders.MergeStaticId, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddMergeStaticIdIfPresent(value, rntbdRequest) },
             { WFConstants.BackendHeaders.EffectivePartitionKey, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEffectivePartitionKeyIfPresent(value, rntbdRequest) },
-            { WFConstants.BackendHeaders.MergeStaticId, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddMergeStaticIdIfPresent(value, rntbdRequest) },
             { HttpConstants.HttpHeaders.EnumerationDirection, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEnumerationDirectionFromProperties(value, rntbdRequest) },
             { HttpConstants.HttpHeaders.ReadFeedKeyType, TransportSerialization.AddStartAndEndKeys },
             { WFConstants.BackendHeaders.TransactionId, TransportSerialization.AddTransactionMetaData },
@@ -229,6 +228,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             rntbdRequest.replicaPath.value.valueBytes = BytesSerializer.GetBytesForString(replicaPath, rntbdRequest);
             rntbdRequest.replicaPath.isPresent = true;
+
+            TransportSerialization.AddResourceIdOrPathHeaders(request, rntbdRequest);
 
             // special-case headers (ones that don't come from request.headers, or ones that are a merge of
             // merging multiple request.headers, or ones that are parsed from a string to an enum).
