@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -189,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task TestDrainFully_StartFromBeginingAsync()
         {
-            int numItems = 100;
+            int numItems = 1000;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
@@ -229,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task TestDrainFully_WithStateResume()
         {
-            int numItems = 100;
+            int numItems = 1000;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
             List<CosmosElement> documents = new List<CosmosElement>();
@@ -273,6 +275,112 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             } while (queryState != null);
 
             Assert.AreEqual(numItems, documents.Count);
+            Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents));
+        }
+
+        [TestMethod]
+        public async Task TestDrainFully_WithSplits()
+        {
+            int numItems = 1000;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+
+            TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                sqlQuerySpec: new SqlQuerySpec(@"
+                    SELECT c._rid AS _rid, [{""item"": c._ts}] AS orderByItems, c AS payload
+                    FROM c
+                    WHERE {documentdb-formattableorderbyquery-filter}
+                    ORDER BY c._ts"),
+                targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                orderByColumns: new List<OrderByColumn>()
+                {
+                    new OrderByColumn("c._ts", SortOrder.Ascending)
+                },
+                pageSize: 10,
+                continuationToken: null);
+            Assert.IsTrue(monadicCreate.Succeeded);
+            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+            Random random = new Random();
+            List<CosmosElement> documents = new List<CosmosElement>();
+            while (await queryPipelineStage.MoveNextAsync())
+            {
+                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                if (tryGetQueryPage.Failed)
+                {
+                    Assert.Fail(tryGetQueryPage.Exception.ToString());
+                }
+
+                QueryPage queryPage = tryGetQueryPage.Result;
+                documents.AddRange(queryPage.Documents);
+
+                if (random.Next() % 4 == 0)
+                {
+                    // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
+                    List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    PartitionKeyRange randomRange = ranges[random.Next(ranges.Count)];
+                    documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
+                }
+            }
+
+            Assert.AreEqual(numItems, documents.Count);
+            Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents));
+        }
+
+        [TestMethod]
+        public async Task TestDrainFully_WithSplit_WithStateResume()
+        {
+            int numItems = 1000;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+
+            Random random = new Random();
+            List<CosmosElement> documents = new List<CosmosElement>();
+            QueryState queryState = null;
+
+            do
+            {
+                TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: new SqlQuerySpec(@"
+                        SELECT c._rid AS _rid, [{""item"": c._ts}] AS orderByItems, c AS payload
+                        FROM c
+                        WHERE {documentdb-formattableorderbyquery-filter}
+                        ORDER BY c._ts"),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    orderByColumns: new List<OrderByColumn>()
+                    {
+                    new OrderByColumn("c._ts", SortOrder.Ascending)
+                    },
+                    pageSize: 10,
+                    continuationToken: queryState?.Value);
+                Assert.IsTrue(monadicCreate.Succeeded);
+                IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+                QueryPage queryPage;
+                do
+                {
+                    // We need to drain out all the initial empty pages,
+                    // since they are non resumable state.
+                    Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
+                    TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                    if (tryGetQueryPage.Failed)
+                    {
+                        Assert.Fail(tryGetQueryPage.Exception.ToString());
+                    }
+
+                    queryPage = tryGetQueryPage.Result;
+                    documents.AddRange(queryPage.Documents);
+                    queryState = queryPage.State;
+                } while ((queryPage.Documents.Count == 0) && (queryState != null));
+
+                // Split
+                List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                PartitionKeyRange randomRange = ranges[random.Next(ranges.Count)];
+                documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
+            } while (queryState != null);
+
+            Assert.AreEqual(numItems, documents.Count);
+            Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents));
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(

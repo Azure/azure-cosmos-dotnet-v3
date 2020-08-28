@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
     internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
     {
         private readonly IQueryDataSource queryDataSource;
-        private readonly SqlQuerySpec sqlQuerySpec;
-        private readonly int pageSize;
 
         public OrderByQueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
@@ -28,11 +26,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             : base(feedRange, state)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
-            this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
-            this.pageSize = pageSize;
+            this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
+            this.PageSize = pageSize;
             this.Filter = filter;
             this.StartOfPageState = state;
         }
+
+        public SqlQuerySpec SqlQuerySpec { get; }
+
+        public int PageSize { get; }
 
         public string Filter { get; }
 
@@ -45,10 +47,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             this.StartOfPageState = this.State;
             return this.queryDataSource
                 .MonadicQueryAsync(
-                    sqlQuerySpec: this.sqlQuerySpec,
+                    sqlQuerySpec: this.SqlQuerySpec,
                     continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-                    feedRange: new FeedRangeEpk(this.Range.ToRange()),
-                    pageSize: this.pageSize,
+                    feedRange: new FeedRangePartitionKeyRange(this.Range.Id),
+                    pageSize: this.PageSize,
                     cancellationToken)
                 .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
                 {

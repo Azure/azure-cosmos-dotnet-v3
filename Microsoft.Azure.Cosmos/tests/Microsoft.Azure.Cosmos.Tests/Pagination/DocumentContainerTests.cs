@@ -124,7 +124,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Record record = await documentContainer.CreateItemAsync(item, cancellationToken: default);
             Assert.IsNotNull(record);
             Assert.AreNotEqual(Guid.Empty, record.Identifier);
-            Assert.AreEqual(1, record.ResourceIdentifier);
 
             // Try to read it back
             Record readRecord = await documentContainer.ReadItemAsync(

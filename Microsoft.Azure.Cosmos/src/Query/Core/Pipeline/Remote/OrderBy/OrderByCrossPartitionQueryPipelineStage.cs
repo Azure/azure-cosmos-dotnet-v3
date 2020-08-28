@@ -111,8 +111,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                     {
                         if (IsSplitException(uninitializedEnumerator.Current.Exception))
                         {
-                            // Handle split
-                            throw new NotImplementedException();
+                            IEnumerable<PartitionKeyRange> childRanges = await this.documentContainer.GetChildRangeAsync(
+                                uninitializedEnumerator.Range,
+                                cancellationToken: default);
+                            foreach (PartitionKeyRange childRange in childRanges)
+                            {
+                                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                                    this.documentContainer,
+                                    uninitializedEnumerator.SqlQuerySpec,
+                                    childRange,
+                                    uninitializedEnumerator.PageSize,
+                                    uninitializedEnumerator.Filter,
+                                    state: uninitializedEnumerator.StartOfPageState);
+                                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+                            }
+
+                            // Recursively retry
+                            return await this.MoveNextAsync();
                         }
 
                         this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token));
@@ -176,8 +191,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                     {
                         if (IsSplitException(filterMonad.Exception))
                         {
-                            // Handle split
-                            throw new NotImplementedException();
+                            IEnumerable<PartitionKeyRange> childRanges = await this.documentContainer.GetChildRangeAsync(
+                                uninitializedEnumerator.Range,
+                                cancellationToken: default);
+                            foreach (PartitionKeyRange childRange in childRanges)
+                            {
+                                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                                    this.documentContainer,
+                                    uninitializedEnumerator.SqlQuerySpec,
+                                    childRange,
+                                    uninitializedEnumerator.PageSize,
+                                    uninitializedEnumerator.Filter,
+                                    state: uninitializedEnumerator.StartOfPageState);
+                                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+                            }
+
+                            // Recursively retry
+                            return await this.MoveNextAsync();
                         }
 
                         this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
@@ -288,6 +318,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                 continuationTokenString = continuationTokenList.ToString();
             }
 
+            this.state = continuationTokenString != null ? new QueryState(CosmosString.Create(continuationTokenString)) : null;
+
             // Return a page of results
             // No stats to report, since we already reported it when we moved to this page.
             this.Current = TryCatch<QueryPage>.FromResult(
@@ -298,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                     responseLengthInBytes: 0,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
-                    state: continuationTokenString != null ? new QueryState(CosmosString.Create(continuationTokenString)) : null));
+                    state: this.state));
             return true;
         }
 
@@ -792,9 +824,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             return TryCatch<(bool, TryCatch<OrderByQueryPage>)>.FromResult((false, enumerator.Current));
         }
 
-        private static bool IsSplitException(Exception exeception)
+        private static bool IsSplitException(Exception exception)
         {
-            return exeception is CosmosException cosmosException
+            while (exception.InnerException != null)
+            {
+                exception = exception.InnerException;
+            }
+
+            return exception is CosmosException cosmosException
                 && (cosmosException.StatusCode == HttpStatusCode.Gone)
                 && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
         }

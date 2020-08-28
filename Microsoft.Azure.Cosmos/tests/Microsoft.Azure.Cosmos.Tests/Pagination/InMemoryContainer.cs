@@ -220,7 +220,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CosmosElement candidatePartitionKey = GetPartitionKeyFromPayload(
                     candidate.Payload,
                     this.partitionKeyDefinition);
-                bool partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
+
+                bool partitionKeyMatches;
+                if (candidatePartitionKey is null && partitionKey is null)
+                {
+                    partitionKeyMatches = true;
+                }
+                else if ((candidatePartitionKey != null) && (partitionKey != null))
+                {
+                    partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
+                }
+                else
+                {
+                    partitionKeyMatches = false;
+                }
 
                 if (identifierMatches && partitionKeyMatches)
                 {
@@ -347,37 +360,34 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
 
-            int index;
+            IEnumerable<CosmosElement> queryPageResults = queryResults;
             if (continuationToken != null)
             {
-                if (!int.TryParse(continuationToken, out index))
+                queryPageResults = queryPageResults.Where(c =>
                 {
-                    return Task.FromResult(
-                        TryCatch<QueryPage>.FromException(
-                            new Exception("FAILED TO PARSE CONTINUATION TOKEN")));
-                }
-            }
-            else
-            {
-                index = 0;
+                    ResourceId continuationResourceId = ResourceId.Parse(continuationToken);
+                    ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
+                    return documentResourceId.Document > continuationResourceId.Document;
+                });
             }
 
-            List<CosmosElement> queryPageResults = queryResults.Skip(index).Take(pageSize).ToList();
+            queryPageResults = queryPageResults.Take(pageSize);
+            List<CosmosElement> queryPageResultList = queryPageResults.ToList();
 
             QueryState queryState;
-            if (queryPageResults.Count == 0)
+            if (queryPageResultList.Count == 0)
             {
                 queryState = null;
             }
             else
             {
-                queryState = new QueryState(CosmosString.Create((index + pageSize).ToString()));
+                queryState = new QueryState(((CosmosObject)queryPageResultList.Last())["_rid"]);
             }
 
             return Task.FromResult(
                 TryCatch<QueryPage>.FromResult(
                     new QueryPage(
-                        queryPageResults,
+                        queryPageResultList,
                         requestCharge: 42,
                         activityId: Guid.NewGuid().ToString(),
                         responseLengthInBytes: 1337,
