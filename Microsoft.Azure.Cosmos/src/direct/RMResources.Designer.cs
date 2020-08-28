@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Microsoft.Azure.Documents {
+namespace Microsoft.Azure.Documents{
     using System;
     
     
