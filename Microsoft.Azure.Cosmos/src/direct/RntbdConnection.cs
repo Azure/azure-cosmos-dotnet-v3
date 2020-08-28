@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Documents
     using System.Security.Authentication;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if COSMOSCLIENT
     using Microsoft.Azure.Cosmos.Rntbd;
@@ -70,14 +71,14 @@ namespace Microsoft.Azure.Documents
         private Socket socket;
         private TcpClient tcpClient;
 
-        private double requestTimeoutInSeconds;
+        private TimeSpan requestTimeoutInSeconds;
         private bool isOpen;
         private string serverAgent;
         private string serverVersion;
         private TimeSpan idleTimeout;
         private TimeSpan unauthenticatedTimeout;
         private string overrideHostNameInCertificate;
-        private double openTimeoutInSeconds;
+        private TimeSpan openTimeoutInSeconds;
 
         private DateTime lastUsed;
         private DateTime opened;
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Documents
         private bool hasIssuedSuccessfulRequest;
 
         private RntbdConnectionOpenTimers connectionTimers;
-        private readonly TimerPool timerPool;
+        private readonly TimerWheel timerPool;
 
         public RntbdConnection(
             Uri address, 
@@ -95,14 +96,14 @@ namespace Microsoft.Azure.Documents
             double idleConnectionTimeoutInSeconds,
             string poolKey, 
             UserAgentContainer userAgent,
-            TimerPool pool)
+            TimerWheel pool)
         {
             this.connectionTimers.CreationTimestamp = DateTimeOffset.Now;
             this.initialOpenUri = address;
             this.poolKey = poolKey;
-            this.requestTimeoutInSeconds = requestTimeoutInSeconds;
+            this.requestTimeoutInSeconds = TimeSpan.FromSeconds(requestTimeoutInSeconds);
             this.overrideHostNameInCertificate = overrideHostNameInCertificate;
-            this.openTimeoutInSeconds = openTimeoutInSeconds;
+            this.openTimeoutInSeconds = TimeSpan.FromSeconds(openTimeoutInSeconds);
             if(TimeSpan.FromSeconds(idleConnectionTimeoutInSeconds) < RntbdConnection.MaxIdleConnectionTimeout
                 && TimeSpan.FromSeconds(idleConnectionTimeoutInSeconds) > RntbdConnection.MinIdleConnectionTimeout)
             {
@@ -194,14 +195,14 @@ namespace Microsoft.Azure.Documents
             Task[] awaitTasks = new Task[2];
 
             // Optimized version of Task.Delay for timeout scenarios
-            PooledTimer delayTaskTimer;
-            if(this.openTimeoutInSeconds != 0)
+            TimerWheelTimer delayTaskTimer;
+            if(this.openTimeoutInSeconds != TimeSpan.Zero)
             {
-                delayTaskTimer = this.timerPool.GetPooledTimer((int)this.openTimeoutInSeconds);
+                delayTaskTimer = this.timerPool.CreateTimer(this.openTimeoutInSeconds);
             }
             else
             {
-                delayTaskTimer = this.timerPool.GetPooledTimer((int)this.requestTimeoutInSeconds);
+                delayTaskTimer = this.timerPool.CreateTimer(this.requestTimeoutInSeconds);
             }
 
             // Starts the timer which returns a Task that you await on
@@ -334,7 +335,7 @@ namespace Microsoft.Azure.Documents
             }
 
             // Optimized version of Task.Delay for timeout scenarios
-            PooledTimer delayTaskTimer = this.timerPool.GetPooledTimer((int)this.requestTimeoutInSeconds);
+            TimerWheelTimer delayTaskTimer = this.timerPool.CreateTimer(this.requestTimeoutInSeconds);
 
             //Starts the timer which returns a Task that you await on
             Task delayTaskRequest = delayTaskTimer.StartTimerAsync();

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents
     using System.Diagnostics;
     using System.Globalization;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class RntbdConnectionDispenser : IConnectionDispenser, IDisposable
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.Documents
         private readonly int openTimeoutInSeconds;
         private readonly UserAgentContainer userAgent;
         private bool isDisposed = false;
-        private TimerPool timerPool;
+        private TimerWheel timerPool;
 
         public RntbdConnectionDispenser(
             int requestTimeoutInSeconds, 
@@ -57,7 +58,20 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            this.timerPool = new TimerPool(timerValueInSeconds);
+            if(openTimeoutInSeconds == 0)
+            {
+                this.timerPool = TimerWheel.CreateTimerWheel(TimeSpan.FromSeconds(requestTimeoutInSeconds), 2);
+            }
+            else if(openTimeoutInSeconds == 5 && requestTimeoutInSeconds == 10)
+            {
+                this.timerPool = TimerWheel.CreateTimerWheel(TimeSpan.FromSeconds(5), 3);
+            }
+            else
+            {
+                int max = Math.Max(openTimeoutInSeconds, requestTimeoutInSeconds);
+                this.timerPool = TimerWheel.CreateTimerWheel(TimeSpan.FromSeconds(timerPoolGranularityInSeconds), max);
+            }
+            
             DefaultTrace.TraceInformation("RntbdConnectionDispenser: requestTimeoutInSeconds: {0}, openTimeoutInSeconds: {1}, timerValueInSeconds: {2}",
                 requestTimeoutInSeconds, 
                 openTimeoutInSeconds,

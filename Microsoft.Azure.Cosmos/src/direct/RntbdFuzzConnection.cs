@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Documents
     using System.IO;
     using System.Text;
     using System.Threading;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Class to fuzz TCP requests
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Documents
             bool fuzzRequest, 
             bool fuzzContext,
             UserAgentContainer userAgent,
-             TimerPool pool)
+            TimerWheel pool)
             : base(fullUri, 
                   0.1, // override request timeout to 100 ms 
                   overrideHostNameInCertificate, 
