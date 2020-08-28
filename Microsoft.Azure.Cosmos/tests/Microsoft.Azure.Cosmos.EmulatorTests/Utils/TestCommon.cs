@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static IList<T> ListAllScriptDirect<T>(DocumentClient client,
+        internal static async ValueTask<IList<T>> ListAllScriptDirect<T>(DocumentClient client,
                 string resourceIdOrFullName,
                 INameValueCollection headers = null) where T : Resource, new()
         {
@@ -376,14 +376,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     try
                     {
-                        pagedResult = ReadScriptFeedDirect<T>(client, resourceIdOrFullName, localHeaders);
+                        pagedResult = await ReadScriptFeedDirect<T>(client, resourceIdOrFullName, localHeaders);
                         break;
                     }
                     catch (ServiceUnavailableException)
                     {
                         if (--nMaxRetry > 0)
                         {
-                            Task.Delay(5000); //Wait 5 seconds before retry.
+                            await Task.Delay(5000); //Wait 5 seconds before retry.
                         }
                         else
                         {
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if (--nMaxRetry > 0)
                         {
-                            Task.Delay(5000); //Wait 5 seconds before retry.
+                            await Task.Delay(5000); //Wait 5 seconds before retry.
                         }
                         else
                         {
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        private static DocumentFeedResponse<T> ReadScriptFeedDirect<T>(
+        private static async ValueTask<DocumentFeedResponse<T>> ReadScriptFeedDirect<T>(
             DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection localHeaders) where T : Resource, new()
@@ -430,14 +430,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     RouteToTheOnlyPartition(client, request);
 
-                    string payload;
-                    string authorization = ((IAuthorizationTokenProvider)client).GetUserAuthorizationToken(
+                    string authorization = (await ((IAuthorizationTokenProvider)client).GetUserAuthorizationAsync(
                         request.ResourceAddress,
                         PathsHelper.GetResourcePath(request.ResourceType),
                         HttpConstants.HttpMethods.Get,
                         request.Headers,
-                        AuthorizationTokenType.PrimaryMasterKey,
-                        out payload);
+                        AuthorizationTokenType.PrimaryMasterKey)).token;
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
                     using (new ActivityScope(Guid.NewGuid()))
