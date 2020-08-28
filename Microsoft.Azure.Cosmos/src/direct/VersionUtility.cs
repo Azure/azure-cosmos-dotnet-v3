@@ -33,6 +33,13 @@ namespace Microsoft.Azure.Documents
         // true if compareVersion >= baseVersion.
         internal static bool IsLaterThan(string compareVersion, string baseVersion)
         {
+            if (baseVersion.ToLowerInvariant().Contains("preview")
+                && !compareVersion.ToLowerInvariant().Contains("preview"))
+            {
+                // Only another preview API version can be considered to be later than a base preview API version
+                return false;
+            }
+
             if (!VersionUtility.TryParseApiVersion(baseVersion, out DateTime baseVersionDate))
             {
                 string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidVersionFormat, "base", baseVersion);
