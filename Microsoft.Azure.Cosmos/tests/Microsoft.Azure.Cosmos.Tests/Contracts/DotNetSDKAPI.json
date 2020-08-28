@@ -8184,6 +8184,13 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Void set_ResourceStream(System.IO.Stream)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_ResourceStream(System.IO.Stream)"
         }
       },
       "NestedTypes": {}
