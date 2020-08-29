@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.mockTokenProvider = new Mock<IAuthorizationTokenProvider>();
             string payload;
-            this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationToken(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), out payload))
-                .Returns("token!");
+            this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
+                .Returns(new ValueTask<(string, string)>(("token!", null)));
             this.mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
             this.mockServiceConfigReader.Setup(foo => foo.SystemReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
             this.mockServiceConfigReader.Setup(foo => foo.UserReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });

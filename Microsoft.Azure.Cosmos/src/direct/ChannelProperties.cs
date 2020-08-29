@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         public ChannelProperties(UserAgentContainer userAgent,
             string certificateHostNameOverride, IConnectionStateListener connectionStateListener,
-            TimerPool requestTimerPool, TimeSpan requestTimeout, TimeSpan openTimeout,
+            Microsoft.Azure.Cosmos.TimerWheel requestTimerPool, TimeSpan requestTimeout, TimeSpan openTimeout,
             PortReuseMode portReuseMode, UserPortPool userPortPool,
             int maxChannels, int partitionCount, int maxRequestsPerChannel,
             TimeSpan receiveHangDetectionTime, TimeSpan sendHangDetectionTime,
-            TimeSpan idleTimeout, TimerPool idleTimerPool,
+            TimeSpan idleTimeout, Microsoft.Azure.Cosmos.TimerWheel idleTimerPool,
             RntbdConstants.CallerId callerId)
         {
             Debug.Assert(userAgent != null);
@@ -55,12 +55,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// timer pool to track request timeout
         /// </summary>
-        public TimerPool RequestTimerPool { get; private set; }
+        public Microsoft.Azure.Cosmos.TimerWheel RequestTimerPool { get; private set; }
 
         /// <summary>
         /// timer pool to track idle channels
         /// </summary>
-        public TimerPool IdleTimerPool { get; private set; }
+        public Microsoft.Azure.Cosmos.TimerWheel IdleTimerPool { get; private set; }
 
         public TimeSpan RequestTimeout { get; private set; }
 

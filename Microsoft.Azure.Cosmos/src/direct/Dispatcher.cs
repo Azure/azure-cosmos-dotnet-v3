@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // When examining IsCancellationRequested in order to decide whether to cancel,
         // guard the operation with connectionLock.
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
-        private readonly TimerPool idleTimerPool;
+        private readonly Microsoft.Azure.Cosmos.TimerWheel idleTimerPool;
 
         private bool disposed = false;
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // lock used to guard underlying tcp connection state, which is a state level higher than callLock
         // Acquire before callLock
         private readonly object connectionLock = new object();
-        private PooledTimer idleTimer; // Guarded by connectionLock
+        private Microsoft.Azure.Cosmos.TimerWheelTimer idleTimer; // Guarded by connectionLock
         private Task idleTimerTask;  // Guarded by connectionLock
 
         public Dispatcher(
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             string hostNameCertificateOverride,
             TimeSpan receiveHangDetectionTime,
             TimeSpan sendHangDetectionTime,
-            TimerPool idleTimerPool,
+            Microsoft.Azure.Cosmos.TimerWheel idleTimerPool,
             TimeSpan idleTimeout)
         {
             this.connection = new Connection(
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private void ScheduleIdleTimer(TimeSpan timeToIdle)
         {
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
-            this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
+            this.idleTimer = this.idleTimerPool.CreateTimer(timeToIdle);
             this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
             this.idleTimerTask.ContinueWith(
                 failedTask =>

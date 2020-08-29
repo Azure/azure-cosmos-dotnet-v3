@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     internal sealed class Channel : IChannel, IDisposable
     {
         private readonly Dispatcher dispatcher;
-        private readonly TimerPool timerPool;
+        private readonly Microsoft.Azure.Cosmos.TimerWheel timerPool;
         private readonly int requestTimeoutSeconds;
         private readonly Uri serverUri;
         private bool disposed = false;
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 throw clientException;
             }
 
-            PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
+            Microsoft.Azure.Cosmos.TimerWheelTimer timer = this.timerPool.CreateTimer(TimeSpan.FromSeconds(this.requestTimeoutSeconds));
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();
             Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments);
@@ -307,8 +307,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             try
             {
-                PooledTimer timer = this.timerPool.GetPooledTimer(
-                    this.openArguments.OpenTimeoutSeconds);
+                Microsoft.Azure.Cosmos.TimerWheelTimer timer = this.timerPool.CreateTimer(TimeSpan.FromSeconds(this.openArguments.OpenTimeoutSeconds));
                 Task[] tasks = new Task[2];
                 tasks[0] = timer.StartTimerAsync();
                 tasks[1] = this.dispatcher.OpenAsync(this.openArguments);

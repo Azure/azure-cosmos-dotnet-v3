@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
         private static TransportPerformanceCounters transportPerformanceCounters = new TransportPerformanceCounters();
 
-        private readonly TimerPool timerPool;
-        private readonly TimerPool idleTimerPool;
+        private readonly Microsoft.Azure.Cosmos.TimerWheel timerPool;
+        private readonly Microsoft.Azure.Cosmos.TimerWheel idleTimerPool;
         private readonly ChannelDictionary channelDictionary;
         private readonly CpuMonitor cpuMonitor;
         private bool disposed = false;
@@ -60,10 +60,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.PortPoolBindAttempts);
             }
 
-            this.timerPool = new TimerPool((int)clientOptions.TimerPoolResolution.TotalSeconds);
+            this.timerPool = Microsoft.Azure.Cosmos.TimerWheel.CreateTimerWheel(clientOptions.TimerPoolResolution, 60);
             if (clientOptions.IdleTimeout > TimeSpan.Zero)
             {
-                this.idleTimerPool = new TimerPool(minSupportedTimerDelayInSeconds: 30);
+                this.idleTimerPool = Microsoft.Azure.Cosmos.TimerWheel.CreateTimerWheel(TimeSpan.FromSeconds(30), 6);
             }
             else
             {
