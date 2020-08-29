@@ -30,43 +30,46 @@ namespace Microsoft.Azure.Documents.Rntbd
             { HttpConstants.HttpHeaders.EnumerationDirection, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEnumerationDirectionFromProperties(value, rntbdRequest) },
             { HttpConstants.HttpHeaders.ReadFeedKeyType, TransportSerialization.AddStartAndEndKeys },
             { WFConstants.BackendHeaders.TransactionId, TransportSerialization.AddTransactionMetaData },
+            { WFConstants.BackendHeaders.RetriableWriteRequestId, TransportSerialization.AddRetriableWriteRequestMetadata},
+            { WFConstants.BackendHeaders.IsRetriedWriteRequest, TransportSerialization.AddIsRetriedWriteRequestMetadata},
+            { WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, TransportSerialization.AddRetriableWriteRequestStartTimestampMetadata},
 
-            {HttpConstants.HttpHeaders.Authorization,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
-            {HttpConstants.HttpHeaders.SessionToken,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PreTriggerInclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PreTriggerExclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PostTriggerInclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PostTriggerExclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PartitionKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PartitionKeyRangeId,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
-            {HttpConstants.HttpHeaders.ResourceTokenExpiry,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
-            {HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
-            {HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
-            {HttpConstants.HttpHeaders.IsBatchOrdered,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
-            {HttpConstants.HttpHeaders.IsBatchAtomic,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
-            {WFConstants.BackendHeaders.CollectionPartitionIndex,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
-            {WFConstants.BackendHeaders.CollectionServiceIndex,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
-            {WFConstants.BackendHeaders.ResourceSchemaName,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
-            {WFConstants.BackendHeaders.BindReplicaDirective,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
-            {WFConstants.BackendHeaders.PrimaryMasterKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.SecondaryMasterKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.PrimaryReadonlyKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.SecondaryReadonlyKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.PartitionCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
-            {WFConstants.BackendHeaders.CollectionRid,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
-            {HttpConstants.HttpHeaders.GatewaySignature,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
-            {HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
-            {HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
-            {HttpConstants.HttpHeaders.TargetLsn,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
-            {HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
-            {HttpConstants.HttpHeaders.TransportRequestID,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
-            {HttpConstants.HttpHeaders.RestoreMetadataFilter,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
-            {WFConstants.BackendHeaders.RestoreParams,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
-            {WFConstants.BackendHeaders.PartitionResourceFilter,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
-            {WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
-            {WFConstants.BackendHeaders.SchemaOwnerRid,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
-            {WFConstants.BackendHeaders.SchemaHash,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
-            {HttpConstants.HttpHeaders.IsClientEncrypted,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
+            { HttpConstants.HttpHeaders.Authorization,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
+            { HttpConstants.HttpHeaders.SessionToken,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PreTriggerInclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PreTriggerExclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PostTriggerInclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PostTriggerExclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PartitionKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PartitionKeyRangeId,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ResourceTokenExpiry,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
+            { HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsBatchOrdered,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsBatchAtomic,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionPartitionIndex,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionServiceIndex,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
+            { WFConstants.BackendHeaders.ResourceSchemaName,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
+            { WFConstants.BackendHeaders.BindReplicaDirective,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
+            { WFConstants.BackendHeaders.PrimaryMasterKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.SecondaryMasterKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.PrimaryReadonlyKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.SecondaryReadonlyKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.PartitionCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionRid,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
+            { HttpConstants.HttpHeaders.GatewaySignature,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
+            { HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TargetLsn,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TransportRequestID,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
+            { HttpConstants.HttpHeaders.RestoreMetadataFilter,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
+            { WFConstants.BackendHeaders.RestoreParams,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
+            { WFConstants.BackendHeaders.PartitionResourceFilter,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
+            { WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
+            { WFConstants.BackendHeaders.SchemaOwnerRid,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
+            { WFConstants.BackendHeaders.SchemaHash,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsClientEncrypted,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
             { WFConstants.BackendHeaders.TimeToLiveInSeconds,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.TimeToLiveInSeconds, rntbdRequest.timeToLiveInSeconds, rntbdRequest)},
 
             { WFConstants.BackendHeaders.BinaryPassthroughRequest,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.BinaryPassthroughRequest, rntbdRequest.binaryPassthroughRequest, rntbdRequest)},
@@ -132,10 +135,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             { HttpConstants.HttpHeaders.EnumerationDirection, TransportSerialization.AddEnumerationDirectionFromHeaders },
             { WFConstants.BackendHeaders.FanoutOperationState, TransportSerialization.AddFanoutOperationStateHeader },
             { HttpConstants.HttpHeaders.ReadFeedKeyType, TransportSerialization.AddStartAndEndKeysFromHeaders },
-            { HttpConstants.HttpHeaders.StartId, TransportSerialization.AddStartAndEndKeysFromHeaders },
-            { HttpConstants.HttpHeaders.EndId, TransportSerialization.AddStartAndEndKeysFromHeaders },
-            { HttpConstants.HttpHeaders.StartEpk, TransportSerialization.AddStartAndEndKeysFromHeaders },
-            { HttpConstants.HttpHeaders.EndEpk, TransportSerialization.AddStartAndEndKeysFromHeaders },
+            { HttpConstants.HttpHeaders.StartId, TransportSerialization.AddStartIdFromHeaders },
+            { HttpConstants.HttpHeaders.EndId, TransportSerialization.AddEndIdFromHeaders },
+            { HttpConstants.HttpHeaders.StartEpk, TransportSerialization.AddStartEpkFromHeaders },
+            { HttpConstants.HttpHeaders.EndEpk, TransportSerialization.AddEndEpkFromHeaders },
             { HttpConstants.HttpHeaders.ContentSerializationFormat, TransportSerialization.AddContentSerializationFormat },
             { WFConstants.BackendHeaders.IsUserRequest, TransportSerialization.AddIsUserRequest },
             { HttpConstants.HttpHeaders.PreserveFullContent, TransportSerialization.AddPreserveFullContent },
@@ -147,47 +150,48 @@ namespace Microsoft.Azure.Documents.Rntbd
             { HttpConstants.HttpHeaders.MigrateOfferToAutopilot, TransportSerialization.AddIsMigrateOfferToAutopilotRequest },
             { HttpConstants.HttpHeaders.SystemDocumentType, TransportSerialization.AddSystemDocumentTypeHeader },
 
-            { WFConstants.BackendHeaders.TransactionCommit, TransportSerialization.AddTransactionCompletionFlag },
             { WFConstants.BackendHeaders.ResourceTypes, TransportSerialization.AddResourceTypes },
             { HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, TransportSerialization.AddUpdateMaxthroughputEverProvisioned },
             { WFConstants.BackendHeaders.UseSystemBudget, TransportSerialization.AddUseSystemBudget },
+            { HttpConstants.HttpHeaders.Prefer, TransportSerialization.AddReturnPreferenceIfPresent },
+            { HttpConstants.HttpHeaders.TruncateMergeLogRequest, TransportSerialization.AddTruncateMergeLogRequest},
 
-            {HttpConstants.HttpHeaders.Authorization,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
-            {HttpConstants.HttpHeaders.SessionToken,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PreTriggerInclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PreTriggerExclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PostTriggerInclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PostTriggerExclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PartitionKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
-            {HttpConstants.HttpHeaders.PartitionKeyRangeId,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
-            {HttpConstants.HttpHeaders.ResourceTokenExpiry,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
-            {HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
-            {HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
-            {HttpConstants.HttpHeaders.IsBatchOrdered,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
-            {HttpConstants.HttpHeaders.IsBatchAtomic,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
-            {WFConstants.BackendHeaders.CollectionPartitionIndex,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
-            {WFConstants.BackendHeaders.CollectionServiceIndex,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
-            {WFConstants.BackendHeaders.ResourceSchemaName,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
-            {WFConstants.BackendHeaders.BindReplicaDirective,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
-            {WFConstants.BackendHeaders.PrimaryMasterKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.SecondaryMasterKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.PrimaryReadonlyKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.SecondaryReadonlyKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
-            {WFConstants.BackendHeaders.PartitionCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
-            {WFConstants.BackendHeaders.CollectionRid,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
-            {HttpConstants.HttpHeaders.GatewaySignature,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
-            {HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
-            {HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
-            {HttpConstants.HttpHeaders.TargetLsn,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
-            {HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
-            {HttpConstants.HttpHeaders.TransportRequestID,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
-            {HttpConstants.HttpHeaders.RestoreMetadataFilter,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
-            {WFConstants.BackendHeaders.RestoreParams,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
-            {WFConstants.BackendHeaders.PartitionResourceFilter,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
-            {WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
-            {WFConstants.BackendHeaders.SchemaOwnerRid,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
-            {WFConstants.BackendHeaders.SchemaHash,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
-            {HttpConstants.HttpHeaders.IsClientEncrypted,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
+            { HttpConstants.HttpHeaders.Authorization,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
+            { HttpConstants.HttpHeaders.SessionToken,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PreTriggerInclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PreTriggerExclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PostTriggerInclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PostTriggerExclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PartitionKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PartitionKeyRangeId,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ResourceTokenExpiry,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
+            { HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsBatchOrdered,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsBatchAtomic,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionPartitionIndex,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionServiceIndex,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
+            { WFConstants.BackendHeaders.ResourceSchemaName,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
+            { WFConstants.BackendHeaders.BindReplicaDirective,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
+            { WFConstants.BackendHeaders.PrimaryMasterKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.SecondaryMasterKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.PrimaryReadonlyKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.SecondaryReadonlyKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.PartitionCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionRid,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
+            { HttpConstants.HttpHeaders.GatewaySignature,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
+            { HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TargetLsn,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TransportRequestID,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
+            { HttpConstants.HttpHeaders.RestoreMetadataFilter,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
+            { WFConstants.BackendHeaders.RestoreParams,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
+            { WFConstants.BackendHeaders.PartitionResourceFilter,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
+            { WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
+            { WFConstants.BackendHeaders.SchemaOwnerRid,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
+            { WFConstants.BackendHeaders.SchemaHash,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsClientEncrypted,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
             { WFConstants.BackendHeaders.TimeToLiveInSeconds,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.TimeToLiveInSeconds, rntbdRequest.timeToLiveInSeconds, rntbdRequest)},
 
             { WFConstants.BackendHeaders.BinaryPassthroughRequest,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.BinaryPassthroughRequest, rntbdRequest.binaryPassthroughRequest, rntbdRequest)},
@@ -1434,6 +1438,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddRntdbTokenBool(rntbdRequest.migrateOfferToAutopilot, headerValue);
         }
 
+        private static void AddTruncateMergeLogRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            string headerValue = request.Headers[HttpConstants.HttpHeaders.TruncateMergeLogRequest];
+            TransportSerialization.AddRntdbTokenBool(rntbdRequest.truncateMergeLogRequest, headerValue);
+        }
+
         private static void AddEnumerationDirectionFromProperties(object enumerationDirectionObject, RntbdConstants.Request rntbdRequest)
         {
             byte? scanDirection = enumerationDirectionObject as byte?;
@@ -1541,28 +1551,40 @@ namespace Microsoft.Azure.Documents.Rntbd
                 rntbdRequest.readFeedKeyType.value.valueByte = (byte)rntdbReadFeedKeyType;
                 rntbdRequest.readFeedKeyType.isPresent = true;
             }
+        }
 
+        private static void AddStartIdFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
             string startId = request.Headers[HttpConstants.HttpHeaders.StartId];
             if (!string.IsNullOrEmpty(startId))
             {
                 rntbdRequest.StartId.value.valueBytes = System.Convert.FromBase64String(startId);
                 rntbdRequest.StartId.isPresent = true;
             }
+        }
 
+        private static void AddEndIdFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
             string endId = request.Headers[HttpConstants.HttpHeaders.EndId];
             if (!string.IsNullOrEmpty(endId))
             {
                 rntbdRequest.EndId.value.valueBytes = System.Convert.FromBase64String(endId);
                 rntbdRequest.EndId.isPresent = true;
             }
+        }
 
+        private static void AddStartEpkFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
             string startEpk = request.Headers[HttpConstants.HttpHeaders.StartEpk];
             if (!string.IsNullOrEmpty(startEpk))
             {
                 rntbdRequest.StartEpk.value.valueBytes = System.Convert.FromBase64String(startEpk);
                 rntbdRequest.StartEpk.isPresent = true;
             }
+        }
 
+        private static void AddEndEpkFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
             string endEpk = request.Headers[HttpConstants.HttpHeaders.EndEpk];
             if (!string.IsNullOrEmpty(endEpk))
             {
@@ -1802,6 +1824,40 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             rntbdRequest.transactionCommit.value.valueByte = ((bool)boolData) ? (byte)0x01 : (byte)0x00;
             rntbdRequest.transactionCommit.isPresent = true;
+        }
+
+        private static void AddRetriableWriteRequestMetadata(object retriableWriteRequestId, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (!(retriableWriteRequestId is byte[] requestId))
+            {
+                throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.RetriableWriteRequestId);
+            }
+
+            rntbdRequest.retriableWriteRequestId.value.valueBytes = requestId;
+            rntbdRequest.retriableWriteRequestId.isPresent = true;
+        }
+
+        private static void AddIsRetriedWriteRequestMetadata(object isRetriedWriteRequestValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            bool? isRetriedWriteRequest = isRetriedWriteRequestValue as bool?;
+            if (!isRetriedWriteRequest.HasValue)
+            {
+                throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.IsRetriedWriteRequest);
+            }
+
+            rntbdRequest.isRetriedWriteRequest.value.valueByte = ((bool)isRetriedWriteRequest) ? (byte)0x01 : (byte)0x00;
+            rntbdRequest.isRetriedWriteRequest.isPresent = true;
+        }
+
+        private static void AddRetriableWriteRequestStartTimestampMetadata(object retriableWriteRequestStartTimestamp, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (!UInt64.TryParse(retriableWriteRequestStartTimestamp.ToString(), out UInt64 requestStartTimestamp) || requestStartTimestamp <= 0)
+            {
+                throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp);
+            }
+
+            rntbdRequest.retriableWriteRequestStartTimestamp.value.valueULongLong = requestStartTimestamp;
+            rntbdRequest.retriableWriteRequestStartTimestamp.isPresent = true;
         }
 
         private static void AddUseSystemBudget(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)

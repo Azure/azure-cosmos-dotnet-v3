@@ -6,16 +6,202 @@ namespace Microsoft.Azure.Cosmos.Test
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
+    using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
+    using Microsoft.Azure.Cosmos.Rntbd;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 
     [TestClass]
     public class ComparableTaskSchedulerTests
     {
+        [TestMethod]
+        public void TransportSerializationTest()
+        {
+            List<string> notSupportedHeaders = new List<string>();
+            HashSet<string> excluededRntdbProperties = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                nameof(RntbdConstants.Request.resourceId),
+                nameof(RntbdConstants.Request.payloadPresent),
+                nameof(RntbdConstants.Request.entityId),
+                nameof(RntbdConstants.Request.replicaPath),
+                nameof(RntbdConstants.Request.databaseName),
+                nameof(RntbdConstants.Request.snapshotName),
+                nameof(RntbdConstants.Request.roleDefinitionName),
+                nameof(RntbdConstants.Request.roleAssignmentName),
+                nameof(RntbdConstants.Request.collectionName),
+                nameof(RntbdConstants.Request.documentName),
+                nameof(RntbdConstants.Request.attachmentName),
+                nameof(RntbdConstants.Request.userName),
+                nameof(RntbdConstants.Request.userDefinedFunctionName),
+                nameof(RntbdConstants.Request.storedProcedureName),
+                nameof(RntbdConstants.Request.triggerName),
+                nameof(RntbdConstants.Request.conflictName),
+                nameof(RntbdConstants.Request.permissionName),
+                nameof(RntbdConstants.Request.clientEncryptionKeyName),
+                nameof(RntbdConstants.Request.partitionKeyRangeName),
+                nameof(RntbdConstants.Request.mergeCheckpointGlsnKeyName),
+                nameof(RntbdConstants.Request.schemaName),
+                nameof(RntbdConstants.Request.systemDocumentName),
+                nameof(RntbdConstants.Request.userDefinedTypeName),
+                nameof(RntbdConstants.Request.isAutoScaleRequest),
+                nameof(RntbdConstants.Request.binaryId),
+                nameof(RntbdConstants.Request.effectivePartitionKey),
+                nameof(RntbdConstants.Request.mergeStaticId),
+                nameof(RntbdConstants.Request.schemaHash), // need to investigate. FillTokens doens't handle bytes
+                nameof(RntbdConstants.Request.collectionChildResourceNameLimitInBytes), // Value set to long but Rntbd token type is bytes
+                nameof(RntbdConstants.Request.collectionChildResourceContentLengthLimitInKB), // Value set to long but Rntbd token type is bytes
+                nameof(RntbdConstants.Request.transactionId), // properties only 
+                nameof(RntbdConstants.Request.transactionFirstRequest), // properties only 
+                nameof(RntbdConstants.Request.transactionCommit), // properties only
+                nameof(RntbdConstants.Request.retriableWriteRequestId), // properties only
+                nameof(RntbdConstants.Request.isRetriedWriteRequest), // properties only
+                nameof(RntbdConstants.Request.retriableWriteRequestStartTimestamp), // properties only 
+            };
+
+            FieldInfo[] allProperties = typeof(RntbdConstants.Request).GetFields(BindingFlags.Public | BindingFlags.Instance)
+                .Where(info => !excluededRntdbProperties.Contains(info.Name)).ToArray();
+
+            Assert.IsTrue(allProperties.Length > 20);
+
+            FieldInfo[] allHeaderConstants = typeof(HttpConstants.HttpHeaders).GetFields(BindingFlags.Public | BindingFlags.Static);
+            Assert.IsTrue(allHeaderConstants.Length > 20);
+            Dictionary<string, string> mapRntbdFieldToHeaderKey = allHeaderConstants.ToDictionary(item => item.Name, item => (string)item.GetValue(null), StringComparer.OrdinalIgnoreCase);
+            // Match custom rntbd field names to the http headers.
+            mapRntbdFieldToHeaderKey["AuthorizationToken"] = HttpConstants.HttpHeaders.Authorization;
+            mapRntbdFieldToHeaderKey["Date"] = HttpConstants.HttpHeaders.XDate;
+            mapRntbdFieldToHeaderKey["ContinuationToken"] = HttpConstants.HttpHeaders.Continuation;
+            mapRntbdFieldToHeaderKey["Match"] = HttpConstants.HttpHeaders.IfNoneMatch;
+            mapRntbdFieldToHeaderKey["IsFanout"] = WFConstants.BackendHeaders.IsFanoutRequest;
+            mapRntbdFieldToHeaderKey["ClientVersion"] = HttpConstants.HttpHeaders.Version;
+            mapRntbdFieldToHeaderKey["filterBySchemaRid"] = HttpConstants.HttpHeaders.FilterBySchemaResourceId;
+            mapRntbdFieldToHeaderKey["collectionChildResourceContentLengthLimitInKB"] = WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB;
+            mapRntbdFieldToHeaderKey["returnPreference"] = HttpConstants.HttpHeaders.Prefer;
+
+            FieldInfo[] allBackendHeaderConstants = typeof(WFConstants.BackendHeaders).GetFields(BindingFlags.Public | BindingFlags.Static);
+            Assert.IsTrue(allBackendHeaderConstants.Length > 20);
+            Dictionary<string, string> backendHeaderPropertyNameToValue = allBackendHeaderConstants.ToDictionary(item => item.Name, item => (string)item.GetValue(null), StringComparer.OrdinalIgnoreCase);
+
+            RntbdConstants.Request request = new RntbdConstants.Request();
+            StoreResponseNameValueCollection dsrHeaders = new StoreResponseNameValueCollection();
+            DocumentServiceRequest documentServiceRequest = new DocumentServiceRequest(
+               operationType: OperationType.Read,
+               resourceIdOrFullName: @"dbs\test\colls\a1\docs\notFound",
+               resourceType: ResourceType.Document,
+               body: null,
+               headers: dsrHeaders,
+               isNameBased: true,
+               authorizationTokenType: Documents.AuthorizationTokenType.PrimaryMasterKey);
+
+            Random random = new Random();
+
+            Dictionary<string, (string, byte)> byteEnumHeaderValue = new Dictionary<string, (string, byte)>()
+            {
+                { HttpConstants.HttpHeaders.IndexingDirective, (((IndexingDirective)0x01).ToString(), 0x01) },
+                { HttpConstants.HttpHeaders.ConsistencyLevel, (((ConsistencyLevel)0x01).ToString(), 0x01) },
+                { HttpConstants.HttpHeaders.MigrateCollectionDirective, (((MigrateCollectionDirective)0x01).ToString(), 0x01) },
+                { WFConstants.BackendHeaders.RemoteStorageType, (((RemoteStorageType)0x01).ToString(), 0x02) },
+                { HttpConstants.HttpHeaders.EnumerationDirection, (((EnumerationDirection)0x01).ToString(), 0x02) },
+                { WFConstants.BackendHeaders.FanoutOperationState, (((FanoutOperationState)0x01).ToString(), 0x02) },
+                { HttpConstants.HttpHeaders.ReadFeedKeyType, (((ReadFeedKeyType)0x01).ToString(), 0x02) },
+                { HttpConstants.HttpHeaders.ContentSerializationFormat, (((ContentSerializationFormat)0x01).ToString(), 0x01) },
+                { HttpConstants.HttpHeaders.Prefer, (HttpConstants.HttpHeaderValues.PreferReturnMinimal, 0x01) },
+                { WFConstants.BackendHeaders.UniqueIndexNameEncodingMode, ("1", 0x01) },
+                { WFConstants.BackendHeaders.UniqueIndexReIndexingState, ("1", 0x01) },
+                { HttpConstants.HttpHeaders.SystemDocumentType, (((SystemDocumentType)0x01).ToString(), 0x01) },
+            };
+
+            foreach (FieldInfo propertyInfo in allProperties)
+            {
+                if (!mapRntbdFieldToHeaderKey.TryGetValue(propertyInfo.Name, out string headerKey) &&
+                    !backendHeaderPropertyNameToValue.TryGetValue(propertyInfo.Name, out headerKey))
+                {
+                    Assert.Fail($"{propertyInfo.Name}; could not find a matching header constant");
+                }
+
+                RntbdToken rntdbToken = (RntbdToken)propertyInfo.GetValue(request);
+                switch (rntdbToken.GetTokenType())
+                {
+                    case RntbdTokenTypes.SmallString:
+                    case RntbdTokenTypes.String:
+                    case RntbdTokenTypes.ULongString:
+                        string headerValue = propertyInfo.Name;
+                        dsrHeaders[headerKey] = headerValue;
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(headerValue, BytesSerializer.GetStringFromBytes(rntdbToken.value.valueBytes));
+                        break;
+                    case RntbdTokenTypes.ULong:
+                        uint ulongHeaderValue = (uint)random.Next(1, 99999999);
+                        dsrHeaders[headerKey] = ulongHeaderValue.ToString(CultureInfo.InvariantCulture);
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(ulongHeaderValue, rntdbToken.value.valueULong);
+                        break;
+                    case RntbdTokenTypes.Long:
+                        long longHeaderValue = random.Next(1, 99999999);
+                        dsrHeaders[headerKey] = longHeaderValue.ToString(CultureInfo.InvariantCulture);
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(longHeaderValue, rntdbToken.value.valueLong);
+                        break;
+                    case RntbdTokenTypes.LongLong:
+                        long longlongHeaderValue = random.Next(1, 99999999);
+                        dsrHeaders[headerKey] = longlongHeaderValue.ToString(CultureInfo.InvariantCulture);
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(longlongHeaderValue, rntdbToken.value.valueLongLong);
+                        break;
+                    case RntbdTokenTypes.Double:
+                        double doubleHeaderValue = random.NextDouble();
+                        dsrHeaders[headerKey] = doubleHeaderValue.ToString(CultureInfo.InvariantCulture);
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(doubleHeaderValue, rntdbToken.value.valueDouble);
+                        break;
+                    case RntbdTokenTypes.Byte:
+                        string byteHeaderValue = bool.TrueString;
+                        byte expectedValue = 0x01;
+                        if (byteEnumHeaderValue.ContainsKey(headerKey))
+                        {
+                            (string value, byte byteValue) = byteEnumHeaderValue[headerKey];
+                            byteHeaderValue = value;
+                            expectedValue = byteValue;
+                        }
+
+                        dsrHeaders[headerKey] = byteHeaderValue;
+
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(expectedValue, rntdbToken.value.valueByte);
+                        break;
+                    case RntbdTokenTypes.Bytes:
+                        string originalString = propertyInfo.Name.ToString(CultureInfo.InvariantCulture);
+                        string base64String = Convert.ToBase64String(Encoding.UTF8.GetBytes(originalString));
+                        dsrHeaders[headerKey] = base64String;
+
+                        this.ValidateRntbdProperty(headerKey, documentServiceRequest, request, rntdbToken);
+                        Assert.AreEqual(originalString, Encoding.UTF8.GetString(rntdbToken.value.valueBytes.Span));
+                        break;
+                    default:
+                        throw new Exception($"{headerKey} Token type not expected");
+                }
+            }
+        }
+
+        private void ValidateRntbdProperty(
+            string headerKey,
+            DocumentServiceRequest documentServiceRequest,
+            RntbdConstants.Request request,
+            RntbdToken rntbdToken)
+        {
+            Assert.IsTrue(TransportSerialization.AddHeaders.ContainsKey(headerKey), headerKey);
+            TransportSerialization.AddHeaders[headerKey](documentServiceRequest, request);
+            Assert.IsTrue(rntbdToken.isPresent, headerKey);
+        }
+
         [TestMethod]
         public async Task SimpleTestAsync()
         {
