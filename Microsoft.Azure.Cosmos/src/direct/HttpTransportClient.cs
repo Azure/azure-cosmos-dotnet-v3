@@ -427,6 +427,8 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, request);
 
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.TruncateMergeLogRequest, request);
+
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowRequestWithoutInstanceId, request);
 
             Stream clonedStream = null;
