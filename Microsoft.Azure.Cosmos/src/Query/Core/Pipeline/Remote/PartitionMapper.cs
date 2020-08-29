@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal static class PartitionMapper
@@ -117,9 +118,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote
                 PartitionKeyRange partitionKeyRange = partitionKeyRangeSpan[i];
                 foreach (PartitionedToken partitionedToken in partitionedContinuationTokens)
                 {
+                    bool rightOfStart = (partitionedToken.Range.Min == string.Empty)
+                        || ((partitionKeyRange.MinInclusive != string.Empty) && (partitionKeyRange.MinInclusive.CompareTo(partitionedToken.Range.Min) >= 0));
+                    bool leftOfEnd = (partitionedToken.Range.Max == string.Empty)
+                        || ((partitionKeyRange.MaxExclusive != string.Empty) && (partitionKeyRange.MaxExclusive.CompareTo(partitionedToken.Range.Max) <= 0));
                     // See if continuation token includes the range
-                    if ((partitionKeyRange.MinInclusive.CompareTo(partitionedToken.Range.Min) >= 0)
-                        && (partitionKeyRange.MaxExclusive.CompareTo(partitionedToken.Range.Max) <= 0))
+                    if (rightOfStart && leftOfEnd)
                     {
                         partitionKeyRangeToToken[partitionKeyRange] = partitionedToken;
                         break;

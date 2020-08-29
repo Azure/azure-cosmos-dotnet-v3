@@ -442,7 +442,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                 }
 
                 PartitionMapping<OrderByContinuationToken> partitionMapping = monadicGetOrderByContinuationTokenMapping.Result;
-
                 IReadOnlyList<CosmosElement> orderByItems = partitionMapping
                     .TargetPartition
                     .Values
@@ -450,6 +449,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
                     .OrderByItems
                     .Select(x => x.Item)
                     .ToList();
+
                 if (orderByItems.Count != orderByColumns.Count)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(

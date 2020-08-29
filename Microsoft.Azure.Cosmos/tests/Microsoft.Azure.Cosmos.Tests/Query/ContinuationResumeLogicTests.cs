@@ -122,6 +122,117 @@
         }
 
         [TestMethod]
+        public void TestTryGetInitializationInfo_ResumeEmptyStart()
+        {
+            PartitionKeyRange pkRange1 = new PartitionKeyRange()
+            {
+                MinInclusive = string.Empty,
+                MaxExclusive = "A",
+                Id = "1"
+            };
+
+            PartitionKeyRange pkRange2 = new PartitionKeyRange()
+            {
+                MinInclusive = "A",
+                MaxExclusive = "B",
+                Id = "2"
+            };
+
+            PartitionKeyRange pkRange3 = new PartitionKeyRange()
+            {
+                MinInclusive = "B",
+                MaxExclusive = string.Empty,
+                Id = "3"
+            };
+
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
+                    min: string.Empty,
+                    max: "B",
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
+
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
+            {
+            };
+
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<PartitionKeyRange, IPartitionedToken>()
+            {
+                { pkRange1, token },
+            };
+
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
+            {
+                { pkRange2, token },
+                { pkRange3, null},
+            };
+
+            RunTryGetInitializationInfo(
+                expectedMappingLeftPartitions,
+                expectedMappingTargetPartition,
+                expectedMappingRightPartitions,
+                new PartitionKeyRange[] { pkRange1, pkRange2, pkRange3 },
+                new IPartitionedToken[] { token });
+        }
+
+        [TestMethod]
+        public void TestTryGetInitializationInfo_ResumeEmptyEnd()
+        {
+            PartitionKeyRange pkRange1 = new PartitionKeyRange()
+            {
+                MinInclusive = string.Empty,
+                MaxExclusive = "A",
+                Id = "1"
+            };
+
+            PartitionKeyRange pkRange2 = new PartitionKeyRange()
+            {
+                MinInclusive = "A",
+                MaxExclusive = "B",
+                Id = "2"
+            };
+
+            PartitionKeyRange pkRange3 = new PartitionKeyRange()
+            {
+                MinInclusive = "B",
+                MaxExclusive = string.Empty,
+                Id = "3"
+            };
+
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
+                    min: "A",
+                    max: string.Empty,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
+
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
+            {
+                { pkRange1, null },
+            };
+
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<PartitionKeyRange, IPartitionedToken>()
+            {
+                { pkRange2, token },
+            };
+
+            IReadOnlyDictionary<PartitionKeyRange, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<PartitionKeyRange, IPartitionedToken>()
+            {
+
+                { pkRange3, token },
+            };
+
+            RunTryGetInitializationInfo(
+                expectedMappingLeftPartitions,
+                expectedMappingTargetPartition,
+                expectedMappingRightPartitions,
+                new PartitionKeyRange[] { pkRange1, pkRange2, pkRange3 },
+                new IPartitionedToken[] { token });
+        }
+
+        [TestMethod]
         public void TestTryGetInitializationInfo_ResumeLeftMostPartition()
         {
             PartitionKeyRange pkRange1 = new PartitionKeyRange()
