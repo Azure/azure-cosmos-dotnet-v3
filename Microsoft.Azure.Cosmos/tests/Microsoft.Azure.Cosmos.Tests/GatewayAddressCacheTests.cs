@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
         public GatewayAddressCacheTests()
         {
             this.mockTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            string payload;
             this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
                 .Returns(new ValueTask<(string token, string payload)>(("token!", null)));
             this.mockServiceConfigReader = new Mock<IServiceConfigurationReader>();

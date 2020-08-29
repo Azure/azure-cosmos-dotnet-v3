@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal static readonly char[] UrlTrim = { '/' };
         internal static readonly IReadOnlyDictionary<object, Action<object, DocumentServiceRequest, RntbdConstants.Request>> AddProperties = new Dictionary<object, Action<object, DocumentServiceRequest, RntbdConstants.Request>>()
         {
-            {WFConstants.BackendHeaders.BinaryId , (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddBinaryIdIfPresent(value, rntbdRequest) },
+            { WFConstants.BackendHeaders.BinaryId , (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddBinaryIdIfPresent(value, rntbdRequest) },
             { WFConstants.BackendHeaders.TransactionCommit, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddTransactionCompletionFlag(value, rntbdRequest) },
             { WFConstants.BackendHeaders.MergeStaticId, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddMergeStaticIdIfPresent(value, rntbdRequest) },
             { WFConstants.BackendHeaders.EffectivePartitionKey, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEffectivePartitionKeyIfPresent(value, rntbdRequest) },
@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             { HttpConstants.HttpHeaders.HttpDate, TransportSerialization.AddDateHeader },
             { HttpConstants.HttpHeaders.Continuation, TransportSerialization.AddContinuation },
             { HttpConstants.HttpHeaders.IfMatch, TransportSerialization.AddMatchHeader },
+            { HttpConstants.HttpHeaders.IfNoneMatch, TransportSerialization.AddMatchHeader },
             { HttpConstants.HttpHeaders.IfModifiedSince, TransportSerialization.AddIfModifiedSinceHeader },
             { HttpConstants.HttpHeaders.A_IM, TransportSerialization.AddA_IMHeader },
             { HttpConstants.HttpHeaders.IndexingDirective, TransportSerialization.AddIndexingDirectiveHeader },
@@ -122,9 +123,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             { HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, TransportSerialization.AddPopulateCollectionThroughputInfo },
             { WFConstants.BackendHeaders.ShareThroughput, TransportSerialization.AddShareThroughput },
             { HttpConstants.HttpHeaders.IsReadOnlyScript, TransportSerialization.AddIsReadOnlyScript },
-            #if !COSMOSCLIENT
+#if !COSMOSCLIENT
             { HttpConstants.HttpHeaders.IsAutoScaleRequest, TransportSerialization.AddIsAutoScaleRequest },
-            #endif
+#endif
             { HttpConstants.HttpHeaders.CanOfferReplaceComplete, TransportSerialization.AddCanOfferReplaceComplete },
             { HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, TransportSerialization.AddIgnoreSystemLoweringMaxThroughput },
             { WFConstants.BackendHeaders.ExcludeSystemProperties, TransportSerialization.AddExcludeSystemProperties },
@@ -230,6 +231,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             rntbdRequest.replicaPath.isPresent = true;
 
             TransportSerialization.AddResourceIdOrPathHeaders(request, rntbdRequest);
+            TransportSerialization.AddEntityId(request, rntbdRequest);
 
             // special-case headers (ones that don't come from request.headers, or ones that are a merge of
             // merging multiple request.headers, or ones that are parsed from a string to an enum).
@@ -1387,7 +1389,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private static void AddCollectionRemoteStorageSecurityIdentifier(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
             string headerValue = request.Headers[HttpConstants.HttpHeaders.CollectionRemoteStorageSecurityIdentifier];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.collectionRemoteStorageSecurityIdentifier, headerValue);
+            TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.collectionRemoteStorageSecurityIdentifier, headerValue);
         }
 
         private static void AddIsUserRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
