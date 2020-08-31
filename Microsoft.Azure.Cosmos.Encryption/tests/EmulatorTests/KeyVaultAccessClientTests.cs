@@ -25,8 +25,8 @@
 
             Dictionary<string, string> keyinfo = new Dictionary<string, string>
             {
-                {"testkey1/","Recoverable"},
-                {"testkey2/","nothingset"}               
+                {"testkey1","Recoverable"},
+                {"testkey2","nothingset"}
             };
 
             /// <summary>
@@ -241,8 +241,8 @@
         {
             internal const string ValidateNullWrappedKey = "nullWrappedKeyByte";
             internal const string ValidateNullUnwrappedKey = "nullUnwrappedKeyByte";
-            internal const string ValidateRequestFailedEx = "requestFailed/";
-            internal const string ValidateNullKeyVaultKey = "nullKeyVaultKey/";
+            internal const string ValidateRequestFailedEx = "requestFailed";
+            internal const string ValidateNullKeyVaultKey = "nullKeyVaultKey";
         }
     }
 }

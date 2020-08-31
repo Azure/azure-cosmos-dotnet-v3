@@ -1,0 +1,29 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT VALUE c.arr[2]]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE c.arr[2]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Expression as indexer]]></Description>
+      <Query><![CDATA[SELECT VALUE c.arr[2 + 2]]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE c.arr[(2 + 2)]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing indexer expression]]></Description>
+      <Query><![CDATA[SELECT VALUE c.array[]]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>

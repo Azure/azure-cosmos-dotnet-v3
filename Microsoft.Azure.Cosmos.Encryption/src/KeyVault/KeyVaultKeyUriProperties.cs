@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             keyVaultUriProperties = new KeyVaultKeyUriProperties(keyUri);
-            keyVaultUriProperties.KeyName = keyVaultUriProperties.KeyUri.Segments[2];
+
+            keyVaultUriProperties.KeyName = keyVaultUriProperties.KeyUri.Segments[2].TrimEnd('/');
             keyVaultUriProperties.KeyVersion = keyVaultUriProperties.KeyUri.Segments[3];
             keyVaultUriProperties.KeyVaultUri = new Uri(keyVaultUriProperties.KeyUri.GetLeftPart(UriPartial.Scheme | UriPartial.Authority));
 
