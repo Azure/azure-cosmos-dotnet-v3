@@ -1788,9 +1788,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void AddTransactionMetaData(object transactionIdValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-
-            if (request.Properties != null &&
-                request.Properties.TryGetValue(WFConstants.BackendHeaders.TransactionFirstRequest, out object isFirstRequestValue))
+            if (request.Properties.TryGetValue(WFConstants.BackendHeaders.TransactionFirstRequest, out object isFirstRequestValue))
             {
                 // read transaction id
                 if (!(transactionIdValue is byte[] transactionId))
