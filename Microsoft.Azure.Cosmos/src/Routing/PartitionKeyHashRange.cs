@@ -29,6 +29,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public PartitionKeyHash? EndExclusive { get; }
 
+        public bool Contains(PartitionKeyHash partitionKeyHash)
+        {
+            bool rangeStartsBefore = !this.StartInclusive.HasValue || (this.StartInclusive.Value <= partitionKeyHash);
+            bool rangeEndsAfter = !this.EndExclusive.HasValue || (partitionKeyHash <= this.EndExclusive.Value);
+            return rangeStartsBefore && rangeEndsAfter;
+        }
+
         public int CompareTo(PartitionKeyHashRange other)
         {
             // Provide a total sort order by first comparing on the start and then going to the end.

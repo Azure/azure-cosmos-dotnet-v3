@@ -205,27 +205,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.Continuation));
             Assert.IsTrue(allKeys.Contains(WFConstants.BackendHeaders.SubStatus));
         }
-
-        [TestMethod]
-        public void AllKnownPropertiesHaveGetAndSetAndIndexed()
-        {
-            Headers Headers = new Headers();
-            IEnumerable<PropertyInfo> knownHeaderProperties = typeof(Headers)
-                    .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(p => p.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).Any());
-
-            foreach (PropertyInfo knownHeaderProperty in knownHeaderProperties)
-            {
-                string value = "123456789";
-                string header = ((CosmosKnownHeaderAttribute)knownHeaderProperty.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).First()).HeaderName;
-                Headers.CosmosMessageHeaders[header] = value; // Using indexer
-
-                Assert.AreEqual(value, (string)knownHeaderProperty.GetValue(Headers)); // Verify getter
-
-                value = "987654321";
-                knownHeaderProperty.SetValue(Headers, value);
-                Assert.AreEqual(value, Headers[header]);
-            }
-        }
     }
 }
