@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.KeyVault;
+    using global::Azure.Core;
 
     /// <summary>
     /// Provides the default implementation for client-side encryption for Cosmos DB.
@@ -29,17 +29,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AzureKeyVaultCosmosEncryptor"/> class.
+        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via a Key Vault.
         /// </summary>
-        /// <param name="clientId">Client id for authentication</param>
-        /// <param name="certificateThumbprint">Certificte thumbprint for authentication</param>
-        public AzureKeyVaultCosmosEncryptor(
-            string clientId,
-            string certificateThumbprint)
+        /// <param name="keyVaultTokenCredentialFactory"> Factory Instance which represents a method to acquire TokenCredentials for accessing Key Vault Services. </param>
+        public AzureKeyVaultCosmosEncryptor(KeyVaultTokenCredentialFactory keyVaultTokenCredentialFactory)
         {
-            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(
-                clientId,
-                certificateThumbprint);
+            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(keyVaultTokenCredentialFactory);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
+            this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
+        }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AzureKeyVaultCosmosEncryptor"/> class.
+        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via a Key Vault.
+        /// </summary>
+        /// <param name="tokenCredential"> User provided TokenCredential for accessing Key Vault services. </param>
+        public AzureKeyVaultCosmosEncryptor(TokenCredential tokenCredential)
+        {
+            EncryptionKeyWrapProvider wrapProvider = new AzureKeyVaultKeyWrapProvider(new UserProvidedTokenCredentialFactory(tokenCredential));
             this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
