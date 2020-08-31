@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         // Path format
         internal static readonly char[] UrlTrim = { '/' };
-        internal static readonly IReadOnlyDictionary<object, Action<object, DocumentServiceRequest, RntbdConstants.Request>> AddProperties = new Dictionary<object, Action<object, DocumentServiceRequest, RntbdConstants.Request>>()
+        internal static readonly IReadOnlyDictionary<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>> AddProperties = new Dictionary<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>>(StringComparer.OrdinalIgnoreCase)
         {
             { WFConstants.BackendHeaders.BinaryId , (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddBinaryIdIfPresent(value, rntbdRequest) },
             { WFConstants.BackendHeaders.TransactionCommit, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddTransactionCompletionFlag(value, rntbdRequest) },
@@ -87,11 +87,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             { HttpConstants.HttpHeaders.Version,  (value, documentServiceRequest, rntbdRequest) =>TransportSerialization.FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.Version, rntbdRequest.clientVersion, rntbdRequest) },
         };
 
-        internal static readonly IReadOnlyDictionary<string, Action<DocumentServiceRequest, RntbdConstants.Request>> AddHeaders = new Dictionary<string, Action<DocumentServiceRequest, RntbdConstants.Request>>()
+        internal static readonly IReadOnlyDictionary<string, Action<DocumentServiceRequest, RntbdConstants.Request>> AddHeaders = new Dictionary<string, Action<DocumentServiceRequest, RntbdConstants.Request>>(StringComparer.OrdinalIgnoreCase)
         {
             { HttpConstants.HttpHeaders.XDate, TransportSerialization.AddDateHeader },
             { HttpConstants.HttpHeaders.HttpDate, TransportSerialization.AddDateHeader },
-            { HttpConstants.HttpHeaders.Continuation, TransportSerialization.AddContinuation },
+            { HttpConstants.HttpHeaders.Continuation, (documentServiceRequest, rntbdRequest) => TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.continuationToken, documentServiceRequest.Headers[HttpConstants.HttpHeaders.Continuation])},
             { HttpConstants.HttpHeaders.IfMatch, TransportSerialization.AddMatchHeader },
             { HttpConstants.HttpHeaders.IfNoneMatch, TransportSerialization.AddMatchHeader },
             { HttpConstants.HttpHeaders.IfModifiedSince, TransportSerialization.AddIfModifiedSinceHeader },
