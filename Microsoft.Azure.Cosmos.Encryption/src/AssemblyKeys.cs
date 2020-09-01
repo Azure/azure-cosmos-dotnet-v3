@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Encryption.Tests" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Encryption.EmulatorTests" + AssemblyKeys.TestPublicKey)]
 
 internal static class AssemblyKeys
 {

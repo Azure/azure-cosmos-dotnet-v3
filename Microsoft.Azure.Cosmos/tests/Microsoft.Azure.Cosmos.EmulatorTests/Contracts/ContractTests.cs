@@ -169,15 +169,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                 }
 
-                FeedRangeEpk feedRangeEpk = feedRange as FeedRangeEpk;
+                FeedRangeEpk FeedRangeEpk = feedRange as FeedRangeEpk;
 
                 // Construct the continuation's range, using PKRangeId + ETag
                 List<dynamic> ct = new List<dynamic>()
                 {
                     new
                     {
-                        min = feedRangeEpk.Range.Min,
-                        max = feedRangeEpk.Range.Max,
+                        min = FeedRangeEpk.Range.Min,
+                        max = FeedRangeEpk.Range.Max,
                         token = firstResponse.Headers.ETag
                     }
                 };

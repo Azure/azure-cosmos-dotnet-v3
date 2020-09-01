@@ -94,10 +94,10 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            if (value is FeedRangeEpk feedRangeEPK)
+            if (value is FeedRangeEpk feedRangeEpk)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
-                rangeJsonConverter.WriteJson(writer, feedRangeEPK.Range, serializer);
+                rangeJsonConverter.WriteJson(writer, feedRangeEpk.Range, serializer);
                 return;
             }
 

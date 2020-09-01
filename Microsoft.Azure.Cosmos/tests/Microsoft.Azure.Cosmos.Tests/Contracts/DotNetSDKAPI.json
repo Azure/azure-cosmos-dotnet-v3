@@ -3173,11 +3173,9 @@
           "Attributes": [],
           "MethodInfo": "Boolean TryGetValue(System.String, System.String ByRef)"
         },
-        "Double get_RequestCharge()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Double get_RequestCharge()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Double get_RequestCharge()"
         },
         "Double RequestCharge": {
@@ -3185,44 +3183,29 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()": {
-          "Type": "Method",
+        "System.String ActivityId": {
+          "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()"
-        },
-        "System.String ActivityId[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"x-ms-activity-id\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
           "MethodInfo": null
         },
-        "System.String ContentLength[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"Content-Length\")]": {
+        "System.String ContentLength": {
           "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ContentType[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"Content-Type\")]": {
+        "System.String ContentType": {
           "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ContinuationToken[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"x-ms-continuation\")]": {
+        "System.String ContinuationToken": {
           "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String ETag[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"etag\")]": {
+        "System.String ETag": {
           "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String Get(System.String)": {
@@ -3230,11 +3213,9 @@
           "Attributes": [],
           "MethodInfo": "System.String Get(System.String)"
         },
-        "System.String get_ActivityId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ActivityId()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ActivityId()"
         },
         "System.String get_ContentLength()": {
@@ -3242,25 +3223,19 @@
           "Attributes": [],
           "MethodInfo": "System.String get_ContentLength()"
         },
-        "System.String get_ContentType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ContentType()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ContentType()"
         },
-        "System.String get_ContinuationToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ContinuationToken()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ContinuationToken()"
         },
-        "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ETag()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ETag()"
         },
         "System.String get_Item(System.String)": {
@@ -3268,18 +3243,14 @@
           "Attributes": [],
           "MethodInfo": "System.String get_Item(System.String)"
         },
-        "System.String get_Location()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_Location()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_Location()"
         },
-        "System.String get_Session()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_Session()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_Session()"
         },
         "System.String GetValueOrDefault(System.String)": {
@@ -3292,18 +3263,14 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.String Location[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"Location\")]": {
+        "System.String Location": {
           "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
-        "System.String Session[Microsoft.Azure.Cosmos.CosmosKnownHeaderAttribute(HeaderName = \"x-ms-session-token\")]": {
+        "System.String Session": {
           "Type": "Property",
-          "Attributes": [
-            "CosmosKnownHeaderAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.String[] AllKeys()": {
@@ -3340,11 +3307,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Set(System.String, System.String)"
-        },
-        "Void set_ContentLength(System.String)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_ContentLength(System.String)"
         },
         "Void set_Item(System.String, System.String)": {
           "Type": "Method",
