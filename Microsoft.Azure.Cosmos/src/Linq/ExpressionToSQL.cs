@@ -101,14 +101,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Call:
                     MethodCallExpression methodCallExpression = (MethodCallExpression)inputExpression;
                     bool shouldConvertToScalarAnyCollection = (context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(nameof(Enumerable.Any));
-                    
+
+                    collection = ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                     if (shouldConvertToScalarAnyCollection)
                     {
                         collection = ExpressionToSql.ConvertToScalarAnyCollection(context);
-                    }
-                    else
-                    {
-                        collection = ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                     }
 
                     break;

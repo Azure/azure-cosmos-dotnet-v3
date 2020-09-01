@@ -418,7 +418,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            if (StringBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
+            if (!StringBuiltinFunctionDefinitions.TryGetValue(
+                methodCallExpression.Method.Name,
+                out BuiltinFunctionVisitor visitor))
             {
                 throw new DocumentQueryException(
                     string.Format(
