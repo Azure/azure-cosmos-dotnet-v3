@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
@@ -17,12 +18,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
     sealed class SqlTopSpec : SqlObject
     {
         private const int PremadeTopIndex = 256;
-        private static readonly SqlTopSpec[] PremadeTopSpecs = Enumerable
+        private static readonly ImmutableArray<SqlTopSpec> PremadeTopSpecs = Enumerable
             .Range(0, PremadeTopIndex)
             .Select(top => new SqlTopSpec(
                 SqlLiteralScalarExpression.Create(
                     SqlNumberLiteral.Create(top))))
-            .ToArray();
+            .ToImmutableArray();
 
         private SqlTopSpec(SqlScalarExpression topExpression)
         {
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             value = Number64.ToLong(sqlNumberLiteral.Value);
             if ((value < PremadeTopIndex) && (value >= 0))
             {
-                return SqlTopSpec.PremadeTopSpecs[value];
+                return SqlTopSpec.PremadeTopSpecs[(int)value];
             }
 
             SqlScalarExpression topExpression = SqlLiteralScalarExpression.Create(

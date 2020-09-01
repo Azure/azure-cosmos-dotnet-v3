@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Diagnostics.Contracts;
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
@@ -173,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 sqlSelectItems.Add(selectItem);
             }
 
-            return SqlSelectListSpec.Create(sqlSelectItems);
+            return SqlSelectListSpec.Create(sqlSelectItems.ToImmutableArray());
         }
 
         public override SqlObject VisitSelect_item([NotNull] sqlParser.Select_itemContext context)
@@ -345,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 groupByColumns.Add((SqlScalarExpression)this.Visit(scalarExpressionContext));
             }
 
-            return SqlGroupByClause.Create(groupByColumns);
+            return SqlGroupByClause.Create(groupByColumns.ToImmutableArray());
         }
         #endregion
         #region ORDER BY
@@ -360,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 orderByItems.Add(orderByItem);
             }
 
-            return SqlOrderbyClause.Create(orderByItems);
+            return SqlOrderbyClause.Create(orderByItems.ToImmutableArray());
         }
 
         public override SqlObject VisitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context)
@@ -471,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlArrayCreateScalarExpression.Create(arrayItems);
+            return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
         }
 
         public override SqlObject VisitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context)
@@ -574,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlFunctionCallScalarExpression.Create(identifier, udf, arguments);
+            return SqlFunctionCallScalarExpression.Create(identifier, udf, arguments.ToImmutableArray());
         }
 
         public override SqlObject VisitIn_scalar_expression([NotNull] sqlParser.In_scalar_expressionContext context)
@@ -590,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 searchList.Add((SqlScalarExpression)this.Visit(scalarExpressionContext));
             }
 
-            return SqlInScalarExpression.Create(needle, not, searchList);
+            return SqlInScalarExpression.Create(needle, not, searchList.ToImmutableArray());
         }
 
         public override SqlObject VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context)
@@ -668,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlObjectCreateScalarExpression.Create(properties);
+            return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
         }
 
         public override SqlObject VisitObject_property([NotNull] sqlParser.Object_propertyContext context)
