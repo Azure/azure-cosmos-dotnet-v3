@@ -19,11 +19,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task NoRetryOnHttpRequestException()
         {
-            HttpMethod HttpMethodFunc() => HttpMethod.Get;
+            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
-                HttpMethodFunc,
-                TimeSpan.FromSeconds(10));
+                httpRequestMessageFunc,
+                TimeSpan.FromSeconds(10),
+                new CosmosDiagnosticsContextCore());
 
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new HttpRequestException(), default(CancellationToken));
             Assert.IsFalse(shouldRetryResult.ShouldRetry);            
@@ -32,12 +33,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task NoRetriesOnUserCancelledException()
         {
-            HttpMethod HttpMethodFunc() => HttpMethod.Get;
+            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
-                HttpMethodFunc,
-                TimeSpan.FromSeconds(10));
-
+                httpRequestMessageFunc,
+                TimeSpan.FromSeconds(10),
+                new CosmosDiagnosticsContextCore());
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationTokenSource.Token;
@@ -50,11 +51,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetriesOnWebException()
         {
             HttpMethod httpMethod = HttpMethod.Get;
-            HttpMethod HttpMethodFunc() => httpMethod;
+            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(httpMethod, "https://localhost:8081");
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
-                HttpMethodFunc,
-                TimeSpan.FromSeconds(10));
+                httpRequestMessageFunc,
+                TimeSpan.FromSeconds(10),
+                new CosmosDiagnosticsContextCore());
 
             List<HttpMethod> httpMethods = new List<HttpMethod>()
             {
@@ -77,11 +79,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOnOperationCancelException()
         {
-            HttpMethod HttpMethodFunc() => HttpMethod.Get;
+            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
-                HttpMethodFunc,
-                TimeSpan.FromSeconds(10));
+                httpRequestMessageFunc,
+                TimeSpan.FromSeconds(10),
+                new CosmosDiagnosticsContextCore());
 
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new OperationCanceledException(), default(CancellationToken));
             Assert.IsTrue(shouldRetryResult.ShouldRetry); 

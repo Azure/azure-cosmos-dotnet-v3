@@ -18,11 +18,13 @@ namespace Microsoft.Azure.Cosmos
             Uri uri,
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         protected abstract void Dispose(bool disposing);

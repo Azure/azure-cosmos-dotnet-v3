@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
     using Resource.CosmosExceptions;
 
@@ -22,19 +23,22 @@ namespace Microsoft.Azure.Cosmos
         private const int BackoffMultiplier = 2;
 
         private readonly DateTime startDateTimeUtc;
-        private readonly Func<HttpMethod> getHttpMethod;
+        private readonly Func<HttpRequestMessage> getHttpReqestMessage;
         private readonly TimeSpan gatewayRequestTimeout;
+        private readonly CosmosDiagnosticsContext diagnosticsContext;
         private int attemptCount = 1;
 
-        // Don't penalise first retry with delay.
+        // Don't penalize first retry with delay.
         private int currentBackoffSeconds = TransientHttpClientRetryPolicy.InitialBackoffSeconds;
 
         public TransientHttpClientRetryPolicy(
-            Func<HttpMethod> getHttpMethod,
-            TimeSpan gatewayRequestTimeout)
+            Func<HttpRequestMessage> getHttpReqestMessage,
+            TimeSpan gatewayRequestTimeout,
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             this.startDateTimeUtc = DateTime.UtcNow;
-            this.getHttpMethod = getHttpMethod ?? throw new ArgumentNullException(nameof(this.getHttpMethod));
+            this.getHttpReqestMessage = getHttpReqestMessage ?? throw new ArgumentNullException(nameof(getHttpReqestMessage));
+            this.diagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
             this.gatewayRequestTimeout = gatewayRequestTimeout;
         }
 
@@ -42,14 +46,31 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            if (!this.IsExceptionTransientRetriable(exception, cancellationToken))
+            HttpRequestMessage httpRequestMessage = this.getHttpReqestMessage();
+            this.diagnosticsContext.AddDiagnosticsInternal(
+                new PointOperationStatistics(
+                    activityId: Trace.CorrelationManager.ActivityId.ToString(),
+                    statusCode: HttpStatusCode.InternalServerError,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    responseTimeUtc: DateTime.UtcNow,
+                    requestCharge: 0,
+                    errorMessage: exception.ToString(),
+                    method: httpRequestMessage.Method,
+                    requestUri: httpRequestMessage.RequestUri.OriginalString,
+                    requestSessionToken: null,
+                    responseSessionToken: null));
+
+            if (!this.IsExceptionTransientRetriable(
+                httpRequestMessage.Method,
+                exception,
+                cancellationToken))
             {
                 // Have caller propagate original exception.
                 return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
             TimeSpan backOffTime = TimeSpan.FromSeconds(0);
-            // Don't penalise first retry with delay.
+            // Don't penalize first retry with delay.
             if (this.attemptCount++ > 1)
             {
                 int remainingSeconds = TransientHttpClientRetryPolicy.WaitTimeInSeconds - (int)(DateTime.UtcNow - this.startDateTimeUtc).TotalSeconds;
@@ -69,11 +90,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public bool IsExceptionTransientRetriable(
+            HttpMethod httpMethod,
             Exception exception,
             CancellationToken cancellationToken)
         {
             return (!cancellationToken.IsCancellationRequested && exception is OperationCanceledException) ||
-                   (exception is WebException webException && (this.getHttpMethod() == HttpMethod.Get || WebExceptionUtility.IsWebExceptionRetriable(webException)));
+                   (exception is WebException webException && (httpMethod == HttpMethod.Get || WebExceptionUtility.IsWebExceptionRetriable(webException)));
         }
 
         private ShouldRetryResult GetShouldRetryFromException(
@@ -86,7 +108,8 @@ namespace Microsoft.Azure.Cosmos
                     $"GatewayStoreClient Request Timeout. Start Time Utc:{this.startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - this.startDateTimeUtc).TotalMilliseconds} Ms; Http Client Timeout:{this.gatewayRequestTimeout.TotalMilliseconds} Ms;";
                 return ShouldRetryResult.NoRetry(CosmosExceptionFactory.CreateRequestTimeoutException(
                     message,
-                    innerException: operationCanceledException));
+                    innerException: operationCanceledException,
+                    diagnosticsContext: this.diagnosticsContext));
             }
 
             return ShouldRetryResult.NoRetry();

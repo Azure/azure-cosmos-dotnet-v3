@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
                 uri: new Uri("https://localhost"),
                 additionalHeaders: new DictionaryNameValueCollection(),
                 resourceType: ResourceType.Document,
+                diagnosticsContext: null,
                 cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);

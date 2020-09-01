@@ -155,6 +155,7 @@ namespace Microsoft.Azure.Cosmos
             Uri uri,
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -185,18 +186,21 @@ namespace Microsoft.Azure.Cosmos
                 CreateRequestMessage,
                 HttpCompletionOption.ResponseHeadersRead,
                 resourceType,
+                diagnosticsContext,
                 cancellationToken);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             return this.SendHttpAsync(
                 createRequestMessageAsync,
                 HttpCompletionOption.ResponseContentRead,
                 resourceType,
+                diagnosticsContext,
                 cancellationToken);
         }
 
@@ -204,56 +208,63 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             HttpCompletionOption httpCompletionOption,
             ResourceType resourceType,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            HttpMethod httpMethod = null;
+            diagnosticsContext ??= new CosmosDiagnosticsContextCore();
+            HttpRequestMessage requestMessage = null;
             Func<Task<HttpResponseMessage>> funcDelegate = async () =>
             {
-                using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
+                using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpAsync)))
                 {
-                    httpMethod = requestMessage.Method;
-                    DateTime sendTimeUtc = DateTime.UtcNow;
-                    Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
-
-                    Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
-                    this.eventSource.Request(
-                        requestedActivityId,
-                        localGuid,
-                        requestMessage.RequestUri.ToString(),
-                        resourceType.ToResourceTypeString(),
-                        requestMessage.Headers);
-
-                    HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
-                            requestMessage,
-                            httpCompletionOption,
-                            cancellationToken);
-
-                    DateTime receivedTimeUtc = DateTime.UtcNow;
-                    TimeSpan durationTimeSpan = receivedTimeUtc - sendTimeUtc;
-
-                    Guid activityId = Guid.Empty;
-                    if (responseMessage.Headers.TryGetValues(
-                        HttpConstants.HttpHeaders.ActivityId,
-                        out IEnumerable<string> headerValues) && headerValues.Any())
+                    using (requestMessage = await createRequestMessageAsync())
                     {
-                        activityId = new Guid(headerValues.First());
+                        DateTime sendTimeUtc = DateTime.UtcNow;
+                        Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
+
+                        Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
+                        this.eventSource.Request(
+                            requestedActivityId,
+                            localGuid,
+                            requestMessage.RequestUri.ToString(),
+                            resourceType.ToResourceTypeString(),
+                            requestMessage.Headers);
+
+                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
+                                requestMessage,
+                                httpCompletionOption,
+                                cancellationToken);
+
+                        DateTime receivedTimeUtc = DateTime.UtcNow;
+                        TimeSpan durationTimeSpan = receivedTimeUtc - sendTimeUtc;
+
+                        Guid activityId = Guid.Empty;
+                        if (responseMessage.Headers.TryGetValues(
+                            HttpConstants.HttpHeaders.ActivityId,
+                            out IEnumerable<string> headerValues) && headerValues.Any())
+                        {
+                            activityId = new Guid(headerValues.First());
+                        }
+
+                        this.eventSource.Response(
+                            activityId,
+                            localGuid,
+                            (short)responseMessage.StatusCode,
+                            durationTimeSpan.TotalMilliseconds,
+                            responseMessage.Headers);
+
+                        return responseMessage;
                     }
-
-                    this.eventSource.Response(
-                        activityId,
-                        localGuid,
-                        (short)responseMessage.StatusCode,
-                        durationTimeSpan.TotalMilliseconds,
-                        responseMessage.Headers);
-
-                    return responseMessage;
                 }
             };
 
-            HttpMethod GetHttpMethod() => httpMethod;
+            HttpRequestMessage GetHttpRequestMessage() => requestMessage;
             return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
                 callbackMethod: funcDelegate,
-                retryPolicy: new TransientHttpClientRetryPolicy(GetHttpMethod, this.httpClient.Timeout),
+                retryPolicy: new TransientHttpClientRetryPolicy(
+                    getHttpReqestMessage: GetHttpRequestMessage,
+                    gatewayRequestTimeout: this.httpClient.Timeout,
+                    diagnosticsContext: diagnosticsContext),
                 cancellationToken: cancellationToken);
         }
 

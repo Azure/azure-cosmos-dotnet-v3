@@ -428,6 +428,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 uri: targetEndpoint,
                 additionalHeaders: headers,
                 resourceType: resourceType,
+                diagnosticsContext: null,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
@@ -504,6 +505,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 uri: targetEndpoint,
                 additionalHeaders: headers,
                 resourceType: ResourceType.Document,
+                diagnosticsContext: null,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =

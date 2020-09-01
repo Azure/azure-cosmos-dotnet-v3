@@ -78,9 +78,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.httpClient.SendHttpAsync(
-                requestMessage,
-                resourceType,
-                cancellationToken);
+                createRequestMessageAsync: requestMessage,
+                resourceType: resourceType,
+                diagnosticsContext: null,
+                cancellationToken: cancellationToken);
         }
 
         internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
@@ -359,9 +360,16 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            CancellationToken cancellationToken)
         {
+            CosmosDiagnosticsContext diagnosticsContext = null;
+            if (request?.RequestContext?.ClientRequestStatistics is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
+            {
+                diagnosticsContext = cosmosClientSideRequestStatistics.DiagnosticsContext;
+            }
+            
             return this.httpClient.SendHttpAsync(
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,
+                diagnosticsContext,
                 cancellationToken);
         }
     }
