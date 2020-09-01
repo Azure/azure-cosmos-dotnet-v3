@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private string monitoredContainerRid;
         private ContainerInternal monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
-        private FeedEstimator feedEstimator;
+        private FeedEstimatorRunner feedEstimatorRunner;
         private ChangeFeedEstimator remainingWorkEstimator;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private bool initialized = false;
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.shutdownCts = new CancellationTokenSource();
             DefaultTrace.TraceInformation("Starting estimator...");
-            this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
+            this.runAsync = this.feedEstimatorRunner.RunAsync(this.shutdownCts.Token);
         }
 
         public override async Task StopAsync()
@@ -111,11 +111,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
             this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
             this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorPushCore.EstimatorDefaultHostName).ConfigureAwait(false);
-            this.feedEstimator = this.BuildFeedEstimator();
+            this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
             this.initialized = true;
         }
 
-        private FeedEstimator BuildFeedEstimator()
+        private FeedEstimatorRunner BuildFeedEstimatorRunner()
         {
             if (this.remainingWorkEstimator == null)
             {
@@ -130,13 +130,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         startFromBeginning: string.IsNullOrEmpty(continuationToken));
                 };
 
-                this.remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
+                this.remainingWorkEstimator = new ChangeFeedEstimatorCore(
                    this.documentServiceLeaseStoreManager.LeaseContainer,
-                   feedCreator,
-                   this.monitoredContainer.ClientContext.Client.ClientOptions?.GatewayModeMaxConnectionLimit ?? 1);
+                   feedCreator);
             }
 
-            return new FeedEstimatorCore(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
+            return new FeedEstimatorRunner(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
         }
     }
 }
