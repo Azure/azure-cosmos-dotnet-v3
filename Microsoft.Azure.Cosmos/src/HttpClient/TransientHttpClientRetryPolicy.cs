@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos
         private int currentBackoffSeconds = TransientHttpClientRetryPolicy.InitialBackoffSeconds;
 
         public TransientHttpClientRetryPolicy(
-            Func<HttpRequestMessage> getHttpReqestMessage,
+            Func<HttpRequestMessage> getHttpRequestMessage,
             TimeSpan gatewayRequestTimeout,
             CosmosDiagnosticsContext diagnosticsContext)
         {
             this.startDateTimeUtc = DateTime.UtcNow;
-            this.getHttpReqestMessage = getHttpReqestMessage ?? throw new ArgumentNullException(nameof(getHttpReqestMessage));
+            this.getHttpReqestMessage = getHttpRequestMessage ?? throw new ArgumentNullException(nameof(getHttpRequestMessage));
             this.diagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
             this.gatewayRequestTimeout = gatewayRequestTimeout;
         }

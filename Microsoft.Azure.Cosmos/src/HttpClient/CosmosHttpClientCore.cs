@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException($"{nameof(connectionPolicy.HttpClientFactory)} can not be set at the same time as {nameof(sendingRequestEventArgs)} or {nameof(ReceivedResponseEventArgs)}");
                 }
 
-                HttpClient userHttpClient = httpClientFactory?.Invoke() ?? throw new ArgumentNullException(nameof(httpClientFactory));
+                HttpClient userHttpClient = httpClientFactory.Invoke() ?? throw new ArgumentNullException($"{nameof(httpClientFactory)} returned null. {nameof(httpClientFactory)} must return a HttpClient instance.");
                 return CosmosHttpClientCore.CreateHelper(
                     httpClient: userHttpClient,
                     httpMessageHandler: httpMessageHandler,
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
             return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
                 callbackMethod: funcDelegate,
                 retryPolicy: new TransientHttpClientRetryPolicy(
-                    getHttpReqestMessage: GetHttpRequestMessage,
+                    getHttpRequestMessage: GetHttpRequestMessage,
                     gatewayRequestTimeout: this.httpClient.Timeout,
                     diagnosticsContext: diagnosticsContext),
                 cancellationToken: cancellationToken);
