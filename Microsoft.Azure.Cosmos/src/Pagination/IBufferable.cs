@@ -4,7 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
-    internal abstract class State
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
+    internal interface IBufferable
     {
+        ValueTask BufferAsync();
     }
 }

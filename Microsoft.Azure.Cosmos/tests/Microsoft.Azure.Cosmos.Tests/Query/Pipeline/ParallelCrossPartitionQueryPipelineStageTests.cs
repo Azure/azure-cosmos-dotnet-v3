@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -71,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -89,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -106,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
                     {
@@ -125,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: documentContainer,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 pageSize: 10,
+                maxConcurrency: 10,
                 continuationToken: default);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -157,6 +164,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     documentContainer: documentContainer,
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                     pageSize: 10,
+                    maxConcurrency: 10,
                     continuationToken: queryState?.Value);
                 Assert.IsTrue(monadicCreate.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicCreate.Result;

@@ -174,6 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer.GetFeedRangesAsync(default(CancellationToken)).Result,
                 GetQueryPlan(query),
                 pageSize: 10,
+                maxConcurrency: 10,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();

@@ -46,11 +46,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
         private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
 
         private readonly IDocumentContainer documentContainer;
-        private readonly SqlQuerySpec sqlQuerySpec;
         private readonly IReadOnlyList<SortOrder> sortOrders;
         private readonly PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators;
         private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens;
         private readonly int pageSize;
+        private readonly int maxConcurrency;
 
         private QueryState state;
 
@@ -65,17 +65,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 
         private OrderByCrossPartitionQueryPipelineStage(
             IDocumentContainer documentContainer,
-            SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<SortOrder> sortOrders,
             int pageSize,
+            int maxConcurrency,
             IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
             QueryState state)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.sortOrders = sortOrders ?? throw new ArgumentNullException(nameof(sortOrders));
             this.enumerators = new PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator>(new OrderByEnumeratorComparer(this.sortOrders));
             this.pageSize = pageSize < 0 ? throw new ArgumentOutOfRangeException($"{nameof(pageSize)} must be a non negative number.") : pageSize;
+            this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException($"{nameof(maxConcurrency)} must be a non negative number.") : maxConcurrency;
             this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
             this.state = state ?? InitializingQueryState;
         }
@@ -175,10 +175,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             }
 
             TryCatch<(bool, TryCatch<OrderByQueryPage>)> filterMonad = await FilterNextAsync(
-                    uninitializedEnumerator,
-                    this.sortOrders,
-                    token,
-                    cancellationToken: default);
+                uninitializedEnumerator,
+                this.sortOrders,
+                token,
+                cancellationToken: default);
 
             if (filterMonad.Failed)
             {
@@ -265,20 +265,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             return await this.MoveNextAsync();
         }
 
-        private ValueTask<bool> MoveNextAsync_InitializeAsync()
+        private async ValueTask<bool> MoveNextAsync_InitializeAsync()
         {
+            await ParallelBuffering.BufferInParallelAsync(
+                this.uninitializedEnumeratorsAndTokens.Select(value => value.Item1),
+                this.maxConcurrency);
             (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
-            ValueTask<bool> task;
+            bool movedNext;
             if (token is null)
             {
-                task = this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator, token);
+                movedNext = await this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator, token);
             }
             else
             {
-                task = this.MoveNextAsync_Iniialize_FilterAsync(uninitializedEnumerator, token);
+                movedNext = await this.MoveNextAsync_Iniialize_FilterAsync(uninitializedEnumerator, token);
             }
 
-            return task;
+            return movedNext;
         }
 
         private ValueTask<bool> MoveNextAsync_DrainPageAsync()
@@ -371,6 +374,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             IReadOnlyList<PartitionKeyRange> targetRanges,
             IReadOnlyList<OrderByColumn> orderByColumns,
             int pageSize,
+            int maxConcurrency,
             CosmosElement continuationToken)
         {
             // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
@@ -498,9 +502,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
 
             OrderByCrossPartitionQueryPipelineStage stage = new OrderByCrossPartitionQueryPipelineStage(
                 documentContainer,
-                sqlQuerySpec,
                 orderByColumns.Select(column => column.SortOrder).ToList(),
                 pageSize,
+                maxConcurrency,
                 enumeratorsAndTokens,
                 continuationToken == null ? null : new QueryState(continuationToken));
             return TryCatch<IQueryPipelineStage>.FromResult(stage);

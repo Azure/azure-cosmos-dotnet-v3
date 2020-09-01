@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>(),
                 queryInfo: new QueryInfo() { },
                 pageSize: 10,
+                maxConcurrency: 10,
                 requestContinuationToken: default);
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
 

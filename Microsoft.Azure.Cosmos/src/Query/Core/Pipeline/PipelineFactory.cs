@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<PartitionKeyRange> targetRanges,
             QueryInfo queryInfo,
             int pageSize,
+            int maxConcurrency,
             CosmosElement requestContinuationToken)
         {
             MonadicCreatePipelineStage monadicCreatePipelineStage;
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         .OrderByExpressions
                         .Zip(queryInfo.OrderBy, (expression, sortOrder) => new OrderByColumn(expression, sortOrder)).ToList(),
                     pageSize: pageSize,
+                    maxConcurrency: maxConcurrency,
                     continuationToken: requestContinuationToken);
             }
             else
@@ -50,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
                     pageSize: pageSize,
+                    maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken);
             }
 

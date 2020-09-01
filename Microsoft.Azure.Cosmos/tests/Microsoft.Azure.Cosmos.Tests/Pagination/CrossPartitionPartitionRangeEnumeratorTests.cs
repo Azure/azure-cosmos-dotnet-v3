@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                    maxConcurrency: 10,
                     state: state);
             }
 
@@ -166,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                    maxConcurrency: 10,
                     state: state);
 
                 return enumerator;

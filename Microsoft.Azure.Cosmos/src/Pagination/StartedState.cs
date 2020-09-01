@@ -4,7 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
-    internal abstract class State
+    internal sealed class StartedState : State
     {
+        public static readonly StartedState Singleton = new StartedState();
+
+        private StartedState()
+        {
+        }
     }
 }

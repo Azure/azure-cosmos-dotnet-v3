@@ -387,6 +387,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 pageSize: inputParameters.MaxItemCount,
+                maxConcurrency: inputParameters.MaxConcurrency,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -433,6 +434,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 targetRanges: targetRanges,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
                 pageSize: (int)optimalPageSize,
+                maxConcurrency: inputParameters.MaxConcurrency,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken);
         }
 

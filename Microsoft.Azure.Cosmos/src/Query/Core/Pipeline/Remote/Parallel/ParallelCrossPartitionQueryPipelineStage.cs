@@ -91,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             int pageSize,
+            int maxConcurrency,
             CosmosElement continuationToken)
         {
             if (pageSize <= 0)
@@ -110,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
                 documentContainer,
                 ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize),
                 Comparer.Singleton,
+                maxConcurrency,
                 state: state);
 
             ParallelCrossPartitionQueryPipelineStage stage = new ParallelCrossPartitionQueryPipelineStage(crossPartitionPageEnumerator);
