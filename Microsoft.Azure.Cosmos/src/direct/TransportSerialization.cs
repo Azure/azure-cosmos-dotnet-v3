@@ -21,192 +21,141 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         // Path format
         internal static readonly char[] UrlTrim = { '/' };
-        internal static readonly IReadOnlyDictionary<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>> AddProperties = new Dictionary<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>>(StringComparer.OrdinalIgnoreCase)
+
+        internal static readonly IReadOnlyDictionary<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>> AddHeaders = new Dictionary<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>>()
         {
+            // Properties only scenarios
             { WFConstants.BackendHeaders.BinaryId , (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddBinaryIdIfPresent(value, rntbdRequest) },
-            { WFConstants.BackendHeaders.TransactionCommit, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddTransactionCompletionFlag(value, rntbdRequest) },
+            { WFConstants.BackendHeaders.TransactionCommit, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.TransactionCommit, rntbdRequest.transactionCommit, rntbdRequest) },
             { WFConstants.BackendHeaders.MergeStaticId, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddMergeStaticIdIfPresent(value, rntbdRequest) },
             { WFConstants.BackendHeaders.EffectivePartitionKey, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEffectivePartitionKeyIfPresent(value, rntbdRequest) },
-            { HttpConstants.HttpHeaders.EnumerationDirection, (value, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEnumerationDirectionFromProperties(value, rntbdRequest) },
-            { HttpConstants.HttpHeaders.ReadFeedKeyType, TransportSerialization.AddStartAndEndKeys },
             { WFConstants.BackendHeaders.TransactionId, TransportSerialization.AddTransactionMetaData },
             { WFConstants.BackendHeaders.RetriableWriteRequestId, TransportSerialization.AddRetriableWriteRequestMetadata},
-            { WFConstants.BackendHeaders.IsRetriedWriteRequest, TransportSerialization.AddIsRetriedWriteRequestMetadata},
+            { WFConstants.BackendHeaders.IsRetriedWriteRequest,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.IsRetriedWriteRequest, rntbdRequest.isRetriedWriteRequest, rntbdRequest) },
             { WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, TransportSerialization.AddRetriableWriteRequestStartTimestampMetadata},
 
-            { HttpConstants.HttpHeaders.Authorization,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
-            { HttpConstants.HttpHeaders.SessionToken,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PreTriggerInclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PreTriggerExclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PostTriggerInclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PostTriggerExclude,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PartitionKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PartitionKeyRangeId,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
-            { HttpConstants.HttpHeaders.ResourceTokenExpiry,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
-            { HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
-            { HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IsBatchOrdered,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IsBatchAtomic,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
-            { WFConstants.BackendHeaders.CollectionPartitionIndex,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
-            { WFConstants.BackendHeaders.CollectionServiceIndex,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
-            { WFConstants.BackendHeaders.ResourceSchemaName,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
-            { WFConstants.BackendHeaders.BindReplicaDirective,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
-            { WFConstants.BackendHeaders.PrimaryMasterKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.SecondaryMasterKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.PrimaryReadonlyKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.SecondaryReadonlyKey,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.PartitionCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
-            { WFConstants.BackendHeaders.CollectionRid,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
-            { HttpConstants.HttpHeaders.GatewaySignature,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
-            { HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
-            { HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
-            { HttpConstants.HttpHeaders.TargetLsn,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
-            { HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
-            { HttpConstants.HttpHeaders.TransportRequestID,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
-            { HttpConstants.HttpHeaders.RestoreMetadataFilter,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
-            { WFConstants.BackendHeaders.RestoreParams,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
-            { WFConstants.BackendHeaders.PartitionResourceFilter,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
-            { WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
-            { WFConstants.BackendHeaders.SchemaOwnerRid,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
-            { WFConstants.BackendHeaders.SchemaHash,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IsClientEncrypted,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
-            { WFConstants.BackendHeaders.TimeToLiveInSeconds,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.TimeToLiveInSeconds, rntbdRequest.timeToLiveInSeconds, rntbdRequest)},
+            // Headers supported by both
+            { HttpConstants.HttpHeaders.HttpDate,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.HttpDate, rntbdRequest.date, rntbdRequest) },
+            { HttpConstants.HttpHeaders.XDate,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.XDate, rntbdRequest.date, rntbdRequest) },
+            { HttpConstants.HttpHeaders.Continuation, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.Continuation, rntbdRequest.continuationToken, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IfMatch, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.AddIfMatchHeader(headerValue, documentServiceRequest, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IfNoneMatch, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.AddIfNoneMatchHeader(headerValue, documentServiceRequest, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IfModifiedSince, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IfModifiedSince,  rntbdRequest.ifModifiedSince, rntbdRequest) },
+            { HttpConstants.HttpHeaders.A_IM, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.A_IM, rntbdRequest.a_IM, rntbdRequest) },
+            { WFConstants.BackendHeaders.IsFanoutRequest, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.IsFanoutRequest, rntbdRequest.isFanout, rntbdRequest) },
+            { HttpConstants.HttpHeaders.CollectionRemoteStorageSecurityIdentifier, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.CollectionRemoteStorageSecurityIdentifier, rntbdRequest.collectionRemoteStorageSecurityIdentifier, rntbdRequest) },
+            { WFConstants.BackendHeaders.ResourceTypes, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.ResourceTypes, rntbdRequest.resourceTypes, rntbdRequest) },
 
-            { WFConstants.BackendHeaders.BinaryPassthroughRequest,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.BinaryPassthroughRequest, rntbdRequest.binaryPassthroughRequest, rntbdRequest)},
-            { WFConstants.BackendHeaders.AllowTentativeWrites,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.AllowTentativeWrites, rntbdRequest.allowTentativeWrites, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IncludeTentativeWrites,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.IncludeTentativeWrites, rntbdRequest.includeTentativeWrites, rntbdRequest)},
+            { HttpConstants.HttpHeaders.EnableScanInQuery, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.EnableScanInQuery, rntbdRequest.enableScanInQuery, rntbdRequest) },
+            { HttpConstants.HttpHeaders.EmitVerboseTracesInQuery,(headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, rntbdRequest.emitVerboseTracesInQuery, rntbdRequest) },
+            { HttpConstants.HttpHeaders.CanCharge, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.CanCharge, rntbdRequest.canCharge, rntbdRequest) },
+            { HttpConstants.HttpHeaders.CanThrottle, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.CanThrottle, rntbdRequest.canThrottle, rntbdRequest) },
+            { HttpConstants.HttpHeaders.ProfileRequest, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.ProfileRequest, rntbdRequest.profileRequest, rntbdRequest) },
+            { HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, rntbdRequest.enableLowPrecisionOrderBy, rntbdRequest) },
+            { HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, rntbdRequest.supportSpatialLegacyCoordinates, rntbdRequest) },
+            { HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, rntbdRequest.usePolygonsSmallerThanAHemisphere, rntbdRequest) },
+            { HttpConstants.HttpHeaders.EnableLogging,(headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.EnableLogging, rntbdRequest.enableLogging, rntbdRequest) },
+            { HttpConstants.HttpHeaders.PopulateQuotaInfo, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PopulateQuotaInfo, rntbdRequest.populateQuotaInfo, rntbdRequest) },
+            { HttpConstants.HttpHeaders.PopulateResourceCount, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PopulateResourceCount, rntbdRequest.populateResourceCount, rntbdRequest) },
+            { HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, rntbdRequest.disableRUPerMinuteUsage, rntbdRequest) },
+            { HttpConstants.HttpHeaders.PopulateQueryMetrics, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PopulateQueryMetrics, rntbdRequest.populateQueryMetrics, rntbdRequest) },
+            { WFConstants.BackendHeaders.ForceQueryScan, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.ForceQueryScan, rntbdRequest.forceQueryScan, rntbdRequest) },
+            { HttpConstants.HttpHeaders.PopulatePartitionStatistics, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PopulatePartitionStatistics, rntbdRequest.populatePartitionStatistics, rntbdRequest) },
+            { HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, rntbdRequest.populateCollectionThroughputInfo, rntbdRequest) },
+            { WFConstants.BackendHeaders.ShareThroughput, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.ShareThroughput, rntbdRequest.shareThroughput, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IsReadOnlyScript,(headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsReadOnlyScript, rntbdRequest.isReadOnlyScript, rntbdRequest) },
+            #if !COSMOSCLIENT
+            { HttpConstants.HttpHeaders.IsAutoScaleRequest, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsAutoScaleRequest, rntbdRequest.isAutoScaleRequest, rntbdRequest) },
+            #endif
+            { HttpConstants.HttpHeaders.CanOfferReplaceComplete, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.CanOfferReplaceComplete, rntbdRequest.canOfferReplaceComplete, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, rntbdRequest.ignoreSystemLoweringMaxThroughput, rntbdRequest) },
+            { WFConstants.BackendHeaders.ExcludeSystemProperties, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.ExcludeSystemProperties, rntbdRequest.excludeSystemProperties, rntbdRequest) },
+            { WFConstants.BackendHeaders.UseSystemBudget, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.UseSystemBudget, rntbdRequest.useSystemBudget, rntbdRequest) },
+            { WFConstants.BackendHeaders.IsUserRequest, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue,  WFConstants.BackendHeaders.IsUserRequest, rntbdRequest.isUserRequest, rntbdRequest) },
+            { HttpConstants.HttpHeaders.PreserveFullContent,(headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PreserveFullContent, rntbdRequest.preserveFullContent, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, rntbdRequest.isRUPerGBEnforcementRequest, rntbdRequest) },
+            { HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, rntbdRequest.isofferStorageRefreshRequest, rntbdRequest) },
+            { HttpConstants.HttpHeaders.ForceSideBySideIndexMigration, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.ForceSideBySideIndexMigration,rntbdRequest.forceSideBySideIndexMigration, rntbdRequest) },
+            { HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, rntbdRequest.migrateOfferToManualThroughput, rntbdRequest) },
+            { HttpConstants.HttpHeaders.MigrateOfferToAutopilot, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.MigrateOfferToAutopilot, rntbdRequest.migrateOfferToAutopilot, rntbdRequest) },
+            { HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, rntbdRequest.getAllPartitionKeyStatistics, rntbdRequest) },
+            { HttpConstants.HttpHeaders.TruncateMergeLogRequest,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.TruncateMergeLogRequest, rntbdRequest.truncateMergeLogRequest, rntbdRequest) },
 
-            { HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, rntbdRequest.maxPollingIntervalMilliseconds, rntbdRequest)},
-            { WFConstants.BackendHeaders.PopulateLogStoreInfo,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PopulateLogStoreInfo, rntbdRequest.populateLogStoreInfo, rntbdRequest)},
-            { WFConstants.BackendHeaders.MergeCheckPointGLSN,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGlsnKeyName, rntbdRequest)},
-            { WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount,  (value, documentServiceRequest, rntbdRequest) => FillTokenFromProperties(value, documentServiceRequest, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest)},
-
-            // will be null in case of direct, which is fine - BE will use the value from the connection context message.
-            // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
-            // BE will respect the per-request value.
-            { HttpConstants.HttpHeaders.Version,  (value, documentServiceRequest, rntbdRequest) =>TransportSerialization.FillTokenFromProperties(value, documentServiceRequest, HttpConstants.HttpHeaders.Version, rntbdRequest.clientVersion, rntbdRequest) },
-        };
-
-        internal static readonly IReadOnlyDictionary<string, Action<DocumentServiceRequest, RntbdConstants.Request>> AddHeaders = new Dictionary<string, Action<DocumentServiceRequest, RntbdConstants.Request>>(StringComparer.OrdinalIgnoreCase)
-        {
-            { HttpConstants.HttpHeaders.XDate, TransportSerialization.AddDateHeader },
-            { HttpConstants.HttpHeaders.HttpDate, TransportSerialization.AddDateHeader },
-            { HttpConstants.HttpHeaders.Continuation, (documentServiceRequest, rntbdRequest) => TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.continuationToken, documentServiceRequest.Headers[HttpConstants.HttpHeaders.Continuation])},
-            { HttpConstants.HttpHeaders.IfMatch, TransportSerialization.AddMatchHeader },
-            { HttpConstants.HttpHeaders.IfNoneMatch, TransportSerialization.AddMatchHeader },
-            { HttpConstants.HttpHeaders.IfModifiedSince, TransportSerialization.AddIfModifiedSinceHeader },
-            { HttpConstants.HttpHeaders.A_IM, TransportSerialization.AddA_IMHeader },
-            { HttpConstants.HttpHeaders.IndexingDirective, TransportSerialization.AddIndexingDirectiveHeader },
-            { HttpConstants.HttpHeaders.MigrateCollectionDirective, TransportSerialization.AddMigrateCollectionDirectiveHeader },
-            { HttpConstants.HttpHeaders.ConsistencyLevel, TransportSerialization.AddConsistencyLevelHeader },
-            { WFConstants.BackendHeaders.IsFanoutRequest, TransportSerialization.AddIsFanout },
-            { HttpConstants.HttpHeaders.EnableScanInQuery, TransportSerialization.AddAllowScanOnQuery },
-            { HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, TransportSerialization.AddEmitVerboseTracesInQuery },
-            { HttpConstants.HttpHeaders.CanCharge, TransportSerialization.AddCanCharge },
-            { HttpConstants.HttpHeaders.CanThrottle, TransportSerialization.AddCanThrottle },
-            { HttpConstants.HttpHeaders.ProfileRequest, TransportSerialization.AddProfileRequest },
-            { HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, TransportSerialization.AddEnableLowPrecisionOrderBy },
-            { HttpConstants.HttpHeaders.PageSize, TransportSerialization.AddPageSize },
-            { HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, TransportSerialization.AddSupportSpatialLegacyCoordinates },
-            { HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, TransportSerialization.AddUsePolygonsSmallerThanAHemisphere },
-            { HttpConstants.HttpHeaders.EnableLogging, TransportSerialization.AddEnableLogging },
-            { HttpConstants.HttpHeaders.PopulateQuotaInfo, TransportSerialization.AddPopulateQuotaInfo },
-            { HttpConstants.HttpHeaders.PopulateResourceCount, TransportSerialization.AddPopulateResourceCount },
-            { HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, TransportSerialization.AddDisableRUPerMinuteUsage },
-            { HttpConstants.HttpHeaders.PopulateQueryMetrics, TransportSerialization.AddPopulateQueryMetrics },
-            { HttpConstants.HttpHeaders.ForceQueryScan, TransportSerialization.AddQueryForceScan },
+            { HttpConstants.HttpHeaders.PageSize, TransportSerialization.AddPageSize},
             { HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, TransportSerialization.AddResponseContinuationTokenLimitInKb },
-            { HttpConstants.HttpHeaders.PopulatePartitionStatistics, TransportSerialization.AddPopulatePartitionStatistics },
             { WFConstants.BackendHeaders.RemoteStorageType, TransportSerialization.AddRemoteStorageType },
-            { HttpConstants.HttpHeaders.CollectionRemoteStorageSecurityIdentifier, TransportSerialization.AddCollectionRemoteStorageSecurityIdentifier },
             { WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes, TransportSerialization.AddCollectionChildResourceNameLimitInBytes },
             { WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB, TransportSerialization.AddCollectionChildResourceContentLengthLimitInKB },
             { WFConstants.BackendHeaders.UniqueIndexNameEncodingMode, TransportSerialization.AddUniqueIndexNameEncodingMode },
             { WFConstants.BackendHeaders.UniqueIndexReIndexingState, TransportSerialization.AddUniqueIndexReIndexingState },
-            { HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, TransportSerialization.AddPopulateCollectionThroughputInfo },
-            { WFConstants.BackendHeaders.ShareThroughput, TransportSerialization.AddShareThroughput },
-            { HttpConstants.HttpHeaders.IsReadOnlyScript, TransportSerialization.AddIsReadOnlyScript },
-#if !COSMOSCLIENT
-            { HttpConstants.HttpHeaders.IsAutoScaleRequest, TransportSerialization.AddIsAutoScaleRequest },
-#endif
-            { HttpConstants.HttpHeaders.CanOfferReplaceComplete, TransportSerialization.AddCanOfferReplaceComplete },
-            { HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, TransportSerialization.AddIgnoreSystemLoweringMaxThroughput },
-            { WFConstants.BackendHeaders.ExcludeSystemProperties, TransportSerialization.AddExcludeSystemProperties },
-            { HttpConstants.HttpHeaders.EnumerationDirection, TransportSerialization.AddEnumerationDirectionFromHeaders },
-            { WFConstants.BackendHeaders.FanoutOperationState, TransportSerialization.AddFanoutOperationStateHeader },
-            { HttpConstants.HttpHeaders.ReadFeedKeyType, TransportSerialization.AddStartAndEndKeysFromHeaders },
-            { HttpConstants.HttpHeaders.StartId, TransportSerialization.AddStartIdFromHeaders },
-            { HttpConstants.HttpHeaders.EndId, TransportSerialization.AddEndIdFromHeaders },
-            { HttpConstants.HttpHeaders.StartEpk, TransportSerialization.AddStartEpkFromHeaders },
-            { HttpConstants.HttpHeaders.EndEpk, TransportSerialization.AddEndEpkFromHeaders },
-            { HttpConstants.HttpHeaders.ContentSerializationFormat, TransportSerialization.AddContentSerializationFormat },
-            { WFConstants.BackendHeaders.IsUserRequest, TransportSerialization.AddIsUserRequest },
-            { HttpConstants.HttpHeaders.PreserveFullContent, TransportSerialization.AddPreserveFullContent },
-            { HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, TransportSerialization.AddIsRUPerGBEnforcementRequest },
-            { HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, TransportSerialization.AddIsOfferStorageRefreshRequest },
-            { HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, TransportSerialization.AddGetAllPartitionKeyStatistics },
-            { HttpConstants.HttpHeaders.ForceSideBySideIndexMigration, TransportSerialization.AddForceSideBySideIndexMigration },
-            { HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, TransportSerialization.AddIsMigrateOfferToManualThroughputRequest },
-            { HttpConstants.HttpHeaders.MigrateOfferToAutopilot, TransportSerialization.AddIsMigrateOfferToAutopilotRequest },
-            { HttpConstants.HttpHeaders.SystemDocumentType, TransportSerialization.AddSystemDocumentTypeHeader },
-
-            { WFConstants.BackendHeaders.ResourceTypes, TransportSerialization.AddResourceTypes },
             { HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, TransportSerialization.AddUpdateMaxthroughputEverProvisioned },
-            { WFConstants.BackendHeaders.UseSystemBudget, TransportSerialization.AddUseSystemBudget },
+            { HttpConstants.HttpHeaders.IndexingDirective, TransportSerialization.AddIndexingDirectiveHeader },
+            { HttpConstants.HttpHeaders.MigrateCollectionDirective, TransportSerialization.AddMigrateCollectionDirectiveHeader },
+            { HttpConstants.HttpHeaders.ConsistencyLevel, TransportSerialization.AddConsistencyLevelHeader },
+            { WFConstants.BackendHeaders.FanoutOperationState, TransportSerialization.AddFanoutOperationStateHeader },
+            { HttpConstants.HttpHeaders.SystemDocumentType, TransportSerialization.AddSystemDocumentTypeHeader },
+            { HttpConstants.HttpHeaders.ContentSerializationFormat, TransportSerialization.AddContentSerializationFormat },
             { HttpConstants.HttpHeaders.Prefer, TransportSerialization.AddReturnPreferenceIfPresent },
-            { HttpConstants.HttpHeaders.TruncateMergeLogRequest, TransportSerialization.AddTruncateMergeLogRequest},
+            { HttpConstants.HttpHeaders.EnumerationDirection,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.AddEnumerationDirection(headerValue, rntbdRequest) },
+            { HttpConstants.HttpHeaders.ReadFeedKeyType, TransportSerialization.AddStartAndEndKeys },
+            // StartId, EndId, StartEpk, EndEpk are all set by ReadFeedKeyType header in AddStartAndEndKeys
+            { HttpConstants.HttpHeaders.StartId, (a, b, c) => { } },
+            { HttpConstants.HttpHeaders.EndId, (a, b, c) => { }  },
+            { HttpConstants.HttpHeaders.StartEpk, (a, b, c) => { }  },
+            { HttpConstants.HttpHeaders.EndEpk, (a, b, c) => { }  },
 
-            { HttpConstants.HttpHeaders.Authorization,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
-            { HttpConstants.HttpHeaders.SessionToken,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PreTriggerInclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PreTriggerExclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PostTriggerInclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PostTriggerExclude,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PartitionKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
-            { HttpConstants.HttpHeaders.PartitionKeyRangeId,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
-            { HttpConstants.HttpHeaders.ResourceTokenExpiry,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
-            { HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
-            { HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IsBatchOrdered,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IsBatchAtomic,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
-            { WFConstants.BackendHeaders.CollectionPartitionIndex,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
-            { WFConstants.BackendHeaders.CollectionServiceIndex,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
-            { WFConstants.BackendHeaders.ResourceSchemaName,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
-            { WFConstants.BackendHeaders.BindReplicaDirective,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
-            { WFConstants.BackendHeaders.PrimaryMasterKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.SecondaryMasterKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.PrimaryReadonlyKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.SecondaryReadonlyKey,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
-            { WFConstants.BackendHeaders.PartitionCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
-            { WFConstants.BackendHeaders.CollectionRid,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
-            { HttpConstants.HttpHeaders.GatewaySignature,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
-            { HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
-            { HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
-            { HttpConstants.HttpHeaders.TargetLsn,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
-            { HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
-            { HttpConstants.HttpHeaders.TransportRequestID,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
-            { HttpConstants.HttpHeaders.RestoreMetadataFilter,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
-            { WFConstants.BackendHeaders.RestoreParams,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
-            { WFConstants.BackendHeaders.PartitionResourceFilter,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
-            { WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
-            { WFConstants.BackendHeaders.SchemaOwnerRid,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
-            { WFConstants.BackendHeaders.SchemaHash,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IsClientEncrypted,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
-            { WFConstants.BackendHeaders.TimeToLiveInSeconds,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.TimeToLiveInSeconds, rntbdRequest.timeToLiveInSeconds, rntbdRequest)},
+            { HttpConstants.HttpHeaders.Authorization,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest)},
+            { HttpConstants.HttpHeaders.SessionToken,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PreTriggerInclude,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PreTriggerInclude, rntbdRequest.preTriggerInclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PreTriggerExclude,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PreTriggerExclude, rntbdRequest.preTriggerExclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PostTriggerInclude,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PostTriggerInclude, rntbdRequest.postTriggerInclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PostTriggerExclude,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PostTriggerExclude, rntbdRequest.postTriggerExclude, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PartitionKey,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PartitionKey, rntbdRequest.partitionKey, rntbdRequest)},
+            { HttpConstants.HttpHeaders.PartitionKeyRangeId,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.PartitionKeyRangeId, rntbdRequest.partitionKeyRangeId, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ResourceTokenExpiry,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.ResourceTokenExpiry, rntbdRequest.resourceTokenExpiry, rntbdRequest)},
+            { HttpConstants.HttpHeaders.FilterBySchemaResourceId,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.FilterBySchemaResourceId, rntbdRequest.filterBySchemaRid, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ShouldBatchContinueOnError,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.ShouldBatchContinueOnError, rntbdRequest.shouldBatchContinueOnError, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsBatchOrdered,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsBatchOrdered, rntbdRequest.isBatchOrdered, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsBatchAtomic,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsBatchAtomic, rntbdRequest.isBatchAtomic, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionPartitionIndex,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.CollectionPartitionIndex, rntbdRequest.collectionPartitionIndex, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionServiceIndex,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.CollectionServiceIndex, rntbdRequest.collectionServiceIndex, rntbdRequest)},
+            { WFConstants.BackendHeaders.ResourceSchemaName,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.ResourceSchemaName, rntbdRequest.resourceSchemaName, rntbdRequest)},
+            { WFConstants.BackendHeaders.BindReplicaDirective,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.BindReplicaDirective, rntbdRequest.bindReplicaDirective, rntbdRequest)},
+            { WFConstants.BackendHeaders.PrimaryMasterKey,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PrimaryMasterKey, rntbdRequest.primaryMasterKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.SecondaryMasterKey,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.SecondaryMasterKey, rntbdRequest.secondaryMasterKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.PrimaryReadonlyKey,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PrimaryReadonlyKey, rntbdRequest.primaryReadonlyKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.SecondaryReadonlyKey,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.SecondaryReadonlyKey, rntbdRequest.secondaryReadonlyKey, rntbdRequest)},
+            { WFConstants.BackendHeaders.PartitionCount,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PartitionCount, rntbdRequest.partitionCount, rntbdRequest)},
+            { WFConstants.BackendHeaders.CollectionRid,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.CollectionRid, rntbdRequest.collectionRid, rntbdRequest)},
+            { HttpConstants.HttpHeaders.GatewaySignature,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.GatewaySignature, rntbdRequest.gatewaySignature, rntbdRequest)},
+            { HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, rntbdRequest.remainingTimeInMsOnClientRequest, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ClientRetryAttemptCount,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.ClientRetryAttemptCount, rntbdRequest.clientRetryAttemptCount, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TargetLsn,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.TargetLsn, rntbdRequest.targetLsn, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TargetGlobalCommittedLsn,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, rntbdRequest.targetGlobalCommittedLsn, rntbdRequest)},
+            { HttpConstants.HttpHeaders.TransportRequestID,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.TransportRequestID, rntbdRequest.transportRequestID, rntbdRequest)},
+            { HttpConstants.HttpHeaders.RestoreMetadataFilter,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.RestoreMetadataFilter, rntbdRequest.restoreMetadataFilter, rntbdRequest)},
+            { WFConstants.BackendHeaders.RestoreParams,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.RestoreParams, rntbdRequest.restoreParams, rntbdRequest)},
+            { WFConstants.BackendHeaders.PartitionResourceFilter,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PartitionResourceFilter, rntbdRequest.partitionResourceFilter, rntbdRequest)},
+            { WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, rntbdRequest.enableDynamicRidRangeAllocation, rntbdRequest)},
+            { WFConstants.BackendHeaders.SchemaOwnerRid,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.SchemaOwnerRid, rntbdRequest.schemaOwnerRid, rntbdRequest)},
+            { WFConstants.BackendHeaders.SchemaHash,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IsClientEncrypted,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest)},
+            { WFConstants.BackendHeaders.TimeToLiveInSeconds,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.TimeToLiveInSeconds, rntbdRequest.timeToLiveInSeconds, rntbdRequest)},
 
-            { WFConstants.BackendHeaders.BinaryPassthroughRequest,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.BinaryPassthroughRequest, rntbdRequest.binaryPassthroughRequest, rntbdRequest)},
-            { WFConstants.BackendHeaders.AllowTentativeWrites,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.AllowTentativeWrites, rntbdRequest.allowTentativeWrites, rntbdRequest)},
-            { HttpConstants.HttpHeaders.IncludeTentativeWrites,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.IncludeTentativeWrites, rntbdRequest.includeTentativeWrites, rntbdRequest)},
+            { WFConstants.BackendHeaders.BinaryPassthroughRequest,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.BinaryPassthroughRequest, rntbdRequest.binaryPassthroughRequest, rntbdRequest)},
+            { WFConstants.BackendHeaders.AllowTentativeWrites,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.AllowTentativeWrites, rntbdRequest.allowTentativeWrites, rntbdRequest)},
+            { HttpConstants.HttpHeaders.IncludeTentativeWrites,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.IncludeTentativeWrites, rntbdRequest.includeTentativeWrites, rntbdRequest)},
 
-            { HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, rntbdRequest.maxPollingIntervalMilliseconds, rntbdRequest)},
-            { WFConstants.BackendHeaders.PopulateLogStoreInfo,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PopulateLogStoreInfo, rntbdRequest.populateLogStoreInfo, rntbdRequest)},
-            { WFConstants.BackendHeaders.MergeCheckPointGLSN,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGlsnKeyName, rntbdRequest)},
-            { WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount,  (documentServiceRequest, rntbdRequest) => FillTokenFromHeader(documentServiceRequest, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest)},
-
+            { HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, rntbdRequest.maxPollingIntervalMilliseconds, rntbdRequest)},
+            { WFConstants.BackendHeaders.PopulateLogStoreInfo,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PopulateLogStoreInfo, rntbdRequest.populateLogStoreInfo, rntbdRequest)},
+            { WFConstants.BackendHeaders.MergeCheckPointGLSN,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGlsnKeyName, rntbdRequest)},
+            { WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest)},
+            
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
             // BE will respect the per-request value.
-            { HttpConstants.HttpHeaders.Version,  (documentServiceRequest, rntbdRequest) =>TransportSerialization.FillTokenFromHeader(documentServiceRequest, HttpConstants.HttpHeaders.Version, rntbdRequest.clientVersion, rntbdRequest) },
+            { HttpConstants.HttpHeaders.Version,  (headerValue, documentServiceRequest, rntbdRequest) =>TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.Version, rntbdRequest.clientVersion, rntbdRequest) },
+
         };
 
         internal class RntbdHeader
@@ -221,8 +170,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             public Guid ActivityId { get; private set; }
         }
 
-        internal static byte[] BuildRequest(DocumentServiceRequest request, string replicaPath,
-            ResourceOperation resourceOperation, Guid activityId, out int headerSize,
+        internal static byte[] BuildRequest(
+            DocumentServiceRequest request,
+            string replicaPath,
+            ResourceOperation resourceOperation,
+            Guid activityId,
+            out int headerSize,
             out int bodySize)
         {
             RntbdConstants.RntbdOperationType operationType = GetRntbdOperationType(resourceOperation.operationType);
@@ -239,22 +192,23 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             // special-case headers (ones that don't come from request.headers, or ones that are a merge of
             // merging multiple request.headers, or ones that are parsed from a string to an enum).
-            foreach (string headerKey in request.Headers.Keys())
-            {
-                if (TransportSerialization.AddHeaders.TryGetValue(headerKey, out Action<DocumentServiceRequest, RntbdConstants.Request> setHeader))
-                {
-                    setHeader(request, rntbdRequest);
-                }
-            }
-
             if (request.Properties != null)
             {
                 foreach (KeyValuePair<string, object> keyValuePair in request.Properties)
                 {
-                    if (TransportSerialization.AddProperties.TryGetValue(keyValuePair.Key, out Action<object, DocumentServiceRequest, RntbdConstants.Request> setProperty))
+                    if (TransportSerialization.AddHeaders.TryGetValue(keyValuePair.Key, out Action<object, DocumentServiceRequest, RntbdConstants.Request> setHeader))
                     {
-                        setProperty(keyValuePair.Value, request, rntbdRequest);
+                        setHeader(keyValuePair.Value, request, rntbdRequest);
                     }
+                }
+            }
+
+            // Headers take priority over properties
+            foreach (string headerKey in request.Headers.Keys())
+            {
+                if (TransportSerialization.AddHeaders.TryGetValue(headerKey, out Action<object, DocumentServiceRequest, RntbdConstants.Request> setHeader))
+                {
+                    setHeader(request.Headers[headerKey], request, rntbdRequest);
                 }
             }
 
@@ -748,49 +702,28 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddMatchHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddIfMatchHeader(object headerValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string match = null;
-            switch (request.OperationType)
-            {
-                case OperationType.Read:
-                case OperationType.ReadFeed:
-                    match = request.Headers[HttpConstants.HttpHeaders.IfNoneMatch];
-                    break;
-                default:
-                    match = request.Headers[HttpConstants.HttpHeaders.IfMatch];
-                    break;
-            }
-
-            if (!string.IsNullOrEmpty(match))
+            if(request.OperationType != OperationType.Read &&
+                request.OperationType != OperationType.ReadFeed &&
+                headerValue is string match &&
+                !string.IsNullOrEmpty(match))
             {
                 rntbdRequest.match.value.valueBytes = BytesSerializer.GetBytesForString(match, rntbdRequest);
                 rntbdRequest.match.isPresent = true;
             }
         }
 
-        private static void AddIfModifiedSinceHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddIfNoneMatchHeader(object headerValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.IfModifiedSince];
-            TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.ifModifiedSince, headerValue);
-        }
-
-        private static void AddA_IMHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.A_IM];
-            TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.a_IM, headerValue);
-        }
-
-        private static void AddDateHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = Helpers.GetDateHeader(request.Headers);
-            TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.date, headerValue);
-        }
-
-        private static void AddContinuation(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Continuation;
-            TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.continuationToken, headerValue);
+            if((request.OperationType == OperationType.Read ||
+                request.OperationType == OperationType.ReadFeed) &&
+                headerValue is string match &&
+                !string.IsNullOrEmpty(match))
+            {
+                rntbdRequest.match.value.valueBytes = BytesSerializer.GetBytesForString(match, rntbdRequest);
+                rntbdRequest.match.isPresent = true;
+            }
         }
 
         private static void AddResourceIdOrPathHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
@@ -924,18 +857,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             rntbdRequest.binaryId.isPresent = true;
         }
 
-        private static void AddReturnPreferenceIfPresent(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddReturnPreferenceIfPresent(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string value = request.Headers[HttpConstants.HttpHeaders.Prefer];
-
-            if (!string.IsNullOrEmpty(value))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
-                if (string.Equals(value, HttpConstants.HttpHeaderValues.PreferReturnMinimal, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(headerValue, HttpConstants.HttpHeaderValues.PreferReturnMinimal, StringComparison.OrdinalIgnoreCase))
                 {
                     rntbdRequest.returnPreference.value.valueByte = (byte)0x01;
                     rntbdRequest.returnPreference.isPresent = true;
                 }
-                else if (string.Equals(value, HttpConstants.HttpHeaderValues.PreferReturnRepresentation, StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(headerValue, HttpConstants.HttpHeaderValues.PreferReturnRepresentation, StringComparison.OrdinalIgnoreCase))
                 {
                     rntbdRequest.returnPreference.value.valueByte = (byte)0x00;
                     rntbdRequest.returnPreference.isPresent = true;
@@ -964,7 +896,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             rntbdRequest.mergeStaticId.value.valueBytes = binaryData;
             rntbdRequest.mergeStaticId.isPresent = true;
         }
-
         private static void AddEntityId(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
             if (!string.IsNullOrEmpty(request.EntityId))
@@ -974,16 +905,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddIndexingDirectiveHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddIndexingDirectiveHeader(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.IndexingDirective]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 RntbdConstants.RntbdIndexingDirective rntbdDirective = RntbdConstants.RntbdIndexingDirective.Invalid;
                 IndexingDirective directive;
-                if (!Enum.TryParse(request.Headers[HttpConstants.HttpHeaders.IndexingDirective], true, out directive))
+                if (!Enum.TryParse(headerValue, true, out directive))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[HttpConstants.HttpHeaders.IndexingDirective], typeof(IndexingDirective).Name));
+                        headerValue, typeof(IndexingDirective).Name));
                 }
 
                 switch (directive)
@@ -999,7 +931,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[HttpConstants.HttpHeaders.IndexingDirective], typeof(IndexingDirective).Name));
+                            headerValue, typeof(IndexingDirective).Name));
                 }
 
                 rntbdRequest.indexingDirective.value.valueByte = (byte)rntbdDirective;
@@ -1007,18 +939,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddMigrateCollectionDirectiveHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddMigrateCollectionDirectiveHeader(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.MigrateCollectionDirective]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
-                RntbdConstants.RntbdMigrateCollectionDirective rntbdDirective = RntbdConstants.RntbdMigrateCollectionDirective.Invalid;
                 MigrateCollectionDirective directive;
-                if (!Enum.TryParse(request.Headers[HttpConstants.HttpHeaders.MigrateCollectionDirective], true, out directive))
+                if (!Enum.TryParse(headerValue, true, out directive))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[HttpConstants.HttpHeaders.MigrateCollectionDirective], typeof(MigrateCollectionDirective).Name));
+                        headerValue, typeof(MigrateCollectionDirective).Name));
                 }
 
+                RntbdConstants.RntbdMigrateCollectionDirective rntbdDirective;
                 switch (directive)
                 {
                     case MigrateCollectionDirective.Freeze:
@@ -1029,7 +962,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[HttpConstants.HttpHeaders.MigrateCollectionDirective], typeof(MigrateCollectionDirective).Name));
+                            headerValue, typeof(MigrateCollectionDirective).Name));
                 }
 
                 rntbdRequest.migrateCollectionDirective.value.valueByte = (byte)rntbdDirective;
@@ -1037,18 +970,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddConsistencyLevelHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddConsistencyLevelHeader(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
-                RntbdConstants.RntbdConsistencyLevel rntbdConsistencyLevel = RntbdConstants.RntbdConsistencyLevel.Invalid;
                 ConsistencyLevel consistencyLevel;
-                if (!Enum.TryParse<ConsistencyLevel>(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel], true, out consistencyLevel))
+                if (!Enum.TryParse<ConsistencyLevel>(headerValue, true, out consistencyLevel))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel], typeof(ConsistencyLevel).Name));
+                        headerValue, typeof(ConsistencyLevel).Name));
                 }
 
+                RntbdConstants.RntbdConsistencyLevel rntbdConsistencyLevel;
                 switch (consistencyLevel)
                 {
                     case ConsistencyLevel.Strong:
@@ -1068,7 +1002,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel], typeof(ConsistencyLevel).Name));
+                            headerValue, typeof(ConsistencyLevel).Name));
                 }
 
                 rntbdRequest.consistencyLevel.value.valueByte = (byte)rntbdConsistencyLevel;
@@ -1076,58 +1010,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddIsFanout(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddPageSize(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.IsFanoutRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.isFanout, headerValue);
-        }
-
-        private static void AddAllowScanOnQuery(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.EnableScanInQuery];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.enableScanInQuery, headerValue);
-        }
-
-        private static void AddEnableLowPrecisionOrderBy(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.enableLowPrecisionOrderBy, headerValue);
-        }
-
-        private static void AddEmitVerboseTracesInQuery(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.EmitVerboseTracesInQuery];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.emitVerboseTracesInQuery, headerValue);
-        }
-
-        private static void AddCanCharge(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.CanCharge];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.canCharge, headerValue);
-        }
-
-        private static void AddCanThrottle(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.CanThrottle];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.canThrottle, headerValue);
-        }
-
-        private static void AddProfileRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.ProfileRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.profileRequest, headerValue);
-        }
-
-        private static void AddPageSize(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string value = request.Headers[HttpConstants.HttpHeaders.PageSize];
-
-            if (!string.IsNullOrEmpty(value))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 int valueInt;
-                if (!Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueInt))
+                if (!Int32.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueInt))
                 {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidPageSize, value));
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidPageSize, headerValue));
                 }
 
                 if (valueInt == -1)
@@ -1140,115 +1031,22 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 else
                 {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidPageSize, value));
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidPageSize, headerValue));
                 }
 
                 rntbdRequest.pageSize.isPresent = true;
             }
         }
 
-        private static void AddEnableLogging(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddUpdateMaxthroughputEverProvisioned(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.EnableLogging];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.enableLogging, headerValue);
-        }
-
-        private static void AddSupportSpatialLegacyCoordinates(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.supportSpatialLegacyCoordinates, headerValue);
-        }
-
-        private static void AddUsePolygonsSmallerThanAHemisphere(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.usePolygonsSmallerThanAHemisphere, headerValue);
-        }
-
-        private static void AddPopulateQuotaInfo(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.PopulateQuotaInfo];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.populateQuotaInfo, headerValue);
-        }
-
-        private static void AddPopulateResourceCount(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.PopulateResourceCount];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.populateResourceCount, headerValue);
-        }
-
-        private static void AddPopulatePartitionStatistics(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.PopulatePartitionStatistics];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.populatePartitionStatistics, headerValue);
-        }
-
-        private static void AddDisableRUPerMinuteUsage(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.DisableRUPerMinuteUsage];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.disableRUPerMinuteUsage, headerValue);
-        }
-
-        private static void AddPopulateQueryMetrics(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.PopulateQueryMetrics];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.populateQueryMetrics, headerValue);
-        }
-
-        private static void AddQueryForceScan(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.ForceQueryScan];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.forceQueryScan, headerValue);
-        }
-
-        private static void AddPopulateCollectionThroughputInfo(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.populateCollectionThroughputInfo, headerValue);
-        }
-
-        private static void AddShareThroughput(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.ShareThroughput];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.shareThroughput, headerValue);
-        }
-
-        private static void AddIsReadOnlyScript(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.IsReadOnlyScript];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.isReadOnlyScript, headerValue);
-        }
-
-#if !COSMOSCLIENT
-        private static void AddIsAutoScaleRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-             string headerValue = request.Headers[HttpConstants.HttpHeaders.IsAutoScaleRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.isAutoScaleRequest, headerValue);
-        }
-#endif
-
-        private static void AddCanOfferReplaceComplete(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.CanOfferReplaceComplete];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.canOfferReplaceComplete, headerValue);
-        }
-
-
-        private static void AddIgnoreSystemLoweringMaxThroughput(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.ignoreSystemLoweringMaxThroughput, headerValue);
-        }
-
-        private static void AddUpdateMaxthroughputEverProvisioned(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
-                string value = request.Headers[HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned];
                 int valueInt;
-                if (!Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueInt))
+                if (!Int32.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueInt))
                 {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidUpdateMaxthroughputEverProvisioned, value));
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidUpdateMaxthroughputEverProvisioned, headerValue));
                 }
 
                 if (valueInt >= 0)
@@ -1257,27 +1055,21 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 else
                 {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidUpdateMaxthroughputEverProvisioned, value));
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidUpdateMaxthroughputEverProvisioned, headerValue));
                 }
 
                 rntbdRequest.updateMaxThroughputEverProvisioned.isPresent = true;
             }
         }
 
-        private static void AddGetAllPartitionKeyStatistics(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddResponseContinuationTokenLimitInKb(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.getAllPartitionKeyStatistics, headerValue);
-        }
-
-        private static void AddResponseContinuationTokenLimitInKb(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
-                string value = request.Headers[HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB];
-                if (!Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valueInt))
+                if (!Int32.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valueInt))
                 {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidPageSize, value));
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidPageSize, headerValue));
                 }
 
                 if (valueInt >= 0)
@@ -1286,22 +1078,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 else
                 {
-                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidResponseContinuationTokenLimit, value));
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidResponseContinuationTokenLimit, headerValue));
                 }
 
                 rntbdRequest.responseContinuationTokenLimitInKb.isPresent = true;
             }
         }
 
-        private static void AddRemoteStorageType(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddRemoteStorageType(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(request.Headers[WFConstants.BackendHeaders.RemoteStorageType]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 RntbdConstants.RntbdRemoteStorageType rntbdRemoteStorageType = RntbdConstants.RntbdRemoteStorageType.Invalid;
-                if (!Enum.TryParse(request.Headers[WFConstants.BackendHeaders.RemoteStorageType], true, out RemoteStorageType remoteStorageType))
+                if (!Enum.TryParse(headerValue, true, out RemoteStorageType remoteStorageType))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[WFConstants.BackendHeaders.RemoteStorageType], typeof(RemoteStorageType).Name));
+                        headerValue, typeof(RemoteStorageType).Name));
                 }
 
                 switch (remoteStorageType)
@@ -1314,7 +1107,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[WFConstants.BackendHeaders.RemoteStorageType], typeof(RemoteStorageType).Name));
+                            headerValue, typeof(RemoteStorageType).Name));
                 }
 
                 rntbdRequest.remoteStorageType.value.valueByte = (byte)rntbdRemoteStorageType;
@@ -1322,10 +1115,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddCollectionChildResourceNameLimitInBytes(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddCollectionChildResourceNameLimitInBytes(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes];
-            if (!string.IsNullOrEmpty(headerValue))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 if (!Int32.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out rntbdRequest.collectionChildResourceNameLimitInBytes.value.valueLong))
                 {
@@ -1339,10 +1132,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddCollectionChildResourceContentLengthLimitInKB(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddCollectionChildResourceContentLengthLimitInKB(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB];
-            if (!string.IsNullOrEmpty(headerValue))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 if (!Int32.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out rntbdRequest.collectionChildResourceContentLengthLimitInKB.value.valueLong))
                 {
@@ -1356,10 +1149,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddUniqueIndexNameEncodingMode(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddUniqueIndexNameEncodingMode(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.UniqueIndexNameEncodingMode];
-            if (!string.IsNullOrEmpty(headerValue))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 if (!Byte.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out rntbdRequest.uniqueIndexNameEncodingMode.value.valueByte))
                 {
@@ -1373,10 +1166,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddUniqueIndexReIndexingState(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddUniqueIndexReIndexingState(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.UniqueIndexReIndexingState];
-            if (!string.IsNullOrEmpty(headerValue))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 if (!Byte.TryParse(headerValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out rntbdRequest.uniqueIndexReIndexingState.value.valueByte))
                 {
@@ -1390,95 +1183,21 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddCollectionRemoteStorageSecurityIdentifier(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddEnumerationDirection(object enumerationDirectionObject, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.CollectionRemoteStorageSecurityIdentifier];
-            TransportSerialization.AddRntdbTokenBytesForString(rntbdRequest, rntbdRequest.collectionRemoteStorageSecurityIdentifier, headerValue);
-        }
-
-        private static void AddIsUserRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.IsUserRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.isUserRequest, headerValue);
-        }
-
-        private static void AddPreserveFullContent(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.PreserveFullContent];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.preserveFullContent, headerValue);
-        }
-
-        private static void AddForceSideBySideIndexMigration(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.ForceSideBySideIndexMigration];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.forceSideBySideIndexMigration, headerValue);
-        }
-
-        private static void AddIsRUPerGBEnforcementRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.isRUPerGBEnforcementRequest, headerValue);
-        }
-
-        private static void AddIsOfferStorageRefreshRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.isofferStorageRefreshRequest, headerValue);
-        }
-
-        private static void AddIsMigrateOfferToManualThroughputRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.MigrateOfferToManualThroughput];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.migrateOfferToManualThroughput, headerValue);
-        }
-
-        private static void AddIsMigrateOfferToAutopilotRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.MigrateOfferToAutopilot];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.migrateOfferToAutopilot, headerValue);
-        }
-
-        private static void AddTruncateMergeLogRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.TruncateMergeLogRequest];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.truncateMergeLogRequest, headerValue);
-        }
-
-        private static void AddEnumerationDirectionFromProperties(object enumerationDirectionObject, RntbdConstants.Request rntbdRequest)
-        {
-            byte? scanDirection = enumerationDirectionObject as byte?;
-            if (scanDirection == null)
+            byte headerByteValue;
+            if (enumerationDirectionObject is string enumerationDirectionString)
             {
-                throw new BadRequestException(
-                    String.Format(
-                        CultureInfo.CurrentUICulture,
-                        RMResources.InvalidEnumValue,
-                        HttpConstants.HttpHeaders.EnumerationDirection,
-                        nameof(EnumerationDirection)));
-            }
-            else
-            {
-                rntbdRequest.enumerationDirection.value.valueByte = scanDirection.Value;
-                rntbdRequest.enumerationDirection.isPresent = true;
-            }
-        }
+                if (string.IsNullOrEmpty(enumerationDirectionString))
+                {
+                    return;
+                }
 
-        private static void AddEnumerationDirectionFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            // Header already set by properties
-            if (rntbdRequest.enumerationDirection.isPresent)
-            {
-                return;
-            }
-
-            string headerValue = request.Headers[HttpConstants.HttpHeaders.EnumerationDirection];
-            if (!string.IsNullOrEmpty(headerValue))
-            {
                 RntbdConstants.RntdbEnumerationDirection rntdbEnumerationDirection = RntbdConstants.RntdbEnumerationDirection.Invalid;
-                if (!Enum.TryParse(headerValue, true, out EnumerationDirection enumerationDirection))
+                if (!Enum.TryParse(enumerationDirectionString, true, out EnumerationDirection enumerationDirection))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        headerValue, nameof(EnumerationDirection)));
+                        enumerationDirectionString, nameof(EnumerationDirection)));
                 }
 
                 switch (enumerationDirection)
@@ -1491,48 +1210,70 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            headerValue, typeof(EnumerationDirection).Name));
+                            enumerationDirectionString, typeof(EnumerationDirection).Name));
                 }
 
-                rntbdRequest.enumerationDirection.value.valueByte = (byte)rntdbEnumerationDirection;
-                rntbdRequest.enumerationDirection.isPresent = true;
+                headerByteValue = (byte)rntdbEnumerationDirection;
             }
+            else
+            {
+                byte? scanDirection = enumerationDirectionObject as byte?;
+                if (scanDirection == null)
+                {
+                    throw new BadRequestException(
+                        String.Format(
+                            CultureInfo.CurrentUICulture,
+                            RMResources.InvalidEnumValue,
+                            HttpConstants.HttpHeaders.EnumerationDirection,
+                            nameof(EnumerationDirection)));
+                }
+
+                headerByteValue = scanDirection.Value;
+            }
+
+            rntbdRequest.enumerationDirection.value.valueByte = headerByteValue;
+            rntbdRequest.enumerationDirection.isPresent = true;
         }
 
-        private static void AddStartAndEndKeys(object requestObject, DocumentServiceRequest documentServiceRequest, RntbdConstants.Request rntbdRequest)
+        private static void AddStartAndEndKeys(object headerValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            RntbdConstants.RntdbReadFeedKeyType? readFeedKeyType = null;
-            if (!(requestObject is byte))
+            if (headerValue is string headerValueString)
+            {
+                TransportSerialization.AddStartAndEndKeysFromHeaders(headerValueString, request, rntbdRequest);
+                return;
+            }
+
+            if (!(headerValue is byte))
             {
                 throw new ArgumentOutOfRangeException(HttpConstants.HttpHeaders.ReadFeedKeyType);
             }
 
-            rntbdRequest.readFeedKeyType.value.valueByte = (byte)requestObject;
+            rntbdRequest.readFeedKeyType.value.valueByte = (byte)headerValue;
             rntbdRequest.readFeedKeyType.isPresent = true;
-            readFeedKeyType = (RntbdConstants.RntdbReadFeedKeyType)requestObject;
+            RntbdConstants.RntdbReadFeedKeyType readFeedKeyType = (RntbdConstants.RntdbReadFeedKeyType)headerValue;
 
             if (readFeedKeyType == RntbdConstants.RntdbReadFeedKeyType.ResourceId)
             {
-                TransportSerialization.SetBytesValue(documentServiceRequest, HttpConstants.HttpHeaders.StartId, rntbdRequest.StartId);
-                TransportSerialization.SetBytesValue(documentServiceRequest, HttpConstants.HttpHeaders.EndId, rntbdRequest.EndId);
+                TransportSerialization.SetBytesValue(request, HttpConstants.HttpHeaders.StartId, rntbdRequest.StartId);
+                TransportSerialization.SetBytesValue(request, HttpConstants.HttpHeaders.EndId, rntbdRequest.EndId);
             }
             else if (readFeedKeyType == RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKey)
             {
 
-                TransportSerialization.SetBytesValue(documentServiceRequest, HttpConstants.HttpHeaders.StartEpk, rntbdRequest.StartEpk);
-                TransportSerialization.SetBytesValue(documentServiceRequest, HttpConstants.HttpHeaders.EndEpk, rntbdRequest.EndEpk);
+                TransportSerialization.SetBytesValue(request, HttpConstants.HttpHeaders.StartEpk, rntbdRequest.StartEpk);
+                TransportSerialization.SetBytesValue(request, HttpConstants.HttpHeaders.EndEpk, rntbdRequest.EndEpk);
             }
         }
 
-        private static void AddStartAndEndKeysFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddStartAndEndKeysFromHeaders(string headerValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType]))
+            if (!string.IsNullOrEmpty(headerValue))
             {
                 RntbdConstants.RntdbReadFeedKeyType rntdbReadFeedKeyType = RntbdConstants.RntdbReadFeedKeyType.Invalid;
-                if (!Enum.TryParse(request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType], true, out ReadFeedKeyType readFeedKeyType))
+                if (!Enum.TryParse(headerValue, true, out ReadFeedKeyType readFeedKeyType))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType], nameof(ReadFeedKeyType)));
+                        headerValue, nameof(ReadFeedKeyType)));
                 }
 
                 switch (readFeedKeyType)
@@ -1545,46 +1286,34 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType], typeof(ReadFeedKeyType).Name));
+                            headerValue, typeof(ReadFeedKeyType).Name));
                 }
 
                 rntbdRequest.readFeedKeyType.value.valueByte = (byte)rntdbReadFeedKeyType;
                 rntbdRequest.readFeedKeyType.isPresent = true;
             }
-        }
 
-        private static void AddStartIdFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
             string startId = request.Headers[HttpConstants.HttpHeaders.StartId];
             if (!string.IsNullOrEmpty(startId))
             {
                 rntbdRequest.StartId.value.valueBytes = System.Convert.FromBase64String(startId);
                 rntbdRequest.StartId.isPresent = true;
             }
-        }
 
-        private static void AddEndIdFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
             string endId = request.Headers[HttpConstants.HttpHeaders.EndId];
             if (!string.IsNullOrEmpty(endId))
             {
                 rntbdRequest.EndId.value.valueBytes = System.Convert.FromBase64String(endId);
                 rntbdRequest.EndId.isPresent = true;
             }
-        }
 
-        private static void AddStartEpkFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
             string startEpk = request.Headers[HttpConstants.HttpHeaders.StartEpk];
             if (!string.IsNullOrEmpty(startEpk))
             {
                 rntbdRequest.StartEpk.value.valueBytes = System.Convert.FromBase64String(startEpk);
                 rntbdRequest.StartEpk.isPresent = true;
             }
-        }
 
-        private static void AddEndEpkFromHeaders(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
             string endEpk = request.Headers[HttpConstants.HttpHeaders.EndEpk];
             if (!string.IsNullOrEmpty(endEpk))
             {
@@ -1607,16 +1336,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddContentSerializationFormat(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddContentSerializationFormat(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 RntbdConstants.RntbdContentSerializationFormat rntbdContentSerializationFormat = RntbdConstants.RntbdContentSerializationFormat.Invalid;
 
-                if (!Enum.TryParse<ContentSerializationFormat>(request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat], true, out ContentSerializationFormat contentSerializationFormat))
+                if (!Enum.TryParse<ContentSerializationFormat>(headerValue, true, out ContentSerializationFormat contentSerializationFormat))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat], nameof(ContentSerializationFormat)));
+                        headerValue, nameof(ContentSerializationFormat)));
                 }
 
                 switch (contentSerializationFormat)
@@ -1632,7 +1362,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat], nameof(ContentSerializationFormat)));
+                            headerValue, nameof(ContentSerializationFormat)));
                 }
 
                 rntbdRequest.contentSerializationFormat.value.valueByte = (byte)rntbdContentSerializationFormat;
@@ -1640,90 +1370,155 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void FillTokenFromHeader(DocumentServiceRequest request, string headerName, RntbdToken token, RntbdConstants.Request rntbdRequest)
+        private static void FillTokenWithValue(object headerValue, string headerName, RntbdToken token, RntbdConstants.Request rntbdRequest)
         {
-            string value = request.Headers[headerName];
-            TransportSerialization.FillTokenWithValue(value, request, headerName, token, rntbdRequest);
-        }
-
-        private static void FillTokenFromProperties(object propertyValue, DocumentServiceRequest request, string headerName, RntbdToken token, RntbdConstants.Request rntbdRequest)
-        {
-            // The token was already set by the headers
-            if (token.isPresent)
+            if (headerValue == null)
             {
                 return;
             }
 
-            string value = (string)propertyValue;
-            TransportSerialization.FillTokenWithValue(value, request, headerName, token, rntbdRequest);
-        }
-
-        private static void FillTokenWithValue(string value, DocumentServiceRequest request, string headerName, RntbdToken token, RntbdConstants.Request rntbdRequest)
-        {
-            if (!string.IsNullOrEmpty(value))
+            string headerStringValue = null;
+            if (headerValue is string valueString)
             {
-                switch (token.GetTokenType())
+                headerStringValue = valueString;
+                if (string.IsNullOrEmpty(headerStringValue))
                 {
-                    case RntbdTokenTypes.SmallString:
-                    case RntbdTokenTypes.String:
-                    case RntbdTokenTypes.ULongString:
-                        token.value.valueBytes = BytesSerializer.GetBytesForString(value, rntbdRequest);
-                        break;
-                    case RntbdTokenTypes.ULong:
-                        if (!uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint valueULong))
-                        {
-                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, value, headerName));
-                        }
-
-                        token.value.valueULong = valueULong;
-                        break;
-                    case RntbdTokenTypes.Long:
-                        if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valueLong))
-                        {
-                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, value, headerName));
-                        }
-
-                        token.value.valueLong = valueLong;
-                        break;
-                    case RntbdTokenTypes.Double:
-                        token.value.valueDouble = double.Parse(value, CultureInfo.InvariantCulture);
-                        break;
-                    case RntbdTokenTypes.LongLong:
-                        if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long valueLongLong))
-                        {
-                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, value, headerName));
-                        }
-
-                        token.value.valueLongLong = valueLongLong;
-                        break;
-                    case RntbdTokenTypes.Byte:
-                        token.value.valueByte = value.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase) ? (byte)0x01 : (byte)0x00;
-                        break;
-                    default:
-                        Debug.Assert(false, "Recognized header has neither special-case nor default handling to convert"
-                            + " from header string to RNTBD token.");
-                        throw new BadRequestException();
+                    return;
                 }
-
-                token.isPresent = true;
             }
-        }
 
-        private static void AddExcludeSystemProperties(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.ExcludeSystemProperties];
-            TransportSerialization.AddRntdbTokenBool(rntbdRequest.excludeSystemProperties, headerValue);
-        }
-
-        private static void AddFanoutOperationStateHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            string value = request.Headers[WFConstants.BackendHeaders.FanoutOperationState];
-            if (!string.IsNullOrEmpty(value))
+            switch (token.GetTokenType())
             {
-                if (!Enum.TryParse(value, true, out FanoutOperationState state))
+                case RntbdTokenTypes.SmallString:
+                case RntbdTokenTypes.String:
+                case RntbdTokenTypes.ULongString:
+                    if (headerStringValue == null)
+                    {
+                        throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                    }
+
+                    token.value.valueBytes = BytesSerializer.GetBytesForString(headerStringValue, rntbdRequest);
+                    break;
+                case RntbdTokenTypes.ULong:
+                    uint valueULong;
+                    if (headerStringValue != null)
+                    {
+                        if (!uint.TryParse(headerStringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueULong))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerStringValue, headerName));
+                        }
+                    }
+                    else
+                    {
+                        if (!(headerValue is uint uintValue))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                        }
+
+                        valueULong = uintValue;
+                    }
+
+                    token.value.valueULong = valueULong;
+                    break;
+                case RntbdTokenTypes.Long:
+                    int valueLong;
+                    if (headerStringValue != null)
+                    {
+                        if (!int.TryParse(headerStringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueLong))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerStringValue, headerName));
+                        }
+                    }
+                    else
+                    {
+                        if (!(headerValue is int intValue))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                        }
+
+                        valueLong = intValue;
+                    }
+
+                    token.value.valueLong = valueLong;
+                    break;
+                case RntbdTokenTypes.Double:
+                    double valueDouble;
+                    if (headerStringValue != null)
+                    {
+                        if (!double.TryParse(headerStringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueDouble))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerStringValue, headerName));
+                        }
+                    }
+                    else
+                    {
+                        if (!(headerValue is double doubleValue))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                        }
+
+                        valueDouble = doubleValue;
+                    }
+
+                    token.value.valueDouble = valueDouble;
+                    break;
+                case RntbdTokenTypes.LongLong:
+                    long valueLongLong;
+                    if (headerStringValue != null)
+                    {
+                        if (!long.TryParse(headerStringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueLongLong))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerStringValue, headerName));
+                        }
+                    }
+                    else
+                    {
+                        if (!(headerValue is long longLongValue))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                        }
+
+                        valueLongLong = longLongValue;
+                    }
+
+                    token.value.valueLongLong = valueLongLong;
+                    break;
+                case RntbdTokenTypes.Byte:
+                    bool valueBool;
+                    if (headerStringValue != null)
+                    {
+                        valueBool = string.Equals(headerStringValue, bool.TrueString, StringComparison.OrdinalIgnoreCase);
+                    }
+                    else
+                    {
+                        if (!(headerValue is bool boolValue))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                        }
+
+                        valueBool = boolValue;
+                    }
+
+                    token.value.valueByte = valueBool ? (byte)0x01 : (byte)0x00;
+                    break;
+                default:
+                    Debug.Assert(false, "Recognized header has neither special-case nor default handling to convert"
+                        + " from header string to RNTBD token.");
+                    throw new BadRequestException();
+            }
+
+            token.isPresent = true;
+        }
+
+        private static void AddFanoutOperationStateHeader(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
+            {
+                if (!Enum.TryParse(headerValue, true, out FanoutOperationState state))
                 {
                     throw new BadRequestException(
-                        String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue, value, nameof(FanoutOperationState)));
+                        String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue, headerValue, nameof(FanoutOperationState)));
                 }
 
                 RntbdConstants.RntbdFanoutOperationState rntbdState;
@@ -1739,7 +1534,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                     default:
                         throw new BadRequestException(
-                            String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue, value, nameof(FanoutOperationState)));
+                            String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue, headerValue, nameof(FanoutOperationState)));
                 }
 
                 rntbdRequest.FanoutOperationState.value.valueByte = (byte)rntbdState;
@@ -1747,25 +1542,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddResourceTypes(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        private static void AddSystemDocumentTypeHeader(object headerObjectValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            string headerValue = request.Headers[WFConstants.BackendHeaders.ResourceTypes];
-            if (!string.IsNullOrEmpty(headerValue))
-            {
-                rntbdRequest.resourceTypes.value.valueBytes = BytesSerializer.GetBytesForString(headerValue, rntbdRequest);
-                rntbdRequest.resourceTypes.isPresent = true;
-            }
-        }
-
-        private static void AddSystemDocumentTypeHeader(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SystemDocumentType]))
+            if (headerObjectValue is string headerValue &&
+                !string.IsNullOrEmpty(headerValue))
             {
                 RntbdConstants.RntbdSystemDocumentType rntbdSystemDocumentType = RntbdConstants.RntbdSystemDocumentType.Invalid;
-                if (!Enum.TryParse(request.Headers[HttpConstants.HttpHeaders.SystemDocumentType], true, out SystemDocumentType systemDocumentType))
+                if (!Enum.TryParse(headerValue, true, out SystemDocumentType systemDocumentType))
                 {
                     throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                        request.Headers[HttpConstants.HttpHeaders.SystemDocumentType], nameof(SystemDocumentType)));
+                        headerValue, nameof(SystemDocumentType)));
                 }
 
                 switch (systemDocumentType)
@@ -1778,7 +1564,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         break;
                     default:
                         throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
-                            request.Headers[HttpConstants.HttpHeaders.SystemDocumentType], typeof(SystemDocumentType).Name));
+                            headerValue, typeof(SystemDocumentType).Name));
                 }
 
                 rntbdRequest.systemDocumentType.value.valueByte = (byte)rntbdSystemDocumentType;
@@ -1812,18 +1598,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void AddTransactionCompletionFlag(object isCommit, RntbdConstants.Request rntbdRequest)
-        {
-            bool? boolData = isCommit as bool?;
-            if (!boolData.HasValue)
-            {
-                throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.TransactionFirstRequest);
-            }
-
-            rntbdRequest.transactionCommit.value.valueByte = ((bool)boolData) ? (byte)0x01 : (byte)0x00;
-            rntbdRequest.transactionCommit.isPresent = true;
-        }
-
         private static void AddRetriableWriteRequestMetadata(object retriableWriteRequestId, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
             if (!(retriableWriteRequestId is byte[] requestId))
@@ -1833,18 +1607,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             rntbdRequest.retriableWriteRequestId.value.valueBytes = requestId;
             rntbdRequest.retriableWriteRequestId.isPresent = true;
-        }
-
-        private static void AddIsRetriedWriteRequestMetadata(object isRetriedWriteRequestValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
-        {
-            bool? isRetriedWriteRequest = isRetriedWriteRequestValue as bool?;
-            if (!isRetriedWriteRequest.HasValue)
-            {
-                throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.IsRetriedWriteRequest);
-            }
-
-            rntbdRequest.isRetriedWriteRequest.value.valueByte = ((bool)isRetriedWriteRequest) ? (byte)0x01 : (byte)0x00;
-            rntbdRequest.isRetriedWriteRequest.isPresent = true;
         }
 
         private static void AddRetriableWriteRequestStartTimestampMetadata(object retriableWriteRequestStartTimestamp, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
@@ -1886,6 +1648,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                     rntbdToken.value.valueByte = (byte)0x00;
                 }
 
+                rntbdToken.isPresent = true;
+            }
+        }
+
+        private static void AddRntdbTokenBytesFromBase64String(RntbdConstants.Request rntbdRequest, RntbdToken rntbdToken, string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                rntbdToken.value.valueBytes = System.Convert.FromBase64String(value);
                 rntbdToken.isPresent = true;
             }
         }

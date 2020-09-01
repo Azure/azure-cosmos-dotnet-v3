@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Test
         public void TransportSerializationTest()
         {
             List<string> notSupportedHeaders = new List<string>();
+            // These properties are excluded because they come from DocumentServiceRequest fields that are not in Headers or Properties bag
             HashSet<string> excluededRntdbProperties = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
             {
                 nameof(RntbdConstants.Request.resourceId),
@@ -53,18 +54,9 @@ namespace Microsoft.Azure.Cosmos.Test
                 nameof(RntbdConstants.Request.systemDocumentName),
                 nameof(RntbdConstants.Request.userDefinedTypeName),
                 nameof(RntbdConstants.Request.isAutoScaleRequest),
-                nameof(RntbdConstants.Request.binaryId),
-                nameof(RntbdConstants.Request.effectivePartitionKey),
-                nameof(RntbdConstants.Request.mergeStaticId),
                 nameof(RntbdConstants.Request.schemaHash), // need to investigate. FillTokens doesn't handle bytes
                 nameof(RntbdConstants.Request.collectionChildResourceNameLimitInBytes), // Value set to long but Rntbd token type is bytes
                 nameof(RntbdConstants.Request.collectionChildResourceContentLengthLimitInKB), // Value set to long but Rntbd token type is bytes
-                nameof(RntbdConstants.Request.transactionId), // properties only 
-                nameof(RntbdConstants.Request.transactionFirstRequest), // properties only 
-                nameof(RntbdConstants.Request.transactionCommit), // properties only
-                nameof(RntbdConstants.Request.retriableWriteRequestId), // properties only
-                nameof(RntbdConstants.Request.isRetriedWriteRequest), // properties only
-                nameof(RntbdConstants.Request.retriableWriteRequestStartTimestamp), // properties only 
             };
 
             FieldInfo[] allProperties = typeof(RntbdConstants.Request).GetFields(BindingFlags.Public | BindingFlags.Instance)
@@ -230,23 +222,117 @@ namespace Microsoft.Azure.Cosmos.Test
                     () => Assert.AreEqual((byte)0x02, token.value.valueByte));
             };
 
+            customHeaderHandling[HttpConstants.HttpHeaders.StartId] = (dsr, rntbdRequest, token) => { };
+            customHeaderHandling[HttpConstants.HttpHeaders.EndId] = (dsr, rntbdRequest, token) => { };
+            customHeaderHandling[HttpConstants.HttpHeaders.StartEpk] = (dsr, rntbdRequest, token) => { };
+            customHeaderHandling[HttpConstants.HttpHeaders.EndEpk] = (dsr, rntbdRequest, token) => { };
             customHeaderHandling[HttpConstants.HttpHeaders.ReadFeedKeyType] = (dsr, rntbdRequest, token) =>
             {
+                ReadOnlyMemory<byte> startEpk = new byte[] { (byte)0x03 };
+                ReadOnlyMemory<byte> endEpk = new byte[] { (byte)0x04 };
+                string startEpkString = Convert.ToBase64String(startEpk.Span);
+                string endEpkString = Convert.ToBase64String(endEpk.Span);
+
+                // check the headers
                 dsr.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = ((ReadFeedKeyType)0x01).ToString();
+                dsr.Headers[HttpConstants.HttpHeaders.StartEpk] = startEpkString;
+                dsr.Headers[HttpConstants.HttpHeaders.EndEpk] = endEpkString;
+                Assert.IsTrue(TransportSerialization.AddHeaders.ContainsKey(HttpConstants.HttpHeaders.ReadFeedKeyType), HttpConstants.HttpHeaders.ReadFeedKeyType);
+                TransportSerialization.AddHeaders[HttpConstants.HttpHeaders.ReadFeedKeyType](documentServiceRequest.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType], documentServiceRequest, request);
+
+                Assert.IsTrue(rntbdRequest.readFeedKeyType.isPresent, HttpConstants.HttpHeaders.ReadFeedKeyType);
+                Assert.AreEqual((byte)0x02, token.value.valueByte);
+
+                Assert.IsTrue(rntbdRequest.StartEpk.isPresent, HttpConstants.HttpHeaders.StartEpk);
+                Assert.IsTrue(startEpk.Span.SequenceEqual(rntbdRequest.StartEpk.value.valueBytes.Span));
+
+                Assert.IsTrue(rntbdRequest.EndEpk.isPresent, HttpConstants.HttpHeaders.EndEpk);
+                Assert.IsTrue(endEpk.Span.SequenceEqual(rntbdRequest.EndEpk.value.valueBytes.Span));
+
+                // Reset the rntbd value and remove the header to verify property value works
+                rntbdRequest.readFeedKeyType.isPresent = false;
+                rntbdRequest.readFeedKeyType.value = new RntbdTokenValue();
+                documentServiceRequest.Headers.Remove(HttpConstants.HttpHeaders.ReadFeedKeyType);
+
+                rntbdRequest.StartEpk.isPresent = false;
+                rntbdRequest.StartEpk.value = new RntbdTokenValue();
+                documentServiceRequest.Headers.Remove(HttpConstants.HttpHeaders.StartEpk);
+
+                rntbdRequest.EndEpk.isPresent = false;
+                rntbdRequest.EndEpk.value = new RntbdTokenValue();
+                documentServiceRequest.Headers.Remove(HttpConstants.HttpHeaders.EndEpk);
+
+                // check the properties
                 dsr.Properties[HttpConstants.HttpHeaders.ReadFeedKeyType] = (byte)0x02;
-                byte[] startEpk = new byte[] {(byte)0x03 };
-                byte[] endEpk = new byte[] {(byte)0x04 };
-                dsr.Properties[HttpConstants.HttpHeaders.StartEpk] = startEpk;
-                dsr.Properties[HttpConstants.HttpHeaders.EndEpk] = endEpk;
-                this.ValidateRntbdProperty(
-                    HttpConstants.HttpHeaders.ReadFeedKeyType,
-                    documentServiceRequest,
-                    request,
-                    token,
-                    () => Assert.AreEqual((byte)0x02, token.value.valueByte));
-                Assert.AreEqual(startEpk, rntbdRequest.StartEpk.value.valueBytes);
-                Assert.AreEqual(endEpk, rntbdRequest.EndEpk.value.valueBytes);
+                dsr.Properties[HttpConstants.HttpHeaders.StartEpk] = startEpk.ToArray();
+                dsr.Properties[HttpConstants.HttpHeaders.EndEpk] = endEpk.ToArray();
+
+                TransportSerialization.AddHeaders[HttpConstants.HttpHeaders.ReadFeedKeyType](documentServiceRequest.Properties[HttpConstants.HttpHeaders.ReadFeedKeyType], documentServiceRequest, request);
+
+                Assert.IsTrue(rntbdRequest.readFeedKeyType.isPresent, HttpConstants.HttpHeaders.ReadFeedKeyType);
+                Assert.AreEqual((byte)0x02, token.value.valueByte);
+
+                Assert.IsTrue(rntbdRequest.StartEpk.isPresent, HttpConstants.HttpHeaders.StartEpk);
+                Assert.IsTrue(startEpk.Span.SequenceEqual(rntbdRequest.StartEpk.value.valueBytes.Span));
+
+                Assert.IsTrue(rntbdRequest.EndEpk.isPresent, HttpConstants.HttpHeaders.EndEpk);
+                Assert.IsTrue(endEpk.Span.SequenceEqual(rntbdRequest.EndEpk.value.valueBytes.Span));
             };
+
+            customHeaderHandling[WFConstants.BackendHeaders.BinaryId] = (dsr, rntbdRequest, token) =>
+            {
+               this.PropertiesBytesHelper(WFConstants.BackendHeaders.BinaryId, dsr, rntbdRequest, token);
+            };
+
+            customHeaderHandling[WFConstants.BackendHeaders.MergeStaticId] = (dsr, rntbdRequest, token) =>
+            {
+               this.PropertiesBytesHelper(WFConstants.BackendHeaders.MergeStaticId, dsr, rntbdRequest, token);
+            };
+
+            customHeaderHandling[WFConstants.BackendHeaders.EffectivePartitionKey] = (dsr, rntbdRequest, token) =>
+            {
+               this.PropertiesBytesHelper(WFConstants.BackendHeaders.EffectivePartitionKey, dsr, rntbdRequest, token);
+            };
+
+            customHeaderHandling[WFConstants.BackendHeaders.TransactionFirstRequest] = (dsr, rntbdRequest, token) => { };
+            customHeaderHandling[WFConstants.BackendHeaders.TransactionId] = (dsr, rntbdRequest, token) =>
+            {
+               
+                documentServiceRequest.Properties[WFConstants.BackendHeaders.TransactionFirstRequest] = true;
+
+                this.PropertiesBytesHelper(WFConstants.BackendHeaders.TransactionId, dsr, rntbdRequest, token);
+
+                Assert.IsTrue(rntbdRequest.transactionFirstRequest.isPresent);
+                Assert.AreEqual((byte)0x01, rntbdRequest.transactionFirstRequest.value.valueByte);
+            };
+
+            customHeaderHandling[WFConstants.BackendHeaders.TransactionCommit] = (dsr, rntbdRequest, token) =>
+            {
+                string headerKey = WFConstants.BackendHeaders.TransactionCommit;
+                documentServiceRequest.Properties[headerKey] = true;
+
+                TransportSerialization.AddHeaders[headerKey](documentServiceRequest.Properties[headerKey], documentServiceRequest, request);
+
+                Assert.IsTrue(rntbdRequest.transactionCommit.isPresent);
+                Assert.AreEqual((byte)0x01, rntbdRequest.transactionCommit.value.valueByte);
+            };
+
+            customHeaderHandling[WFConstants.BackendHeaders.RetriableWriteRequestId] = (dsr, rntbdRequest, token) =>
+            {
+                this.PropertiesBytesHelper(WFConstants.BackendHeaders.RetriableWriteRequestId, dsr, rntbdRequest, token);
+            };
+
+            customHeaderHandling[WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp] = (dsr, rntbdRequest, token) =>
+            {
+                string headerKey = WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp;
+                UInt64 value = 1234859822589;
+                documentServiceRequest.Properties[headerKey] = value;
+
+                TransportSerialization.AddHeaders[headerKey](documentServiceRequest.Properties[headerKey], documentServiceRequest, request);
+                Assert.IsTrue(rntbdRequest.retriableWriteRequestStartTimestamp.isPresent);
+                Assert.AreEqual(value, rntbdRequest.retriableWriteRequestStartTimestamp.value.valueULongLong);
+            };
+
 
             foreach (FieldInfo propertyInfo in allProperties)
             {
@@ -365,30 +451,37 @@ namespace Microsoft.Azure.Cosmos.Test
             RntbdToken rntbdToken,
             Action validateValues)
         {
-            bool headerIsHandled = false;
-            if (TransportSerialization.AddHeaders.ContainsKey(headerKey))
-            {
-                headerIsHandled = true;
-                TransportSerialization.AddHeaders[headerKey](documentServiceRequest, request);
-                Assert.IsTrue(rntbdToken.isPresent, headerKey);
-                validateValues();
-            }
+            Assert.IsTrue(TransportSerialization.AddHeaders.ContainsKey(headerKey), headerKey);
+            TransportSerialization.AddHeaders[headerKey](documentServiceRequest.Headers[headerKey], documentServiceRequest, request);
+            Assert.IsTrue(rntbdToken.isPresent, headerKey);
+            validateValues();
 
-            if (TransportSerialization.AddProperties.ContainsKey(headerKey))
-            {
-                headerIsHandled = true;
-                if (rntbdToken.isPresent)
-                {
-                    rntbdToken.isPresent = false;
-                    rntbdToken.value = new RntbdTokenValue();
-                }
+            // Reset the rntbd value and remove the header to verify property value works
+            rntbdToken.isPresent = false;
+            rntbdToken.value = new RntbdTokenValue();
+            documentServiceRequest.Headers.Remove(headerKey);
 
-                TransportSerialization.AddProperties[headerKey](documentServiceRequest.Properties[headerKey] ,documentServiceRequest, request);
-                Assert.IsTrue(rntbdToken.isPresent, headerKey);
-                validateValues();
-            }
+            TransportSerialization.AddHeaders[headerKey](documentServiceRequest.Properties[headerKey], documentServiceRequest, request);
+            Assert.IsTrue(rntbdToken.isPresent, headerKey);
+            validateValues();
+        }
 
-            Assert.IsTrue(headerIsHandled, headerKey);
+        private void PropertiesBytesHelper(
+            string headerKey,
+            DocumentServiceRequest documentServiceRequest,
+            RntbdConstants.Request request,
+            RntbdToken rntbdToken)
+        {
+            Random random = new Random();
+            // Only dictionary is handled
+            byte[] binaryValue = new byte[5];
+            random.NextBytes(binaryValue);
+
+            documentServiceRequest.Properties[headerKey] = binaryValue;
+            TransportSerialization.AddHeaders[headerKey](documentServiceRequest.Properties[headerKey], documentServiceRequest, request);
+
+            Assert.IsTrue(rntbdToken.isPresent, headerKey);
+            Assert.IsTrue(((ReadOnlySpan<byte>)binaryValue).SequenceEqual(rntbdToken.value.valueBytes.Span));
         }
 
         private void EnumToByteHelper(
@@ -399,15 +492,15 @@ namespace Microsoft.Azure.Cosmos.Test
             RntbdConstants.Request request,
             RntbdToken rntbdToken)
         {
-             documentServiceRequest.Headers[headerKey] = headerValue;
-             documentServiceRequest.Headers[headerKey] = headerValue;
+            documentServiceRequest.Headers[headerKey] = headerValue;
+            documentServiceRequest.Properties[headerKey] = headerValue;
 
-             this.ValidateRntbdProperty(
-                headerKey,
-                documentServiceRequest,
-                request,
-                rntbdToken,
-                () => Assert.AreEqual(expectedValue, rntbdToken.value.valueByte));
+            this.ValidateRntbdProperty(
+               headerKey,
+               documentServiceRequest,
+               request,
+               rntbdToken,
+               () => Assert.AreEqual(expectedValue, rntbdToken.value.valueByte));
         }
 
         [TestMethod]
