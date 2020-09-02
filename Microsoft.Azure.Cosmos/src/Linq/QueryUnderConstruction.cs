@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
@@ -426,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (selValue != null)
             {
                 SqlScalarExpression replaced = selValue.Expression;
-                SqlOrderByItem[] substitutedItems = new SqlOrderByItem[orderByClause.OrderbyItems.Count];
+                SqlOrderByItem[] substitutedItems = new SqlOrderByItem[orderByClause.OrderbyItems.Length];
                 for (int i = 0; i < substitutedItems.Length; ++i)
                 {
                     SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, orderByClause.OrderbyItems[i].Expression);
@@ -584,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.currentQuery.orderByClause.OrderbyItems);
             items.AddRange(thenBy.OrderbyItems);
-            context.currentQuery.orderByClause = SqlOrderbyClause.Create(items);
+            context.currentQuery.orderByClause = SqlOrderbyClause.Create(items.ToImmutableArray());
 
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.currentQuery.AddBinding(binding);
 

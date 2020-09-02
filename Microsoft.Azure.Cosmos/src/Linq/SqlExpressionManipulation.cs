@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlArrayCreateScalarExpression scalarExpression,
                 (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
-                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Items.Count];
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Items.Length];
                 for (int i = 0; i < items.Length; i++)
                 {
                     SqlScalarExpression replitem = scalarExpression.Accept(this, input);
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlFunctionCallScalarExpression scalarExpression,
                 (SqlScalarExpression replacement, SqlIdentifier toReplace) input)
             {
-                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Arguments.Count];
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Arguments.Length];
                 for (int i = 0; i < items.Length; i++)
                 {
                     SqlScalarExpression item = scalarExpression.Arguments[i];
@@ -115,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 SqlScalarExpression expression = scalarExpression.Needle.Accept(this, input);
 
-                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Haystack.Count];
+                SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Haystack.Length];
                 for (int i = 0; i < items.Length; i++)
                 {
                     items[i] = scalarExpression.Haystack[i].Accept(this, input);
@@ -145,7 +146,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlObjectCreateScalarExpression.Create(
                     scalarExpression
                         .Properties
-                        .Select(prop => SqlObjectProperty.Create(prop.Name, prop.Value.Accept(this, input))));
+                        .Select(prop => SqlObjectProperty.Create(prop.Name, prop.Value.Accept(this, input)))
+                        .ToImmutableArray());
             }
 
             public override SqlScalarExpression Visit(

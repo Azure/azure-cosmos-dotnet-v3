@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin(
                         SqlFunctionCallScalarExpression.Identifiers.Concat,
-                        arguments);
+                        arguments.ToImmutableArray());
                 }
 
                 return null;

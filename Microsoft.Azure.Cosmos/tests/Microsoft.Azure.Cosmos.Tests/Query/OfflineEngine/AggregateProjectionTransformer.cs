@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         selectItem.Alias));
                 }
 
-                return SqlSelectListSpec.Create(selectItems);
+                return SqlSelectListSpec.Create(selectItems.ToImmutableArray());
             }
 
             public override SqlSelectSpec Visit(SqlSelectStarSpec selectSpec)
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         items.Add(item.Accept(this));
                     }
 
-                    return SqlArrayCreateScalarExpression.Create(items);
+                    return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
                 }
 
                 public override SqlScalarExpression Visit(SqlArrayScalarExpression sqlArrayScalarExpression)
@@ -274,8 +275,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 public override SqlScalarExpression Visit(SqlInScalarExpression sqlInScalarExpression)
                 {
-                    SqlScalarExpression[] items = new SqlScalarExpression[sqlInScalarExpression.Haystack.Count];
-                    for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+                    SqlScalarExpression[] items = new SqlScalarExpression[sqlInScalarExpression.Haystack.Length];
+                    for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
                     {
                         items[i] = sqlInScalarExpression.Haystack[i].Accept(this);
                     }
@@ -306,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         properties.Add(SqlObjectProperty.Create(property.Name, property.Value.Accept(this)));
                     }
 
-                    return SqlObjectCreateScalarExpression.Create(properties);
+                    return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
                 }
 
                 public override SqlScalarExpression Visit(SqlParameterRefScalarExpression scalarExpression)
@@ -352,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     items.Add(arrayItem.Accept(this));
                 }
 
-                return SqlArrayCreateScalarExpression.Create(items);
+                return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
             }
 
             public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
@@ -396,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     properties.Add(property);
                 }
 
-                return SqlObjectCreateScalarExpression.Create(properties);
+                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
             }
 
             public SqlScalarExpression Visit(CosmosString cosmosString)

@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 {
     using System;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
@@ -107,15 +108,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                 {
-                    Aggregate aggregate;
                     return !sqlFunctionCallScalarExpression.IsUdf &&
-                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out aggregate);
+                        Enum.TryParse(
+                            value: sqlFunctionCallScalarExpression.Name.Value,
+                            ignoreCase: true,
+                            result: out Aggregate aggregate);
                 }
 
                 public override bool Visit(SqlInScalarExpression sqlInScalarExpression)
                 {
                     bool hasAggregates = false;
-                    for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+                    for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
                     {
                         hasAggregates |= sqlInScalarExpression.Haystack[i].Accept(this);
                     }

@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(expression, context);
-                return SqlInScalarExpression.Create(scalarExpression, not: false, items);
+                return SqlInScalarExpression.Create(scalarExpression, not: false, items.ToImmutableArray());
             }
         }
 

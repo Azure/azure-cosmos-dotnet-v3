@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
 #if INTERNAL
@@ -16,13 +17,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlSelectListSpec : SqlSelectSpec
     {
-        private SqlSelectListSpec(IReadOnlyList<SqlSelectItem> items)
+        private SqlSelectListSpec(ImmutableArray<SqlSelectItem> items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException($"{nameof(items)} must not be null.");
-            }
-
             foreach (SqlSelectItem item in items)
             {
                 if (item == null)
@@ -31,14 +27,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 }
             }
 
-            this.Items = new List<SqlSelectItem>(items);
+            this.Items = items;
         }
 
-        public IReadOnlyList<SqlSelectItem> Items { get; }
+        public ImmutableArray<SqlSelectItem> Items { get; }
 
-        public static SqlSelectListSpec Create(params SqlSelectItem[] items) => new SqlSelectListSpec(items);
+        public static SqlSelectListSpec Create(params SqlSelectItem[] items) => new SqlSelectListSpec(items.ToImmutableArray());
 
-        public static SqlSelectListSpec Create(IReadOnlyList<SqlSelectItem> items) => new SqlSelectListSpec(items);
+        public static SqlSelectListSpec Create(ImmutableArray<SqlSelectItem> items) => new SqlSelectListSpec(items);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

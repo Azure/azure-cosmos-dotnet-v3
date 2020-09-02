@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(argument, context));
             }
 
-            return SqlFunctionCallScalarExpression.CreateBuiltin(this.Name, arguments);
+            return SqlFunctionCallScalarExpression.CreateBuiltin(this.Name, arguments.ToImmutableArray());
         }
     }
 }
