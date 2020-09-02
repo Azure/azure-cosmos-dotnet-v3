@@ -64,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(message.Contains("Start Time"), "Start Time:" + message);
                     Assert.IsTrue(message.Contains("Total Duration"), "Total Duration:" + message);
                     Assert.IsTrue(message.Contains("Http Client Timeout"), "Http Client Timeout:" + message);
+                    Assert.IsTrue(message.Contains("Activity id"), "Activity id:" + message);
                 }
             }
         }

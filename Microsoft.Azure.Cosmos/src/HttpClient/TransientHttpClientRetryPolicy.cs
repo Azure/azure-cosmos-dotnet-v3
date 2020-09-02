@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
                 string message =
-                    $"GatewayStoreClient Request Timeout. Start Time Utc:{this.startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - this.startDateTimeUtc).TotalMilliseconds} Ms; Http Client Timeout:{this.gatewayRequestTimeout.TotalMilliseconds} Ms;";
+                    $"GatewayStoreClient Request Timeout. Start Time Utc:{this.startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - this.startDateTimeUtc).TotalMilliseconds} Ms; Http Client Timeout:{this.gatewayRequestTimeout.TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId.ToString()};";
                 return ShouldRetryResult.NoRetry(CosmosExceptionFactory.CreateRequestTimeoutException(
                     message,
                     innerException: operationCanceledException,
