@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.monitoringDelay = estimationPeriod.HasValue ? estimationPeriod.Value : FeedEstimatorRunner.defaultMonitoringDelay;
         }
 
-        public override async Task RunAsync(CancellationToken cancellationToken)
+        public async Task RunAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {

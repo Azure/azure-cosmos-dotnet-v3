@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     containerProperties.PartitionKey != null &&
                     containerProperties.PartitionKey.Paths != null &&
                     containerProperties.PartitionKey.Paths.Count > 0;
-                bool isMigratedFixed = (containerProperties.PartitionKey?.IsSystemKey == true);
+                bool isMigratedFixed = containerProperties.PartitionKey?.IsSystemKey == true;
                 if (isPartitioned
                     && !isMigratedFixed
                     && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))

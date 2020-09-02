@@ -14,7 +14,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Cosmos.Container;
 
-    internal sealed class ChangeFeedEstimatorPushCore : ChangeFeedProcessor
+    /// <summary>
+    /// Implementation of the Estimator as a push model.
+    /// </summary>
+    internal sealed class ChangeFeedEstimatorRunner : ChangeFeedProcessor
     {
         private const string EstimatorDefaultHostName = "Estimator";
 
@@ -32,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private Task runAsync;
 
-        public ChangeFeedEstimatorPushCore(
+        public ChangeFeedEstimatorRunner(
             ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod)
             : this(estimatorPeriod)
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <summary>
         /// Used for tests
         /// </summary>
-        internal ChangeFeedEstimatorPushCore(
+        internal ChangeFeedEstimatorRunner(
             ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
             ChangeFeedEstimator remainingWorkEstimator)
@@ -54,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.remainingWorkEstimator = remainingWorkEstimator;
         }
 
-        private ChangeFeedEstimatorPushCore(TimeSpan? estimatorPeriod)
+        private ChangeFeedEstimatorRunner(TimeSpan? estimatorPeriod)
         {
             if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
 
@@ -110,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
             this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorPushCore.EstimatorDefaultHostName).ConfigureAwait(false);
+            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorRunner.EstimatorDefaultHostName).ConfigureAwait(false);
             this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
             this.initialized = true;
         }

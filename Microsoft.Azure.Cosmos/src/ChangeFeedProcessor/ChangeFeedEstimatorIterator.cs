@@ -27,21 +27,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
 
-        private readonly DocumentServiceLeaseContainer leaseContainer;
+        private readonly ContainerInternal monitoredContainer;
+        private readonly ContainerInternal leaseContainer;
+        private readonly string processorName;
         private readonly Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator;
         private readonly ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions;
         private readonly AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>> lazyLeaseDocuments;
+        private DocumentServiceLeaseContainer documentServiceLeaseContainer;
         private int currentPage;
         private int maxPage;
         private int pageSize;
         private bool hasMoreResults;
 
         public ChangeFeedEstimatorIterator(
-            DocumentServiceLeaseContainer leaseContainer,
-            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator,
+            string processorName,
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
         {
-            this.monitoredContainerFeedCreator = monitoredContainerFeedCreator ?? throw new ArgumentNullException(nameof(monitoredContainerFeedCreator));
+            this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
             this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
             this.changeFeedEstimatorRequestOptions = changeFeedEstimatorRequestOptions ?? new ChangeFeedEstimatorRequestOptions();
             this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(valueFactory: (innerCancellationToken) =>
@@ -49,6 +54,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 return this.TryInitializeLeaseDocumentsAsync(innerCancellationToken);
             });
             this.hasMoreResults = true;
+
+            this.monitoredContainerFeedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            {
+                return ResultSetIteratorUtils.BuildResultSetIterator(
+                    partitionKeyRangeId: partitionKeyRangeId,
+                    continuationToken: continuationToken,
+                    maxItemCount: 1,
+                    container: monitoredContainer,
+                    startTime: null,
+                    startFromBeginning: string.IsNullOrEmpty(continuationToken));
+            };
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -60,6 +76,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 if (!this.lazyLeaseDocuments.ValueInitialized)
                 {
+                    using (diagnostics.CreateScope("InitializeLeaseStore"))
+                    {
+                        await this.InitializeLeaseStoreAsync(cancellationToken);   
+                    }
                     using (diagnostics.CreateScope("InitializeLeaseDocuments"))
                     {
                         TryCatch<IReadOnlyList<DocumentServiceLease>> tryInitializeContainerRId = await this.lazyLeaseDocuments.GetValueAsync(cancellationToken).ConfigureAwait(false);
@@ -239,11 +259,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
+        private async Task InitializeLeaseStoreAsync(CancellationToken cancellationToken)
+        {
+            // Reuse Change Feed Processor lease store initialization
+            DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(
+                documentServiceLeaseStoreManager: null,
+                leaseContainer: this.leaseContainer,
+                leaseContainerPrefix: this.processorName,
+                instanceName: string.Empty);
+
+            this.documentServiceLeaseContainer = documentServiceLeaseStoreManager.LeaseContainer;
+        }
+
         private async Task<TryCatch<IReadOnlyList<DocumentServiceLease>>> TryInitializeLeaseDocumentsAsync(CancellationToken cancellationToken)
         {
             try
             {
-                IReadOnlyList<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
+                IReadOnlyList<DocumentServiceLease> leases = await this.documentServiceLeaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
                 if (leases == null || leases.Count == 0)
                 {
                     leases = (IReadOnlyList<DocumentServiceLease>)new List<RemainingLeaseWork>().AsReadOnly();

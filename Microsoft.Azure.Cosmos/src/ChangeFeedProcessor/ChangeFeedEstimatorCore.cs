@@ -6,36 +6,29 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeed;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedEstimator
     {
-        private readonly Func<string, string, bool, FeedIterator> feedCreator;
-        private readonly DocumentServiceLeaseContainer leaseContainer;
+        private readonly string processorName;
+        private readonly ContainerInternal monitoredContainer;
+        private readonly ContainerInternal leaseContainer;
 
         public ChangeFeedEstimatorCore(
-            DocumentServiceLeaseContainer leaseContainer,
-            Func<string, string, bool, FeedIterator> feedCreator)
+            string processorName,
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer)
         {
-            if (leaseContainer == null)
-            {
-                throw new ArgumentNullException(nameof(leaseContainer));
-            }
-
-            if (feedCreator == null)
-            {
-                throw new ArgumentNullException(nameof(feedCreator));
-            }
-
-            this.leaseContainer = leaseContainer;
-            this.feedCreator = feedCreator;
+            this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
+            this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
         }
 
         public override FeedIterator<RemainingLeaseWork> GetRemainingLeaseWorkIterator(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions = null)
         {
             return new ChangeFeedEstimatorIterator(
+                this.processorName,
+                this.monitoredContainer,
                 this.leaseContainer,
-                this.feedCreator,
                 changeFeedEstimatorRequestOptions);
         }
     }
