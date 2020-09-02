@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IComputeHash authKeyHashFunction;
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
-        private readonly HttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
 
         public GatewayAccountReader(Uri serviceEndpoint,
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
                 bool hasResourceToken,
                 string resourceToken,
                 ConnectionPolicy connectionPolicy,
-                HttpClient httpClient)
+                CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
@@ -58,7 +58,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, authorizationToken);
-            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(serviceEndpoint, headers))
+            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                uri: serviceEndpoint,
+                additionalHeaders: headers,
+                resourceType: ResourceType.DatabaseAccount,
+                diagnosticsContext: null,
+                cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

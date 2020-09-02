@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly PartitionKeyRangeCache routingMapProvider;
         private readonly int maxEndpoints;
         private readonly IServiceConfigurationReader serviceConfigReader;
-        private readonly HttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyRangeCache routingMapProvider,
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
-            HttpClient httpClient)
+            CosmosHttpClient httpClient)
         {
             this.endpointManager = endpointManager;
             this.protocol = protocol;
