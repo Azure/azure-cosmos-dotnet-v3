@@ -129,6 +129,7 @@
     <DefineConstants>TRACE;NETSTANDARD20;DOCDBCLIENT;COSMOSCLIENT;CODE_ANALYSIS;NETSTANDARD2_0</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
     <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
+    <DefineConstants Condition=" '$(SdkRelease)' == 'true' ">$(DefineConstants);SDK_RELEASE</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
