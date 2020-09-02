@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// Represents a SQL query in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    internal sealed class SqlQuerySpec
+    public sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
 
@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <summary>
         /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="Parameters"/> property should be serialized.
         /// </summary>
+        /// <returns> bool </returns>
         public bool ShouldSerializeParameters()
         {
             return this.parameters.Count > 0;

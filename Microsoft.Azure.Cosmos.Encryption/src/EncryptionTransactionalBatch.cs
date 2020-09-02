@@ -251,5 +251,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return response;
             }
         }
+
+        public override TransactionalBatch PatchItem(string id, IReadOnlyList<PatchOperation> patchOperations, TransactionalBatchItemRequestOptions requestOptions = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -46,7 +46,11 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The text of the SQL query.</value>
         public string QueryText { get; }
 
-        internal QueryDefinition(SqlQuerySpec sqlQuery)
+        /// <summary>
+        /// Query Definition 
+        /// </summary>
+        /// <param name="sqlQuery"></param>
+        public QueryDefinition(SqlQuerySpec sqlQuery)
         {
             if (sqlQuery == null)
             {
@@ -98,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the sql parameters for the class
         /// </summary>
-        internal IReadOnlyDictionary<string, SqlParameter> Parameters
+        public IReadOnlyDictionary<string, SqlParameter> Parameters
         {
             get
             {

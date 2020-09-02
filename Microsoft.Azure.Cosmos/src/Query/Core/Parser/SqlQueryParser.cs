@@ -11,10 +11,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
-    internal static class SqlQueryParser
+    /// <summary>
+    /// Sql Query Parser.
+    /// </summary>
+    public static class SqlQueryParser
     {
+        /// <summary>
+        /// Monadic
+        /// </summary>
         public static class Monadic
         {
+            /// <summary>
+            /// Parse 
+            /// </summary>
+            /// <param name="text"></param>
+            /// <returns> Sql Query </returns>
             public static TryCatch<SqlQuery> Parse(string text)
             {
                 if (text == null)
@@ -93,6 +104,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
         }
 
+        /// <summary>
+        /// Try Parse Sql Query
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="sqlQuery"></param>
+        /// <returns> bool </returns>
         public static bool TryParse(string text, out SqlQuery sqlQuery)
         {
             TryCatch<SqlQuery> monadicParse = Monadic.Parse(text);
@@ -106,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return true;
         }
 
+        /// <summary>
+        /// Parse SQL query
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns> Sql Query </returns>
         public static SqlQuery Parse(string text)
         {
             TryCatch<SqlQuery> monadicParse = Monadic.Parse(text);
