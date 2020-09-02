@@ -100,20 +100,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
-        public bool HasDistinct
-        {
-            get
-            {
-                return this.DistinctType != DistinctQueryType.None;
-            }
-        }
-        public bool HasTop
-        {
-            get
-            {
-                return this.Top != null;
-            }
-        }
+        public bool HasDistinct => this.DistinctType != DistinctQueryType.None;
+        public bool HasTop => this.Top != null;
 
         public bool HasAggregates
         {
@@ -133,36 +121,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
         }
 
-        public bool HasGroupBy
-        {
-            get
-            {
-                return this.GroupByExpressions != null && this.GroupByExpressions.Count > 0;
-            }
-        }
+        public bool HasGroupBy => this.GroupByExpressions != null && this.GroupByExpressions.Count > 0;
 
-        public bool HasOrderBy
-        {
-            get
-            {
-                return this.OrderBy != null && this.OrderBy.Count > 0;
-            }
-        }
+        public bool HasOrderBy => this.OrderBy != null && this.OrderBy.Count > 0;
 
-        public bool HasOffset
-        {
-            get
-            {
-                return this.Offset != null;
-            }
-        }
+        public bool HasOffset => this.Offset != null;
 
-        public bool HasLimit
-        {
-            get
-            {
-                return this.Limit != null;
-            }
-        }
+        public bool HasLimit => this.Limit != null;
     }
 }

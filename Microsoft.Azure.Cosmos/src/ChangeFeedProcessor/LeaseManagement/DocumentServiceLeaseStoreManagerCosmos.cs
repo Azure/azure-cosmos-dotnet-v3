@@ -42,12 +42,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             RequestOptionsFactory requestOptionsFactory,
             DocumentServiceLeaseUpdater leaseUpdater) // For testing purposes only.
         {
-            if (options == null) throw new ArgumentNullException(nameof(options));
-            if (options.ContainerNamePrefix == null) throw new ArgumentNullException(nameof(options.ContainerNamePrefix));
-            if (string.IsNullOrEmpty(options.HostName)) throw new ArgumentNullException(nameof(options.HostName));
-            if (container == null) throw new ArgumentNullException(nameof(container));
-            if (requestOptionsFactory == null) throw new ArgumentException(nameof(requestOptionsFactory));
-            if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.ContainerNamePrefix == null)
+            {
+                throw new ArgumentNullException(nameof(options.ContainerNamePrefix));
+            }
+
+            if (string.IsNullOrEmpty(options.HostName))
+            {
+                throw new ArgumentNullException(nameof(options.HostName));
+            }
+
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            if (requestOptionsFactory == null)
+            {
+                throw new ArgumentException(nameof(requestOptionsFactory));
+            }
+
+            if (leaseUpdater == null)
+            {
+                throw new ArgumentException(nameof(leaseUpdater));
+            }
 
             this.leaseStore = new DocumentServiceLeaseStoreCosmos(
                 container,

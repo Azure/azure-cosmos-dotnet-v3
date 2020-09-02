@@ -34,23 +34,23 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
         /// </summary>
-        private ParameterSubstitution substitutions;
+        private readonly ParameterSubstitution substitutions;
         /// <summary>
         /// We are currently visiting these methods.
         /// </summary>
-        private List<MethodCallExpression> methodStack;
+        private readonly List<MethodCallExpression> methodStack;
         /// <summary>
         /// Stack of parameters from lambdas currently in scope.
         /// </summary>
-        private List<ParameterExpression> lambdaParametersStack;
+        private readonly List<ParameterExpression> lambdaParametersStack;
         /// <summary>
         /// Stack of collection-valued inputs.
         /// </summary>
-        private List<Collection> collectionStack;
+        private readonly List<Collection> collectionStack;
         /// <summary>
         /// The stack of subquery binding information.
         /// </summary>
-        private Stack<SubqueryBinding> subqueryBindingStack;
+        private readonly Stack<SubqueryBinding> subqueryBindingStack;
 
         public TranslationContext()
         {
@@ -199,7 +199,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         public bool IsInMainBranchSelect()
         {
-            if (this.methodStack.Count == 0) return false;
+            if (this.methodStack.Count == 0)
+            {
+                return false;
+            }
 
             bool isPositive = true;
             string bottomMethod = this.methodStack[0].ToString();
@@ -308,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         // This class is used to rename parameters, so that the Linq program above generates 
         // the correct SQL program above (modulo alpha-renaming).
 
-        private Dictionary<ParameterExpression, Expression> substitutionTable;
+        private readonly Dictionary<ParameterExpression, Expression> substitutionTable;
 
         public ParameterSubstitution()
         {
@@ -390,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// The list of parameter definitions.  This will generate a FROM clause of the shape:
         /// FROM ParameterDefinitions[0] JOIN ParameterDefinitions[1] ... ParameterDefinitions[n]
         /// </summary>
-        private List<Binding> ParameterDefinitions;
+        private readonly List<Binding> ParameterDefinitions;
 
         /// <summary>
         /// Create empty parameter bindings.
@@ -439,7 +442,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         public ParameterExpression GetInputParameter()
         {
             int i = this.ParameterDefinitions.Count - 1;
-            while (i > 0 && !this.ParameterDefinitions[i].IsInputParameter) i--;
+            while (i > 0 && !this.ParameterDefinitions[i].IsInputParameter)
+            {
+                i--;
+            }
 
             // always the first one to be set.
             return i >= 0 ? this.ParameterDefinitions[i].Parameter : null;

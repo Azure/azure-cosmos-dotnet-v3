@@ -20,13 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public bool IsLeft { get; }
 
-        public bool IsRight
-        {
-            get
-            {
-                return !this.IsLeft;
-            }
-        }
+        public bool IsRight => !this.IsLeft;
 
         public void Match(Action<TLeft> onLeft, Action<TRight> onRight)
         {

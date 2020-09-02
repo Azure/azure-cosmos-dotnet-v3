@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -66,13 +65,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Binary;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
             public override IJsonNavigatorNode GetRootNode()
@@ -320,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
                 // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
+                buffer = buffer.Slice(0, arrayLength);
 
                 // Seek to the first array item
                 buffer = buffer.Slice(firstArrayItemOffset);
@@ -565,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
                 // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
+                buffer = buffer.Slice(0, arrayLength);
 
                 // Seek to the first array item
                 buffer = buffer.Slice(firstArrayItemOffset);

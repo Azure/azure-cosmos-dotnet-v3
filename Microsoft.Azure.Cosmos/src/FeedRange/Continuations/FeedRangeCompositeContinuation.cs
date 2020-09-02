@@ -93,7 +93,10 @@ namespace Microsoft.Azure.Cosmos
             this.CurrentToken = this.CompositeContinuationTokens.Peek();
         }
 
-        public override string GetContinuation() => this.CurrentToken?.Token;
+        public override string GetContinuation()
+        {
+            return this.CurrentToken?.Token;
+        }
 
         public override FeedRange GetFeedRange()
         {
@@ -268,7 +271,10 @@ namespace Microsoft.Azure.Cosmos
 
         private void CreateChildRanges(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
-            if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
+            if (keyRanges == null)
+            {
+                throw new ArgumentNullException(nameof(keyRanges));
+            }
             // Update current
             Documents.PartitionKeyRange firstRange = keyRanges[0];
             this.CurrentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
@@ -327,6 +333,9 @@ namespace Microsoft.Azure.Cosmos
             return keyRanges;
         }
 
-        public override void Accept(IFeedRangeContinuationVisitor visitor) => visitor.Visit(this);
+        public override void Accept(IFeedRangeContinuationVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
     }
 }

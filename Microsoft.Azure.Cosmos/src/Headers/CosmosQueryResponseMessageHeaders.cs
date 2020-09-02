@@ -38,10 +38,7 @@ namespace Microsoft.Azure.Cosmos
                 return base.ContinuationToken;
             }
 
-            internal set
-            {
-                throw new InvalidOperationException("To prevent the different aggregate context from impacting each other only allow updating the continuation token via clone method.");
-            }
+            internal set => throw new InvalidOperationException("To prevent the different aggregate context from impacting each other only allow updating the continuation token via clone method.");
         }
 
         internal virtual string ContainerRid { get; }

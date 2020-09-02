@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -62,18 +61,14 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                string value;
-                if (!this.TryGetValue(headerName, out value))
+                if (!this.TryGetValue(headerName, out string value))
                 {
                     return null;
                 }
 
                 return value;
             }
-            set
-            {
-                this.Set(headerName, value);
-            }
+            set => this.Set(headerName, value);
         }
 
         public void Set(string key, string value)

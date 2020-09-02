@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int DefaultDispatchTimerInSeconds = 1;
         private const int TimerWheelBucketCount = 20;
-        private readonly static TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
 
         private readonly ContainerInternal cosmosContainer;
         private readonly CosmosClientContext cosmosClientContext;

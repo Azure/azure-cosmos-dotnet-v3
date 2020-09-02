@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -35,7 +34,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override CosmosElement GetCosmosElementContinuationToken() => throw new NotImplementedException();
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Get the next set of results from the cosmos service

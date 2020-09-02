@@ -93,7 +93,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                             this.queryengineConfiguration);
 
                         Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                        if (exception != null) throw exception;
+                        if (exception != null)
+                        {
+                            throw exception;
+                        }
                     }
                 }
             }
@@ -281,7 +284,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                                 out this.serviceProvider);
 
                             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                            if (exception != null) throw exception;
+                            if (exception != null)
+                            {
+                                throw exception;
+                            }
                         }
                     }
                 }

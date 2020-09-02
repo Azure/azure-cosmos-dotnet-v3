@@ -34,7 +34,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
 
             this.clientContext = clientContext;
             this.container = container;

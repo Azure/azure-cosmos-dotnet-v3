@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
             if (offerV2 == null &&
                 failIfNotConfigured)
             {
-                throw (CosmosException)CosmosExceptionFactory.CreateNotFoundException(
+                throw CosmosExceptionFactory.CreateNotFoundException(
                     $"Throughput is not configured for {targetRID}");
             }
 

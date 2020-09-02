@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputIfExistsAsync),
                 requestOptions,
-                (diagnostics) => base.ReadThroughputIfExistsAsync(diagnostics,  requestOptions, cancellationToken));
+                (diagnostics) => base.ReadThroughputIfExistsAsync(diagnostics, requestOptions, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(ThroughputProperties throughput, RequestOptions requestOptions, CancellationToken cancellationToken)

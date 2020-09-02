@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;

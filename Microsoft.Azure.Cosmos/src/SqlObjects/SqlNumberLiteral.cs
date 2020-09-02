@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         private const int Capacity = 256;
         private static readonly Dictionary<long, SqlNumberLiteral> FrequentLongs = Enumerable
             .Range(-Capacity, Capacity)
-            .ToDictionary(x => (long)x, x => new SqlNumberLiteral((long)x));
+            .ToDictionary(x => (long)x, x => new SqlNumberLiteral(x));
         private static readonly Dictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
             .Range(-Capacity, Capacity)
             .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
@@ -52,14 +52,29 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             return sqlNumberLiteral;
         }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
 
-        public override void Accept(SqlLiteralVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlLiteralVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
     }
 }

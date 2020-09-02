@@ -33,9 +33,15 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static LambdaExpression GetLambda(Expression expr)
         {
             while (expr.NodeType == ExpressionType.Quote)
+            {
                 expr = ((UnaryExpression)expr).Operand;
+            }
+
             if (expr.NodeType != ExpressionType.Lambda)
+            {
                 throw new ArgumentException("Expected a lambda expression");
+            }
+
             return expr as LambdaExpression;
         }
 
@@ -65,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal abstract class ExpressionSimplifier
     {
-        private static ConcurrentDictionary<Type, ExpressionSimplifier> cached = new ConcurrentDictionary<Type, ExpressionSimplifier>();
+        private static readonly ConcurrentDictionary<Type, ExpressionSimplifier> cached = new ConcurrentDictionary<Type, ExpressionSimplifier>();
         public abstract object EvalBoxed(Expression expr);
 
         public static object Evaluate(Expression expr)

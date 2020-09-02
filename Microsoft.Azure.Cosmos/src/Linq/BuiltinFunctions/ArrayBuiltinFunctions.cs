@@ -156,31 +156,43 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         static ArrayBuiltinFunctions()
         {
-            ArrayBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
+            ArrayBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
+            {
+                {
+                    "Concat",
+                    new ArrayConcatVisitor()
+                },
 
-            ArrayBuiltinFunctionDefinitions.Add("Concat",
-                new ArrayConcatVisitor());
+                {
+                    "Contains",
+                    new ArrayContainsVisitor()
+                },
 
-            ArrayBuiltinFunctionDefinitions.Add("Contains",
-                new ArrayContainsVisitor());
+                {
+                    "Count",
+                    new ArrayCountVisitor()
+                },
 
-            ArrayBuiltinFunctionDefinitions.Add("Count",
-                new ArrayCountVisitor());
+                {
+                    "get_Item",
+                    new ArrayGetItemVisitor()
+                },
 
-            ArrayBuiltinFunctionDefinitions.Add("get_Item",
-                new ArrayGetItemVisitor());
+                {
+                    "ToArray",
+                    new ArrayToArrayVisitor()
+                },
 
-            ArrayBuiltinFunctionDefinitions.Add("ToArray",
-                new ArrayToArrayVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("ToList",
-                new ArrayToArrayVisitor());
+                {
+                    "ToList",
+                    new ArrayToArrayVisitor()
+                }
+            };
         }
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
+            if (ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
             {
                 return visitor.Visit(methodCallExpression, context);
             }

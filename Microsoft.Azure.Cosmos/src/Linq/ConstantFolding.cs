@@ -434,7 +434,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static LambdaExpression FoldLambda(LambdaExpression inputExpression)
         {
-            if (inputExpression == null) return null;
+            if (inputExpression == null)
+            {
+                return null;
+            }
+
             Expression body = ConstantFolding.Fold(inputExpression.Body);
             if (body != inputExpression.Body)
             {

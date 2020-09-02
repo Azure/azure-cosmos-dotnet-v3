@@ -172,17 +172,26 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         public static SqlFunctionCallScalarExpression Create(
             SqlIdentifier name,
             bool isUdf,
-            params SqlScalarExpression[] arguments) => new SqlFunctionCallScalarExpression(name, isUdf, arguments.ToImmutableArray());
+            params SqlScalarExpression[] arguments)
+        {
+            return new SqlFunctionCallScalarExpression(name, isUdf, arguments.ToImmutableArray());
+        }
 
         public static SqlFunctionCallScalarExpression Create(
             SqlIdentifier name,
             bool isUdf,
-            ImmutableArray<SqlScalarExpression> arguments) => new SqlFunctionCallScalarExpression(name, isUdf, arguments);
+            ImmutableArray<SqlScalarExpression> arguments)
+        {
+            return new SqlFunctionCallScalarExpression(name, isUdf, arguments);
+        }
 
         public static SqlFunctionCallScalarExpression Create(
             string name,
             bool isUdf,
-            params SqlScalarExpression[] arguments) => SqlFunctionCallScalarExpression.Create(name, isUdf, arguments.ToImmutableArray());
+            params SqlScalarExpression[] arguments)
+        {
+            return SqlFunctionCallScalarExpression.Create(name, isUdf, arguments.ToImmutableArray());
+        }
 
         public static SqlFunctionCallScalarExpression Create(
             string name,
@@ -199,31 +208,61 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public static SqlFunctionCallScalarExpression CreateBuiltin(
             string name,
-            params SqlScalarExpression[] arguments) => SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+            params SqlScalarExpression[] arguments)
+        {
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+        }
 
         public static SqlFunctionCallScalarExpression CreateBuiltin(
             string name,
-            ImmutableArray<SqlScalarExpression> arguments) => SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+            ImmutableArray<SqlScalarExpression> arguments)
+        {
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+        }
 
         public static SqlFunctionCallScalarExpression CreateBuiltin(
             SqlIdentifier name,
-            params SqlScalarExpression[] arguments) => SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+            params SqlScalarExpression[] arguments)
+        {
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+        }
 
         public static SqlFunctionCallScalarExpression CreateBuiltin(
             SqlIdentifier name,
-            ImmutableArray<SqlScalarExpression> arguments) => SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+            ImmutableArray<SqlScalarExpression> arguments)
+        {
+            return SqlFunctionCallScalarExpression.Create(name, isUdf: false, arguments);
+        }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
 
-        public override void Accept(SqlScalarExpressionVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
 
         public static class Names
         {

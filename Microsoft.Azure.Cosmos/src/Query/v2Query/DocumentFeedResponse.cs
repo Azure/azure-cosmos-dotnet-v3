@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -62,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             : this(result)
         {
             this.Count = count;
-            this.responseHeaders = (INameValueCollection)responseHeaders.Clone();
+            this.responseHeaders = responseHeaders.Clone();
             this.usageHeaders = new Dictionary<string, long>();
             this.quotaHeaders = new Dictionary<string, long>();
             this.useETagAsContinuation = useETagAsContinuation;

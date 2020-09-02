@@ -29,13 +29,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.getResultCallback = getResultCallback ?? throw new ArgumentNullException(nameof(getResultCallback));
         }
 
-        public override long CurrentLength
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override long CurrentLength => throw new NotImplementedException();
 
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
@@ -196,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
                             throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonToken)}: {jsonTextReader.TokenType}.");
                     }
                 }
-                
+
             }
         }
 

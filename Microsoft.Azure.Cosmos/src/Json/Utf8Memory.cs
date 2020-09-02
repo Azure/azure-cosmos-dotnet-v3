@@ -31,10 +31,16 @@ namespace Microsoft.Azure.Cosmos.Json
         public Utf8Span Span => Utf8Span.UnsafeFromUtf8BytesNoValidation(this.Memory.Span);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Utf8Memory Slice(int start) => new Utf8Memory(this.Memory.Slice(start));
+        public Utf8Memory Slice(int start)
+        {
+            return new Utf8Memory(this.Memory.Slice(start));
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Utf8Memory Slice(int start, int length) => new Utf8Memory(this.Memory.Slice(start, length));
+        public Utf8Memory Slice(int start, int length)
+        {
+            return new Utf8Memory(this.Memory.Slice(start, length));
+        }
 
         public bool IsEmpty => this.Memory.IsEmpty;
         public int Length => this.Memory.Length;

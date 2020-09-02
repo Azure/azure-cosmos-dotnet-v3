@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -388,16 +386,16 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 (diagnostics) =>
                 {
-                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
+                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                    ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
-                return this.CreateDatabaseInternalAsync(
-                    databaseProperties: databaseProperties,
-                    throughputProperties: throughputProperties,
-                    requestOptions: requestOptions,
-                    diagnosticsContext: diagnostics,
-                    cancellationToken: cancellationToken);
-            });
+                    return this.CreateDatabaseInternalAsync(
+                        databaseProperties: databaseProperties,
+                        throughputProperties: throughputProperties,
+                        requestOptions: requestOptions,
+                        diagnosticsContext: diagnostics,
+                        cancellationToken: cancellationToken);
+                });
         }
 
         /// <summary>

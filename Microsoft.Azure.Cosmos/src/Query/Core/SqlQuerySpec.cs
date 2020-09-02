@@ -59,14 +59,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         [DataMember(Name = "parameters")]
         public SqlParameterCollection Parameters
         {
-            get
-            {
-                return this.parameters;
-            }
-            set
-            {
-                this.parameters = value ?? throw new ArgumentNullException("value");
-            }
+            get => this.parameters;
+            set => this.parameters = value ?? throw new ArgumentNullException("value");
         }
 
         /// <summary>

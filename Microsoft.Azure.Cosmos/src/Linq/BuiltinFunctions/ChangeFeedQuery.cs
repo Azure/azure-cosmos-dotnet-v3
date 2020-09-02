@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly ChangeFeedOptions feedOptions;
         private HttpStatusCode lastStatusCode = HttpStatusCode.OK;
         private string nextIfNoneMatch;
-        private string ifModifiedSince;
+        private readonly string ifModifiedSince;
         #endregion Fields
 
         #region Constructor
@@ -80,13 +80,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <value>Boolean value representing if whether there are potentially additional results that can be retrieved.</value>
         /// <remarks>Initially returns true. This value is set based on whether the last execution returned a continuation token.</remarks>
-        public bool HasMoreResults
-        {
-            get
-            {
-                return this.lastStatusCode != HttpStatusCode.NotModified;
-            }
-        }
+        public bool HasMoreResults => this.lastStatusCode != HttpStatusCode.NotModified;
 
         /// <summary>
         /// Read feed and retrieves the next page of results in the Azure Cosmos DB service.
@@ -126,8 +120,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (response.ResponseBody != null && response.ResponseBody.Length > 0)
                 {
                     long responseLengthInBytes = response.ResponseBody.Length;
-                    int itemCount = 0;
-                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
+                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out int itemCount);
                     DocumentFeedResponse<dynamic> feedResponse = new DocumentFeedResponse<dynamic>(
                         feedResource,
                         itemCount,

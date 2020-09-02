@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override Task MarkInitializedAsync()
         {
-            isInitialized = true;
+            this.isInitialized = true;
             return Task.CompletedTask;
         }
 

@@ -42,45 +42,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
         QueryCompatibilityMode IDocumentQueryClient.QueryCompatibilityMode
         {
-            get
-            {
-                return this.innerClient.QueryCompatibilityMode;
-            }
+            get => this.innerClient.QueryCompatibilityMode;
 
-            set
-            {
-                this.innerClient.QueryCompatibilityMode = value;
-            }
+            set => this.innerClient.QueryCompatibilityMode = value;
         }
 
-        IRetryPolicyFactory IDocumentQueryClient.ResetSessionTokenRetryPolicy
-        {
-            get
-            {
-                return this.innerClient.ResetSessionTokenRetryPolicy;
-            }
-        }
+        IRetryPolicyFactory IDocumentQueryClient.ResetSessionTokenRetryPolicy => this.innerClient.ResetSessionTokenRetryPolicy;
 
-        Uri IDocumentQueryClient.ServiceEndpoint
-        {
-            get
-            {
-                return this.innerClient.ReadEndpoint;
-            }
-        }
+        Uri IDocumentQueryClient.ServiceEndpoint => this.innerClient.ReadEndpoint;
 
-        ConnectionMode IDocumentQueryClient.ConnectionMode
-        {
-            get
-            {
-                return this.innerClient.ConnectionPolicy.ConnectionMode;
-            }
-        }
+        ConnectionMode IDocumentQueryClient.ConnectionMode => this.innerClient.ConnectionPolicy.ConnectionMode;
 
-        Action<IQueryable> IDocumentQueryClient.OnExecuteScalarQueryCallback
-        {
-            get { return this.innerClient.OnExecuteScalarQueryCallback; }
-        }
+        Action<IQueryable> IDocumentQueryClient.OnExecuteScalarQueryCallback => this.innerClient.OnExecuteScalarQueryCallback;
 
         async Task<CollectionCache> IDocumentQueryClient.GetCollectionCacheAsync()
         {

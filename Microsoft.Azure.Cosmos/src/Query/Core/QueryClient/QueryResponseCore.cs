@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>().AsReadOnly();
         internal static readonly string EmptyGuidString = Guid.Empty.ToString();
-        
+
         private QueryResponseCore(
             IReadOnlyList<CosmosElement> result,
             bool isSuccess,

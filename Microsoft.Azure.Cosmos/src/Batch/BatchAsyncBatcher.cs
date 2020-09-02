@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
                             {
                                 response.DiagnosticsContext = batchResponse.DiagnosticsContext;
                             }
-                            
+
                             if (!response.IsSuccessStatusCode)
                             {
                                 Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);

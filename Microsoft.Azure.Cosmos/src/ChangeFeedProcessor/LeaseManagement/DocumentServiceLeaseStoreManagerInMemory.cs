@@ -37,7 +37,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             DocumentServiceLeaseUpdater leaseUpdater,
             ConcurrentDictionary<string, DocumentServiceLease> container) // For testing purposes only.
         {
-            if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
+            if (leaseUpdater == null)
+            {
+                throw new ArgumentException(nameof(leaseUpdater));
+            }
 
             this.leaseStore = new DocumentServiceLeaseStoreInMemory();
 

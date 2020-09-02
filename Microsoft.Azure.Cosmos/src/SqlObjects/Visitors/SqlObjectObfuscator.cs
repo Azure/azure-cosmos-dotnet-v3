@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 || (value.IsInteger && (Number64.ToLong(value) == long.MinValue))
                 || (value.IsInteger && (Math.Abs(Number64.ToLong(value)) < 100))
                 || (value.IsDouble && (Math.Abs(Number64.ToDouble(value)) < 100) && ((long)Number64.ToDouble(value) == Number64.ToDouble(value)))
-                || (value.IsDouble && (Math.Abs(Number64.ToDouble(value)) <= Double.Epsilon)))
+                || (value.IsDouble && (Math.Abs(Number64.ToDouble(value)) <= double.Epsilon)))
             {
                 obfuscatedNumber = value;
             }

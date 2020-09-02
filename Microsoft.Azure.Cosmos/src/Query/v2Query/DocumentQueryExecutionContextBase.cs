@@ -192,8 +192,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public FeedOptions GetFeedOptions(string continuationToken)
         {
-            FeedOptions options = new FeedOptions(this.feedOptions);
-            options.RequestContinuationToken = continuationToken;
+            FeedOptions options = new FeedOptions(this.feedOptions)
+            {
+                RequestContinuationToken = continuationToken
+            };
             return options;
         }
 

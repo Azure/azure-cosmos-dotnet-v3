@@ -39,7 +39,8 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        IReadOnlyDictionary<string, object> Properties { get; set; }
+        IReadOnlyDictionary<string, object> Properties
+        { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

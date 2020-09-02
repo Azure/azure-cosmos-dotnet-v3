@@ -6,10 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
-    using System.Text;
 
     /// <summary>
     /// JsonReader partial.
@@ -145,13 +142,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Text;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
             public override bool Read()
@@ -747,7 +738,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case '\\':
-                            this.token.JsonTextTokenType = (JsonTextTokenType)(this.token.JsonTextTokenType | JsonTextTokenType.EscapedFlag);
+                            this.token.JsonTextTokenType = this.token.JsonTextTokenType | JsonTextTokenType.EscapedFlag;
                             char escapeCharacter = this.jsonTextBuffer.ReadCharacter();
                             if (escapeCharacter == 'u')
                             {

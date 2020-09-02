@@ -41,12 +41,12 @@ namespace Microsoft.Azure.Cosmos
 
         private TimerWheelTimer congestionControlTimer;
         private Task congestionControlTask;
-        private SemaphoreSlim limiter;
+        private readonly SemaphoreSlim limiter;
 
         private int congestionDegreeOfConcurrency = 1;
         private long congestionWaitTimeInMilliseconds = 1000;
-        private BatchPartitionMetric oldPartitionMetric;
-        private BatchPartitionMetric partitionMetric;
+        private readonly BatchPartitionMetric oldPartitionMetric;
+        private readonly BatchPartitionMetric partitionMetric;
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,

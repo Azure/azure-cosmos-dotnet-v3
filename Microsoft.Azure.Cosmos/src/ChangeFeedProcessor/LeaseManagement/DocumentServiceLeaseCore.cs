@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonIgnore]
         public override DateTime Timestamp
         {
-            get { return this.ExplicitTimestamp ?? UnixStartTime.AddSeconds(this.TS); }
-            set { this.ExplicitTimestamp = value; }
+            get => this.ExplicitTimestamp ?? UnixStartTime.AddSeconds(this.TS);
+            set => this.ExplicitTimestamp = value;
         }
 
         [JsonIgnore]

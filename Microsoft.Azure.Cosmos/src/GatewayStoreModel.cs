@@ -90,8 +90,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long longValue;
-                IEnumerable<string> headerValues;
-                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out headerValues) &&
+                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out IEnumerable<string> headerValues) &&
                     (headerValues.Count() != 0))
                 {
                     if (long.TryParse(headerValues.First(), out longValue))
