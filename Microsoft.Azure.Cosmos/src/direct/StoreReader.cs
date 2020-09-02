@@ -202,8 +202,13 @@ namespace Microsoft.Azure.Documents
 
             int replicasToRead = replicaCountToRead;
 
+           bool enforceSessionCheck;
+#if !SDK_RELEASE
             string clientVersion = entity.Headers[HttpConstants.HttpHeaders.Version];
-            bool enforceSessionCheck = !string.IsNullOrEmpty(clientVersion) && VersionUtility.IsLaterThan(clientVersion, HttpConstants.VersionDates.v2016_05_30);
+            enforceSessionCheck = !string.IsNullOrEmpty(clientVersion) && VersionUtility.IsLaterThan(clientVersion, HttpConstants.VersionDates.v2016_05_30);
+#else
+            enforceSessionCheck = true;
+#endif
 
             bool hasGoneException = false;
             Exception exceptionToThrow = null;

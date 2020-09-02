@@ -67,7 +67,14 @@ namespace Microsoft.Azure.Cosmos.Common
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            InternalCache cache = this.GetCache(request.Headers[HttpConstants.HttpHeaders.Version]);
+            string version;
+#if !SDK_RELEASE
+            version = request.Headers[HttpConstants.HttpHeaders.Version];
+#else
+            version = HttpConstants.Versions.CurrentVersion;
+ #endif
+
+            InternalCache cache = this.GetCache(version);
 #if !NETSTANDARD16
             Debug.Assert(request.ForceNameCacheRefresh == false);
 #endif 
@@ -117,6 +124,13 @@ namespace Microsoft.Azure.Cosmos.Common
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
+            string version;
+#if !SDK_RELEASE
+            version = request.Headers[HttpConstants.HttpHeaders.Version];
+#else
+            version = HttpConstants.Versions.CurrentVersion;
+ #endif
+
             if (request.IsNameBased)
             {
                 if (request.ForceNameCacheRefresh)
@@ -126,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
 
                 ContainerProperties collectionInfo = await this.ResolveByPartitionKeyRangeIdentityAsync(
-                    request.Headers[HttpConstants.HttpHeaders.Version],
+                    version,
                     request.PartitionKeyRangeIdentity,
                     cancellationToken);
                 if (collectionInfo != null)
@@ -137,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 if (request.RequestContext.ResolvedCollectionRid == null)
                 {
                     collectionInfo =
-                        await this.ResolveByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellationToken);
+                        await this.ResolveByNameAsync(version, request.ResourceAddress, cancellationToken);
 
                     if (collectionInfo != null)
                     {
@@ -162,13 +176,13 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
                 else
                 {
-                    return await this.ResolveByRidAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.RequestContext.ResolvedCollectionRid, cancellationToken);
+                    return await this.ResolveByRidAsync(version, request.RequestContext.ResolvedCollectionRid, cancellationToken);
                 }
             }
             else
             {
-                return await this.ResolveByPartitionKeyRangeIdentityAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.PartitionKeyRangeIdentity, cancellationToken) ??
-                    await this.ResolveByRidAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellationToken);
+                return await this.ResolveByPartitionKeyRangeIdentityAsync(version, request.PartitionKeyRangeIdentity, cancellationToken) ??
+                    await this.ResolveByRidAsync(version, request.ResourceAddress, cancellationToken);
             }
         }
 

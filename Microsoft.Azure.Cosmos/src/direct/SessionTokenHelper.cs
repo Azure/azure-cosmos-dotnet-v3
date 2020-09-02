@@ -74,24 +74,25 @@ namespace Microsoft.Azure.Documents
             }
             else
             {
+#if !SDK_RELEASE
                 string version = entity.Headers[HttpConstants.HttpHeaders.Version];
                 version = string.IsNullOrEmpty(version) ? HttpConstants.Versions.CurrentVersion : version;
 
                 if (VersionUtility.IsLaterThan(version, HttpConstants.VersionDates.v2015_12_16))
                 {
-                    entity.Headers[HttpConstants.HttpHeaders.SessionToken] =
+                    entity.Headers[HttpConstants.HttpHeaders.SessionToken] = entity.RequestContext.SessionToken.ConvertToString();
+                    return;
+                }
+#endif
+                
+                entity.Headers[HttpConstants.HttpHeaders.SessionToken] =
                         string.Format(CultureInfo.InvariantCulture, "{0}:{1}", partitionKeyRangeId, entity.RequestContext.SessionToken.ConvertToString());
-                }
-                else
-                {
-                    entity.Headers[HttpConstants.HttpHeaders.SessionToken] =
-                        entity.RequestContext.SessionToken.ConvertToString();
-                }
             }
         }
 
         internal static ISessionToken GetLocalSessionToken(DocumentServiceRequest request, string globalSessionToken, string partitionKeyRangeId)
         {
+#if INTERNAL
             string version = request.Headers[HttpConstants.HttpHeaders.Version];
             version = string.IsNullOrEmpty(version) ? HttpConstants.Versions.CurrentVersion : version;
 
@@ -108,6 +109,7 @@ namespace Microsoft.Azure.Documents
                     return sessionToken;
                 }
             }
+#endif
 
             // Convert global session token to local - there's no point in sending global token over the wire to the backend.
             // Global session token is comma separated array of <partitionkeyrangeid>:<lsn> pairs. For example:

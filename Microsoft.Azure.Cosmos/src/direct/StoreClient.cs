@@ -187,6 +187,7 @@ namespace Microsoft.Azure.Documents
             if (storeLSN == -1)
                 return;
 
+#if !SDK_RELEASE
             string version = request.Headers[HttpConstants.HttpHeaders.Version];
             version = string.IsNullOrEmpty(version) ? HttpConstants.Versions.CurrentVersion : version;
 
@@ -196,6 +197,7 @@ namespace Microsoft.Azure.Documents
             }
             else
             {
+#endif
                 string partitionKeyRangeId = headers[WFConstants.BackendHeaders.PartitionKeyRangeId];
 
                 if (string.IsNullOrEmpty(partitionKeyRangeId))
@@ -217,11 +219,12 @@ namespace Microsoft.Azure.Documents
                 {
                     sessionToken = SessionTokenHelper.Parse(sessionTokenResponseHeader);
                 }
+#if !SDK_RELEASE
                 else if (!VersionUtility.IsLaterThan(version, HttpConstants.VersionDates.v2018_06_18))
                 {
                     sessionToken = new SimpleSessionToken(storeLSN);
                 }
-
+#endif
                 if (sessionToken != null)
                 {
                     headers[HttpConstants.HttpHeaders.SessionToken] = string.Format(
@@ -230,7 +233,9 @@ namespace Microsoft.Azure.Documents
                         partitionKeyRangeId,
                         sessionToken.ConvertToString());
                 }
+#if !SDK_RELEASE
             }
+#endif
 
             headers.Remove(WFConstants.BackendHeaders.PartitionKeyRangeId);
         }

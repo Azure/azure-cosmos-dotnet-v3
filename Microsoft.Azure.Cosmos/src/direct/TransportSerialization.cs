@@ -1943,6 +1943,40 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private static void AddRetriableWriteRequestMetadata(object retriableWriteRequestId, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (!(retriableWriteRequestId is byte[] requestId))
+            {
+                throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.RetriableWriteRequestId);
+            }
+
+            rntbdRequest.retriableWriteRequestId.value.valueBytes = requestId;
+            rntbdRequest.retriableWriteRequestId.isPresent = true;
+
+            if (request.Properties.TryGetValue(WFConstants.BackendHeaders.IsRetriedWriteRequest, out object isRetriedWriteRequestValue))
+            {
+                bool? isRetriedWriteRequest = isRetriedWriteRequestValue as bool?;
+                if (!isRetriedWriteRequest.HasValue)
+                {
+                    throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.IsRetriedWriteRequest);
+                }
+
+                rntbdRequest.isRetriedWriteRequest.value.valueByte = ((bool)isRetriedWriteRequest) ? (byte)0x01 : (byte)0x00;
+                rntbdRequest.isRetriedWriteRequest.isPresent = true;
+            }
+
+            if (request.Properties.TryGetValue(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, out object retriableWriteRequestStartTimestamp))
+            {
+                if (!UInt64.TryParse(retriableWriteRequestStartTimestamp.ToString(), out UInt64 requestStartTimestamp) || requestStartTimestamp <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp);
+                }
+
+                rntbdRequest.retriableWriteRequestStartTimestamp.value.valueULongLong = requestStartTimestamp;
+                rntbdRequest.retriableWriteRequestStartTimestamp.isPresent = true;
+            }
+        }
+
         private static void AddUseSystemBudget(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
             if (!string.IsNullOrEmpty(request.Headers[WFConstants.BackendHeaders.UseSystemBudget]))

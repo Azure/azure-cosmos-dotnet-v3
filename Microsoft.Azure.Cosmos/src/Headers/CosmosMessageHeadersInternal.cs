@@ -18,8 +18,10 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosMessageHeadersInternal : INameValueCollection
     {
+        public static readonly List<Dictionary<string, int>> headerCountList = new List<Dictionary<string, int>>();
         private static readonly int HeadersDefaultCapacity = 16;
         private readonly Dictionary<string, string> headers;
+        private readonly Dictionary<string, int> headerCount;
 
         public CosmosMessageHeadersInternal()
             : this(HeadersDefaultCapacity)
@@ -28,9 +30,24 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosMessageHeadersInternal(int capacity)
         {
+            this.headerCount = new Dictionary<string, int>();
+            headerCountList.Add(this.headerCount);
             this.headers = new Dictionary<string, string>(
                 capacity,
                 StringComparer.OrdinalIgnoreCase);
+        }
+
+        private void AddCount(string headerName, string op)
+        {
+            string key = headerName + op;
+            if (this.headerCount.ContainsKey(key))
+            {
+                this.headerCount[key] += 1;
+            }
+            else
+            {
+                this.headerCount[key] = 1;
+            }
         }
 
         public void Add(string headerName, string value)
@@ -40,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
         public bool TryGetValue(string headerName, out string value)
         {
+            this.AddCount(headerName, nameof(TryGetValue));
             if (headerName == null)
             {
                 throw new ArgumentNullException(nameof(headerName));
@@ -50,6 +68,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Remove(string headerName)
         {
+            this.AddCount(headerName, nameof(Remove));
             if (headerName == null)
             {
                 throw new ArgumentNullException(nameof(headerName));
@@ -78,6 +97,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Set(string key, string value)
         {
+            this.AddCount(key, nameof(Set));
             if (key == null)
             {
                 throw new ArgumentNullException($"{nameof(key)}; {nameof(value)}: {value ?? "null"}");
@@ -93,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
 
         public string Get(string key)
         {
+            this.AddCount(key, nameof(Get));
             if (key == null)
             {
                 throw new ArgumentNullException(nameof(key));
@@ -108,11 +129,13 @@ namespace Microsoft.Azure.Cosmos
 
         public int Count()
         {
+            this.AddCount("", nameof(Count));
             return this.headers.Count;
         }
 
         public INameValueCollection Clone()
         {
+            this.AddCount("", nameof(Clone));
             CosmosMessageHeadersInternal headersClone = new CosmosMessageHeadersInternal(this.headers.Count);
             foreach (KeyValuePair<string, string> header in this.headers)
             {
@@ -124,6 +147,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Add(INameValueCollection collection)
         {
+            this.AddCount("INameValueCollection", nameof(Add));
             foreach (string key in collection.Keys())
             {
                 this.Add(key, collection[key]);
@@ -148,6 +172,7 @@ namespace Microsoft.Azure.Cosmos
 
         public string[] AllKeys()
         {
+            this.AddCount("", nameof(AllKeys));
             return this.headers.Keys.ToArray();
         }
 
@@ -166,6 +191,7 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerator<string> GetEnumerator()
         {
+            this.AddCount("", nameof(GetEnumerator));
             return this.headers.Select(x => x.Key).GetEnumerator();
         }
 
