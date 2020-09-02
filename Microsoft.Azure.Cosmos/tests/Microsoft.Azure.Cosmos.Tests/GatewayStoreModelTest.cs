@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tests;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -326,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -388,7 +389,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -452,7 +453,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -598,7 +599,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -664,7 +665,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -748,7 +749,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                new HttpClient(httpMessageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)));
 
             return storeModel;
         }
