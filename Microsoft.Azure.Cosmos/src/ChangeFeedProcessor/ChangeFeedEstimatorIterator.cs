@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
     internal sealed class ChangeFeedEstimatorIterator : FeedIterator<RemainingLeaseWork>
     {
+        private const string EstimatorDefaultHostName = "Estimator";
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
@@ -261,12 +262,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task InitializeLeaseStoreAsync(CancellationToken cancellationToken)
         {
+            string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
+            string leasePrefix = this.monitoredContainer.GetLeasePrefix(this.processorName, monitoredContainerAndDatabaseRid);
             // Reuse Change Feed Processor lease store initialization
             DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(
                 documentServiceLeaseStoreManager: null,
                 leaseContainer: this.leaseContainer,
-                leaseContainerPrefix: this.processorName,
-                instanceName: string.Empty);
+                leaseContainerPrefix: leasePrefix,
+                instanceName: ChangeFeedEstimatorIterator.EstimatorDefaultHostName);
 
             this.documentServiceLeaseContainer = documentServiceLeaseStoreManager.LeaseContainer;
         }

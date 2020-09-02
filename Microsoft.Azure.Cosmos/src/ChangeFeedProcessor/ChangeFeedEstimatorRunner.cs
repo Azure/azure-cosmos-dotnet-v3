@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Cosmos.Container;
 
@@ -19,13 +18,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </summary>
     internal sealed class ChangeFeedEstimatorRunner : ChangeFeedProcessor
     {
-        private const string EstimatorDefaultHostName = "Estimator";
-
         private readonly ChangesEstimationHandler initialEstimateDelegate;
         private readonly TimeSpan? estimatorPeriod;
         private CancellationTokenSource shutdownCts;
         private ContainerInternal leaseContainer;
-        private string monitoredContainerRid;
         private ContainerInternal monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimatorRunner feedEstimatorRunner;
@@ -67,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             ContainerInternal leaseContainer,
-            string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
@@ -78,21 +73,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
-            this.monitoredContainerRid = monitoredContainerRid;
             this.monitoredContainer = monitoredContainer;
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
         }
 
-        public override async Task StartAsync()
+        public override Task StartAsync()
         {
             if (!this.initialized)
             {
-                await this.InitializeAsync().ConfigureAwait(false);
+                this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
+                this.initialized = true;
             }
 
             this.shutdownCts = new CancellationTokenSource();
             DefaultTrace.TraceInformation("Starting estimator...");
             this.runAsync = this.feedEstimatorRunner.RunAsync(this.shutdownCts.Token);
+            return Task.CompletedTask;
         }
 
         public override async Task StopAsync()
@@ -109,33 +105,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private async Task InitializeAsync()
-        {
-            string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
-            this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorRunner.EstimatorDefaultHostName).ConfigureAwait(false);
-            this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
-            this.initialized = true;
-        }
-
         private FeedEstimatorRunner BuildFeedEstimatorRunner()
         {
             if (this.remainingWorkEstimator == null)
             {
-                Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
-                {
-                    return ResultSetIteratorUtils.BuildResultSetIterator(
-                        partitionKeyRangeId: partitionKeyRangeId,
-                        continuationToken: continuationToken,
-                        maxItemCount: 1,
-                        container: this.monitoredContainer,
-                        startTime: null,
-                        startFromBeginning: string.IsNullOrEmpty(continuationToken));
-                };
-
                 this.remainingWorkEstimator = new ChangeFeedEstimatorCore(
-                   this.documentServiceLeaseStoreManager.LeaseContainer,
-                   feedCreator);
+                   this.changeFeedLeaseOptions.LeasePrefix,
+                   this.monitoredContainer,
+                   this.leaseContainer);
             }
 
             return new FeedEstimatorRunner(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);

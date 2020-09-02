@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly Action<DocumentServiceLeaseStoreManager,
                 ContainerInternal,
                 string,
-                string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
                 ContainerInternal> applyBuilderConfiguration;
@@ -31,7 +30,6 @@ namespace Microsoft.Azure.Cosmos
         private ContainerInternal leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
-        private string monitoredContainerRid;
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
@@ -40,7 +38,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
                 ContainerInternal,
-                string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
@@ -202,14 +199,6 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        internal virtual ChangeFeedProcessorBuilder WithMonitoredContainerRid(string monitoredContainerRid)
-        {
-            if (monitoredContainerRid != null) throw new ArgumentNullException(nameof(monitoredContainerRid));
-
-            this.monitoredContainerRid = monitoredContainerRid;
-            return this;
-        }
-
         /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
@@ -237,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.InitializeDefaultOptions();
-            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
+            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;

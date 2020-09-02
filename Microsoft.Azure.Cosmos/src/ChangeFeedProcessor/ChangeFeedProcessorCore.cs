@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     {
         private readonly ChangeFeedObserverFactory<T> observerFactory;
         private ContainerInternal leaseContainer;
-        private string monitoredContainerRid;
         private string instanceName;
         private ContainerInternal monitoredContainer;
         private PartitionManager partitionManager;
@@ -38,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             ContainerInternal leaseContainer,
-            string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
@@ -50,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
-            this.monitoredContainerRid = monitoredContainerRid;
             this.instanceName = instanceName;
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
@@ -78,9 +75,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task InitializeAsync()
         {
-            string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
-            this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<T>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, this.instanceName).ConfigureAwait(false);
+            string monitoredDatabaseAndContainerRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
+            string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredDatabaseAndContainerRid);
+            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<T>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
             this.partitionManager = this.BuildPartitionManager();
             this.initialized = true;
         }
