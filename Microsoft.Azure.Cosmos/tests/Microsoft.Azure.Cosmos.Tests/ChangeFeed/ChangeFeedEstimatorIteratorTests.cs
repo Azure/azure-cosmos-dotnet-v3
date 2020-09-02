@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 null);
 
             await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
-            CollectionAssert.AreEqual(expectedPKRanges, requestedPKRanges);
+            CollectionAssert.AreEquivalent(expectedPKRanges, requestedPKRanges);
         }
 
         [TestMethod]
