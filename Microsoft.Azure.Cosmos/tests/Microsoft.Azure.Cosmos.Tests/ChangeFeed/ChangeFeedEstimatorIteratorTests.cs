@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -46,11 +47,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
-                feedCreator);
+                feedCreator,
+                null);
 
             await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
             CollectionAssert.AreEqual(expectedPKRanges, requestedPKRanges);
-
         }
 
         [TestMethod]
@@ -96,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
-                feedCreator);
+                feedCreator,
+                null);
 
             long estimation = 0;
             while (remainingWorkEstimator.HasMoreResults)
@@ -153,7 +155,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Of<ContainerInternal>(),
                 Mock.Of<ContainerInternal>(),
                 mockContainer.Object,
-                feedCreator);
+                feedCreator,
+                null);
 
             long estimation = 0;
             while (remainingWorkEstimator.HasMoreResults)
@@ -163,6 +166,167 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             Assert.AreEqual(expectedTotal, estimation);
+        }
+
+        [TestMethod]
+        public async Task ShouldReturnAllLeasesInOnePage()
+        {
+            // no max item count
+            await this.ShouldReturnAllLeasesInOnePage(null);
+
+            // higher max item count
+            await this.ShouldReturnAllLeasesInOnePage(new ChangeFeedEstimatorRequestOptions() { MaxItemCount = 10 });
+        }
+
+        public async Task ShouldReturnAllLeasesInOnePage(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
+        {
+            List<string> ranges = new List<string>() { "0", "1" };
+
+            List<DocumentServiceLeaseCore> leases = ranges.Select(pkRangeId => new DocumentServiceLeaseCore()
+            {
+                LeaseToken = pkRangeId
+            }).ToList();
+
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            {
+                return mockIterator.Object;
+            };
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator,
+                changeFeedEstimatorRequestOptions);
+
+            FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+
+            Assert.IsFalse(remainingWorkEstimator.HasMoreResults);
+            Assert.AreEqual(ranges.Count, response.Count);
+        }
+
+        [TestMethod]
+        public async Task ShouldReturnAllLeasesInPages()
+        {
+            const int pageSize = 1;
+            List<string> ranges = new List<string>() { "0", "1" };
+
+            List<DocumentServiceLeaseCore> leases = ranges.Select(pkRangeId => new DocumentServiceLeaseCore()
+            {
+                LeaseToken = pkRangeId
+            }).ToList();
+
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            {
+                return mockIterator.Object;
+            };
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator,
+                new ChangeFeedEstimatorRequestOptions() { MaxItemCount = pageSize }); // Expect multiple pages
+
+            FeedResponse<RemainingLeaseWork> firstResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+
+            Assert.IsTrue(remainingWorkEstimator.HasMoreResults);
+            Assert.AreEqual(pageSize, firstResponse.Count);
+
+            FeedResponse<RemainingLeaseWork> secondResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+
+            Assert.IsFalse(remainingWorkEstimator.HasMoreResults);
+            Assert.AreEqual(pageSize, secondResponse.Count);
+        }
+
+        [TestMethod]
+        public async Task ShouldAggregateRUAndDiagnostics()
+        {
+            List<string> ranges = new List<string>() { "0", "1" };
+
+            List<DocumentServiceLeaseCore> leases = ranges.Select(pkRangeId => new DocumentServiceLeaseCore()
+            {
+                LeaseToken = pkRangeId
+            }).ToList();
+
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            {
+                return mockIterator.Object;
+            };
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator,
+                null);
+
+            FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+
+            Assert.AreEqual(2, response.Headers.RequestCharge, "Should contain the sum of all RU charges for each partition read."); // Each request costs 1 RU
+            string diagnotics = response.Diagnostics.ToString();
+            int index = -1;
+            int count = 0;
+            while ((index = diagnotics.IndexOf("PointOperation", index + 1)) > 0)
+            {
+                count++;
+            }
+
+            Assert.AreEqual(2, count, "Should contain one Diagnostics for each partition read.");
+        }
+
+        [TestMethod]
+        public async Task ReportsInstanceNameAndToken()
+        {
+            string instanceName = Guid.NewGuid().ToString();
+            string leaseToken = Guid.NewGuid().ToString();
+            List<string> ranges = new List<string>() { leaseToken };
+
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>() {
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = leaseToken,
+                    Owner = instanceName
+                }
+            };
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
+            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
+
+            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            {
+                return mockIterator.Object;
+            };
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator,
+                null);
+
+            FeedResponse<RemainingLeaseWork> firstResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+
+            RemainingLeaseWork remainingLeaseWork = firstResponse.First();
+
+            Assert.AreEqual(instanceName, remainingLeaseWork.InstanceName);
+            Assert.AreEqual(leaseToken, remainingLeaseWork.LeaseToken);
         }
 
         [TestMethod]
@@ -193,6 +357,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             ResponseMessage message = new ResponseMessage(statusCode);
             message.Headers.Add(Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
+            message.Headers.Add(Documents.HttpConstants.HttpHeaders.RequestCharge, "1");
+            message.DiagnosticsContext.AddDiagnosticsInternal(new Diagnostics.PointOperationStatistics(Guid.NewGuid().ToString(), statusCode, Documents.SubStatusCodes.Unknown, DateTime.UtcNow, 1, "", HttpMethod.Post, "https://localhost", localLsn, localLsn));
             if (!string.IsNullOrEmpty(itemLsn))
             {
                 JObject firstDocument = new JObject();

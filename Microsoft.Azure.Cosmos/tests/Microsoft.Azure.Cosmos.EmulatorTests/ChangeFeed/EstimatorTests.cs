@@ -240,6 +240,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             {
                 FeedResponse<RemainingLeaseWork> response = await feedIterator.ReadNextAsync();
                 receivedEstimation += response.Sum(r => r.RemainingWork);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+                Assert.IsNotNull(response.Diagnostics);
+                Assert.IsTrue(response.Diagnostics.ToString().Length > 0);
             }
 
             Assert.AreEqual(10, receivedEstimation);

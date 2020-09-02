@@ -70,12 +70,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
-            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator)
+            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator,
+            ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
             : this(
                   processorName: string.Empty,
                   monitoredContainer: monitoredContainer,
                   leaseContainer: leaseContainer,
-                  changeFeedEstimatorRequestOptions: null,
+                  changeFeedEstimatorRequestOptions: changeFeedEstimatorRequestOptions,
                   monitoredContainerFeedCreator: monitoredContainerFeedCreator)
         {
             this.documentServiceLeaseContainer = documentServiceLeaseContainer;
@@ -357,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override int Count => this.remainingLeaseWorks.Count;
 
-            public override Headers Headers => throw new NotImplementedException();
+            public override Headers Headers => this.headers;
 
             public override IEnumerable<RemainingLeaseWork> Resource => this.remainingLeaseWorks;
 
