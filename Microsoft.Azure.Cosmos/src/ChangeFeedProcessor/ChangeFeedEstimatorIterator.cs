@@ -67,12 +67,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// For testing purposes
         /// </summary>
         internal ChangeFeedEstimatorIterator(
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
             Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator)
             : this(
                   processorName: string.Empty,
-                  monitoredContainer: null,
-                  leaseContainer: null,
+                  monitoredContainer: monitoredContainer,
+                  leaseContainer: leaseContainer,
                   changeFeedEstimatorRequestOptions: null,
                   monitoredContainerFeedCreator: monitoredContainerFeedCreator)
         {

@@ -211,6 +211,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedProcessorCoreTests.GetMockedClientContext());
+            Mock<DatabaseInternal> mockedDatabase = MockCosmosUtil.CreateMockDatabase();
+            mockedContainer.Setup(c => c.Database).Returns(mockedDatabase.Object);
             return mockedContainer.Object;
         }
 

@@ -8,9 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-using Microsoft.Azure.Cosmos.Query.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -45,8 +43,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-               mockContainer.Object,
-               feedCreator);
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator);
 
             await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
             CollectionAssert.AreEqual(expectedPKRanges, requestedPKRanges);
@@ -93,8 +93,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-               mockContainer.Object,
-               feedCreator);
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator);
 
             long estimation = 0;
             while (remainingWorkEstimator.HasMoreResults)
@@ -148,8 +150,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
-               mockContainer.Object,
-               feedCreator);
+                Mock.Of<ContainerInternal>(),
+                Mock.Of<ContainerInternal>(),
+                mockContainer.Object,
+                feedCreator);
 
             long estimation = 0;
             while (remainingWorkEstimator.HasMoreResults)
