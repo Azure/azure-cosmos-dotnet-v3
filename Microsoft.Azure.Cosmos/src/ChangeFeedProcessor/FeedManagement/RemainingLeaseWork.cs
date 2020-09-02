@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// <summary>
     /// Remaining estimated work on the lease.
     /// </summary>
-    public class RemainingLeaseWork
+    public sealed class RemainingLeaseWork
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RemainingLeaseWork"/> class.
