@@ -307,6 +307,47 @@
       },
       "NestedTypes": {}
     },
+    "ChangeFeedEstimator": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork] GetRemainingLeaseWorkIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork] GetRemainingLeaseWorkIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "ChangeFeedEstimatorRequestOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[System.Int32] get_MaxItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount()"
+        },
+        "System.Nullable`1[System.Int32] MaxItemCount": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_MaxItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
+        }
+      },
+      "NestedTypes": {}
+    },
     "ChangeFeedProcessor": {
       "Subclasses": {},
       "Members": {
@@ -694,10 +735,10 @@
     "Container": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationDetailedHandler, System.Nullable`1[System.TimeSpan])": {
+        "Microsoft.Azure.Cosmos.ChangeFeedEstimator GetChangeFeedEstimator(System.String, Microsoft.Azure.Cosmos.Container)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationDetailedHandler, System.Nullable`1[System.TimeSpan])"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedEstimator GetChangeFeedEstimator(System.String, Microsoft.Azure.Cosmos.Container)"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])": {
           "Type": "Method",
@@ -718,11 +759,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Conflicts get_Conflicts()"
-        },
-        "Microsoft.Azure.Cosmos.Container+ChangesEstimationDetailedHandler": {
-          "Type": "NestedType",
-          "Attributes": [],
-          "MethodInfo": null
         },
         "Microsoft.Azure.Cosmos.Container+ChangesEstimationHandler": {
           "Type": "NestedType",
@@ -896,32 +932,6 @@
         }
       },
       "NestedTypes": {
-        "ChangesEstimationDetailedHandler": {
-          "Subclasses": {},
-          "Members": {
-            "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
-            },
-            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
-            },
-            "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)"
-            },
-            "Void .ctor(System.Object, IntPtr)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "Void .ctor(System.Object, IntPtr)"
-            }
-          },
-          "NestedTypes": {}
-        },
         "ChangesEstimationHandler": {
           "Subclasses": {},
           "Members": {
@@ -975,32 +985,6 @@
           "NestedTypes": {}
         }
       }
-    },
-    "ChangesEstimationDetailedHandler": {
-      "Subclasses": {},
-      "Members": {
-        "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken, System.AsyncCallback, System.Object)"
-        },
-        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)"
-        },
-        "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task Invoke(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.ChangeFeed.RemainingLeaseWork], System.Threading.CancellationToken)"
-        },
-        "Void .ctor(System.Object, IntPtr)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.Object, IntPtr)"
-        }
-      },
-      "NestedTypes": {}
     },
     "ChangesEstimationHandler": {
       "Subclasses": {},
