@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Cosmos.Container;
 
+    /// <summary>
+    /// Obtains the <see cref="ChangeFeedEstimator"/> estimation as a periodic Task and notifies it to a <see cref="ChangesEstimationHandler"/>..
+    /// </summary>
     internal sealed class FeedEstimatorRunner
     {
         private static TimeSpan defaultMonitoringDelay = TimeSpan.FromSeconds(5);

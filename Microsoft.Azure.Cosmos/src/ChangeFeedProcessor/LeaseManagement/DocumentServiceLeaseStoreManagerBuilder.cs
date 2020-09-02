@@ -14,11 +14,44 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
+        public static async Task<DocumentServiceLeaseStoreManager> InitializeAsync(
+            ContainerInternal leaseContainer,
+            string leaseContainerPrefix,
+            string instanceName)
+        {
+            ContainerResponse cosmosContainerResponse = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
+            ContainerProperties containerProperties = cosmosContainerResponse.Resource;
+
+            bool isPartitioned =
+                containerProperties.PartitionKey != null &&
+                containerProperties.PartitionKey.Paths != null &&
+                containerProperties.PartitionKey.Paths.Count > 0;
+            bool isMigratedFixed = containerProperties.PartitionKey?.IsSystemKey == true;
+            if (isPartitioned
+                && !isMigratedFixed
+                && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
+            {
+                throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
+            }
+
+            RequestOptionsFactory requestOptionsFactory = isPartitioned && !isMigratedFixed ?
+                (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
+                (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
+
+            DocumentServiceLeaseStoreManagerBuilder leaseStoreManagerBuilder = new DocumentServiceLeaseStoreManagerBuilder()
+                .WithLeasePrefix(leaseContainerPrefix)
+                .WithLeaseContainer(leaseContainer)
+                .WithRequestOptionsFactory(requestOptionsFactory)
+                .WithHostName(instanceName);
+
+            return await leaseStoreManagerBuilder.BuildAsync().ConfigureAwait(false);
+        }
+
         private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
         private Container container;
         private RequestOptionsFactory requestOptionsFactory;
 
-        public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
+        private DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
 
@@ -26,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this;
         }
 
-        public DocumentServiceLeaseStoreManagerBuilder WithLeasePrefix(string leasePrefix)
+        private DocumentServiceLeaseStoreManagerBuilder WithLeasePrefix(string leasePrefix)
         {
             if (leasePrefix == null) throw new ArgumentNullException(nameof(leasePrefix));
 
@@ -34,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this;
         }
 
-        public DocumentServiceLeaseStoreManagerBuilder WithRequestOptionsFactory(RequestOptionsFactory requestOptionsFactory)
+        private DocumentServiceLeaseStoreManagerBuilder WithRequestOptionsFactory(RequestOptionsFactory requestOptionsFactory)
         {
             if (requestOptionsFactory == null) throw new ArgumentNullException(nameof(requestOptionsFactory));
 
@@ -42,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this;
         }
 
-        public DocumentServiceLeaseStoreManagerBuilder WithHostName(string hostName)
+        private DocumentServiceLeaseStoreManagerBuilder WithHostName(string hostName)
         {
             if (hostName == null) throw new ArgumentNullException(nameof(hostName));
 
@@ -50,14 +83,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this;
         }
 
-        public Task<DocumentServiceLeaseStoreManager> BuildAsync()
+        private Task<DocumentServiceLeaseStoreManager> BuildAsync()
         {
             if (this.container == null)
+            {
                 throw new InvalidOperationException(nameof(this.container) + " was not specified");
-            if (this.requestOptionsFactory == null)
-                throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
+            }
 
-            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
+            if (this.requestOptionsFactory == null)
+            {
+                throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
+            }
+
+            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
             return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
         }
     }

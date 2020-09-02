@@ -264,9 +264,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
             string leasePrefix = this.monitoredContainer.GetLeasePrefix(this.processorName, monitoredContainerAndDatabaseRid);
-            // Reuse Change Feed Processor lease store initialization
-            DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(
-                documentServiceLeaseStoreManager: null,
+            DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(
                 leaseContainer: this.leaseContainer,
                 leaseContainerPrefix: leasePrefix,
                 instanceName: ChangeFeedEstimatorIterator.EstimatorDefaultHostName);

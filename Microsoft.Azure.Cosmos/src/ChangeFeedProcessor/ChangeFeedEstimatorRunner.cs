@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private CancellationTokenSource shutdownCts;
         private ContainerInternal leaseContainer;
         private ContainerInternal monitoredContainer;
-        private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimatorRunner feedEstimatorRunner;
         private ChangeFeedEstimator remainingWorkEstimator;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
@@ -36,9 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             TimeSpan? estimatorPeriod)
             : this(estimatorPeriod)
         {
-            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
-
-            this.initialEstimateDelegate = initialEstimateDelegate;
+            this.initialEstimateDelegate = initialEstimateDelegate ?? throw new ArgumentNullException(nameof(initialEstimateDelegate));
         }
 
         /// <summary>
@@ -71,7 +68,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
 
-            this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
             this.monitoredContainer = monitoredContainer;
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
