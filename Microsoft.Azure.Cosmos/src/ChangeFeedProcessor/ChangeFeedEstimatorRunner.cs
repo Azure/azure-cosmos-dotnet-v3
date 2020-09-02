@@ -99,6 +99,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 // Expected during shutdown
             }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown
+            }
         }
 
         private FeedEstimatorRunner BuildFeedEstimatorRunner()

@@ -92,6 +92,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
             this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
             this.changeFeedEstimatorRequestOptions = changeFeedEstimatorRequestOptions ?? new ChangeFeedEstimatorRequestOptions();
+            if (this.changeFeedEstimatorRequestOptions.MaxItemCount.HasValue
+                && this.changeFeedEstimatorRequestOptions.MaxItemCount.Value <= 0)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(this.changeFeedEstimatorRequestOptions.MaxItemCount)} value should be a positive integer.");
+            }
+
             this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(valueFactory: (innerCancellationToken) =>
             {
                 return this.TryInitializeLeaseDocumentsAsync(innerCancellationToken);
@@ -152,6 +158,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (this.lazyLeaseDocuments.Result.Result.Count == 0)
+            {
+                // Lease store is empty
+                this.hasMoreResults = false;
+                return new ChangeFeedEstimatorEmptyFeedResponse(diagnosticsContext.Diagnostics);
+            }
 
             IEnumerable<DocumentServiceLease> leasesForCurrentPage = this.lazyLeaseDocuments.Result.Result.Skip(this.currentPage * this.pageSize).Take(this.pageSize);
             IEnumerable<Task<List<(RemainingLeaseWork, double)>>> tasks = Partitioner.Create(leasesForCurrentPage)
@@ -314,10 +327,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             try
             {
                 IReadOnlyList<DocumentServiceLease> leases = await this.documentServiceLeaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
-                if (leases == null || leases.Count == 0)
-                {
-                    leases = (IReadOnlyList<DocumentServiceLease>)new List<RemainingLeaseWork>().AsReadOnly();
-                }
 
                 return TryCatch<IReadOnlyList<DocumentServiceLease>>.FromResult(leases);
             }
@@ -357,6 +366,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             public override CosmosDiagnostics Diagnostics => this.cosmosDiagnostics;
 
             public override IEnumerator<RemainingLeaseWork> GetEnumerator() => this.remainingLeaseWorks.GetEnumerator();
+        }
+
+        private class ChangeFeedEstimatorEmptyFeedResponse : FeedResponse<RemainingLeaseWork>
+        {
+            private readonly static IEnumerable<RemainingLeaseWork> remainingLeaseWorks = Enumerable.Empty<RemainingLeaseWork>();
+            private readonly CosmosDiagnostics cosmosDiagnostics;
+            private readonly Headers headers;
+
+            public ChangeFeedEstimatorEmptyFeedResponse(CosmosDiagnostics cosmosDiagnostics)
+            {
+                this.cosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
+                this.headers = new Headers();
+            }
+
+            public override string ContinuationToken => throw new NotSupportedException();
+
+            public override int Count => 0;
+
+            public override Headers Headers => throw new NotImplementedException();
+
+            public override IEnumerable<RemainingLeaseWork> Resource => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks;
+
+            public override HttpStatusCode StatusCode => HttpStatusCode.OK;
+
+            public override CosmosDiagnostics Diagnostics => this.cosmosDiagnostics;
+
+            public override IEnumerator<RemainingLeaseWork> GetEnumerator() => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks.GetEnumerator();
         }
     }
 }
