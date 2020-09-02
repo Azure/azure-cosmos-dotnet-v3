@@ -625,7 +625,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
             // Ignoring it until this is fixed
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
             await this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client);
         }
 
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (database != null)
                 {
-                    await database.DeleteAsync();
+                    using ResponseMessage message = await database.DeleteStreamAsync();
                 }
             }
         }
