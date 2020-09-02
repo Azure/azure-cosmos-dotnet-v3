@@ -109,8 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
         private const bool EnableAuthFailureTraces = false;
-
-        private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
+       
         // Gateway has backoff/retry logic to hide transient errors.
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private RetryPolicy retryPolicy;
@@ -143,8 +142,6 @@ namespace Microsoft.Azure.Cosmos
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
-        internal HttpMessageHandler httpMessageHandler;
-
         //Private state.
         private bool isSuccessfullyInitialized;
         private bool isDisposed;
@@ -152,8 +149,7 @@ namespace Microsoft.Azure.Cosmos
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
-        private HttpClient mediaClient;
-        private HttpClient httpClient;
+        private CosmosHttpClient httpClient;
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
@@ -568,37 +564,6 @@ namespace Microsoft.Azure.Cosmos
                 }).ToList();
         }
 
-        public static HttpClient BuildHttpClient(
-            ConnectionPolicy connectionPolicy,
-            ApiType apiType,
-            HttpMessageHandler messageHandler)
-        {
-            HttpClient httpClient;
-            if (connectionPolicy.HttpClientFactory != null)
-            {
-                httpClient = connectionPolicy.HttpClientFactory();
-            }
-            else
-            {
-                httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
-            }
-
-            httpClient.Timeout = (connectionPolicy.RequestTimeout > DocumentClient.GatewayRequestTimeout) ? connectionPolicy.RequestTimeout : DocumentClient.GatewayRequestTimeout;
-            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-
-            httpClient.AddUserAgentHeader(connectionPolicy.UserAgentContainer);
-            httpClient.AddApiTypeHeader(apiType);
-
-            // Set requested API version header that can be used for
-            // version enforcement.
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
-
-            return httpClient;
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified Azure Cosmos DB service endpoint, a list of <see cref="ResourceToken"/> objects and a connection policy.
@@ -747,18 +712,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal GlobalAddressResolver AddressResolver { get; private set; }
-
-        internal event EventHandler<SendingRequestEventArgs> SendingRequest
-        {
-            add
-            {
-                this.sendingRequest += value;
-            }
-            remove
-            {
-                this.sendingRequest -= value;
-            }
-        }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
 
@@ -1071,24 +1024,13 @@ namespace Microsoft.Azure.Cosmos
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
 
-            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse, handler);
-
-            this.mediaClient = new HttpClient(this.httpMessageHandler);
-
-            this.mediaClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            this.mediaClient.AddUserAgentHeader(this.ConnectionPolicy.UserAgentContainer);
-
-            this.mediaClient.AddApiTypeHeader(this.ApiType);
-
-            // Set requested API version header that can be used for
-            // version enforcement.
-            this.mediaClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            this.mediaClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept,
-                RuntimeConstants.MediaTypes.Any);
-
-            this.httpClient = DocumentClient.BuildHttpClient(this.ConnectionPolicy, this.ApiType, this.httpMessageHandler);
+            this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                this.ApiType,
+                DocumentClientEventSource.Instance,
+                this.ConnectionPolicy,
+                handler,
+                this.sendingRequest,
+                this.receivedResponse);
 
             if (sessionContainer != null)
             {
@@ -1101,8 +1043,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.retryPolicy = new RetryPolicy(this.GlobalEndpointManager, this.ConnectionPolicy);
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
-
-            this.mediaClient.Timeout = this.ConnectionPolicy.MediaRequestTimeout;
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
@@ -1432,12 +1372,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.AddressResolver.Dispose();
                 this.AddressResolver = null;
-            }
-
-            if (this.mediaClient != null)
-            {
-                this.mediaClient.Dispose();
-                this.mediaClient = null;
             }
 
             if (this.httpClient != null)
@@ -6742,8 +6676,9 @@ namespace Microsoft.Azure.Cosmos
             GatewayStoreModel gatewayModel = this.GatewayStoreModel as GatewayStoreModel;
             if (gatewayModel != null)
             {
-                using (HttpRequestMessage request = new HttpRequestMessage())
+                ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
+                    HttpRequestMessage request = new HttpRequestMessage();
                     INameValueCollection headersCollection = new DictionaryNameValueCollection();
                     string xDate = DateTime.UtcNow.ToString("r");
                     headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -6769,13 +6704,13 @@ namespace Microsoft.Azure.Cosmos
 
                     request.Method = HttpMethod.Get;
                     request.RequestUri = serviceEndpoint;
-
-                    AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
-
-                    this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
-
-                    return databaseAccount;
+                    return new ValueTask<HttpRequestMessage>(request);
                 }
+
+                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage);
+
+                this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
+                return databaseAccount;
             }
 
             return null;

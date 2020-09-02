@@ -1,15 +1,10 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net.Http;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Routing;
     using System.Threading.Tasks;
     using System.Threading;
     using System.Net;
@@ -17,6 +12,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tests;
 
     /// <summary>
     /// Tests for <see cref="GatewayAddressCache"/>.
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
                 Documents.Client.Protocol.Https,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
-                httpClient,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             int initialAddressesCount = cache.TryGetAddressesAsync(
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                 Documents.Client.Protocol.Https,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
-                httpClient,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -145,7 +145,15 @@ namespace Microsoft.Azure.Cosmos
                         RequestTimeout = TimeSpan.FromSeconds(10)
                     };
 
-                    GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(globalEndpointManager, Documents.Client.Protocol.Tcp, this.mockTokenProvider.Object, null, null, this.mockServiceConfigReader.Object, connectionPolicy, new HttpClient(messageHandler));
+                    GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
+                        endpointManager: globalEndpointManager,
+                        protocol: Documents.Client.Protocol.Tcp,
+                        tokenProvider: this.mockTokenProvider.Object,
+                        collectionCache: null,
+                        routingMapProvider: null,
+                        serviceConfigReader: this.mockServiceConfigReader.Object,
+                        connectionPolicy: connectionPolicy,
+                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
                     ConnectionStateListener connectionStateListener = new ConnectionStateListener(globalAddressResolver);
                     connectionStateListener.OnConnectionEvent(ConnectionEvent.ReadEof, DateTime.Now, new Documents.Rntbd.ServerKey(new Uri("https://endpoint.azure.com:4040/")));

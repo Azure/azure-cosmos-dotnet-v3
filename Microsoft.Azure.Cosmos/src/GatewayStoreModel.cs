@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            HttpClient httpClient)
+            CosmosHttpClient httpClient)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
@@ -76,13 +76,15 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
             AccountProperties databaseAccount = null;
 
             // Get the ServiceDocumentResource from the gateway.
-            using (HttpResponseMessage responseMessage =
-                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellationToken))
+            using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
+                requestMessage,
+                ResourceType.DatabaseAccount,
+                cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
