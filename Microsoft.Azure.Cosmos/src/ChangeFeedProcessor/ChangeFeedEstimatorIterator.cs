@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             double totalRUCost = unifiedResults.Sum(r => r.Item2);
 
-            this.hasMoreResults = ++this.currentPage == this.maxPage;
+            this.hasMoreResults = ++this.currentPage != this.maxPage;
 
             return new ChangeFeedEstimatorFeedResponse(diagnosticsContext.Diagnostics, estimations, totalRUCost);
         }
