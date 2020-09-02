@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 null,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -43,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 null,
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -58,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -72,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -86,7 +82,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 null,
                 ChangeFeedProcessorCoreTests.GetMockedContainer("leases"),
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -111,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -151,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -185,7 +178,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),

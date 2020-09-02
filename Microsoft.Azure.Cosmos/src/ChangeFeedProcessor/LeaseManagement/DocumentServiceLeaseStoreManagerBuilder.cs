@@ -53,33 +53,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
         {
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-
-            this.container = leaseContainer;
+            this.container = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
             return this;
         }
 
         private DocumentServiceLeaseStoreManagerBuilder WithLeasePrefix(string leasePrefix)
         {
-            if (leasePrefix == null) throw new ArgumentNullException(nameof(leasePrefix));
-
-            this.options.ContainerNamePrefix = leasePrefix;
+            this.options.ContainerNamePrefix = leasePrefix ?? throw new ArgumentNullException(nameof(leasePrefix));
             return this;
         }
 
         private DocumentServiceLeaseStoreManagerBuilder WithRequestOptionsFactory(RequestOptionsFactory requestOptionsFactory)
         {
-            if (requestOptionsFactory == null) throw new ArgumentNullException(nameof(requestOptionsFactory));
-
-            this.requestOptionsFactory = requestOptionsFactory;
+            this.requestOptionsFactory = requestOptionsFactory ?? throw new ArgumentNullException(nameof(requestOptionsFactory));
             return this;
         }
 
         private DocumentServiceLeaseStoreManagerBuilder WithHostName(string hostName)
         {
-            if (hostName == null) throw new ArgumentNullException(nameof(hostName));
-
-            this.options.HostName = hostName;
+            this.options.HostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
             return this;
         }
 

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     [TestClass]
     [TestCategory("ChangeFeed")]
-    public class RemainingWorkEstimatorTests
+    public class ChangeFeedEstimatorIteratorTests
     {
         [TestMethod]
         public async Task ShouldRequestForAllPartitionKeyRanges()
@@ -44,40 +44,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIterator.Object;
             };
 
-            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
                mockContainer.Object,
-               feedCreator,
-               1);
+               feedCreator);
 
-            await remainingWorkEstimator.GetEstimatedRemainingWorkAsync(CancellationToken.None);
+            await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
             CollectionAssert.AreEqual(expectedPKRanges, requestedPKRanges);
 
-        }
-
-        [TestMethod]
-        public async Task ShouldReturnOneWhenNoLeases()
-        {
-            long expectedTotal = 1;
-
-            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>();
-
-            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
-            mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
-
-            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
-            {
-                return mockIterator.Object;
-            };
-
-            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
-               mockContainer.Object,
-               feedCreator,
-               1);
-
-            long estimation = await remainingWorkEstimator.GetEstimatedRemainingWorkAsync(CancellationToken.None);
-
-            Assert.AreEqual(expectedTotal, estimation);
         }
 
         [TestMethod]
@@ -119,12 +92,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIteratorPKRange1.Object;
             };
 
-            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
                mockContainer.Object,
-               feedCreator,
-               1);
+               feedCreator);
 
-            long estimation = await remainingWorkEstimator.GetEstimatedRemainingWorkAsync(CancellationToken.None);
+            long estimation = 0;
+            while (remainingWorkEstimator.HasMoreResults)
+            {
+                FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+                estimation += response.Sum(e => e.RemainingWork);
+            }
 
             Assert.AreEqual(expectedTotal, estimation);
         }
@@ -170,12 +147,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return mockIteratorPKRange1.Object;
             };
 
-            FeedManagement.ChangeFeedEstimatorCore remainingWorkEstimator = new FeedManagement.ChangeFeedEstimatorCore(
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
                mockContainer.Object,
-               feedCreator,
-               1);
+               feedCreator);
 
-            long estimation = await remainingWorkEstimator.GetEstimatedRemainingWorkAsync(CancellationToken.None);
+            long estimation = 0;
+            while (remainingWorkEstimator.HasMoreResults)
+            {
+                FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+                estimation += response.Sum(e => e.RemainingWork);
+            }
 
             Assert.AreEqual(expectedTotal, estimation);
         }
@@ -185,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string oldToken = "0:12345";
             string expectedLsn = "12345";
-            Assert.AreEqual(expectedLsn, FeedManagement.ChangeFeedEstimatorCore.ExtractLsnFromSessionToken(oldToken));
+            Assert.AreEqual(expectedLsn, ChangeFeedEstimatorIterator.ExtractLsnFromSessionToken(oldToken));
         }
 
         [TestMethod]
@@ -193,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string newToken = "0:-1#12345";
             string expectedLsn = "12345";
-            Assert.AreEqual(expectedLsn, FeedManagement.ChangeFeedEstimatorCore.ExtractLsnFromSessionToken(newToken));
+            Assert.AreEqual(expectedLsn, ChangeFeedEstimatorIterator.ExtractLsnFromSessionToken(newToken));
         }
 
         [TestMethod]
@@ -201,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string newTokenWithRegionalLsn = "0:-1#12345#Region1=1#Region2=2";
             string expectedLsn = "12345";
-            Assert.AreEqual(expectedLsn, FeedManagement.ChangeFeedEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
+            Assert.AreEqual(expectedLsn, ChangeFeedEstimatorIterator.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
         }
 
         private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
