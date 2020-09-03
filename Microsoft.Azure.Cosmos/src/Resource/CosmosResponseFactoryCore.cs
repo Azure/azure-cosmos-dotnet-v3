@@ -89,6 +89,20 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        public override ItemResponse<T> CreateItemResponse<T>(
+            ResponseMessage responseMessage,
+            T item)
+        {
+            return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
+            {
+                return new ItemResponse<T>(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    item,
+                    cosmosResponseMessage.Diagnostics);
+            });
+        }
+
         public override ContainerResponse CreateContainerResponse(
             Container container,
             ResponseMessage responseMessage)

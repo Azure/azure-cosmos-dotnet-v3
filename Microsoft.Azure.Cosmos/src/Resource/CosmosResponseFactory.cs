@@ -28,21 +28,32 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage);
 
         /// <summary>
-        /// Creates a FeedResponse from a response message
+        /// Creates a ItemResponse from a response message
         /// </summary>
-        /// <typeparam name="T">The user</typeparam>
+        /// <typeparam name="T">The user type of the serialized item</typeparam>
         /// <param name="responseMessage">The response message from the stream API</param>
-        /// <returns>An instance of FeedResponse<typeparamref name="T"/></returns>
+        /// <returns>An instance of ItemResponse<typeparamref name="T"/></returns>
         public abstract ItemResponse<T> CreateItemResponse<T>(
             ResponseMessage responseMessage);
 
         /// <summary>
         /// Creates a StoredProcedureExecuteResponse from a response message
         /// </summary>
-        /// <typeparam name="T">The user</typeparam>
+        /// <typeparam name="T">The user type of the serialized item</typeparam>
         /// <param name="responseMessage">The response message from the stream API</param>
-        /// <returns>An instance of FeedResponse<typeparamref name="T"/></returns>
+        /// <returns>An instance of StoredProcedureExecuteResponse<typeparamref name="T"/></returns>
         public abstract StoredProcedureExecuteResponse<T> CreateStoredProcedureExecuteResponse<T>(
             ResponseMessage responseMessage);
+
+        /// <summary>
+        /// Creates a ItemResponse from a response message and the item resource.
+        /// </summary>
+        /// <typeparam name="T">The user type of the serialized item</typeparam>
+        /// <param name="responseMessage">The response message from the stream API</param>
+        /// <param name="item">The item resource.</param>
+        /// <returns>An instance of ItemResponse<typeparamref name="T"/></returns>
+        public abstract ItemResponse<T> CreateItemResponse<T>(
+            ResponseMessage responseMessage,
+            T item);
     }
 }

@@ -174,11 +174,35 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage udfResponse = this.CreateResponse();
             ResponseMessage itemResponse = this.CreateResponse();
 
-
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
             CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(
                serializerCore);
+
+            // Verify ItemResponse created from a response message and the item resource
+            ResponseMessage itemResponseWithoutContent = new ResponseMessage(statusCode: HttpStatusCode.OK);
+            Assert.IsNull(itemResponseWithoutContent.Content);
+            ToDoActivity item = new ToDoActivity()
+            {
+                id = "item1",
+                description = "test"
+            };
+
+            ItemResponse<ToDoActivity> itemResponseCreated = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponseWithoutContent, item);
+            Assert.IsNotNull(itemResponseCreated.Resource);
+            Assert.AreEqual(item, itemResponseCreated.Resource);
+
+            // Validate responseMessage with non-success status code
+            itemResponseWithoutContent = new ResponseMessage(statusCode: HttpStatusCode.InternalServerError);
+            try
+            {
+                cosmosResponseFactory.CreateItemResponse(itemResponseWithoutContent, item);
+                Assert.Fail();
+            }
+            catch (CosmosException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: InternalServerError"));
+            }
 
             // Test the user specified response
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
