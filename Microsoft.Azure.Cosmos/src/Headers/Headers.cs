@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new StoreResponseNameValueCollection();
+            this.CosmosMessageHeaders = new CosmosMessageHeadersInternal();
         }
 
         internal Headers(INameValueCollection nameValue)
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.Add(headerName, value);
+                this.Set(headerName, value);
             }
         }
 
