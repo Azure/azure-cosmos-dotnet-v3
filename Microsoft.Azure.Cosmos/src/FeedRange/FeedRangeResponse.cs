@@ -46,7 +46,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(responseMessage));
             }
 
-            responseMessage.Headers.ContinuationToken = null;
+            if (responseMessage.Headers.ContinuationToken != null)
+            {
+                responseMessage.Headers.Remove(Documents.HttpConstants.HttpHeaders.Continuation);
+            }
 
             return responseMessage;
         }

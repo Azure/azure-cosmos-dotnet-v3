@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new CosmosMessageHeadersInternal();
+            this.CosmosMessageHeaders = new StoreResponseNameValueCollection();
         }
 
         internal Headers(INameValueCollection nameValue)
