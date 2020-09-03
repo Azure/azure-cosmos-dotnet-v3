@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             HttpClient httpClient = new HttpClient(httpMessageHandler);
+            httpClient.MaxResponseContentBufferSize = 1;
 
             return CosmosHttpClientCore.CreateHelper(
                 httpClient: httpClient,
@@ -184,7 +185,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.SendHttpAsync(
                 CreateRequestMessage,
-                HttpCompletionOption.ResponseHeadersRead,
                 resourceType,
                 diagnosticsContext,
                 cancellationToken);
@@ -192,21 +192,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
-            ResourceType resourceType,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            return this.SendHttpAsync(
-                createRequestMessageAsync,
-                HttpCompletionOption.ResponseContentRead,
-                resourceType,
-                diagnosticsContext,
-                cancellationToken);
-        }
-
-        private Task<HttpResponseMessage> SendHttpAsync(
-            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
-            HttpCompletionOption httpCompletionOption,
             ResourceType resourceType,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -230,9 +215,12 @@ namespace Microsoft.Azure.Cosmos
                             resourceType.ToResourceTypeString(),
                             requestMessage.Headers);
 
+                        // Only read the header initially. The content gets copied into a memory stream later
+                        // if we read the content http client will buffer the message and then it will get buffered
+                        // again when it is copied to the memory stream.
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
                                 requestMessage,
-                                httpCompletionOption,
+                                HttpCompletionOption.ResponseHeadersRead,
                                 cancellationToken);
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
