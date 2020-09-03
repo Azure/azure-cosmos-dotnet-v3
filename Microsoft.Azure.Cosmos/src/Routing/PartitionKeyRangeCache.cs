@@ -224,14 +224,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 string authorizationToken = null;
                 try
                 {
-                    authorizationToken =
-                        this.authorizationTokenProvider.GetUserAuthorizationToken(
-                    request.ResourceAddress,
-                    PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Get,
-                    request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey,
-                    payload: out _);
+                    authorizationToken = (await this.authorizationTokenProvider.GetUserAuthorizationAsync(
+                        request.ResourceAddress,
+                        PathsHelper.GetResourcePath(request.ResourceType),
+                        HttpConstants.HttpMethods.Get,
+                        request.Headers,
+                        AuthorizationTokenType.PrimaryMasterKey)).token;
                 }
                 catch (UnauthorizedException)
                 {
@@ -240,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (authorizationToken == null)
                 {
                     // User doesn't have rid based resource token. Maybe he has name based.
-                    throw new NotSupportedException("Resoruce tokens are not supported");
+                    throw new NotSupportedException("Resource tokens are not supported");
 
                     ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                     ////authorizationToken =
