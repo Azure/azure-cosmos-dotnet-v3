@@ -4622,6 +4622,16 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String JioIndiaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String JioIndiaWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String KoreaCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -4773,6 +4783,11 @@
           "MethodInfo": null
         },
         "System.String WestUS2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestUS3": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
