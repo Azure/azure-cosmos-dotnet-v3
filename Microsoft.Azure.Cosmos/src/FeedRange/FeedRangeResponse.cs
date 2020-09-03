@@ -26,10 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (feedRangeContinuation.IsDone)
             {
-                if (responseMessage.Headers.ContinuationToken != null)
-                {
-                    responseMessage.Headers.Remove(Documents.HttpConstants.HttpHeaders.Continuation);
-                }
+                responseMessage.Headers.ContinuationToken = null;
             }
             else
             {
@@ -46,10 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(responseMessage));
             }
 
-            if (responseMessage.Headers.ContinuationToken != null)
-            {
-                responseMessage.Headers.Remove(Documents.HttpConstants.HttpHeaders.Continuation);
-            }
+            responseMessage.Headers.ContinuationToken = null;
 
             return responseMessage;
         }
