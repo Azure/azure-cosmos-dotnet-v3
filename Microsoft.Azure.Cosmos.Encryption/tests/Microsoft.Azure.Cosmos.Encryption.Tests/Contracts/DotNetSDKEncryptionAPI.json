@@ -418,6 +418,79 @@
       },
       "NestedTypes": {}
     },
+    "DecryptableItem": {
+      "Subclasses": {
+        "EncryptableItem`1": {
+          "Subclasses": {},
+          "Members": {
+            "Void .ctor(T)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(T)"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "EncryptableItemStream": {
+          "Subclasses": {},
+          "Members": {
+            "Void .ctor(System.IO.Stream)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(System.IO.Stream)"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
+      "Members": {
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.DecryptableItem+<GetItemAsStreamAsync>d__8))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()"
+        },
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.DecryptableItem+<GetItemAsync>d__7`1))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "DecryptionInfo": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PathsDecrypted()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_PathsDecrypted()"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] PathsDecrypted": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String DataEncryptionKeyId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DataEncryptionKeyId()"
+        }
+      },
+      "NestedTypes": {}
+    },
     "DecryptionResult": {
       "Subclasses": {},
       "Members": {
@@ -448,32 +521,24 @@
       },
       "NestedTypes": {}
     },
-    "EncryptionChangeFeedRequestOptions": {
+    "EncryptableItem`1": {
       "Subclasses": {},
       "Members": {
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] DecryptionResultHandler": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()"
-        },
-        "Void .ctor()": {
+        "Void .ctor(T)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        },
-        "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])"
+          "MethodInfo": "Void .ctor(T)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "EncryptableItemStream": {
+      "Subclasses": {},
+      "Members": {
+        "Void .ctor(System.IO.Stream)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.IO.Stream)"
         }
       },
       "NestedTypes": {}
@@ -488,19 +553,19 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor)"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.QueryRequestOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.QueryRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.QueryRequestOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.QueryRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])"
         }
       },
       "NestedTypes": {}
@@ -520,29 +585,10 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.EncryptionOptions get_EncryptionOptions()"
         },
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] DecryptionResultHandler": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()"
-        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
-        },
-        "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])"
         },
         "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -765,36 +811,6 @@
       },
       "NestedTypes": {}
     },
-    "EncryptionQueryRequestOptions": {
-      "Subclasses": {},
-      "Members": {
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] DecryptionResultHandler": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
-        },
-        "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])"
-        }
-      },
-      "NestedTypes": {}
-    },
     "EncryptionTransactionalBatchItemRequestOptions": {
       "Subclasses": {},
       "Members": {
@@ -810,29 +826,10 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.EncryptionOptions get_EncryptionOptions()"
         },
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] DecryptionResultHandler": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] get_DecryptionResultHandler()"
-        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
-        },
-        "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DecryptionResultHandler(System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult])"
         },
         "Void set_EncryptionOptions(Microsoft.Azure.Cosmos.Encryption.EncryptionOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

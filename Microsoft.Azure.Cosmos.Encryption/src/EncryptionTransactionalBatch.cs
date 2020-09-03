@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         if (result.ResourceStream != null)
                         {
-                            result.ResourceStream = await EncryptionProcessor.DecryptAsync(
+                            (result.ResourceStream, _) = await EncryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
                                 diagnosticsContext,
@@ -219,6 +219,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return response;
             }
+        }
+
+        public override Task<TransactionalBatchResponse> ExecuteAsync(TransactionalBatchRequestOptions requestOptions, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }
