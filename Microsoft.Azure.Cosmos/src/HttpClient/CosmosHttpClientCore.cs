@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             HttpClient httpClient = new HttpClient(httpMessageHandler);
-            httpClient.MaxResponseContentBufferSize = 1;
 
             return CosmosHttpClientCore.CreateHelper(
                 httpClient: httpClient,
