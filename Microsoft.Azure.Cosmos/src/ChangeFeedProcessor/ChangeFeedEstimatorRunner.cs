@@ -95,13 +95,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 await this.runAsync.ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
                 // Expected during shutdown
+                Cosmos.Extensions.TraceException(ex);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
                 // Expected during shutdown
+                Cosmos.Extensions.TraceException(ex);
             }
         }
 
