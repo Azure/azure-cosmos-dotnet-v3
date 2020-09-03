@@ -26,7 +26,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (feedRangeContinuation.IsDone)
             {
-                responseMessage.Headers.ContinuationToken = null;
+                if (responseMessage.Headers.ContinuationToken != null)
+                {
+                    responseMessage.Headers.Remove(Documents.HttpConstants.HttpHeaders.Continuation);
+                }
             }
             else
             {
