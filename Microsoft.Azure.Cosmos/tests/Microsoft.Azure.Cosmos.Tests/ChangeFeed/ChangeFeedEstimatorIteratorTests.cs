@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await this.ShouldReturnAllLeasesInOnePage(new ChangeFeedEstimatorRequestOptions() { MaxItemCount = 10 });
         }
 
-        public async Task ShouldReturnAllLeasesInOnePage(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
+        private async Task ShouldReturnAllLeasesInOnePage(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
         {
             List<string> ranges = new List<string>() { "0", "1" };
 

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task WhenNoLeasesExist_Pull()
         {
-            ChangeFeedEstimator estimator = this.Container
+            ChangeFeedEstimator estimator = ((ContainerInternal)this.Container)
                 .GetChangeFeedEstimator(
                     processorName: "test",
                     this.LeaseContainer);
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
 
             long receivedEstimation = 0;
-            ChangeFeedEstimator estimator = this.Container
+            ChangeFeedEstimator estimator = ((ContainerInternal)this.Container)
                 .GetChangeFeedEstimator(
                     processorName: "test",
                     this.LeaseContainer);
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             ManualResetEvent manualResetEvent = new ManualResetEvent(false);
             long receivedEstimation = 0;
-            ChangeFeedEstimator estimator = this.Container
+            ChangeFeedEstimator estimator = ((ContainerInternal)this.Container)
                 .GetChangeFeedEstimator(
                     processorName: "test",
                     this.LeaseContainer);

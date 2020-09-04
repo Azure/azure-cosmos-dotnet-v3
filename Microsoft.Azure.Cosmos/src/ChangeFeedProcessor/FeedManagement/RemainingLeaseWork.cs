@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Remaining estimated work on the lease.
     /// </summary>
-    public sealed class RemainingLeaseWork
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    sealed class RemainingLeaseWork
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RemainingLeaseWork"/> class.
