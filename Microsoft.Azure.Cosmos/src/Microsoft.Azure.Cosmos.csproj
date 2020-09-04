@@ -64,7 +64,7 @@
     </Compile>
     <Compile Update="direct\RMResources.Designer.cs">
       <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
+      <AutoGen>false</AutoGen>
       <DependentUpon>RMResources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
@@ -74,10 +74,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="direct/RMResources.resx">
+    <EmbeddedResource Update="direct\RMResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>RMResources.Designer.cs</LastGenOutput>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CustomToolNamespace>Microsoft.Azure.Documents</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
 

@@ -8,11 +8,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Microsoft.Azure.Documents
-{
+namespace Microsoft.Azure.Documents {
     using System;
-
-
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -20,3551 +19,2907 @@ namespace Microsoft.Azure.Documents
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class RMResources
-    {
-
+    internal class RMResources {
+        
         private static global::System.Resources.ResourceManager resourceMan;
-
+        
         private static global::System.Globalization.CultureInfo resourceCulture;
-
+        
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal RMResources()
-        {
+        internal RMResources() {
         }
-
+        
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager
-        {
-            get
-            {
-                if (object.ReferenceEquals(resourceMan, null))
-                {
-#if COSMOSCLIENT
+        internal static global::System.Resources.ResourceManager ResourceManager {
+            get {
+                if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
-#else
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
-#endif
                     resourceMan = temp;
                 }
                 return resourceMan;
             }
         }
-
+        
         /// <summary>
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture
-        {
-            get
-            {
+        internal static global::System.Globalization.CultureInfo Culture {
+            get {
                 return resourceCulture;
             }
-            set
-            {
+            set {
                 resourceCulture = value;
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to {0} api is not supported for this database account.
-        /// </summary>
-        internal static string ApiTypeForbidden
-        {
-            get
-            {
-                return ResourceManager.GetString("ApiTypeForbidden", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to {0} should have {1} argument..
-        /// </summary>
-        internal static string ArgumentRequired
-        {
-            get
-            {
-                return ResourceManager.GetString("ArgumentRequired", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Auto-Scale Setting Change With User Auth Is Disallowed..
-        /// </summary>
-        internal static string AutoScaleSettingChangeWithUserAuthIsDisallowed
-        {
-            get
-            {
-                return ResourceManager.GetString("AutoScaleSettingChangeWithUserAuthIsDisallowed", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to AAD Authentication is disabled for this account. Please contact Azure Support [https://azure.microsoft.com/support] to enable it..
         /// </summary>
-        internal static string AadAuthDisabled
-        {
-            get
-            {
+        internal static string AadAuthDisabled {
+            get {
                 return ResourceManager.GetString("AadAuthDisabled", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Failed to validate AAD identity since the authenticator is unavailable..
         /// </summary>
-        internal static string AadAuthNotAvailable
-        {
-            get
-            {
+        internal static string AadAuthNotAvailable {
+            get {
                 return ResourceManager.GetString("AadAuthNotAvailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Failed to update the AAD Public Keys with value {0}. Exception: {1}..
         /// </summary>
-        internal static string AadAuthPublicKeysFailedToUpdate
-        {
-            get
-            {
+        internal static string AadAuthPublicKeysFailedToUpdate {
+            get {
                 return ResourceManager.GetString("AadAuthPublicKeysFailedToUpdate", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to At this time, only write operations made from the MongoDB SDKs are supported. Modifications to MongoDB collections using other SDKs is temporarily blocked..
+        ///   Looks up a localized string similar to {0} api is not supported for this database account.
         /// </summary>
-        internal static string BadClientMongo
-        {
-            get
-            {
-                return ResourceManager.GetString("BadClientMongo", resourceCulture);
+        internal static string ApiTypeForbidden {
+            get {
+                return ResourceManager.GetString("ApiTypeForbidden", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Invalid response from upstream server or upstream server request failed..
+        ///   Looks up a localized string similar to {0} should have {1} argument..
         /// </summary>
-        internal static string BadGateway
-        {
-            get
-            {
-                return ResourceManager.GetString("BadGateway", resourceCulture);
+        internal static string ArgumentRequired {
+            get {
+                return ResourceManager.GetString("ArgumentRequired", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to One of the input values is invalid..
-        /// </summary>
-        internal static string BadRequest
-        {
-            get
-            {
-                return ResourceManager.GetString("BadRequest", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Request url is invalid..
-        /// </summary>
-        internal static string BadUrl
-        {
-            get
-            {
-                return ResourceManager.GetString("BadUrl", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot offline a write region that has zero read regions configured. There needs to be atleast one read region to failover to..
-        /// </summary>
-        internal static string CannotOfflineWriteRegionWithNoReadRegions
-        {
-            get
-            {
-                return ResourceManager.GetString("CannotOfflineWriteRegionWithNoReadRegions", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot specify partition key range or partition key for resource that is not partitioned..
-        /// </summary>
-        internal static string CannotSpecifyPKRangeForNonPartitionedResource
-        {
-            get
-            {
-                return ResourceManager.GetString("CannotSpecifyPKRangeForNonPartitionedResource", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to StartTime cannot have DateTimeKind.Unspecified..
-        /// </summary>
-        internal static string ChangeFeedOptionsStartTimeWithUnspecifiedDateTimeKind
-        {
-            get
-            {
-                return ResourceManager.GetString("ChangeFeedOptionsStartTimeWithUnspecifiedDateTimeKind", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Channel is closed.
-        /// </summary>
-        internal static string ChannelClosed
-        {
-            get
-            {
-                return ResourceManager.GetString("ChannelClosed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The channel multiplexer has shut down..
-        /// </summary>
-        internal static string ChannelMultiplexerClosedTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("ChannelMultiplexerClosedTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The transport client failed to open a connection. See the inner exception for details..
-        /// </summary>
-        internal static string ChannelOpenFailedTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("ChannelOpenFailedTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The transport client timed out when opening a connection. See the inner exception for details..
-        /// </summary>
-        internal static string ChannelOpenTimeoutTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("ChannelOpenTimeoutTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request..
-        /// </summary>
-        internal static string ClientCpuOverload
-        {
-            get
-            {
-                return ResourceManager.GetString("ClientCpuOverload", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. Please check for client resource starvation issues and verify connectivity between client and server..
-        /// </summary>
-        internal static string ClientUnavailable
-        {
-            get
-            {
-                return ResourceManager.GetString("ClientUnavailable", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Collection create request conflicted with ongoing add region or failover operation. Ensure to complete region configuration before creating collection..
-        /// </summary>
-        internal static string CollectionCreateTopologyConflict
-        {
-            get
-            {
-                return ResourceManager.GetString("CollectionCreateTopologyConflict", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Throughput of this collection cannot be more than {0}, as was provisioned during collection creation time..
-        /// </summary>
-        internal static string CollectionThroughputCannotBeMoreThan
-        {
-            get
-            {
-                return ResourceManager.GetString("CollectionThroughputCannotBeMoreThan", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Failed to connect to the remote endpoint..
-        /// </summary>
-        internal static string ConnectFailedTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("ConnectFailedTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The connection failed..
-        /// </summary>
-        internal static string ConnectionBrokenTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("ConnectionBrokenTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The connection attempt timed out..
-        /// </summary>
-        internal static string ConnectTimeoutTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("ConnectTimeoutTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Correlation ID not found in response.
-        /// </summary>
-        internal static string CorrelationIDNotFoundInResponse
-        {
-            get
-            {
-                return ResourceManager.GetString("CorrelationIDNotFoundInResponse", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid CORS rule. At least one allowed origin is required..
-        /// </summary>
-        internal static string CorsAllowedOriginsEmptyList
-        {
-            get
-            {
-                return ResourceManager.GetString("CorsAllowedOriginsEmptyList", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to InvalidCORS rule. The origin &apos;{0}&apos; is an invalid origin. A valid rigin should not include a uri path..
-        /// </summary>
-        internal static string CorsAllowedOriginsInvalidPath
-        {
-            get
-            {
-                return ResourceManager.GetString("CorsAllowedOriginsInvalidPath", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid CORS rule. The origin &apos;{0}&apos; is not a well formed origin...
-        /// </summary>
-        internal static string CorsAllowedOriginsMalformedUri
-        {
-            get
-            {
-                return ResourceManager.GetString("CorsAllowedOriginsMalformedUri", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid CORS rule. Wildcards are not supported..
-        /// </summary>
-        internal static string CorsAllowedOriginsWildcardsNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("CorsAllowedOriginsWildcardsNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid CORS rules. Only one rule is supported..
-        /// </summary>
-        internal static string CorsTooManyRules
-        {
-            get
-            {
-                return ResourceManager.GetString("CorsTooManyRules", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Value specified in the &quot;{0}&quot; header is incompatible with value specified in the &quot;{1}&quot; header of the request..
-        /// </summary>
-        internal static string CrossPartitionContinuationAndIndex
-        {
-            get
-            {
-                return ResourceManager.GetString("CrossPartitionContinuationAndIndex", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cross partition query is required but disabled. Please set x-ms-documentdb-query-enablecrosspartition to true, specify x-ms-documentdb-partitionkey, or revise your query to avoid this exception..
-        /// </summary>
-        internal static string CrossPartitionQueryDisabled
-        {
-            get
-            {
-                return ResourceManager.GetString("CrossPartitionQueryDisabled", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Database Account {0} does not exist.
-        /// </summary>
-        internal static string DatabaseAccountNotFound
-        {
-            get
-            {
-                return ResourceManager.GetString("DatabaseAccountNotFound", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Database create request conflicted with ongoing add region or failover operation. Ensure to complete region configuration before creating collection...
-        /// </summary>
-        internal static string DatabaseCreateTopologyConflict
-        {
-            get
-            {
-                return ResourceManager.GetString("DatabaseCreateTopologyConflict", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Expecting DateTime value..
-        /// </summary>
-        internal static string DateTimeConverterInvalidDateTime
-        {
-            get
-            {
-                return ResourceManager.GetString("DateTimeConverterInvalidDateTime", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Expecting reader to read Integer.
-        /// </summary>
-        internal static string DateTimeConverterInvalidReaderValue
-        {
-            get
-            {
-                return ResourceManager.GetString("DateTimeConverterInvalidReaderValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Expecting reader value to be compatible with double conversion..
-        /// </summary>
-        internal static string DateTimeConveterInvalidReaderDoubleValue
-        {
-            get
-            {
-                return ResourceManager.GetString("DateTimeConveterInvalidReaderDoubleValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Error occurred while deserializing content &apos;{0}&apos;..
-        /// </summary>
-        internal static string DeserializationError
-        {
-            get
-            {
-                return ResourceManager.GetString("DeserializationError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to DNS resolution failed..
-        /// </summary>
-        internal static string DnsResolutionFailedTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("DnsResolutionFailedTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to DNS resolution timed out..
-        /// </summary>
-        internal static string DnsResolutionTimeoutTransportError
-        {
-            get
-            {
-                return ResourceManager.GetString("DnsResolutionTimeoutTransportError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Document Query Execution Context is done..
-        /// </summary>
-        internal static string DocumentQueryExecutionContextIsDone
-        {
-            get
-            {
-                return ResourceManager.GetString("DocumentQueryExecutionContextIsDone", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Service is currently unavailable, please retry after a while. If this problem persists please contact support..
-        /// </summary>
-        internal static string DocumentServiceUnavailable
-        {
-            get
-            {
-                return ResourceManager.GetString("DocumentServiceUnavailable", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Duplicate correlation id generated.
-        /// </summary>
-        internal static string DuplicateCorrelationIdGenerated
-        {
-            get
-            {
-                return ResourceManager.GetString("DuplicateCorrelationIdGenerated", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Empty Virtual Network Resource Guid.
-        /// </summary>
-        internal static string EmptyVirtualNetworkResourceGuid
-        {
-            get
-            {
-                return ResourceManager.GetString("EmptyVirtualNetworkResourceGuid", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Specified Virtual Network Rules list is empty.
-        /// </summary>
-        internal static string EmptyVirtualNetworkRulesSpecified
-        {
-            get
-            {
-                return ResourceManager.GetString("EmptyVirtualNetworkRulesSpecified", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot set EnableAnalyticsStorage on an account with EnableServerless.
-        /// </summary>
-        internal static string EnableAnalyticsStorageAndEnableServerlessNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("EnableAnalyticsStorageAndEnableServerlessNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot set EnableMultipleWriteLocations on an account with EnableServerless.
-        /// </summary>
-        internal static string EnableMultipleWriteLocationsAndEnableServerlessNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("EnableMultipleWriteLocationsAndEnableServerlessNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Accounts configured with default consistency level as &apos;Strong&apos; cannot be enabled for multiple write locations(i.e. EnableMultipleWriteLocations=true). Consider relaxing default consistency level of the account to enable multiple write locations..
-        /// </summary>
-        internal static string EnableMultipleWriteLocationsAndStrongConsistencyNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("EnableMultipleWriteLocationsAndStrongConsistencyNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Availability Zone on a multi region account requires multi master to be enabled. Please enable Multi-Master on the database account to proceed..
-        /// </summary>
-        internal static string EnableMultipleWriteLocationsBeforeAddingRegion
-        {
-            get
-            {
-                return ResourceManager.GetString("EnableMultipleWriteLocationsBeforeAddingRegion", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to This account already has EnableMultipleWriteLocations flag set to {0}"..
-        /// </summary>
-        internal static string EnableMultipleWriteLocationsNotModified
-        {
-            get
-            {
-                return ResourceManager.GetString("EnableMultipleWriteLocationsNotModified", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot add regions to an account with EnableServerless.
-        /// </summary>
-        internal static string EnableMultiRegionAndEnableServerlessNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("EnableMultiRegionAndEnableServerlessNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Unable to retrieve address of endpoint &apos;{0}&apos; from the address &apos;{1}&apos;.
-        /// </summary>
-        internal static string EndpointNotFound
-        {
-            get
-            {
-                return ResourceManager.GetString("EndpointNotFound", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Entity with the specified id already exists in the system..
-        /// </summary>
-        internal static string EntityAlreadyExists
-        {
-            get
-            {
-                return ResourceManager.GetString("EntityAlreadyExists", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Message: {0}.
-        /// </summary>
-        internal static string ExceptionMessage
-        {
-            get
-            {
-                return ResourceManager.GetString("ExceptionMessage", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to {0}, Local IP: {1}.
-        /// </summary>
-        internal static string ExceptionMessageAddIpAddress
-        {
-            get
-            {
-                return ResourceManager.GetString("ExceptionMessageAddIpAddress", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to {0}, Request URI: {1}, RequestStats: {2}, SDK: {3}.
-        /// </summary>
-        internal static string ExceptionMessageAddRequestUri
-        {
-            get
-            {
-                return ResourceManager.GetString("ExceptionMessageAddRequestUri", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Feature {0} is not supported for Multi-region Account.
-        /// </summary>
-        internal static string FeatureNotSupportedForMultiRegionAccount
-        {
-            get
-            {
-                return ResourceManager.GetString("FeatureNotSupportedForMultiRegionAccount", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Feature {0} is not supported in {1} region.
-        /// </summary>
-        internal static string FeatureNotSupportedInRegion
-        {
-            get
-            {
-                return ResourceManager.GetString("FeatureNotSupportedInRegion", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to {0} is not supported for the target subscription.
-        /// </summary>
-        internal static string FeatureNotSupportedOnSubscription
-        {
-            get
-            {
-                return ResourceManager.GetString("FeatureNotSupportedOnSubscription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Federation {0} in region {1} is not found.
-        /// </summary>
-        internal static string FederationEntityNotFound
-        {
-            get
-            {
-                return ResourceManager.GetString("FederationEntityNotFound", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Request is blocked by your Cosmos DB account firewall settings..
-        /// </summary>
-        internal static string Forbidden
-        {
-            get
-            {
-                return ResourceManager.GetString("Forbidden", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to client IP {0} through public internet.
-        /// </summary>
-        internal static string ClientPublicIpInfo
-        {
-            get
-            {
-                return ResourceManager.GetString("ClientPublicIpInfo", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to client VNET through {0}.
-        /// </summary>
-        internal static string ClientVnetInfo
-        {
-            get
-            {
-                return ResourceManager.GetString("ClientVnetInfo", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Request originated from {0}. This is blocked by your Cosmos DB account firewall settings..
-        /// </summary>
-        internal static string ForbiddenClientIpAddress
-        {
-            get
-            {
-                return ResourceManager.GetString("ForbiddenClientIpAddress", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Attempt to process the request timed out at remote server..
-        /// </summary>
-        internal static string GatewayTimedout
-        {
-            get
-            {
-                return ResourceManager.GetString("GatewayTimedout", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Database and Write Location are not matching.
-        /// </summary>
-        internal static string GlobalAndWriteRegionMisMatch
-        {
-            get
-            {
-                return ResourceManager.GetString("GlobalAndWriteRegionMisMatch", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Global Strong write barrier has not been met for the request..
-        /// </summary>
-        internal static string GlobalStrongWriteBarrierNotMet
-        {
-            get
-            {
-                return ResourceManager.GetString("GlobalStrongWriteBarrierNotMet", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The requested resource is no longer available at the server..
-        /// </summary>
-        internal static string Gone
-        {
-            get
-            {
-                return ResourceManager.GetString("Gone", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Failed to generate id for resourceType = {0}, partitionIndex = {1}, serviceIndex = {2}, partitionCount = {3}..
-        /// </summary>
-        internal static string IdGenerationFailed
-        {
-            get
-            {
-                return ResourceManager.GetString("IdGenerationFailed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Routing map is not complete..
-        /// </summary>
-        internal static string IncompleteRoutingMap
-        {
-            get
-            {
-                return ResourceManager.GetString("IncompleteRoutingMap", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Insufficient permissions provided in the authorization header for the corresponding request. Please retry with another authorization header..
-        /// </summary>
-        internal static string InsufficientPermissions
-        {
-            get
-            {
-                return ResourceManager.GetString("InsufficientPermissions", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Unable to continue without atleast a single token in the resource tokens input collection..
-        /// </summary>
-        internal static string InsufficientResourceTokens
-        {
-            get
-            {
-                return ResourceManager.GetString("InsufficientResourceTokens", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Unknown server error occurred when processing this request..
-        /// </summary>
-        internal static string InternalServerError
-        {
-            get
-            {
-                return ResourceManager.GetString("InternalServerError", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid API version. Ensure a valid x-ms-version header value is passed. Please update to the latest version of Azure Cosmos DB SDK..
-        /// </summary>
-        internal static string InvalidAPIVersion
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidAPIVersion", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid API version for {0}. Ensure a valid x-ms-version header value is passed. Please update to the latest version of Azure Cosmos DB SDK..
-        /// </summary>
-        internal static string InvalidAPIVersionForFeature
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidAPIVersionForFeature", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to AudienceKind is Invalid.
-        /// </summary>
-        internal static string InvalidAudienceKind
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidAudienceKind", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid Audience Resource Type.
-        /// </summary>
-        internal static string InvalidAudienceResourceType
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidAudienceResourceType", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Authorization header doesn&apos;t confirm to the required format. Please verify and try again..
-        /// </summary>
-        internal static string InvalidAuthHeaderFormat
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidAuthHeaderFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The backend response was not in the correct format..
-        /// </summary>
-        internal static string InvalidBackendResponse
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidBackendResponse", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to &quot;{0} capability cannot be specified with {1} .&quot;.
-        /// </summary>
-        internal static string InvalidCapabilityCombination
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidCapabilityCombination", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The resource name presented contains invalid character &apos;{0}&apos;..
-        /// </summary>
-        internal static string InvalidCharacterInResourceName
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidCharacterInResourceName", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid mode &apos;{0}&apos; for setting &apos;{1}&apos;. Mode expected is &apos;{2}&apos;..
-        /// </summary>
-        internal static string InvalidConflictResolutionMode
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidConflictResolutionMode", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to ConsistencyLevel {0} specified in the request is invalid when service is configured with consistency level {1}. Ensure the request consistency level is not stronger than the service consistency level..
-        /// </summary>
-        internal static string InvalidConsistencyLevel
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidConsistencyLevel", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid Continuation Token.
-        /// </summary>
-        internal static string InvalidContinuationToken
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidContinuationToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The specified document collection is invalid...
-        /// </summary>
-        internal static string InvalidDatabase
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidDatabase", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The input date header is invalid format. Please pass in RFC 1123 style date format..
-        /// </summary>
-        internal static string InvalidDateHeader
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidDateHeader", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The specified document collection is invalid..
-        /// </summary>
-        internal static string InvalidDocumentCollection
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidDocumentCollection", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot enable &apos;enableMultipleWriteLocations&apos; without also enabling &apos;canEnableMultipleWriteLocations&apos;..
-        /// </summary>
-        internal static string InvalidEnableMultipleWriteLocations
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidEnableMultipleWriteLocations", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid value {0} passed for enum {1}.
-        /// </summary>
-        internal static string InvalidEnumValue
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidEnumValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Failover priority value {0} supplied for region {1} is invalid.
-        /// </summary>
-        internal static string InvalidFailoverPriority
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidFailoverPriority", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Value &apos;{0}&apos; specified for the header &apos;{1}&apos; is invalid. .
-        /// </summary>
-        internal static string InvalidHeaderValue
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidHeaderValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The specified value {0} of the index kind is invalid..
-        /// </summary>
-        internal static string InvalidIndexKindValue
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidIndexKindValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The index spec format is invalid..
-        /// </summary>
-        internal static string InvalidIndexSpecFormat
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidIndexSpecFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Received invalid index transformation progress values from all the replicas..
-        /// </summary>
-        internal static string InvalidIndexTransformationProgressValues
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidIndexTransformationProgressValues", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to List of supplied locations is invalid.
-        /// </summary>
-        internal static string InvalidLocations
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidLocations", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Only one manualPrivateLinkServiceConnection or one privateLinkServiceConnection is supported.
-        /// </summary>
-        internal static string InvalidPrivateLinkServiceConnections
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPrivateLinkServiceConnections", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Only one privateLinkServiceProxy is supported.
-        /// </summary>
-        internal static string InvalidPrivateLinkServiceProxies
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPrivateLinkServiceProxies", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Only one groupId is supported.
-        /// </summary>
-        internal static string InvalidGroupIdCount
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidGroupIdCount", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to GroupId {0} is not supported.
-        /// </summary>
-        internal static string InvalidGroupId
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidGroupId", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to MaxStalenessInterval should be greater than or equal to {0} sec and less than or equal to {1} sec.
-        /// </summary>
-        internal static string InvalidMaxStalenessInterval
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidMaxStalenessInterval", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to MaxStalenessPrefix should be greater than or equal to {0} and less than or equal to {1}.
-        /// </summary>
-        internal static string InvalidMaxStalenessPrefix
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidMaxStalenessPrefix", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The value of offer throughput specified exceeded supported maximum throughput for Fixed size container. Please enter value less than {0}..
-        /// </summary>
-        internal static string InvalidNonPartitionedOfferThroughput
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidNonPartitionedOfferThroughput", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The container doesn't have enough data populated with partition key information. Please retry the throughput scale operation after inserting data with partition key information.
-        /// </summary>
-        internal static string InsufficientPartitionedDataForOfferThroughput
-        {
-            get
-            {
-                return ResourceManager.GetString("InsufficientPartitionedDataForOfferThroughput", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The value of offer IsAutoScaleEnabled specified is invalid. Please specify a boolean value..
-        /// </summary>
-        internal static string InvalidOfferIsAutoScaleEnabled
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferIsAutoScaleEnabled", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        /// Looks up a localized string similar to The value of OfferAutoScaleMode specified is invalid.  Please specfy a valid auto scale mode.
-        /// </summary>
-        internal static string InvalidOfferAutoScaleMode
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferAutoScaleMode", resourceCulture);
-            }
-        }
-
-        internal static string OfferAutopilotNotSupportedForNonPartitionedCollections
-        {
-            get
-            {
-                return ResourceManager.GetString("OfferAutopilotNotSupportedForNonPartitionedCollections", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Autopilot is currently not supported on shared throughput database.
-        /// </summary>
-        internal static string OfferAutopilotNotSupportedOnSharedThroughputDatabase
-        {
-            get
-            {
-                return ResourceManager.GetString("OfferAutopilotNotSupportedOnSharedThroughputDatabase", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The value of offer IsRUPerMinuteThroughputEnabled specified is invalid. Please specify a boolean value..
-        /// </summary>
-        internal static string InvalidOfferIsRUPerMinuteThroughputEnabled
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferIsRUPerMinuteThroughputEnabled", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The value of offer throughput specified is invalid. Please enter valid positive integer..
-        /// </summary>
-        internal static string InvalidOfferThroughput
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferThroughput", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to OfferType {0} specified in the request is invalid. Please refer to offer documentation and specify a valid offer type..
-        /// </summary>
-        internal static string InvalidOfferType
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferType", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The required field Content is missing in Offer version v2..
-        /// </summary>
-        internal static string InvalidOfferV2Input
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferV2Input", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Offer read/replace is not supported for serverless accounts.
-        /// </summary>
-        internal static string InvalidOfferCRUDForServerless
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOfferCRUDForServerless", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Resource {0} is invalid for adding owner resource record.
-        /// </summary>
-        internal static string InvalidOwnerResourceType
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidOwnerResourceType", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The input PageSize {0} is invalid. Ensure to pass a valid page size which must be a positive integer or -1 for a dynamic page size..
-        /// </summary>
-        internal static string InvalidPageSize
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPageSize", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Partition key {0} is invalid..
-        /// </summary>
-        internal static string InvalidPartitionKey
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPartitionKey", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to x-ms-documentdb-partitionkeyrangeid header contains invalid value &apos;{0}&apos;..
-        /// </summary>
-        internal static string InvalidPartitionKeyRangeIdHeader
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPartitionKeyRangeIdHeader", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The permission mode provided in the authorization token doesn&apos;t provide sufficient permissions..
-        /// </summary>
-        internal static string InvalidPermissionMode
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPermissionMode", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid policy type found..
-        /// </summary>
-        internal static string InvalidPolicyType
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidPolicyType", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to Command is not supported by backend.
-        /// </summary>
-        internal static string InvalidProxyCommand
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidProxyCommand", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Query &apos;{0}&apos; specified is either invalid or unsupported..
-        /// </summary>
-        internal static string InvalidQuery
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidQuery", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Value &apos;{0}&apos; specified for the query &apos;{1}&apos; is invalid..
-        /// </summary>
-        internal static string InvalidQueryValue
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidQueryValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Compared session tokens &apos;{0}&apos; and &apos;{1}&apos; has unexpected regions. .
-        /// </summary>
-        internal static string InvalidRegionsInSessionToken
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidRegionsInSessionToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Strong consistency level cannot be specified with async replication. Either change the replication policy &apos;AsyncReplication&apos; to false or relax the consistency level..
-        /// </summary>
-        internal static string InvalidReplicationAndConsistencyCombination
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidReplicationAndConsistencyCombination", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Failed to parse the value &apos;{0}&apos; as ResourceId..
-        /// </summary>
-        internal static string InvalidResourceID
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResourceID", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Value for {0} should be greater than 0.
-        /// </summary>
-        internal static string InvalidResourceIdBatchSize
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResourceIdBatchSize", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Resource kind {0} is invalid.
-        /// </summary>
-        internal static string InvalidResourceKind
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResourceKind", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Requested ResourceType {0} passed as generic argument should be same as the one specified by ResourceType member {1}.
-        /// </summary>
-        internal static string InvalidResourceType
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResourceType", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Resource Url path {0} is invalid..
-        /// </summary>
-        internal static string InvalidResourceUrlPath
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResourceUrlPath", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The value &apos;{0}&apos; specified  for query &apos;{1}&apos; is invalid..
-        /// </summary>
-        internal static string InvalidResourceUrlQuery
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResourceUrlQuery", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The input continuation token size limit {0} is invalid. Please pass in a valid continuation token size limit which must be a positive integer..
-        /// </summary>
-        internal static string InvalidResponseContinuationTokenLimit
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidResponseContinuationTokenLimit", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Script request has invalid body..
-        /// </summary>
-        internal static string InvalidScriptResource
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidScriptResource", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The session token provided &apos;{0}&apos; is invalid..
-        /// </summary>
-        internal static string InvalidSessionToken
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidSessionToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The resource name can&apos;t end with space..
-        /// </summary>
-        internal static string InvalidSpaceEndingInResourceName
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidSpaceEndingInResourceName", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Staleness Policy specified is invalid. Ensure both MaxPrefix and MaxStalenessIntervalInSeconds are both 0 or both not zero..
-        /// </summary>
-        internal static string InvalidStalenessPolicy
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidStalenessPolicy", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Storage Service index {0} for media account {1} must be within byte range (inclusive)..
-        /// </summary>
-        internal static string InvalidStorageServiceMediaIndex
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidStorageServiceMediaIndex", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot disable &apos;canEnableMultipleWriteLocations&apos; flag once it has been enabled..
-        /// </summary>
-        internal static string InvalidSwitchOffCanEnableMultipleWriteLocations
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidSwitchOffCanEnableMultipleWriteLocations", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot enable &apos;canEnableMultipleWriteLocations&apos; flag once account has been created with it disabled..
-        /// </summary>
-        internal static string InvalidSwitchOnCanEnableMultipleWriteLocations
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidSwitchOnCanEnableMultipleWriteLocations", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Target for the request is invalid.
-        /// </summary>
-        internal static string InvalidTarget
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidTarget", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The authorization token is not valid at the current time. Please create another token and retry (token start time: {0}, token expiry time: {1}, current server time: {2})..
-        /// </summary>
-        internal static string InvalidTokenTimeRange
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidTokenTimeRange", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Request url is invalid..
-        /// </summary>
-        internal static string InvalidUrl
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidUrl", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to System key can only access replica root.
-        /// </summary>
-        internal static string InvalidUseSystemKey
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidUseSystemKey", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid version format for {0}. Input Version {1}.
-        /// </summary>
-        internal static string InvalidVersionFormat
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidVersionFormat", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to IpAddress {0} is blocked by Policy.
-        /// </summary>
-        internal static string IpAddressBlockedByPolicy
-        {
-            get
-            {
-                return ResourceManager.GetString("IpAddressBlockedByPolicy", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Not allowed to force delete federation in this environment..
-        /// </summary>
-        internal static string IsForceDeleteFederationAllowed
-        {
-            get
-            {
-                return ResourceManager.GetString("IsForceDeleteFederationAllowed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Tried to write a JSON end array (“]“) symbol without a matching array start symbol (“[“)..
-        /// </summary>
-        internal static string JsonArrayNotStarted
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonArrayNotStarted", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid escape character in JSON..
-        /// </summary>
-        internal static string JsonInvalidEscapedCharacter
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonInvalidEscapedCharacter", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid number in JSON..
-        /// </summary>
-        internal static string JsonInvalidNumber
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonInvalidNumber", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid parameter in JSON..
-        /// </summary>
-        internal static string JsonInvalidParameter
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonInvalidParameter", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid string character in JSON..
-        /// </summary>
-        internal static string JsonInvalidStringCharacter
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonInvalidStringCharacter", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered an element that is not a valid JSON value (false / null / true / object / array / number / string).
-        /// </summary>
-        internal static string JsonInvalidToken
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonInvalidToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid Unicode escape sequence in JSON..
-        /// </summary>
-        internal static string JsonInvalidUnicodeEscape
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonInvalidUnicodeEscape", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Exceeded the maximum level of nesting for JSON..
-        /// </summary>
-        internal static string JsonMaxNestingExceeded
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonMaxNestingExceeded", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Missing a closing quote (&quot;) in JSON..
-        /// </summary>
-        internal static string JsonMissingClosingQuote
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonMissingClosingQuote", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Missing an end array (&quot;]&quot;) symbol in JSON..
-        /// </summary>
-        internal static string JsonMissingEndArray
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonMissingEndArray", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Missing an end object (&quot;}&quot;) symbol in JSON..
-        /// </summary>
-        internal static string JsonMissingEndObject
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonMissingEndObject", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Missing a name separator (&quot;:&quot;) in JSON..
-        /// </summary>
-        internal static string JsonMissingNameSeparator
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonMissingNameSeparator", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Missing a JSON property..
-        /// </summary>
-        internal static string JsonMissingProperty
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonMissingProperty", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a JSON property name without a corresponding property value.
-        /// </summary>
-        internal static string JsonNotComplete
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonNotComplete", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a value that was not a JSON field name..
-        /// </summary>
-        internal static string JsonNotFieldnameToken
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonNotFieldnameToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a value that was not a JSON number..
-        /// </summary>
-        internal static string JsonNotNumberToken
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonNotNumberToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a value that was not a JSON string..
-        /// </summary>
-        internal static string JsonNotStringToken
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonNotStringToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a number that exceeded the range for JSON numbers..
-        /// </summary>
-        internal static string JsonNumberOutOfRange
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonNumberOutOfRange", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a number that was too long for a JSON number..
-        /// </summary>
-        internal static string JsonNumberTooLong
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonNumberTooLong", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Tried to write a JSON object end symbol (&quot;}&quot;) without first opening with a JSON object start symbol (&quot;{&quot;)..
-        /// </summary>
-        internal static string JsonObjectNotStarted
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonObjectNotStarted", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered a JSON property name after another JSON property name..
-        /// </summary>
-        internal static string JsonPropertyAlreadyAdded
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonPropertyAlreadyAdded", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Either a JSON property array or object was not started..
-        /// </summary>
-        internal static string JsonPropertyArrayOrObjectNotStarted
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonPropertyArrayOrObjectNotStarted", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Read a JSON end array (&quot;]&quot;) symbol without a matching JSON start array symbol (&quot;[&quot;)..
-        /// </summary>
-        internal static string JsonUnexpectedEndArray
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonUnexpectedEndArray", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Read a JSON end object (&quot;}&quot;) symbol without a matching JSON start object symbol (&quot;{&quot;)..
-        /// </summary>
-        internal static string JsonUnexpectedEndObject
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonUnexpectedEndObject", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Read a JSON name separator (&quot;:&quot;) symbol without a corresponding field name..
-        /// </summary>
-        internal static string JsonUnexpectedNameSeparator
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonUnexpectedNameSeparator", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Encountered an unexpected JSON token..
-        /// </summary>
-        internal static string JsonUnexpectedToken
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonUnexpectedToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Read a JSON name separator (&quot;,&quot;) symbol without a preceding JSON value..
-        /// </summary>
-        internal static string JsonUnexpectedValueSeparator
-        {
-            get
-            {
-                return ResourceManager.GetString("JsonUnexpectedValueSeparator", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The resource that is being accessed is locked..
-        /// </summary>
-        internal static string Locked
-        {
-            get
-            {
-                return ResourceManager.GetString("Locked", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Current maximum throughput per collection is {0}. Please contact Azure support to increase it..
-        /// </summary>
-        internal static string MaximumRULimitExceeded
-        {
-            get
-            {
-                return ResourceManager.GetString("MaximumRULimitExceeded", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot find messageId header.
-        /// </summary>
-        internal static string MessageIdHeaderMissing
-        {
-            get
-            {
-                return ResourceManager.GetString("MessageIdHeaderMissing", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The requested verb is not supported..
-        /// </summary>
-        internal static string MethodNotAllowed
-        {
-            get
-            {
-                return ResourceManager.GetString("MethodNotAllowed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The input authorization token can&apos;t serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign: &apos;{0}&apos;.
-        /// </summary>
-        internal static string MismatchToken
-        {
-            get
-            {
-                return ResourceManager.GetString("MismatchToken", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Required Header authorization is missing. Ensure a valid Authorization token is passed..
-        /// </summary>
-        internal static string MissingAuthHeader
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingAuthHeader", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Authorization token mandates Date headers. Please pass in RFC 1123 style date format..
-        /// </summary>
-        internal static string MissingDateForAuthorization
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingDateForAuthorization", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to PartitionKey value must be supplied for this operation..
-        /// </summary>
-        internal static string MissingPartitionKeyValue
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingPartitionKeyValue", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Required property {0} is not specified in the request..
-        /// </summary>
-        internal static string MissingProperty
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingProperty", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Required header &apos;{0}&apos; is not specified in the request..
-        /// </summary>
-        internal static string MissingRequiredHeader
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingRequiredHeader", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Required query variable &apos;{0}&apos; is not specified in the request..
-        /// </summary>
-        internal static string MissingRequiredQuery
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingRequiredQuery", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to This account already has one backup interval capability..
-        /// </summary>
-        internal static string MoreThanOneBackupIntervalCapability
-        {
-            get
-            {
-                return ResourceManager.GetString("MoreThanOneBackupIntervalCapability", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to This account already has one backup retention capability..
-        /// </summary>
-        internal static string MoreThanOneBackupRetentionCapability
-        {
-            get
-            {
-                return ResourceManager.GetString("MoreThanOneBackupRetentionCapability", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Atleast single region must be specified in PreferredLocation list when automatic failover is disabled..
-        /// </summary>
-        internal static string MustHaveNonZeroPreferredRegionWhenAutomaticFailoverDisabled
-        {
-            get
-            {
-                return ResourceManager.GetString("MustHaveNonZeroPreferredRegionWhenAutomaticFailoverDisabled", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to NamingProperty {0} not found.
-        /// </summary>
-        internal static string NamingPropertyNotFound
-        {
-            get
-            {
-                return ResourceManager.GetString("NamingPropertyNotFound", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Property &apos;{0}&apos; integer value must be greater than or equal to zero..
-        /// </summary>
-        internal static string NegativeInteger
-        {
-            get
-            {
-                return ResourceManager.GetString("NegativeInteger", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to No graft point.
-        /// </summary>
-        internal static string NoGraftPoint
-        {
-            get
-            {
-                return ResourceManager.GetString("NoGraftPoint", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Entity with the specified id does not exist in the system..
-        /// </summary>
-        internal static string NotFound
-        {
-            get
-            {
-                return ResourceManager.GetString("NotFound", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Offer replace request conflicted..
-        /// </summary>
-        internal static string OfferReplaceTopologyConflict
-        {
-            get
-            {
-                return ResourceManager.GetString("OfferReplaceTopologyConflict", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot replace an offer with version {0} with version {1}.
-        /// </summary>
-        internal static string OfferReplaceWithSpecifiedVersionsNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("OfferReplaceWithSpecifiedVersionsNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Offer type and throughput cannot both be specified..
-        /// </summary>
-        internal static string OfferTypeAndThroughputCannotBeSpecifiedBoth
-        {
-            get
-            {
-                return ResourceManager.GetString("OfferTypeAndThroughputCannotBeSpecifiedBoth", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Offer throughput and autopilot settings cannot both be specified..
-        /// </summary>
-        internal static string OfferThroughputAndAutoPilotSettingsCannotBeSpecifiedBoth
-        {
-            get
-            {
-                return ResourceManager.GetString("OfferThroughputAndAutoPilotSettingsCannotBeSpecifiedBoth", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Autopilot tier and AutoPilotSettings cannot both be specified..
-        /// </summary>
-        internal static string AutoPilotTierAndAutoPilotSettingsCannotBeSpecifiedBoth
-        {
-            get
-            {
-                return ResourceManager.GetString("AutoPilotTierAndAutoPilotSettingsCannotBeSpecifiedBoth", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Autopilot autoupgrade is not supported for non-partitioned collections..
         /// </summary>
-        internal static string AutopilotAutoUpgradeUnsupportedNonPartitionedCollection
-        {
-            get
-            {
+        internal static string AutopilotAutoUpgradeUnsupportedNonPartitionedCollection {
+            get {
                 return ResourceManager.GetString("AutopilotAutoUpgradeUnsupportedNonPartitionedCollection", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Autopilot tier and AutoPilotSettings cannot both be specified..
+        /// </summary>
+        internal static string AutoPilotTierAndAutoPilotSettingsCannotBeSpecifiedBoth {
+            get {
+                return ResourceManager.GetString("AutoPilotTierAndAutoPilotSettingsCannotBeSpecifiedBoth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Auto-Scale Setting Change With User Auth Is Disallowed..
+        /// </summary>
+        internal static string AutoScaleSettingChangeWithUserAuthIsDisallowed {
+            get {
+                return ResourceManager.GetString("AutoScaleSettingChangeWithUserAuthIsDisallowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to At this time, only write operations made from the MongoDB SDKs are supported. Modifications to MongoDB collections using other SDKs is temporarily blocked..
+        /// </summary>
+        internal static string BadClientMongo {
+            get {
+                return ResourceManager.GetString("BadClientMongo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid response from upstream server or upstream server request failed..
+        /// </summary>
+        internal static string BadGateway {
+            get {
+                return ResourceManager.GetString("BadGateway", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One of the input values is invalid..
+        /// </summary>
+        internal static string BadRequest {
+            get {
+                return ResourceManager.GetString("BadRequest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Request url is invalid..
+        /// </summary>
+        internal static string BadUrl {
+            get {
+                return ResourceManager.GetString("BadUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot offline a write region that has zero read regions configured. There needs to be atleast one read region to failover to..
+        /// </summary>
+        internal static string CannotOfflineWriteRegionWithNoReadRegions {
+            get {
+                return ResourceManager.GetString("CannotOfflineWriteRegionWithNoReadRegions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The container replace request is not allowed since it removes the schema policy from the container {0}..
+        /// </summary>
+        internal static string CannotRemoveSchemaPolicyFromContainer {
+            get {
+                return ResourceManager.GetString("CannotRemoveSchemaPolicyFromContainer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot specify partition key range or partition key for resource that is not partitioned..
+        /// </summary>
+        internal static string CannotSpecifyPKRangeForNonPartitionedResource {
+            get {
+                return ResourceManager.GetString("CannotSpecifyPKRangeForNonPartitionedResource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to StartTime cannot have DateTimeKind.Unspecified..
+        /// </summary>
+        internal static string ChangeFeedOptionsStartTimeWithUnspecifiedDateTimeKind {
+            get {
+                return ResourceManager.GetString("ChangeFeedOptionsStartTimeWithUnspecifiedDateTimeKind", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Channel is closed.
+        /// </summary>
+        internal static string ChannelClosed {
+            get {
+                return ResourceManager.GetString("ChannelClosed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The channel multiplexer has shut down..
+        /// </summary>
+        internal static string ChannelMultiplexerClosedTransportError {
+            get {
+                return ResourceManager.GetString("ChannelMultiplexerClosedTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The transport client failed to open a connection. See the inner exception for details..
+        /// </summary>
+        internal static string ChannelOpenFailedTransportError {
+            get {
+                return ResourceManager.GetString("ChannelOpenFailedTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The transport client timed out when opening a connection. See the inner exception for details..
+        /// </summary>
+        internal static string ChannelOpenTimeoutTransportError {
+            get {
+                return ResourceManager.GetString("ChannelOpenTimeoutTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request..
+        /// </summary>
+        internal static string ClientCpuOverload {
+            get {
+                return ResourceManager.GetString("ClientCpuOverload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to client IP {0} through public internet.
+        /// </summary>
+        internal static string ClientPublicIpInfo {
+            get {
+                return ResourceManager.GetString("ClientPublicIpInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. Please check for client resource starvation issues and verify connectivity between client and server..
+        /// </summary>
+        internal static string ClientUnavailable {
+            get {
+                return ResourceManager.GetString("ClientUnavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to client VNET through {0}.
+        /// </summary>
+        internal static string ClientVnetInfo {
+            get {
+                return ResourceManager.GetString("ClientVnetInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Collection is not yet available for read. Please retry in some time..
+        /// </summary>
+        internal static string CollectionCreateInProgress {
+            get {
+                return ResourceManager.GetString("CollectionCreateInProgress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Collection create request conflicted with ongoing add region or failover operation. Ensure to complete region configuration before creating collection..
+        /// </summary>
+        internal static string CollectionCreateTopologyConflict {
+            get {
+                return ResourceManager.GetString("CollectionCreateTopologyConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Throughput of this collection cannot be more than {0}, as was provisioned during collection creation time..
+        /// </summary>
+        internal static string CollectionThroughputCannotBeMoreThan {
+            get {
+                return ResourceManager.GetString("CollectionThroughputCannotBeMoreThan", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to connect to the remote endpoint..
+        /// </summary>
+        internal static string ConnectFailedTransportError {
+            get {
+                return ResourceManager.GetString("ConnectFailedTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The connection failed..
+        /// </summary>
+        internal static string ConnectionBrokenTransportError {
+            get {
+                return ResourceManager.GetString("ConnectionBrokenTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Connection is too busy. Please retry after sometime or open more connections..
+        /// </summary>
+        internal static string ConnectionIsBusy {
+            get {
+                return ResourceManager.GetString("ConnectionIsBusy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The connection attempt timed out..
+        /// </summary>
+        internal static string ConnectTimeoutTransportError {
+            get {
+                return ResourceManager.GetString("ConnectTimeoutTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Correlation ID not found in response.
+        /// </summary>
+        internal static string CorrelationIDNotFoundInResponse {
+            get {
+                return ResourceManager.GetString("CorrelationIDNotFoundInResponse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid CORS rule. At least one allowed origin is required..
+        /// </summary>
+        internal static string CorsAllowedOriginsEmptyList {
+            get {
+                return ResourceManager.GetString("CorsAllowedOriginsEmptyList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to InvalidCORS rule. The origin &apos;{0}&apos; is an invalid origin. A valid rigin should not include a uri path..
+        /// </summary>
+        internal static string CorsAllowedOriginsInvalidPath {
+            get {
+                return ResourceManager.GetString("CorsAllowedOriginsInvalidPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid CORS rule. The origin &apos;{0}&apos; is not a well formed origin...
+        /// </summary>
+        internal static string CorsAllowedOriginsMalformedUri {
+            get {
+                return ResourceManager.GetString("CorsAllowedOriginsMalformedUri", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid CORS rule. Wildcards are not supported..
+        /// </summary>
+        internal static string CorsAllowedOriginsWildcardsNotSupported {
+            get {
+                return ResourceManager.GetString("CorsAllowedOriginsWildcardsNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid CORS rules. Only one rule is supported..
+        /// </summary>
+        internal static string CorsTooManyRules {
+            get {
+                return ResourceManager.GetString("CorsTooManyRules", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value specified in the &quot;{0}&quot; header is incompatible with value specified in the &quot;{1}&quot; header of the request..
+        /// </summary>
+        internal static string CrossPartitionContinuationAndIndex {
+            get {
+                return ResourceManager.GetString("CrossPartitionContinuationAndIndex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cross partition query is required but disabled. Please set x-ms-documentdb-query-enablecrosspartition to true, specify x-ms-documentdb-partitionkey, or revise your query to avoid this exception..
+        /// </summary>
+        internal static string CrossPartitionQueryDisabled {
+            get {
+                return ResourceManager.GetString("CrossPartitionQueryDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Database Account {0} does not exist.
+        /// </summary>
+        internal static string DatabaseAccountNotFound {
+            get {
+                return ResourceManager.GetString("DatabaseAccountNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Database create request conflicted with ongoing add region or failover operation. Ensure to complete region configuration before creating collection...
+        /// </summary>
+        internal static string DatabaseCreateTopologyConflict {
+            get {
+                return ResourceManager.GetString("DatabaseCreateTopologyConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;Operation &apos;{0}&apos; on resource &apos;{1}&apos; is not allowed through Azure Cosmos DB endpoint. Please switch on such operations for your account, or perform this operation through Azure Resource Manager, Azure Portal, Azure CLI or Azure Powershell&quot;.
+        /// </summary>
+        internal static string DataPlaneOperationNotAllowed {
+            get {
+                return ResourceManager.GetString("DataPlaneOperationNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expecting DateTime value..
+        /// </summary>
+        internal static string DateTimeConverterInvalidDateTime {
+            get {
+                return ResourceManager.GetString("DateTimeConverterInvalidDateTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expecting reader to read Integer.
+        /// </summary>
+        internal static string DateTimeConverterInvalidReaderValue {
+            get {
+                return ResourceManager.GetString("DateTimeConverterInvalidReaderValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expecting reader value to be compatible with double conversion..
+        /// </summary>
+        internal static string DateTimeConveterInvalidReaderDoubleValue {
+            get {
+                return ResourceManager.GetString("DateTimeConveterInvalidReaderDoubleValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error occurred while deserializing content &apos;{0}&apos;..
+        /// </summary>
+        internal static string DeserializationError {
+            get {
+                return ResourceManager.GetString("DeserializationError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DNS resolution failed..
+        /// </summary>
+        internal static string DnsResolutionFailedTransportError {
+            get {
+                return ResourceManager.GetString("DnsResolutionFailedTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DNS resolution timed out..
+        /// </summary>
+        internal static string DnsResolutionTimeoutTransportError {
+            get {
+                return ResourceManager.GetString("DnsResolutionTimeoutTransportError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Document Query Execution Context is done..
+        /// </summary>
+        internal static string DocumentQueryExecutionContextIsDone {
+            get {
+                return ResourceManager.GetString("DocumentQueryExecutionContextIsDone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Service is currently unavailable, please retry after a while. If this problem persists please contact support..
+        /// </summary>
+        internal static string DocumentServiceUnavailable {
+            get {
+                return ResourceManager.GetString("DocumentServiceUnavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Duplicate correlation id generated.
+        /// </summary>
+        internal static string DuplicateCorrelationIdGenerated {
+            get {
+                return ResourceManager.GetString("DuplicateCorrelationIdGenerated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Empty Virtual Network Resource Guid.
+        /// </summary>
+        internal static string EmptyVirtualNetworkResourceGuid {
+            get {
+                return ResourceManager.GetString("EmptyVirtualNetworkResourceGuid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified Virtual Network Rules list is empty.
+        /// </summary>
+        internal static string EmptyVirtualNetworkRulesSpecified {
+            get {
+                return ResourceManager.GetString("EmptyVirtualNetworkRulesSpecified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Serverless accounts do not support analytics storage(i.e. EnableAnalyticsStorage=true)..
+        /// </summary>
+        internal static string EnableAnalyticsStorageAndEnableServerlessNotSupported {
+            get {
+                return ResourceManager.GetString("EnableAnalyticsStorageAndEnableServerlessNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Serverless accounts do not support multiple write locations(i.e. EnableMultipleWriteLocations=true)..
+        /// </summary>
+        internal static string EnableMultipleWriteLocationsAndEnableServerlessNotSupported {
+            get {
+                return ResourceManager.GetString("EnableMultipleWriteLocationsAndEnableServerlessNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Accounts configured with default consistency level as &apos;Strong&apos; cannot be enabled for multiple write locations(i.e. EnableMultipleWriteLocations=true). Consider relaxing default consistency level of the account to enable multiple write locations..
+        /// </summary>
+        internal static string EnableMultipleWriteLocationsAndStrongConsistencyNotSupported {
+            get {
+                return ResourceManager.GetString("EnableMultipleWriteLocationsAndStrongConsistencyNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;Availability Zone on a multi region account requires multi master to be enabled. Please enable Multi-Master on the database account to proceed.&quot;.
+        /// </summary>
+        internal static string EnableMultipleWriteLocationsBeforeAddingRegion {
+            get {
+                return ResourceManager.GetString("EnableMultipleWriteLocationsBeforeAddingRegion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This account already has EnableMultipleWriteLocations flag set to {0}&quot;..
+        /// </summary>
+        internal static string EnableMultipleWriteLocationsNotModified {
+            get {
+                return ResourceManager.GetString("EnableMultipleWriteLocationsNotModified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Serverless accounts do not support multiple regions..
+        /// </summary>
+        internal static string EnableMultiRegionAndEnableServerlessNotSupported {
+            get {
+                return ResourceManager.GetString("EnableMultiRegionAndEnableServerlessNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to retrieve address of endpoint &apos;{0}&apos; from the address &apos;{1}&apos;.
+        /// </summary>
+        internal static string EndpointNotFound {
+            get {
+                return ResourceManager.GetString("EndpointNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Entity with the specified id already exists in the system..
+        /// </summary>
+        internal static string EntityAlreadyExists {
+            get {
+                return ResourceManager.GetString("EntityAlreadyExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Message: {0}.
+        /// </summary>
+        internal static string ExceptionMessage {
+            get {
+                return ResourceManager.GetString("ExceptionMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}, Local IP: {1}.
+        /// </summary>
+        internal static string ExceptionMessageAddIpAddress {
+            get {
+                return ResourceManager.GetString("ExceptionMessageAddIpAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}, Request URI: {1}, RequestStats: {2}, SDK: {3}.
+        /// </summary>
+        internal static string ExceptionMessageAddRequestUri {
+            get {
+                return ResourceManager.GetString("ExceptionMessageAddRequestUri", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Feature {0} is not supported for Multi-region Account.
+        /// </summary>
+        internal static string FeatureNotSupportedForMultiRegionAccount {
+            get {
+                return ResourceManager.GetString("FeatureNotSupportedForMultiRegionAccount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Feature {0} is not supported in {1} region.
+        /// </summary>
+        internal static string FeatureNotSupportedInRegion {
+            get {
+                return ResourceManager.GetString("FeatureNotSupportedInRegion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} is not supported for the target subscription.
+        /// </summary>
+        internal static string FeatureNotSupportedOnSubscription {
+            get {
+                return ResourceManager.GetString("FeatureNotSupportedOnSubscription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Federation {0} in region {1} is not found.
+        /// </summary>
+        internal static string FederationEntityNotFound {
+            get {
+                return ResourceManager.GetString("FederationEntityNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Request is blocked by your Cosmos DB account firewall settings..
+        /// </summary>
+        internal static string Forbidden {
+            get {
+                return ResourceManager.GetString("Forbidden", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Request originated from {0}. This is blocked by your Cosmos DB account firewall settings..
+        /// </summary>
+        internal static string ForbiddenClientIpAddress {
+            get {
+                return ResourceManager.GetString("ForbiddenClientIpAddress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Free tier has already been applied to another Azure Cosmos DB account in this subscription. To apply free tier to this account, you can select another subscription for this account or delete the existing free tier account. You can have up to one free tier account per subscription..
+        /// </summary>
+        internal static string FreeTierAppliedBefore {
+            get {
+                return ResourceManager.GetString("FreeTierAppliedBefore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Free tier is not supported for Internal subscriptions..
+        /// </summary>
+        internal static string FreeTierNotSupportedForInternalSubscription {
+            get {
+                return ResourceManager.GetString("FreeTierNotSupportedForInternalSubscription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot update FreeTier property for existing account..
+        /// </summary>
+        internal static string FreeTierUpdateNotSupported {
+            get {
+                return ResourceManager.GetString("FreeTierUpdateNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Attempt to process the request timed out at remote server..
+        /// </summary>
+        internal static string GatewayTimedout {
+            get {
+                return ResourceManager.GetString("GatewayTimedout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Database and Write Location are not matching.
+        /// </summary>
+        internal static string GlobalAndWriteRegionMisMatch {
+            get {
+                return ResourceManager.GetString("GlobalAndWriteRegionMisMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Global Strong write barrier has not been met for the request..
+        /// </summary>
+        internal static string GlobalStrongWriteBarrierNotMet {
+            get {
+                return ResourceManager.GetString("GlobalStrongWriteBarrierNotMet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The requested resource is no longer available at the server..
+        /// </summary>
+        internal static string Gone {
+            get {
+                return ResourceManager.GetString("Gone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to generate id for resourceType = {0}, partitionIndex = {1}, serviceIndex = {2}, partitionCount = {3}..
+        /// </summary>
+        internal static string IdGenerationFailed {
+            get {
+                return ResourceManager.GetString("IdGenerationFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Routing map is not complete..
+        /// </summary>
+        internal static string IncompleteRoutingMap {
+            get {
+                return ResourceManager.GetString("IncompleteRoutingMap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to For containers migrated from fixed to unlimited, scale operation can be performed only if the container has documents populated with partition key. Please retry the throughput scale operation after populating documents with partition key..
+        /// </summary>
+        internal static string InsufficientPartitionedDataForOfferThroughput {
+            get {
+                return ResourceManager.GetString("InsufficientPartitionedDataForOfferThroughput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Insufficient permissions provided in the authorization header for the corresponding request. Please retry with another authorization header..
+        /// </summary>
+        internal static string InsufficientPermissions {
+            get {
+                return ResourceManager.GetString("InsufficientPermissions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to continue without atleast a single token in the resource tokens input collection..
+        /// </summary>
+        internal static string InsufficientResourceTokens {
+            get {
+                return ResourceManager.GetString("InsufficientResourceTokens", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown server error occurred when processing this request..
+        /// </summary>
+        internal static string InternalServerError {
+            get {
+                return ResourceManager.GetString("InternalServerError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid API version. Ensure a valid x-ms-version header value is passed. Please update to the latest version of Azure Cosmos DB SDK..
+        /// </summary>
+        internal static string InvalidAPIVersion {
+            get {
+                return ResourceManager.GetString("InvalidAPIVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid API version for {0}. Ensure a valid x-ms-version header value is passed. Please update to the latest version of Azure Cosmos DB SDK..
+        /// </summary>
+        internal static string InvalidAPIVersionForFeature {
+            get {
+                return ResourceManager.GetString("InvalidAPIVersionForFeature", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to AudienceKind is Invalid.
+        /// </summary>
+        internal static string InvalidAudienceKind {
+            get {
+                return ResourceManager.GetString("InvalidAudienceKind", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Audience Resource Type.
+        /// </summary>
+        internal static string InvalidAudienceResourceType {
+            get {
+                return ResourceManager.GetString("InvalidAudienceResourceType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Authorization header doesn&apos;t confirm to the required format. Please verify and try again..
+        /// </summary>
+        internal static string InvalidAuthHeaderFormat {
+            get {
+                return ResourceManager.GetString("InvalidAuthHeaderFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The backend response was not in the correct format..
+        /// </summary>
+        internal static string InvalidBackendResponse {
+            get {
+                return ResourceManager.GetString("InvalidBackendResponse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;{0} capability cannot be specified with {1} .&quot;.
+        /// </summary>
+        internal static string InvalidCapabilityCombination {
+            get {
+                return ResourceManager.GetString("InvalidCapabilityCombination", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The resource name presented contains invalid character &apos;{0}&apos;..
+        /// </summary>
+        internal static string InvalidCharacterInResourceName {
+            get {
+                return ResourceManager.GetString("InvalidCharacterInResourceName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid mode &apos;{0}&apos; for setting &apos;{1}&apos;. Mode expected is &apos;{2}&apos;..
+        /// </summary>
+        internal static string InvalidConflictResolutionMode {
+            get {
+                return ResourceManager.GetString("InvalidConflictResolutionMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ConsistencyLevel {0} specified in the request is invalid when service is configured with consistency level {1}. Ensure the request consistency level is not stronger than the service consistency level..
+        /// </summary>
+        internal static string InvalidConsistencyLevel {
+            get {
+                return ResourceManager.GetString("InvalidConsistencyLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Continuation Token.
+        /// </summary>
+        internal static string InvalidContinuationToken {
+            get {
+                return ResourceManager.GetString("InvalidContinuationToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified document collection is invalid...
+        /// </summary>
+        internal static string InvalidDatabase {
+            get {
+                return ResourceManager.GetString("InvalidDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The input date header is invalid format. Please pass in RFC 1123 style date format..
+        /// </summary>
+        internal static string InvalidDateHeader {
+            get {
+                return ResourceManager.GetString("InvalidDateHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified document collection is invalid..
+        /// </summary>
+        internal static string InvalidDocumentCollection {
+            get {
+                return ResourceManager.GetString("InvalidDocumentCollection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot enable &apos;enableMultipleWriteLocations&apos; without also enabling &apos;canEnableMultipleWriteLocations&apos;..
+        /// </summary>
+        internal static string InvalidEnableMultipleWriteLocations {
+            get {
+                return ResourceManager.GetString("InvalidEnableMultipleWriteLocations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid value {0} passed for enum {1}.
+        /// </summary>
+        internal static string InvalidEnumValue {
+            get {
+                return ResourceManager.GetString("InvalidEnumValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failover priority value {0} supplied for region {1} is invalid.
+        /// </summary>
+        internal static string InvalidFailoverPriority {
+            get {
+                return ResourceManager.GetString("InvalidFailoverPriority", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Partition key path {0} is invalid for Gremlin API. The path cannot be &apos;/id&apos;, &apos;/label&apos; or a nested path such as &apos;/key/path&apos;..
+        /// </summary>
+        internal static string InvalidGremlinPartitionKey {
+            get {
+                return ResourceManager.GetString("InvalidGremlinPartitionKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to GroupId {0} is not supported.
+        /// </summary>
+        internal static string InvalidGroupId {
+            get {
+                return ResourceManager.GetString("InvalidGroupId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Only one groupId is supported.
+        /// </summary>
+        internal static string InvalidGroupIdCount {
+            get {
+                return ResourceManager.GetString("InvalidGroupIdCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value &apos;{0}&apos; specified for the header &apos;{1}&apos; is invalid. .
+        /// </summary>
+        internal static string InvalidHeaderValue {
+            get {
+                return ResourceManager.GetString("InvalidHeaderValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified value {0} of the index kind is invalid..
+        /// </summary>
+        internal static string InvalidIndexKindValue {
+            get {
+                return ResourceManager.GetString("InvalidIndexKindValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The index spec format is invalid..
+        /// </summary>
+        internal static string InvalidIndexSpecFormat {
+            get {
+                return ResourceManager.GetString("InvalidIndexSpecFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Received invalid index transformation progress values from all the replicas..
+        /// </summary>
+        internal static string InvalidIndexTransformationProgressValues {
+            get {
+                return ResourceManager.GetString("InvalidIndexTransformationProgressValues", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to List of supplied locations is invalid.
+        /// </summary>
+        internal static string InvalidLocations {
+            get {
+                return ResourceManager.GetString("InvalidLocations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to MaxStalenessInterval should be greater than or equal to {0} sec and less than or equal to {1} sec.
+        /// </summary>
+        internal static string InvalidMaxStalenessInterval {
+            get {
+                return ResourceManager.GetString("InvalidMaxStalenessInterval", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to MaxStalenessPrefix should be greater than or equal to {0} and less than or equal to {1}.
+        /// </summary>
+        internal static string InvalidMaxStalenessPrefix {
+            get {
+                return ResourceManager.GetString("InvalidMaxStalenessPrefix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Partition key path {0} is invalid for MongoDB API..
+        /// </summary>
+        internal static string InvalidMongoPartitionKey {
+            get {
+                return ResourceManager.GetString("InvalidMongoPartitionKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value of offer throughput specified exceeded supported maximum throughput for Fixed size container. Please enter value less than {0}..
+        /// </summary>
+        internal static string InvalidNonPartitionedOfferThroughput {
+            get {
+                return ResourceManager.GetString("InvalidNonPartitionedOfferThroughput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value of OfferAutoScaleMode specified is invalid. Please specify a valid auto scale mode..
+        /// </summary>
+        internal static string InvalidOfferAutoScaleMode {
+            get {
+                return ResourceManager.GetString("InvalidOfferAutoScaleMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reading or replacing offers is not supported for serverless accounts..
+        /// </summary>
+        internal static string InvalidOfferCRUDForServerless {
+            get {
+                return ResourceManager.GetString("InvalidOfferCRUDForServerless", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value of offer IsAutoScaleEnabled specified is invalid. Please specify a boolean value..
+        /// </summary>
+        internal static string InvalidOfferIsAutoScaleEnabled {
+            get {
+                return ResourceManager.GetString("InvalidOfferIsAutoScaleEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value of offer IsRUPerMinuteThroughputEnabled specified is invalid. Please specify a boolean value..
+        /// </summary>
+        internal static string InvalidOfferIsRUPerMinuteThroughputEnabled {
+            get {
+                return ResourceManager.GetString("InvalidOfferIsRUPerMinuteThroughputEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value of offer throughput specified is invalid. Please enter valid positive integer..
+        /// </summary>
+        internal static string InvalidOfferThroughput {
+            get {
+                return ResourceManager.GetString("InvalidOfferThroughput", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OfferType {0} specified in the request is invalid. Please refer to offer documentation and specify a valid offer type..
+        /// </summary>
+        internal static string InvalidOfferType {
+            get {
+                return ResourceManager.GetString("InvalidOfferType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The required field Content is missing in Offer version v2..
+        /// </summary>
+        internal static string InvalidOfferV2Input {
+            get {
+                return ResourceManager.GetString("InvalidOfferV2Input", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource {0} is invalid for adding owner resource record.
+        /// </summary>
+        internal static string InvalidOwnerResourceType {
+            get {
+                return ResourceManager.GetString("InvalidOwnerResourceType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The input PageSize {0} is invalid. Ensure to pass a valid page size which must be a positive integer or -1 for a dynamic page size..
+        /// </summary>
+        internal static string InvalidPageSize {
+            get {
+                return ResourceManager.GetString("InvalidPageSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Partition key {0} is invalid..
+        /// </summary>
+        internal static string InvalidPartitionKey {
+            get {
+                return ResourceManager.GetString("InvalidPartitionKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to x-ms-documentdb-partitionkeyrangeid header contains invalid value &apos;{0}&apos;..
+        /// </summary>
+        internal static string InvalidPartitionKeyRangeIdHeader {
+            get {
+                return ResourceManager.GetString("InvalidPartitionKeyRangeIdHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The permission mode provided in the authorization token doesn&apos;t provide sufficient permissions..
+        /// </summary>
+        internal static string InvalidPermissionMode {
+            get {
+                return ResourceManager.GetString("InvalidPermissionMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Policy type is invalid..
+        /// </summary>
+        internal static string InvalidPolicyType {
+            get {
+                return ResourceManager.GetString("InvalidPolicyType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Only one manualPrivateLinkServiceConnection or one privateLinkServiceConnection is supported.
+        /// </summary>
+        internal static string InvalidPrivateLinkServiceConnections {
+            get {
+                return ResourceManager.GetString("InvalidPrivateLinkServiceConnections", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Only one privateLinkServiceProxy is supported.
+        /// </summary>
+        internal static string InvalidPrivateLinkServiceProxies {
+            get {
+                return ResourceManager.GetString("InvalidPrivateLinkServiceProxies", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Command is not supported by backend.
+        /// </summary>
+        internal static string InvalidProxyCommand {
+            get {
+                return ResourceManager.GetString("InvalidProxyCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query &apos;{0}&apos; specified is either invalid or unsupported..
+        /// </summary>
+        internal static string InvalidQuery {
+            get {
+                return ResourceManager.GetString("InvalidQuery", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value &apos;{0}&apos; specified for the query &apos;{1}&apos; is invalid..
+        /// </summary>
+        internal static string InvalidQueryValue {
+            get {
+                return ResourceManager.GetString("InvalidQueryValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Compared session tokens &apos;{0}&apos; and &apos;{1}&apos; has unexpected regions. .
+        /// </summary>
+        internal static string InvalidRegionsInSessionToken {
+            get {
+                return ResourceManager.GetString("InvalidRegionsInSessionToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Strong consistency level cannot be specified with async replication. Either change the replication policy &apos;AsyncReplication&apos; to false or relax the consistency level..
+        /// </summary>
+        internal static string InvalidReplicationAndConsistencyCombination {
+            get {
+                return ResourceManager.GetString("InvalidReplicationAndConsistencyCombination", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to parse the value &apos;{0}&apos; as ResourceId..
+        /// </summary>
+        internal static string InvalidResourceID {
+            get {
+                return ResourceManager.GetString("InvalidResourceID", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value for {0} should be greater than 0.
+        /// </summary>
+        internal static string InvalidResourceIdBatchSize {
+            get {
+                return ResourceManager.GetString("InvalidResourceIdBatchSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource kind {0} is invalid.
+        /// </summary>
+        internal static string InvalidResourceKind {
+            get {
+                return ResourceManager.GetString("InvalidResourceKind", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Requested ResourceType {0} passed as generic argument should be same as the one specified by ResourceType member {1}.
+        /// </summary>
+        internal static string InvalidResourceType {
+            get {
+                return ResourceManager.GetString("InvalidResourceType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Resource Url path {0} is invalid..
+        /// </summary>
+        internal static string InvalidResourceUrlPath {
+            get {
+                return ResourceManager.GetString("InvalidResourceUrlPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The value &apos;{0}&apos; specified  for query &apos;{1}&apos; is invalid..
+        /// </summary>
+        internal static string InvalidResourceUrlQuery {
+            get {
+                return ResourceManager.GetString("InvalidResourceUrlQuery", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The input continuation token size limit {0} is invalid. Please pass in a valid continuation token size limit which must be a positive integer..
+        /// </summary>
+        internal static string InvalidResponseContinuationTokenLimit {
+            get {
+                return ResourceManager.GetString("InvalidResponseContinuationTokenLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Script request has invalid body..
+        /// </summary>
+        internal static string InvalidScriptResource {
+            get {
+                return ResourceManager.GetString("InvalidScriptResource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The session token provided &apos;{0}&apos; is invalid..
+        /// </summary>
+        internal static string InvalidSessionToken {
+            get {
+                return ResourceManager.GetString("InvalidSessionToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The resource name can&apos;t end with space..
+        /// </summary>
+        internal static string InvalidSpaceEndingInResourceName {
+            get {
+                return ResourceManager.GetString("InvalidSpaceEndingInResourceName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Staleness Policy specified is invalid. Ensure both MaxPrefix and MaxStalenessIntervalInSeconds are both 0 or both not zero..
+        /// </summary>
+        internal static string InvalidStalenessPolicy {
+            get {
+                return ResourceManager.GetString("InvalidStalenessPolicy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Storage Service index {0} for media account {1} must be within byte range (inclusive)..
+        /// </summary>
+        internal static string InvalidStorageServiceMediaIndex {
+            get {
+                return ResourceManager.GetString("InvalidStorageServiceMediaIndex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Subpartitioning is only supported for atmost 3 partition paths .
+        /// </summary>
+        internal static string InvalidSubPartitionKeyLength {
+            get {
+                return ResourceManager.GetString("InvalidSubPartitionKeyLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Subpartitioning is only supported for Hash V2. .
+        /// </summary>
+        internal static string InvalidSubPartitionKeyVersion {
+            get {
+                return ResourceManager.GetString("InvalidSubPartitionKeyVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot disable &apos;canEnableMultipleWriteLocations&apos; flag once it has been enabled..
+        /// </summary>
+        internal static string InvalidSwitchOffCanEnableMultipleWriteLocations {
+            get {
+                return ResourceManager.GetString("InvalidSwitchOffCanEnableMultipleWriteLocations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot enable &apos;canEnableMultipleWriteLocations&apos; flag once account has been created with it disabled..
+        /// </summary>
+        internal static string InvalidSwitchOnCanEnableMultipleWriteLocations {
+            get {
+                return ResourceManager.GetString("InvalidSwitchOnCanEnableMultipleWriteLocations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Target for the request is invalid.
+        /// </summary>
+        internal static string InvalidTarget {
+            get {
+                return ResourceManager.GetString("InvalidTarget", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The authorization token is not valid at the current time. Please create another token and retry (token start time: {0}, token expiry time: {1}, current server time: {2})..
+        /// </summary>
+        internal static string InvalidTokenTimeRange {
+            get {
+                return ResourceManager.GetString("InvalidTokenTimeRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid type system &apos;{0}&apos; specified for container {1}..
+        /// </summary>
+        internal static string InvalidTypeSystemPolicy {
+            get {
+                return ResourceManager.GetString("InvalidTypeSystemPolicy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please provide non-negative value for UpdateMaxthroughputEverProvisioned..
+        /// </summary>
+        internal static string InvalidUpdateMaxthroughputEverProvisioned {
+            get {
+                return ResourceManager.GetString("InvalidUpdateMaxthroughputEverProvisioned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Request url is invalid..
+        /// </summary>
+        internal static string InvalidUrl {
+            get {
+                return ResourceManager.GetString("InvalidUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to System key can only access replica root.
+        /// </summary>
+        internal static string InvalidUseSystemKey {
+            get {
+                return ResourceManager.GetString("InvalidUseSystemKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid version format for {0}. Input Version {1}.
+        /// </summary>
+        internal static string InvalidVersionFormat {
+            get {
+                return ResourceManager.GetString("InvalidVersionFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IpAddress {0} is blocked by Policy.
+        /// </summary>
+        internal static string IpAddressBlockedByPolicy {
+            get {
+                return ResourceManager.GetString("IpAddressBlockedByPolicy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Not allowed to force delete federation in this environment..
+        /// </summary>
+        internal static string IsForceDeleteFederationAllowed {
+            get {
+                return ResourceManager.GetString("IsForceDeleteFederationAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tried to write a JSON end array (“]“) symbol without a matching array start symbol (“[“)..
+        /// </summary>
+        internal static string JsonArrayNotStarted {
+            get {
+                return ResourceManager.GetString("JsonArrayNotStarted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid escape character in JSON..
+        /// </summary>
+        internal static string JsonInvalidEscapedCharacter {
+            get {
+                return ResourceManager.GetString("JsonInvalidEscapedCharacter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid number in JSON..
+        /// </summary>
+        internal static string JsonInvalidNumber {
+            get {
+                return ResourceManager.GetString("JsonInvalidNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid parameter in JSON..
+        /// </summary>
+        internal static string JsonInvalidParameter {
+            get {
+                return ResourceManager.GetString("JsonInvalidParameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid string character in JSON..
+        /// </summary>
+        internal static string JsonInvalidStringCharacter {
+            get {
+                return ResourceManager.GetString("JsonInvalidStringCharacter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered an element that is not a valid JSON value (false / null / true / object / array / number / string).
+        /// </summary>
+        internal static string JsonInvalidToken {
+            get {
+                return ResourceManager.GetString("JsonInvalidToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid Unicode escape sequence in JSON..
+        /// </summary>
+        internal static string JsonInvalidUnicodeEscape {
+            get {
+                return ResourceManager.GetString("JsonInvalidUnicodeEscape", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Exceeded the maximum level of nesting for JSON..
+        /// </summary>
+        internal static string JsonMaxNestingExceeded {
+            get {
+                return ResourceManager.GetString("JsonMaxNestingExceeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing a closing quote (&quot;) in JSON..
+        /// </summary>
+        internal static string JsonMissingClosingQuote {
+            get {
+                return ResourceManager.GetString("JsonMissingClosingQuote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing an end array (&quot;]&quot;) symbol in JSON..
+        /// </summary>
+        internal static string JsonMissingEndArray {
+            get {
+                return ResourceManager.GetString("JsonMissingEndArray", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing an end object (&quot;}&quot;) symbol in JSON..
+        /// </summary>
+        internal static string JsonMissingEndObject {
+            get {
+                return ResourceManager.GetString("JsonMissingEndObject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing a name separator (&quot;:&quot;) in JSON..
+        /// </summary>
+        internal static string JsonMissingNameSeparator {
+            get {
+                return ResourceManager.GetString("JsonMissingNameSeparator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing a JSON property..
+        /// </summary>
+        internal static string JsonMissingProperty {
+            get {
+                return ResourceManager.GetString("JsonMissingProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a JSON property name without a corresponding property value.
+        /// </summary>
+        internal static string JsonNotComplete {
+            get {
+                return ResourceManager.GetString("JsonNotComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a value that was not a JSON field name..
+        /// </summary>
+        internal static string JsonNotFieldnameToken {
+            get {
+                return ResourceManager.GetString("JsonNotFieldnameToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a value that was not a JSON number..
+        /// </summary>
+        internal static string JsonNotNumberToken {
+            get {
+                return ResourceManager.GetString("JsonNotNumberToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a value that was not a JSON string..
+        /// </summary>
+        internal static string JsonNotStringToken {
+            get {
+                return ResourceManager.GetString("JsonNotStringToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a number that exceeded the range for JSON numbers..
+        /// </summary>
+        internal static string JsonNumberOutOfRange {
+            get {
+                return ResourceManager.GetString("JsonNumberOutOfRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a number that was too long for a JSON number..
+        /// </summary>
+        internal static string JsonNumberTooLong {
+            get {
+                return ResourceManager.GetString("JsonNumberTooLong", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tried to write a JSON object end symbol (&quot;}&quot;) without first opening with a JSON object start symbol (&quot;{&quot;)..
+        /// </summary>
+        internal static string JsonObjectNotStarted {
+            get {
+                return ResourceManager.GetString("JsonObjectNotStarted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered a JSON property name after another JSON property name..
+        /// </summary>
+        internal static string JsonPropertyAlreadyAdded {
+            get {
+                return ResourceManager.GetString("JsonPropertyAlreadyAdded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Either a JSON property array or object was not started..
+        /// </summary>
+        internal static string JsonPropertyArrayOrObjectNotStarted {
+            get {
+                return ResourceManager.GetString("JsonPropertyArrayOrObjectNotStarted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Read a JSON end array (&quot;]&quot;) symbol without a matching JSON start array symbol (&quot;[&quot;)..
+        /// </summary>
+        internal static string JsonUnexpectedEndArray {
+            get {
+                return ResourceManager.GetString("JsonUnexpectedEndArray", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Read a JSON end object (&quot;}&quot;) symbol without a matching JSON start object symbol (&quot;{&quot;)..
+        /// </summary>
+        internal static string JsonUnexpectedEndObject {
+            get {
+                return ResourceManager.GetString("JsonUnexpectedEndObject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Read a JSON name separator (&quot;:&quot;) symbol without a corresponding field name..
+        /// </summary>
+        internal static string JsonUnexpectedNameSeparator {
+            get {
+                return ResourceManager.GetString("JsonUnexpectedNameSeparator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Encountered an unexpected JSON token..
+        /// </summary>
+        internal static string JsonUnexpectedToken {
+            get {
+                return ResourceManager.GetString("JsonUnexpectedToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Read a JSON name separator (&quot;,&quot;) symbol without a preceding JSON value..
+        /// </summary>
+        internal static string JsonUnexpectedValueSeparator {
+            get {
+                return ResourceManager.GetString("JsonUnexpectedValueSeparator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The resource that is being accessed is locked..
+        /// </summary>
+        internal static string Locked {
+            get {
+                return ResourceManager.GetString("Locked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Current maximum throughput per collection is {0}. Please contact Azure support to increase it..
+        /// </summary>
+        internal static string MaximumRULimitExceeded {
+            get {
+                return ResourceManager.GetString("MaximumRULimitExceeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot find messageId header.
+        /// </summary>
+        internal static string MessageIdHeaderMissing {
+            get {
+                return ResourceManager.GetString("MessageIdHeaderMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The requested verb is not supported..
+        /// </summary>
+        internal static string MethodNotAllowed {
+            get {
+                return ResourceManager.GetString("MethodNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The input authorization token can&apos;t serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign: &apos;{0}&apos;.
+        /// </summary>
+        internal static string MismatchToken {
+            get {
+                return ResourceManager.GetString("MismatchToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Required Header authorization is missing. Ensure a valid Authorization token is passed..
+        /// </summary>
+        internal static string MissingAuthHeader {
+            get {
+                return ResourceManager.GetString("MissingAuthHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Authorization token mandates Date headers. Please pass in RFC 1123 style date format..
+        /// </summary>
+        internal static string MissingDateForAuthorization {
+            get {
+                return ResourceManager.GetString("MissingDateForAuthorization", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PartitionKey value must be supplied for this operation..
+        /// </summary>
+        internal static string MissingPartitionKeyValue {
+            get {
+                return ResourceManager.GetString("MissingPartitionKeyValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Required property {0} is not specified in the request..
+        /// </summary>
+        internal static string MissingProperty {
+            get {
+                return ResourceManager.GetString("MissingProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Required header &apos;{0}&apos; is not specified in the request..
+        /// </summary>
+        internal static string MissingRequiredHeader {
+            get {
+                return ResourceManager.GetString("MissingRequiredHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Required query variable &apos;{0}&apos; is not specified in the request..
+        /// </summary>
+        internal static string MissingRequiredQuery {
+            get {
+                return ResourceManager.GetString("MissingRequiredQuery", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;The create request is not allowed since it does not specify the schema for container &apos;{0}&apos;..
+        /// </summary>
+        internal static string MissingSchemaPolicyOnContainer {
+            get {
+                return ResourceManager.GetString("MissingSchemaPolicyOnContainer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type system must be specified for the container {0}..
+        /// </summary>
+        internal static string MissingTypeSystemPolicy {
+            get {
+                return ResourceManager.GetString("MissingTypeSystemPolicy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Auto upgrade policy is not supported for MongDB resources..
+        /// </summary>
+        internal static string MongoClientAutoUpgradeNotSupported {
+            get {
+                return ResourceManager.GetString("MongoClientAutoUpgradeNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This account already has one backup interval capability..
+        /// </summary>
+        internal static string MoreThanOneBackupIntervalCapability {
+            get {
+                return ResourceManager.GetString("MoreThanOneBackupIntervalCapability", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This account already has one backup retention capability..
+        /// </summary>
+        internal static string MoreThanOneBackupRetentionCapability {
+            get {
+                return ResourceManager.GetString("MoreThanOneBackupRetentionCapability", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Atleast single region must be specified in PreferredLocation list when automatic failover is disabled..
+        /// </summary>
+        internal static string MustHaveNonZeroPreferredRegionWhenAutomaticFailoverDisabled {
+            get {
+                return ResourceManager.GetString("MustHaveNonZeroPreferredRegionWhenAutomaticFailoverDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to NamingProperty {0} not found.
+        /// </summary>
+        internal static string NamingPropertyNotFound {
+            get {
+                return ResourceManager.GetString("NamingPropertyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Property &apos;{0}&apos; integer value must be greater than or equal to zero..
+        /// </summary>
+        internal static string NegativeInteger {
+            get {
+                return ResourceManager.GetString("NegativeInteger", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No graft point.
+        /// </summary>
+        internal static string NoGraftPoint {
+            get {
+                return ResourceManager.GetString("NoGraftPoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Entity with the specified id does not exist in the system. More info: https://aka.ms/cosmosdb-tsg-not-found.
+        /// </summary>
+        internal static string NotFound {
+            get {
+                return ResourceManager.GetString("NotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Autopilot of non-partitioned collections is not supported. Please specify a partition key..
+        /// </summary>
+        internal static string OfferAutopilotNotSupportedForNonPartitionedCollections {
+            get {
+                return ResourceManager.GetString("OfferAutopilotNotSupportedForNonPartitionedCollections", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Autopilot is currently not supported on shared throughput database..
+        /// </summary>
+        internal static string OfferAutopilotNotSupportedOnSharedThroughputDatabase {
+            get {
+                return ResourceManager.GetString("OfferAutopilotNotSupportedOnSharedThroughputDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Offer replace request conflicted..
+        /// </summary>
+        internal static string OfferReplaceTopologyConflict {
+            get {
+                return ResourceManager.GetString("OfferReplaceTopologyConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot replace an offer with version {0} with version {1}.
+        /// </summary>
+        internal static string OfferReplaceWithSpecifiedVersionsNotSupported {
+            get {
+                return ResourceManager.GetString("OfferReplaceWithSpecifiedVersionsNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Offer throughput and autopilot settings cannot both be specified..
+        /// </summary>
+        internal static string OfferThroughputAndAutoPilotSettingsCannotBeSpecifiedBoth {
+            get {
+                return ResourceManager.GetString("OfferThroughputAndAutoPilotSettingsCannotBeSpecifiedBoth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Offer type and throughput cannot both be specified..
+        /// </summary>
+        internal static string OfferTypeAndThroughputCannotBeSpecifiedBoth {
+            get {
+                return ResourceManager.GetString("OfferTypeAndThroughputCannotBeSpecifiedBoth", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Requested Operation Status = {0} is invalid..
         /// </summary>
-        internal static string OperationRequestedStatusIsInvalid
-        {
-            get
-            {
+        internal static string OperationRequestedStatusIsInvalid {
+            get {
                 return ResourceManager.GetString("OperationRequestedStatusIsInvalid", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Selected partition is full, please try insert in different partition..
         /// </summary>
-        internal static string PartitionIsFull
-        {
-            get
-            {
+        internal static string PartitionIsFull {
+            get {
                 return ResourceManager.GetString("PartitionIsFull", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Either PartitionKey or EffectivePartitionKey are expected..
         /// </summary>
-        internal static string PartitionKeyAndEffectivePartitionKeyBothSpecified
-        {
-            get
-            {
+        internal static string PartitionKeyAndEffectivePartitionKeyBothSpecified {
+            get {
                 return ResourceManager.GetString("PartitionKeyAndEffectivePartitionKeyBothSpecified", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to PartitionKey and PartitionKeyRangeId cannot be specified at the same time in ChangeFeedOptions..
         /// </summary>
-        internal static string PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified
-        {
-            get
-            {
+        internal static string PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified {
+            get {
                 return ResourceManager.GetString("PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Partition key provided either doesn&apos;t correspond to definition in the collection or doesn&apos;t match partition key field values specified in the document..
         /// </summary>
-        internal static string PartitionKeyMismatch
-        {
-            get
-            {
+        internal static string PartitionKeyMismatch {
+            get {
                 return ResourceManager.GetString("PartitionKeyMismatch", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to PartitionKeyRangeId is absent in the context..
         /// </summary>
-        internal static string PartitionKeyRangeIdAbsentInContext
-        {
-            get
-            {
+        internal static string PartitionKeyRangeIdAbsentInContext {
+            get {
                 return ResourceManager.GetString("PartitionKeyRangeIdAbsentInContext", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to For partitioned collection, either ChangeFeedOptions.PartitionKeyRangeId or ChangeFeedOptions.PartitionKey must be specified..
         /// </summary>
-        internal static string PartitionKeyRangeIdOrPartitionKeyMustBeSpecified
-        {
-            get
-            {
+        internal static string PartitionKeyRangeIdOrPartitionKeyMustBeSpecified {
+            get {
                 return ResourceManager.GetString("PartitionKeyRangeIdOrPartitionKeyMustBeSpecified", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to PartitionKeyRange with id &apos;{0}&apos; in collection &apos;{1}&apos; doesn&apos;t exist..
         /// </summary>
-        internal static string PartitionKeyRangeNotFound
-        {
-            get
-            {
+        internal static string PartitionKeyRangeNotFound {
+            get {
                 return ResourceManager.GetString("PartitionKeyRangeNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Property &apos;{0}&apos; integer value must be greater than zero..
         /// </summary>
-        internal static string PositiveInteger
-        {
-            get
-            {
+        internal static string PositiveInteger {
+            get {
                 return ResourceManager.GetString("PositiveInteger", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Operation cannot be performed because one of the specified precondition is not met..
         /// </summary>
-        internal static string PreconditionFailed
-        {
-            get
-            {
+        internal static string PreconditionFailed {
+            get {
                 return ResourceManager.GetString("PreconditionFailed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unable to resolve primary endpoint for partition {0} for service {1}..
         /// </summary>
-        internal static string PrimaryNotFound
-        {
-            get
-            {
+        internal static string PrimaryNotFound {
+            get {
                 return ResourceManager.GetString("PrimaryNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Property {0} can not be assigned to null..
         /// </summary>
-        internal static string PropertyCannotBeNull
-        {
-            get
-            {
+        internal static string PropertyCannotBeNull {
+            get {
                 return ResourceManager.GetString("PropertyCannotBeNull", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Property &apos;{0}&apos; is not found in the document..
         /// </summary>
-        internal static string PropertyNotFound
-        {
-            get
-            {
+        internal static string PropertyNotFound {
+            get {
                 return ResourceManager.GetString("PropertyNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Reached the pre-approved storage limit for the database account. Please contact Azure support to increase this limit..
         /// </summary>
-        internal static string ProvisionLimit
-        {
-            get
-            {
+        internal static string ProvisionLimit {
+            get {
                 return ResourceManager.GetString("ProvisionLimit", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Read Quorum size of {0} is not met for the request..
         /// </summary>
-        internal static string ReadQuorumNotMet
-        {
-            get
-            {
+        internal static string ReadQuorumNotMet {
+            get {
                 return ResourceManager.GetString("ReadQuorumNotMet", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The read session is not available for the input session token..
         /// </summary>
-        internal static string ReadSessionNotAvailable
-        {
-            get
-            {
+        internal static string ReadSessionNotAvailable {
+            get {
                 return ResourceManager.GetString("ReadSessionNotAvailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Failed to read the server response..
         /// </summary>
-        internal static string ReceiveFailedTransportError
-        {
-            get
-            {
+        internal static string ReceiveFailedTransportError {
+            get {
                 return ResourceManager.GetString("ReceiveFailedTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The remote system closed the connection..
         /// </summary>
-        internal static string ReceiveStreamClosedTransportError
-        {
-            get
-            {
+        internal static string ReceiveStreamClosedTransportError {
+            get {
                 return ResourceManager.GetString("ReceiveStreamClosedTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The request timed out while waiting for a server response..
         /// </summary>
-        internal static string ReceiveTimeoutTransportError
-        {
-            get
-            {
+        internal static string ReceiveTimeoutTransportError {
+            get {
                 return ResourceManager.GetString("ReceiveTimeoutTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Cannot remove write region for account {0}. Please issue delete on the account to remove write region.
         /// </summary>
-        internal static string RemoveWriteRegionNotSupported
-        {
-            get
-            {
+        internal static string RemoveWriteRegionNotSupported {
+            get {
                 return ResourceManager.GetString("RemoveWriteRegionNotSupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Replica at index &apos;{0}&apos; is currently unavailable..
         /// </summary>
-        internal static string ReplicaAtIndexNotAvailable
-        {
-            get
-            {
+        internal static string ReplicaAtIndexNotAvailable {
+            get {
                 return ResourceManager.GetString("ReplicaAtIndexNotAvailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Consistency Level &apos;{0}&apos;  requested via header &apos;{1}&apos; is not supported by this service endpoint. Please contact the service administrator..
         /// </summary>
-        internal static string RequestConsistencyLevelNotSupported
-        {
-            get
-            {
+        internal static string RequestConsistencyLevelNotSupported {
+            get {
                 return ResourceManager.GetString("RequestConsistencyLevelNotSupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The size of the response exceeded the maximum allowed size, limit the  response size by specifying smaller value for &apos;{0}&apos; header..
         /// </summary>
-        internal static string RequestEntityTooLarge
-        {
-            get
-            {
+        internal static string RequestEntityTooLarge {
+            get {
                 return ResourceManager.GetString("RequestEntityTooLarge", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Request timed out..
+        ///   Looks up a localized string similar to Request timed out. More info: https://aka.ms/cosmosdb-tsg-request-timeout.
         /// </summary>
-        internal static string RequestTimeout
-        {
-            get
-            {
+        internal static string RequestTimeout {
+            get {
                 return ResourceManager.GetString("RequestTimeout", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The request timed out. See the inner exception for details..
         /// </summary>
-        internal static string RequestTimeoutTransportError
-        {
-            get
-            {
+        internal static string RequestTimeoutTransportError {
+            get {
                 return ResourceManager.GetString("RequestTimeoutTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The size of the request exceeded the maximum allowed size..
         /// </summary>
-        internal static string RequestTooLarge
-        {
-            get
-            {
+        internal static string RequestTooLarge {
+            get {
                 return ResourceManager.GetString("RequestTooLarge", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Resource id cannot be empty..
         /// </summary>
-        internal static string ResourceIdCannotBeEmpty
-        {
-            get
-            {
+        internal static string ResourceIdCannotBeEmpty {
+            get {
                 return ResourceManager.GetString("ResourceIdCannotBeEmpty", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to ResourceId {0} of type {1} is not a valid resource Id..
         /// </summary>
-        internal static string ResourceIdNotValid
-        {
-            get
-            {
+        internal static string ResourceIdNotValid {
+            get {
                 return ResourceManager.GetString("ResourceIdNotValid", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to ResourceIdPolicy {0} is not supported.
         /// </summary>
-        internal static string ResourceIdPolicyNotSupported
-        {
-            get
-            {
+        internal static string ResourceIdPolicyNotSupported {
+            get {
                 return ResourceManager.GetString("ResourceIdPolicyNotSupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Resource type {0} is not supported by ResourceIdPartitioner.
         /// </summary>
-        internal static string ResourceTypeNotSupported
-        {
-            get
-            {
+        internal static string ResourceTypeNotSupported {
+            get {
                 return ResourceManager.GetString("ResourceTypeNotSupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Retry the request..
         /// </summary>
-        internal static string RetryWith
-        {
-            get
-            {
+        internal static string RetryWith {
+            get {
                 return ResourceManager.GetString("RetryWith", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Changing id of a script in collections with multiple partitions is not supported..
         /// </summary>
-        internal static string ScriptRenameInMultiplePartitionsIsNotSupported
-        {
-            get
-            {
+        internal static string ScriptRenameInMultiplePartitionsIsNotSupported {
+            get {
                 return ResourceManager.GetString("ScriptRenameInMultiplePartitionsIsNotSupported", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unable to resolve secondary endpoint for partition {0} for service {1}..
         /// </summary>
-        internal static string SecondariesNotFound
-        {
-            get
-            {
+        internal static string SecondariesNotFound {
+            get {
                 return ResourceManager.GetString("SecondariesNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Sending the request failed..
         /// </summary>
-        internal static string SendFailedTransportError
-        {
-            get
-            {
+        internal static string SendFailedTransportError {
+            get {
                 return ResourceManager.GetString("SendFailedTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Acquiring the send stream lock timed out..
         /// </summary>
-        internal static string SendLockTimeoutTransportError
-        {
-            get
-            {
+        internal static string SendLockTimeoutTransportError {
+            get {
                 return ResourceManager.GetString("SendLockTimeoutTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Sending the request timed out..
         /// </summary>
-        internal static string SendTimeoutTransportError
-        {
-            get
-            {
+        internal static string SendTimeoutTransportError {
+            get {
                 return ResourceManager.GetString("SendTimeoutTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The response body length is too large. Body length: {0} bytes. Connection: {1}.
         /// </summary>
-        internal static string ServerResponseBodyTooLargeError
-        {
-            get
-            {
+        internal static string ServerResponseBodyTooLargeError {
+            get {
                 return ResourceManager.GetString("ServerResponseBodyTooLargeError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The response total header length is too large. Header length: {0} bytes. Connection: {1}.
         /// </summary>
-        internal static string ServerResponseHeaderTooLargeError
-        {
-            get
-            {
+        internal static string ServerResponseHeaderTooLargeError {
+            get {
                 return ResourceManager.GetString("ServerResponseHeaderTooLargeError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Invalid response total header length. Expected {0} bytes. Received {1} bytes. Connection: {2}.
         /// </summary>
-        internal static string ServerResponseInvalidHeaderLengthError
-        {
-            get
-            {
+        internal static string ServerResponseInvalidHeaderLengthError {
+            get {
                 return ResourceManager.GetString("ServerResponseInvalidHeaderLengthError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The transport request ID is missing from the server response..
         /// </summary>
-        internal static string ServerResponseTransportRequestIdMissingError
-        {
-            get
-            {
+        internal static string ServerResponseTransportRequestIdMissingError {
+            get {
                 return ResourceManager.GetString("ServerResponseTransportRequestIdMissingError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Service at index {0} not found..
         /// </summary>
-        internal static string ServiceNotFound
-        {
-            get
-            {
+        internal static string ServiceNotFound {
+            get {
                 return ResourceManager.GetString("ServiceNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Service reserved bits can not be more than 24. Otherwise it overlaps with the collection/user multiplexing bit.
         /// </summary>
-        internal static string ServiceReservedBitsOutOfRange
-        {
-            get
-            {
+        internal static string ServiceReservedBitsOutOfRange {
+            get {
                 return ResourceManager.GetString("ServiceReservedBitsOutOfRange", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Service is currently unavailable..
+        ///   Looks up a localized string similar to Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable.
         /// </summary>
-        internal static string ServiceUnavailable
-        {
-            get
-            {
+        internal static string ServiceUnavailable {
+            get {
                 return ResourceManager.GetString("ServiceUnavailable", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Could not find service hosting DocumentCollection with ResourceId {0}.
         /// </summary>
-        internal static string ServiceWithResourceIdNotFound
-        {
-            get
-            {
+        internal static string ServiceWithResourceIdNotFound {
+            get {
                 return ResourceManager.GetString("ServiceWithResourceIdNotFound", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Bounding box must have an even number of coordinates and more than 3..
         /// </summary>
-        internal static string SpatialBoundingBoxInvalidCoordinates
-        {
-            get
-            {
+        internal static string SpatialBoundingBoxInvalidCoordinates {
+            get {
                 return ResourceManager.GetString("SpatialBoundingBoxInvalidCoordinates", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Spatial operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server..
         /// </summary>
-        internal static string SpatialExtensionMethodsNotImplemented
-        {
-            get
-            {
+        internal static string SpatialExtensionMethodsNotImplemented {
+            get {
                 return ResourceManager.GetString("SpatialExtensionMethodsNotImplemented", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Coordinate Reference System specified in GeoJSON is invalid..
         /// </summary>
-        internal static string SpatialFailedToDeserializeCrs
-        {
-            get
-            {
+        internal static string SpatialFailedToDeserializeCrs {
+            get {
                 return ResourceManager.GetString("SpatialFailedToDeserializeCrs", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Failed to deserialize Geometry object because &apos;type&apos; property is either absent or has invalid value..
         /// </summary>
-        internal static string SpatialInvalidGeometryType
-        {
-            get
-            {
+        internal static string SpatialInvalidGeometryType {
+            get {
                 return ResourceManager.GetString("SpatialInvalidGeometryType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Spatial position must have at least two coordinates..
         /// </summary>
-        internal static string SpatialInvalidPosition
-        {
-            get
-            {
+        internal static string SpatialInvalidPosition {
+            get {
                 return ResourceManager.GetString("SpatialInvalidPosition", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to SSL negotiation failed..
         /// </summary>
-        internal static string SslNegotiationFailedTransportError
-        {
-            get
-            {
+        internal static string SslNegotiationFailedTransportError {
+            get {
                 return ResourceManager.GetString("SslNegotiationFailedTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to SSL negotiation timed out..
         /// </summary>
-        internal static string SslNegotiationTimeoutTransportError
-        {
-            get
-            {
+        internal static string SslNegotiationTimeoutTransportError {
+            get {
                 return ResourceManager.GetString("SslNegotiationTimeoutTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Star and slash should have no arguments..
         /// </summary>
-        internal static string StarSlashArgumentError
-        {
-            get
-            {
+        internal static string StarSlashArgumentError {
+            get {
                 return ResourceManager.GetString("StarSlashArgumentError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Storage analytics is not enabled for this account. Ensure storage analytics is enabled before retrying..
         /// </summary>
-        internal static string StorageAnalyticsNotEnabled
-        {
-            get
-            {
+        internal static string StorageAnalyticsNotEnabled {
+            get {
                 return ResourceManager.GetString("StorageAnalyticsNotEnabled", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to String agument {0} is null or empty.
         /// </summary>
-        internal static string StringArgumentNullOrEmpty
-        {
-            get
-            {
+        internal static string StringArgumentNullOrEmpty {
+            get {
                 return ResourceManager.GetString("StringArgumentNullOrEmpty", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to PartitionKey has fewer components than defined the collection resource..
         /// </summary>
-        internal static string TooFewPartitionKeyComponents
-        {
-            get
-            {
+        internal static string TooFewPartitionKeyComponents {
+            get {
                 return ResourceManager.GetString("TooFewPartitionKeyComponents", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to PartitionKey has more components than defined the collection resource..
         /// </summary>
-        internal static string TooManyPartitionKeyComponents
-        {
-            get
-            {
+        internal static string TooManyPartitionKeyComponents {
+            get {
                 return ResourceManager.GetString("TooManyPartitionKeyComponents", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The request rate is too large. Please retry after sometime..
         /// </summary>
-        internal static string TooManyRequests
-        {
-            get
-            {
+        internal static string TooManyRequests {
+            get {
                 return ResourceManager.GetString("TooManyRequests", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to A client transport error occurred: {0}.
         /// </summary>
-        internal static string TransportExceptionMessage
-        {
-            get
-            {
+        internal static string TransportExceptionMessage {
+            get {
                 return ResourceManager.GetString("TransportExceptionMessage", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The transport protocol negotiation timed out. See the inner exception for details..
         /// </summary>
-        internal static string TransportNegotiationTimeoutTransportError
-        {
-            get
-            {
+        internal static string TransportNegotiationTimeoutTransportError {
+            get {
                 return ResourceManager.GetString("TransportNegotiationTimeoutTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Cannot deserialize PartitionKey value &apos;{0}&apos;.
         /// </summary>
-        internal static string UnableToDeserializePartitionKeyValue
-        {
-            get
-            {
+        internal static string UnableToDeserializePartitionKeyValue {
+            get {
                 return ResourceManager.GetString("UnableToDeserializePartitionKeyValue", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unable to find free connection.
         /// </summary>
-        internal static string UnableToFindFreeConnection
-        {
-            get
-            {
+        internal static string UnableToFindFreeConnection {
+            get {
                 return ResourceManager.GetString("UnableToFindFreeConnection", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unable to authenticate the request. The request requires valid user authentication..
         /// </summary>
-        internal static string Unauthorized
-        {
-            get
-            {
+        internal static string Unauthorized {
+            get {
                 return ResourceManager.GetString("Unauthorized", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unauthorized Offer Replace Request..
         /// </summary>
-        internal static string UnauthorizedOfferReplaceRequest
-        {
-            get
-            {
+        internal static string UnauthorizedOfferReplaceRequest {
+            get {
                 return ResourceManager.GetString("UnauthorizedOfferReplaceRequest", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unauthorized Auto-Scale Request..
         /// </summary>
-        internal static string UnauthorizedRequestForAutoScale
-        {
-            get
-            {
+        internal static string UnauthorizedRequestForAutoScale {
+            get {
                 return ResourceManager.GetString("UnauthorizedRequestForAutoScale", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing &apos;_id&apos; index while creating a MongoDB api collection..
+        /// </summary>
+        internal static string UnderscoreIdIndexRequiredForMongo {
+            get {
+                return ResourceManager.GetString("UnderscoreIdIndexRequiredForMongo", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Operation not permitted as consistency level is set to {0}. Expected {1}..
         /// </summary>
-        internal static string UnexpectedConsistencyLevel
-        {
-            get
-            {
+        internal static string UnexpectedConsistencyLevel {
+            get {
                 return ResourceManager.GetString("UnexpectedConsistencyLevel", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unexpected JsonSerializationFormat: {0}.
         /// </summary>
-        internal static string UnexpectedJsonSerializationFormat
-        {
-            get
-            {
+        internal static string UnexpectedJsonSerializationFormat {
+            get {
                 return ResourceManager.GetString("UnexpectedJsonSerializationFormat", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Failed to register JsonTokenType: {0}.
         /// </summary>
-        internal static string UnexpectedJsonTokenType
-        {
-            get
-            {
+        internal static string UnexpectedJsonTokenType {
+            get {
                 return ResourceManager.GetString("UnexpectedJsonTokenType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unexpected offer version {0} from store..
         /// </summary>
-        internal static string UnexpectedOfferVersion
-        {
-            get
-            {
+        internal static string UnexpectedOfferVersion {
+            get {
                 return ResourceManager.GetString("UnexpectedOfferVersion", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unexpected operation type {0} for routing requests for multiple partitions..
         /// </summary>
-        internal static string UnexpectedOperationTypeForRoutingRequest
-        {
-            get
-            {
+        internal static string UnexpectedOperationTypeForRoutingRequest {
+            get {
                 return ResourceManager.GetString("UnexpectedOperationTypeForRoutingRequest", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unexpected operator {0} ..
         /// </summary>
-        internal static string UnexpectedOperator
-        {
-            get
-            {
+        internal static string UnexpectedOperator {
+            get {
                 return ResourceManager.GetString("UnexpectedOperator", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to PartitionKeyRangeId is not expected..
         /// </summary>
-        internal static string UnexpectedPartitionKeyRangeId
-        {
-            get
-            {
+        internal static string UnexpectedPartitionKeyRangeId {
+            get {
                 return ResourceManager.GetString("UnexpectedPartitionKeyRangeId", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Provided Resource Kind {0} to ReEncrypt is not expected..
+        ///   Looks up a localized string similar to Provided Resource Kind {0} to ReEncrypt is not expected.
         /// </summary>
-        internal static string UnExpectedResourceKindToReEncrypt
-        {
-            get
-            {
+        internal static string UnExpectedResourceKindToReEncrypt {
+            get {
                 return ResourceManager.GetString("UnExpectedResourceKindToReEncrypt", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to ResourceType {0} is unexpected..
         /// </summary>
-        internal static string UnexpectedResourceType
-        {
-            get
-            {
+        internal static string UnexpectedResourceType {
+            get {
                 return ResourceManager.GetString("UnexpectedResourceType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Resource kind {0} is unknown.
         /// </summary>
-        internal static string UnknownResourceKind
-        {
-            get
-            {
+        internal static string UnknownResourceKind {
+            get {
                 return ResourceManager.GetString("UnknownResourceKind", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Resource type {0} is unknown.
         /// </summary>
-        internal static string UnknownResourceType
-        {
-            get
-            {
+        internal static string UnknownResourceType {
+            get {
                 return ResourceManager.GetString("UnknownResourceType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to An unknown client transport error has occurred..
         /// </summary>
-        internal static string UnknownTransportError
-        {
-            get
-            {
+        internal static string UnknownTransportError {
+            get {
                 return ResourceManager.GetString("UnknownTransportError", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Distict query requires a matching order by in order to return a continuation token.
         ///If you would like to serve this query through continuation tokens, then please rewrite the query in the form &apos;SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah&apos; and please make sure that there is a range index on &apos;c.blah&apos;..
         /// </summary>
-        internal static string UnorderedDistinctQueryContinuationToken
-        {
-            get
-            {
+        internal static string UnorderedDistinctQueryContinuationToken {
+            get {
                 return ResourceManager.GetString("UnorderedDistinctQueryContinuationToken", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to &quot;{0} capability is not allowed with kind={1}&quot;.
         /// </summary>
-        internal static string UnsupportedCapabilityForKind
-        {
-            get
-            {
+        internal static string UnsupportedCapabilityForKind {
+            get {
                 return ResourceManager.GetString("UnsupportedCapabilityForKind", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to Update of &quot;{0} capability is not allowed.
+        ///   Looks up a localized string similar to &quot;Update of {0} capability is not allowed.&quot;.
         /// </summary>
-        internal static string UnsupportedCapabilityUpdate
-        {
-            get
-            {
+        internal static string UnsupportedCapabilityUpdate {
+            get {
                 return ResourceManager.GetString("UnsupportedCapabilityUpdate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Cannot execute cross partition order-by queries on mix types. Consider using IS_STRING/IS_NUMBER to get around this exception. Expect type: {0}. Actual type: {1}. Item value: {2}..
         /// </summary>
-        internal static string UnsupportedCrossPartitionOrderByQueryOnMixedTypes
-        {
-            get
-            {
+        internal static string UnsupportedCrossPartitionOrderByQueryOnMixedTypes {
+            get {
                 return ResourceManager.GetString("UnsupportedCrossPartitionOrderByQueryOnMixedTypes", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The provided cross partition query can not be directly served by the gateway. This is a first chance (internal) exception that all newer clients will know how to handle gracefully. This exception is traced, but unless you see it bubble up as an exception (which only happens on older SDK clients), then you can safely ignore this message..
         /// </summary>
-        internal static string UnsupportedCrossPartitionQuery
-        {
-            get
-            {
+        internal static string UnsupportedCrossPartitionQuery {
+            get {
                 return ResourceManager.GetString("UnsupportedCrossPartitionQuery", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Cross partition query with aggregate functions is not supported..
         /// </summary>
-        internal static string UnsupportedCrossPartitionQueryWithAggregate
-        {
-            get
-            {
+        internal static string UnsupportedCrossPartitionQueryWithAggregate {
+            get {
                 return ResourceManager.GetString("UnsupportedCrossPartitionQueryWithAggregate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unsupported entity type {0}.
         /// </summary>
-        internal static string UnsupportedEntityType
-        {
-            get
-            {
+        internal static string UnsupportedEntityType {
+            get {
                 return ResourceManager.GetString("UnsupportedEntityType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Indexing Hints are not supported in this deployment. .
         /// </summary>
-        internal static string UnsupportedHints
-        {
-            get
-            {
+        internal static string UnsupportedHints {
+            get {
                 return ResourceManager.GetString("UnsupportedHints", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Key type {0} is unsupported.
         /// </summary>
-        internal static string UnsupportedKeyType
-        {
-            get
-            {
+        internal static string UnsupportedKeyType {
+            get {
                 return ResourceManager.GetString("UnsupportedKeyType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The value of offer throughput specified is invalid. Please specify a value between {0} and {1} inclusive in increments of {2}. Please contact https://azure.microsoft.com/support to request limit increases beyond {1} RU/s..
         /// </summary>
-        internal static string UnSupportedOfferThroughput
-        {
-            get
-            {
+        internal static string UnSupportedOfferThroughput {
+            get {
                 return ResourceManager.GetString("UnSupportedOfferThroughput", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The value of offer throughput specified is invalid. Please specify a value between {0} and {1}, or between {2} and {3} inclusive in increments of {4}. Please contact https://azure.microsoft.com/support to request limit increases beyond {3} RU/s..
         /// </summary>
-        internal static string UnSupportedOfferThroughputWithTwoRanges
-        {
-            get
-            {
+        internal static string UnSupportedOfferThroughputWithTwoRanges {
+            get {
                 return ResourceManager.GetString("UnSupportedOfferThroughputWithTwoRanges", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Offer type is not supported with Offer version &apos;V2&apos; and above..
         /// </summary>
-        internal static string UnsupportedOfferTypeWithV2Offer
-        {
-            get
-            {
+        internal static string UnsupportedOfferTypeWithV2Offer {
+            get {
                 return ResourceManager.GetString("UnsupportedOfferTypeWithV2Offer", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The supplied offer version {0} is not supported. Please specify either a blank version, &apos;V1&apos; or &apos;V2&apos;..
         /// </summary>
-        internal static string UnsupportedOfferVersion
-        {
-            get
-            {
+        internal static string UnsupportedOfferVersion {
+            get {
                 return ResourceManager.GetString("UnsupportedOfferVersion", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unsupported PartitionKey value component &apos;{0}&apos;. Numeric, string, bool, null, Undefined are the only supported types..
         /// </summary>
-        internal static string UnsupportedPartitionKeyComponentValue
-        {
-            get
-            {
+        internal static string UnsupportedPartitionKeyComponentValue {
+            get {
                 return ResourceManager.GetString("UnsupportedPartitionKeyComponentValue", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Program requires to run in 64 bit for elastic query feature to work. Please switch your program to 64 bit or use Gateway connectivity mode..
         /// </summary>
-        internal static string UnsupportedProgram
-        {
-            get
-            {
+        internal static string UnsupportedProgram {
+            get {
                 return ResourceManager.GetString("UnsupportedProgram", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Value &apos;{0}&apos; specified for protocol is unsupported..
         /// </summary>
-        internal static string UnsupportedProtocol
-        {
-            get
-            {
+        internal static string UnsupportedProtocol {
+            get {
                 return ResourceManager.GetString("UnsupportedProtocol", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Query that expects full results from aggregate functions is not supported..
         /// </summary>
-        internal static string UnsupportedQueryWithFullResultAggregate
-        {
-            get
-            {
+        internal static string UnsupportedQueryWithFullResultAggregate {
+            get {
                 return ResourceManager.GetString("UnsupportedQueryWithFullResultAggregate", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The requested region &apos;{0}&apos; is not supported..
         /// </summary>
-        internal static string UnsupportedRegion
-        {
-            get
-            {
+        internal static string UnsupportedRegion {
+            get {
                 return ResourceManager.GetString("UnsupportedRegion", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The requested region &apos;{0}&apos; is not supported  for spark cluster creation..
-        /// </summary>
-        internal static string UnsupportedSparkClusterRegion
-        {
-            get
-            {
-                return ResourceManager.GetString("UnsupportedSparkClusterRegion", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The requested rollback kind &apos;{0}&apos; is not supported..
         /// </summary>
-        internal static string UnsupportedRollbackKind
-        {
-            get
-            {
+        internal static string UnsupportedRollbackKind {
+            get {
                 return ResourceManager.GetString("UnsupportedRollbackKind", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Changing Root Indexing Policy is not supported in this deployment..
         /// </summary>
-        internal static string UnsupportedRootPolicyChange
-        {
-            get
-            {
+        internal static string UnsupportedRootPolicyChange {
+            get {
                 return ResourceManager.GetString("UnsupportedRootPolicyChange", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The requested region &apos;{0}&apos; is not supported for spark cluster creation..
+        /// </summary>
+        internal static string UnsupportedSparkClusterRegion {
+            get {
+                return ResourceManager.GetString("UnsupportedSparkClusterRegion", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Federation system key kind {0} is invalid.
         /// </summary>
-        internal static string UnsupportedSystemKeyKind
-        {
-            get
-            {
+        internal static string UnsupportedSystemKeyKind {
+            get {
                 return ResourceManager.GetString("UnsupportedSystemKeyKind", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Unsupported token type {0}.
         /// </summary>
-        internal static string UnsupportedTokenType
-        {
-            get
-            {
+        internal static string UnsupportedTokenType {
+            get {
                 return ResourceManager.GetString("UnsupportedTokenType", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to The Offer Version &apos;V1&apos; is not supported since the associated collection is already a partitioned collection. Please use offer version &apos;V2&apos;..
         /// </summary>
-        internal static string UnsupportedV1OfferVersion
-        {
-            get
-            {
+        internal static string UnsupportedV1OfferVersion {
+            get {
                 return ResourceManager.GetString("UnsupportedV1OfferVersion", resourceCulture);
             }
         }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Upserts for scripts in collections with multiple partitions are not supported..
-        /// </summary>
-        internal static string UpsertsForScriptsWithMultiplePartitionsAreNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("UpsertsForScriptsWithMultiplePartitionsAreNotSupported", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot offline write region when automatic failover is not enabled.
-        /// </summary>
-        internal static string WriteRegionAutomaticFailoverNotEnabled
-        {
-            get
-            {
-                return ResourceManager.GetString("WriteRegionAutomaticFailoverNotEnabled", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot add additional regions, since database account provision failed..
-        /// </summary>
-        internal static string WriteRegionDoesNotExist
-        {
-            get
-            {
-                return ResourceManager.GetString("WriteRegionDoesNotExist", resourceCulture);
-            }
-        }
-
-
-        /// <summary>
-        ///   Looks up a localized string similar to Zone Redundant Accounts are not supported in {0} Location yet. Please try other locations..
-        /// </summary>
-        internal static string ZoneRedundantAccountsNotSupportedInLocation
-        {
-            get
-            {
-                return ResourceManager.GetString("ZoneRedundantAccountsNotSupportedInLocation", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Connection is too busy. Please retry after sometime or open more connections.
-        /// </summary>
-        internal static string ConnectionIsBusy
-        {
-            get
-            {
-                return ResourceManager.GetString("ConnectionIsBusy", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Partition key path {0} is invalid for Gremlin API. The path cannot be &apos;/id&apos;, &apos;/label&apos; or a nested path such as &apos;/key/path&apos;..
-        /// </summary>
-        internal static string InvalidGremlinPartitionKey
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidGremlinPartitionKey", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Please provide non-negative value for UpdateMaxthroughputEverProvisioned..
-        /// </summary>
-        internal static string InvalidUpdateMaxthroughputEverProvisioned
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidUpdateMaxthroughputEverProvisioned", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to &quot;Operation &apos;{0}&apos; on resource &apos;{1}&apos; is not allowed through Azure Cosmos DB endpoint. Please switch on such operations for your account, or perform this operation through Azure Resource Manager, Azure Portal, Azure CLI or Azure Powershell&quot;.
-        /// </summary>
-        internal static string DataPlaneOperationNotAllowed
-        {
-            get
-            {
-                return ResourceManager.GetString("DataPlaneOperationNotAllowed", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Collection is not yet available for read. Please retry in some time..
-        /// </summary>
-        internal static string CollectionCreateInProgress
-        {
-            get
-            {
-                return ResourceManager.GetString("CollectionCreateInProgress", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Free tier has already been applied to another Azure Cosmos DB account in this subscription. To apply free tier to this account, you can select another subscription for this account or delete the existing free tier account. You can have up to one free tier account per subscription..
-        /// </summary>
-        internal static string FreeTierAppliedBefore
-        {
-            get
-            {
-                return ResourceManager.GetString("FreeTierAppliedBefore", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Free tier is not supported for Internal subscriptions..
-        /// </summary>
-        internal static string FreeTierNotSupportedForInternalSubscription
-        {
-            get
-            {
-                return ResourceManager.GetString("FreeTierNotSupportedForInternalSubscription", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Cannot update FreeTier property for existing account..
-        /// </summary>
-        internal static string FreeTierUpdateNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("FreeTierUpdateNotSupported", resourceCulture);
-            }
-        }
-
-        ///   Looks up a localized string similar to Subpartitioning is only supported for atmost 3 partition paths .
-        /// </summary>
-        internal static string InvalidSubPartitionKeyLength
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidSubPartitionKeyLength", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Subpartitioning is only supported for Hash V2. .
-        /// </summary>
-        internal static string InvalidSubPartitionKeyVersion
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidSubPartitionKeyVersion", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Missing '_id' index while creating a MongoDB api collection.
-        /// </summary>
-        internal static string UnderscoreIdIndexRequiredForMongo
-        {
-            get
-            {
-                return ResourceManager.GetString("UnderscoreIdIndexRequiredForMongo", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Partition key path {0} is invalid for MongoDB API.
-        /// </summary>
-        internal static string InvalidMongoPartitionKey
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidMongoPartitionKey", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The create request is not allowed since it does not specify the schema for container '{0}'.
-        /// </summary>
-        internal static string MissingSchemaPolicyOnContainer
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingSchemaPolicyOnContainer", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to The container replace request is not allowed since it removes the schema policy from the container {0}.
-        /// </summary>
-        internal static string CannotRemoveSchemaPolicyFromContainer
-        {
-            get
-            {
-                return ResourceManager.GetString("CannotRemoveSchemaPolicyFromContainer", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid type system '{0}' specified for container {1}.
-        /// </summary>
-        internal static string InvalidTypeSystemPolicy
-        {
-            get
-            {
-                return ResourceManager.GetString("InvalidTypeSystemPolicy", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Type system must be specified for the container {0}.
-        /// </summary>
-        internal static string MissingTypeSystemPolicy
-        {
-            get
-            {
-                return ResourceManager.GetString("MissingTypeSystemPolicy", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Auto upgrade policy is not supported for MongDB resources..
-        /// </summary>
-        internal static string MongoClientAutoUpgradeNotSupported
-        {
-            get
-            {
-                return ResourceManager.GetString("MongoClientAutoUpgradeNotSupported", resourceCulture);
-            }
-        }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Updating offer to autoscale throughput is not allowed. Please invoke migration API to migrate this offer..
         /// </summary>
-        internal static string UpdateToAutoscaleThroughputNotAllowed
-        {
-            get
-            {
+        internal static string UpdateToAutoscaleThroughputNotAllowed {
+            get {
                 return ResourceManager.GetString("UpdateToAutoscaleThroughputNotAllowed", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Updating offer to manually provisioned throughput is not allowed. Please invoke migration API to migrate this offer..
         /// </summary>
-        internal static string UpdateToManualThroughputNotAllowed
-        {
-            get
-            {
+        internal static string UpdateToManualThroughputNotAllowed {
+            get {
                 return ResourceManager.GetString("UpdateToManualThroughputNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Upserts for scripts in collections with multiple partitions are not supported..
+        /// </summary>
+        internal static string UpsertsForScriptsWithMultiplePartitionsAreNotSupported {
+            get {
+                return ResourceManager.GetString("UpsertsForScriptsWithMultiplePartitionsAreNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot offline write region when automatic failover is not enabled.
+        /// </summary>
+        internal static string WriteRegionAutomaticFailoverNotEnabled {
+            get {
+                return ResourceManager.GetString("WriteRegionAutomaticFailoverNotEnabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot add additional regions, since database account provision failed..
+        /// </summary>
+        internal static string WriteRegionDoesNotExist {
+            get {
+                return ResourceManager.GetString("WriteRegionDoesNotExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Zone Redundant Accounts are not supported in {0} Location yet. Please try other locations..
+        /// </summary>
+        internal static string ZoneRedundantAccountsNotSupportedInLocation {
+            get {
+                return ResourceManager.GetString("ZoneRedundantAccountsNotSupportedInLocation", resourceCulture);
             }
         }
     }
