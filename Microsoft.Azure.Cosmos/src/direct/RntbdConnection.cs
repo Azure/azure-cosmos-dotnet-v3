@@ -70,14 +70,14 @@ namespace Microsoft.Azure.Documents
         private Socket socket;
         private TcpClient tcpClient;
 
-        private double requestTimeoutInSeconds;
+        private TimeSpan requestTimeoutInSeconds;
         private bool isOpen;
         private string serverAgent;
         private string serverVersion;
         private TimeSpan idleTimeout;
         private TimeSpan unauthenticatedTimeout;
         private string overrideHostNameInCertificate;
-        private double openTimeoutInSeconds;
+        private TimeSpan openTimeoutInSeconds;
 
         private DateTime lastUsed;
         private DateTime opened;
@@ -85,7 +85,6 @@ namespace Microsoft.Azure.Documents
         private bool hasIssuedSuccessfulRequest;
 
         private RntbdConnectionOpenTimers connectionTimers;
-        private readonly TimerPool timerPool;
 
         public RntbdConnection(
             Uri address, 
@@ -94,15 +93,14 @@ namespace Microsoft.Azure.Documents
             double openTimeoutInSeconds, 
             double idleConnectionTimeoutInSeconds,
             string poolKey, 
-            UserAgentContainer userAgent,
-            TimerPool pool)
+            UserAgentContainer userAgent)
         {
             this.connectionTimers.CreationTimestamp = DateTimeOffset.Now;
             this.initialOpenUri = address;
             this.poolKey = poolKey;
-            this.requestTimeoutInSeconds = requestTimeoutInSeconds;
+            this.requestTimeoutInSeconds = TimeSpan.FromSeconds(requestTimeoutInSeconds);
             this.overrideHostNameInCertificate = overrideHostNameInCertificate;
-            this.openTimeoutInSeconds = openTimeoutInSeconds;
+            this.openTimeoutInSeconds = TimeSpan.FromSeconds(openTimeoutInSeconds);
             if(TimeSpan.FromSeconds(idleConnectionTimeoutInSeconds) < RntbdConnection.MaxIdleConnectionTimeout
                 && TimeSpan.FromSeconds(idleConnectionTimeoutInSeconds) > RntbdConnection.MinIdleConnectionTimeout)
             {
@@ -117,7 +115,6 @@ namespace Microsoft.Azure.Documents
             this.opened = DateTime.UtcNow;
             this.lastUsed = opened;
             this.userAgent = userAgent ?? new UserAgentContainer();
-            this.timerPool = pool;
         }
 
         public string PoolKey
@@ -194,18 +191,15 @@ namespace Microsoft.Azure.Documents
             Task[] awaitTasks = new Task[2];
 
             // Optimized version of Task.Delay for timeout scenarios
-            PooledTimer delayTaskTimer;
-            if(this.openTimeoutInSeconds != 0)
+            Task delayTaskOpen;
+            if (this.openTimeoutInSeconds != TimeSpan.Zero)
             {
-                delayTaskTimer = this.timerPool.GetPooledTimer((int)this.openTimeoutInSeconds);
+                delayTaskOpen = Task.Delay(this.openTimeoutInSeconds);
             }
             else
             {
-                delayTaskTimer = this.timerPool.GetPooledTimer((int)this.requestTimeoutInSeconds);
+                delayTaskOpen = Task.Delay(this.requestTimeoutInSeconds);
             }
-
-            // Starts the timer which returns a Task that you await on
-            Task delayTaskOpen = delayTaskTimer.StartTimerAsync();
 
             awaitTasks[0] = delayTaskOpen;
             awaitTasks[1] = this.OpenSocket(activityId);
@@ -228,9 +222,6 @@ namespace Microsoft.Azure.Documents
             {
                 if (completedTask.IsFaulted)
                 {
-                    // Cancels the timer as it's no longer needed
-                    delayTaskTimer.CancelTimer();
-
                     if (completedTask.Exception.InnerException is DocumentClientException)
                     {
                         ((DocumentClientException)completedTask.Exception.InnerException)
@@ -266,9 +257,6 @@ namespace Microsoft.Azure.Documents
             }
             else
             {
-                // Cancels the timer as it's no longer needed
-                delayTaskTimer.CancelTimer();
-
                 if (completedTask.IsFaulted)
                 {
                     if (completedTask.Exception.InnerException is DocumentClientException)
@@ -333,11 +321,8 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            // Optimized version of Task.Delay for timeout scenarios
-            PooledTimer delayTaskTimer = this.timerPool.GetPooledTimer((int)this.requestTimeoutInSeconds);
-
             //Starts the timer which returns a Task that you await on
-            Task delayTaskRequest = delayTaskTimer.StartTimerAsync();
+            Task delayTaskRequest =  Task.Delay(this.requestTimeoutInSeconds);
 
             DateTimeOffset requestStartTime = DateTimeOffset.Now;
 
@@ -388,9 +373,6 @@ namespace Microsoft.Azure.Documents
             {
                 if (completedTask.IsFaulted)
                 {
-                    // Cancels the timer as it's no longer needed
-                    delayTaskTimer.CancelTimer();
-
                     if (completedTask.Exception.InnerException is DocumentClientException)
                     {
                         ((DocumentClientException)completedTask.Exception.InnerException)
@@ -453,9 +435,6 @@ namespace Microsoft.Azure.Documents
             }
             else
             {
-                // Cancels the timer as it's no longer needed
-                delayTaskTimer.CancelTimer();
-
                 if (completedTask.IsFaulted)
                 {
                     if (completedTask.Exception.InnerException is DocumentClientException)

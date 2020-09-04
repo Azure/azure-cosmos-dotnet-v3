@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     internal sealed class Channel : IChannel, IDisposable
     {
         private readonly Dispatcher dispatcher;
-        private readonly TimerPool timerPool;
         private readonly int requestTimeoutSeconds;
         private readonly Uri serverUri;
         private bool disposed = false;
@@ -38,9 +37,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.CertificateHostNameOverride,
                 channelProperties.ReceiveHangDetectionTime,
                 channelProperties.SendHangDetectionTime,
-                channelProperties.IdleTimerPool,
                 channelProperties.IdleTimeout);
-            this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
             this.openArguments = new ChannelOpenArguments(
@@ -176,9 +173,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 throw clientException;
             }
 
-            PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
             Task[] tasks = new Task[2];
-            tasks[0] = timer.StartTimerAsync();
+            tasks[0] = Task.Delay(this.requestTimeoutSeconds);
             Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments);
             TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest?.Length);
             tasks[1] = dispatcherCall;
@@ -205,7 +201,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 // Request completed.
                 Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
-                timer.CancelTimer();
 
                 if (completedTask.IsFaulted)
                 {
@@ -307,10 +302,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             try
             {
-                PooledTimer timer = this.timerPool.GetPooledTimer(
-                    this.openArguments.OpenTimeoutSeconds);
                 Task[] tasks = new Task[2];
-                tasks[0] = timer.StartTimerAsync();
+                tasks[0] = Task.Delay(TimeSpan.FromSeconds(this.openArguments.OpenTimeoutSeconds));
                 tasks[1] = this.dispatcher.OpenAsync(this.openArguments);
                 Task completedTask = await Task.WhenAny(tasks);
                 if (object.ReferenceEquals(completedTask, tasks[0]))
@@ -338,7 +331,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     // Open completed.
                     Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
-                    timer.CancelTimer();
 
                     if (completedTask.IsFaulted)
                     {

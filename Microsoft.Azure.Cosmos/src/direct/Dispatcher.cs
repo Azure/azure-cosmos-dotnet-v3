@@ -40,7 +40,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         // When examining IsCancellationRequested in order to decide whether to cancel,
         // guard the operation with connectionLock.
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
-        private readonly TimerPool idleTimerPool;
 
         private bool disposed = false;
 
@@ -62,7 +61,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         // lock used to guard underlying tcp connection state, which is a state level higher than callLock
         // Acquire before callLock
         private readonly object connectionLock = new object();
-        private PooledTimer idleTimer; // Guarded by connectionLock
         private Task idleTimerTask;  // Guarded by connectionLock
 
         public Dispatcher(
@@ -72,7 +70,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             string hostNameCertificateOverride,
             TimeSpan receiveHangDetectionTime,
             TimeSpan sendHangDetectionTime,
-            TimerPool idleTimerPool,
             TimeSpan idleTimeout)
         {
             this.connection = new Connection(
@@ -82,7 +79,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.userAgent = userAgent;
             this.connectionStateListener = connectionStateListener;
             this.serverUri = serverUri;
-            this.idleTimerPool = idleTimerPool;
         }
 
         #region Test hook.
@@ -201,11 +197,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     TaskScheduler.Default);
                 }
 
-                if (this.idleTimerPool != null)
-                {
-                    // idle timeout is enabled
-                    this.StartIdleTimer();
-                }
+                // idle timeout is enabled
+                this.StartIdleTimer();
             }
             catch (DocumentClientException)
             {
@@ -365,9 +358,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(!Monitor.IsEntered(this.connectionLock));
             lock (this.connectionLock)
             {
-                Debug.Assert(this.idleTimer == null);
-                Debug.Assert(this.idleTimerTask == null);
-
                 receiveTaskCopy = this.CloseConnection();
             }
 
@@ -458,7 +448,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     return;
                 }
 
-                this.idleTimer = null;
                 this.idleTimerTask = null;
 
                 this.StartConnectionShutdown();
@@ -472,8 +461,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private void ScheduleIdleTimer(TimeSpan timeToIdle)
         {
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
-            this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
-            this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
+            this.idleTimerTask = Task.Delay(timeToIdle).ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
             this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
@@ -514,22 +502,9 @@ namespace Microsoft.Azure.Documents.Rntbd
         // this.connectionLock must be held.
         private Task StopIdleTimer()
         {
-            Task idleTimerTaskCopy = null;
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
-            if (this.idleTimer != null)
-            {
-                if (this.idleTimer.CancelTimer())
-                {
-                    // Dispose() won the race and the timer was cancelled.
-                    this.idleTimer = null;
-                    this.idleTimerTask = null;
-                }
-                else
-                {
-                    idleTimerTaskCopy = this.idleTimerTask;
-                }
-            }
-            return idleTimerTaskCopy;
+
+            return this.idleTimerTask;
         }
 
         // this.connectionLock must be held.

@@ -37,8 +37,7 @@ namespace Microsoft.Azure.Documents
                   1, // override open timeout to 1 second 
                   idleTimeoutInSeconds, 
                   poolKey, 
-                  userAgent, 
-                  pool)
+                  userAgent)
         {
             this.sendFuzzedRequest = fuzzRequest;
             this.sendFuzzedContext = fuzzContext;

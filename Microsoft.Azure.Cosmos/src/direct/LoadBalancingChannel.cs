@@ -42,7 +42,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     channelProperties.UserAgent,
                     channelProperties.CertificateHostNameOverride,
                     channelProperties.ConnectionStateListener,
-                    channelProperties.RequestTimerPool,
                     channelProperties.RequestTimeout,
                     channelProperties.OpenTimeout,
                     channelProperties.PortReuseMode,
@@ -56,7 +55,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     channelProperties.ReceiveHangDetectionTime,
                     channelProperties.SendHangDetectionTime,
                     channelProperties.IdleTimeout,
-                    channelProperties.IdleTimerPool,
                     channelProperties.CallerId);
                 this.partitions = new LoadBalancingPartition[channelProperties.PartitionCount];
                 for (int i = 0; i < this.partitions.Length; i++)

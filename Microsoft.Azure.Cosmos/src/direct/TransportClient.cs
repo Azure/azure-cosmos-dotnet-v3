@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
         private static TransportPerformanceCounters transportPerformanceCounters = new TransportPerformanceCounters();
 
-        private readonly TimerPool timerPool;
-        private readonly TimerPool idleTimerPool;
         private readonly ChannelDictionary channelDictionary;
         private readonly CpuMonitor cpuMonitor;
         private bool disposed = false;
@@ -60,22 +58,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.PortPoolBindAttempts);
             }
 
-            this.timerPool = new TimerPool((int)clientOptions.TimerPoolResolution.TotalSeconds);
-            if (clientOptions.IdleTimeout > TimeSpan.Zero)
-            {
-                this.idleTimerPool = new TimerPool(minSupportedTimerDelayInSeconds: 30);
-            }
-            else
-            {
-                this.idleTimerPool = null;
-            }
-
             this.channelDictionary = new ChannelDictionary(
                 new ChannelProperties(
                     clientOptions.UserAgent,
                     clientOptions.CertificateHostNameOverride,
                     clientOptions.ConnectionStateListener,
-                    this.timerPool,
                     clientOptions.RequestTimeout,
                     clientOptions.OpenTimeout,
                     clientOptions.PortReuseMode,
@@ -86,7 +73,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.ReceiveHangDetectionTime,
                     clientOptions.SendHangDetectionTime,
                     clientOptions.IdleTimeout,
-                    this.idleTimerPool,
                     clientOptions.CallerId));
 
             // CpuMonitor must be disabled inside compute gateway because it presents unnecessary overhead
@@ -233,13 +219,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.cpuMonitor.Stop();
                 this.cpuMonitor.Dispose();
             }
-
-            if (this.idleTimerPool != null)
-            {
-                this.idleTimerPool.Dispose();
-            }
-
-            this.timerPool.Dispose();
 
             base.Dispose();
 

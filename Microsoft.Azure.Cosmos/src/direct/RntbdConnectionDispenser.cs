@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Documents
         private readonly int openTimeoutInSeconds;
         private readonly UserAgentContainer userAgent;
         private bool isDisposed = false;
-        private TimerPool timerPool;
 
         public RntbdConnectionDispenser(
             int requestTimeoutInSeconds, 
@@ -57,7 +56,6 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            this.timerPool = new TimerPool(timerValueInSeconds);
             DefaultTrace.TraceInformation("RntbdConnectionDispenser: requestTimeoutInSeconds: {0}, openTimeoutInSeconds: {1}, timerValueInSeconds: {2}",
                 requestTimeoutInSeconds, 
                 openTimeoutInSeconds,
@@ -79,8 +77,6 @@ namespace Microsoft.Azure.Documents
 
             if(disposing)
             {
-                this.timerPool.Dispose();
-                this.timerPool = null;
                 DefaultTrace.TraceInformation("RntbdConnectionDispenser Disposed");
             }
 
@@ -135,8 +131,7 @@ namespace Microsoft.Azure.Documents
                     this.openTimeoutInSeconds, 
                     this.idleConnectionTimeoutInSeconds, 
                     poolKey, 
-                    userAgent,
-                    this.timerPool);
+                    userAgent);
             }
 
             DateTimeOffset creationTimestampTicks = DateTimeOffset.Now;
