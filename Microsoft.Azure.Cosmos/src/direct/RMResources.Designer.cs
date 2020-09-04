@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Documents {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.direct.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

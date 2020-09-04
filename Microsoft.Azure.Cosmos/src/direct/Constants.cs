@@ -593,6 +593,7 @@ namespace Microsoft.Azure.Documents
             public const string StorageServiceFederationId = "federationId";
             public const string StorageAccountSku = "storageAccountSku";
             public const string IsRegisteredWithSms = "isRegisteredWithSms";
+            public const string StorageAccountVersion = "storageAccountVersion";
 
             // Cassandra Connector Constants
             public const string ConnectorOffer = "connectorOffer";
@@ -1152,6 +1153,8 @@ namespace Microsoft.Azure.Documents
             public const string IsSqlEndpointSwapped = "isSqlEndpointSwapped";
             public const string DatabaseServicesInfo = "DatabaseServicesInfo";
             public const string RedirectMapVersion = "version";
+            public const string IsOwnedByExternalProvider = "isOwnedByExternalProvider";
+            public const string ConnectionInformation = "connectionInformation";
 
             // Data Plane Operation Policy
             public const string DisableKeyBasedMetadataWriteAccess = "disableKeyBasedMetadataWriteAccess";
@@ -1228,6 +1231,7 @@ namespace Microsoft.Azure.Documents
 
             // AAD Authentication
             public const string TrustedAadTenants = "trustedAadTenants";
+            public const string EnableAadAuth = "enableAadAuth";
 
             // Restorable database accounts
             public const string CreationTime = "creationTime";
@@ -1319,6 +1323,7 @@ namespace Microsoft.Azure.Documents
             public const string IndexEncodingOptions = "indexEncodingOptions";
             public const string EnableIndexingFullFidelity = "enableIndexingFullFidelity";
             public const string IndexUniquifierId = "indexUniquifierId";
+            public const string CellExpiryIndexingMethod = "cellExpiryIndexingMethod";
         }
 
         public static class TypeSystemPolicy

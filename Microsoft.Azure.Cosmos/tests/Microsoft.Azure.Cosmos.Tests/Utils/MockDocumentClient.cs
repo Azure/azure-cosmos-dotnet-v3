@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Task.FromResult((IDictionary<string, object>)queryEngineConfiguration);
         }
 
-         ValueTask<(string token, string payload)> IAuthorizationTokenProvider.GetUserAuthorizationAsync(
+        ValueTask<(string token, string payload)> IAuthorizationTokenProvider.GetUserAuthorizationAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,

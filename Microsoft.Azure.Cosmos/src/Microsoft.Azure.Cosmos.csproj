@@ -64,7 +64,7 @@
     </Compile>
     <Compile Update="direct\RMResources.Designer.cs">
       <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
+      <AutoGen>false</AutoGen>
       <DependentUpon>RMResources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
@@ -74,10 +74,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="direct/RMResources.resx">
+    <EmbeddedResource Update="direct\RMResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>RMResources.Designer.cs</LastGenOutput>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CustomToolNamespace>Microsoft.Azure.Documents</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
 
@@ -86,6 +86,9 @@
   </ItemGroup>
 
   <ItemGroup>
+	  <PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
+	  <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+	  <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
       <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
       <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
