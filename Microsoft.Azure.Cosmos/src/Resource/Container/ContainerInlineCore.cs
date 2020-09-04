@@ -359,13 +359,7 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedEstimatorBuilder(processorName, estimationDelegate, estimationPeriod);
         }
 
-        public
-#if PREVIEW
-        override
-#else
-        new 
-#endif
-        ChangeFeedEstimator GetChangeFeedEstimator(
+        public override ChangeFeedEstimator GetChangeFeedEstimator(
             string processorName,
             Container leaseContainer)
         {
