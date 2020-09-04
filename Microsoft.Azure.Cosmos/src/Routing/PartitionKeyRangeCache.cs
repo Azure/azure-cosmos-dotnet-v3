@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {

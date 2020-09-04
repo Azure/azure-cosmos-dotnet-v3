@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -13,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -61,7 +61,9 @@ namespace Microsoft.Azure.Cosmos
                     ConsistencyLevel.Eventual,
                     eventSource,
                     null,
-                    new HttpClient(messageHandler));
+                    MockCosmosUtil.CreateCosmosHttpClient(
+                        () => new HttpClient(messageHandler),
+                        eventSource));
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {
@@ -115,7 +117,9 @@ namespace Microsoft.Azure.Cosmos
                     ConsistencyLevel.Eventual,
                     eventSource,
                     null,
-                    new HttpClient(messageHandler));
+                    MockCosmosUtil.CreateCosmosHttpClient(
+                        () => new HttpClient(messageHandler),
+                        eventSource));
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {

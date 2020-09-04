@@ -86,6 +86,9 @@
   </ItemGroup>
 
   <ItemGroup>
+	  <PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
+	  <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+	  <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
       <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
       <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
