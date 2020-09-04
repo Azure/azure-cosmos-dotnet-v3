@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             NewtonsoftToCosmosDBReader newtonsoftToCosmosDBReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftToCosmosDBWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            newtonsoftToCosmosDBWriter.WriteAll(newtonsoftToCosmosDBReader);
+            newtonsoftToCosmosDBReader.WriteAll(newtonsoftToCosmosDBWriter);
             return Encoding.UTF8.GetString(newtonsoftToCosmosDBWriter.GetResult().ToArray());
         }
 

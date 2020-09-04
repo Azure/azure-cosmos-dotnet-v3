@@ -184,15 +184,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <returns>A <see cref="Byte"/>[] or <c>null</c> if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
         public override byte[] ReadAsBytes()
         {
-            this.Read();
-            if (!this.jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-            {
-                throw new Exception("Failed to get the bytes.");
-            }
-
-            byte[] value = bufferedRawJsonToken.ToArray();
-            this.SetToken(JsonToken.Bytes, value);
-            return value;
+            throw new NotImplementedException();
         }
 
         /// <summary>
