@@ -597,9 +597,11 @@ namespace Microsoft.Azure.Cosmos.Json
             public void WriteRawJsonValue(
                 ReadOnlyMemory<byte> rawJsonValue,
                 bool isFieldName,
+                bool isRootNode,
                 IReadOnlyJsonStringDictionary jsonStringDictionary)
             {
-                if (this.IsSameStringDictionary(jsonStringDictionary))
+                // Only if the we attempt to write the root node as is the input and output have the same dictionary encoding
+                if (this.IsSameStringDictionary(jsonStringDictionary) && isRootNode && (this.binaryWriter.Position == 1))
                 {
                     // Other that whether or not this is a field name, the type of the value does not matter here
                     this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);

@@ -521,7 +521,11 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException($"Expected writer to implement: {nameof(IJsonBinaryWriterExtensions)}.");
                     }
 
-                    jsonBinaryWriter.WriteRawJsonValue(binaryNavigatorNode.Buffer, isFieldName, this.jsonStringDictionary);
+                    jsonBinaryWriter.WriteRawJsonValue(
+                        binaryNavigatorNode.Buffer,
+                        isFieldName,
+                        isRootNode: object.ReferenceEquals(jsonNavigatorNode, this.rootNode),
+                        this.jsonStringDictionary);
                 }
                 else
                 {

@@ -2516,7 +2516,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 double valueFromString = double.Parse(stringRawJsonToken, CultureInfo.InvariantCulture);
                 Assert.AreEqual(expectedNumberValue, valueFromString);
@@ -2534,7 +2534,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"I{expected}", stringRawJsonToken);
             }
@@ -2551,7 +2551,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"H{expected}", stringRawJsonToken);
             }
@@ -2568,7 +2568,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"L{expected}", stringRawJsonToken);
             }
@@ -2585,7 +2585,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"LL{expected}", stringRawJsonToken);
             }
@@ -2602,7 +2602,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"UL{expected}", stringRawJsonToken);
             }
@@ -2619,7 +2619,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"S{expected.ToString("G9", CultureInfo.InvariantCulture)}", stringRawJsonToken);
             }
@@ -2636,7 +2636,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"D{expected.ToString("G17", CultureInfo.InvariantCulture)}", stringRawJsonToken);
             }
@@ -2653,7 +2653,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"G{expected.ToString()}", stringRawJsonToken);
             }
@@ -2670,7 +2670,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+                IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
                 string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
                 Assert.AreEqual($"B{Convert.ToBase64String(expected.ToArray())}", stringRawJsonToken);
             }
@@ -2705,7 +2705,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         private void VerifyFragment(IJsonReader jsonReader, string fragment, Encoding encoding)
         {
-            IJsonTextReaderExtensions textReader = (IJsonTextReaderExtensions)jsonReader;
+            IJsonTextReaderPrivateImplementation textReader = (IJsonTextReaderPrivateImplementation)jsonReader;
             string stringRawJsonToken = encoding.GetString(textReader.GetBufferedJsonToken().Memory.ToArray());
             Assert.AreEqual(fragment, stringRawJsonToken);
         }

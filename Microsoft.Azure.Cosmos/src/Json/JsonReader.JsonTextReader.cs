@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// JsonReader that knows how to read text
         /// </summary>
-        private sealed class JsonTextReader : JsonReader, IJsonTextReaderExtensions
+        private sealed class JsonTextReader : JsonReader, IJsonTextReaderPrivateImplementation
         {
             private const char Int8TokenPrefix = 'I';
             private const char Int16TokenPrefix = 'H';
@@ -142,13 +142,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Text;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
             public override bool Read()
@@ -395,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonTextParser.GetBinaryValue(binaryToken);
             }
 
-            public Utf8Memory GetBufferedJsonToken()
+            Utf8Memory IJsonTextReaderPrivateImplementation.GetBufferedJsonToken()
             {
                 ReadOnlyMemory<byte> bufferedRawJson = this.jsonTextBuffer.GetBufferedRawJsonToken(
                     this.token.Start,
