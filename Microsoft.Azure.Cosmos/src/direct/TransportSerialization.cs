@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             { WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, TransportSerialization.AddRetriableWriteRequestStartTimestampMetadata},
 
             // Headers supported by both
-            { HttpConstants.HttpHeaders.HttpDate,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.HttpDate, rntbdRequest.date, rntbdRequest) },
+            { HttpConstants.HttpHeaders.HttpDate,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.AddHttpDateHeader(headerValue, documentServiceRequest, rntbdRequest) },
             { HttpConstants.HttpHeaders.XDate,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.XDate, rntbdRequest.date, rntbdRequest) },
             { HttpConstants.HttpHeaders.Continuation, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.Continuation, rntbdRequest.continuationToken, rntbdRequest) },
             { HttpConstants.HttpHeaders.IfMatch, (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.AddIfMatchHeader(headerValue, documentServiceRequest, rntbdRequest) },
@@ -150,7 +150,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             { WFConstants.BackendHeaders.PopulateLogStoreInfo,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PopulateLogStoreInfo, rntbdRequest.populateLogStoreInfo, rntbdRequest)},
             { WFConstants.BackendHeaders.MergeCheckPointGLSN,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGlsnKeyName, rntbdRequest)},
             { WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest)},
-            
+            { WFConstants.BackendHeaders.AddResourcePropertiesToResponse,  (headerValue, documentServiceRequest, rntbdRequest) =>TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.AddResourcePropertiesToResponse, rntbdRequest.addResourcePropertiesToResponse, rntbdRequest)},
+
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
             // BE will respect the per-request value.
@@ -407,6 +408,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddResponseLongLongHeaderIfPresent(response.timeToLiveInSeconds, WFConstants.BackendHeaders.TimeToLiveInSeconds, storeResponse.Headers);
             TransportSerialization.AddResponseBoolHeaderIfPresent(response.replicaStatusRevoked, WFConstants.BackendHeaders.ReplicaStatusRevoked, storeResponse.Headers);
             TransportSerialization.AddResponseULongHeaderIfPresent(response.softMaxAllowedThroughput, WFConstants.BackendHeaders.SoftMaxAllowedThroughput, storeResponse.Headers);
+            TransportSerialization.AddResponseDoubleHeaderIfPresent(response.backendRequestDurationMilliseconds, HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, storeResponse.Headers);
 
             if (response.requestCharge.isPresent)
             {
@@ -442,6 +444,23 @@ namespace Microsoft.Azure.Documents.Rntbd
             storeResponse.Status = (int)status;
 
             return storeResponse;
+        }
+
+        private static void AddHttpDateHeader(object value, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if(!(value is string httpDateString))
+            {
+                throw new ArgumentOutOfRangeException(HttpConstants.HttpHeaders.HttpDate);
+            }
+
+            // XDate takes priority over HttpDate
+            string xDateHeader = request.Headers[HttpConstants.HttpHeaders.XDate];
+            if (string.IsNullOrEmpty(xDateHeader) &&
+                !string.IsNullOrEmpty(httpDateString))
+            {
+                rntbdRequest.date.value.valueBytes = BytesSerializer.GetBytesForString(httpDateString, rntbdRequest);
+                rntbdRequest.date.isPresent = true;
+            }
         }
 
         internal static RntbdHeader DecodeRntbdHeader(byte[] header)
@@ -704,7 +723,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void AddIfMatchHeader(object headerValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if(request.OperationType != OperationType.Read &&
+            if (request.OperationType != OperationType.Read &&
                 request.OperationType != OperationType.ReadFeed &&
                 headerValue is string match &&
                 !string.IsNullOrEmpty(match))
@@ -716,7 +735,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void AddIfNoneMatchHeader(object headerValue, DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
-            if((request.OperationType == OperationType.Read ||
+            if ((request.OperationType == OperationType.Read ||
                 request.OperationType == OperationType.ReadFeed) &&
                 headerValue is string match &&
                 !string.IsNullOrEmpty(match))
