@@ -33,15 +33,32 @@
         {
             using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
-                using (Trace childTrace1 = rootTrace.StartChild("Child1"))
+                using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                 {
                 }
 
-                using (Trace childTrace2 = rootTrace.StartChild("Child2"))
+                using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
                 {
                 }
 
                 Assert.AreEqual(rootTrace.Children.Count, 2);
+            }
+        }
+
+        [TestMethod]
+        public void TestNoOpTrace()
+        {
+            using (NoOpTrace rootTrace = NoOpTrace.Singleton)
+            {
+                using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+                {
+                }
+
+                using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
+                {
+                }
+
+                Assert.AreEqual(rootTrace.Children.Count, 0);
             }
         }
     }

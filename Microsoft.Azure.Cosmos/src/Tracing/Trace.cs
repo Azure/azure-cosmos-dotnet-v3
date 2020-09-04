@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
 
-    internal sealed class Trace : IDisposable
+    internal sealed class Trace : ITrace
     {
         private static readonly DateTime globalStartTime = DateTime.UtcNow;
         private static readonly Stopwatch globalStopwatch = Stopwatch.StartNew();
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public TraceComponent Component { get; }
 
-        public Trace Parent { get; }
+        public ITrace Parent { get; }
 
-        public IReadOnlyList<Trace> Children => this.children;
+        public IReadOnlyList<ITrace> Children => this.children;
 
         public ITraceInfo Info { get; set; }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.duration = globalStartTime.AddTicks(globalStopwatch.ElapsedTicks) - this.StartTime;
         }
 
-        public Trace StartChild(
+        public ITrace StartChild(
             string name,
             TraceLevel level = TraceLevel.Verbose,
             TraceComponent component = TraceComponent.Unknown)
