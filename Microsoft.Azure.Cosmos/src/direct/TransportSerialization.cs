@@ -108,6 +108,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddResourceTypes(request, rntbdRequest);
             TransportSerialization.AddUpdateMaxthroughputEverProvisioned(request, rntbdRequest);
             TransportSerialization.AddUseSystemBudget(request, rntbdRequest);
+            TransportSerialization.AddTruncateMergeLogRequest(request, rntbdRequest);
+            TransportSerialization.AddRetriableWriteRequestMetadata(request, rntbdRequest);
 
             // "normal" headers (strings, ULongs, etc.,)
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
@@ -159,6 +161,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateLogStoreInfo, rntbdRequest.populateLogStoreInfo, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGlsnKeyName, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.AddResourcePropertiesToResponse, rntbdRequest.addResourcePropertiesToResponse, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -360,6 +363,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddResponseLongLongHeaderIfPresent(response.timeToLiveInSeconds, WFConstants.BackendHeaders.TimeToLiveInSeconds, storeResponse.Headers);
             TransportSerialization.AddResponseBoolHeaderIfPresent(response.replicaStatusRevoked, WFConstants.BackendHeaders.ReplicaStatusRevoked, storeResponse.Headers);
             TransportSerialization.AddResponseULongHeaderIfPresent(response.softMaxAllowedThroughput, WFConstants.BackendHeaders.SoftMaxAllowedThroughput, storeResponse.Headers);
+            TransportSerialization.AddResponseDoubleHeaderIfPresent(response.backendRequestDurationMilliseconds, HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, storeResponse.Headers);
 
             if (response.requestCharge.isPresent)
             {
@@ -1566,6 +1570,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private static void AddTruncateMergeLogRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.TruncateMergeLogRequest]))
+            {
+                rntbdRequest.truncateMergeLogRequest.value.valueByte = (request.Headers[HttpConstants.HttpHeaders.TruncateMergeLogRequest].
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.truncateMergeLogRequest.isPresent = true;
+            }
+        }
+
         private static void AddEnumerationDirection(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
             if (request.Properties != null && request.Properties.TryGetValue(
@@ -1940,6 +1956,45 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 rntbdRequest.transactionCommit.value.valueByte = ((bool)boolData) ? (byte)0x01 : (byte)0x00;
                 rntbdRequest.transactionCommit.isPresent = true;
+            }
+        }
+
+        private static void AddRetriableWriteRequestMetadata(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (request.Properties != null &&
+               request.Properties.TryGetValue(WFConstants.BackendHeaders.RetriableWriteRequestId, out object retriableWriteRequestId))
+            {
+                byte[] requestId = retriableWriteRequestId as byte[];
+                if (requestId == null)
+                {
+                    throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.RetriableWriteRequestId);
+                }
+
+                rntbdRequest.retriableWriteRequestId.value.valueBytes = requestId;
+                rntbdRequest.retriableWriteRequestId.isPresent = true;
+
+                if (request.Properties.TryGetValue(WFConstants.BackendHeaders.IsRetriedWriteRequest, out object isRetriedWriteRequestValue))
+                {
+                    bool? isRetriedWriteRequest = isRetriedWriteRequestValue as bool?;
+                    if (!isRetriedWriteRequest.HasValue)
+                    {
+                        throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.IsRetriedWriteRequest);
+                    }
+
+                    rntbdRequest.isRetriedWriteRequest.value.valueByte = ((bool)isRetriedWriteRequest) ? (byte)0x01 : (byte)0x00;
+                    rntbdRequest.isRetriedWriteRequest.isPresent = true;
+                }
+
+                if (request.Properties.TryGetValue(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, out object retriableWriteRequestStartTimestamp))
+                {
+                    if (!UInt64.TryParse(retriableWriteRequestStartTimestamp.ToString(), out UInt64 requestStartTimestamp) || requestStartTimestamp <= 0)
+                    {
+                        throw new ArgumentOutOfRangeException(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp);
+                    }
+
+                    rntbdRequest.retriableWriteRequestStartTimestamp.value.valueULongLong = requestStartTimestamp;
+                    rntbdRequest.retriableWriteRequestStartTimestamp.isPresent = true;
+                }
             }
         }
 

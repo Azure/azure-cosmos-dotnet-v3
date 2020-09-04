@@ -464,7 +464,7 @@ namespace Microsoft.Azure.Documents
                 else if (this.RoleAssignment > 0)
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.RoleAssignment), 0, val, 0, 4);
-                    ResourceId.BlockCopy(BitConverter.GetBytes(0x8000), 0, val, 4, 2);
+                    ResourceId.BlockCopy(BitConverter.GetBytes(0x1000), 0, val, 4, 2);
                 }
                 else if (this.RoleDefinition > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.RoleDefinition), 0, val, 0, ResourceId.RbacResourceIdLength);
@@ -760,18 +760,23 @@ namespace Microsoft.Azure.Documents
 
                 if (buffer.Length == ResourceId.RbacResourceIdLength)
                 {
-                    bool isRoleAssignment = (buffer[ResourceId.RbacResourceIdLength - 1] & 0x80) > 0;
+                    byte rbacResourceType = buffer[ResourceId.RbacResourceIdLength - 1];
                     ulong rbacResourceId = ResourceId.ToUnsignedLong(buffer, 4);
 
-                    if (isRoleAssignment)
+                    switch((RbacResourceType)rbacResourceType)
                     {
-                        rid.RoleAssignment = rbacResourceId;
-                    }
-                    else
-                    {
-                        rid.RoleDefinition = rbacResourceId;
-                    }
+                        case RbacResourceType.RbacResourceType_RoleDefinition:
+                            rid.RoleDefinition = rbacResourceId;
+                            break;
 
+                        case RbacResourceType.RbacResourceType_RoleAssignment:
+                            rid.RoleAssignment = rbacResourceId;
+                            break;
+
+                        default:
+                            return false;
+                    }
+                    
                     return true;
                 }
 
@@ -1064,6 +1069,12 @@ namespace Microsoft.Azure.Documents
         {
             UserDefinedType = 0x01,
             ClientEncryptionKey = 0x02
+        }
+
+        internal enum RbacResourceType : byte
+        {
+            RbacResourceType_RoleDefinition = 0x00,
+            RbacResourceType_RoleAssignment = 0x10,
         }
     }
 }
