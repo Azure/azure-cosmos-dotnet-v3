@@ -12,7 +12,7 @@
         {
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
-            binaryWriter.WriteAll(textReader);
+            textReader.WriteAll(binaryWriter);
             return binaryWriter.GetResult().ToArray();
         }
 
@@ -20,7 +20,7 @@
         {
             IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            textWriter.WriteAll(binaryReader);
+            binaryReader.WriteAll(textWriter);
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 

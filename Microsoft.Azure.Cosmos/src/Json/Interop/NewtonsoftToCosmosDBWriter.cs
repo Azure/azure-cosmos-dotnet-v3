@@ -141,65 +141,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteValue(value);
         }
 
-        public override void WriteRawJsonToken(
-            JsonTokenType jsonTokenType,
-            ReadOnlySpan<byte> rawJsonToken)
-        {
-            string rawJson = Encoding.UTF8.GetString(rawJsonToken);
-            Newtonsoft.Json.JsonTextReader jsonTextReader = new Newtonsoft.Json.JsonTextReader(new StringReader(rawJson))
-            {
-                DateParseHandling = DateParseHandling.None,
-            };
-
-            while (jsonTextReader.Read())
-            {
-                if (jsonTokenType == JsonTokenType.FieldName)
-                {
-                    this.writer.WritePropertyName(jsonTextReader.Value as string);
-                }
-                else
-                {
-                    switch (jsonTextReader.TokenType)
-                    {
-                        case Newtonsoft.Json.JsonToken.StartObject:
-                            this.writer.WriteStartObject();
-                            break;
-
-                        case Newtonsoft.Json.JsonToken.StartArray:
-                            this.writer.WriteStartArray();
-                            break;
-
-                        case Newtonsoft.Json.JsonToken.PropertyName:
-                            this.writer.WritePropertyName(jsonTextReader.Value as string);
-                            break;
-
-                        case Newtonsoft.Json.JsonToken.Integer:
-                        case Newtonsoft.Json.JsonToken.Float:
-                        case Newtonsoft.Json.JsonToken.String:
-                        case Newtonsoft.Json.JsonToken.Boolean:
-                            this.writer.WriteValue(jsonTextReader.Value);
-                            break;
-
-                        case Newtonsoft.Json.JsonToken.Null:
-                            this.writer.WriteNull();
-                            break;
-
-                        case Newtonsoft.Json.JsonToken.EndObject:
-                            this.writer.WriteEndObject();
-                            break;
-
-                        case Newtonsoft.Json.JsonToken.EndArray:
-                            this.writer.WriteEndArray();
-                            break;
-
-                        default:
-                            throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonToken)}: {jsonTextReader.TokenType}.");
-                    }
-                }
-                
-            }
-        }
-
         public static NewtonsoftToCosmosDBWriter CreateTextWriter()
         {
             StringWriter stringWriter = new StringWriter();

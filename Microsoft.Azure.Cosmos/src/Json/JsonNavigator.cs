@@ -119,10 +119,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
-
-        /// <inheritdoc />
-        public virtual void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+        public virtual void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
         {
             JsonNodeType nodeType = this.GetNodeType(jsonNavigatorNode);
             switch (nodeType)
@@ -138,19 +135,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonNodeType.True:
                     jsonWriter.WriteBoolValue(true);
                     return;
-            }
-
-            bool sameEncoding = this.SerializationFormat == jsonWriter.SerializationFormat;
-            if (sameEncoding && this.TryGetBufferedRawJson(jsonNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))
-            {
-                // Token type doesn't make any difference other than whether it's a value or field name
-                JsonTokenType tokenType = nodeType == JsonNodeType.FieldName ? JsonTokenType.FieldName : JsonTokenType.String;
-                jsonWriter.WriteRawJsonToken(tokenType, bufferedRawJson.Span);
-                return;
-            }
-
-            switch (nodeType)
-            {
                 case JsonNodeType.Number64:
                     {
                         Number64 value = this.GetNumber64Value(jsonNavigatorNode);
@@ -192,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                         foreach (IJsonNavigatorNode arrayItem in this.GetArrayItems(jsonNavigatorNode))
                         {
-                            this.WriteTo(arrayItem, jsonWriter);
+                            this.WriteNode(arrayItem, jsonWriter);
                         }
 
                         jsonWriter.WriteArrayEnd();
@@ -205,8 +189,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                         foreach (ObjectProperty objectProperty in this.GetObjectProperties(jsonNavigatorNode))
                         {
-                            this.WriteTo(objectProperty.NameNode, jsonWriter);
-                            this.WriteTo(objectProperty.ValueNode, jsonWriter);
+                            this.WriteNode(objectProperty.NameNode, jsonWriter);
+                            this.WriteNode(objectProperty.ValueNode, jsonWriter);
                         }
 
                         jsonWriter.WriteObjectEnd();

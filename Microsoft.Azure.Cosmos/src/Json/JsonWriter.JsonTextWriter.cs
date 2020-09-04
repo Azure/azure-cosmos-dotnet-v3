@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// The user can also provide initial size to reserve string buffer, that will help reduce cost of reallocation.
         /// It provides error checking based on JSON grammar. It provides escaping for nine characters specified in JSON.
         /// </summary>
-        private sealed class JsonTextWriter : JsonWriter
+        private sealed class JsonTextWriter : JsonWriter, IJsonTextWriterExtensions
         {
             private const byte ValueSeperatorToken = (byte)':';
             private const byte MemberSeperatorToken = (byte)',';
@@ -310,61 +310,31 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.WriteBinaryAsBase64(value);
             }
 
+            public void WriteRawJsonValue(ReadOnlyMemory<byte> buffer, bool isFieldName)
+            {
+                // The token type here does not matter, we only need to know whether it is a field name
+                this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
+
+                this.PrefixMemberSeparator();
+
+                this.jsonTextMemoryWriter.Write(buffer.Span);
+
+                if (isFieldName)
+                {
+                    // no separator after property name
+                    this.firstValue = true;
+
+                    // Append value separator character
+                    this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
+                }
+            }
+
             /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetResult()
             {
                 return this.jsonTextMemoryWriter.BufferAsMemory.Slice(
                     0,
                     this.jsonTextMemoryWriter.Position);
-            }
-
-            /// <inheritdoc />
-            public override void WriteRawJsonToken(
-                JsonTokenType jsonTokenType,
-                ReadOnlySpan<byte> rawJsonToken)
-            {
-                switch (jsonTokenType)
-                {
-                    case JsonTokenType.String:
-                    case JsonTokenType.Number:
-                    case JsonTokenType.True:
-                    case JsonTokenType.False:
-                    case JsonTokenType.Null:
-                    case JsonTokenType.FieldName:
-                    case JsonTokenType.Int8:
-                    case JsonTokenType.Int16:
-                    case JsonTokenType.Int32:
-                    case JsonTokenType.Int64:
-                    case JsonTokenType.UInt32:
-                    case JsonTokenType.Float32:
-                    case JsonTokenType.Float64:
-                    case JsonTokenType.Guid:
-                    case JsonTokenType.Binary:
-                        // Supported Tokens
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException($"Unknown token type: {jsonTokenType}.");
-                }
-
-                if (rawJsonToken.IsEmpty)
-                {
-                    throw new ArgumentException($"Expected non empty {nameof(rawJsonToken)}.");
-                }
-
-                this.JsonObjectState.RegisterToken(jsonTokenType);
-                this.PrefixMemberSeparator();
-
-                // No separator after property name
-                if (jsonTokenType == JsonTokenType.FieldName)
-                {
-                    this.firstValue = true;
-                    this.jsonTextMemoryWriter.Write(rawJsonToken);
-                    this.jsonTextMemoryWriter.Write(ValueSeperatorToken);
-                }
-                else
-                {
-                    this.jsonTextMemoryWriter.Write(rawJsonToken);
-                }
             }
 
             private void WriteIntegerInternal(long value)
