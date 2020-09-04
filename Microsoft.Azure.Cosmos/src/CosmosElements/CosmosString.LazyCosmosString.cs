@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.jsonNavigatorNode,
                 out bufferedValue);
 
-            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
         }
     }
 #if INTERNAL

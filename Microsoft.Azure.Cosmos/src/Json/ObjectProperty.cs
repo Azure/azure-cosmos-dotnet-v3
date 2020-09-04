@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
-    using System;
-
     /// <summary>
     /// Struct to hold the property name and property value for an object property.
     /// </summary>

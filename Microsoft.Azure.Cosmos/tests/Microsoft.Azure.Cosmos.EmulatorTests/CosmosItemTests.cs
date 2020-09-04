@@ -1140,7 +1140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 IJsonReader reader = JsonReader.Create(content);
                 IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                textWriter.WriteAll(reader);
+                reader.WriteAll(textWriter);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
                 Assert.IsNotNull(json);
                 ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
