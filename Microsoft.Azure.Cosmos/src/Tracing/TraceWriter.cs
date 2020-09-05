@@ -14,18 +14,76 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         private const string space = "  ";
 
-        private static readonly AsciiTreeCharacters DefaultAsciiTreeCharacters = new AsciiTreeCharacters(
-            blank: ' ',
-            child: '├',
-            dash: '─',
-            last: '└',
-            parent: '│',
-            root: '.');
-        private static readonly AsciiTreeIndents DefaultAsciiTreeIndents = AsciiTreeIndents.Create(DefaultAsciiTreeCharacters);
+        private static readonly Dictionary<AsciiType, AsciiTreeCharacters> asciiTreeCharactersMap = new Dictionary<AsciiType, AsciiTreeCharacters>()
+        {
+            {
+                AsciiType.Default,
+                new AsciiTreeCharacters(
+                    blank: ' ',
+                    child: '├',
+                    dash: '─',
+                    last: '└',
+                    parent: '│',
+                    root: '.')
+            },
+            {
+                AsciiType.DoubleLine,
+                new AsciiTreeCharacters(
+                    blank: ' ',
+                    child: '╠',
+                    dash: '═',
+                    last: '╚',
+                    parent: '║',
+                    root: '╗')
+            },
+            {
+                AsciiType.Classic,
+                new AsciiTreeCharacters(
+                    blank: ' ',
+                    child: '|',
+                    dash: '-',
+                    last: '+',
+                    parent: '|',
+                    root: '+')
+            },
+            {
+                AsciiType.ClassicRounded,
+                new AsciiTreeCharacters(
+                    blank: ' ',
+                    child: '|',
+                    dash: '-',
+                    last: '`',
+                    parent: '|',
+                    root: '+')
+            },
+            {
+                AsciiType.ExclamationMarks,
+                new AsciiTreeCharacters(
+                    blank: ' ',
+                    child: '#',
+                    dash: '=',
+                    last: '*',
+                    parent: '!',
+                    root: '#')
+            },
+        };
+        private static readonly Dictionary<AsciiType, AsciiTreeIndents> asciiTreeIndentsMap = new Dictionary<AsciiType, AsciiTreeIndents>()
+        {
+            { AsciiType.Default, AsciiTreeIndents.Create(asciiTreeCharactersMap[AsciiType.Default]) },
+            { AsciiType.DoubleLine, AsciiTreeIndents.Create(asciiTreeCharactersMap[AsciiType.DoubleLine]) },
+            { AsciiType.Classic, AsciiTreeIndents.Create(asciiTreeCharactersMap[AsciiType.Classic]) },
+            { AsciiType.ClassicRounded, AsciiTreeIndents.Create(asciiTreeCharactersMap[AsciiType.ClassicRounded]) },
+            { AsciiType.ExclamationMarks, AsciiTreeIndents.Create(asciiTreeCharactersMap[AsciiType.ExclamationMarks]) },
+        };
+
         private static readonly string[] newLines = new string[] { Environment.NewLine };
         private static readonly char[] newLineCharacters = Environment.NewLine.ToCharArray();
 
-        public static void WriteTrace(TextWriter writer, ITrace trace, TraceLevel level = TraceLevel.Verbose)
+        public static void WriteTrace(
+            TextWriter writer,
+            ITrace trace,
+            TraceLevel level = TraceLevel.Verbose,
+            AsciiType asciiType = AsciiType.Default)
         {
             if (writer == null)
             {
@@ -42,11 +100,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 return;
             }
 
-            writer.WriteLine(DefaultAsciiTreeCharacters.Root);
-            WriteTraceRecursive(writer, trace, level, isLastChild: true);
+            AsciiTreeCharacters asciiTreeCharacter = asciiTreeCharactersMap[asciiType];
+            AsciiTreeIndents asciiTreeIndents = asciiTreeIndentsMap[asciiType];
+
+            writer.WriteLine(asciiTreeCharacter.Root);
+            WriteTraceRecursive(writer, trace, level, asciiTreeIndents, isLastChild: true);
         }
 
-        private static void WriteTraceRecursive(TextWriter writer, ITrace trace, TraceLevel level, bool isLastChild)
+        private static void WriteTraceRecursive(
+            TextWriter writer,
+            ITrace trace,
+            TraceLevel level,
+            AsciiTreeIndents asciiTreeIndents,
+            bool isLastChild)
         {
             ITrace parent = trace.Parent;
             Stack<string> indentStack = new Stack<string>();
@@ -55,17 +121,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 bool parentIsLastChild = (parent.Parent == null) || parent.Equals(parent.Parent.Children.Last());
                 if (parentIsLastChild)
                 {
-                    indentStack.Push(DefaultAsciiTreeIndents.Blank);
+                    indentStack.Push(asciiTreeIndents.Blank);
                 }
                 else
                 {
-                    indentStack.Push(DefaultAsciiTreeIndents.Parent);
+                    indentStack.Push(asciiTreeIndents.Parent);
                 }
 
                 parent = parent.Parent;
             }
 
-            WriteIndents(writer, indentStack, isLastChild);
+            WriteIndents(writer, indentStack, asciiTreeIndents, isLastChild);
 
             writer.Write(trace.Name);
             writer.Write('(');
@@ -96,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 bool isLeaf = trace.Children.Count == 0;
 
-                WriteInfoIndents(writer, indentStack, isLastChild: isLastChild, isLeaf: isLeaf);
+                WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                 writer.WriteLine('(');
 
                 string[] infoLines = trace.Info
@@ -105,29 +171,33 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     .Split(newLines, StringSplitOptions.None);
                 foreach (string infoLine in infoLines)
                 {
-                    WriteInfoIndents(writer, indentStack, isLastChild: isLastChild, isLeaf: isLeaf);
-                    writer.Write(DefaultAsciiTreeIndents.Blank);
+                    WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
+                    writer.Write(asciiTreeIndents.Blank);
                     writer.WriteLine(infoLine);
                 }
 
-                WriteInfoIndents(writer, indentStack, isLastChild: isLastChild, isLeaf: isLeaf);
+                WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                 writer.WriteLine(')');
             }
 
             for (int i = 0; i < trace.Children.Count - 1; i++)
             {
                 ITrace child = trace.Children[i];
-                WriteTraceRecursive(writer, child, level, isLastChild: false);
+                WriteTraceRecursive(writer, child, level, asciiTreeIndents, isLastChild: false);
             }
 
             if (trace.Children.Count != 0)
             {
                 ITrace child = trace.Children[trace.Children.Count - 1];
-                WriteTraceRecursive(writer, child, level, isLastChild: true);
+                WriteTraceRecursive(writer, child, level, asciiTreeIndents, isLastChild: true);
             }
         }
 
-        private static void WriteIndents(TextWriter writer, Stack<string> indentStack, bool isLastChild)
+        private static void WriteIndents(
+            TextWriter writer,
+            Stack<string> indentStack,
+            AsciiTreeIndents asciiTreeIndents,
+            bool isLastChild)
         {
             foreach (string indent in indentStack)
             {
@@ -136,15 +206,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             if (isLastChild)
             {
-                writer.Write(DefaultAsciiTreeIndents.Last);
+                writer.Write(asciiTreeIndents.Last);
             }
             else
             {
-                writer.Write(DefaultAsciiTreeIndents.Child);
+                writer.Write(asciiTreeIndents.Child);
             }
         }
 
-        private static void WriteInfoIndents(TextWriter writer, Stack<string> indentStack, bool isLastChild, bool isLeaf)
+        private static void WriteInfoIndents(
+            TextWriter writer,
+            Stack<string> indentStack,
+            AsciiTreeIndents asciiTreeIndents,
+            bool isLastChild,
+            bool isLeaf)
         {
             foreach (string indent in indentStack)
             {
@@ -153,20 +228,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             if (isLastChild)
             {
-                writer.Write(DefaultAsciiTreeIndents.Blank);
+                writer.Write(asciiTreeIndents.Blank);
             }
             else
             {
-                writer.Write(DefaultAsciiTreeIndents.Parent);
+                writer.Write(asciiTreeIndents.Parent);
             }
 
             if (isLeaf)
             {
-                writer.Write(DefaultAsciiTreeIndents.Blank);
+                writer.Write(asciiTreeIndents.Blank);
             }
             else
             {
-                writer.Write(DefaultAsciiTreeIndents.Parent);
+                writer.Write(asciiTreeIndents.Parent);
             }
         }
 
@@ -267,6 +342,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         asciiTreeCharacters.Blank,
                         asciiTreeCharacters.Blank
                     }));
+        }
+
+        public enum AsciiType
+        {
+            Default,
+            DoubleLine,
+            Classic,
+            ClassicRounded,
+            ExclamationMarks,
         }
     }
 }

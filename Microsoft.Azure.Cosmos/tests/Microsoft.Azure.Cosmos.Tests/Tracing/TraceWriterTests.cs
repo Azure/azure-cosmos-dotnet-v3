@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private static string GetTraceString(ITrace trace)
         {
             StringWriter stringWriter = new StringWriter();
-            TraceWriter.WriteTrace(stringWriter, trace);
+            TraceWriter.WriteTrace(stringWriter, trace, asciiType: TraceWriter.AsciiType.DoubleLine);
             return stringWriter.ToString();
         }
     }
