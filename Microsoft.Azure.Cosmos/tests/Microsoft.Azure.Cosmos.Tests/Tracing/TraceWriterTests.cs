@@ -61,10 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 }
             }
 
-            StringWriter stringWriter = new StringWriter();
-            TraceWriter traceWriter = new TraceWriter(stringWriter);
-            traceWriter.WriteTrace(rootTrace);
-            string result = stringWriter.ToString();
+            string traceString = GetTraceString(rootTrace);
         }
 
         [TestMethod]
@@ -265,8 +262,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private static string GetTraceString(ITrace trace)
         {
             StringWriter stringWriter = new StringWriter();
-            TraceWriter traceWriter = new TraceWriter(stringWriter);
-            traceWriter.WriteTrace(trace);
+            TraceWriter.WriteTrace(stringWriter, trace);
             return stringWriter.ToString();
         }
     }

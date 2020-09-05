@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.IO;
     using System.Linq;
 
-    internal sealed class TraceWriter
+    internal static class TraceWriter
     {
         private const string space = "  ";
 
@@ -25,16 +25,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private static readonly string[] newLines = new string[] { Environment.NewLine };
         private static readonly char[] newLineCharacters = Environment.NewLine.ToCharArray();
 
-        private readonly TextWriter writer;
-        private int indentLevel;
-
-        public TraceWriter(TextWriter writer)
+        public static void WriteTrace(TextWriter writer, ITrace trace, TraceLevel level = TraceLevel.Verbose)
         {
-            this.writer = writer ?? throw new ArgumentNullException(nameof(writer));
-        }
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
 
-        public void WriteTrace(ITrace trace, TraceLevel level = TraceLevel.Verbose)
-        {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
@@ -45,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 return;
             }
 
-            this.writer.WriteLine(DefaultAsciiTreeCharacters.Root);
-            this.WriteTraceRecursive(trace, level, isLastChild: true);
+            writer.WriteLine(DefaultAsciiTreeCharacters.Root);
+            WriteTraceRecursive(writer, trace, level, isLastChild: true);
         }
 
-        private void WriteTraceRecursive(ITrace trace, TraceLevel level, bool isLastChild)
+        private static void WriteTraceRecursive(TextWriter writer, ITrace trace, TraceLevel level, bool isLastChild)
         {
             ITrace parent = trace.Parent;
             Stack<string> indentStack = new Stack<string>();
@@ -70,70 +67,70 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             foreach (string indent in indentStack)
             {
-                this.writer.Write(indent);
+                writer.Write(indent);
             }
 
             if (isLastChild)
             {
-                this.writer.Write(DefaultAsciiTreeIndents.Last);
+                writer.Write(DefaultAsciiTreeIndents.Last);
             }
             else
             {
-                this.writer.Write(DefaultAsciiTreeIndents.Child);
+                writer.Write(DefaultAsciiTreeIndents.Child);
             }
 
-            this.writer.Write(trace.Name);
-            this.writer.Write('(');
-            this.writer.Write(trace.Id);
-            this.writer.Write(')');
-            this.writer.Write(space);
+            writer.Write(trace.Name);
+            writer.Write('(');
+            writer.Write(trace.Id);
+            writer.Write(')');
+            writer.Write(space);
 
-            this.writer.Write(trace.Component);
-            this.writer.Write('-');
-            this.writer.Write("Component");
-            this.writer.Write(space);
+            writer.Write(trace.Component);
+            writer.Write('-');
+            writer.Write("Component");
+            writer.Write(space);
 
-            this.writer.Write(trace.StackFrame.GetFileName().Split('\\').Last());
-            this.writer.Write(':');
-            this.writer.Write(trace.StackFrame.GetFileLineNumber());
-            this.writer.Write(space);
+            writer.Write(trace.StackFrame.GetFileName().Split('\\').Last());
+            writer.Write(':');
+            writer.Write(trace.StackFrame.GetFileLineNumber());
+            writer.Write(space);
 
-            this.writer.Write(trace.StartTime.ToString("hh:mm:ss:fff"));
-            this.writer.Write(space);
+            writer.Write(trace.StartTime.ToString("hh:mm:ss:fff"));
+            writer.Write(space);
 
-            this.writer.Write(trace.Duration.TotalMilliseconds.ToString("0.00"));
-            this.writer.Write(" milliseconds");
-            this.writer.Write(space);
+            writer.Write(trace.Duration.TotalMilliseconds.ToString("0.00"));
+            writer.Write(" milliseconds");
+            writer.Write(space);
 
-            this.writer.WriteLine();
+            writer.WriteLine();
 
             if (trace.Info != null)
             {
                 {
                     foreach (string indent in indentStack)
                     {
-                        this.writer.Write(indent);
+                        writer.Write(indent);
                     }
 
                     if (isLastChild)
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                        writer.Write(DefaultAsciiTreeIndents.Blank);
                     }
                     else
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Parent);
+                        writer.Write(DefaultAsciiTreeIndents.Parent);
                     }
 
                     if (trace.Children.Count == 0)
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                        writer.Write(DefaultAsciiTreeIndents.Blank);
                     }
                     else
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Parent);
+                        writer.Write(DefaultAsciiTreeIndents.Parent);
                     }
 
-                    this.writer.WriteLine('(');
+                    writer.WriteLine('(');
                 }
 
                 string[] infoLines = trace.Info
@@ -144,75 +141,71 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 {
                     foreach (string indent in indentStack)
                     {
-                        this.writer.Write(indent);
+                        writer.Write(indent);
                     }
 
                     if (isLastChild)
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                        writer.Write(DefaultAsciiTreeIndents.Blank);
                     }
                     else
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Parent);
+                        writer.Write(DefaultAsciiTreeIndents.Parent);
                     }
 
                     if (trace.Children.Count == 0)
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                        writer.Write(DefaultAsciiTreeIndents.Blank);
                     }
                     else
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Parent);
+                        writer.Write(DefaultAsciiTreeIndents.Parent);
                     }
 
-                    this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                    writer.Write(DefaultAsciiTreeIndents.Blank);
 
-                    this.writer.WriteLine(infoLine);
+                    writer.WriteLine(infoLine);
                 }
 
                 {
                     foreach (string indent in indentStack)
                     {
-                        this.writer.Write(indent);
+                        writer.Write(indent);
                     }
 
                     if (isLastChild)
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                        writer.Write(DefaultAsciiTreeIndents.Blank);
                     }
                     else
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Parent);
+                        writer.Write(DefaultAsciiTreeIndents.Parent);
                     }
 
                     if (trace.Children.Count == 0)
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Blank);
+                        writer.Write(DefaultAsciiTreeIndents.Blank);
                     }
                     else
                     {
-                        this.writer.Write(DefaultAsciiTreeIndents.Parent);
+                        writer.Write(DefaultAsciiTreeIndents.Parent);
                     }
 
-                    this.writer.WriteLine(')');
+                    writer.WriteLine(')');
                 }
             }
-
-            this.indentLevel++;
 
             for (int i = 0; i < trace.Children.Count - 1; i++)
             {
                 ITrace child = trace.Children[i];
-                this.WriteTraceRecursive(child, level, isLastChild: false);
+                WriteTraceRecursive(writer, child, level, isLastChild: false);
             }
 
             if (trace.Children.Count != 0)
             {
                 ITrace child = trace.Children[trace.Children.Count - 1];
-                this.WriteTraceRecursive(child, level, isLastChild: true);
+                WriteTraceRecursive(writer, child, level, isLastChild: true);
             }
-
-            this.indentLevel--;
         }
 
         /// <summary>
