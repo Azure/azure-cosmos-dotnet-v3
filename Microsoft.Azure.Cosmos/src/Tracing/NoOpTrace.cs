@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             // NoOp
         }
 
-        public ITrace StartChild(string name, TraceLevel level = TraceLevel.Verbose, TraceComponent component = TraceComponent.Unknown)
+        public ITrace StartChild(string name, TraceLevel level = TraceLevel.Verbose, TraceComponent? component = null)
         {
             return this;
         }

@@ -31,17 +31,19 @@
         [TestMethod]
         public void TestTraceChildren()
         {
-            using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace", component: TraceComponent.Query))
             {
-                using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+                using (ITrace childTrace1 = rootTrace.StartChild("Child1" /*inherits parent's component*/))
                 {
                 }
 
-                using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
+                using (ITrace childTrace2 = rootTrace.StartChild("Child2", component: TraceComponent.Transport))
                 {
                 }
 
                 Assert.AreEqual(rootTrace.Children.Count, 2);
+                Assert.AreEqual(rootTrace.Children[0].Component, TraceComponent.Query);
+                Assert.AreEqual(rootTrace.Children[1].Component, TraceComponent.Transport);
             }
         }
 

@@ -30,9 +30,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         ITraceInfo Info { get; set; }
 
-        public ITrace StartChild(
+        ITrace StartChild(
             string name,
             TraceLevel level = TraceLevel.Verbose,
-            TraceComponent component = TraceComponent.Unknown);
+            TraceComponent? component = null);
     }
 }

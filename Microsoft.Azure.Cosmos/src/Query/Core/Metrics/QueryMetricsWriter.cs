@@ -42,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteRuntimesExecutionTimes(queryMetrics.BackendMetrics.RuntimeExecutionTimes);
 
             this.WriteDocumentWriteTime(queryMetrics.BackendMetrics.DocumentWriteTime);
+            this.WriteRequestCharge(queryMetrics.ClientSideMetrics.RequestCharge);
 
+#if false
             // ClientSideMetrics
             this.WriteClientSideMetrics(queryMetrics.ClientSideMetrics);
 
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteBeforeIndexUtilizationInfo();
 
             this.WriteIndexUtilizationInfo(queryMetrics.IndexUtilizationInfo);
-
+#endif
             this.WriteAfterQueryMetrics();
         }
 
@@ -68,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected abstract void WriteTotalQueryExecutionTime(TimeSpan totalQueryExecutionTime);
 
-        #region QueryPreparationTimes
+#region QueryPreparationTimes
         private void WriteQueryPreparationTimes(QueryPreparationTimes queryPreparationTimes)
         {
             this.WriteBeforeQueryPreparationTimes();
@@ -92,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         protected abstract void WriteQueryOptimizationTime(TimeSpan queryOptimizationTime);
 
         protected abstract void WriteAfterQueryPreparationTimes();
-        #endregion
+#endregion
 
         protected abstract void WriteIndexLookupTime(TimeSpan indexLookupTime);
 
@@ -100,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected abstract void WriteVMExecutionTime(TimeSpan vMExecutionTime);
 
-        #region RuntimeExecutionTimes
+#region RuntimeExecutionTimes
         private void WriteRuntimesExecutionTimes(RuntimeExecutionTimes runtimeExecutionTimes)
         {
             this.WriteBeforeRuntimeExecutionTimes();
@@ -121,11 +123,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         protected abstract void WriteUserDefinedFunctionExecutionTime(TimeSpan userDefinedFunctionExecutionTime);
 
         protected abstract void WriteAfterRuntimeExecutionTimes();
-        #endregion
+#endregion
 
         protected abstract void WriteDocumentWriteTime(TimeSpan documentWriteTime);
 
-        #region ClientSideMetrics
+#region ClientSideMetrics
         private void WriteClientSideMetrics(ClientSideMetrics clientSideMetrics)
         {
             this.WriteBeforeClientSideMetrics();
@@ -224,16 +226,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         protected abstract void WriteAfterSchedulingMetrics();
 
         protected abstract void WriteAfterClientSideMetrics();
-        #endregion
+#endregion
 
-        #region IndexUtilizationInfo
+#region IndexUtilizationInfo
 
         protected abstract void WriteBeforeIndexUtilizationInfo();
 
         protected abstract void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo);
 
         protected abstract void WriteAfterIndexUtilizationInfo();
-        #endregion
+#endregion
 
         protected abstract void WriteAfterQueryMetrics();
     }

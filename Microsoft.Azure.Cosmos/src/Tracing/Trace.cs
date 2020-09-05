@@ -61,13 +61,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public ITrace StartChild(
             string name,
             TraceLevel level = TraceLevel.Verbose,
-            TraceComponent component = TraceComponent.Unknown)
+            TraceComponent? component = null)
         {
             Trace child = new Trace(
                 name: name,
-                stackFrame: new StackFrame(fNeedFileInfo: true),
+                stackFrame: new StackFrame(skipFrames: 1, fNeedFileInfo: true),
                 level: level,
-                component: component,
+                component: component ?? this.Component,
                 parent: this);
             this.children.Add(child);
             return child;

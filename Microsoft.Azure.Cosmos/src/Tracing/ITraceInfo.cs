@@ -6,5 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     internal interface ITraceInfo
     {
+        string Serialize();
     }
 }
