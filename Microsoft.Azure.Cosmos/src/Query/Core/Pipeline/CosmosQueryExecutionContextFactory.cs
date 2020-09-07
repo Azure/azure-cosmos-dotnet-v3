@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         }
 
         /// <summary>
-        /// Gets the list of partition key ranges. 
+        /// Gets the list of partition key ranges.
         /// 1. Check partition key range id
         /// 2. Check Partition key
         /// 3. Check the effective partition key
@@ -759,6 +759,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     public override bool Visit(SqlSubqueryScalarExpression sqlSubqueryScalarExpression)
                     {
                         // No need to worry about the aggregates within the subquery since they get recursively evaluated.
+                        return false;
+                    }
+
+                    public override bool Visit(SqlTagsMatchExpression scalarExpression)
+                    {
                         return false;
                     }
 

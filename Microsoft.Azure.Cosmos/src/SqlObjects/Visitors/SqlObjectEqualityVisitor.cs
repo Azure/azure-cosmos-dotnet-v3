@@ -861,6 +861,36 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlTagsMatchExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlTagsMatchExpression second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.QueryOptions, second.QueryOptions))
+            {
+                return false;
+            }
+
+            if (!Equals(first.TagsProperty, second.TagsProperty))
+            {
+                return false;
+            }
+
+            if (!Equals(first.UdfName, second.UdfName))
+            {
+                return false;
+            }
+
+            if (!first.Tags.SequenceEqual(second.Tags))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlTopSpec first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlTopSpec second))

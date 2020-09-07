@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlStringPathExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlSubqueryCollection sqlObject, TArg input);
         public abstract TOutput Visit(SqlSubqueryScalarExpression sqlObject, TArg input);
+        public abstract TOutput Visit(SqlTagsMatchExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlTopSpec sqlObject, TArg input);
         public abstract TOutput Visit(SqlUnaryScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlUndefinedLiteral sqlObject, TArg input);
