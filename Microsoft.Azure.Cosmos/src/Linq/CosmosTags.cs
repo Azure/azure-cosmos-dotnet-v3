@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             if (needsAnd)
                                 sb.Append(" AND ");
 
-                            sb.Append($"NOT(IS_DEFINED({regularProp})");
+                            sb.Append($"NOT({regularProp} = true)");
                             needsAnd = true;
                         }
                         else
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                                 sb.Append("(");
 
                                 // No document "not" tags set
-                                sb.Append($"NOT(IS_DEFINED({notProp}))");
+                                sb.Append($"NOT({notProp} = true)");
                                 sb.Append(" OR ");
                                 // Explicit document "not" wildcard is set
                                 sb.Append($"NOT(ARRAY_CONTAINS({tagProp}, \"!{wildcardTag}\"))");
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                             sb.Append("(");
                             // Implicit document wildcard
-                            sb.Append($"NOT(IS_DEFINED({regularProp}))");
+                            sb.Append($"NOT({regularProp} = true)");
                             sb.Append(" OR ");
                             // Explicit document wildcard
                             sb.Append($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
