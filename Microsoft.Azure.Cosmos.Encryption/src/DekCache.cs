@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             InMemoryRawDek inMemoryRawDek = await this.RawDekCache.GetAsync(
-                dekProperties.SelfLink,
+                dekProperties.Id,
                 null,
                 () => unwrapper(dekProperties, requestOptions, diagnosticsContext, cancellationToken),
                 cancellationToken);
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
             {
                 inMemoryRawDek = await this.RawDekCache.GetAsync(
-                   dekProperties.SelfLink,
+                   dekProperties.Id,
                    null,
                    () => unwrapper(dekProperties, requestOptions, diagnosticsContext, cancellationToken),
                    cancellationToken,

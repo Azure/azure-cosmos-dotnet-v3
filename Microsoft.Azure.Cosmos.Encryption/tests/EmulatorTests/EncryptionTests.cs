@@ -102,6 +102,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionVerifyDefaultDekCache()
+        {
+            string dekId = "genericDek";
+            string metadataValue = "anotherMetadata";
+            DataEncryptionKeyProperties dekProperties = await EncryptionTests.CreateDekAsync(EncryptionTests.dekProvider, dekId, new EncryptionKeyWrapMetadata(metadataValue));
+
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(metadataValue + EncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            Assert.AreEqual(1, EncryptionTests.testKeyWrapProvider.UnwrapKeyCallsCount[metadataValue + EncryptionTests.metadataUpdateSuffix]);
+
+            // Use different database, container
+            Database newDatabase = await EncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container newItemContainer = await newDatabase.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            Container newEncryptionContainer = newItemContainer.WithEncryptor(EncryptionTests.encryptor);
+
+            // Unwrap call shouldn't be required, DEK should be retrieved from cache
+            await EncryptionTests.CreateItemAsync(newEncryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            Assert.AreEqual(1, EncryptionTests.testKeyWrapProvider.UnwrapKeyCallsCount[metadataValue + EncryptionTests.metadataUpdateSuffix]);
+        }
+
+        [TestMethod]
         public async Task EncryptionOptOutOfUsingUnwrappedDekCache()
         {
             TestKeyWrapProvider newKeyWrapProvider = new TestKeyWrapProvider();
@@ -110,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 cacheUnwrappedDek: false);
             await dekProviderWithNoCache.InitializeAsync(EncryptionTests.database, EncryptionTests.keyContainer.Id);
 
-            string dekId = "genericDek";
+            string dekId = "userDek";
             string metadataValue = "randomMetadata";
             DataEncryptionKeyProperties dekProperties = await EncryptionTests.CreateDekAsync(dekProviderWithNoCache, dekId, new EncryptionKeyWrapMetadata(metadataValue));
 
