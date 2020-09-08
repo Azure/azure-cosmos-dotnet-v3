@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Net.Http;
+
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
@@ -75,6 +77,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static CosmosClientOptions GetDefaultConfiguration()
         {
             return new CosmosClientOptions();
+        }
+
+        public static CosmosHttpClient CreateCosmosHttpClient(
+            Func<HttpClient> httpClient,
+            DocumentClientEventSource eventSource = null)
+        {
+            if (eventSource == null)
+            {
+                eventSource = DocumentClientEventSource.Instance;
+            }
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                HttpClientFactory = httpClient
+            };
+
+            return CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: default,
+                eventSource: eventSource,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

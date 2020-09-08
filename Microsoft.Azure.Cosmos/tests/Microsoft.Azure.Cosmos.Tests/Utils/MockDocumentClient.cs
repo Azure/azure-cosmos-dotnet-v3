@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType)
         {
             return new ValueTask<(string token, string payload)>((null, null));
         }

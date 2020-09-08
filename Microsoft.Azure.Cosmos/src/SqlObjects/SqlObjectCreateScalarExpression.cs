@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
 #if INTERNAL
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
     {
-        private SqlObjectCreateScalarExpression(IEnumerable<SqlObjectProperty> properties)
+        private SqlObjectCreateScalarExpression(ImmutableArray<SqlObjectProperty> properties)
         {
             if (properties == null)
             {
@@ -31,14 +32,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 }
             }
 
-            this.Properties = new List<SqlObjectProperty>(properties);
+            this.Properties = properties;
         }
 
-        public IEnumerable<SqlObjectProperty> Properties { get; }
+        public ImmutableArray<SqlObjectProperty> Properties { get; }
 
-        public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties);
+        public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties.ToImmutableArray());
 
-        public static SqlObjectCreateScalarExpression Create(IEnumerable<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties);
+        public static SqlObjectCreateScalarExpression Create(ImmutableArray<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

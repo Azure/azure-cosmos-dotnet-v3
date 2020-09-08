@@ -694,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     public override bool Visit(SqlInScalarExpression sqlInScalarExpression)
                     {
                         bool hasAggregates = false;
-                        for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+                        for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
                         {
                             hasAggregates |= sqlInScalarExpression.Haystack[i].Accept(this);
                         }

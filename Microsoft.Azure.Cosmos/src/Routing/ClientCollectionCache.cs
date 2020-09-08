@@ -66,7 +66,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                    new DictionaryNameValueCollection()))
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
-
                 
                 (string authorizationToken, string payload) = await this.tokenProvider.GetUserAuthorizationAsync(
                     request.ResourceAddress,

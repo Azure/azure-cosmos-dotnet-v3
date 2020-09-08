@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
 #if INTERNAL
@@ -16,13 +16,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlGroupByClause : SqlObject
     {
-        private SqlGroupByClause(IReadOnlyList<SqlScalarExpression> expressions)
+        private SqlGroupByClause(ImmutableArray<SqlScalarExpression> expressions)
         {
-            if (expressions == null)
-            {
-                throw new ArgumentNullException($"{nameof(expressions)}");
-            }
-
             foreach (SqlScalarExpression expression in expressions)
             {
                 if (expression == null)
@@ -34,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             this.Expressions = expressions;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Expressions { get; }
+        public ImmutableArray<SqlScalarExpression> Expressions { get; }
 
-        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions);
+        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions.ToImmutableArray());
 
-        public static SqlGroupByClause Create(IReadOnlyList<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
+        public static SqlGroupByClause Create(ImmutableArray<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 
