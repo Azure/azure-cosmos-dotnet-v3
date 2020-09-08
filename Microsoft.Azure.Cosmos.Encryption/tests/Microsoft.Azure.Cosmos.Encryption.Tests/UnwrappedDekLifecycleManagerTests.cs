@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Threading;
+    using global::Azure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -23,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 .ReturnsAsync((byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken) =>
                     metadata.Value == "metadata1" ?
                     throw new UnauthorizedAccessException() :
+                    metadata.Value == "accessRevoked" ?
+                    throw new RequestFailedException(403, "Operation unwrapKey is not permitted on this key.") :
                     new EncryptionKeyUnwrapResult(wrappedKey, TimeSpan.FromSeconds(1)));
         }
 
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 "dekId2",
                 "metadata2",
                 TimeSpan.FromSeconds(1),
-                50);
+                25);
 
             // to ensure refresh is attempted
             rawDek1.UpdateLastUsageTime();
@@ -64,8 +67,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             unwrappedDekLifecycleManager.Add(rawDek1);
             unwrappedDekLifecycleManager.Add(rawDek2);
-            
-            Thread.Sleep(1100);
+
+            Thread.Sleep(300);
+
+            UnwrappedDekLifecycleManagerTests.mockEncryptionKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
+                    rawDek1.DataEncryptionKeyProperties.WrappedDataEncryptionKey,
+                    rawDek1.DataEncryptionKeyProperties.EncryptionKeyWrapMetadata,
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+            dek1.Verify(m => m.Dispose(), Times.Never);
+
+            UnwrappedDekLifecycleManagerTests.mockEncryptionKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
+                    rawDek2.DataEncryptionKeyProperties.WrappedDataEncryptionKey,
+                    rawDek2.DataEncryptionKeyProperties.EncryptionKeyWrapMetadata,
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+            dek2.Verify(m => m.Dispose(), Times.Never);
+
+            // to ensure refresh is attempted again
+            rawDek1.UpdateLastUsageTime();
+            rawDek2.UpdateLastUsageTime();
+
+            Thread.Sleep(800);
 
             UnwrappedDekLifecycleManagerTests.mockEncryptionKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
                     rawDek1.DataEncryptionKeyProperties.WrappedDataEncryptionKey,
@@ -83,7 +106,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public void DekIsDisposedfterExpiry()
+        public void DekIsDisposedIfAccessIsRevoked()
+        {
+            UnwrappedDekLifecycleManager unwrappedDekLifecycleManager = this.CreateUnwrappedDekLifecycleManager();
+
+            Mock<DataEncryptionKey> dek1 = new Mock<DataEncryptionKey>();
+            InMemoryRawDek rawDek1 = this.CreateInMemoryRawDek(
+                dek1.Object,
+                "dekId1",
+                "accessRevoked",
+                TimeSpan.FromSeconds(0.5),
+                25);
+
+            unwrappedDekLifecycleManager.Add(rawDek1);
+            rawDek1.UpdateLastUsageTime(); // to ensure refresh is attempted
+
+            Thread.Sleep(300);
+
+            UnwrappedDekLifecycleManagerTests.mockEncryptionKeyWrapProvider.Verify(m => m.UnwrapKeyAsync(
+                    rawDek1.DataEncryptionKeyProperties.WrappedDataEncryptionKey,
+                    rawDek1.DataEncryptionKeyProperties.EncryptionKeyWrapMetadata,
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            dek1.Verify(m => m.Dispose(), Times.Once);
+        }
+
+        [TestMethod]
+        public void DekIsDisposedAfterExpiry()
         {
             UnwrappedDekLifecycleManager unwrappedDekLifecycleManager = this.CreateUnwrappedDekLifecycleManager();
 

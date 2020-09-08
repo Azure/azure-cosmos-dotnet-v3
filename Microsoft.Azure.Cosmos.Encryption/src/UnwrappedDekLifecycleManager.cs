@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
 
     internal sealed class UnwrappedDekLifecycleManager : IDisposable
     {
@@ -100,9 +101,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 this.inMemoryRawDeks[index].DataEncryptionKeyProperties.EncryptionKeyWrapMetadata,
                                 cancellationToken: default);
                         }
-                        catch (Exception)
+                        catch (Exception exception)
                         {
-                            this.inMemoryRawDeks[index].UpdateNextRefreshTime();
+                            // If key access is removed, then remove the unwrapped key from cache and dispose
+                            if (exception is RequestFailedException requestFailedException &&
+                                requestFailedException.Status == 403)
+                            {
+                                this.inMemoryRawDeks[index].DataEncryptionKey.Dispose();
+                                this.inMemoryRawDeks.RemoveAt(index--);
+                            }
+                            else
+                            {
+                                this.inMemoryRawDeks[index].UpdateNextRefreshTime();
+                            }
+
                             continue;
                         }
 
