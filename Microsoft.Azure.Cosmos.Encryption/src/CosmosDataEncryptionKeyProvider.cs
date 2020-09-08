@@ -50,13 +50,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        /// <param name="cacheUnwrappedDek">Boolean value indicating whether we should cache unwrapped DEK or not.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
-            TimeSpan? dekPropertiesTimeToLive = null)
+            TimeSpan? dekPropertiesTimeToLive = null,
+            bool cacheUnwrappedDek = true)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.DekCache = new DekCache(
+                cacheUnwrappedDek,
+                dekPropertiesTimeToLive);
         }
 
         /// <summary>
@@ -100,10 +104,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 id,
+                requestOptions,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 

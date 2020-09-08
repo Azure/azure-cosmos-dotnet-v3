@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         streamPayload,
                         this.Encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -117,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
                         encryptionItemRequestOptions.DecryptionResultHandler,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -199,6 +201,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 responseMessage.Content = await this.DecryptResponseAsync(
                     responseMessage.Content,
                     decryptionErroHandler,
+                    requestOptions,
                     diagnosticsContext,
                     cancellationToken);
 
@@ -285,6 +288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         streamPayload,
                         this.Encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -298,6 +302,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
                         encryptionItemRequestOptions.DecryptionResultHandler,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -380,6 +385,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         streamPayload,
                         this.Encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -392,6 +398,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     responseMessage.Content = await this.DecryptResponseAsync(
                         responseMessage.Content,
                         encryptionItemRequestOptions.DecryptionResultHandler,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -570,6 +577,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
+                requestOptions,
                 decryptionResultHandler);
         }
 
@@ -594,6 +602,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
+                requestOptions,
                 decryptionResultHandler);
         }
 
@@ -644,6 +653,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     changeFeedRequestOptions),
                 this.Encryptor,
+                changeFeedRequestOptions,
                 decryptionResultHandler);
         }
 
@@ -666,6 +676,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     feedRange,
                     changeFeedRequestOptions),
                 this.Encryptor,
+                changeFeedRequestOptions,
                 decryptionResultHandler);
         }
 
@@ -688,6 +699,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     partitionKey,
                     changeFeedRequestOptions),
                 this.Encryptor,
+                changeFeedRequestOptions,
                 decryptionResultHandler);
         }
 
@@ -754,6 +766,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
+                requestOptions,
                 decryptionResultHandler);
         }
 
@@ -775,6 +788,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async Task<Stream> DecryptResponseAsync(
             Stream input,
             Action<DecryptionResult> decryptionResultHandler,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -788,6 +802,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return await EncryptionProcessor.DecryptAsync(
                     input,
                     this.Encryptor,
+                    requestOptions,
                     diagnosticsContext,
                     cancellationToken);
             }

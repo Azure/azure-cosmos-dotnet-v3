@@ -29,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
-                string id,
-                string encryptionAlgorithm,
-                EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
-                ItemRequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default)
+            string id,
+            string encryptionAlgorithm,
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 rawDek,
                 encryptionAlgorithm,
                 encryptionKeyWrapMetadata,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -88,10 +89,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <inheritdoc/>
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> RewrapDataEncryptionKeyAsync(
-           string id,
-           EncryptionKeyWrapMetadata newWrapMetadata,
-           ItemRequestOptions requestOptions = null,
-           CancellationToken cancellationToken = default)
+            string id,
+            EncryptionKeyWrapMetadata newWrapMetadata,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             if (newWrapMetadata == null)
             {
@@ -102,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await this.FetchUnwrappedAsync(
                 id,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -110,6 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 inMemoryRawDek.DataEncryptionKey.RawKey,
                 dekProperties.EncryptionAlgorithm,
                 newWrapMetadata,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -168,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedAsync(
             string id,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -182,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 InMemoryRawDek inMemoryRawDek = await this.DekProvider.DekCache.GetOrAddRawDekAsync(
                     dekProperties,
                     this.UnwrapAsync,
+                    requestOptions,
                     diagnosticsContext,
                     cancellationToken);
 
@@ -200,18 +205,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] key,
             string encryptionAlgorithm,
             EncryptionKeyWrapMetadata metadata,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             EncryptionKeyWrapResult keyWrapResponse;
             using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
             {
-                keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+                keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(
+                    key,
+                    metadata,
+                    requestOptions,
+                    cancellationToken);
             }
 
             // Verify
             DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithm, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, DateTime.UtcNow);
-            InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
+            InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, requestOptions, diagnosticsContext, cancellationToken);
             if (!roundTripResponse.DataEncryptionKey.RawKey.SequenceEqual(key))
             {
                 throw new InvalidOperationException("The key wrapping provider configured was unable to unwrap the wrapped key correctly.");
@@ -222,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal async Task<InMemoryRawDek> UnwrapAsync(
             DataEncryptionKeyProperties dekProperties,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -231,6 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
                     dekProperties.WrappedDataEncryptionKey,
                     dekProperties.EncryptionKeyWrapMetadata,
+                    requestOptions,
                     cancellationToken);
             }
 

@@ -19,12 +19,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="plainText">Plain text.</param>
         /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
         /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
+        /// <param name="requestOptions">The options for the request.</param>
         /// <param name="cancellationToken">Token for cancellation.</param>
         /// <returns>Cipher text.</returns>
         public abstract Task<byte[]> EncryptAsync(
             byte[] plainText,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -33,12 +35,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="cipherText">Ciphertext to be decrypted.</param>
         /// <param name="dataEncryptionKeyId">Identifier of the data encryption key.</param>
         /// <param name="encryptionAlgorithm">Identifier for the encryption algorithm.</param>
+        /// <param name="requestOptions">The options for the request.</param>
         /// <param name="cancellationToken">Token for cancellation.</param>
         /// <returns>Plain text.</returns>
         public abstract Task<byte[]> DecryptAsync(
             byte[] cipherText,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default);
     }
 }

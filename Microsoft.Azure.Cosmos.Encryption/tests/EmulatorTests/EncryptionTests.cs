@@ -101,6 +101,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(dekProperties, readProperties);
         }
 
+        [TestMethod]
+        public async Task EncryptionOptOutOfUsingUnwrappedDekCache()
+        {
+            TestKeyWrapProvider newKeyWrapProvider = new TestKeyWrapProvider();
+            CosmosDataEncryptionKeyProvider dekProviderWithNoCache = new CosmosDataEncryptionKeyProvider(
+                newKeyWrapProvider,
+                cacheUnwrappedDek: false);
+            await dekProviderWithNoCache.InitializeAsync(EncryptionTests.database, EncryptionTests.keyContainer.Id);
+
+            string dekId = "genericDek";
+            string metadataValue = "randomMetadata";
+            DataEncryptionKeyProperties dekProperties = await EncryptionTests.CreateDekAsync(dekProviderWithNoCache, dekId, new EncryptionKeyWrapMetadata(metadataValue));
+
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(metadataValue + EncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            Assert.AreEqual(1, newKeyWrapProvider.UnwrapKeyCallsCount[metadataValue + EncryptionTests.metadataUpdateSuffix]);
+
+            // Use different database, container
+            TestEncryptor newEncryptor = new TestEncryptor(dekProviderWithNoCache);
+            Container newEncryptionContainer = EncryptionTests.itemContainer.WithEncryptor(newEncryptor);
+
+            // Additonal Unwrap call should be required, since unwrapped DEK is not cached
+            await EncryptionTests.CreateItemAsync(newEncryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            Assert.AreEqual(3, newKeyWrapProvider.UnwrapKeyCallsCount[metadataValue + EncryptionTests.metadataUpdateSuffix]); // 1 call each for encrypt & decrypt
+        }
+
         /// <summary>
         /// Validates UnWrapKey via KeyVault Wrap Provider.
         /// </summary>
@@ -178,7 +206,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionKeyWrapResult keyWrapResponse = await azureKeyVaultKeyWrapProvider.WrapKeyAsync(
                 rawDekForKeyVault,
                 invalidWrapMetadata,
-                cancellationToken);         
+                requestOptions: null,
+                cancellationToken);
         }
 
         /// <summary>
@@ -200,6 +229,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionKeyUnwrapResult keyWrapResponse = await azureKeyVaultKeyWrapProvider.UnwrapKeyAsync(
                wrappedDek,
                invalidWrapMetadata,
+               requestOptions: null,
                cancellationToken);            
         }
 
@@ -1408,12 +1438,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readResponse.Resource);
         }
 
-        private static async Task<DataEncryptionKeyProperties> CreateDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId)
+        private static async Task<DataEncryptionKeyProperties> CreateDekAsync(
+            CosmosDataEncryptionKeyProvider dekProvider,
+            string dekId,
+            EncryptionKeyWrapMetadata metadata = null)
         {
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                EncryptionTests.metadata1);
+                metadata ?? EncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
             
@@ -1426,6 +1459,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionKeyWrapResult keyWrapResponse = await azureKeyVaultKeyWrapProvider.WrapKeyAsync(                
                 rawDek,
                 wrapMetaData,
+                requestOptions: null,
                 cancellationToken);
 
             return keyWrapResponse;
@@ -1436,6 +1470,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionKeyUnwrapResult keyUnwrapResponse = await azureKeyVaultKeyWrapProvider.UnwrapKeyAsync(
                 wrappedDek,
                 unwrapMetaData,
+                requestOptions: null,
                 cancellationToken);
 
             return keyUnwrapResponse;
@@ -1549,18 +1584,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             public Dictionary<string, int> WrapKeyCallsCount { get; private set; }
 
+            public Dictionary<string, int> UnwrapKeyCallsCount { get; private set; }
+
             public TestKeyWrapProvider()
             {
                 this.WrapKeyCallsCount = new Dictionary<string, int>();
+                this.UnwrapKeyCallsCount = new Dictionary<string, int>();
             }
 
-            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, RequestOptions requestOptions, CancellationToken cancellationToken)
             {
+                if (!this.UnwrapKeyCallsCount.ContainsKey(metadata.Value))
+                {
+                    this.UnwrapKeyCallsCount[metadata.Value] = 1;
+                }
+                else
+                {
+                    this.UnwrapKeyCallsCount[metadata.Value]++;
+                }
+
                 int moveBy = metadata.Value == EncryptionTests.metadata1.Value + EncryptionTests.metadataUpdateSuffix ? 1 : 2;
                 return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), EncryptionTests.cacheTTL));
             }
 
-            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, RequestOptions requestOptions, CancellationToken cancellationToken)
             {
                 if (!this.WrapKeyCallsCount.ContainsKey(metadata.Value))
                 {
@@ -1593,6 +1640,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 byte[] cipherText,
                 string dataEncryptionKeyId,
                 string encryptionAlgorithm,
+                RequestOptions requestOptions,
                 CancellationToken cancellationToken = default)
             {
                 if (this.FailDecryption && dataEncryptionKeyId.Equals("failDek"))
@@ -1603,6 +1651,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
+                    requestOptions,
                     cancellationToken);
 
                 if (dek == null)
@@ -1617,11 +1666,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 byte[] plainText,
                 string dataEncryptionKeyId,
                 string encryptionAlgorithm,
+                RequestOptions requestOptions,
                 CancellationToken cancellationToken = default)
             {
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
+                    requestOptions,
                     cancellationToken);
 
                 return dek.EncryptData(plainText);

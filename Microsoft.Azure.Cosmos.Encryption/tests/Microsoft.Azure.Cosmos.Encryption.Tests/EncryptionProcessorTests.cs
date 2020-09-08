@@ -32,11 +32,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
 
             EncryptionProcessorTests.mockEncryptor = new Mock<Encryptor>();
-            EncryptionProcessorTests.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
+            EncryptionProcessorTests.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<RequestOptions>(),It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] plainText, string dekId, string algo, RequestOptions requestOptions, CancellationToken t) =>
                     dekId == EncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
-            EncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => 
+            EncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<RequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[] cipherText, string dekId, string algo, RequestOptions requestOptions, CancellationToken t) => 
                     dekId == EncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
         }
 
@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     testDoc.ToStream(),
                     EncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
+                    new RequestOptions(),
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject decryptedDoc = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 EncryptionProcessorTests.mockEncryptor.Object,
+                new RequestOptions(),
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -97,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject decryptedDoc = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 EncryptionProcessorTests.mockEncryptor.Object,
+                new RequestOptions(),
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -114,12 +117,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 EncryptionProcessorTests.mockEncryptor.Object,
                 EncryptionProcessorTests.encryptionOptions,
+                new RequestOptions(),
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
                 encryptedStream,
                 EncryptionProcessorTests.mockEncryptor.Object,
+                new RequestOptions(),
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -138,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
                 docStream,
                 EncryptionProcessorTests.mockEncryptor.Object,
+                new RequestOptions(),
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -152,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 EncryptionProcessorTests.mockEncryptor.Object,
                 EncryptionProcessorTests.encryptionOptions,
+                new RequestOptions(),
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 

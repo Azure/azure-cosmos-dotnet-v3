@@ -33,11 +33,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherText,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
+                requestOptions,
                 cancellationToken);
 
             if (dek == null)
@@ -53,11 +55,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] plainText,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
+                requestOptions,
                 cancellationToken);
 
             if (dek == null)

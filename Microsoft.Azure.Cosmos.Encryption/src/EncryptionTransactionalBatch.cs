@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -133,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -180,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
+                        requestOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
                 }
@@ -211,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             result.ResourceStream = await EncryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
+                                requestOptions: null,
                                 diagnosticsContext,
                                 cancellationToken);
                         }

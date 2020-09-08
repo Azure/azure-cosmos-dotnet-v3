@@ -69,12 +69,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] plainText,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
             return this.cosmosEncryptor.EncryptAsync(
                 plainText,
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
+                requestOptions,
                 cancellationToken);
         }
 
@@ -83,12 +85,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherText,
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
             return this.cosmosEncryptor.DecryptAsync(
                 cipherText,
                 dataEncryptionKeyId,
                 encryptionAlgorithm,
+                requestOptions,
                 cancellationToken);
         }
     }

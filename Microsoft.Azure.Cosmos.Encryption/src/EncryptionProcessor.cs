@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -104,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 plainText,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptionOptions.EncryptionAlgorithm,
+                requestOptions,
                 cancellationToken);
 
             if (cipherText == null)
@@ -130,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<Stream> DecryptAsync(
             Stream input,
             Encryptor encryptor,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -163,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = await EncryptionProcessor.DecryptContentAsync(
                 encryptionProperties,
                 encryptor,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -179,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<JObject> DecryptAsync(
             JObject document,
             Encryptor encryptor,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -196,6 +201,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = await EncryptionProcessor.DecryptContentAsync(
                 encryptionProperties,
                 encryptor,
+                requestOptions,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -212,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task<JObject> DecryptContentAsync(
             EncryptionProperties encryptionProperties,
             Encryptor encryptor,
+            RequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -224,6 +231,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionProperties.EncryptedData,
                 encryptionProperties.DataEncryptionKeyId,
                 encryptionProperties.EncryptionAlgorithm,
+                requestOptions,
                 cancellationToken);
 
             if (plainText == null)

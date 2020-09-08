@@ -16,14 +16,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
         private readonly Action<DecryptionResult> decryptionResultHandler;
+        private readonly RequestOptions requestOptions;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
+            RequestOptions requestOptions = null,
             Action<DecryptionResult> decryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
+            this.requestOptions = requestOptions;
             this.decryptionResultHandler = decryptionResultHandler;
         }
 
@@ -76,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
                         document,
                         this.encryptor,
+                        this.requestOptions,
                         diagnosticsContext,
                         cancellationToken);
 

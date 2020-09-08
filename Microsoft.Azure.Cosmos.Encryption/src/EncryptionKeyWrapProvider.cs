@@ -25,17 +25,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="key">Data encryption key that needs to be wrapped.</param>
         /// <param name="metadata">Metadata for the wrap provider that should be used to wrap / unwrap the key.</param>
+        /// <param name="requestOptions">The options for the request.</param>
         /// <param name="cancellationToken">Cancellation token allowing for cancellation of this operation.</param>
         /// <returns>Awaitable wrapped (i.e. encrypted) version of data encryption key passed in possibly with updated metadata.</returns>
-        public abstract Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken);
+        public abstract Task<EncryptionKeyWrapResult> WrapKeyAsync(
+            byte[] key,
+            EncryptionKeyWrapMetadata metadata,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken);
 
         /// <summary>
         /// Unwraps (i.e. decrypts) the provided wrapped data encryption key.
         /// </summary>
         /// <param name="wrappedKey">Wrapped form of data encryption key that needs to be unwrapped.</param>
         /// <param name="metadata">Metadata for the wrap provider that should be used to wrap / unwrap the key.</param>
+        /// <param name="requestOptions">The options for the request.</param>
         /// <param name="cancellationToken">Cancellation token allowing for cancellation of this operation.</param>
         /// <returns>Awaitable unwrapped (i.e. unencrypted) version of data encryption key passed in and how long the raw data encryption key can be cached on the client.</returns>
-        public abstract Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken);
+        public abstract Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
+            byte[] wrappedKey,
+            EncryptionKeyWrapMetadata metadata,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken);
     }
 }

@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
             byte[] wrappedKey,
             EncryptionKeyWrapMetadata metadata,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             if (metadata.Type != AzureKeyVaultKeyWrapMetadata.TypeConstant)
@@ -71,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<EncryptionKeyWrapResult> WrapKeyAsync(
             byte[] key,
             EncryptionKeyWrapMetadata metadata,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             if (metadata.Type != AzureKeyVaultKeyWrapMetadata.TypeConstant)
@@ -80,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
             }
 
             if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))
