@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
 #if INTERNAL
@@ -19,14 +20,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         private SqlInScalarExpression(
             SqlScalarExpression needle,
             bool not,
-            IReadOnlyList<SqlScalarExpression> haystack)
+            ImmutableArray<SqlScalarExpression> haystack)
         {
-            if (haystack == null)
-            {
-                throw new ArgumentNullException("items");
-            }
-
-            if (haystack.Count == 0)
+            if (haystack.IsEmpty)
             {
                 throw new ArgumentException("items can't be empty.");
             }
@@ -41,24 +37,24 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
             this.Needle = needle ?? throw new ArgumentNullException(nameof(needle));
             this.Not = not;
-            this.Haystack = new List<SqlScalarExpression>(haystack);
+            this.Haystack = haystack;
         }
 
         public SqlScalarExpression Needle { get; }
 
         public bool Not { get; }
 
-        public IReadOnlyList<SqlScalarExpression> Haystack { get; }
+        public ImmutableArray<SqlScalarExpression> Haystack { get; }
 
         public static SqlInScalarExpression Create(
             SqlScalarExpression needle,
             bool not,
-            params SqlScalarExpression[] haystack) => new SqlInScalarExpression(needle, not, haystack);
+            params SqlScalarExpression[] haystack) => new SqlInScalarExpression(needle, not, haystack.ToImmutableArray());
 
         public static SqlInScalarExpression Create(
             SqlScalarExpression needle,
             bool not,
-            IReadOnlyList<SqlScalarExpression> haystack) => new SqlInScalarExpression(needle, not, haystack);
+            ImmutableArray<SqlScalarExpression> haystack) => new SqlInScalarExpression(needle, not, haystack);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

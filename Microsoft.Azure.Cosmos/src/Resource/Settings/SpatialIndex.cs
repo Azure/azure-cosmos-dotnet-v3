@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The data type for which this index should be applied.
         /// </value>
-        /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
         [JsonProperty(PropertyName = Constants.Properties.DataType)]
         [JsonConverter(typeof(StringEnumConverter))]
         public DataType DataType { get; set; }

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!first.Alias.Accept(this, second.Alias))
+            if (!SqlObjectEqualityVisitor.Equals(first.Alias, second.Alias))
             {
                 return false;
             }
@@ -39,11 +39,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override bool Visit(SqlArrayCreateScalarExpression first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlArrayCreateScalarExpression second))
-            {
-                return false;
-            }
-
-            if (first.Items.Count != second.Items.Count)
             {
                 return false;
             }
@@ -268,11 +263,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Expressions.Count != second.Expressions.Count)
-            {
-                return false;
-            }
-
             if (!SequenceEquals(first.Expressions, second.Expressions))
             {
                 return false;
@@ -308,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!first.ParentPath.Accept(this, second.ParentPath))
+            if (!SqlObjectEqualityVisitor.Equals(first.ParentPath, second.ParentPath))
             {
                 return false;
             }
@@ -328,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!first.RelativePath.Accept(this, second.RelativePath))
+            if (!SqlObjectEqualityVisitor.Equals(first.RelativePath, second.RelativePath))
             {
                 return false;
             }
@@ -910,7 +900,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
             foreach ((SqlObject firstItem, SqlObject secondItem) in itemPairs)
             {
-                if (firstItem.Accept(SqlObjectEqualityVisitor.Singleton, secondItem))
+                if (!firstItem.Accept(SqlObjectEqualityVisitor.Singleton, secondItem))
                 {
                     return false;
                 }

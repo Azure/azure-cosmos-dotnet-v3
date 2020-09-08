@@ -1,0 +1,11 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * FROM c JOIN d in c.children]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM c JOIN d IN c.children]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>

@@ -55,11 +55,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // The Public emulator has only 1 MasterKey, no read-only keys
             this.primaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
-                         ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
+                         ConfigurationManager.AppSettings["MasterKey"],
+                         (HttpMessageHandler)null,
+                         connectionPolicy: null);
 
             this.secondaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
-                         ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
+                         ConfigurationManager.AppSettings["MasterKey"],
+                         (HttpMessageHandler)null,
+                         connectionPolicy: null);
 
             this.CleanUp();
         }
@@ -610,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.client.Create<Document>(collection.GetIdOrFullName(), documentDefinition, requestHeaders);
 
                 IEnumerable<Document> queriedDocuments = this.client.CreateDocumentQuery<Document>(collection.GetLink(), @"select * from root r where r.StringField = ""222""", new FeedOptions { EnableCrossPartitionQuery = true });
-                Assert.AreEqual(0, queriedDocuments.Count());
+                Assert.AreEqual(1, queriedDocuments.Count());
             }
             catch (DocumentClientException e)
             {
@@ -660,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(docReplaced.NumericField, 3333);
 
                 // query for changed string value
-                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
+                Assert.AreEqual(1, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
                 requestHeaders.Remove("x-ms-indexing-directive");
                 requestHeaders.Add("x-ms-indexing-directive", "include");

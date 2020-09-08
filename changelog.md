@@ -3,6 +3,39 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.13.0-preview"/> [3.13.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0-preview) - 2020-08-12
+
+#### Added
+- [#1725](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1725) ChangeFeed : Adds ChangeFeedStartFrom to support StartTimes x FeedRanges. WARNING: This is breaking change for preview SDK
+- [#1764](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1764) Performance: Adds compiler optimize flag
+- [#1768](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1768) SessionToken: Adds optimization to reduce header size by removing session token for CRUD on stored procedure, triggers, and UDFs
+
+#### Fixed
+
+- [#1757](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1757) Batch API: Fixes the size limit to reduce timeouts
+- [#1758](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1758) Connectivity: Fixes address resolution calls when using EnableTcpConnectionEndpointRediscovery
+
+### <a name="3.12.0"/> [3.12.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.12.0) - 2020-08-06
+
+#### Added 
+
+- [#1548](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1548) Transport: Adds an optimization to unify HttpClient usage across Gateway classes
+- [#1569](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1569) Batch API: Adds support of request options for transactional batch
+- [#1693](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1693) Performance: Reduces lock contention on GlobalAddress Resolver
+- [#1712](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1712) Performance: Adds optimization to reduce AuthorizationHelper memory allocations
+- [#1715](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1715) Availability: Adds cross-region retry mechanism on transient connectivity issues
+- [#1721](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1721) LINQ : Adds support for case-insensitive searches (Thanks to jeffpardy)
+- [#1733](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1733) Change Feed Processor: Adds backward compatibility of lease store
+
+#### Fixed
+
+- [#1720](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1720) Gateway Trace: Fixes a bug where the ActivityId is being set to Guid.Empty
+- [#1728](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1728) Diagnostics: Fixes ActivityScope by moving it to operation level
+- [#1740](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1740) Connection limits: Fixes .NET core to honor gateway connection limit
+- [#1744](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1744) Transport: Fixes use of PortReuseMode and other Direct configuration settings
+
+
+
 ### <a name="3.11.0"/> [3.11.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.0) - 2020-07-07
 
 #### Added 

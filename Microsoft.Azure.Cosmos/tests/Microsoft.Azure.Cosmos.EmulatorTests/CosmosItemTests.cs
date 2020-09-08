@@ -1140,7 +1140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 IJsonReader reader = JsonReader.Create(content);
                 IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                textWriter.WriteAll(reader);
+                reader.WriteAll(textWriter);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
                 Assert.IsNotNull(json);
                 ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
@@ -1366,7 +1366,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
-                Assert.IsTrue(ex.Message.Contains("One of the specified inputs is invalid"));
+                Assert.IsTrue(ex.Message.Contains("Add Operation only support adding a leaf node of an existing node(array or object), no path found beyond: 'nonExistentParent'"), ex.Message);
             }
 
             // precondition failure - 412 response
