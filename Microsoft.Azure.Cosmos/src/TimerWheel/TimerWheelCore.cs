@@ -107,16 +107,31 @@ namespace Microsoft.Azure.Cosmos.Timers
             this.ThrowIfDisposed();
             long timerTimeoutInTicks = timer.Timeout.Ticks;
             int bucket = (int)timerTimeoutInTicks / this.resolutionInTicks;
-            lock (this.subscriptionLock)
+            int index = this.GetIndexForTimeout(bucket);
+
+            // Try to get the ConcurrentQueue.
+            if (this.timers.TryGetValue(index, out ConcurrentQueue<TimerWheelTimer> timerQueue))
             {
-                int index = this.GetIndexForTimeout(bucket);
-                ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers.GetOrAdd(index,
-                        _ =>
-                        {
-                            return new ConcurrentQueue<TimerWheelTimer>();
-                        });
                 timerQueue.Enqueue(timer);
+                return;
             }
+
+            // Try to add the ConcurrentQueue. It's possible that there is a race condition where another thread adds it between the previous get and the add operation.
+            timerQueue = new ConcurrentQueue<TimerWheelTimer>();
+            if(this.timers.TryAdd(index, timerQueue))
+            {
+                timerQueue.Enqueue(timer);
+                return;
+            }
+
+            // Another thread added the ConcurrentQueue after the initial get. Do a get again to for the new queue.
+            if (this.timers.TryGetValue(index, out ConcurrentQueue<TimerWheelTimer> timerQueueAfterAdd))
+            {
+                timerQueueAfterAdd.Enqueue(timer);
+                return;
+            }
+
+            throw new ArgumentException("TimerWheel failed to get or add the timer to the wheel.");
         }
 
         public void OnTimer(Object stateInfo)
