@@ -62,9 +62,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
     </Compile>
-    <Compile Update="direct\RMResources.Designer.cs">
+    <Compile Update="RMResources.Designer.cs">
       <DesignTime>True</DesignTime>
-      <AutoGen>false</AutoGen>
+      <AutoGen>True</AutoGen>
       <DependentUpon>RMResources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
@@ -74,7 +74,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="direct\RMResources.resx">
+    <EmbeddedResource Update="RMResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>RMResources.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.Azure.Documents</CustomToolNamespace>
