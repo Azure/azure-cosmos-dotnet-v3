@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         {
                             Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
 
-                            partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                            partitionedQueryExecutionInfo = QueryPlanRetriever.GetQueryPlanWithServiceInterop(
                                 cosmosQueryContext.QueryClient,
                                 inputParameters.SqlQuerySpec,
                                 partitionKeyDefinition,

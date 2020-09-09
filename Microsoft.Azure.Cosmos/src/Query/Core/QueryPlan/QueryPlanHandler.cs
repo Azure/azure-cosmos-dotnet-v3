@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             this.queryClient = queryClient ?? throw new ArgumentNullException($"{nameof(queryClient)}");
         }
 
-        public async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetQueryPlanAsync(
+        public TryCatch<PartitionedQueryExecutionInfo> TryGetQueryPlan(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
             }
 
-            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryInfo = await this.TryGetQueryInfoAsync(
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryInfo = this.TryGetQueryInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         /// <summary>
         /// Used in the compute gateway to support legacy gateways query execution pattern.
         /// </summary>
-        public async Task<TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)>> TryGetQueryInfoAndIfSupportedAsync(
+        public TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> TryGetQueryInfoAndIfSupported(
             QueryFeatures supportedQueryFeatures,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryInfo = await this.TryGetQueryInfoAsync(
+            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryInfo = this.TryGetQueryInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return TryCatch<(PartitionedQueryExecutionInfo, bool)>.FromResult((tryGetQueryInfo.Result, neededQueryFeatures == QueryFeatures.None));
         }
 
-        private async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetQueryInfoAsync(
+        private TryCatch<PartitionedQueryExecutionInfo> TryGetQueryInfo(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<PartitionedQueryExecutionInfo> tryGetPartitoinedQueryExecutionInfo = await this.queryClient.TryGetPartitionedQueryExecutionInfoAsync(
+            TryCatch<PartitionedQueryExecutionInfo> tryGetPartitoinedQueryExecutionInfo = this.queryClient.TryGetPartitionedQueryExecutionInfo(
                 sqlQuerySpec: sqlQuerySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,

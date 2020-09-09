@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.Routing.Range<string> range,
             bool forceRefresh = false);
 
-        public abstract Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
+        public abstract TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(
             SqlQuerySpec sqlQuerySpec,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,

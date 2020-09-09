@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         // Get the routing map provider
                         CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
                         ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                        QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellationToken);
+                        QueryPartitionProvider queryPartitionProvider = this.Client.GetQueryPartitionProvider();
                         IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
                         // Figure out what partition you are going to based on the range from the continuation token
@@ -306,7 +306,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                        (errorMessage) => new BadRequestException(errorMessage),
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,

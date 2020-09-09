@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public Guid CorrelatedActivityId { get; }
 
-        public async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+        public PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query
             cancellationToken.ThrowIfCancellationRequested();
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
-            QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellationToken);
+            QueryPartitionProvider queryPartitionProvider = this.Client.GetQueryPartitionProvider();
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 this.QuerySpec,
                 partitionKeyDefinition,

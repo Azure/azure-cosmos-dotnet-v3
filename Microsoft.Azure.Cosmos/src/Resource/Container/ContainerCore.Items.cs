@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos
 
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
 
-            TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> tryGetQueryInfoAndIfSupported = await queryPlanHandler.TryGetQueryInfoAndIfSupportedAsync(
+            TryCatch<(PartitionedQueryExecutionInfo queryPlan, bool supported)> tryGetQueryInfoAndIfSupported = queryPlanHandler.TryGetQueryInfoAndIfSupported(
                 supportedQueryFeatures,
                 queryDefinition.ToSqlQuerySpec(),
                 partitionKeyDefinition,
