@@ -5,13 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
+    using System.ComponentModel;
     using System.IO;
+    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tests.Query.Metrics;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Cosmos.Tracing.TraceInfos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -29,32 +33,53 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             Trace rootTrace;
             using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
-                using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+                using (ITrace childTrace1 = rootTrace.StartChild(
+                    name: "Child1",
+                    component: TraceComponent.Unknown,
+                    level: TraceLevel.Info))
                 {
-                    using (ITrace child1Child1 = childTrace1.StartChild("Child1Child1"))
+                    using (ITrace child1Child1 = childTrace1.StartChild(
+                        name: "Child1Child1",
+                        component: TraceComponent.Unknown,
+                        level: TraceLevel.Info))
                     {
                         Thread.Sleep(100);
                     }
 
-                    using (ITrace child1Child2 = childTrace1.StartChild("Child1Child2"))
+                    using (ITrace child1Child2 = childTrace1.StartChild(
+                        name: "Child1Child2",
+                        component: TraceComponent.Unknown,
+                        level: TraceLevel.Info))
                     {
                         await Task.Delay(100);
                     }
                 }
 
-                using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
+                using (ITrace childTrace2 = rootTrace.StartChild(
+                    name: "Child2",
+                    component: TraceComponent.Unknown,
+                    level: TraceLevel.Info))
                 {
-                    using (ITrace child2Child1 = childTrace2.StartChild("Child2Child1"))
+                    using (ITrace child2Child1 = childTrace2.StartChild(
+                        name: "Child2Child1",
+                        component: TraceComponent.Unknown,
+                        level: TraceLevel.Info))
                     {
                         await Task.Delay(100);
                     }
 
-                    using (ITrace child2Child2 = childTrace2.StartChild("Child2Child2"))
+                    using (ITrace child2Child2 = childTrace2.StartChild(
+                        name: "Child2Child2",
+                        component: TraceComponent.Unknown,
+                        level: TraceLevel.Info))
                     {
                         Thread.Sleep(100);
                     }
 
-                    using (ITrace child2Child3 = childTrace2.StartChild("Child2Child3"))
+                    using (ITrace child2Child3 = childTrace2.StartChild(
+                        name: "Child2Child3",
+                        component: TraceComponent.Unknown,
+                        level: TraceLevel.Info))
                     {
                         await Task.Delay(100);
                     }
@@ -68,7 +93,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         public void RootTrace()
         {
             Trace rootTrace;
-            using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            using (rootTrace = Trace.GetRootTrace(
+                name: "RootTrace"))
             {
             }
 
@@ -81,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             Trace rootTrace;
             using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
-                rootTrace.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                rootTrace.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
             }
 
             string traceString = GetTraceString(rootTrace);
@@ -109,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                 {
-                    childTrace1.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                    childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
                 }
             }
 
@@ -142,12 +168,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                 {
-                    childTrace1.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                    childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
                 }
 
                 using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
                 {
-                    childTrace2.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                    childTrace2.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
                 }
             }
 
@@ -192,27 +218,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     activityId: Guid.NewGuid().ToString()));
 
             Trace queryTrace;
-            using (queryTrace = Trace.GetRootTrace(name: "Cross Partition Query", component: TraceComponent.Query))
+            using (queryTrace = Trace.GetRootTrace(
+                name: "Cross Partition Query",
+                component: TraceComponent.Query,
+                level: TraceLevel.Info))
             {
                 using (ITrace getQueryPlanTrace = queryTrace.StartChild("GetQueryPlan"))
                 {
-                    using (ITrace gatewayTrace = getQueryPlanTrace.StartChild("Gateway Call", component: TraceComponent.Transport))
+                    using (ITrace gatewayTrace = getQueryPlanTrace.StartChild(
+                        "Gateway Call",
+                        component: TraceComponent.Transport,
+                        level: TraceLevel.Info))
                     {
                         Thread.Sleep(1);
-                        gatewayTrace.Info = new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics);
+                        gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
                     }
                 }
 
                 using (ITrace getPkRanges = queryTrace.StartChild("GetPkRanges"))
                 {
-                    using (ITrace addressResolution = getPkRanges.StartChild("AddressResolution", component: TraceComponent.Transport))
+                    using (ITrace addressResolution = getPkRanges.StartChild(
+                        "AddressResolution",
+                        component: TraceComponent.Transport,
+                        level: TraceLevel.Info))
                     {
                         await Task.Delay(1);
-                        addressResolution.Info = new CosmosDiagnosticsTraceInfo(
+                        addressResolution.AddDatum("AddressResolutionStatistics", new CosmosDiagnosticsTraceInfo(
                             new AddressResolutionStatistics(
                                 DateTime.MinValue,
                                 DateTime.MinValue,
-                                "https://testuri"));
+                                "https://testuri")));
                     }
                 }
 
@@ -220,13 +255,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 {
                     using (ITrace continuation1 = queryPkRange1.StartChild("Continuation 1"))
                     {
-                        using (ITrace gatewayTrace = continuation1.StartChild("Execute Query Direct", component: TraceComponent.Transport))
+                        using (ITrace gatewayTrace = continuation1.StartChild(
+                            "Execute Query Direct",
+                            component: TraceComponent.Transport,
+                            level: TraceLevel.Info))
                         {
                             await Task.Delay(1);
-                            gatewayTrace.Info = new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics);
+                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
                         }
 
-                        continuation1.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                        continuation1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+                        continuation1.AddDatum("RequestCharge", 42);
                     }
                 }
 
@@ -234,24 +273,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 {
                     using (ITrace continuation1 = queryPkRange2.StartChild("Continuation 1"))
                     {
-                        using (ITrace gatewayTrace = continuation1.StartChild("Execute Query Direct", component: TraceComponent.Transport))
+                        using (ITrace gatewayTrace = continuation1.StartChild(
+                            "Execute Query Direct",
+                            component: TraceComponent.Transport,
+                            level: TraceLevel.Info))
                         {
                             await Task.Delay(1);
-                            gatewayTrace.Info = new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics);
+                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
                         }
 
-                        continuation1.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                        continuation1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+                        continuation1.AddDatum("RequestCharge", 42);
                     }
 
                     using (ITrace continuation2 = queryPkRange2.StartChild("Continuation 2"))
                     {
-                        using (ITrace gatewayTrace = continuation2.StartChild("Execute Query Direct", component: TraceComponent.Transport))
+                        using (ITrace gatewayTrace = continuation2.StartChild(
+                            "Execute Query Direct",
+                            component: TraceComponent.Transport,
+                            level: TraceLevel.Info))
                         {
                             await Task.Delay(1);
-                            gatewayTrace.Info = new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics);
+                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
                         }
 
-                        continuation2.Info = new QueryMetricsTraceInfo(MockQueryMetrics);
+                        continuation2.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+                        continuation2.AddDatum("RequestCharge", 42);
                     }
                 }
             }

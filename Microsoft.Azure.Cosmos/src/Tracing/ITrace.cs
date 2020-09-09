@@ -28,11 +28,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         IReadOnlyList<ITrace> Children { get; }
 
-        ITraceInfo Info { get; set; }
+        IReadOnlyDictionary<string, object> Data { get; }
+
+        ITrace StartChild(string name);
 
         ITrace StartChild(
             string name,
-            TraceLevel level = TraceLevel.Verbose,
-            TraceComponent? component = null);
+            TraceComponent component,
+            TraceLevel level);
+
+        void AddDatum(string key, ITraceDatum traceDatum);
+
+        void AddDatum(string key, object value);
     }
 }

@@ -10,11 +10,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class Trace : ITrace
     {
-        private static readonly DateTime globalStartTime = DateTime.UtcNow;
-        private static readonly Stopwatch globalStopwatch = Stopwatch.StartNew();
-
         private readonly List<Trace> children;
-        private TimeSpan? duration;
+        private readonly Dictionary<string, object> data;
+        private readonly Stopwatch stopwatch;
 
         private Trace(
             string name,
@@ -26,11 +24,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
             this.StackFrame = stackFrame ?? throw new ArgumentNullException(nameof(name));
-            this.StartTime = globalStartTime.AddTicks(globalStopwatch.ElapsedTicks);
+            this.StartTime = DateTime.UtcNow;
+            this.stopwatch = Stopwatch.StartNew();
             this.Level = level;
             this.Component = component;
             this.Parent = parent;
             this.children = new List<Trace>();
+            this.data = new Dictionary<string, object>();
         }
 
         public string Name { get; }
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public DateTime StartTime { get; }
 
-        public TimeSpan Duration => this.duration.Value;
+        public TimeSpan Duration => this.stopwatch.Elapsed;
 
         public TraceLevel Level { get; }
 
@@ -51,36 +51,50 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public ITraceInfo Info { get; set; }
+        public IReadOnlyDictionary<string, object> Data => this.data;
 
         public void Dispose()
         {
-            this.duration = globalStartTime.AddTicks(globalStopwatch.ElapsedTicks) - this.StartTime;
+            this.stopwatch.Stop();
         }
+
+        public ITrace StartChild(string name) => this.StartChild(
+            name,
+            level: TraceLevel.Verbose,
+            component: this.Component);
 
         public ITrace StartChild(
             string name,
-            TraceLevel level = TraceLevel.Verbose,
-            TraceComponent? component = null)
+            TraceComponent component,
+            TraceLevel level)
         {
             Trace child = new Trace(
                 name: name,
                 stackFrame: new StackFrame(skipFrames: 1, fNeedFileInfo: true),
                 level: level,
-                component: component ?? this.Component,
+                component: component,
                 parent: this);
             this.children.Add(child);
             return child;
         }
 
+        public static Trace GetRootTrace(string name) => Trace.GetRootTrace(
+            name,
+            component: TraceComponent.Unknown,
+            level: TraceLevel.Verbose);
+
         public static Trace GetRootTrace(
             string name,
-            TraceLevel level = TraceLevel.Verbose,
-            TraceComponent component = TraceComponent.Unknown) => new Trace(
+            TraceComponent component,
+            TraceLevel level) => new Trace(
                 name: name,
                 stackFrame: new StackFrame(skipFrames: 1, fNeedFileInfo: true),
                 level: level,
                 component: component,
                 parent: null);
+
+        public void AddDatum(string key, ITraceDatum traceDatum) => this.data.Add(key, traceDatum);
+
+        public void AddDatum(string key, object value) => this.data.Add(key, value);
     }
 }

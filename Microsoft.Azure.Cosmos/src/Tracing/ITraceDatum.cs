@@ -4,8 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
-    internal interface ITraceInfo
+    internal interface ITraceDatum
     {
-        string Serialize();
+        void Accept(ITraceDatumVisitor traceDatumVisitor);
     }
 }

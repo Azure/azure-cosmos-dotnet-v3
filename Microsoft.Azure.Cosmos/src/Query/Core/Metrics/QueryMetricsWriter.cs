@@ -42,8 +42,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteRuntimesExecutionTimes(queryMetrics.BackendMetrics.RuntimeExecutionTimes);
 
             this.WriteDocumentWriteTime(queryMetrics.BackendMetrics.DocumentWriteTime);
-            this.WriteRequestCharge(queryMetrics.ClientSideMetrics.RequestCharge);
-
 #if false
             // ClientSideMetrics
             this.WriteClientSideMetrics(queryMetrics.ClientSideMetrics);

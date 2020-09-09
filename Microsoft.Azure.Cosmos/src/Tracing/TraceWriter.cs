@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static class TraceWriter
     {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if ((int)trace.Level < (int)level)
+            if ((int)trace.Level > (int)level)
             {
                 return;
             }
@@ -158,22 +158,47 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             writer.WriteLine();
 
-            if (trace.Info != null)
+            if (trace.Data.Count > 0)
             {
                 bool isLeaf = trace.Children.Count == 0;
 
                 WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                 writer.WriteLine('(');
 
-                string[] infoLines = trace.Info
-                    .Serialize()
-                    .TrimEnd(newLineCharacters)
-                    .Split(newLines, StringSplitOptions.None);
-                foreach (string infoLine in infoLines)
+                foreach (KeyValuePair<string, object> kvp in trace.Data)
                 {
+                    string key = kvp.Key;
+                    object value = kvp.Value;
+
                     WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                     writer.Write(asciiTreeIndents.Blank);
-                    writer.WriteLine(infoLine);
+                    writer.Write('[');
+                    writer.Write(key);
+                    writer.Write(']');
+                    writer.WriteLine();
+
+                    if (value is ITraceDatum traceDatum)
+                    {
+                        TraceDatumTextWriter traceDatumTextWriter = new TraceDatumTextWriter();
+                        traceDatum.Accept(traceDatumTextWriter);
+
+                        string[] infoLines = traceDatumTextWriter
+                            .ToString()
+                            .TrimEnd(newLineCharacters)
+                            .Split(newLines, StringSplitOptions.None);
+                        foreach (string infoLine in infoLines)
+                        {
+                            WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
+                            writer.Write(asciiTreeIndents.Blank);
+                            writer.WriteLine(infoLine);
+                        }
+                    }
+                    else
+                    {
+                        WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
+                        writer.Write(asciiTreeIndents.Blank);
+                        writer.WriteLine(value.ToString());
+                    }
                 }
 
                 WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
@@ -243,6 +268,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 writer.Write(asciiTreeIndents.Parent);
             }
+        }
+
+        private sealed class TraceDatumTextWriter : ITraceDatumVisitor
+        {
+            private string toStringValue;
+
+            public TraceDatumTextWriter()
+            {
+            }
+
+            public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
+            {
+                this.toStringValue = queryMetricsTraceDatum.QueryMetrics.ToString();
+            }
+
+            public override string ToString() => this.toStringValue;
         }
 
         /// <summary>

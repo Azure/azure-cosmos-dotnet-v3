@@ -15,11 +15,12 @@
             {
                 Assert.IsNotNull(rootTrace);
                 Assert.IsNotNull(rootTrace.Children);
-                Assert.AreEqual(rootTrace.Children.Count, 0);
+                Assert.AreEqual(0, rootTrace.Children.Count);
                 Assert.AreEqual(rootTrace.Component, TraceComponent.Unknown);
                 Assert.AreNotEqual(rootTrace.Id, Guid.Empty);
-                Assert.IsNull(rootTrace.Info);
-                Assert.AreEqual(rootTrace.Level, System.Diagnostics.TraceLevel.Verbose);
+                Assert.IsNotNull(rootTrace.Data);
+                Assert.AreEqual(0, rootTrace.Data.Count);
+                Assert.AreEqual(rootTrace.Level, TraceLevel.Verbose);
                 Assert.AreEqual(rootTrace.Name, "RootTrace");
                 Assert.IsNull(rootTrace.Parent);
                 Assert.IsNotNull(rootTrace.StackFrame);
@@ -31,13 +32,13 @@
         [TestMethod]
         public void TestTraceChildren()
         {
-            using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace", component: TraceComponent.Query))
+            using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace", component: TraceComponent.Query, level: TraceLevel.Info))
             {
                 using (ITrace childTrace1 = rootTrace.StartChild("Child1" /*inherits parent's component*/))
                 {
                 }
 
-                using (ITrace childTrace2 = rootTrace.StartChild("Child2", component: TraceComponent.Transport))
+                using (ITrace childTrace2 = rootTrace.StartChild("Child2", component: TraceComponent.Transport, TraceLevel.Info))
                 {
                 }
 
