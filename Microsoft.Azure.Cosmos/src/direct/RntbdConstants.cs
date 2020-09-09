@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Documents
         {
             PartitionKey = 0x00,
             MaterializedViewLeaseDocument = 0x01,
-            MaterializedViewBuilderStateDocument = 0x02,
+            MaterializedViewBuilderOwnershipDocument = 0x02,
 
             Invalid = 0xFF,
         }

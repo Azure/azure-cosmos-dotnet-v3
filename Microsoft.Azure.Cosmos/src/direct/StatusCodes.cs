@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Documents
         StorageSplitConflictingWithNWayThroughputSplit = 2011,
         MergeIsDisabled = 2012,
 		TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
+        InvalidAccountStatus = 2016,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,

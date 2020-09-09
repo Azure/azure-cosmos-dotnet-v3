@@ -1417,6 +1417,22 @@ namespace Microsoft.Azure.Documents
             // BlobStorageAttributes for Storage Analytics
             public const string IsDeletedProperty = "IsDeleted";
             public const string DeletedTimeStampProperty = "DeletedTimeStamp";
+
+            // Analytics Storage Properties (It is a contract with BE, need to be kept in sync with StreamManager2.h/.cpp)
+            public const string PartitionedParQuetSuffix = "Partitioned.Parquet";
+            public const string CosmosSuffix = "Cosmos";
+            public const string RootMetaDataSuffix = "RootMetadata";
+            public const string PartitionedPreffix = "Partitioned";
+            public const string ParquetFileExtension = "Parquet";
+            public const string CompressionType = "snappy";
+            public const string RootFileName = "Root";
+            public const string MetadataExtension = "Metadata";
+            public const string InvalidationFileExtension = "Invalidation";
+            public const string InvalidationManifestFileExtension = "InvalidationManifest";
+            public const string MergedInvalidationFileExtension = "MergedInvalidation";
+            public const string SnapshotFileName = "Snapshot";
+
+            public const string MetadataBlobFileNameSuffix = "Root.Metadata";
         }
 
         public static class BackupConstants
@@ -1470,12 +1486,26 @@ namespace Microsoft.Azure.Documents
         {
             public const int BasedOnSubscription = 0;
             public const int EnsureOperationLogsFlushedTimeoutTimeInMinutes = 60;
-
+            
             // StreamStandard => 0x0004 = 4
             public const int PreferredLogStoreMetadataStorageKind = 4;
 
             // It needs to be in sync with bancked config for operation logs flush interval, which is currently 100s
             public const int EnsureOperationLogsPauseTimeInSeconds = 200;
+
+            //Blob metadata
+            public const string PartitionKeyRangeRid = "PartitionKeyRangeRid";
+            public const string CollectionLLSN = "CollectionLLSN";
+            public const string CollectionGLSN = "CollectionGLSN";
+            public const string IsValidTimeStamp = "IsValidTimeStamp";
+            public const string CollectionTS = "CollectionTS";
+        }
+
+        public static class RestoreConstants
+        {
+            public const int ListBlobMaxResults = 1000;
+            public const int ListBlobRetryDeltaBackoffInSeconds = 30;
+            public const int ListBlobRetryMaxAttempts = 5;
         }
 
         public static class SubscriptionsQuotaConstants

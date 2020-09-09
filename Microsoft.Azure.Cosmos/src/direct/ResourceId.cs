@@ -98,6 +98,15 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return this.Database != 0 && this.DocumentCollection != 0
+                    && (this.Document == 0 && this.PartitionKeyRange == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0);
+            }
+        }
+
+        public bool IsPartitionKeyRangeId
+        {
+            get
+            {
+                return this.Database != 0 && this.DocumentCollection != 0 && this.PartitionKeyRange != 0
                     && (this.Document == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0);
             }
         }
