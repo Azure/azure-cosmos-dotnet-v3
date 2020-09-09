@@ -37,10 +37,8 @@ namespace Microsoft.Azure.Cosmos
 
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerWheelTimer currentTimer;
-        private Task timerTask;
 
         private TimerWheelTimer congestionControlTimer;
-        private Task congestionControlTask;
         private SemaphoreSlim limiter;
 
         private int congestionDegreeOfConcurrency = 1;
@@ -136,35 +134,30 @@ namespace Microsoft.Azure.Cosmos
 
             this.currentTimer.CancelTimer();
             this.currentTimer = null;
-            this.timerTask = null;
 
             if (this.congestionControlTimer != null)
             {
                 this.congestionControlTimer.CancelTimer();
                 this.congestionControlTimer = null;
-                this.congestionControlTask = null;
             }
         }
 
         private void ResetTimer()
         {
             this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
-            this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
+            _ = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
-                if (task.IsCompleted)
-                {
-                    this.DispatchTimer();
-                }
-            }, this.cancellationTokenSource.Token);
+                this.DispatchTimer();
+            }, this.cancellationTokenSource.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
         }
 
         private void StartCongestionControlTimer()
         {
             this.congestionControlTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.congestionControllerDelay);
-            this.congestionControlTask = this.congestionControlTimer.StartTimerAsync().ContinueWith(async (task) =>
+            _ = this.congestionControlTimer.StartTimerAsync().ContinueWith((task) =>
             {
-                await this.RunCongestionControlAsync();
-            }, this.cancellationTokenSource.Token);
+                _ = this.RunCongestionControlAsync();
+            }, this.cancellationTokenSource.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
         }
 
         private void DispatchTimer()

@@ -221,20 +221,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)
+        internal virtual Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)
         {
             // All operations should be for the same PKRange
             string partitionKeyRangeId = this.batchOperations[0].Context.PartitionKeyRangeId;
 
             ArraySegment<ItemBatchOperation> operationsArraySegment = new ArraySegment<ItemBatchOperation>(this.batchOperations.ToArray());
-            return await PartitionKeyRangeServerBatchRequest.CreateAsync(
+            return PartitionKeyRangeServerBatchRequest.CreateAsync(
                   partitionKeyRangeId,
                   operationsArraySegment,
                   this.maxBatchByteSize,
                   this.maxBatchOperationCount,
                   ensureContinuousOperationIndexes: false,
                   serializerCore: this.serializerCore,
-                  cancellationToken: cancellationToken).ConfigureAwait(false);
+                  cancellationToken: cancellationToken);
         }
     }
 

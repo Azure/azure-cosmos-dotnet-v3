@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly string resourceLink;
 
         private readonly ContainerProperties collection;
-        private readonly bool isContinuationExpected;
 
         private readonly Guid correlatedActivityId;
 
@@ -48,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query
             FeedOptions feedOptions,
             string resourceLink,
             ContainerProperties collection,
-            bool isContinuationExpected,
             Guid correlatedActivityId)
         {
             this.innerExecutionContext = innerExecutionContext;
@@ -61,7 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.resourceLink = resourceLink;
 
             this.collection = collection;
-            this.isContinuationExpected = isContinuationExpected;
 
             this.correlatedActivityId = correlatedActivityId;
         }
@@ -90,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 feedOptions,
                 resourceLink,
                 collection,
-                isContinuationExpected,
                 correlatedActivityId);
         }
 
@@ -117,13 +113,8 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 return await this.innerExecutionContext.ExecuteNextFeedResponseAsync(token);
             }
-            catch (DocumentClientException ex)
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.BadRequest && ex.GetSubStatus() == SubStatusCodes.CrossPartitionQueryNotServable)
             {
-                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.GetSubStatus() != SubStatusCodes.CrossPartitionQueryNotServable)
-                {
-                    throw;
-                }
-
                 error = ex.Error;
             }
 

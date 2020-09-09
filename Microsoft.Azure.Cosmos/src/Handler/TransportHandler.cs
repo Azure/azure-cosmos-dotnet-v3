@@ -88,14 +88,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
             using (request.DiagnosticsContext.CreateScope(storeProxy.GetType().FullName))
             {
+                DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
                 if (request.OperationType == OperationType.Upsert)
                 {
-                    return await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
+                    this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
                 }
-                else
-                {
-                    return await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-                }
+                return response;
             }
         }
 
@@ -115,13 +113,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return null;
-        }
-
-        private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
-        {
-            DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-            this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
-            return response;
         }
     }
 }

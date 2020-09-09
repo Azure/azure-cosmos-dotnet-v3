@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.requestOptionsFactory = requestOptionsFactory;
         }
 
-        public override async Task<DocumentServiceLease> CheckpointAsync(DocumentServiceLease lease, string continuationToken)
+        public override Task<DocumentServiceLease> CheckpointAsync(DocumentServiceLease lease, string continuationToken)
         {
             if (lease == null)
             {
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentException("continuationToken must be a non-empty string", nameof(continuationToken));
             }
 
-            return await this.leaseUpdater.UpdateLeaseAsync(
+            return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
                 this.requestOptionsFactory.GetPartitionKey(lease.Id),
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     }
                     serverLease.ContinuationToken = continuationToken;
                     return serverLease;
-                }).ConfigureAwait(false);
+                });
         }
     }
 }

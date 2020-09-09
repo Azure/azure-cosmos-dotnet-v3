@@ -13,32 +13,54 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal abstract class AbstractRetryHandler : RequestHandler
     {
-        internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request);
+        internal abstract IDocumentClientRetryPolicy GetRetryPolicy(RequestMessage request);
 
         public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+            IDocumentClientRetryPolicy retryPolicyInstance = this.GetRetryPolicy(request);
             request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
             try
             {
-                return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ShouldRetryResult result;
+
+                    try
                     {
-                        return base.SendAsync(request, cancellationToken);
-                    },
-                    callShouldRetry: (cosmosResponseMessage, token) =>
+                        ResponseMessage cosmosResponseMessage = await base.SendAsync(request, cancellationToken);
+                        if (cosmosResponseMessage.IsSuccessStatusCode)
+                        {
+                            return cosmosResponseMessage;
+                        }
+
+                        result = await retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+
+                        if (!result.ShouldRetry)
+                        {
+                            return cosmosResponseMessage;
+                        }
+                    }
+                    catch (HttpRequestException httpRequestException)
                     {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                    },
-                    callShouldRetryException: (exception, token) =>
+                        result = await retryPolicyInstance.ShouldRetryAsync(httpRequestException, cancellationToken);
+                        if (!result.ShouldRetry)
+                        {
+                            // Today we don't translate request exceptions into status codes since this was an error before
+                            // making the request. TODO: Figure out how to pipe this as a response instead of throwing?
+                            throw;
+                        }
+                    }
+
+                    TimeSpan backoffTime = result.BackoffTime;
+                    if (backoffTime != TimeSpan.Zero)
                     {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                    },
-                    diagnosticsContext: request.DiagnosticsContext,
-                    cancellationToken: cancellationToken);
+                        await Task.Delay(result.BackoffTime, cancellationToken);
+                    }
+                }
             }
             catch (DocumentClientException ex)
             {
@@ -65,52 +87,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             finally
             {
                 request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
-            }
-        }
-
-        private static async Task<ResponseMessage> ExecuteHttpRequestAsync(
-           Func<Task<ResponseMessage>> callbackMethod,
-           Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
-           Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
-           CosmosDiagnosticsContext diagnosticsContext,
-           CancellationToken cancellationToken)
-        {
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                ShouldRetryResult result;
-
-                try
-                {
-                    ResponseMessage cosmosResponseMessage = await callbackMethod();
-                    if (cosmosResponseMessage.IsSuccessStatusCode)
-                    {
-                        return cosmosResponseMessage;
-                    }
-
-                    result = await callShouldRetry(cosmosResponseMessage, cancellationToken);
-
-                    if (!result.ShouldRetry)
-                    {
-                        return cosmosResponseMessage;
-                    }
-                }
-                catch (HttpRequestException httpRequestException)
-                {
-                    result = await callShouldRetryException(httpRequestException, cancellationToken);
-                    if (!result.ShouldRetry)
-                    {
-                        // Today we don't translate request exceptions into status codes since this was an error before
-                        // making the request. TODO: Figure out how to pipe this as a response instead of throwing?
-                        throw;
-                    }
-                }
-
-                TimeSpan backoffTime = result.BackoffTime;
-                if (backoffTime != TimeSpan.Zero)
-                {
-                    await Task.Delay(result.BackoffTime, cancellationToken);
-                }
             }
         }
     }

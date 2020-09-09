@@ -110,9 +110,9 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.InlineIfPossible(() => this.InternalExecuteNextAsync(cancellationToken), null, cancellationToken);
         }
 
-        private async Task<DocumentFeedResponse<T>> InternalExecuteNextAsync(CancellationToken cancellationToken)
+        private Task<DocumentFeedResponse<T>> InternalExecuteNextAsync(CancellationToken cancellationToken)
         {
-            return await this.documentQuery.ExecuteNextAsync<T>(cancellationToken);
+            return this.documentQuery.ExecuteNextAsync<T>(cancellationToken);
         }
     }
 }

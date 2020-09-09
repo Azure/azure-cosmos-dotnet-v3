@@ -137,14 +137,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
             }
-            catch (DocumentClientException ex)
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                if (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return null;
-                }
-
-                throw;
+                return null;
             }
         }
 

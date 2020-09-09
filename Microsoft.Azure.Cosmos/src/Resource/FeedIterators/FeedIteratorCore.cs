@@ -62,56 +62,49 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnosticsContext.GetOverallScope())
+            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnostics.GetOverallScope())
             {
-                return await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
-            }
-        }
+                cancellationToken.ThrowIfCancellationRequested();
 
-        private async Task<ResponseMessage> ReadNextInternalAsync(
-            CosmosDiagnosticsContext diagnostics,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+                Stream stream = null;
+                OperationType operation = OperationType.ReadFeed;
+                if (this.querySpec != null)
+                {
+                    stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
+                    operation = OperationType.Query;
+                }
 
-            Stream stream = null;
-            OperationType operation = OperationType.ReadFeed;
-            if (this.querySpec != null)
-            {
-                stream = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.querySpec, this.resourceType);
-                operation = OperationType.Query;
-            }
-
-            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.resourceLink,
-               resourceType: this.resourceType,
-               operationType: operation,
-               requestOptions: this.requestOptions,
-               cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
-               streamPayload: stream,
-               requestEnricher: request =>
-               {
-                   QueryRequestOptions.FillContinuationToken(request, this.ContinuationToken);
-                   if (this.querySpec != null)
+                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                   resourceUri: this.resourceLink,
+                   resourceType: this.resourceType,
+                   operationType: operation,
+                   requestOptions: this.requestOptions,
+                   cosmosContainerCore: null,
+                   partitionKey: this.requestOptions?.PartitionKey,
+                   streamPayload: stream,
+                   requestEnricher: request =>
                    {
-                       request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                       request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                   }
-               },
-               diagnosticsContext: diagnostics,
-               cancellationToken: cancellationToken);
+                       QueryRequestOptions.FillContinuationToken(request, this.ContinuationToken);
+                       if (this.querySpec != null)
+                       {
+                           request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                           request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                       }
+                   },
+                   diagnosticsContext: diagnostics,
+                   cancellationToken: cancellationToken);
 
-            this.ContinuationToken = responseMessage.Headers.ContinuationToken;
-            this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
+                this.ContinuationToken = responseMessage.Headers.ContinuationToken;
+                this.hasMoreResultsInternal = this.ContinuationToken != null && responseMessage.StatusCode != HttpStatusCode.NotModified;
 
-            if (responseMessage.Content != null)
-            {
-                await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+                if (responseMessage.Content != null)
+                {
+                    await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
+                }
+
+                return responseMessage;
             }
-            
-            return responseMessage;
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()

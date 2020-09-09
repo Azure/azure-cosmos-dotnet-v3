@@ -1368,11 +1368,7 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = null;
             }
 
-            if (this.AddressResolver != null)
-            {
-                this.AddressResolver.Dispose();
-                this.AddressResolver = null;
-            }
+            this.AddressResolver = null;
 
             if (this.httpClient != null)
             {
@@ -1458,10 +1454,7 @@ namespace Microsoft.Azure.Cosmos
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
 
-        internal Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
-        {
-            return Task.FromResult<Documents.ConsistencyLevel?>(this.desiredConsistencyLevel);
-        }
+        internal Documents.ConsistencyLevel? GetDesiredConsistencyLevel() => this.desiredConsistencyLevel;
 
         internal async Task<DocumentServiceResponse> ProcessRequestAsync(
             string verb,
@@ -1767,24 +1760,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await this.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(database.Id));
             }
-            catch (DocumentClientException dce)
+            catch (DocumentClientException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
             {
-                if (dce.StatusCode != HttpStatusCode.NotFound)
-                {
-                    throw;
-                }
             }
 
             try
             {
                 return await this.CreateDatabaseAsync(database, options);
             }
-            catch (DocumentClientException ex)
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
             {
-                if (ex.StatusCode != HttpStatusCode.Conflict)
-                {
-                    throw;
-                }
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -2120,24 +2105,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await this.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(database.Id, documentCollection.Id), null);
             }
-            catch (DocumentClientException dce)
+            catch (DocumentClientException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
             {
-                if (dce.StatusCode != HttpStatusCode.NotFound)
-                {
-                    throw;
-                }
             }
 
             try
             {
                 return await this.CreateDocumentCollectionAsync(databaseLink, documentCollection, options);
             }
-            catch (DocumentClientException ex)
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
             {
-                if (ex.StatusCode != HttpStatusCode.Conflict)
-                {
-                    throw;
-                }
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the collection and only one succeeds with Create
@@ -7258,28 +7235,6 @@ namespace Microsoft.Azure.Cosmos
             public IDocumentClientRetryPolicy GetRequestPolicy()
             {
                 return new RenameCollectionAwareClientRetryPolicy(this.sessionContainer, this.collectionCache, this.retryPolicy.GetRequestPolicy());
-            }
-        }
-
-        private class HttpRequestMessageHandler : DelegatingHandler
-        {
-            private readonly EventHandler<SendingRequestEventArgs> sendingRequest;
-            private readonly EventHandler<ReceivedResponseEventArgs> receivedResponse;
-
-            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse, HttpMessageHandler innerHandler)
-            {
-                this.sendingRequest = sendingRequest;
-                this.receivedResponse = receivedResponse;
-
-                this.InnerHandler = innerHandler ?? new HttpClientHandler();
-            }
-
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                this.sendingRequest?.Invoke(this, new SendingRequestEventArgs(request));
-                HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
-                this.receivedResponse?.Invoke(this, new ReceivedResponseEventArgs(request, response));
-                return response;
             }
         }
 

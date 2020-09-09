@@ -65,19 +65,17 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 cancellationToken: default))
             {
-                using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                using (DocumentServiceResponse documentServiceResponse = await GatewayStoreClient.ParseResponseAsync(responseMessage))
                 {
                     return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
             }
         }
 
-        public async Task<AccountProperties> InitializeReaderAsync()
+        public Task<AccountProperties> InitializeReaderAsync()
         {
-            AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+            return GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 this.serviceEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
-
-            return databaseAccount;
         }
     }
 }

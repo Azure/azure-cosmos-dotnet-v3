@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                DocumentServiceResponse dsr = await ClientExtensions.ParseResponseAsync(message);
+                DocumentServiceResponse dsr = await GatewayStoreClient.ParseResponseAsync(message);
             }
             catch (DocumentClientException dce)
             {
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                DocumentServiceResponse dsr = await ClientExtensions.ParseResponseAsync(message);
+                DocumentServiceResponse dsr = await GatewayStoreClient.ParseResponseAsync(message);
             }
             catch (DocumentClientException dce)
             {

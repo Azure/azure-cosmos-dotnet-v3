@@ -145,15 +145,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             return this;
         }
 
-        public async Task<TryCatch<TResult>> CatchAsync(
+        public Task<TryCatch<TResult>> CatchAsync(
             Func<Exception, Task<TryCatch<TResult>>> onError)
         {
             if (!this.Succeeded)
             {
-                return await onError(this.either.FromLeft(default));
+                return onError(this.either.FromLeft(default));
             }
 
-            return this;
+            return Task.FromResult(this);
         }
 
         public void ThrowIfFailed()

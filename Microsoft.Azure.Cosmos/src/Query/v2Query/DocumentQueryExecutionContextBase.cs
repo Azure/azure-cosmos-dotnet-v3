@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Query
             INameValueCollection requestHeaders = new DictionaryNameValueCollection();
 
             Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)await this.Client.GetDefaultConsistencyLevelAsync();
-            Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)await this.Client.GetDesiredConsistencyLevelAsync();
+            Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)this.Client.GetDesiredConsistencyLevel();
             if (!string.IsNullOrEmpty(feedOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(this.ResourceTypeEnum, OperationType.ReadFeed))
             {
                 if (defaultConsistencyLevel == Cosmos.ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == Cosmos.ConsistencyLevel.Session))
@@ -358,24 +358,24 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, documentServiceResponse);
         }
 
-        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestAsync(
+        public Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            return await (this.ShouldExecuteQueryRequest ?
+            return this.ShouldExecuteQueryRequest ?
                 this.ExecuteQueryRequestAsync(request, retryPolicyInstance, cancellationToken) :
-                this.ExecuteReadFeedRequestAsync(request, retryPolicyInstance, cancellationToken));
+                this.ExecuteReadFeedRequestAsync(request, retryPolicyInstance, cancellationToken);
         }
 
-        public async Task<DocumentFeedResponse<T>> ExecuteRequestAsync<T>(
+        public Task<DocumentFeedResponse<T>> ExecuteRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            return await (this.ShouldExecuteQueryRequest ?
+            return this.ShouldExecuteQueryRequest ?
                 this.ExecuteQueryRequestAsync<T>(request, retryPolicyInstance, cancellationToken) :
-                this.ExecuteReadFeedRequestAsync<T>(request, retryPolicyInstance, cancellationToken));
+                this.ExecuteReadFeedRequestAsync<T>(request, retryPolicyInstance, cancellationToken);
         }
 
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteQueryRequestAsync(

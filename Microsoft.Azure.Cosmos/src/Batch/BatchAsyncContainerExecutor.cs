@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerWheel.Dispose();
         }
 
-        internal virtual async Task ValidateOperationAsync(
+        internal virtual Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
-            await operation.MaterializeResourceAsync(this.cosmosClientContext.SerializerCore, cancellationToken);
+            return operation.MaterializeResourceAsync(this.cosmosClientContext.SerializerCore, cancellationToken);
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
@@ -204,15 +204,15 @@ namespace Microsoft.Azure.Cosmos
             return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyString).Id;
         }
 
-        private async Task<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
+        private Task<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
         {
             Debug.Assert(operation.PartitionKey.HasValue, "PartitionKey should be set on the operation");
             if (operation.PartitionKey.Value.IsNone)
             {
-                return await this.cosmosContainer.GetNonePartitionKeyValueAsync(cancellationToken).ConfigureAwait(false);
+                return this.cosmosContainer.GetNonePartitionKeyValueAsync(cancellationToken);
             }
 
-            return operation.PartitionKey.Value.InternalKey;
+            return Task.FromResult(operation.PartitionKey.Value.InternalKey);
         }
 
         private async Task<PartitionKeyRangeBatchExecutionResult> ExecuteAsync(

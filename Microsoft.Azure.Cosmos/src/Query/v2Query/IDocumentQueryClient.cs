@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 
-        Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
+        Documents.ConsistencyLevel? GetDesiredConsistencyLevel();
 
         Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel);
 

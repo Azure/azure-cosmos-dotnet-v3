@@ -2730,32 +2730,24 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey()"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__9))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)": {
           "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__11))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)": {
           "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__10))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)": {
           "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__12))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)": {
           "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)"
         }
       },
@@ -4810,11 +4802,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.RequestHandler+<SendAsync>d__4))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
           "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)"
         },
         "Void set_InnerHandler(Microsoft.Azure.Cosmos.RequestHandler)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {

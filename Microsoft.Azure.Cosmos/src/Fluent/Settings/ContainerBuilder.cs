@@ -67,13 +67,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateAsync(
+        public Task<ContainerResponse> CreateAsync(
             ThroughputProperties throughputProperties,
             CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.database.CreateContainerAsync(
+            return this.database.CreateContainerAsync(
                 containerProperties: containerProperties,
                 throughputProperties: throughputProperties,
                 cancellationToken: cancellationToken);
@@ -86,13 +86,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateIfNotExistsAsync(
+        public Task<ContainerResponse> CreateIfNotExistsAsync(
             ThroughputProperties throughputProperties,
             CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.database.CreateContainerIfNotExistsAsync(
+            return this.database.CreateContainerIfNotExistsAsync(
                 containerProperties: containerProperties,
                 throughputProperties: throughputProperties,
                 cancellationToken: cancellationToken);
@@ -105,13 +105,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateAsync(
+        public Task<ContainerResponse> CreateAsync(
             int? throughput = null,
             CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.database.CreateContainerAsync(
+            return this.database.CreateContainerAsync(
                 containerProperties: containerProperties,
                 throughput: throughput,
                 requestOptions: null,
@@ -125,13 +125,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateIfNotExistsAsync(
+        public Task<ContainerResponse> CreateIfNotExistsAsync(
             int? throughput = null,
             CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.database.CreateContainerIfNotExistsAsync(
+            return this.database.CreateContainerIfNotExistsAsync(
                 containerProperties: containerProperties,
                 throughput: throughput,
                 requestOptions: null,

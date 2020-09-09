@@ -125,9 +125,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return (ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
         }
 
-        public Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
+        public ConsistencyLevel? GetDesiredConsistencyLevel()
         {
-            return this.innerClient.GetDesiredConsistencyLevelAsync();
+            return this.innerClient.GetDesiredConsistencyLevel();
         }
 
         public Task EnsureValidOverwriteAsync(ConsistencyLevel requestedConsistencyLevel)

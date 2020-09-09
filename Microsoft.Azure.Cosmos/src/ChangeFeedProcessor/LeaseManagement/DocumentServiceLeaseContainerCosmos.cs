@@ -23,17 +23,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.options = options;
         }
 
-        public override async Task<IReadOnlyList<DocumentServiceLease>> GetAllLeasesAsync()
-        {
-            return await this.ListDocumentsAsync(this.options.GetPartitionLeasePrefix()).ConfigureAwait(false);
-        }
-
         public override async Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync()
         {
             List<DocumentServiceLease> ownedLeases = new List<DocumentServiceLease>();
             foreach (DocumentServiceLease lease in await this.GetAllLeasesAsync().ConfigureAwait(false))
             {
-                if (string.Compare(lease.Owner, this.options.HostName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(lease.Owner, this.options.HostName, StringComparison.OrdinalIgnoreCase))
                 {
                     ownedLeases.Add(lease);
                 }
@@ -42,8 +37,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return ownedLeases;
         }
 
-        private async Task<IReadOnlyList<DocumentServiceLeaseCore>> ListDocumentsAsync(string prefix)
+        public override async Task<IReadOnlyList<DocumentServiceLease>> GetAllLeasesAsync()
         {
+            string prefix = this.options.GetPartitionLeasePrefix();
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 

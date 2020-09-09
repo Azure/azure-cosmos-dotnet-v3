@@ -89,22 +89,11 @@ namespace Microsoft.Azure.Cosmos
             using (responseMessage)
             {
                 IClientSideRequestStatistics requestStatistics = request?.RequestContext?.ClientRequestStatistics;
-                if ((int)responseMessage.StatusCode < 400)
+                if ((int)responseMessage.StatusCode < 400
+                    || (request != null && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode)))
                 {
-                    INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
-                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
-                    return new DocumentServiceResponse(
-                        body: contentStream,
-                        headers: headers,
-                        statusCode: responseMessage.StatusCode,
-                        clientSideRequestStatistics: requestStatistics,
-                        serializerSettings: serializerSettings);
-                }
-                else if (request != null
-                    && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
-                {
-                    INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
-                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+                    INameValueCollection headers = ExtractResponseHeaders(responseMessage);
+                    Stream contentStream = await BufferContentIfAvailableAsync(responseMessage);
                     return new DocumentServiceResponse(
                         body: contentStream,
                         headers: headers,
@@ -215,7 +204,6 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                String message = await responseMessage.Content.ReadAsStringAsync();
                 return new DocumentClientException(
                     message: context.ToString(),
                     innerException: null,

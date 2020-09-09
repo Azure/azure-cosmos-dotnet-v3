@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
                     tokenMapping.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.CompositeContinuationToken.Token),
                     deferFirstPage: false,
                     filter,
-                    tryFilterAsync: async (itemProducerTree) =>
+                    tryFilterAsync: (itemProducerTree) =>
                     {
                         if (!tokenMapping.TryGetValue(
                             itemProducerTree.Root.PartitionKeyRange,
@@ -200,10 +200,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
 
                         if (continuationToken == null)
                         {
-                            return TryCatch.FromResult();
+                            return Task.FromResult(TryCatch.FromResult());
                         }
 
-                        return await this.TryFilterAsync(
+                        return this.TryFilterAsync(
                             itemProducerTree,
                             sortOrders,
                             continuationToken,

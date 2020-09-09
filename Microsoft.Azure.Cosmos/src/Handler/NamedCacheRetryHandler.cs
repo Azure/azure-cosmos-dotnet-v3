@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Handlers
 {
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
@@ -16,9 +15,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
         }
 
-        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
+        internal override IDocumentClientRetryPolicy GetRetryPolicy(RequestMessage request)
         {
-            return Task.FromResult<IDocumentClientRetryPolicy>(new InvalidPartitionExceptionRetryPolicy(null));
+            return new InvalidPartitionExceptionRetryPolicy(null);
         }
     }
 }

@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
-        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+        private Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)
         {
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
                 && (!subStatusCode.HasValue
                 || subStatusCode.Value == SubStatusCodes.Unknown))
             {
-                return null;
+                return Task.FromResult<ShouldRetryResult>(null);
             }
 
             // Received 403.3 on write region, initiate the endpoint rediscovery
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
                 DefaultTrace.TraceWarning("Endpoint not writable. Refresh cache and retry");
-                return await this.ShouldRetryOnEndpointFailureAsync(false, true);
+                return this.ShouldRetryOnEndpointFailureAsync(false, true);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
@@ -180,23 +180,23 @@ namespace Microsoft.Azure.Cosmos
                 && (this.isReadRequest || this.canUseMultipleWriteLocations))
             {
                 DefaultTrace.TraceWarning("Endpoint not available for reads. Refresh cache and retry");
-                return await this.ShouldRetryOnEndpointFailureAsync(true, false);
+                return this.ShouldRetryOnEndpointFailureAsync(true, false);
             }
 
             if (statusCode == HttpStatusCode.NotFound
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-                return this.ShouldRetryOnSessionNotAvailable();
+                return Task.FromResult(this.ShouldRetryOnSessionNotAvailable());
             }
 
             // Received 503.0 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable
                 && subStatusCode == SubStatusCodes.Unknown)
             {
-                return this.ShouldRetryOnServiceUnavailable();
+                return Task.FromResult(this.ShouldRetryOnServiceUnavailable());
             }
 
-            return null;
+            return Task.FromResult<ShouldRetryResult>(null);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(bool isReadRequest, bool forceRefresh)

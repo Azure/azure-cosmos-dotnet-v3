@@ -27,24 +27,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                TimeSpan delay = this.monitoringDelay;
-
                 try
                 {
                     long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
                     await this.dispatcher.DispatchEstimationAsync(estimation, cancellationToken);
                 }
-                catch (TaskCanceledException canceledException)
+                catch (OperationCanceledException canceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        throw;
-
                     Extensions.TraceException(new Exception("exception within estimator", canceledException));
 
                     // ignore as it is caused by client
                 }
 
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(this.monitoringDelay, cancellationToken).ConfigureAwait(false);
             }
         }
     }

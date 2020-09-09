@@ -31,11 +31,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.requestOptionsFactory = requestOptionsFactory;
         }
 
-        public override async Task<bool> IsInitializedAsync()
+        public override Task<bool> IsInitializedAsync()
         {
             string markerDocId = this.GetStoreMarkerName();
 
-            return await this.container.ItemExistsAsync(this.requestOptionsFactory.GetPartitionKey(markerDocId), markerDocId).ConfigureAwait(false);
+            return this.container.ItemExistsAsync(this.requestOptionsFactory.GetPartitionKey(markerDocId), markerDocId);
         }
 
         public override async Task MarkInitializedAsync()

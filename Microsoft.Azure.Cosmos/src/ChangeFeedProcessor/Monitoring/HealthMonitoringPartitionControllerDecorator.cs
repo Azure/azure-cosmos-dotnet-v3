@@ -29,11 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 await this.inner.AddOrUpdateLeaseAsync(lease);
                 await this.monitor.InspectAsync(new HealthMonitoringRecord(HealthSeverity.Informational, MonitoredOperation.AcquireLease, lease, null));
             }
-            catch (DocumentClientException)
-            {
-                throw;
-            }
-            catch (Exception exception)
+            catch (Exception exception) when (!(exception is DocumentClientException))
             {
                 await this.monitor.InspectAsync(new HealthMonitoringRecord(HealthSeverity.Error, MonitoredOperation.AcquireLease, lease, exception));
 

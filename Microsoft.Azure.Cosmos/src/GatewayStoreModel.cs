@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.DatabaseAccount,
                 cancellationToken))
             {
-                using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                using (DocumentServiceResponse documentServiceResponse = await GatewayStoreClient.ParseResponseAsync(responseMessage))
                 {
                     databaseAccount = CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
@@ -145,7 +145,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private void CaptureSessionToken(

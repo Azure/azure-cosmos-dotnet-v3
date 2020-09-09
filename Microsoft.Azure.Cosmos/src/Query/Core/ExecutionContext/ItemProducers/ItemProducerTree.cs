@@ -509,28 +509,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             }
         }
 
-        public async Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
+        public Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            return await this.ExecuteWithSplitProofingAsync(
+            return this.ExecuteWithSplitProofingAsync(
                function: this.TryMoveNextPageImplementationAsync,
                functionNeedsBeReexecuted: false,
                cancellationToken: cancellationToken);
         }
 
-        public async Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsync(CancellationToken cancellationToken)
+        public Task<(bool movedToNextPage, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            return await this.ExecuteWithSplitProofingAsync(
+            return this.ExecuteWithSplitProofingAsync(
                 function: this.TryMoveNextPageIfNotSplitAsyncImplementationAsync,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: cancellationToken);
         }
 
-        public async Task<(bool bufferedMoreDocuments, QueryResponseCore? failureResponse)> BufferMoreDocumentsAsync(CancellationToken cancellationToken)
+        public Task<(bool bufferedMoreDocuments, QueryResponseCore? failureResponse)> BufferMoreDocumentsAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            return await this.ExecuteWithSplitProofingAsync(
+            return this.ExecuteWithSplitProofingAsync(
                 function: this.BufferMoreDocumentsImplementationAsync,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: cancellationToken);
@@ -548,29 +545,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
             }
         }
 
-        private async Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageImplementationAsync(CancellationToken cancellationToken)
+        private Task<(bool succeeded, QueryResponseCore? failureResponse)> TryMoveNextPageImplementationAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             if (this.CurrentItemProducerTree == this)
             {
-                return await this.Root.TryMoveNextPageAsync(cancellationToken);
+                return this.Root.TryMoveNextPageAsync(cancellationToken);
             }
             else
             {
-                return await this.CurrentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
+                return this.CurrentItemProducerTree.TryMoveNextPageAsync(cancellationToken);
             }
         }
 
-        private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsyncImplementationAsync(CancellationToken cancellationToken)
+        private Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> TryMoveNextPageIfNotSplitAsyncImplementationAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (this.HasSplit)
             {
-                return ItemProducer.IsDoneResponse;
+                return Task.FromResult(ItemProducer.IsDoneResponse);
             }
 
-            return await this.TryMoveNextPageImplementationAsync(cancellationToken);
+            return this.TryMoveNextPageImplementationAsync(cancellationToken);
         }
 
         private async Task<(bool successfullyMovedNext, QueryResponseCore? failureResponse)> BufferMoreDocumentsImplementationAsync(CancellationToken cancellationToken)
@@ -632,6 +626,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
                 try
                 {
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
+                    cancellationToken.ThrowIfCancellationRequested();
                     (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await function(cancellationToken);
                     if (response.failureResponse == null || !ItemProducerTree.IsSplitException(response.failureResponse.Value))
                     {

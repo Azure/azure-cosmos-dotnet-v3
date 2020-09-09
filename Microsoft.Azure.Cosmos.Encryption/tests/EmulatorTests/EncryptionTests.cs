@@ -1630,10 +1630,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         internal class EncryptionTestsTokenCredentialFactory : KeyVaultTokenCredentialFactory
         {
-            public override async ValueTask<TokenCredential> GetTokenCredentialAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
+            public override ValueTask<TokenCredential> GetTokenCredentialAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
             {
-                return await Task.FromResult(new DefaultAzureCredential());
-            }        
+                return new ValueTask<TokenCredential>(new DefaultAzureCredential());
+            }
         }
     }
 }

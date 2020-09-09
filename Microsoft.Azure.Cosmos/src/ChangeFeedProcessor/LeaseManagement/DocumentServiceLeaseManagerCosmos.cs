@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.requestOptionsFactory = requestOptionsFactory;
         }
 
-        public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
+        public override Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
         {
             if (lease == null)
             {
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             string oldOwner = lease.Owner;
 
-            return await this.leaseUpdater.UpdateLeaseAsync(
+            return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
                 this.requestOptionsFactory.GetPartitionKey(lease.Id),
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     serverLease.Owner = this.options.HostName;
                     serverLease.Properties = lease.Properties;
                     return serverLease;
-                }).ConfigureAwait(false);
+                });
         }
 
         public override async Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string leaseToken, string continuationToken)
@@ -112,16 +112,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }).ConfigureAwait(false);
         }
 
-        public override async Task DeleteAsync(DocumentServiceLease lease)
+        public override Task DeleteAsync(DocumentServiceLease lease)
         {
             if (lease?.Id == null)
             {
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            await this.leaseContainer.TryDeleteItemAsync<DocumentServiceLeaseCore>(
+            return this.leaseContainer.TryDeleteItemAsync<DocumentServiceLeaseCore>(
                     this.requestOptionsFactory.GetPartitionKey(lease.Id),
-                    lease.Id).ConfigureAwait(false);
+                    lease.Id);
         }
 
         public override async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }).ConfigureAwait(false);
         }
 
-        public override async Task<DocumentServiceLease> UpdatePropertiesAsync(DocumentServiceLease lease)
+        public override Task<DocumentServiceLease> UpdatePropertiesAsync(DocumentServiceLease lease)
         {
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new LeaseLostException(lease);
             }
 
-            return await this.leaseUpdater.UpdateLeaseAsync(
+            return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
                 this.requestOptionsFactory.GetPartitionKey(lease.Id),
@@ -176,12 +176,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     }
                     serverLease.Properties = lease.Properties;
                     return serverLease;
-                }).ConfigureAwait(false);
+                });
         }
 
-        private async Task<DocumentServiceLeaseCore> TryGetLeaseAsync(DocumentServiceLease lease)
+        private Task<DocumentServiceLeaseCore> TryGetLeaseAsync(DocumentServiceLease lease)
         {
-            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLeaseCore>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id).ConfigureAwait(false);
+            return this.leaseContainer.TryGetItemAsync<DocumentServiceLeaseCore>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id);
         }
 
         private string GetDocumentId(string partitionId)

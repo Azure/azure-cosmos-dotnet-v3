@@ -254,13 +254,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        private async Task<ItemResponse<DataEncryptionKeyProperties>> ReadInternalAsync(
+        private Task<ItemResponse<DataEncryptionKeyProperties>> ReadInternalAsync(
             string id,
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
+            return this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
                 id,
                 new PartitionKey(id),
                 requestOptions,

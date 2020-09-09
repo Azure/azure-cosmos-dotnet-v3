@@ -167,15 +167,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="keyVaultUriProperties"> Parsed key Vault Uri Properties. </param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> Key Client </returns>
-        private async Task<KeyClient> GetAkvClientAsync(
+        private Task<KeyClient> GetAkvClientAsync(
             KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<KeyClient>(cancellationToken);
+            }
 
             // Called once per KEYVALTNAME
             // Eg:https://KEYVALTNAME.vault.azure.net/
-            KeyClient akvClient = await this.akvClientCache.GetAsync(
+            return this.akvClientCache.GetAsync(
                 key: keyVaultUriProperties.KeyVaultUri,
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
@@ -184,8 +187,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return this.keyClientFactory.GetKeyClient(keyVaultUriProperties, tokenCred);
                 },
                 cancellationToken: cancellationToken);
-
-            return akvClient;
         }
 
         /// <summary>
@@ -194,16 +195,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="keyVaultUriProperties"> Parsed key Vault Uri Properties. </param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> CryptographyClient </returns>
-        private async Task<CryptographyClient> GetCryptoClientAsync(
+        private Task<CryptographyClient> GetCryptoClientAsync(
             KeyVaultKeyUriProperties keyVaultUriProperties,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<CryptographyClient>(cancellationToken);
+            }
 
             // Get a Crypto Client for Wrap and UnWrap,this gets init per Key Version
             // Cache it against the KeyVersion/KeyId
             // Eg: :https://KEYVAULTNAME.vault.azure.net/keys/keyname/KEYID
-            CryptographyClient cryptoClient = await this.akvCryptoClientCache.GetAsync(
+            return this.akvCryptoClientCache.GetAsync(
                 key: keyVaultUriProperties.KeyUri,
                 obsoleteValue: null,
                 singleValueInitFunc: async () =>
@@ -213,7 +217,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return this.cryptographyClientFactory.GetCryptographyClient(keyVaultUriProperties, tokenCred);
                 },
                 cancellationToken: cancellationToken);
-            return cryptoClient;
         }
     }
 }

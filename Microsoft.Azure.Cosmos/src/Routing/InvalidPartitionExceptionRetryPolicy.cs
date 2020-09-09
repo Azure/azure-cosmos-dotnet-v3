@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.nextPolicy = nextPolicy;
         }
 
-        public async Task<ShouldRetryResult> ShouldRetryAsync(
+        public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
             CancellationToken cancellationToken)
         {
@@ -31,37 +31,34 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentClientException clientException = exception as DocumentClientException;
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 clientException?.StatusCode,
-                clientException?.GetSubStatus(),
-                clientException?.ResourceAddress);
+                clientException?.GetSubStatus());
             if (shouldRetryResult != null)
             {
-                return shouldRetryResult;
+                return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextPolicy != null ? await this.nextPolicy.ShouldRetryAsync(exception, cancellationToken) : ShouldRetryResult.NoRetry();
+            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(exception, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
         }
 
-        public async Task<ShouldRetryResult> ShouldRetryAsync(
+        public Task<ShouldRetryResult> ShouldRetryAsync(
             ResponseMessage httpResponseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 httpResponseMessage.StatusCode,
-                httpResponseMessage.Headers.SubStatusCode,
-                httpResponseMessage.GetResourceAddress());
+                httpResponseMessage.Headers.SubStatusCode);
 
             if (shouldRetryResult != null)
             {
-                return shouldRetryResult;
+                return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextPolicy != null ? await this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : ShouldRetryResult.NoRetry();
+            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
         }
 
         private ShouldRetryResult ShouldRetryInternal(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode,
-            string resourceIdOrFullName)
+            SubStatusCodes? subStatusCode)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
