@@ -31,15 +31,10 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
-        /// Application opted Cosmos request conext that flow through with the <see cref="RequestMessage" />.
+        /// Application opted Cosmos request context that flow through with the <see cref="RequestMessage" />.
         /// Context will be available through handlers.
         /// </summary>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        IReadOnlyDictionary<string, object> Properties { get; set; }
+        public IReadOnlyDictionary<string, object> Properties { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

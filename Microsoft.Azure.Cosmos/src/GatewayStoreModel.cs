@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            HttpClient httpClient)
+            CosmosHttpClient httpClient)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
@@ -48,7 +49,10 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ApplySessionToken(request);
+            GatewayStoreModel.ApplySessionToken(
+                request,
+                this.defaultConsistencyLevel,
+                this.sessionContainer);
 
             DocumentServiceResponse response;
             try
@@ -72,13 +76,15 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
             AccountProperties databaseAccount = null;
 
             // Get the ServiceDocumentResource from the gateway.
-            using (HttpResponseMessage responseMessage =
-                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellationToken))
+            using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
+                requestMessage,
+                ResourceType.DatabaseAccount,
+                cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
@@ -187,50 +193,74 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ApplySessionToken(DocumentServiceRequest request)
+        internal static void ApplySessionToken(
+            DocumentServiceRequest request,
+            ConsistencyLevel defaultConsistencyLevel,
+            ISessionContainer sessionContainer)
         {
-            if (request.Headers != null &&
-                !string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
+            if (request.Headers == null)
             {
-                if (ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+                Debug.Fail("DocumentServiceRequest does not have headers.");
+                return;
+            }
+
+            // Master resource operations don't require session token.
+            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType))
+            {
+                if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
                     request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
                 }
-                return; //User is explicitly controlling the session.
+
+                return;
             }
 
-            if (request.Headers != null &&
-                 request.OperationType == OperationType.QueryPlan)
+            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
             {
-                {
-                    string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
-                    bool isPlanOnly = false;
-                    if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
-                    {
-                        return; // for query plan session token is not needed
-                    }
-                }
+                return; // User is explicitly controlling the session.
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
 
             bool sessionConsistency =
-                this.defaultConsistencyLevel == ConsistencyLevel.Session ||
+                defaultConsistencyLevel == ConsistencyLevel.Session ||
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency || ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+            if (!sessionConsistency)
             {
-                return; // Only apply the session token in case of session consistency and when resource is not a master resource
+                return; // Only apply the session token in case of session consistency
             }
 
             //Apply the ambient session.
-            string sessionToken = this.sessionContainer.ResolveGlobalSessionToken(request);
+            string sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
 
             if (!string.IsNullOrEmpty(sessionToken))
             {
                 request.Headers[HttpConstants.HttpHeaders.SessionToken] = sessionToken;
             }
+        }
+
+        // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
+        internal static bool IsMasterOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            // Stored procedures, trigger, and user defined functions CRUD operations are done on
+            // master so they do not require the session token. Stored procedures execute is not a master operation
+            return ReplicatedResourceClient.IsMasterResource(resourceType) ||
+                   GatewayStoreModel.IsStoredProcedureCrudOperation(resourceType, operationType) ||
+                   resourceType == ResourceType.Trigger ||
+                   resourceType == ResourceType.UserDefinedFunction ||
+                   operationType == OperationType.QueryPlan;
+        }
+
+        internal static bool IsStoredProcedureCrudOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            return resourceType == ResourceType.StoredProcedure &&
+                   operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
         private void Dispose(bool disposing)

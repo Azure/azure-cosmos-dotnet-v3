@@ -5,7 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Net.Sockets;
     using System.Threading;
@@ -23,6 +26,38 @@ namespace Microsoft.Azure.Cosmos
         internal static bool IsSuccess(this HttpStatusCode httpStatusCode)
         {
             return ((int)httpStatusCode >= 200) && ((int)httpStatusCode <= 299);
+        }
+
+        public static void Add(this INameValueCollection nameValueCollection, string headerName, IEnumerable<string> values)
+        {
+            if (headerName == null)
+            {
+                throw new ArgumentNullException(nameof(headerName));
+            }
+
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            nameValueCollection.Add(headerName, string.Join(",", values));
+        }
+
+        public static T GetHeaderValue<T>(this INameValueCollection nameValueCollection, string key)
+        {
+            string value = nameValueCollection[key];
+
+            if (string.IsNullOrEmpty(value))
+            {
+                return default(T);
+            }
+
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.Parse(value, CultureInfo.InvariantCulture);
+            }
+
+            return (T)(object)value;
         }
 
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
@@ -126,13 +161,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
         {
-            Headers headers = new Headers();
-            foreach (string key in nameValueCollection)
-            {
-                headers.Add(key, nameValueCollection[key]);
-            }
-
-            return headers;
+            return new Headers(nameValueCollection);
         }
 
         internal static void TraceException(Exception exception)

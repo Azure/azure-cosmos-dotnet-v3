@@ -20,10 +20,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         internal async Task<List<ItemBatchOperation>> ReadPayloadAsync(Stream payload)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             await payload.ReadRecordIOAsync(
                 record =>
                 {
-
                     Result r = this.ReadOperation(record, out ItemBatchOperation operation);
                     if (r != Result.Success)
                     {
@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     return r;
                 },
                 resizer: new MemorySpanResizer<byte>((int)payload.Length));
+#pragma warning restore CS0618 // Type or member is obsolete
 
             return this.operations;
         }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
+
         private readonly string userAgent;
         private bool isDisposed = false;
 
@@ -58,6 +60,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
+            HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
+                clientOptions.GatewayModeMaxConnectionLimit,
+                clientOptions.WebProxy);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -69,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
-               handler: ClientContextCore.CreateHttpClientHandler(clientOptions),
+               handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
@@ -389,10 +394,15 @@ namespace Microsoft.Azure.Cosmos
             IDisposable synchronizationContextScope = diagnosticsContext.CreateScope("SynchronizationContext");
             return Task.Run(() =>
             {
-                synchronizationContextScope.Dispose();
-                return this.RunWithDiagnosticsHelperAsync<TResult>(
-                    diagnosticsContext,
-                    task);
+                using (new ActivityScope(Guid.NewGuid()))
+                {
+                    // The goal of synchronizationContextScope is to log how much latency the Task.Run added to the latency.
+                    // Dispose of it here so it only measures the latency added by the Task.Run.
+                    synchronizationContextScope.Dispose();
+                    return this.RunWithDiagnosticsHelperAsync<TResult>(
+                        diagnosticsContext,
+                        task);
+                }
             });
         }
 
@@ -400,16 +410,19 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Func<CosmosDiagnosticsContext, Task<TResult>> task)
         {
-            try
+            using (new ActivityScope(Guid.NewGuid()))
             {
-                using (diagnosticsContext.GetOverallScope())
+                try
                 {
-                    return await task(diagnosticsContext).ConfigureAwait(false);
+                    using (diagnosticsContext.GetOverallScope())
+                    {
+                        return await task(diagnosticsContext).ConfigureAwait(false);
+                    }
                 }
-            }
-            catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
-            {
-                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                {
+                    throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+                }
             }
         }
 
@@ -460,21 +473,6 @@ namespace Microsoft.Azure.Cosmos
                 || operationType == OperationType.Delete
                 || operationType == OperationType.Replace
                 || operationType == OperationType.Patch);
-        }
-
-        private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
-        {
-            if (clientOptions == null || clientOptions.WebProxy == null)
-            {
-                return null;
-            }
-
-            HttpClientHandler httpClientHandler = new HttpClientHandler
-            {
-                Proxy = clientOptions.WebProxy
-            };
-
-            return httpClientHandler;
         }
 
         private static CosmosClientOptions CreateOrCloneClientOptions(CosmosClientOptions clientOptions)

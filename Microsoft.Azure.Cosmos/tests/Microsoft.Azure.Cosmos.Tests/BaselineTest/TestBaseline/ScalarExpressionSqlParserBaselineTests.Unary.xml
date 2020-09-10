@@ -1,0 +1,47 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[BitwiseNot]]></Description>
+      <Query><![CDATA[SELECT VALUE (~ 42)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (~ 42)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Not]]></Description>
+      <Query><![CDATA[SELECT VALUE (NOT 42)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (NOT 42)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Minus]]></Description>
+      <Query><![CDATA[SELECT VALUE (- 42)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (- 42)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Plus]]></Description>
+      <Query><![CDATA[SELECT VALUE (+ 42)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (+ 42)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[unknown operator]]></Description>
+      <Query><![CDATA[SELECT VALUE $42]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>

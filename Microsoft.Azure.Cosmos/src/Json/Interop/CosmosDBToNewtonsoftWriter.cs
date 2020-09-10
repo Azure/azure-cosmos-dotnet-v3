@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteRaw(string json)
         {
             IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
-            this.jsonWriter.WriteAll(jsonReader);
+            jsonReader.WriteAll(this.jsonWriter);
         }
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteRawValue(string json)
         {
             IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
-            this.jsonWriter.WriteAll(jsonReader);
+            jsonReader.WriteAll(this.jsonWriter);
         }
 
         /// <summary>
@@ -167,9 +167,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="Object"/> value to write.</param>
         public override void WriteValue(object value)
         {
-            if (value is string)
+            if (value is string stringValue)
             {
-                this.WriteValue((string)value);
+                this.WriteValue(stringValue);
             }
             else
             {
