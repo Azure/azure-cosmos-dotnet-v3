@@ -41,8 +41,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("component");
                 writer.WriteStringValue(trace.Component.ToString());
 
-                writer.WriteFieldName("stackframe");
-                writer.WriteStringValue($"{trace.StackFrame.GetFileName().Split('\\').Last()}:{trace.StackFrame.GetFileLineNumber()}");
+                writer.WriteFieldName("caller information");
+                writer.WriteObjectStart();
+
+                writer.WriteFieldName("member name");
+                writer.WriteStringValue(trace.CallerInfo.MemberName);
+
+                writer.WriteFieldName("file path");
+                writer.WriteStringValue(trace.CallerInfo.FilePath);
+
+                writer.WriteFieldName("line number");
+                writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
+
+                writer.WriteObjectEnd();
 
                 writer.WriteFieldName("start time");
                 writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
 
     internal sealed class Trace : ITrace
     {
@@ -16,14 +17,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         private Trace(
             string name,
-            StackFrame stackFrame,
+            CallerInfo callerInfo,
             TraceLevel level,
             TraceComponent component,
             Trace parent)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
-            this.StackFrame = stackFrame ?? throw new ArgumentNullException(nameof(name));
+            this.CallerInfo = callerInfo;
             this.StartTime = DateTime.UtcNow;
             this.stopwatch = Stopwatch.StartNew();
             this.Level = level;
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public Guid Id { get; }
 
-        public StackFrame StackFrame { get; }
+        public CallerInfo CallerInfo { get; }
 
         public DateTime StartTime { get; }
 
@@ -58,19 +59,29 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.stopwatch.Stop();
         }
 
-        public ITrace StartChild(string name) => this.StartChild(
+        public ITrace StartChild(
+            string name,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0) => this.StartChild(
             name,
             level: TraceLevel.Verbose,
-            component: this.Component);
+            component: this.Component,
+            memberName: memberName,
+            sourceFilePath: sourceFilePath,
+            sourceLineNumber: sourceLineNumber);
 
         public ITrace StartChild(
             string name,
             TraceComponent component,
-            TraceLevel level)
+            TraceLevel level,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0)
         {
             Trace child = new Trace(
                 name: name,
-                stackFrame: new StackFrame(skipFrames: 1, fNeedFileInfo: true),
+                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
                 parent: this);
@@ -86,9 +97,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static Trace GetRootTrace(
             string name,
             TraceComponent component,
-            TraceLevel level) => new Trace(
+            TraceLevel level,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0) => new Trace(
                 name: name,
-                stackFrame: new StackFrame(skipFrames: 1, fNeedFileInfo: true),
+                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
                 parent: null);

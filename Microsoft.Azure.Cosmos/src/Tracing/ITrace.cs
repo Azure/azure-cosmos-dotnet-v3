@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Runtime.CompilerServices;
 
     internal interface ITrace : IDisposable
     {
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         Guid Id { get; }
 
-        StackFrame StackFrame { get; }
+        CallerInfo CallerInfo { get; }
 
         DateTime StartTime { get; }
 
@@ -30,12 +31,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         IReadOnlyDictionary<string, object> Data { get; }
 
-        ITrace StartChild(string name);
+        ITrace StartChild(
+            string name,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0);
 
         ITrace StartChild(
             string name,
             TraceComponent component,
-            TraceLevel level);
+            TraceLevel level,
+            [CallerMemberName] string memberName = "",
+            [CallerFilePath] string sourceFilePath = "",
+            [CallerLineNumber] int sourceLineNumber = 0);
 
         void AddDatum(string key, ITraceDatum traceDatum);
 

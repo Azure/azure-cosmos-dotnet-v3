@@ -147,9 +147,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.Write("Component");
                 writer.Write(space);
 
-                writer.Write(trace.StackFrame.GetFileName().Split('\\').Last());
+                writer.Write(trace.CallerInfo.MemberName);
+                writer.Write('@');
+                writer.Write(trace.CallerInfo.FilePath.Split('\\').Last());
                 writer.Write(':');
-                writer.Write(trace.StackFrame.GetFileLineNumber());
+                writer.Write(trace.CallerInfo.LineNumber);
                 writer.Write(space);
 
                 writer.Write(trace.StartTime.ToString("hh:mm:ss:fff"));

@@ -23,7 +23,6 @@
                 Assert.AreEqual(rootTrace.Level, TraceLevel.Verbose);
                 Assert.AreEqual(rootTrace.Name, "RootTrace");
                 Assert.IsNull(rootTrace.Parent);
-                Assert.IsNotNull(rootTrace.StackFrame);
             }
 
             Assert.IsTrue(rootTrace.Duration > TimeSpan.Zero);
