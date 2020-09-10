@@ -200,6 +200,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
             {
                 TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(cancellationToken);
+                List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -209,16 +210,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         if (result.ResourceStream != null)
                         {
-                            result.ResourceStream = await EncryptionProcessor.DecryptAsync(
+                            Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
                                 diagnosticsContext,
                                 cancellationToken);
+
+                            result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
+                            decryptedTransactionalBatchOperationResults.Add(result);
+                        }
+                        else
+                        {
+                            // delete etc.
+                            result = new EncryptionTransactionalBatchOperationResult(response[index], result.ResourceStream);
+                            decryptedTransactionalBatchOperationResults.Add(result);
                         }
                     }
                 }
 
-                return response;
+                return new EncryptionTransactionalBatchResponse(decryptedTransactionalBatchOperationResults, response);
             }
         }
 
@@ -231,6 +241,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
 
+                List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
+
                 if (response.IsSuccessStatusCode)
                 {
                     for (int index = 0; index < response.Count; index++)
@@ -239,16 +251,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         if (result.ResourceStream != null)
                         {
-                            result.ResourceStream = await EncryptionProcessor.DecryptAsync(
+                            Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
                                 diagnosticsContext,
                                 cancellationToken);
+
+                            result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
+                            decryptedTransactionalBatchOperationResults.Add(result);
+                        }
+                        else
+                        {
+                            result = new EncryptionTransactionalBatchOperationResult(response[index], result.ResourceStream);
+                            decryptedTransactionalBatchOperationResults.Add(result);
                         }
                     }
                 }
 
-                return response;
+                return new EncryptionTransactionalBatchResponse(decryptedTransactionalBatchOperationResults, response);
             }
         }
     }

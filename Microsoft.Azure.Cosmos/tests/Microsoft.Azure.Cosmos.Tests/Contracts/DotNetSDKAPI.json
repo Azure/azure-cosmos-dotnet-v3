@@ -317,6 +317,109 @@
       },
       "NestedTypes": {}
     },
+    "ChangeFeedRequestOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[System.Int32] get_PageSizeHint()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_PageSizeHint()"
+        },
+        "System.Nullable`1[System.Int32] PageSizeHint": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_IfMatchEtag()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_IfMatchEtag()"
+        },
+        "System.String get_IfNoneMatchEtag()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_IfNoneMatchEtag()"
+        },
+        "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
+          "Type": "Property",
+          "Attributes": [
+            "EditorBrowsableAttribute",
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
+          "Type": "Property",
+          "Attributes": [
+            "EditorBrowsableAttribute",
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": null
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_IfMatchEtag(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_IfMatchEtag(System.String)"
+        },
+        "Void set_IfNoneMatchEtag(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+        },
+        "Void set_PageSizeHint(System.Nullable`1[System.Int32])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "ChangeFeedStartFrom": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning()"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning(Microsoft.Azure.Cosmos.FeedRange)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning(Microsoft.Azure.Cosmos.FeedRange)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom ContinuationToken(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom ContinuationToken(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now()"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "CompositePath": {
       "Subclasses": {},
       "Members": {
@@ -687,6 +790,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Database get_Database()"
         },
+        "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
@@ -696,6 +809,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
@@ -831,6 +954,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)"
+        },
+        "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] ReadThroughputAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1335,6 +1468,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosClientOptions get_ClientOptions()"
+        },
+        "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()"
+        },
+        "Microsoft.Azure.Cosmos.CosmosResponseFactory ResponseFactory": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "Microsoft.Azure.Cosmos.Database GetDatabase(System.String)": {
           "Type": "Method",
@@ -2062,6 +2205,27 @@
       },
       "NestedTypes": {}
     },
+    "CosmosResponseFactory": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
+        },
+        "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
+        },
+        "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
+        }
+      },
+      "NestedTypes": {}
+    },
     "CosmosSerializationOptions": {
       "Subclasses": {},
       "Members": {
@@ -2605,6 +2769,27 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Dispose()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "FeedRange": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)"
+        },
+        "System.String ToJsonString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToJsonString()"
         }
       },
       "NestedTypes": {}
@@ -3714,6 +3899,13 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])"
+        },
+        "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -4930,6 +5122,68 @@
     },
     "RequestOptions": {
       "Subclasses": {
+        "ChangeFeedRequestOptions": {
+          "Subclasses": {},
+          "Members": {
+            "System.Nullable`1[System.Int32] get_PageSizeHint()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[System.Int32] get_PageSizeHint()"
+            },
+            "System.Nullable`1[System.Int32] PageSizeHint": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String get_IfMatchEtag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_IfMatchEtag()"
+            },
+            "System.String get_IfNoneMatchEtag()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.String get_IfNoneMatchEtag()"
+            },
+            "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
+              "Type": "Property",
+              "Attributes": [
+                "EditorBrowsableAttribute",
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": null
+            },
+            "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
+              "Type": "Property",
+              "Attributes": [
+                "EditorBrowsableAttribute",
+                "ObsoleteAttribute"
+              ],
+              "MethodInfo": null
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor()"
+            },
+            "Void set_IfMatchEtag(System.String)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void set_IfMatchEtag(System.String)"
+            },
+            "Void set_IfNoneMatchEtag(System.String)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+            },
+            "Void set_PageSizeHint(System.Nullable`1[System.Int32])": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32])"
+            }
+          },
+          "NestedTypes": {}
+        },
         "ContainerRequestOptions": {
           "Subclasses": {},
           "Members": {
@@ -5400,6 +5654,18 @@
         }
       },
       "Members": {
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()"
+        },
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] Properties": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String get_IfMatchEtag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5442,6 +5708,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+        },
+        "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object])"
         }
       },
       "NestedTypes": {}

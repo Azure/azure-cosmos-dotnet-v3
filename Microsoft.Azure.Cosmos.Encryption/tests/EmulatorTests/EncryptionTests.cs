@@ -962,6 +962,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
 
+            TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
+            Assert.AreEqual(doc1ToCreate, doc1.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
+            Assert.AreEqual(doc2ToCreate, doc2.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc3 = batchResponse.GetOperationResultAtIndex<TestDoc>(2);
+            Assert.AreEqual(doc1ToReplace, doc3.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc4 = batchResponse.GetOperationResultAtIndex<TestDoc>(3);
+            Assert.AreEqual(doc3ToCreate, doc4.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc5 = batchResponse.GetOperationResultAtIndex<TestDoc>(4);
+            Assert.AreEqual(doc4ToCreate, doc5.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc6 = batchResponse.GetOperationResultAtIndex<TestDoc>(5);
+            Assert.AreEqual(doc2ToReplace, doc6.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc7 = batchResponse.GetOperationResultAtIndex<TestDoc>(6);
+            Assert.AreEqual(doc1ToUpsert, doc7.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc>(8);
+            Assert.AreEqual(doc2ToUpsert, doc8.Resource);
+
+
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc1ToCreate);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc2ToCreate);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, doc3ToCreate);
