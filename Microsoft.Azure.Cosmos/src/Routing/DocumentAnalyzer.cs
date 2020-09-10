@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Documents;
@@ -39,10 +40,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return PartitionKeyInternal.FromObjectArray(
                     partitionKeyDefinition.Paths.Select(path =>
                     {
-                        string[] parts = PathParser.GetPathParts(path);
-                        Debug.Assert(parts.Length >= 1, "Partition key component definition path is invalid.");
+                        IReadOnlyList<string> parts = PathParser.GetPathParts(path);
+                        Debug.Assert(parts.Count >= 1, "Partition key component definition path is invalid.");
 
-                        return document.GetValueByPath<object>(parts, Undefined.Value);
+                        return document.GetValueByPath<object>(parts.ToArray(), Undefined.Value);
                     }).ToArray(),
                     false);
             }
@@ -73,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             return PartitionKeyInternal.FromObjectArray(
                 partitionKeyDefinition.Paths.Select(path =>
                 {
-                    string[] parts = PathParser.GetPathParts(path);
-                    Debug.Assert(parts.Length >= 1, "Partition key component definition path is invalid.");
+                    IReadOnlyList<string> parts = PathParser.GetPathParts(path);
+                    Debug.Assert(parts.Count >= 1, "Partition key component definition path is invalid.");
 
                     JToken token = convertToJToken(data);
 
