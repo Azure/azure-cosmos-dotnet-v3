@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Runtime.CompilerServices;
 
     internal interface ITrace : IDisposable
