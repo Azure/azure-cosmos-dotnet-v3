@@ -252,9 +252,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<bool>(),
                     It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromException(
+                .ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(
                     new InvalidOperationException(
-                        exceptionMessage))));
+                        exceptionMessage)));
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
