@@ -5,18 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
-    using System.ComponentModel;
     using System.IO;
-    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tests.Query.Metrics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using Microsoft.Azure.Cosmos.Tracing.TraceInfos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -86,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 }
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -98,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -107,10 +103,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             Trace rootTrace;
             using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
             {
-                rootTrace.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
+                rootTrace.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -124,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 }
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -135,11 +131,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                 {
-                    childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
+                    childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
                 }
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -157,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 }
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -168,16 +164,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             {
                 using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                 {
-                    childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
+                    childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
                 }
 
                 using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
                 {
-                    childTrace2.AddDatum("QueryMetrics", new QueryMetricsTraceInfo(MockQueryMetrics));
+                    childTrace2.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
                 }
             }
 
-            string traceString = GetTraceString(rootTrace);
+            string traceString = TraceWriter.TraceToText(rootTrace);
         }
 
         [TestMethod]
@@ -231,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         level: TraceLevel.Info))
                     {
                         Thread.Sleep(1);
-                        gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
+                        gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceDatum(clientSideRequestStatistics));
                     }
                 }
 
@@ -243,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         level: TraceLevel.Info))
                     {
                         await Task.Delay(1);
-                        addressResolution.AddDatum("AddressResolutionStatistics", new CosmosDiagnosticsTraceInfo(
+                        addressResolution.AddDatum("AddressResolutionStatistics", new CosmosDiagnosticsTraceDatum(
                             new AddressResolutionStatistics(
                                 DateTime.MinValue,
                                 DateTime.MinValue,
@@ -261,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             level: TraceLevel.Info))
                         {
                             await Task.Delay(1);
-                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
+                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceDatum(clientSideRequestStatistics));
                         }
 
                         continuation1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
@@ -279,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             level: TraceLevel.Info))
                         {
                             await Task.Delay(1);
-                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
+                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceDatum(clientSideRequestStatistics));
                         }
 
                         continuation1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
@@ -294,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             level: TraceLevel.Info))
                         {
                             await Task.Delay(1);
-                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceInfo(clientSideRequestStatistics));
+                            gatewayTrace.AddDatum("ClientSideRequestStats", new CosmosDiagnosticsTraceDatum(clientSideRequestStatistics));
                         }
 
                         continuation2.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
@@ -303,14 +299,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 }
             }
 
-            string traceString = GetTraceString(queryTrace);
-        }
-
-        private static string GetTraceString(ITrace trace)
-        {
-            StringWriter stringWriter = new StringWriter();
-            TraceWriter.WriteTrace(stringWriter, trace, asciiType: TraceWriter.AsciiType.DoubleLine);
-            return stringWriter.ToString();
+            string textTraceString = TraceWriter.TraceToText(queryTrace, asciiType: TraceWriter.AsciiType.DoubleLine);
+            string jsonTraceString = TraceWriter.TraceToJson(queryTrace);
         }
     }
 }

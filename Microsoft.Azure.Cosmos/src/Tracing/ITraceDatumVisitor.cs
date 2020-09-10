@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal interface ITraceDatumVisitor
     {
+        void Visit(CosmosDiagnosticsTraceDatum cosmosDiagnosticsTraceDatum);
+
         void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum);
     }
 }
