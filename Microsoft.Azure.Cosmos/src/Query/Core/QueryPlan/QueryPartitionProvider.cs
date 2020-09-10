@@ -168,24 +168,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             List<string> paths = new List<string>(partitionKeyDefinition.Paths);
             List<IReadOnlyList<string>> pathPartsList = new List<IReadOnlyList<string>>(paths.Count);
             uint[] partsLengths = new uint[paths.Count];
-            int i = 0;
             int allPartsLength = 0;
 
-            foreach (string path in paths)
+            for (int i = 0; i < paths.Count; i++)
             {
-                IReadOnlyList<string> pathParts = PathParser.GetPathParts(path);
-                partsLengths[i++] = (uint)pathParts.Count;
+                IReadOnlyList<string> pathParts = PathParser.GetPathParts(paths[i]);
+                partsLengths[i] = (uint)pathParts.Count;
                 pathPartsList.Add(pathParts);
                 allPartsLength += pathParts.Count;
             }
 
             string[] allParts = new string[allPartsLength];
-            i = 0;
+            int allPartsPointer = 0;
             foreach (IReadOnlyList<string> pathParts in pathPartsList)
             {
                 foreach (string part in pathParts)
                 {
-                    allParts[i++] = part;
+                    allParts[allPartsPointer++] = part;
                 }
             }
 
@@ -193,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             this.Initialize();
 
-            Span<byte> buffer = stackalloc byte[InitialBufferSize];
+            Span<byte> buffer = stackalloc byte[QueryPartitionProvider.InitialBufferSize];
             uint errorCode;
             uint serializedQueryExecutionInfoResultLength;
 
@@ -218,7 +217,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                     if (errorCode == DISP_E_BUFFERTOOSMALL)
                     {
-                        buffer = stackalloc byte[(int)serializedQueryExecutionInfoResultLength];
+                        // Allocate on stack for smaller arrays, otherwise use heap.
+                        buffer = serializedQueryExecutionInfoResultLength < 4096
+                            ? stackalloc byte[(int)serializedQueryExecutionInfoResultLength]
+                            : new byte[serializedQueryExecutionInfoResultLength];
+
                         fixed (byte* bytePtr2 = buffer)
                         {
                             errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery(
