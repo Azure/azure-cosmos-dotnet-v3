@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 //todo:elasticcollections this may rely on information from collection cache which is outdated
                 //if collection is deleted/created with same name.
                 //need to make it not rely on information from collection cache.
-                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryExecutionContext.GetPartitionedQueryExecutionInfo(
+                PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await queryExecutionContext.GetPartitionedQueryExecutionInfoAsync(
                     partitionKeyDefinition: collection.PartitionKey,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,

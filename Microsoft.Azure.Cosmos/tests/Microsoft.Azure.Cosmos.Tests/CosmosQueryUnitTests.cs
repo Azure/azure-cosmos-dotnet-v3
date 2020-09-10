@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(x => x.ByPassQueryParsing())
                 .Returns(false);
             client
-                .Setup(x => x.TryGetPartitionedQueryExecutionInfo(
+                .Setup(x => x.TryGetPartitionedQueryExecutionInfoAsync(
                     It.IsAny<SqlQuerySpec>(),
                     It.IsAny<PartitionKeyDefinition>(),
                     It.IsAny<bool>(),
@@ -252,9 +252,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<bool>(),
                     It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(TryCatch<PartitionedQueryExecutionInfo>.FromException(
+                .Returns(Task.FromResult(TryCatch<PartitionedQueryExecutionInfo>.FromException(
                     new InvalidOperationException(
-                        exceptionMessage)));
+                        exceptionMessage))));
 
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,

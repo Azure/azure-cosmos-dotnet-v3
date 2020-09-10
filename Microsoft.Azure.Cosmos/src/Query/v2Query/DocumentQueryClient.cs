@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.innerClient.GetPartitionKeyRangeCacheAsync();
         }
 
-        public QueryPartitionProvider GetQueryPartitionProvider()
+        public Task<QueryPartitionProvider> GetQueryPartitionProviderAsync()
         {
             return this.innerClient.QueryPartitionProvider;
         }

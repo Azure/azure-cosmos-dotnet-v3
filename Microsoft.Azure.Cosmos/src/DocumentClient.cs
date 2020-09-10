@@ -1459,9 +1459,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal Action<IQueryable> OnExecuteScalarQueryCallback { get; set; }
 
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-        internal virtual QueryPartitionProvider QueryPartitionProvider => this.queryPartitionProvider.Value.Result;
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+        internal virtual Task<QueryPartitionProvider> QueryPartitionProvider => this.queryPartitionProvider.Value;
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {

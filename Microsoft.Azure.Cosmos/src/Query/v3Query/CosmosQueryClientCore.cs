@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 containerProperties.PartitionKey);
         }
 
-        public override TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(
+        public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
-            return this.documentClient.QueryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
+            return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
