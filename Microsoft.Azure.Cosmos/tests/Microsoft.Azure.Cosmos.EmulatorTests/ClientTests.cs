@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task HttpClientConnectionLimitTest()
         {
-            int gatewayConnectionLimit = 1;
+            int gatewayConnectionLimit = 15;
 
             IReadOnlyList<string> excludeConnections = GetActiveConnections();
             CosmosClient cosmosClient = new CosmosClient(
