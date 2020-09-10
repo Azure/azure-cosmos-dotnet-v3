@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool hasAuthKeyResourceToken;
         private readonly string authKeyResourceToken = string.Empty;
-        private Lazy<QueryPartitionProvider> queryPartitionProvider;
+        private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
         internal Task initializeTask;
@@ -799,7 +799,11 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.InitEventListener();
 
-            this.queryPartitionProvider = new Lazy<QueryPartitionProvider>(() => new QueryPartitionProvider(this.accountServiceConfiguration.QueryEngineConfiguration));
+            this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
+            {
+                await this.EnsureValidClientAsync();
+                return new QueryPartitionProvider(this.accountServiceConfiguration.QueryEngineConfiguration);
+            }, CancellationToken.None);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -1455,7 +1459,9 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal Action<IQueryable> OnExecuteScalarQueryCallback { get; set; }
 
-        internal virtual QueryPartitionProvider QueryPartitionProvider => this.queryPartitionProvider.Value;
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+        internal virtual QueryPartitionProvider QueryPartitionProvider => this.queryPartitionProvider.Value.Result;
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
