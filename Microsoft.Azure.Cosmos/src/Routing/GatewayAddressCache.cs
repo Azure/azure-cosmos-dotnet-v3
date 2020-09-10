@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
-        private HttpClient httpClient;
+        private CosmosHttpClient httpClient;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Protocol protocol,
             IAuthorizationTokenProvider tokenProvider,
             IServiceConfigurationReader serviceConfigReader,
-            HttpClient httpClient,
+            CosmosHttpClient httpClient,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false)
         {
@@ -411,20 +411,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-            string token = this.tokenProvider.GetUserAuthorizationToken(
+            (string token, string _) = await this.tokenProvider.GetUserAuthorizationAsync(
                 resourceAddress,
                 resourceTypeToSign,
                 HttpConstants.HttpMethods.Get,
                 headers,
-                AuthorizationTokenType.PrimaryMasterKey,
-                payload: out _);
+                AuthorizationTokenType.PrimaryMasterKey);
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
 
             Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
             string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(targetEndpoint, headers))
+            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                uri: targetEndpoint,
+                additionalHeaders: headers,
+                resourceType: resourceType,
+                diagnosticsContext: null,
+                cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
                         await ClientExtensions.ParseResponseAsync(httpResponseMessage))
@@ -466,13 +470,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             string token = null;
             try
             {
-                token = this.tokenProvider.GetUserAuthorizationToken(
+                token = (await this.tokenProvider.GetUserAuthorizationAsync(
                     collectionRid,
                     resourceTypeToSign,
                     HttpConstants.HttpMethods.Get,
                     headers,
-                    AuthorizationTokenType.PrimaryMasterKey,
-                    payload: out _);
+                    AuthorizationTokenType.PrimaryMasterKey)).token;
             }
             catch (UnauthorizedException)
             {
@@ -482,13 +485,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 // User doesn't have rid based resource token. Maybe he has name based.
                 string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
-                token = this.tokenProvider.GetUserAuthorizationToken(
+                token = (await this.tokenProvider.GetUserAuthorizationAsync(
                         collectionAltLink,
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey,
-                        payload: out _);
+                        AuthorizationTokenType.PrimaryMasterKey)).token;
             }
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
@@ -496,7 +498,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
             string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(targetEndpoint, headers))
+            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                uri: targetEndpoint,
+                additionalHeaders: headers,
+                resourceType: ResourceType.Document,
+                diagnosticsContext: null,
+                cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
                         await ClientExtensions.ParseResponseAsync(httpResponseMessage))

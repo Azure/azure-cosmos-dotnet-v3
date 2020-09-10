@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]

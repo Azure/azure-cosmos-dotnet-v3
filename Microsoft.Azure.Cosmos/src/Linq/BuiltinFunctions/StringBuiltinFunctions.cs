@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq.Expressions;
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
                     }
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONCAT", arguments);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONCAT", arguments.ToImmutableArray());
                 }
 
                 return null;
@@ -298,7 +299,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression right = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
                     SqlScalarExpression caseInsensitive = SqlStringWithComparisonVisitor.GetCaseInsensitiveExpression(methodCallExpression.Arguments[1]);
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("STRINGEQUALS", left, right, caseInsensitive);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(
+                        SqlFunctionCallScalarExpression.Names.StringEquals,
+                        left,
+                        right,
+                        caseInsensitive);
                 }
 
                 return null;

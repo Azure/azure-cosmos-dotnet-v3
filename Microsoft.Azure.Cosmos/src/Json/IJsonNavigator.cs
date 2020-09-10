@@ -177,14 +177,6 @@ namespace Microsoft.Azure.Cosmos.Json
         IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <summary>
-        /// Tries to get the buffered raw json
-        /// </summary>
-        /// <param name="jsonNode">The json node of interest</param>
-        /// <param name="bufferedRawJson">The raw json.</param>
-        /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
-        bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
-
-        /// <summary>
         /// Creates an <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.
         /// </summary>
         /// <param name="jsonNavigatorNode">The node to create a reader from..</param>
@@ -196,6 +188,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="jsonNavigatorNode">The <see cref="IJsonNavigatorNode"/> to write.</param>
         /// <param name="jsonWriter">The <see cref="IJsonWriter"/> to write to.</param>
-        void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
+        void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
     }
 }
