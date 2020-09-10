@@ -840,22 +840,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             SerializationFormat destinationFormat,
             string json)
         {
+            JsonStringDictionary sourceDictionary = null;
+
             IJsonReader reader;
             switch (sourceFormat)
             {
                 case SerializationFormat.Text:
                     reader = JsonReader.Create(Encoding.UTF8.GetBytes(json));
                     break;
+
                 case SerializationFormat.Binary:
                     reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json));
                     break;
+
                 case SerializationFormat.NewtonsoftText:
                     reader = NewtonsoftToCosmosDBReader.CreateFromString(json);
                     break;
+
                 case SerializationFormat.BinaryWithDictionaryEncoding:
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
-                    reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
+                    sourceDictionary = new JsonStringDictionary(capacity: 128);
+                    reader = JsonReader.Create(JsonTestUtils.ConvertTextToBinary(json, sourceDictionary), sourceDictionary);
                     break;
+
                 default:
                     throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
             }
@@ -866,16 +872,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 case SerializationFormat.Text:
                     navigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(json));
                     break;
+
                 case SerializationFormat.Binary:
                     navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json));
                     break;
+
                 case SerializationFormat.NewtonsoftText:
                     navigator = new JsonNewtonsoftNavigator(json);
                     break;
+
                 case SerializationFormat.BinaryWithDictionaryEncoding:
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
-                    navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary), jsonStringDictionary);
+                    sourceDictionary = new JsonStringDictionary(capacity: 128);
+                    navigator = JsonNavigator.Create(JsonTestUtils.ConvertTextToBinary(json, sourceDictionary), sourceDictionary);
                     break;
+
                 default:
                     throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: {sourceFormat}");
             }
@@ -904,6 +914,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                     case SerializationFormat.BinaryWithDictionaryEncoding:
                         jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                        if (sourceFormat == SerializationFormat.BinaryWithDictionaryEncoding)
+                        {
+                            int index = 0;
+                            while (sourceDictionary.TryGetStringAtIndex(index++, out UtfAllString value))
+                            {
+                                Assert.IsTrue(jsonStringDictionary.TryAddString(value.Utf16String, out _));
+                            }
+                        }
+
                         writer = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
                         break;
 
@@ -914,11 +933,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 switch (source)
                 {
                     case IJsonReader sourceReader:
-                        writer.WriteAll(sourceReader);
+                        sourceReader.WriteAll(writer);
                         break;
 
                     case IJsonNavigator sourceNavigator:
-                        sourceNavigator.WriteTo(sourceNavigator.GetRootNode(), writer);
+                        sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
                         break;
 
                     default:
@@ -953,7 +972,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             NewtonsoftToCosmosDBReader newtonsoftReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            newtonsoftWriter.WriteAll(newtonsoftReader);
+            newtonsoftReader.WriteAll(newtonsoftWriter);
             return Encoding.UTF8.GetString(newtonsoftWriter.GetResult().ToArray());
         }
 
