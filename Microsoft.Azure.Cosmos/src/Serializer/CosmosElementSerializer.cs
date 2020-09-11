@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
 
-            jsonNavigator.WriteTo(jsonNavigator.GetRootNode(), jsonWriter);
+            jsonNavigator.WriteNode(jsonNavigator.GetRootNode(), jsonWriter);
 
             ReadOnlyMemory<byte> result = jsonWriter.GetResult();
             MemoryStream rewrittenMemoryStream;
