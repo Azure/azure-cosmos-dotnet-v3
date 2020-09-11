@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class TokenCredentialCache : IDisposable
     {
-        private const string ScopeFormat = "https://{0}/user_impersonation";
+        private const string ScopeFormat = "https://{0}/.default";
         private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
         private readonly TimeSpan backgroundTokenCredentialRefreshInterval;
