@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
         private readonly TokenCredentialCache tokenCredentialCache;
-        private readonly HttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
 
         // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
                 string resourceToken,
                 TokenCredentialCache tokenCredentialCache,
                 ConnectionPolicy connectionPolicy,
-                HttpClient httpClient)
+                CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
@@ -67,7 +67,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, authorizationToken);
-            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(serviceEndpoint, headers))
+            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                uri: serviceEndpoint,
+                additionalHeaders: headers,
+                resourceType: ResourceType.DatabaseAccount,
+                diagnosticsContext: null,
+                cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

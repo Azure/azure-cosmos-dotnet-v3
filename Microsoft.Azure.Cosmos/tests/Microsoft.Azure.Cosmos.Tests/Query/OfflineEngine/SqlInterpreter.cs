@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             SqlOrderByItem firstItem = sqlOrderByClause.OrderbyItems[0];
 
             // Since we don't supply an explicit index on the policy undefined items don't show up in the sort order
-            if (sqlOrderByClause.OrderbyItems.Count == 1)
+            if (sqlOrderByClause.OrderbyItems.Length == 1)
             {
                 dataSource = dataSource.Where(element => firstItem.Expression.Accept(
                     ScalarExpressionEvaluator.Singleton,

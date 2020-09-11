@@ -421,12 +421,12 @@ namespace Microsoft.Azure.Cosmos
                 return 1;
             }
 
-            if (value is UInt128)
+            if (!(value is UInt128 uint128))
             {
-                return this.CompareTo((UInt128)value);
+                throw new ArgumentException("Value must be a UInt128.");
             }
 
-            throw new ArgumentException("Value must be a UInt128.");
+            return this.CompareTo(uint128);
         }
 
         /// <summary>
@@ -465,12 +465,12 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            if (obj is UInt128)
+            if (!(obj is UInt128 uint128))
             {
-                return this.Equals((UInt128)obj);
+                return false;
             }
 
-            return false;
+            return this.Equals(uint128);
         }
 
         /// <summary>

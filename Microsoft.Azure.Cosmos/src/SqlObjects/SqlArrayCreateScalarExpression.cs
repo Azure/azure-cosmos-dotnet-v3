@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
 #if INTERNAL
@@ -16,15 +17,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlArrayCreateScalarExpression : SqlScalarExpression
     {
-        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new List<SqlScalarExpression>());
+        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(ImmutableArray<SqlScalarExpression>.Empty);
 
-        private SqlArrayCreateScalarExpression(IReadOnlyList<SqlScalarExpression> items)
+        private SqlArrayCreateScalarExpression(ImmutableArray<SqlScalarExpression> items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException($"{nameof(items)} must not be null.");
-            }
-
             foreach (SqlScalarExpression item in items)
             {
                 if (item == null)
@@ -33,16 +29,16 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 }
             }
 
-            this.Items = new List<SqlScalarExpression>(items);
+            this.Items = items;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Items { get; }
+        public ImmutableArray<SqlScalarExpression> Items { get; }
 
         public static SqlArrayCreateScalarExpression Create() => SqlArrayCreateScalarExpression.Empty;
 
-        public static SqlArrayCreateScalarExpression Create(params SqlScalarExpression[] items) => new SqlArrayCreateScalarExpression(items);
+        public static SqlArrayCreateScalarExpression Create(params SqlScalarExpression[] items) => new SqlArrayCreateScalarExpression(items.ToImmutableArray());
 
-        public static SqlArrayCreateScalarExpression Create(IReadOnlyList<SqlScalarExpression> items) => new SqlArrayCreateScalarExpression(items);
+        public static SqlArrayCreateScalarExpression Create(ImmutableArray<SqlScalarExpression> items) => new SqlArrayCreateScalarExpression(items);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

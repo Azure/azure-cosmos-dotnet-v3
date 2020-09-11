@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 this.WriteStartContext("[");
 
-                for (int i = 0; i < sqlArrayCreateScalarExpression.Items.Count; i++)
+                for (int i = 0; i < sqlArrayCreateScalarExpression.Items.Length; i++)
                 {
                     if (i > 0)
                     {
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 this.WriteStartContext("(");
 
-                for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Count; i++)
+                for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Length; i++)
                 {
                     if (i > 0)
                     {
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             this.writer.Write("GROUP BY ");
             sqlGroupByClause.Expressions[0].Accept(this);
-            for (int i = 1; i < sqlGroupByClause.Expressions.Count; i++)
+            for (int i = 1; i < sqlGroupByClause.Expressions.Length; i++)
             {
                 this.writer.Write(", ");
                 sqlGroupByClause.Expressions[i].Accept(this);
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 this.WriteStartContext("(");
 
-                for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+                for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
                 {
                     if (i > 0)
                     {
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.writer.Write("ORDER BY ");
             sqlOrderByClause.OrderbyItems[0].Accept(this);
 
-            for (int i = 1; i < sqlOrderByClause.OrderbyItems.Count; i++)
+            for (int i = 1; i < sqlOrderByClause.OrderbyItems.Length; i++)
             {
                 this.writer.Write(", ");
                 sqlOrderByClause.OrderbyItems[i].Accept(this);

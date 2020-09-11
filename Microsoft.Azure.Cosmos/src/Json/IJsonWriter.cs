@@ -142,32 +142,6 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteBinaryValue(ReadOnlySpan<byte> value);
 
         /// <summary>
-        /// Writes current token from a json reader to the internal buffer.
-        /// </summary>
-        /// <param name="jsonReader">The JsonReader to the get the current token from.</param>
-        void WriteCurrentToken(IJsonReader jsonReader);
-
-        /// <summary>
-        /// Writes every token from the JsonReader to the internal buffer.
-        /// </summary>
-        /// <param name="jsonReader">The JsonReader to get the tokens from.</param>
-        void WriteAll(IJsonReader jsonReader);
-
-        /// <summary>
-        /// Writes a fragment of a json to the internal buffer
-        /// </summary>
-        /// <param name="jsonFragment">A section of a valid json</param>
-        void WriteJsonFragment(ReadOnlyMemory<byte> jsonFragment);
-
-        /// <summary>
-        /// Writes a raw JSON token to the writer.
-        /// </summary>
-        /// <remarks>The raw json token has to be the same format.</remarks>
-        /// <param name="jsonTokenType">The type of jsonToken to write.</param>
-        /// <param name="rawJsonToken">The JSON token to write.</param>
-        void WriteRawJsonToken(JsonTokenType jsonTokenType, ReadOnlySpan<byte> rawJsonToken);
-
-        /// <summary>
         /// Gets the result of the JsonWriter.
         /// </summary>
         /// <returns>The result of the JsonWriter as an array of bytes.</returns>

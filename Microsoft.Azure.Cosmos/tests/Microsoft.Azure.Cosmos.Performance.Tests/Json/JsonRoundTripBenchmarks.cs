@@ -1,5 +1,4 @@
-﻿
-namespace Microsoft.Azure.Cosmos.Json
+﻿namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
             //public static readonly CurratedDocsPayload LogData = CurratedDocsPayload.CreateFromCurratedDocs("LogData");
             //public static readonly CurratedDocsPayload MillionSong1KDocuments = CurratedDocsPayload.CreateFromCurratedDocs("MillionSong1KDocuments");
             //public static readonly CurratedDocsPayload MsnCollection = CurratedDocsPayload.CreateFromCurratedDocs("MsnCollection");
-            //public static readonly CurratedDocsPayload NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
+            public static readonly CurratedDocsPayload NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
             //public static readonly CurratedDocsPayload RunsCollection = CurratedDocsPayload.CreateFromCurratedDocs("runsCollection");
             //public static readonly CurratedDocsPayload StatesCommittees = CurratedDocsPayload.CreateFromCurratedDocs("states_committees");
             //public static readonly CurratedDocsPayload StatesLegislators = CurratedDocsPayload.CreateFromCurratedDocs("states_legislators");
@@ -70,9 +69,9 @@ namespace Microsoft.Azure.Cosmos.Json
         [Benchmark]
         [ArgumentsSource(nameof(NavigatorToWriterArguments))]
         public void NavigatorToWriter(
-            CurratedDocsPayload payload,
-            SerializationFormat sourceFormat,
-            SerializationFormat destinationFormat)
+        CurratedDocsPayload payload,
+        SerializationFormat sourceFormat,
+        SerializationFormat destinationFormat)
         {
             IJsonNavigator navigator = sourceFormat switch
             {
@@ -90,12 +89,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
                 SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
                     JsonSerializationFormat.Binary,
-                    new JsonStringDictionary(capacity: 128)),
+                    sourceFormat == SerializationFormat.BinaryWithDictionaryEncoding ? payload.BinaryWithDictionaryEncoding.dictionary : new JsonStringDictionary(capacity: 128)),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            navigator.WriteTo(navigator.GetRootNode(), writer);
+            navigator.WriteNode(navigator.GetRootNode(), writer);
         }
 
         public enum SerializationFormat
@@ -132,20 +131,28 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                string path = $"TestJsons/{name}.json";
-                string json = TextFileConcatenation.ReadMultipartFile(path);
-                json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
+                try
+                {
+                    string path = $"TestJsons/{name}.json";
+                    string json = TextFileConcatenation.ReadMultipartFile(path);
+                    json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
 
-                ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
-                ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
-                ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
+                    ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
+                    ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
+                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
 
-                return new CurratedDocsPayload(
-                    name: name,
-                    text: text,
-                    binary: binary,
-                    binaryWithDictionaryEncoding: (dictionaryEncodedBinary, jsonStringDictionary));
+                    return new CurratedDocsPayload(
+                        name: name,
+                        text: text,
+                        binary: binary,
+                        binaryWithDictionaryEncoding: (dictionaryEncodedBinary, jsonStringDictionary));
+                }
+                catch (Exception)
+                {
+                    // initializer can not throw exception:
+                    return default;
+                }
             }
 
             public override string ToString()
