@@ -179,12 +179,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
 
             string[] allParts = new string[allPartsLength];
-            int allPartsPointer = 0;
+            int allPartsIndex = 0;
             foreach (IReadOnlyList<string> pathParts in pathPartsList)
             {
                 foreach (string part in pathParts)
                 {
-                    allParts[allPartsPointer++] = part;
+                    allParts[allPartsIndex++] = part;
                 }
             }
 
