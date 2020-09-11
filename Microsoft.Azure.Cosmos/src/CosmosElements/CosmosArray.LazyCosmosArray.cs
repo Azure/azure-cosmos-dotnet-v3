@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this.lazyCosmosElementArray.Value.Select(lazyItem => lazyItem.Value).GetEnumerator();
 
-            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
 
             public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
         }

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    readonly struct Utf8Memory
+    readonly struct Utf8Memory : IEquatable<Utf8Memory>
     {
         public static readonly Utf8Memory Empty = new Utf8Memory(ReadOnlyMemory<byte>.Empty);
 
