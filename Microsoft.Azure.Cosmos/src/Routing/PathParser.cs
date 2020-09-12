@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </remarks>
         /// <param name="path">A path string</param>
         /// <returns>An array of parts of path</returns>
-        public static string[] GetPathParts(string path)
+        public static IReadOnlyList<string> GetPathParts(string path)
         {
             List<string> tokens = new List<string>();
             int currentIndex = 0;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            return tokens.ToArray();
+            return tokens;
         }
 
         private static string GetEscapedToken(string path, ref int currentIndex)
