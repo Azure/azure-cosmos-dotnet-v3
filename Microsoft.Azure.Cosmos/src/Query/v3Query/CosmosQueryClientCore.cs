@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerInternal cosmosContainerCore;
         private readonly DocumentClient documentClient;
         private readonly SemaphoreSlim semaphore;
-        private QueryPartitionProvider queryPartitionProvider;
 
         public CosmosQueryClientCore(
             CosmosClientContext clientContext,
@@ -88,26 +87,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
-            if (this.queryPartitionProvider == null)
-            {
-                try
-                {
-                    await this.semaphore.WaitAsync(cancellationToken);
-
-                    if (this.queryPartitionProvider == null)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        IDictionary<string, object> queryConfiguration = await this.documentClient.GetQueryEngineConfigurationAsync();
-                        this.queryPartitionProvider = new QueryPartitionProvider(queryConfiguration);
-                    }
-                }
-                finally
-                {
-                    this.semaphore.Release();
-                }
-            }
-
-            return this.queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
+            return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,

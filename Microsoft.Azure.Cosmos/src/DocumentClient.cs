@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -166,6 +167,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool hasAuthKeyResourceToken;
         private readonly string authKeyResourceToken = string.Empty;
+        private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
         internal Task initializeTask;
@@ -797,6 +799,12 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.InitEventListener();
 
+            this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
+            {
+                await this.EnsureValidClientAsync();
+                return new QueryPartitionProvider(this.accountServiceConfiguration.QueryEngineConfiguration);
+            }, CancellationToken.None);
+
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
             // GetEntryAssembly returns null when loaded from native netstandard2.0
@@ -1401,6 +1409,11 @@ namespace Microsoft.Azure.Cosmos
                 this.GlobalEndpointManager = null;
             }
 
+            if (this.queryPartitionProvider.IsValueCreated)
+            {
+                this.queryPartitionProvider.Value.Dispose();
+            }
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
@@ -1446,11 +1459,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal Action<IQueryable> OnExecuteScalarQueryCallback { get; set; }
 
-        internal virtual async Task<IDictionary<string, object>> GetQueryEngineConfigurationAsync()
-        {
-            await this.EnsureValidClientAsync();
-            return this.accountServiceConfiguration.QueryEngineConfiguration;
-        }
+        internal virtual Task<QueryPartitionProvider> QueryPartitionProvider => this.queryPartitionProvider.Value;
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
