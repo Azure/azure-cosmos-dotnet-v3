@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Text;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static FromParameterBindings;
-    using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
 
     /// <summary>
     /// Query that is being constructed.
