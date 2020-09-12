@@ -12,7 +12,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal static class SqlExpressionManipulation
     {
-        public static SqlScalarExpression Substitute(SqlScalarExpression replacement, SqlIdentifier toReplace, SqlScalarExpression into)
+        public static SqlScalarExpression Substitute(
+            SqlScalarExpression replacement,
+            SqlIdentifier toReplace,
+            SqlScalarExpression into)
         {
             if (into == null)
             {
@@ -21,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (replacement == null)
             {
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
             }
 
             return into.Accept(SubstitionVisitor.Singleton, (replacement, toReplace));
@@ -42,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlScalarExpression[] items = new SqlScalarExpression[scalarExpression.Items.Length];
                 for (int i = 0; i < items.Length; i++)
                 {
-                    SqlScalarExpression replitem = scalarExpression.Accept(this, input);
+                    SqlScalarExpression replitem = scalarExpression.Items[i].Accept(this, input);
                     items[i] = replitem;
                 }
 

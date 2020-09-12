@@ -361,8 +361,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlSelectClause.Create(selectSpec, topSpec, inputSelectClause.HasDistinct);
             }
 
-            SqlSelectValueSpec selValue = selectSpec as SqlSelectValueSpec;
-            if (selValue != null)
+            if (selectSpec is SqlSelectValueSpec selValue)
             {
                 SqlSelectSpec intoSpec = selectClause.SelectSpec;
                 if (intoSpec is SqlSelectStarSpec)
@@ -370,12 +369,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return SqlSelectClause.Create(selectSpec, topSpec, selectClause.HasDistinct || inputSelectClause.HasDistinct);
                 }
 
-                SqlSelectValueSpec intoSelValue = intoSpec as SqlSelectValueSpec;
-                if (intoSelValue != null)
+                if (intoSpec is SqlSelectValueSpec intoSelValue)
                 {
-                    SqlScalarExpression replacement = SqlExpressionManipulation.Substitute(selValue.Expression, inputParam, intoSelValue.Expression);
+                    SqlScalarExpression replacement = SqlExpressionManipulation.Substitute(
+                        selValue.Expression,
+                        inputParam,
+                        intoSelValue.Expression);
                     SqlSelectValueSpec selValueReplacement = SqlSelectValueSpec.Create(replacement);
-                    return SqlSelectClause.Create(selValueReplacement, topSpec, selectClause.HasDistinct || inputSelectClause.HasDistinct);
+                    return SqlSelectClause.Create(
+                        selValueReplacement,
+                        topSpec,
+                        selectClause.HasDistinct || inputSelectClause.HasDistinct);
                 }
 
                 throw new DocumentQueryException("Unexpected SQL select clause type: " + intoSpec.GetType());
