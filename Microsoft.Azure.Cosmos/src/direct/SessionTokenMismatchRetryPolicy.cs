@@ -20,49 +20,61 @@ namespace Microsoft.Azure.Documents
         private const int defaultMaximumBackoffTimeInMilliseconds = 50;
         private const int backoffMultiplier = 2;
 
+        private static readonly Lazy<int> sessionRetryInitialBackoffConfig;
+        private static readonly Lazy<int> sessionRetryMaximumBackoffConfig;
+
         private int retryCount;
         private Stopwatch durationTimer = new Stopwatch();
         private int waitTimeInMilliSeconds;
-        private int initialBackoffTimeInMilliseconds = SessionTokenMismatchRetryPolicy.defaultInitialBackoffTimeInMilliseconds;
-        private int maximumBackoffTimeInMilliseconds = SessionTokenMismatchRetryPolicy.defaultMaximumBackoffTimeInMilliseconds;
 
-        private int currentBackoffInMilliSeconds;
+        private int? currentBackoffInMilliSeconds;
+
+        static SessionTokenMismatchRetryPolicy()
+        {
+            // Lazy load the environment variable to avoid the overhead of checking it and parsing the value
+            sessionRetryInitialBackoffConfig = new Lazy<int>(() =>
+            {
+                string sessionRetryInitialBackoffConfig = Environment.GetEnvironmentVariable(sessionRetryInitialBackoff);
+                if (!string.IsNullOrWhiteSpace(sessionRetryInitialBackoffConfig))
+                {
+                    if (int.TryParse(sessionRetryInitialBackoffConfig, out int value) && value >= 0)
+                    {
+                        return value;
+                    }
+                    else
+                    {
+                        DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_INITIAL_BACKOFF is invalid.  Value: {0}", value);
+                    }
+                }
+
+                return SessionTokenMismatchRetryPolicy.defaultInitialBackoffTimeInMilliseconds;
+            });
+
+            sessionRetryMaximumBackoffConfig = new Lazy<int>(() =>
+            {
+                string sessionRetryMaximumBackoffConfig = Environment.GetEnvironmentVariable(sessionRetryMaximumBackoff);
+                if (!string.IsNullOrWhiteSpace(sessionRetryMaximumBackoffConfig))
+                {
+                    if (int.TryParse(sessionRetryMaximumBackoffConfig, out int value) && value >= 0)
+                    {
+                        return value;
+                    }
+                    else
+                    {
+                        DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_MAXIMUM_BACKOFF is invalid.  Value: {0}", value);
+                    }
+                }
+
+                return SessionTokenMismatchRetryPolicy.defaultMaximumBackoffTimeInMilliseconds;
+            });
+        }
 
         public SessionTokenMismatchRetryPolicy(int waitTimeInMilliSeconds = defaultWaitTimeInMilliSeconds)
         {
             this.durationTimer.Start();
             this.retryCount = 0;
             this.waitTimeInMilliSeconds = waitTimeInMilliSeconds;
-
-            string sessionRetryInitialBackoffConfig = Environment.GetEnvironmentVariable(sessionRetryInitialBackoff);
-            if (!string.IsNullOrWhiteSpace(sessionRetryInitialBackoffConfig))
-            {
-                int value;
-                if (int.TryParse(sessionRetryInitialBackoffConfig, out value) && value >= 0)
-                {
-                    this.initialBackoffTimeInMilliseconds = value;
-                }
-                else
-                {
-                    DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_INITIAL_BACKOFF is invalid.  Value: {0}", value);
-                }
-            }
-
-            string sessionRetryMaximumBackoffConfig = Environment.GetEnvironmentVariable(sessionRetryMaximumBackoff);
-            if (!string.IsNullOrWhiteSpace(sessionRetryMaximumBackoffConfig))
-            {
-                int value;
-                if (int.TryParse(sessionRetryMaximumBackoffConfig, out value) && value >= 0)
-                {
-                    this.maximumBackoffTimeInMilliseconds = value;
-                }
-                else
-                {
-                    DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_MAXIMUM_BACKOFF is invalid.  Value: {0}", value);
-                }
-            }
-
-            currentBackoffInMilliSeconds = this.initialBackoffTimeInMilliseconds;
+            this.currentBackoffInMilliSeconds = null;
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
@@ -70,8 +82,7 @@ namespace Microsoft.Azure.Documents
             cancellationToken.ThrowIfCancellationRequested();
             ShouldRetryResult result = ShouldRetryResult.NoRetry();
 
-            DocumentClientException dce = exception as DocumentClientException;
-            if (dce != null)
+            if (exception is DocumentClientException dce)
             {
                 result = this.ShouldRetryInternalAsync(
                     dce?.StatusCode,
@@ -85,8 +96,8 @@ namespace Microsoft.Azure.Documents
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)
         {
-            if ((statusCode.HasValue && statusCode.Value == HttpStatusCode.NotFound)
-                && (subStatusCode.HasValue && subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable))
+            if (statusCode.HasValue && statusCode.Value == HttpStatusCode.NotFound
+                && subStatusCode.HasValue && subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
             {
                 int remainingTimeInMilliSeconds = this.waitTimeInMilliSeconds - Convert.ToInt32(this.durationTimer.Elapsed.TotalMilliseconds);
 
@@ -103,15 +114,20 @@ namespace Microsoft.Azure.Documents
                 // Don't penalize first retry with delay
                 if (this.retryCount > 0)
                 {
+                    if (!this.currentBackoffInMilliSeconds.HasValue)
+                    {
+                        this.currentBackoffInMilliSeconds = SessionTokenMismatchRetryPolicy.sessionRetryInitialBackoffConfig.Value;
+                    }
+
                     // Get the backoff time by selecting the smallest value between the remaining time and the current back off time
                     backoffTime = TimeSpan.FromMilliseconds(
-                        Math.Min(this.currentBackoffInMilliSeconds, remainingTimeInMilliSeconds));
+                        Math.Min(this.currentBackoffInMilliSeconds.Value, remainingTimeInMilliSeconds));
 
                     // Update the current back off time
                     this.currentBackoffInMilliSeconds =
                         Math.Min(
-                            this.currentBackoffInMilliSeconds * SessionTokenMismatchRetryPolicy.backoffMultiplier,
-                            this.maximumBackoffTimeInMilliseconds);
+                            this.currentBackoffInMilliSeconds.Value * SessionTokenMismatchRetryPolicy.backoffMultiplier,
+                            SessionTokenMismatchRetryPolicy.sessionRetryMaximumBackoffConfig.Value);
                 }
 
                 this.retryCount++;

@@ -1277,6 +1277,7 @@ namespace Microsoft.Azure.Documents
             public const string CollectionContent = "collectionContent";
             public const string DatabaseContent = "databaseContent";
             public const string SnapshotTimestamp = "snapshotTimestamp";
+            public const string EventTimestamp = "eventTimestamp";
             public const string DataDirectories = "dataDirectories";
             public const string MetadataDirectory = "metadataDirectory";
             public const string OperationType = "operationType";

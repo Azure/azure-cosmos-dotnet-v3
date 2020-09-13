@@ -87,6 +87,10 @@ namespace Microsoft.Azure.Documents
 
         CompleteUserTransaction = 52,
 
+#if !COSMOSCLIENT
+        SystemOperation = 53,
+#endif
+
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
 #if !COSMOSCLIENT
