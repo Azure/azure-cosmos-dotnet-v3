@@ -22,6 +22,10 @@ namespace Microsoft.Azure.Cosmos
         public const int MaxAuthorizationHeaderSize = 1024;
         public const int DefaultAllowedClockSkewInSeconds = 900;
         public const int DefaultMasterTokenExpiryInSeconds = 900;
+        private static readonly string AuthorizationFormatPrefixUrlEncoded = HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                Constants.Properties.MasterToken,
+                Constants.Properties.TokenVersion,
+                string.Empty));
 
         private static readonly Encoding AuthorizationEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
@@ -117,10 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 key,
                 out _,
                 bUseUtcNowForMissingXDate);
-            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                Constants.Properties.MasterToken,
-                Constants.Properties.TokenVersion,
-                authorizationToken));
+            return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
         }
 
         // This is a helper for both system and master keys
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -140,10 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 out ArrayOwner payloadStream);
             using (payloadStream)
             {
-                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                    Constants.Properties.MasterToken,
-                    Constants.Properties.TokenVersion,
-                    authorizationToken));
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
         }
 
@@ -156,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out string payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -166,10 +164,7 @@ namespace Microsoft.Azure.Cosmos
             using (payloadStream)
             {
                 payload = AuthorizationHelper.AuthorizationEncoding.GetString(payloadStream.Buffer.Array, payloadStream.Buffer.Offset, (int)payloadStream.Buffer.Count);
-                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                    Constants.Properties.MasterToken,
-                    Constants.Properties.TokenVersion,
-                    authorizationToken));
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
         }
 
@@ -182,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out ArrayOwner payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -191,10 +186,7 @@ namespace Microsoft.Azure.Cosmos
                 out payload);
             try
             {
-                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                    Constants.Properties.MasterToken,
-                    Constants.Properties.TokenVersion,
-                    authorizationToken));
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
             catch
             {
@@ -671,7 +663,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
-        private static string GenerateAuthorizationTokenWithHashCore(
+        private static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
@@ -723,8 +715,8 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                string authorizationToken = Convert.ToBase64String(hashPayLoad);
-                return authorizationToken;
+                
+                return Convert.ToBase64String(hashPayLoad);
             }
             catch
             {
