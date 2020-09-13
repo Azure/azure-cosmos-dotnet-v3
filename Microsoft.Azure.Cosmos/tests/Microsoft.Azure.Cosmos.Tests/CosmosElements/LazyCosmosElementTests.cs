@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
             IJsonReader jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(Encoding.UTF8.GetBytes(json));
             IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
-            jsonWriter.WriteAll(jsonReader);
+            jsonReader.WriteAll(jsonWriter);
             return jsonWriter.GetResult();
         }
 
