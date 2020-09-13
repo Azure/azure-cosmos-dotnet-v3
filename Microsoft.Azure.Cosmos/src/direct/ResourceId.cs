@@ -563,6 +563,14 @@ namespace Microsoft.Azure.Documents
             };
         }
 
+        public static ResourceId NewSnapshotId(ulong snapshotId)
+        {
+            return new ResourceId()
+            {
+                Snapshot = snapshotId
+            };
+        }
+
         public static ResourceId NewDocumentCollectionId(string databaseId, uint collectionId)
         {
             ResourceId dbId = ResourceId.Parse(databaseId);
