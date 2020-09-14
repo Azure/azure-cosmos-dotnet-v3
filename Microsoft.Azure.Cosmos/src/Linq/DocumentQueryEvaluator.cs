@@ -40,8 +40,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static bool IsTransformExpression(Expression expression)
         {
-            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            return methodCallExpression != null &&
+            return expression is MethodCallExpression methodCallExpression &&
                 methodCallExpression.Method.DeclaringType == typeof(DocumentQueryable) &&
                 (methodCallExpression.Method.Name == DocumentQueryEvaluator.SQLMethod);
         }
