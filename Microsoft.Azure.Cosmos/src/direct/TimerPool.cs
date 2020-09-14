@@ -77,9 +77,9 @@ namespace Microsoft.Azure.Documents
 
         private void OnTimer(Object stateInfo)
         {
-            lock(this.timerConcurrencyLock)
+            lock (this.timerConcurrencyLock)
             {
-                if(!this.isRunning)
+                if (!this.isRunning)
                 {
                     this.isRunning = true;
                 }
@@ -94,34 +94,26 @@ namespace Microsoft.Azure.Documents
                 // timeout duration and fire timeouts
                 long currentTicks = DateTime.UtcNow.Ticks;
 
-                foreach(KeyValuePair<int, ConcurrentQueue<PooledTimer>> kv in this.pooledTimersByTimeout)
+                foreach (KeyValuePair<int, ConcurrentQueue<PooledTimer>> kv in this.pooledTimersByTimeout)
                 {
                     ConcurrentQueue<PooledTimer> pooledTimerQueue = kv.Value;
                     int count = kv.Value.Count;
                     long lastTicks = 0;
 
-                    for(int nIndex = 0; nIndex < count; nIndex++)
+                    for (int nIndex = 0; nIndex < count; nIndex++)
                     {
                         PooledTimer pooledTimer;
 
                         // We keeping peeking, firing timeouts, and dequeuing until reach hit the first
                         // element whose timeout has not occcured.
-                        if(pooledTimerQueue.TryPeek(out pooledTimer))
+                        if (pooledTimerQueue.TryPeek(out pooledTimer))
                         {
-                            if(currentTicks >= pooledTimer.TimeoutTicks)
+                            if (currentTicks >= pooledTimer.TimeoutTicks)
                             {
-                                if(pooledTimer.TimeoutTicks < lastTicks)
-                                {
-                                    // Queue of timers should have expiry in increasing tick order
-                                    DefaultTrace.TraceCritical("LastTicks: {0}, PooledTimer.Ticks: {1}",
-                                        lastTicks,
-                                        pooledTimer.TimeoutTicks);
-                                }
-
                                 pooledTimer.FireTimeout();
                                 lastTicks = pooledTimer.TimeoutTicks;
                                 PooledTimer timer;
-                                if(pooledTimerQueue.TryDequeue(out timer))
+                                if (pooledTimerQueue.TryDequeue(out timer))
                                 {
                                     // this is purely a correctness check
                                     if (!ReferenceEquals(timer, pooledTimer))
@@ -143,13 +135,13 @@ namespace Microsoft.Azure.Documents
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 DefaultTrace.TraceCritical("Hit exception ex: {0}\n, stack: {1}", ex.Message, ex.StackTrace);
             }
             finally
             {
-                lock(timerConcurrencyLock)
+                lock (timerConcurrencyLock)
                 {
                     isRunning = false;
                 }
@@ -183,7 +175,7 @@ namespace Microsoft.Azure.Documents
         public long SubscribeForTimeouts(PooledTimer pooledTimer)
         {
             this.ThrowIfDisposed();
-            if(pooledTimer.Timeout < this.minSupportedTimeout)
+            if (pooledTimer.Timeout < this.minSupportedTimeout)
             {
                 DefaultTrace.TraceWarning("Timer timeoutinSeconds {0} is less than minSupportedTimeoutInSeconds {1}, will use the minsupported value",
                     pooledTimer.Timeout.TotalSeconds,
@@ -198,11 +190,9 @@ namespace Microsoft.Azure.Documents
             }
 
             // in order to enqueue timers into a queue by their TimeoutTicks, do TimeoutTicks generation and enqueue atomically.
-            lock (timerQueue)
-            {
-                timerQueue.Enqueue(pooledTimer);
-                return DateTime.UtcNow.Ticks;
-            }
+
+            timerQueue.Enqueue(pooledTimer);
+            return DateTime.UtcNow.Ticks;
         }
     }
 }
