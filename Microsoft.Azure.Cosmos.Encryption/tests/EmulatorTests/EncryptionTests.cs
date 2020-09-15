@@ -603,6 +603,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException), "Decryptable content is not initialized.")]
+        public void ValidateDecryptableContent()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            EncryptableItem<TestDoc> encryptableItem = new EncryptableItem<TestDoc>(testDoc);
+            encryptableItem.GetItemAsStreamAsync();
+        }
+
+        [TestMethod]
         public async Task EncryptionCreateItemWithLazyDecryption()
         {
             TestDoc testDoc = TestDoc.Create();

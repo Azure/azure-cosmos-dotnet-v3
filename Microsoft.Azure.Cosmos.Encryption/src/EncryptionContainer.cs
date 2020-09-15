@@ -17,11 +17,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly Container container;
 
-        internal CosmosSerializer CosmosSerializer { get; }
+        public CosmosSerializer CosmosSerializer { get; }
 
-        internal Encryptor Encryptor { get; }
+        public Encryptor Encryptor { get; }
 
-        internal CosmosResponseFactory ResponseFactory { get; }
+        public CosmosResponseFactory ResponseFactory { get; }
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
@@ -79,7 +79,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (item is DecryptableItem decryptableItem)
                 {
-                    using (Stream streamPayload = decryptableItem.GetInputStreamPayload(this.CosmosSerializer))
+                    dynamic encryptableItem = item;
+
+                    using (Stream streamPayload = item.GetType().GetGenericArguments().Length == 0 ?
+                        encryptableItem.StreamPayload :
+                        this.CosmosSerializer.ToStream(encryptableItem.Item))
                     {
                         responseMessage = await this.CreateItemHelperAsync(
                             streamPayload,
@@ -90,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             cancellationToken);
                     }
 
-                    decryptableItem.Populate(
+                    encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
@@ -231,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         diagnosticsContext,
                         cancellationToken);
 
-                    DecryptableItem decryptableItem = new DecryptableItem(
+                    DecryptableItemCore decryptableItem = new DecryptableItemCore(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
@@ -338,7 +342,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (item is DecryptableItem decryptableItem)
                 {
-                    using (Stream streamPayload = decryptableItem.GetInputStreamPayload(this.CosmosSerializer))
+                    dynamic encryptableItem = item;
+
+                    using (Stream streamPayload = item.GetType().GetGenericArguments().Length == 0 ?
+                        encryptableItem.StreamPayload :
+                        this.CosmosSerializer.ToStream(encryptableItem.Item))
                     {
                         responseMessage = await this.ReplaceItemHelperAsync(
                             streamPayload,
@@ -350,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             cancellationToken);
                     }
 
-                    decryptableItem.Populate(
+                    encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
@@ -493,7 +501,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (item is DecryptableItem decryptableItem)
                 {
-                    using (Stream streamPayload = decryptableItem.GetInputStreamPayload(this.CosmosSerializer))
+                    dynamic encryptableItem = item;
+
+                    using (Stream streamPayload = item.GetType().GetGenericArguments().Length == 0 ?
+                        encryptableItem.StreamPayload :
+                        this.CosmosSerializer.ToStream(encryptableItem.Item))
                     {
                         responseMessage = await this.UpsertItemHelperAsync(
                             streamPayload,
@@ -504,7 +516,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             cancellationToken);
                     }
 
-                    decryptableItem.Populate(
+                    encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);

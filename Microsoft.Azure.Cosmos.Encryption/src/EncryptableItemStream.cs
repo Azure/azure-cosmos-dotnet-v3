@@ -4,7 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.IO;
+    using System.Threading.Tasks;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Stream APIs cannot be used to follow lazy decryption method and to retrieve the decryption information.
@@ -37,24 +40,53 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// ]]>
     /// </code>
     /// </example>
-    public class EncryptableItemStream : DecryptableItem
+    public sealed class EncryptableItemStream : DecryptableItem, IDisposable
     {
-        private readonly Stream streamPayload;
+        private DecryptableItemCore decryptableItem;
 
-        internal override Stream GetInputStreamPayload(
-            CosmosSerializer cosmosSerializer)
-        {
-            return this.streamPayload;
-        }
+        /// <summary>
+        /// Gets input stream payload.
+        /// </summary>
+        public Stream StreamPayload { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EncryptableItemStream"/> class.
         /// </summary>
         /// <param name="input">Input item stream.</param>
         public EncryptableItemStream(Stream input)
-            : base(null, null, null)
         {
-            this.streamPayload = input;
+            this.StreamPayload = input;
+        }
+
+        internal void SetDecryptableItem(
+            JToken decryptableContent,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer)
+        {
+            this.decryptableItem = new DecryptableItemCore(
+                decryptableContent,
+                encryptor,
+                cosmosSerializer);
+        }
+
+        /// <inheritdoc/>
+        public override Task<(T, DecryptionInfo)> GetItemAsync<T>()
+        {
+            this.Validate(this.decryptableItem);
+            return this.decryptableItem.GetItemAsync<T>();
+        }
+
+        /// <inheritdoc/>
+        public override Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync()
+        {
+            this.Validate(this.decryptableItem);
+            return this.decryptableItem.GetItemAsStreamAsync();
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            this.StreamPayload.Dispose();
         }
     }
 }

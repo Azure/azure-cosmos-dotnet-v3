@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System.IO;
+    using System.Threading.Tasks;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Input type that can be used to allow for lazy decryption & to retrieve the operation details in the write path.
@@ -40,14 +42,38 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// ]]>
     /// </code>
     /// </example>
-    public class EncryptableItem<T> : DecryptableItem
+    public sealed class EncryptableItem<T> : DecryptableItem
     {
-        private readonly T item;
+        private DecryptableItemCore decryptableItem;
 
-        internal override Stream GetInputStreamPayload(
+        /// <summary>
+        /// Gets the input item.
+        /// </summary>
+        public T Item { get; }
+
+        internal void SetDecryptableItem(
+            JToken decryptableContent,
+            Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
-            return cosmosSerializer.ToStream(this.item);
+            this.decryptableItem = new DecryptableItemCore(
+                decryptableContent,
+                encryptor,
+                cosmosSerializer);
+        }
+
+        /// <inheritdoc/>
+        public override Task<(T, DecryptionInfo)> GetItemAsync<T>()
+        {
+            this.Validate(this.decryptableItem);
+            return this.decryptableItem.GetItemAsync<T>();
+        }
+
+        /// <inheritdoc/>
+        public override Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync()
+        {
+            this.Validate(this.decryptableItem);
+            return this.decryptableItem.GetItemAsStreamAsync();
         }
 
         /// <summary>
@@ -55,9 +81,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="input">Item to be written.</param>
         public EncryptableItem(T input)
-            : base(null, null, null)
         {
-            this.item = input;
+            this.Item = input;
         }
     }
 }

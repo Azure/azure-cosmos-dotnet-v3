@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (JToken value in documents)
             {
-                DecryptableItem item = new DecryptableItem(
+                DecryptableItemCore item = new DecryptableItemCore(
                     value,
                     this.encryptor,
                     this.cosmosSerializer);

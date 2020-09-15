@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.IO;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -43,79 +44,31 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// ]]>
     /// </code>
     /// </example>
-    public class DecryptableItem
+    public abstract class DecryptableItem
     {
-        /// <summary>
-        /// The encrypted content which is yet to be decrypted.
-        /// </summary>
-        private JToken decryptableContent;
-
-        private Encryptor encryptor;
-
-        private CosmosSerializer cosmosSerializer;
-
-        /// <summary>
-        /// For customer to use for mocking
-        /// </summary>
-        protected DecryptableItem()
-        {
-        }
-
-        internal DecryptableItem(
-            JToken decryptableContent,
-            Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
-        {
-            this.decryptableContent = decryptableContent;
-            this.encryptor = encryptor;
-            this.cosmosSerializer = cosmosSerializer;
-        }
-
-        internal void Populate(
-            JToken decryptableContent,
-            Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
-        {
-            this.decryptableContent = decryptableContent;
-            this.encryptor = encryptor;
-            this.cosmosSerializer = cosmosSerializer;
-        }
-
-        internal virtual Stream GetInputStreamPayload(
-            CosmosSerializer cosmosSerializer)
-        {
-            return null;
-        }
-
         /// <summary>
         /// Decrypts and deserializes the content.
         /// </summary>
         /// <typeparam name="T">The type of item to be returned.</typeparam>
         /// <returns>The requested item and the decryption information.</returns>
-        public async Task<(T, DecryptionInfo)> GetItemAsync<T>()
-        {
-            (Stream decryptedStream, DecryptionInfo decryptionInfo) = await this.GetItemAsStreamAsync();
-            return (this.cosmosSerializer.FromStream<T>(decryptedStream), decryptionInfo);
-        }
+        public abstract Task<(T, DecryptionInfo)> GetItemAsync<T>();
 
         /// <summary>
         /// Decrypts the content and outputs stream.
         /// </summary>
         /// <returns>Decrypted stream response and the decryption information.</returns>
-        public async Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync()
+        public abstract Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync();
+
+        /// <summary>
+        /// Validate that the DecryptableItem is initialized.
+        /// </summary>
+        /// <param name="decryptableItem">Decryptable item to check.</param>
+        protected void Validate(DecryptableItem decryptableItem)
         {
-            if (!(this.decryptableContent is JObject document))
+            if (decryptableItem == null)
             {
-                return (EncryptionProcessor.BaseSerializer.ToStream(this.decryptableContent), null);
+                throw new InvalidOperationException("Decryptable content is not initialized.");
             }
-
-            (JObject decryptedItem, DecryptionInfo decryptionInfo) = await EncryptionProcessor.DecryptAsync(
-                document,
-                this.encryptor,
-                new CosmosDiagnosticsContext(),
-                cancellationToken: default);
-
-            return (EncryptionProcessor.BaseSerializer.ToStream(decryptedItem), decryptionInfo);
         }
     }
 }

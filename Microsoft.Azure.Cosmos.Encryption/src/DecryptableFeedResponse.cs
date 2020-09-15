@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Collections.Generic;
     using System.Net;
 
@@ -41,6 +42,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ResponseMessage responseMessage,
             IReadOnlyCollection<T> resource)
         {
+            if (responseMessage == null)
+            {
+                throw new ArgumentNullException(nameof(responseMessage));
+            }
+
             using (responseMessage)
             {
                 // ReadFeed can return 304 in some scenarios (for example Change Feed)
