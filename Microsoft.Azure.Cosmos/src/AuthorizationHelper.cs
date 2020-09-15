@@ -1058,7 +1058,29 @@ namespace Microsoft.Azure.Cosmos
 
         public unsafe static string UrlEncodeSpanInPlaceStack(ReadOnlySpan<byte> bytesToEncode)
         {
-            Span<byte> buffer = stackalloc byte[bytesToEncode.Length * 3];
+            int num = 0;
+            int num2 = 0;
+            for (int i = 0; i < bytesToEncode.Length; i++)
+            {
+                char ch = (char)bytesToEncode[i];
+                if (ch == ' ')
+                {
+                    num++;
+                }
+                else if (!HttpUtility.IsSafe(ch))
+                {
+                    num2++;
+                }
+            }
+            if (num == 0 && num2 == 0)
+            {
+                fixed (byte* bp = bytesToEncode)
+                {
+                    return Encoding.UTF8.GetString(bp, bytesToEncode.Length);
+                }
+            }
+
+            Span<byte> buffer = stackalloc byte[bytesToEncode.Length + (num2 * 2)];
             int bufferPosition = 0;
             for (int j = 0; j < bytesToEncode.Length; j++)
             {
