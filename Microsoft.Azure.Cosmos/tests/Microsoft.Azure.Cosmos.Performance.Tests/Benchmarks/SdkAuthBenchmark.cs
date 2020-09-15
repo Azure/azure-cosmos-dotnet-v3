@@ -39,6 +39,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        public void AuthEncodeOptimizationStack()
+        {
+            string auth = AuthorizationHelper.GenerateKeyAuthorizationSignatureStack(
+                "get",
+                "dbs/72c6b99c-05c9-48bc-bb48-ce908e0d0dbb/colls/69058ef4-aba0-438f-b4ec-afde30a494e0/docs/9c114841-47ab-46ce-8b4c-40f7f2438c95",
+                "Document",
+                this.headers,
+                this.authKeyHashFunction,
+                out AuthorizationHelper.ArrayOwner arrayOwner);
+            arrayOwner.Dispose();
+        }
+
+        [Benchmark]
         public void AuthOriginal()
         {
             string auth = AuthorizationHelper.GenerateKeyAuthorizationSignatureOld(
