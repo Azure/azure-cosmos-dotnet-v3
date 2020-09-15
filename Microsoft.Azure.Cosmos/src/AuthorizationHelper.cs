@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out ArrayOwner payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCoreStack(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -921,7 +921,7 @@ namespace Microsoft.Azure.Cosmos
                 ReadOnlySpan<byte> hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
 
                 // Get double the length so the same buffer can be used for the URL encoding
-                Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2];
+                Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3];
 
                 OperationStatus status = Base64.EncodeToUtf8(
                     hashPayLoad,
@@ -1034,57 +1034,32 @@ namespace Microsoft.Azure.Cosmos
                 ReadOnlySpan<byte> hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
 
                 // Get double the length so the same buffer can be used for the URL encoding
-                Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length)];
-
-                OperationStatus status = Base64.EncodeToUtf8(
-                    hashPayLoad,
-                    encodingBufferSpan,
-                    out int bytesConsumed,
-                    out int bytesWritten);
-
-                if (status != OperationStatus.Done)
+                byte[] encodingBuffer = ArrayPool<byte>.Shared.Rent(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length));
+                try
                 {
-                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
-                }
+                    Span<byte> encodingBufferSpan = encodingBuffer;
+                    OperationStatus status = Base64.EncodeToUtf8(
+                        hashPayLoad,
+                        encodingBufferSpan,
+                        out int bytesConsumed,
+                        out int bytesWritten);
 
-                return AuthorizationHelper.UrlEncodeSpanInPlaceStack(encodingBufferSpan.Slice(0, bytesWritten));
+                    if (status != OperationStatus.Done)
+                    {
+                        throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                    }
+
+                    return HttpUtility.UrlEncodeSpanStack(encodingBufferSpan);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(encodingBuffer);
+                }
             }
             catch
             {
                 ArrayPool<byte>.Shared.Return(payloadBuffer);
                 throw;
-            }
-        }
-
-        public unsafe static string UrlEncodeSpanInPlaceStack(ReadOnlySpan<byte> bytesToEncode)
-        {
-            // Worst case every character needs to be replaced.
-            Span<byte> buffer = stackalloc byte[bytesToEncode.Length * 3];
-            int bufferPosition = 0;
-            for (int j = 0; j < bytesToEncode.Length; j++)
-            {
-                byte num6 = bytesToEncode[j];
-                char ch2 = (char)num6;
-                if (HttpUtility.IsSafe(ch2))
-                {
-                    buffer[bufferPosition++] = num6;
-                }
-                else if (ch2 == ' ')
-                {
-                    buffer[bufferPosition++] = 0x2b;
-                }
-                else
-                {
-                    buffer[bufferPosition++] = 0x25;
-                    buffer[bufferPosition++] = (byte)HttpUtility.IntToHex((num6 >> 4) & 15);
-                    buffer[bufferPosition++] = (byte)HttpUtility.IntToHex(num6 & 15);
-                }
-            }
-
-            Span<byte> encodedSlice = buffer.Slice(0, bufferPosition);
-            fixed (byte* bp = encodedSlice)
-            {
-                return Encoding.UTF8.GetString(bp, encodedSlice.Length);
             }
         }
 

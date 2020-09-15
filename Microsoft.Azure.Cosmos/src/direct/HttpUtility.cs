@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Buffers;
     using System.Buffers.Text;
     using System.Collections.Specialized;
     using System.Globalization;
@@ -564,11 +565,11 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public unsafe static string UrlEncodeSpanStack(ReadOnlySpan<byte> bytes, int count)
+        public unsafe static string UrlEncodeSpanStack(ReadOnlySpan<byte> bytes)
         {
             int num = 0;
             int num2 = 0;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < bytes.Length; i++)
             {
                 char ch = (char)bytes[i];
                 if (ch == ' ')
@@ -584,35 +585,43 @@ namespace Microsoft.Azure.Documents
             {
                 fixed (byte* bp = bytes)
                 {
-                    return Encoding.UTF8.GetString(bp, count);
+                    return Encoding.UTF8.GetString(bp, bytes.Length);
                 }
             }
 
-            Span<byte> buffer = stackalloc byte[count + (num2 * 2)];
-            int num4 = 0;
-            for (int j = 0; j < count; j++)
+            byte[] bufferBytes = ArrayPool<byte>.Shared.Rent(bytes.Length + (num2 * 2));
+            try
             {
-                byte num6 = bytes[ j];
-                char ch2 = (char)num6;
-                if (IsSafe(ch2))
+                Span<byte> buffer = bufferBytes;
+                int num4 = 0;
+                for (int j = 0; j < bytes.Length; j++)
                 {
-                    buffer[num4++] = num6;
+                    byte num6 = bytes[j];
+                    char ch2 = (char)num6;
+                    if (IsSafe(ch2))
+                    {
+                        buffer[num4++] = num6;
+                    }
+                    else if (ch2 == ' ')
+                    {
+                        buffer[num4++] = 0x2b;
+                    }
+                    else
+                    {
+                        buffer[num4++] = 0x25;
+                        buffer[num4++] = (byte)IntToHex((num6 >> 4) & 15);
+                        buffer[num4++] = (byte)IntToHex(num6 & 15);
+                    }
                 }
-                else if (ch2 == ' ')
+
+                fixed (byte* bp = buffer)
                 {
-                    buffer[num4++] = 0x2b;
-                }
-                else
-                {
-                    buffer[num4++] = 0x25;
-                    buffer[num4++] = (byte)IntToHex((num6 >> 4) & 15);
-                    buffer[num4++] = (byte)IntToHex(num6 & 15);
+                    return Encoding.UTF8.GetString(bp, num4);
                 }
             }
-
-            fixed (byte* bp = buffer)
+            finally
             {
-                return Encoding.UTF8.GetString(bp, num4);
+                ArrayPool<byte>.Shared.Return(bufferBytes);
             }
         }
 
