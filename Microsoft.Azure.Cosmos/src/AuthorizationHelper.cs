@@ -719,10 +719,12 @@ namespace Microsoft.Azure.Cosmos
 
                 // Double the size to allow the URL encode to use the same buffer
                 Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2];
+
+                // This replaces the Convert.ToBase64String
                 OperationStatus status = Base64.EncodeToUtf8(
                     hashPayLoad,
                     encodingBufferSpan,
-                    out int bytesConsumed,
+                    out int _,
                     out int bytesWritten);
 
                 if (status != OperationStatus.Done)
@@ -739,9 +741,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// This does HttpUtility.UrlEncode functionality with Span buffer. It does an in place update to avoid
+        /// creating the new buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer that include the bytes to url encode.</param>
+        /// <param name="count">The size of the buffer that is used for the bytes to encode</param>
+        /// <returns>The URLEncoded string of the bytes in the buffer</returns>
         public unsafe static string UrlEncodeSpanInPlace(Span<byte> buffer, int count)
         {
-            if (buffer.Length < count)
+            if (buffer.Length < count || count == 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), $"buffer length: {buffer.Length}, buffer count: {count}");
             }
