@@ -795,10 +795,10 @@ namespace Microsoft.Azure.Cosmos
 
             string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
             int capacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(capacity);
+            byte[] payloadBuffer = ArrayPool<byte>.Shared.Rent(capacity);
             try
             {
-                Span<byte> payloadBytes = buffer;
+                Span<byte> payloadBytes = payloadBuffer;
                 int length = AuthorizationHelper.SerializeMessagePayload(
                     payloadBytes,
                     verbInput,
@@ -806,35 +806,35 @@ namespace Microsoft.Azure.Cosmos
                     resourceTypeInput,
                     headers);
 
-                payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
+                payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(payloadBuffer, 0, length));
                 ReadOnlySpan<byte> hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                OperationStatus status = Base64.EncodeToUtf8(
-                    hashPayLoad,
-                    buffer,
-                    out int bytesConsumed,
-                    out int bytesWritten);
 
-                if (status == OperationStatus.DestinationTooSmall)
+                byte[] encodingBuffer = ArrayPool<byte>.Shared.Rent(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2);
+                try
                 {
-                    int maxLength = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length);
-                    byte[] largerBuffer = ArrayPool<byte>.Shared.Rent(maxLength);
-                    status = Base64.EncodeToUtf8(
+                    Span<byte> encodingBufferSpan = encodingBuffer;
+                    OperationStatus status = Base64.EncodeToUtf8(
                         hashPayLoad,
-                        largerBuffer,
-                        out bytesConsumed,
-                        out bytesWritten);
-                }
+                        encodingBufferSpan,
+                        out int bytesConsumed,
+                        out int bytesWritten);
 
-                if (status != OperationStatus.Done)
+                    if (status != OperationStatus.Done)
+                    {
+                        throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                    }
+
+                    return AuthorizationHelper.UrlEncodeSpanInPlace(encodingBufferSpan, bytesWritten);
+                }
+                finally
                 {
-                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                    ArrayPool<byte>.Shared.Return(encodingBuffer);
                 }
 
-                return AuthorizationHelper.UrlEncodeSpanInPlace(buffer, bytesWritten);
             }
             catch
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                ArrayPool<byte>.Shared.Return(payloadBuffer);
                 throw;
             }
         }
