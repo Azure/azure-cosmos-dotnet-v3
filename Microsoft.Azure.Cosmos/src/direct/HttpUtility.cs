@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Buffers.Text;
     using System.Collections.Specialized;
     using System.Globalization;
     using System.IO;
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Documents
 
         internal static bool IsSafe(char ch)
         {
-            if ((((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z'))) || ((ch >= '0') && (ch <= '9')))
+            if (((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')) || ((ch >= '0') && (ch <= '9')))
             {
                 return true;
             }
@@ -533,6 +534,88 @@ namespace Microsoft.Azure.Documents
             return Encoding.UTF8.GetString(encodedBytes, 0, encodedBytes.Length);
         }
 
+        public unsafe static string UrlEncodeSpanOld(Span<byte> bytes, int count)
+        {
+            Span<byte> buffer = stackalloc byte[count * 2];
+            int num4 = 0;
+            for (int j = 0; j < count; j++)
+            {
+                byte num6 = bytes[j];
+                char ch2 = (char)num6;
+                if (IsSafe(ch2))
+                {
+                    buffer[num4++] = num6;
+                }
+                else if (ch2 == ' ')
+                {
+                    buffer[num4++] = 0x2b;
+                }
+                else
+                {
+                    buffer[num4++] = 0x25;
+                    buffer[num4++] = (byte)IntToHex((num6 >> 4) & 15);
+                    buffer[num4++] = (byte)IntToHex(num6 & 15);
+                }
+            }
+
+            fixed (byte* bp = buffer)
+            {
+                return Encoding.UTF8.GetString(bp, num4);
+            }
+        }
+
+        public unsafe static string UrlEncodeSpanStack(ReadOnlySpan<byte> bytes, int count)
+        {
+            int num = 0;
+            int num2 = 0;
+            for (int i = 0; i < count; i++)
+            {
+                char ch = (char)bytes[i];
+                if (ch == ' ')
+                {
+                    num++;
+                }
+                else if (!IsSafe(ch))
+                {
+                    num2++;
+                }
+            }
+            if (num == 0 && num2 == 0)
+            {
+                fixed (byte* bp = bytes)
+                {
+                    return Encoding.UTF8.GetString(bp, count);
+                }
+            }
+
+            Span<byte> buffer = stackalloc byte[count + (num2 * 2)];
+            int num4 = 0;
+            for (int j = 0; j < count; j++)
+            {
+                byte num6 = bytes[ j];
+                char ch2 = (char)num6;
+                if (IsSafe(ch2))
+                {
+                    buffer[num4++] = num6;
+                }
+                else if (ch2 == ' ')
+                {
+                    buffer[num4++] = 0x2b;
+                }
+                else
+                {
+                    buffer[num4++] = 0x25;
+                    buffer[num4++] = (byte)IntToHex((num6 >> 4) & 15);
+                    buffer[num4++] = (byte)IntToHex(num6 & 15);
+                }
+            }
+
+            fixed (byte* bp = buffer)
+            {
+                return Encoding.UTF8.GetString(bp, num4);
+            }
+        }
+
         private static byte[] UrlEncodeBytesToBytesInternal(byte[] bytes, int offset, int count, bool alwaysCreateReturnValue)
         {
             int num = 0;
@@ -553,6 +636,7 @@ namespace Microsoft.Azure.Documents
             {
                 return bytes;
             }
+
             byte[] buffer = new byte[count + (num2 * 2)];
             int num4 = 0;
             for (int j = 0; j < count; j++)
