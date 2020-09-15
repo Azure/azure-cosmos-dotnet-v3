@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out ArrayOwner payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCoreStack(
                 verb,
                 resourceId,
                 resourceType,
@@ -974,6 +974,113 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Span<byte> encodedSlice = buffer.Slice(bufferPos + 1);
+            fixed (byte* bp = encodedSlice)
+            {
+                return Encoding.UTF8.GetString(bp, encodedSlice.Length);
+            }
+        }
+
+        private static string GenerateUrlEncodedAuthorizationTokenWithHashCoreStack(
+           string verb,
+           string resourceId,
+           string resourceType,
+           INameValueCollection headers,
+           IComputeHash stringHMACSHA256Helper,
+           out ArrayOwner payload)
+        {
+            // resourceId can be null for feed-read of /dbs
+            if (string.IsNullOrEmpty(verb))
+            {
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, nameof(verb));
+            }
+
+            if (resourceType == null)
+            {
+                throw new ArgumentNullException(nameof(resourceType)); // can be empty
+            }
+
+            if (stringHMACSHA256Helper == null)
+            {
+                throw new ArgumentNullException(nameof(stringHMACSHA256Helper));
+            }
+
+            if (headers == null)
+            {
+                throw new ArgumentNullException(nameof(headers));
+            }
+
+            // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
+            // More headers can be added in the future.
+            // If any of the value is optional, it should still have the placeholder value of ""
+            // OperationType -> ResourceType -> ResourceId/OwnerId -> XDate -> Date
+            string verbInput = verb ?? string.Empty;
+            string resourceIdInput = resourceId ?? string.Empty;
+            string resourceTypeInput = resourceType ?? string.Empty;
+
+            string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
+            int capacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
+            byte[] payloadBuffer = ArrayPool<byte>.Shared.Rent(capacity);
+            try
+            {
+                Span<byte> payloadBytes = payloadBuffer;
+                int length = AuthorizationHelper.SerializeMessagePayload(
+                    payloadBytes,
+                    verbInput,
+                    authResourceId,
+                    resourceTypeInput,
+                    headers);
+
+                payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(payloadBuffer, 0, length));
+                ReadOnlySpan<byte> hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
+
+                // Get double the length so the same buffer can be used for the URL encoding
+                Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length)];
+
+                OperationStatus status = Base64.EncodeToUtf8(
+                    hashPayLoad,
+                    encodingBufferSpan,
+                    out int bytesConsumed,
+                    out int bytesWritten);
+
+                if (status != OperationStatus.Done)
+                {
+                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                }
+
+                return AuthorizationHelper.UrlEncodeSpanInPlaceStack(encodingBufferSpan.Slice(0, bytesWritten));
+            }
+            catch
+            {
+                ArrayPool<byte>.Shared.Return(payloadBuffer);
+                throw;
+            }
+        }
+
+        public unsafe static string UrlEncodeSpanInPlaceStack(ReadOnlySpan<byte> bytesToEncode)
+        {
+            Span<byte> buffer = stackalloc byte[bytesToEncode.Length * 3];
+            int bufferPosition = 0;
+            for (int j = 0; j < bytesToEncode.Length; j++)
+            {
+                byte num6 = bytesToEncode[j];
+                char ch2 = (char)num6;
+                if (HttpUtility.IsSafe(ch2))
+                {
+                    buffer[bufferPosition++] = num6;
+                }
+                else if (ch2 == ' ')
+                {
+                    buffer[bufferPosition++] = 0x2b;
+                }
+                else
+                {
+                    buffer[bufferPosition++] = 0x25;
+                    buffer[bufferPosition++] = (byte)HttpUtility.IntToHex((num6 >> 4) & 15);
+                    buffer[bufferPosition++] = (byte)HttpUtility.IntToHex(num6 & 15);
+                }
+            }
+
+            Span<byte> encodedSlice = buffer.Slice(0, bufferPosition);
             fixed (byte* bp = encodedSlice)
             {
                 return Encoding.UTF8.GetString(bp, encodedSlice.Length);
