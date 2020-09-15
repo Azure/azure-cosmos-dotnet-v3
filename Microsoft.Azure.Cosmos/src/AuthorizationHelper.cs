@@ -783,7 +783,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
+        private static string GenerateUrlEncodedAuthorizationTokenWithHashCoreRent(
             string verb,
             string resourceId,
             string resourceType,
@@ -867,7 +867,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static string GenerateUrlEncodedAuthorizationTokenWithHashCoreStack(
+        private static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
            string verb,
            string resourceId,
            string resourceType,
