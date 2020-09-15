@@ -616,6 +616,36 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public unsafe static string UrlEncodeSpan(Span<byte> buffer, int count)
+        {
+            int bufferPos = buffer.Length -1;
+            for (int j = count-1; j >= 0; j--)
+            {
+                byte num6 = buffer[j];
+                char ch2 = (char)num6;
+                if (IsSafe(ch2))
+                {
+                    buffer[bufferPos--] = num6;
+                }
+                else if (ch2 == ' ')
+                {
+                    buffer[bufferPos--] = 0x2b;
+                }
+                else
+                {
+                    buffer[bufferPos--] = (byte)IntToHex(num6 & 15);
+                    buffer[bufferPos--] = (byte)IntToHex((num6 >> 4) & 15);
+                    buffer[bufferPos--] = 0x25;
+                }
+            }
+
+            Span<byte> encodedSlice = buffer.Slice(bufferPos+1);
+            fixed (byte* bp = encodedSlice)
+            {
+                return Encoding.UTF8.GetString(bp, encodedSlice.Length);
+            }
+        }
+
         private static byte[] UrlEncodeBytesToBytesInternal(byte[] bytes, int offset, int count, bool alwaysCreateReturnValue)
         {
             int num = 0;

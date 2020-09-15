@@ -839,17 +839,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public unsafe static string UrlEncodeSpanInPlace(Span<byte> buffer, int bufferCount)
+        public unsafe static string UrlEncodeSpanInPlace(Span<byte> buffer, int count)
         {
-            if (buffer.Length < bufferCount)
+            if (buffer.Length < count)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferCount), $"buffer length: {buffer.Length}, buffer count: {bufferCount}");
+                throw new ArgumentOutOfRangeException(nameof(count), $"buffer length: {buffer.Length}, buffer count: {count}");
             }
 
             // Start at the back of the buffer and move foward. This prevents
             // creating a new buffer.
             int bufferPos = buffer.Length - 1;
-            for (int j = buffer.Length - 1; j >= 0; j--)
+            for (int j = count - 1; j >= 0; j--)
             {
                 byte num6 = buffer[j];
                 char ch2 = (char)num6;
