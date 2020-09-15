@@ -704,6 +704,7 @@ namespace Microsoft.Azure.Cosmos
             string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
             int capacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
             byte[] payloadBuffer = ArrayPool<byte>.Shared.Rent(capacity);
+            byte[] encodingBuffer = null;
             try
             {
                 Span<byte> payloadBytes = payloadBuffer;
@@ -717,13 +718,13 @@ namespace Microsoft.Azure.Cosmos
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(payloadBuffer, 0, length));
                 ReadOnlySpan<byte> hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
 
-                // Double the size to allow the URL encode to use the same buffer
-                Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2];
+                // Create a large enough buffer that URL encode can use it.
+                encodingBuffer = ArrayPool<byte>.Shared.Rent(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3);
 
                 // This replaces the Convert.ToBase64String
                 OperationStatus status = Base64.EncodeToUtf8(
                     hashPayLoad,
-                    encodingBufferSpan,
+                    encodingBuffer,
                     out int _,
                     out int bytesWritten);
 
@@ -732,12 +733,19 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"Authorization key payload is invalid. {status}");
                 }
 
-                return AuthorizationHelper.UrlEncodeSpanInPlace(encodingBufferSpan, bytesWritten);
+                return AuthorizationHelper.UrlEncodeSpanInPlace(encodingBuffer, bytesWritten);
             }
             catch
             {
                 ArrayPool<byte>.Shared.Return(payloadBuffer);
                 throw;
+            }
+            finally
+            {
+                if (encodingBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(encodingBuffer);
+                }
             }
         }
 
@@ -750,7 +758,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The URLEncoded string of the bytes in the buffer</returns>
         public unsafe static string UrlEncodeSpanInPlace(Span<byte> buffer, int count)
         {
-            if (buffer.Length < count || count == 0)
+            if (count == 0)
+            {
+                return string.Empty;
+            }
+
+            if (buffer.Length < count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), $"buffer length: {buffer.Length}, buffer count: {count}");
             }
