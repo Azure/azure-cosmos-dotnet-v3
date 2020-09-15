@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out ArrayOwner payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCoreStack(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
