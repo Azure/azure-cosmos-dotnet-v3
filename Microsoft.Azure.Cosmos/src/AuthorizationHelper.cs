@@ -717,28 +717,20 @@ namespace Microsoft.Azure.Cosmos
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(payloadBuffer, 0, length));
                 ReadOnlySpan<byte> hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
 
-                byte[] encodingBuffer = ArrayPool<byte>.Shared.Rent(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2);
-                try
-                {
-                    Span<byte> encodingBufferSpan = encodingBuffer;
-                    OperationStatus status = Base64.EncodeToUtf8(
-                        hashPayLoad,
-                        encodingBufferSpan,
-                        out int bytesConsumed,
-                        out int bytesWritten);
+                // Double the size to allow the URL encode to use the same buffer
+                Span<byte> encodingBufferSpan = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2];
+                OperationStatus status = Base64.EncodeToUtf8(
+                    hashPayLoad,
+                    encodingBufferSpan,
+                    out int bytesConsumed,
+                    out int bytesWritten);
 
-                    if (status != OperationStatus.Done)
-                    {
-                        throw new ArgumentException($"Authorization key payload is invalid. {status}");
-                    }
-
-                    return AuthorizationHelper.UrlEncodeSpanInPlace(encodingBufferSpan, bytesWritten);
-                }
-                finally
+                if (status != OperationStatus.Done)
                 {
-                    ArrayPool<byte>.Shared.Return(encodingBuffer);
+                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
                 }
-                
+
+                return AuthorizationHelper.UrlEncodeSpanInPlace(encodingBufferSpan, bytesWritten);
             }
             catch
             {
