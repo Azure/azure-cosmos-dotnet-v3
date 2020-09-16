@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             arrayOwner.Dispose();
         }
 
-        [Params(10, 100, 200, 300, 400, 500, 1000)]
+        [Params(10, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000)]
         public int Capacity { get; set; }
 
         [Benchmark]
