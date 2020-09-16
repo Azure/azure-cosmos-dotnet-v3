@@ -53,19 +53,20 @@ namespace Microsoft.Azure.Cosmos
             GC.SuppressFinalize(this);
         }
 
-        ~SecureStringHMACSHA256Helper() => this.Dispose(false);
-
         private void Dispose(bool disposing)
         {
-            if (this.algorithmHandle != IntPtr.Zero)
+            if (disposing)
             {
-                int status = NativeMethods.BCryptCloseAlgorithmProvider(this.algorithmHandle, 0);
-                if (status != 0)
+                if (this.algorithmHandle != null)
                 {
-                    DefaultTrace.TraceError("Failed to close algorithm provider: {0}", status);
-                }
+                    int status = NativeMethods.BCryptCloseAlgorithmProvider(this.algorithmHandle, 0);
+                    if (status != 0)
+                    {
+                        DefaultTrace.TraceError("Failed to close algorithm provider: {0}", status);
+                    }
 
-                this.algorithmHandle = IntPtr.Zero;
+                    this.algorithmHandle = IntPtr.Zero;
+                }
             }
         }
 
