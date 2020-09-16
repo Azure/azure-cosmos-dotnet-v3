@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Threading;
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.headers.Add(HttpConstants.HttpHeaders.HttpDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void AuthEncodeOptimization()
         {
             string auth = AuthorizationHelper.GenerateKeyAuthorizationSignature(
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             arrayOwner.Dispose();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void AuthEncodeOptimizationStack()
         {
             string auth = AuthorizationHelper.GenerateKeyAuthorizationSignatureStack(
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             arrayOwner.Dispose();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void AuthOriginal()
         {
             string auth = AuthorizationHelper.GenerateKeyAuthorizationSignatureOld(
@@ -62,6 +63,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 this.authKeyHashFunction,
                 out AuthorizationHelper.ArrayOwner arrayOwner);
             arrayOwner.Dispose();
+        }
+
+        [Params(10, 100, 200, 300, 400, 500, 1000)]
+        public int Capacity { get; set; }
+
+        [Benchmark]
+        public void StackAlloc()
+        {
+            Span<byte> payloadBuffer = stackalloc byte[this.Capacity];
+        }
+
+        [Benchmark]
+        public void RentReturn()
+        {
+            byte[] pyaloadBuffer = ArrayPool<byte>.Shared.Rent(this.Capacity);
+            ArrayPool<byte>.Shared.Return(pyaloadBuffer);
         }
     }
 
