@@ -465,12 +465,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     "SELECT TOP 1 * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id DESC");
 
                 // Ensure only required results are returned
+                QueryDefinition queryDefinition = new QueryDefinition("SELECT * from c where c.id >= @startId and c.id <= @endId ORDER BY c.id ASC")
+                    .WithParameter("@startId", "Contoso_v000")
+                    .WithParameter("@endId", "Contoso_v999");
                 await EncryptionTests.IterateDekFeedAsync(
                     dekProvider,
                     new List<string> { contosoV1, contosoV2 },
                     isExpectedDeksCompleteSetForRequest: true,
                     isResultOrderExpected: true,
-                    "SELECT * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id ASC");
+                    query: null,
+                    queryDefinition: queryDefinition);
 
                 // Test pagination
                 await EncryptionTests.IterateDekFeedAsync(
@@ -1231,7 +1235,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             bool isExpectedDeksCompleteSetForRequest,
             bool isResultOrderExpected,
             string query,
-            int? itemCountInPage = null)
+            int? itemCountInPage = null,
+            QueryDefinition queryDefinition = null)
         {
             int remainingItemCount = expectedDekIds.Count;
             QueryRequestOptions requestOptions = null;
@@ -1243,10 +1248,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 };
             }
 
-            FeedIterator<DataEncryptionKeyProperties> dekIterator = dekProvider.DataEncryptionKeyContainer
-                .GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
+            FeedIterator<DataEncryptionKeyProperties> dekIterator;
+
+            if (queryDefinition != null)
+            {
+                dekIterator = dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
+                    queryDefinition,
+                    requestOptions: requestOptions);
+            }
+            else
+            {
+                dekIterator = dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
                     query,
                     requestOptions: requestOptions);
+            }
 
             Assert.IsTrue(dekIterator.HasMoreResults);
 
