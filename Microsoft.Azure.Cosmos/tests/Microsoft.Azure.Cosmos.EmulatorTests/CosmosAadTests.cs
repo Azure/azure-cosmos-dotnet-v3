@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, getAadTokenCount);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
-            Assert.AreEqual(2, getAadTokenCount);
+            Assert.AreEqual(1, getAadTokenCount);
         }
 
         [TestMethod]

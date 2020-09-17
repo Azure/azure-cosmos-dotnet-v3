@@ -130,6 +130,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (RequestFailedException requestFailedException)
                     {
+                        lastException = requestFailedException;
                         diagnosticsContext.AddDiagnosticsInternal(
                             new PointOperationStatistics(
                                 activityId: Trace.CorrelationManager.ActivityId.ToString(),
@@ -156,6 +157,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (Exception exception)
                     {
+                        lastException = exception;
                         diagnosticsContext.AddDiagnosticsInternal(
                             new PointOperationStatistics(
                                 activityId: Trace.CorrelationManager.ActivityId.ToString(),
