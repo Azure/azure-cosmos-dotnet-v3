@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
     using System.Threading;
@@ -107,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 Exception lastException = null;
-                int totalRetryCount = 3;
+                const int totalRetryCount = 3;
                 for (int retry = 0; retry < totalRetryCount; retry++)
                 {
                     if (this.cancellationToken.IsCancellationRequested)
