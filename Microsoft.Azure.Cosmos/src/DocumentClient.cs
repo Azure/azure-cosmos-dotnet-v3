@@ -1055,6 +1055,14 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
+            if (tokenCredential != null)
+            {
+                this.tokenCredentialCache = new TokenCredentialCache(
+                    tokenCredential,
+                    this.ServiceEndpoint.Host,
+                    this.ConnectionPolicy.TokenCredentialBackgroundRefreshInterval ?? ConnectionPolicy.DefaultTokenCredentialBackgroundRefreshInterval);
+            }
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;

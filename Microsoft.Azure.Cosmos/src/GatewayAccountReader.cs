@@ -31,6 +31,11 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionPolicy connectionPolicy,
                 CosmosHttpClient httpClient)
         {
+            if (tokenCredentialCache == null && stringHMACSHA256Helper == null)
+            {
+                throw new ArgumentNullException("stringHMACSHA256Helper or tokenCredentialCache is required");
+            }
+
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
             this.authKeyHashFunction = stringHMACSHA256Helper;

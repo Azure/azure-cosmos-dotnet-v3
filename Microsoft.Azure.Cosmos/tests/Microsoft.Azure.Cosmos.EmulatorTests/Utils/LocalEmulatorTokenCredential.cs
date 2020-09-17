@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private AccessToken GetAccessToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
-            this.GetTokenCallback(
+            this.GetTokenCallback?.Invoke(
                 requestContext,
                 cancellationToken);
 
