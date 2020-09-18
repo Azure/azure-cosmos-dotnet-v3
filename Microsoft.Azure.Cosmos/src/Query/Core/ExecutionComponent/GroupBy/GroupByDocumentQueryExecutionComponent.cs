@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggregators;
@@ -159,7 +157,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 }
             }
 
-            public bool TryGetPayload(out CosmosElement payload) => this.cosmosObject.TryGetValue(PayloadPropertyName, out payload);
+            public bool TryGetPayload(out CosmosElement payload)
+            {
+                return this.cosmosObject.TryGetValue(PayloadPropertyName, out payload);
+            }
         }
 
         protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
@@ -301,9 +302,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 return TryCatch<GroupingTable>.FromResult(groupingTable);
             }
 
-            IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>.GetEnumerator() => this.table.GetEnumerator();
+            IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>.GetEnumerator()
+            {
+                return this.table.GetEnumerator();
+            }
 
-            IEnumerator IEnumerable.GetEnumerator() => this.table.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.table.GetEnumerator();
+            }
         }
     }
 }

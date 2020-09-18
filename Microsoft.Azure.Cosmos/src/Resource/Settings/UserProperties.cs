@@ -112,12 +112,6 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the self-link of the permissions associated with the user for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The self-link of the permissions associated with the user.</value>
-        internal string PermissionsLink
-        {
-            get
-            {
-                return $"{this.SelfLink?.TrimEnd('/')}/{ this.Permissions}";
-            }
-        }
+        internal string PermissionsLink => $"{this.SelfLink?.TrimEnd('/')}/{ this.Permissions}";
     }
 }

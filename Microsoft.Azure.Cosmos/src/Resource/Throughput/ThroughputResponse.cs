@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Net;
     using Microsoft.Azure.Documents;
 
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending) != null)
                 {
-                    return Boolean.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending));
+                    return bool.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending));
                 }
                 return null;
             }

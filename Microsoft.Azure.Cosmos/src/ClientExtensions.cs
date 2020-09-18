@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         public static async Task<HttpResponseMessage> GetAsync(this HttpClient client,
             Uri uri,
             INameValueCollection additionalHeaders = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (uri == null) throw new ArgumentNullException("uri");
 

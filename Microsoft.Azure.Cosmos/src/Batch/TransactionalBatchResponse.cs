@@ -148,13 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="index">0-based index of the operation in the batch whose result needs to be returned.</param>
         /// <returns>Result of operation at the provided index in the batch.</returns>
-        public virtual TransactionalBatchOperationResult this[int index]
-        {
-            get
-            {
-                return this.results[index];
-            }
-        }
+        public virtual TransactionalBatchOperationResult this[int index] => this.results[index];
 
         /// <summary>
         /// Gets the result of the operation at the provided index in the batch - the returned result has a Resource of provided type.
@@ -166,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         {
             TransactionalBatchOperationResult result = this.results[index];
 
-            T resource = default(T);
+            T resource = default;
             if (result.ResourceStream != null)
             {
                 resource = this.SerializerCore.FromStream<T>(result.ResourceStream);
@@ -378,9 +372,10 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers,
                 responseMessage.DiagnosticsContext,
                 serverRequest.Operations,
-                serializer);
-
-            response.results = results;
+                serializer)
+            {
+                results = results
+            };
             return response;
         }
 
