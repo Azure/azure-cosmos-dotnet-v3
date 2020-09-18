@@ -220,10 +220,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return response;
             }
         }
-
-        public override Task<TransactionalBatchResponse> ExecuteAsync(TransactionalBatchRequestOptions requestOptions, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         this.Encryptor,
                         this.CosmosSerializer);
 
-                    return this.ResponseFactory.CreateItemResponse<T>(
+                    return new EncryptionItemResponse<T>(
                         responseMessage,
                         item);
                 }
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         this.Encryptor,
                         this.CosmosSerializer);
 
-                    return this.ResponseFactory.CreateItemResponse(
+                    return new EncryptionItemResponse<T>(
                         responseMessage,
                         (T)(object)decryptableItem);
                 }
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         this.Encryptor,
                         this.CosmosSerializer);
 
-                    return this.ResponseFactory.CreateItemResponse<T>(
+                    return new EncryptionItemResponse<T>(
                         responseMessage,
                         item);
                 }
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         this.Encryptor,
                         this.CosmosSerializer);
 
-                    return this.ResponseFactory.CreateItemResponse<T>(
+                    return new EncryptionItemResponse<T>(
                         responseMessage,
                         item);
                 }
