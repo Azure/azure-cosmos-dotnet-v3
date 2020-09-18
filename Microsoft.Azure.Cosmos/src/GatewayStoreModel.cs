@@ -145,7 +145,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private void CaptureSessionToken(

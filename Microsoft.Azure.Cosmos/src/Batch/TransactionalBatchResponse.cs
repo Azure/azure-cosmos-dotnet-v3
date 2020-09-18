@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos
     public class TransactionalBatchResponse : IReadOnlyList<TransactionalBatchOperationResult>, IDisposable
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
-        private bool isDisposed;
-
         private List<TransactionalBatchOperationResult> results;
 
         /// <summary>
@@ -198,7 +196,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc />
@@ -385,9 +382,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">Indicates whether to dispose managed resources or not.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !this.isDisposed)
+            if (disposing)
             {
-                this.isDisposed = true;
                 if (this.Operations != null)
                 {
                     foreach (ItemBatchOperation operation in this.Operations)
