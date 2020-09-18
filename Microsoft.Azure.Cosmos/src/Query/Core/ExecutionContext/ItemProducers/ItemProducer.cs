@@ -235,14 +235,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreIfEmptyAsync(CancellationToken token)
+        public Task BufferMoreIfEmptyAsync(CancellationToken token)
         {
-            token.ThrowIfCancellationRequested();
-
-            if (this.bufferedPages.Count == 0)
-            {
-                await this.BufferMoreDocumentsAsync(token);
-            }
+            return token.IsCancellationRequested ? Task.FromCanceled(token)
+                : this.bufferedPages.Count == 0 ? this.BufferMoreDocumentsAsync(token)
+                : Task.CompletedTask;
         }
 
         /// <summary>

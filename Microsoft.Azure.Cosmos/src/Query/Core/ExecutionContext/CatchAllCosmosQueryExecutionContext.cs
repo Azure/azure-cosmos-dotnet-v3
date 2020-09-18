@@ -44,12 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 queryResponseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                // Per cancellationToken.ThrowIfCancellationRequested(); line above, this function should still throw OperationCanceledException.
-                throw;
-            }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException && cancellationToken.IsCancellationRequested))
             {
                 queryResponseCore = QueryResponseFactory.CreateFromException(ex);
             }

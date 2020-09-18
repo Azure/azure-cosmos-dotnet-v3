@@ -81,13 +81,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     result.Add(decryptedDocument);
                 }
-                catch (Exception exception)
+                catch (Exception exception) when (this.decryptionResultHandler != null)
                 {
-                    if (this.decryptionResultHandler == null)
-                    {
-                        throw;
-                    }
-
                     result.Add(document);
 
                     MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream(document);
