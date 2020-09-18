@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// but we eventually used the whole page for the next continuation; which continuation reports the cost?
         /// Basically the only thing we can ensure is if you drain a query fully you should get back the same query metrics by the end.
         /// </remarks>
-        private ConcurrentBag<QueryPageDiagnostics> diagnosticsPages;
+        private readonly ConcurrentBag<QueryPageDiagnostics> diagnosticsPages;
 
         /// <summary>
         /// Total number of buffered items to determine if we can go for another prefetch while still honoring the MaxBufferedItemCount.
@@ -364,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     querySpecForInit,
                     partitionKeyRange,
                     this.OnItemProducerTreeCompleteFetching,
-                    this.itemProducerForest.Comparer as IComparer<ItemProducerTree>,
+                    this.itemProducerForest.Comparer,
                     this.equalityComparer,
                     this.testSettings,
                     deferFirstPage,

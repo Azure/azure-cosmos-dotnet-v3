@@ -16,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.CosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
         }
 
-        public void Accept(ITraceDatumVisitor traceDatumVisitor) => traceDatumVisitor.Visit(this);
+        public void Accept(ITraceDatumVisitor traceDatumVisitor)
+        {
+            traceDatumVisitor.Visit(this);
+        }
     }
 }

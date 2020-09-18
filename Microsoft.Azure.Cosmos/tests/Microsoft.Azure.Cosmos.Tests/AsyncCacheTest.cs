@@ -192,7 +192,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // neither task is complete at this point.
             Assert.IsFalse(getTask2.IsCompleted);
-            Assert.IsFalse(getTask1.IsCompleted);
 
             try
             {

@@ -22,10 +22,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
         public BootstrapperCore(PartitionSynchronizer synchronizer, DocumentServiceLeaseStore leaseStore, TimeSpan lockTime, TimeSpan sleepTime)
         {
-            if (synchronizer == null) throw new ArgumentNullException(nameof(synchronizer));
-            if (leaseStore == null) throw new ArgumentNullException(nameof(leaseStore));
-            if (lockTime <= TimeSpan.Zero) throw new ArgumentException("should be positive", nameof(lockTime));
-            if (sleepTime <= TimeSpan.Zero) throw new ArgumentException("should be positive", nameof(sleepTime));
+            if (synchronizer == null)
+            {
+                throw new ArgumentNullException(nameof(synchronizer));
+            }
+
+            if (leaseStore == null)
+            {
+                throw new ArgumentNullException(nameof(leaseStore));
+            }
+
+            if (lockTime <= TimeSpan.Zero)
+            {
+                throw new ArgumentException("should be positive", nameof(lockTime));
+            }
+
+            if (sleepTime <= TimeSpan.Zero)
+            {
+                throw new ArgumentException("should be positive", nameof(sleepTime));
+            }
 
             this.synchronizer = synchronizer;
             this.leaseStore = leaseStore;
@@ -38,7 +53,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             while (true)
             {
                 bool initialized = await this.leaseStore.IsInitializedAsync().ConfigureAwait(false);
-                if (initialized) break;
+                if (initialized)
+                {
+                    break;
+                }
 
                 bool isLockAcquired = await this.leaseStore.AcquireInitializationLockAsync(this.lockTime).ConfigureAwait(false);
 
