@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 {
     using System;
-    using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using System.Diagnostics;
-    using System.Collections.Generic;
+    using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class BackendMetricsTests

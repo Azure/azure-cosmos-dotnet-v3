@@ -27,14 +27,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
                 handlerCalls++;
                 return TestHandler.ReturnSuccess();
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -51,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
                 if (handlerCalls == 0)
                 {
                     handlerCalls++;
@@ -63,12 +67,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
-            requestMessage.OperationType =OperationType.Read;
+            requestMessage.OperationType = OperationType.Read;
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
@@ -82,7 +88,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
                 handlerCalls++;
                 if (handlerCalls == expectedHandlerCalls)
                 {
@@ -93,8 +100,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -107,9 +116,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             DocumentClient dc = new MockDocumentClient(RetryHandlerTests.TestUri, "test");
             CosmosClient client = new CosmosClient(
-                RetryHandlerTests.TestUri.OriginalString, 
-                Guid.NewGuid().ToString(), 
-                new CosmosClientOptions(), 
+                RetryHandlerTests.TestUri.OriginalString,
+                Guid.NewGuid().ToString(),
+                new CosmosClientOptions(),
                 dc);
 
             Mock<IDocumentClientRetryPolicy> mockClientRetryPolicy = new Mock<IDocumentClientRetryPolicy>();
@@ -124,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, response) => {
+            TestHandler testHandler = new TestHandler((request, response) =>
+            {
                 handlerCalls++;
                 if (handlerCalls == expectedHandlerCalls)
                 {
@@ -135,8 +145,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -174,7 +186,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCodes subStatusCode = SubStatusCodes.Unknown)
         {
             int handlerCalls = 0;
-            TestHandler testHandler = new TestHandler((request, response) => {
+            TestHandler testHandler = new TestHandler((request, response) =>
+            {
                 handlerCalls++;
 
                 if (handlerCalls == 0)
@@ -186,11 +199,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            RetryHandler retryHandler = new RetryHandler(client);
-            retryHandler.InnerHandler = testHandler;
+            RetryHandler retryHandler = new RetryHandler(client)
+            {
+                InnerHandler = testHandler
+            };
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -209,14 +226,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler();
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
                 handlerCalls++;
                 return TestHandler.ReturnSuccess();
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
@@ -230,7 +250,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler();
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
                 request.OnBeforeSendRequestActions(request.ToDocumentServiceRequest());
                 if (handlerCalls == 0)
                 {
@@ -243,10 +264,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
-            
+
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }

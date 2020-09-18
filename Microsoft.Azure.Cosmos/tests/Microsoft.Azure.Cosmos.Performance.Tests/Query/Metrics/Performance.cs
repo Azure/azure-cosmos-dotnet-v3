@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Query.Metrics
 {
     using System;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Diagnostics;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     public class Performance
     {

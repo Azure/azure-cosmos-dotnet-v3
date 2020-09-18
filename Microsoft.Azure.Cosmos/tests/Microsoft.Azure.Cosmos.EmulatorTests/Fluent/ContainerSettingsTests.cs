@@ -4,20 +4,23 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
     [TestClass]
     public class ContainerSettingsTests : BaseCosmosClientHelper
     {
-        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
+        private static long ToEpoch(DateTime dateTime)
+        {
+            return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
+        }
 
         [TestInitialize]
         public async Task TestInitialize()

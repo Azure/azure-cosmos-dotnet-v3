@@ -19,21 +19,27 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task NoRetryOnHttpRequestException()
         {
-            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
+            HttpRequestMessage httpRequestMessageFunc()
+            {
+                return new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
+            }
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
                 httpRequestMessageFunc,
                 TimeSpan.FromSeconds(10),
                 new CosmosDiagnosticsContextCore());
 
-            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new HttpRequestException(), default(CancellationToken));
-            Assert.IsFalse(shouldRetryResult.ShouldRetry);            
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new HttpRequestException(), default);
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
         }
 
         [TestMethod]
         public async Task NoRetriesOnUserCancelledException()
         {
-            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
+            HttpRequestMessage httpRequestMessageFunc()
+            {
+                return new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
+            }
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
                 httpRequestMessageFunc,
@@ -44,14 +50,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             cancellationTokenSource.Cancel();
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new OperationCanceledException(), cancellationToken);
-            Assert.IsFalse(shouldRetryResult.ShouldRetry); 
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
         }
 
         [TestMethod]
         public async Task RetriesOnWebException()
         {
             HttpMethod httpMethod = HttpMethod.Get;
-            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(httpMethod, "https://localhost:8081");
+            HttpRequestMessage httpRequestMessageFunc()
+            {
+                return new HttpRequestMessage(httpMethod, "https://localhost:8081");
+            }
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
                 httpRequestMessageFunc,
@@ -70,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (HttpMethod method in httpMethods)
             {
                 httpMethod = method;
-                ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new WebException("Test", WebExceptionStatus.ConnectFailure), default(CancellationToken));
-                Assert.IsTrue(shouldRetryResult.ShouldRetry, method.ToString()); 
+                ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new WebException("Test", WebExceptionStatus.ConnectFailure), default);
+                Assert.IsTrue(shouldRetryResult.ShouldRetry, method.ToString());
             }
         }
 
@@ -79,15 +88,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetriesOnOperationCancelException()
         {
-            HttpRequestMessage httpRequestMessageFunc() => new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
+            HttpRequestMessage httpRequestMessageFunc()
+            {
+                return new HttpRequestMessage(HttpMethod.Get, "https://localhost:8081");
+            }
 
             IRetryPolicy retryPolicy = new TransientHttpClientRetryPolicy(
                 httpRequestMessageFunc,
                 TimeSpan.FromSeconds(10),
                 new CosmosDiagnosticsContextCore());
 
-            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new OperationCanceledException(), default(CancellationToken));
-            Assert.IsTrue(shouldRetryResult.ShouldRetry); 
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(new OperationCanceledException(), default);
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
     }
 }

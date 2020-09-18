@@ -70,7 +70,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Collection<T> responseCollection = new Collection<T>();
             string responseContinuation = null;
 
-            if (headers == null) headers = new DictionaryNameValueCollection();
+            if (headers == null)
+            {
+                headers = new DictionaryNameValueCollection();
+            }
 
             do
             {
@@ -139,7 +142,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Uri uri,
             NameValueCollection additionalHeaders = null)
         {
-            if (uri == null) throw new ArgumentNullException("uri");
+            if (uri == null)
+            {
+                throw new ArgumentNullException("uri");
+            }
 
             // GetAsync doesn't let clients to pass in additional headers. So, we are
             // internally using SendAsync and add the additional headers to requestMessage. 

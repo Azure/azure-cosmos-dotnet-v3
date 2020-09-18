@@ -51,7 +51,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override ReadOnlyMemory<byte> Value => this.lazyBytes.Value;
 
-            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
+            public override void WriteTo(IJsonWriter jsonWriter)
+            {
+                this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
+            }
         }
     }
 #if INTERNAL

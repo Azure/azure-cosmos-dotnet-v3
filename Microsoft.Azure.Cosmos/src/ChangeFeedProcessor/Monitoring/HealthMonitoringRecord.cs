@@ -21,7 +21,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
         /// <param name="exception">The exception.</param>
         public HealthMonitoringRecord(HealthSeverity severity, MonitoredOperation operation, DocumentServiceLease lease, Exception exception)
         {
-            if (lease == null) throw new ArgumentNullException(nameof(lease));
+            if (lease == null)
+            {
+                throw new ArgumentNullException(nameof(lease));
+            }
+
             this.Severity = severity;
             this.Operation = operation;
             this.Lease = lease;

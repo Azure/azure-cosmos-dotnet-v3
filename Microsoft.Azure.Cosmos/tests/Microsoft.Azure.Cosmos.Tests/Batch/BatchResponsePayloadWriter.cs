@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal class BatchResponsePayloadWriter
     {
-        private List<TransactionalBatchOperationResult> results;
+        private readonly List<TransactionalBatchOperationResult> results;
 
         public BatchResponsePayloadWriter(List<TransactionalBatchOperationResult> results)
         {

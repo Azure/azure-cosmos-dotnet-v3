@@ -21,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [DataTestMethod]
-        [DataRow(0,1)]
-        [DataRow(-1,1)]
-        [DataRow(50,0)]
-        [DataRow(50,-1)]
+        [DataRow(0, 1)]
+        [DataRow(-1, 1)]
+        [DataRow(50, 0)]
+        [DataRow(50, -1)]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void InvalidConstructor(int resolutionInMs, int buckets)
         {
@@ -143,18 +143,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 int estimatedTimeout = (i + 1) * timerTimeout;
                 TimerWheelTimer timer = wheel.CreateTimer(TimeSpan.FromMilliseconds(estimatedTimeout));
-                tasks.Add(Task.Run(async () => {
+                tasks.Add(Task.Run(async () =>
+                {
                     Stopwatch stopwatch = Stopwatch.StartNew();
                     await timer.StartTimerAsync();
                     stopwatch.Stop();
-                    return (estimatedTimeout,stopwatch.ElapsedMilliseconds);
+                    return (estimatedTimeout, stopwatch.ElapsedMilliseconds);
                 }));
             }
 
             await Task.WhenAll(tasks);
             foreach (Task<(int, long)> task in tasks)
             {
-                Assert.IsTrue(task.Result.Item2 >= task.Result.Item1  - resolution && task.Result.Item2 <= task.Result.Item1 + resolution, $"Timer configured with {task.Result.Item1} took {task.Result.Item2} to fire.");
+                Assert.IsTrue(task.Result.Item2 >= task.Result.Item1 - resolution && task.Result.Item2 <= task.Result.Item1 + resolution, $"Timer configured with {task.Result.Item1} took {task.Result.Item2} to fire.");
             }
         }
     }

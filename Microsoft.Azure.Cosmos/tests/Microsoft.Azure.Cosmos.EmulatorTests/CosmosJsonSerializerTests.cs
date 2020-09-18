@@ -6,11 +6,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -128,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                if(database != null)
+                if (database != null)
                 {
                     using (await database.DeleteStreamAsync()) { }
                 }

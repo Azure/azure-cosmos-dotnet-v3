@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
@@ -33,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(true);
 
-            await SmokeTestForNameAPI(client);
+            await this.SmokeTestForNameAPI(client);
         }
 
 #if DIRECT_MODE
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                await SmokeTestForNameAPI(client);
+                await this.SmokeTestForNameAPI(client);
             }
             catch (AggregateException e)
             {
@@ -106,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     //swallow
                 }
-                
+
 
                 //1. Database CRUD
                 Cosmos.Database database = await client.CreateDatabaseAsync(resourceRandomId);
@@ -458,12 +457,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.Database database = await client.CreateDatabaseAsync(databaseId);
             Container collection = await database.CreateContainerAsync(containerSetting);
 
-            LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book();
-            myDocument.Id = Guid.NewGuid().ToString();
-            myDocument.Title = "My Book"; //Simple Property.
-            myDocument.Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
-            myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
-            myDocument.Price = 9.99;
+            LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book
+            {
+                Id = Guid.NewGuid().ToString(),
+                Title = "My Book", //Simple Property.
+                Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }, //Array Property
+                Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }, //Complex Property
+                Price = 9.99
+            };
 
             await collection.CreateItemAsync<LinqGeneralBaselineTests.Book>(myDocument);
 
@@ -474,11 +475,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions options = new QueryRequestOptions() { MaxConcurrency = 1, MaxItemCount = 1 };
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
             FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
-            Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
+            Assert.AreEqual(0, await this.GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
             cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
-            Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
+            Assert.AreEqual(1, await this.GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
             // Testing the ReplaceDocumentAsync API with Document SelfLink as the parameter
@@ -486,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
             cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
-            Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
+            Assert.AreEqual(1, await this.GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 
         [TestMethod]
@@ -534,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Document anotherdoc = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc2Id });
 
             // doing a read, which cause the gateway has name->Id cache.
-            Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id), 
+            Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id),
                 new RequestOptions() { PartitionKey = new PartitionKey(doc1Id) });
 
             // Now delete the collection:
@@ -559,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Read Document, it should fail with notFound
             try
             {
-                Document doc3 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc2Id), 
+                Document doc3 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc2Id),
                     new RequestOptions() { PartitionKey = new PartitionKey(doc1Id) });
                 Assert.Fail("Should have thrown exception in here");
             }
@@ -629,7 +630,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client);
         }
 
-        enum FabircServiceReuseType
+        private enum FabircServiceReuseType
         {
             // recreate the fabric service using same collection name, everything just works.
             BoundToSameName,
@@ -639,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Bindable
         }
 
-        enum CallAPIForStaleCacheTest
+        private enum CallAPIForStaleCacheTest
         {
             Document,
             DocumentCollection,
@@ -651,19 +652,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // Create database and create collection
-                database = await client.CreateDatabaseAsync(id : "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString());
+                database = await client.CreateDatabaseAsync(id: "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString());
 
                 int collectionsCount = 10;
                 Logger.LogLine("Create {0} collections simultaneously.", collectionsCount);
                 IList<Container> containers = await this.CreateContainerssAsync(database,
                     collectionsCount - 1);
 
-                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.DocumentCollection);
-                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[0], CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[1], CallAPIForStaleCacheTest.DocumentCollection);
-                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[2], CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[3], CallAPIForStaleCacheTest.DocumentCollection);
+                await this.UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.Document);
+                await this.UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.DocumentCollection);
+                await this.UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[0], CallAPIForStaleCacheTest.Document);
+                await this.UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[1], CallAPIForStaleCacheTest.DocumentCollection);
+                await this.UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[2], CallAPIForStaleCacheTest.Document);
+                await this.UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[3], CallAPIForStaleCacheTest.DocumentCollection);
             }
             finally
             {
@@ -696,7 +697,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string collectionBarId = "collectionBar" + suffix;
             string doc1Id = "document1" + suffix;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            Container collFoo = await database.CreateContainerAsync( new ContainerProperties() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
+            Container collFoo = await database.CreateContainerAsync(new ContainerProperties() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
             Document documentDefinition = new Document() { Id = doc1Id };
             documentDefinition.SetPropertyValue("pk", "test");
             Document doc1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition);
@@ -717,13 +718,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else if (type == FabircServiceReuseType.BoundToDifferentName || type == FabircServiceReuseType.Bindable)
             {
                 // Now create collectionBar fist.
-                collBar = await database.CreateContainerAsync( new ContainerProperties() { Id = collectionBarId, PartitionKey = partitionKeyDefinition });
+                collBar = await database.CreateContainerAsync(new ContainerProperties() { Id = collectionBarId, PartitionKey = partitionKeyDefinition });
                 // delete another random collection so we have 1 bindable collection left
                 await collBar.DeleteContainerAsync();
             }
 
             // Now create collectionFoo second time
-            Container collFoo2 = await database.CreateContainerAsync( new ContainerProperties() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
+            Container collFoo2 = await database.CreateContainerAsync(new ContainerProperties() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
 
             if (type == FabircServiceReuseType.Bindable)
             {
@@ -834,8 +835,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(ex.StatusCode, HttpStatusCode.NotFound);
-                string validationFailure;
-                ex.TryGetHeader(HttpConstants.HttpHeaders.RequestValidationFailure, out validationFailure);
+                ex.TryGetHeader(HttpConstants.HttpHeaders.RequestValidationFailure, out string validationFailure);
                 Assert.IsNull(validationFailure);
             }
         }
@@ -1049,7 +1049,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 // the url doesn't conform to the schema at at all.
                 ItemResponse<Document> response = await coll.ReadItemAsync<Document>("dba/what/colltions/abc", new Cosmos.PartitionKey(doc1Id));
-            }            
+            }
             catch (CosmosException e)
             {
                 // without client validation.
@@ -1185,10 +1185,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void NameParsingTest()
         {
-            bool isFeed = false;
-            string resourceType;
-            string resourceIdorFullName;
-            bool isNameBased = false;
 
             string suffix = Guid.NewGuid().ToString();
             // First to create a ton of named based resource object.
@@ -1206,7 +1202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Uri baseuri = new Uri("http://localhost");
             bool tryParse;
 
-            tryParse = PathsHelper.TryParsePathSegments(uri.OriginalString, out isFeed, out resourceType, out resourceIdorFullName, out isNameBased);
+            tryParse = PathsHelper.TryParsePathSegments(uri.OriginalString, out bool isFeed, out string resourceType, out string resourceIdorFullName, out bool isNameBased);
             Assert.IsTrue(tryParse);
             Assert.IsTrue(isNameBased);
             Assert.IsFalse(isFeed);
@@ -1358,7 +1354,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                if(database != null)
+                if (database != null)
                 {
                     await database.DeleteAsync();
                 }
@@ -1550,10 +1546,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document1.SetPropertyValue("field1", 1);
             await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
-            var query = client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c", new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery();
+            IDocumentQuery<dynamic> query = client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c", new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery();
             await query.ExecuteNextAsync();
             await query.ExecuteNextAsync();
-            var result = await query.ExecuteNextAsync();
+            DocumentFeedResponse<dynamic> result = await query.ExecuteNextAsync();
             Assert.AreEqual("2", result.SessionToken.Split(':')[0], result.SessionToken);
 
             DocumentClient otherClient = TestCommon.CreateClient(false);
@@ -1600,10 +1596,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
 
                 ContainerInternal containerCore = (ContainerInlineCore)container;
-                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
+                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default);
 
                 Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
-            } finally
+            }
+            finally
             {
                 if (database != null)
                 {
@@ -1673,7 +1670,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
 
                 ContainerInternal containerCore = (ContainerInlineCore)container;
-                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
+                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default);
 
                 Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
             }
@@ -1812,8 +1809,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 for (int i = 0; i < 10; i++)
                 {
                     await scripts.ExecuteStoredProcedureAsync<object>(
-                        storedProcedureId: "sproc1", 
-                        partitionKey: new Cosmos.PartitionKey(i),  
+                        storedProcedureId: "sproc1",
+                        partitionKey: new Cosmos.PartitionKey(i),
                         parameters: null);
                 }
             }
@@ -1950,7 +1947,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 for (int i = 0; i < numberOfCollectionsPerDatabase; ++i)
                 {
-                    containers.Add(await AsyncRetryRateLimiting(() => database.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })));
+                    containers.Add(await this.AsyncRetryRateLimiting(() => database.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })));
                 }
             }
             return containers;

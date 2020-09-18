@@ -33,7 +33,7 @@
             Random random = seed.HasValue ? new Random(seed.Value) : new Random();
 
             string sampledJson;
-            if(root.Type == Newtonsoft.Json.Linq.JTokenType.Array)
+            if (root.Type == Newtonsoft.Json.Linq.JTokenType.Array)
             {
                 Newtonsoft.Json.Linq.JArray array = (Newtonsoft.Json.Linq.JArray)root;
                 IEnumerable<Newtonsoft.Json.Linq.JToken> tokens = array
@@ -47,7 +47,7 @@
 
                 sampledJson = newArray.ToString();
             }
-            else if(root.Type == Newtonsoft.Json.Linq.JTokenType.Object)
+            else if (root.Type == Newtonsoft.Json.Linq.JTokenType.Object)
             {
                 Newtonsoft.Json.Linq.JObject jobject = (Newtonsoft.Json.Linq.JObject)root;
                 IEnumerable<Newtonsoft.Json.Linq.JProperty> properties = jobject
@@ -55,7 +55,7 @@
                     .OrderBy(x => random.Next())
                     .Take(maxNumberOfItems);
                 Newtonsoft.Json.Linq.JObject newObject = new Newtonsoft.Json.Linq.JObject();
-                foreach(Newtonsoft.Json.Linq.JProperty property in properties)
+                foreach (Newtonsoft.Json.Linq.JProperty property in properties)
                 {
                     newObject.Add(property);
                 }

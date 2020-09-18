@@ -4,13 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using System.Xml;
-    using System.Collections.Generic;
     using System;
-    using Newtonsoft.Json;
+    using System.Collections.Generic;
     using System.Net.Http;
+    using System.Xml;
+    using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public sealed class CosmosDiagnosticsSerializerTests : BaselineTests<CosmosDiagnosticsSerializerBaselineInput, CosmosDiagnosticsSerializerBaselineOutput>

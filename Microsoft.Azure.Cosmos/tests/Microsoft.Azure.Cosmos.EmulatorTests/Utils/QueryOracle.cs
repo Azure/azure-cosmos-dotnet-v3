@@ -30,14 +30,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         private readonly bool enableRetries;
 
         public QueryOracle(Uri gatewayUri, string masterKey, string collectionLink, bool enableRetries,
-                           int targetNumberOfQueriesToValidate = Int32.MaxValue)
+                           int targetNumberOfQueriesToValidate = int.MaxValue)
             : this(
                 new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: Documents.ConsistencyLevel.Session, handler: null),
                 collectionLink, enableRetries, targetNumberOfQueriesToValidate)
         {
         }
 
-        internal QueryOracle(DocumentClient client, string collectionLink, bool enableRetries, int targetNumberOfQueriesToValidate = Int32.MaxValue)
+        internal QueryOracle(DocumentClient client, string collectionLink, bool enableRetries, int targetNumberOfQueriesToValidate = int.MaxValue)
         {
             this.collectionLink = collectionLink;
             this.targetNumberOfQueriesToValidate = targetNumberOfQueriesToValidate;
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string cont = null;
             do
             {
-                DocumentFeedResponse<dynamic> response = AsyncRetryRateLimiting(() => this.client.ReadDocumentFeedAsync(this.collectionLink, new FeedOptions { RequestContinuationToken = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
+                DocumentFeedResponse<dynamic> response = AsyncRetryRateLimiting(() => this.client.ReadDocumentFeedAsync(this.collectionLink, new FeedOptions { RequestContinuationToken = cont, MaxItemCount = 1000, EnableCrossPartitionQuery = true })).Result;
 
                 Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             }
             else
             {
-                string errorMessage = String.Format("Unknown type: {0}, token: {1}", token.Type, token.ToString());
+                string errorMessage = string.Format("Unknown type: {0}, token: {1}", token.Type, token.ToString());
                 Debug.Assert(false, errorMessage);
                 throw new NotSupportedException(errorMessage);
             }
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                                            resultCount / (double)numberOfQueries, numberOfQueries);
                 }
 
-                IDocumentQuery<dynamic> docQuery = this.client.CreateDocumentQuery(this.collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize , EnableCrossPartitionQuery = true}).AsDocumentQuery();
+                IDocumentQuery<dynamic> docQuery = this.client.CreateDocumentQuery(this.collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize, EnableCrossPartitionQuery = true }).AsDocumentQuery();
                 while (docQuery.HasMoreResults)
                 {
                     DateTime startTime = DateTime.Now;
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                     {
                         Trace.TraceInformation(
                             DateTime.Now.ToString("HH:mm:ss.ffff") +
-                            @": The doc id {0} was expected for query {1} but was not obtained, query all pages activitiIDs: ({2})", queryOracleId, query, String.Join(",", activityIDsAllQueryPages));
+                            @": The doc id {0} was expected for query {1} but was not obtained, query all pages activitiIDs: ({2})", queryOracleId, query, string.Join(",", activityIDsAllQueryPages));
 
                         if (!this.failedQueries.ContainsKey(keyVal.Key))
                         {
@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 //In case of a failure, retry only failed queries after sleeping for couple of minutes.
                 if (this.enableRetries && this.retryCount < 10)
                 {
-                    Trace.TraceInformation(String.Format(CultureInfo.InvariantCulture, @"*** Retrying {0} Failed queries ***", this.failedQueries.Count));
+                    Trace.TraceInformation(string.Format(CultureInfo.InvariantCulture, @"*** Retrying {0} Failed queries ***", this.failedQueries.Count));
                     this.retryCount++;
                     Thread.Sleep(120 * 1000);
                     result = await this.RetryFailedQueries(pageSize);
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             {
                 this.invertedIndex.Add(indexKey, new HashSet<string>());
             }
-            Debug.Assert(!this.invertedIndex[indexKey].Contains(val), String.Format(CultureInfo.InvariantCulture, "Same path ({0}) is found twice in the same document {1}", indexKey, val));
+            Debug.Assert(!this.invertedIndex[indexKey].Contains(val), string.Format(CultureInfo.InvariantCulture, "Same path ({0}) is found twice in the same document {1}", indexKey, val));
             this.invertedIndex[indexKey].Add(val);
         }
 
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
             public string GetQuery()
             {
-                return String.Format(CultureInfo.InvariantCulture, @"SELECT r._rid FROM root r WHERE {0} = {1}", this.strKey, this.strValue);
+                return string.Format(CultureInfo.InvariantCulture, @"SELECT r._rid FROM root r WHERE {0} = {1}", this.strKey, this.strValue);
             }
 
             public override int GetHashCode()

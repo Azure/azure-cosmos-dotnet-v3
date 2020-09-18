@@ -166,55 +166,55 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 TryCatch<sbyte> tryDeserialize = JsonSerializer.Monadic.Deserialize<sbyte>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<byte> tryDeserialize = JsonSerializer.Monadic.Deserialize<byte>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<short> tryDeserialize = JsonSerializer.Monadic.Deserialize<short>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<int> tryDeserialize = JsonSerializer.Monadic.Deserialize<int>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<long> tryDeserialize = JsonSerializer.Monadic.Deserialize<long>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, tryDeserialize.Result);
             }
 
             {
                 TryCatch<ushort> tryDeserialize = JsonSerializer.Monadic.Deserialize<ushort>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<uint> tryDeserialize = JsonSerializer.Monadic.Deserialize<uint>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<ulong> tryDeserialize = JsonSerializer.Monadic.Deserialize<ulong>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
                 TryCatch<decimal> tryDeserialize = JsonSerializer.Monadic.Deserialize<decimal>(integerBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((long)integerValue, (long)tryDeserialize.Result);
+                Assert.AreEqual(integerValue, (long)tryDeserialize.Result);
             }
 
             {
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 TryCatch<decimal> tryDeserialize = JsonSerializer.Monadic.Deserialize<decimal>(doubleBuffer);
                 Assert.IsTrue(tryDeserialize.Succeeded);
-                Assert.AreEqual((decimal)(double)doubleValue, tryDeserialize.Result);
+                Assert.AreEqual((decimal)doubleValue, tryDeserialize.Result);
             }
 
             {

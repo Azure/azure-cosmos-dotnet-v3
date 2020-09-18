@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -22,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class FeedProcessorCoreTests
     {
-        private static ProcessorOptions DefaultSettings = new ProcessorOptions() {
+        private static readonly ProcessorOptions DefaultSettings = new ProcessorOptions()
+        {
             FeedPollDelay = TimeSpan.FromSeconds(0)
         };
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(mockObserver.Object)
                 .Verify(o => o.ProcessChangesAsync(
-                    It.IsAny<ChangeFeedObserverContext>(), 
+                    It.IsAny<ChangeFeedObserverContext>(),
                     It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
                     It.IsAny<CancellationToken>())
                     , Times.Once);
@@ -172,8 +172,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             if (includeItem)
             {
-                MyDocument document = new MyDocument();
-                document.id = "test";
+                MyDocument document = new MyDocument
+                {
+                    id = "test"
+                };
 
                 message.Content = new CosmosJsonDotNetSerializer().ToStream(new { Documents = new List<MyDocument>() { document } });
             }
@@ -188,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private class CustomSerializer : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public int FromStreamCalled = 0;
             public int ToStreamCalled = 0;
 
@@ -205,9 +207,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        private class CustomSerializerFails: CosmosSerializer
+        private class CustomSerializerFails : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public override T FromStream<T>(Stream stream)
             {
                 throw new CustomException();

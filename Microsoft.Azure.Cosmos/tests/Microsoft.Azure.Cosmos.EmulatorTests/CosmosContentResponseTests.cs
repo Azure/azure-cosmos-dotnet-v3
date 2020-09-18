@@ -6,12 +6,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -352,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (TransactionalBatchOperationResult itemResponse in response)
             {
                 count++;
-                if(count == noResponseItemCount)
+                if (count == noResponseItemCount)
                 {
                     break;
                 }
@@ -456,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsNotNull(headers.ETag);
             }
-            
+
             //Assert.IsNotNull(headers.ActivityId);
         }
     }

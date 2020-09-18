@@ -7,16 +7,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class BatchExecUtilsUnitTests
     {
-        private Random random = new Random();
+        private readonly Random random = new Random();
 
         [TestMethod]
         [Owner("abpai")]
@@ -134,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         private class TestNonSeekableStream : Stream
         {
-            private byte[] data;
+            private readonly byte[] data;
 
             private int currentIndex;
 

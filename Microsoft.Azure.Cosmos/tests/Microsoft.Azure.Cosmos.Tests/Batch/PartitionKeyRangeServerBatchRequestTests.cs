@@ -30,14 +30,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CreateItemBatchOperation()
             };
 
-            (PartitionKeyRangeServerBatchRequest request , ArraySegment<ItemBatchOperation> pendingOperations) = await PartitionKeyRangeServerBatchRequest.CreateAsync(
+            (PartitionKeyRangeServerBatchRequest request, ArraySegment<ItemBatchOperation> pendingOperations) = await PartitionKeyRangeServerBatchRequest.CreateAsync(
                 "0",
                 new ArraySegment<ItemBatchOperation>(operations.ToArray()),
                 200000,
                 2,
                 false,
                 MockCosmosUtil.Serializer,
-                default(CancellationToken));
+                default);
 
             Assert.AreEqual(operations.Count, request.Operations.Count);
             CollectionAssert.AreEqual(operations, request.Operations.ToArray());
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 1,
                 false,
                 MockCosmosUtil.Serializer,
-                default(CancellationToken));
+                default);
 
             Assert.AreEqual(1, request.Operations.Count);
             Assert.AreEqual(operations[0].Id, request.Operations[0].Id);
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 1,
                 false,
                 MockCosmosUtil.Serializer,
-                default(CancellationToken));
+                default);
 
             Assert.AreEqual(1, request.Operations.Count);
             // The first element is not taken into account due to an Offset of 1
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxServerRequestOperationCount,
                 false,
                 MockCosmosUtil.Serializer,
-                default(CancellationToken));
+                default);
         }
     }
 }

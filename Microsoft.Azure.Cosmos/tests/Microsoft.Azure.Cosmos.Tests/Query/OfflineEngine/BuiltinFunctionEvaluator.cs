@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Newtonsoft.Json.Linq;
 
     internal static class BuiltinFunctionEvaluator
     {
@@ -479,14 +478,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The numeric expression to take the absolute value of.</param>
         /// <returns>The absolute (positive) value of the specified numeric expression.</returns>
-        private static CosmosElement ABS(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Abs, number);
+        private static CosmosElement ABS(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Abs, number);
+        }
 
         /// <summary>
         /// Returns the angle, in radians, whose cosine is the specified numeric expression; also called arccosine.
         /// </summary>
         /// <param name="number">The numeric expression to take the arccosine of.</param>
         /// <returns>The angle, in radians, whose cosine is the specified numeric expression; also called arccosine.</returns>
-        private static CosmosElement ACOS(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Acos, number);
+        private static CosmosElement ACOS(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Acos, number);
+        }
 
         /// <summary>
         /// Returns an array that is the result of concatenating two or more array values.
@@ -719,14 +724,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The numeric expression to take the arcsine of.</param>
         /// <returns>The angle, in radians, whose sine is the specified numeric expression. This is also called arcsine.</returns>
-        private static CosmosElement ASIN(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Asin, number);
+        private static CosmosElement ASIN(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Asin, number);
+        }
 
         /// <summary>
         /// Returns the angle, in radians, whose tangent is the specified numeric expression. This is also called arctangent.
         /// </summary>
         /// <param name="number">The numeric expression.</param>
         /// <returns>The angle, in radians, whose tangent is the specified numeric expression. This is also called arctangent.</returns>
-        private static CosmosElement ATAN(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Atan, number);
+        private static CosmosElement ATAN(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Atan, number);
+        }
 
         /// <summary>
         /// Returns the angle, in radians, between the positive x-axis and the ray from the origin to the point (y, x), where x and y are the values of the two specified float expressions.
@@ -734,14 +745,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="x">x coordinate of the point.</param>
         /// <param name="y">y coordinate of the point.</param>
         /// <returns>the angle, in radians, between the positive x-axis and the ray from the origin to the point (y, x), where x and y are the values of the two specified float expressions.</returns>
-        private static CosmosElement ATN2(CosmosElement x, CosmosElement y) => ExecuteTwoArgumentNumberFunction(Math.Atan2, x, y);
+        private static CosmosElement ATN2(CosmosElement x, CosmosElement y)
+        {
+            return ExecuteTwoArgumentNumberFunction(Math.Atan2, x, y);
+        }
 
         /// <summary>
         /// Returns the smallest integer value greater than, or equal to, the specified numeric expression.
         /// </summary>
         /// <param name="number">The numeric expression.</param>
         /// <returns>The smallest integer value greater than, or equal to, the specified numeric expression.</returns>
-        private static CosmosElement CEILING(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Ceiling, number);
+        private static CosmosElement CEILING(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Ceiling, number);
+        }
 
         /// <summary>
         /// Returns a string that is the result of concatenating two or more string values.
@@ -798,37 +815,49 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <returns>A Boolean indicating whether the first string expression contains the second.</returns>
         private static CosmosElement CONTAINS(
             CosmosElement haystack,
-            CosmosElement needle) => ExecuteTwoArgumentStringFunction(
-                (value1, value2) => CosmosBoolean.Create(value1.Contains(value2)),
-                haystack,
-                needle);
+            CosmosElement needle)
+        {
+            return ExecuteTwoArgumentStringFunction(
+(value1, value2) => CosmosBoolean.Create(value1.Contains(value2)),
+haystack,
+needle);
+        }
 
         /// <summary>
         /// Returns the trigonometric cosine of the specified angle, in radians, in the specified expression.
         /// </summary>
         /// <param name="number">The numeric expression to take the cosine of.</param>
         /// <returns>The trigonometric cosine of the specified angle, in radians, in the specified expression.</returns>
-        private static CosmosElement COS(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            Math.Cos,
-            number);
+        private static CosmosElement COS(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+Math.Cos,
+number);
+        }
 
         /// <summary>
         /// Returns the trigonometric cotangent of the specified angle, in radians, in the specified numeric expression.
         /// </summary>
         /// <param name="number">The numeric expression to take the cotangent of.</param>
         /// <returns>The trigonometric cotangent of the specified angle, in radians, in the specified numeric expression.</returns>
-        private static CosmosElement COT(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            (value) => 1.0 / Math.Tan(value),
-            number);
+        private static CosmosElement COT(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+(value) => 1.0 / Math.Tan(value),
+number);
+        }
 
         /// <summary>
         /// Returns the corresponding angle in degrees for an angle specified in radians.
         /// </summary>
         /// <param name="number">The angle specified in radians to convert to degrees.</param>
         /// <returns>The corresponding angle in degrees for an angle specified in radians.</returns>
-        private static CosmosElement DEGREES(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            (radians) => 180 / Math.PI * radians,
-            number);
+        private static CosmosElement DEGREES(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+(radians) => 180 / Math.PI * radians,
+number);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating whether the first string expression ends with the second.
@@ -836,24 +865,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string expression to check.</param>
         /// <param name="suffix">The suffix to look for.</param>
         /// <returns>a Boolean indicating whether the first string expression ends with the second.</returns>
-        private static CosmosElement ENDSWITH(CosmosElement str, CosmosElement suffix) => ExecuteTwoArgumentStringFunction(
-            (value1, value2) => CosmosBoolean.Create(value1.EndsWith(value2, StringComparison.Ordinal)),
-            str,
-            suffix);
+        private static CosmosElement ENDSWITH(CosmosElement str, CosmosElement suffix)
+        {
+            return ExecuteTwoArgumentStringFunction(
+(value1, value2) => CosmosBoolean.Create(value1.EndsWith(value2, StringComparison.Ordinal)),
+str,
+suffix);
+        }
 
         /// <summary>
         /// Returns the exponent of the specified numeric expression.
         /// </summary>
         /// <param name="number">The numeric expression to take the exponent of.</param>
         /// <returns>The exponent of the specified numeric expression.</returns>
-        private static CosmosElement EXP(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Exp, number);
+        private static CosmosElement EXP(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Exp, number);
+        }
 
         /// <summary>
         /// Returns the largest integer less than or equal to the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to take the floor of.</param>
         /// <returns>The largest integer less than or equal to the specified numeric expression.</returns>
-        private static CosmosElement FLOOR(CosmosElement number) => ExecuteOneArgumentNumberFunction(Math.Floor, number);
+        private static CosmosElement FLOOR(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(Math.Floor, number);
+        }
 
         /// <summary>
         /// Returns the starting position of the first occurrence of the second string expression within the first specified string expression, or -1 if the string is not found.
@@ -861,66 +899,93 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string expression to look in.</param>
         /// <param name="substring">The string expression to look for.</param>
         /// <returns>The starting position of the first occurrence of the second string expression within the first specified string expression, or -1 if the string is not found.</returns>
-        private static CosmosElement INDEX_OF(CosmosElement str, CosmosElement substring) => ExecuteTwoArgumentStringFunction(
-            (value1, value2) => CosmosNumber64.Create(value1.IndexOf(value2, StringComparison.Ordinal)),
-            str,
-            substring);
+        private static CosmosElement INDEX_OF(CosmosElement str, CosmosElement substring)
+        {
+            return ExecuteTwoArgumentStringFunction(
+(value1, value2) => CosmosNumber64.Create(value1.IndexOf(value2, StringComparison.Ordinal)),
+str,
+substring);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is an array.
         /// </summary>
         /// <param name="value">The expression to check if it's an array.</param>
         /// <returns>A Boolean indicating if the type of the value is an array.</returns>
-        private static CosmosElement IS_ARRAY(CosmosElement value) => CosmosBoolean.Create(value is CosmosArray);
+        private static CosmosElement IS_ARRAY(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value is CosmosArray);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a Boolean.
         /// </summary>
         /// <param name="value">The expression to check if it is a boolean.</param>
         /// <returns>A Boolean indicating if the type of the value is a Boolean.</returns>
-        private static CosmosElement IS_BOOL(CosmosElement value) => CosmosBoolean.Create(value is CosmosBoolean);
+        private static CosmosElement IS_BOOL(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value is CosmosBoolean);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the property has been assigned a value.
         /// </summary>
         /// <param name="value">The expression to check if it is defined.</param>
         /// <returns>A Boolean indicating if the property has been assigned a value.</returns>
-        private static CosmosElement IS_DEFINED(CosmosElement value) => CosmosBoolean.Create(value != Undefined);
+        private static CosmosElement IS_DEFINED(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value != Undefined);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is null.
         /// </summary>
         /// <param name="value">The expression to check if it is null.</param>
         /// <returns>A Boolean indicating if the type of the value is null.</returns>
-        private static CosmosElement IS_NULL(CosmosElement value) => CosmosBoolean.Create(value is CosmosNull);
+        private static CosmosElement IS_NULL(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value is CosmosNull);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a number.
         /// </summary>
         /// <param name="value">The expression to check if it is a number.</param>
         /// <returns>A Boolean indicating if the type of the value is a number.</returns>
-        private static CosmosElement IS_NUMBER(CosmosElement value) => CosmosBoolean.Create(value is CosmosNumber);
+        private static CosmosElement IS_NUMBER(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value is CosmosNumber);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a JSON object.
         /// </summary>
         /// <param name="value">The expression to check if it is an object.</param>
         /// <returns>A Boolean indicating if the type of the value is a JSON object.</returns>
-        private static CosmosElement IS_OBJECT(CosmosElement value) => CosmosBoolean.Create(value is CosmosObject);
+        private static CosmosElement IS_OBJECT(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value is CosmosObject);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a string, number, Boolean or null.
         /// </summary>
         /// <param name="value">The expression to check if it is a primitive.</param>
         /// <returns>A Boolean indicating if the type of the value is a string, number, Boolean or null.</returns>
-        private static CosmosElement IS_PRIMITIVE(CosmosElement value) => CosmosBoolean.Create(Utils.IsPrimitive(value));
+        private static CosmosElement IS_PRIMITIVE(CosmosElement value)
+        {
+            return CosmosBoolean.Create(Utils.IsPrimitive(value));
+        }
 
         /// <summary>
         /// Returns a Boolean indicating if the type of the value is a string.
         /// </summary>
         /// <param name="value">The expression to check if it is a string.</param>
         /// <returns>A Boolean indicating if the type of the value is a string.</returns>
-        private static CosmosElement IS_STRING(CosmosElement value) => CosmosBoolean.Create(value is CosmosString);
+        private static CosmosElement IS_STRING(CosmosElement value)
+        {
+            return CosmosBoolean.Create(value is CosmosString);
+        }
 
         /// <summary>
         /// Returns the left part of a string with the specified number of characters.
@@ -928,19 +993,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="str">The string to take the left part of.</param>
         /// <param name="length">The number of characters to take.</param>
         /// <returns>The left part of a string with the specified number of characters.</returns>
-        private static CosmosElement LEFT(CosmosElement str, CosmosElement length) => ExecuteSubstring(
-            str,
-            CosmosNumber64.Create(0),
-            length);
+        private static CosmosElement LEFT(CosmosElement str, CosmosElement length)
+        {
+            return ExecuteSubstring(
+str,
+CosmosNumber64.Create(0),
+length);
+        }
 
         /// <summary>
         /// Returns the number of characters of the specified string expression.
         /// </summary>
         /// <param name="str">The string expression to take the length of.</param>
         /// <returns>The number of characters of the specified string expression.</returns>
-        private static CosmosElement LENGTH(CosmosElement str) => ExecuteOneArgumentStringFunction(
-            (value) => CosmosNumber64.Create(value.Length),
-            str);
+        private static CosmosElement LENGTH(CosmosElement str)
+        {
+            return ExecuteOneArgumentStringFunction(
+(value) => CosmosNumber64.Create(value.Length),
+str);
+        }
 
         /// <summary>
         /// Returns the natural logarithm of the specified numeric expression, or the logarithm using the specified base.
@@ -948,42 +1019,57 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <param name="number">The number to take the log of.</param>
         /// <param name="numberBase">The (optional) base.</param>
         /// <returns>The natural logarithm of the specified numeric expression, or the logarithm using the specified base.</returns>
-        private static CosmosElement LOG(CosmosElement number, CosmosElement numberBase = null) => ExecuteOneArgumentNumberFunction(
-            Math.Log,
-            number);
+        private static CosmosElement LOG(CosmosElement number, CosmosElement numberBase = null)
+        {
+            return ExecuteOneArgumentNumberFunction(
+Math.Log,
+number);
+        }
 
         /// <summary>
         /// Returns the base-10 logarithmic value of the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to take the base-10 log of.</param>
         /// <returns>The base-10 logarithmic value of the specified numeric expression.</returns>
-        private static CosmosElement LOG10(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            Math.Log10,
-            number);
+        private static CosmosElement LOG10(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+Math.Log10,
+number);
+        }
 
         /// <summary>
         /// Returns a string expression after converting uppercase character data to lowercase.
         /// </summary>
         /// <param name="str">The string to lowercase.</param>
         /// <returns>A string expression after converting uppercase character data to lowercase.</returns>
-        private static CosmosElement LOWER(CosmosElement str) => ExecuteOneArgumentStringFunction(
-            (value) => CosmosString.Create(value.ToLower(CultureInfo.InvariantCulture)),
-            str);
+        private static CosmosElement LOWER(CosmosElement str)
+        {
+            return ExecuteOneArgumentStringFunction(
+(value) => CosmosString.Create(value.ToLower(CultureInfo.InvariantCulture)),
+str);
+        }
 
         /// <summary>
         /// Returns a string expression after it removes leading blanks.
         /// </summary>
         /// <param name="str">The string to remove leading blanks from.</param>
         /// <returns>A string expression after it removes leading blanks.</returns>
-        private static CosmosElement LTRIM(CosmosElement str) => ExecuteOneArgumentStringFunction(
-            (value) => CosmosString.Create(value.TrimStart()),
-            str);
+        private static CosmosElement LTRIM(CosmosElement str)
+        {
+            return ExecuteOneArgumentStringFunction(
+(value) => CosmosString.Create(value.TrimStart()),
+str);
+        }
 
         /// <summary>
         /// Returns the constant value of PI.
         /// </summary>
         /// <returns>The constant value of PI.</returns>
-        private static CosmosElement PI() => CosmosNumber64.Create(Math.PI);
+        private static CosmosElement PI()
+        {
+            return CosmosNumber64.Create(Math.PI);
+        }
 
         /// <summary>
         /// Returns the power of the specified numeric expression to the value specified.
@@ -993,19 +1079,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <returns>The power of the specified numeric expression to the value specified.</returns>
         private static CosmosElement POWER(
             CosmosElement baseNumber,
-            CosmosElement exponentNumber) => ExecuteTwoArgumentNumberFunction(
-                Math.Pow,
-                baseNumber,
-                exponentNumber);
+            CosmosElement exponentNumber)
+        {
+            return ExecuteTwoArgumentNumberFunction(
+Math.Pow,
+baseNumber,
+exponentNumber);
+        }
 
         /// <summary>
         /// Returns radians when a numeric expression, in degrees, is entered.
         /// </summary>
         /// <param name="number">The number expression, in degrees, to take the power of.</param>
         /// <returns>Radians when a numeric expression, in degrees, is entered.</returns>
-        private static CosmosElement RADIANS(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            (degrees) => Math.PI * degrees / 180.0,
-            number);
+        private static CosmosElement RADIANS(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+(degrees) => Math.PI * degrees / 180.0,
+number);
+        }
 
         /// <summary>
         /// Replaces all occurrences of a specified string value with another string value.
@@ -1098,9 +1190,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="str">The string value to reverse.</param>
         /// <returns>The reverse order of a string value.</returns>
-        private static CosmosElement REVERSE(CosmosElement str) => ExecuteOneArgumentStringFunction(
-            (value) => CosmosString.Create(new string(value.Reverse().ToArray())),
-            str);
+        private static CosmosElement REVERSE(CosmosElement str)
+        {
+            return ExecuteOneArgumentStringFunction(
+(value) => CosmosString.Create(new string(value.Reverse().ToArray())),
+str);
+        }
 
         /// <summary>
         /// Returns the right part of a string with the specified number of characters.
@@ -1136,54 +1231,72 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="number">The numeric value to round.</param>
         /// <returns>A numeric value, rounded to the closest integer value.</returns>
-        private static CosmosElement ROUND(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            (value) => Math.Round(value, MidpointRounding.AwayFromZero),
-            number);
+        private static CosmosElement ROUND(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+(value) => Math.Round(value, MidpointRounding.AwayFromZero),
+number);
+        }
 
         /// <summary>
         /// Returns a string expression after truncating all trailing blanks.
         /// </summary>
         /// <param name="str">The string to remove trailing blanks from.</param>
         /// <returns>A string expression after truncating all trailing blanks.</returns>
-        private static CosmosElement RTRIM(CosmosElement str) => ExecuteOneArgumentStringFunction(
-            (value) => CosmosString.Create(value.TrimEnd()),
-            str);
+        private static CosmosElement RTRIM(CosmosElement str)
+        {
+            return ExecuteOneArgumentStringFunction(
+(value) => CosmosString.Create(value.TrimEnd()),
+str);
+        }
 
         /// <summary>
         /// Returns the sign value (-1, 0, 1) of the specified numeric expression.
         /// </summary>
         /// <param name="number">The value to take the sign of.</param>
         /// <returns>The sign value (-1, 0, 1) of the specified numeric expression.</returns>
-        private static CosmosElement SIGN(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            (value) => Math.Sign(value),
-            number);
+        private static CosmosElement SIGN(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+(value) => Math.Sign(value),
+number);
+        }
 
         /// <summary>
         /// Returns the trigonometric sine of the specified angle, in radians, in the specified expression.
         /// </summary>
         /// <param name="number">The number to take the sine of.</param>
         /// <returns>The trigonometric sine of the specified angle, in radians, in the specified expression.</returns>
-        private static CosmosElement SIN(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            Math.Sin,
-            number);
+        private static CosmosElement SIN(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+Math.Sin,
+number);
+        }
 
         /// <summary>
         /// Returns the square root of the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to take the square root of.</param>
         /// <returns>The square root of the specified numeric expression.</returns>
-        private static CosmosElement SQRT(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            Math.Sqrt,
-            number);
+        private static CosmosElement SQRT(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+Math.Sqrt,
+number);
+        }
 
         /// <summary>
         /// Returns the square of the specified numeric expression.
         /// </summary>
         /// <param name="number">The number to square.</param>
         /// <returns>The square of the specified numeric expression.</returns>
-        private static CosmosElement SQUARE(CosmosElement number) => ExecuteOneArgumentNumberFunction(
-            (value) => value * value,
-            number);
+        private static CosmosElement SQUARE(CosmosElement number)
+        {
+            return ExecuteOneArgumentNumberFunction(
+(value) => value * value,
+number);
+        }
 
         /// <summary>
         /// Returns a Boolean indicating whether the first string expression starts with the second.
@@ -1193,10 +1306,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// <returns>A Boolean indicating whether the first string expression starts with the second.</returns>
         private static CosmosElement STARTSWITH(
             CosmosElement str,
-            CosmosElement prefix) => ExecuteTwoArgumentStringFunction(
-                (value1, value2) => CosmosBoolean.Create(value1.StartsWith(value2, StringComparison.Ordinal)),
-                str,
-                prefix);
+            CosmosElement prefix)
+        {
+            return ExecuteTwoArgumentStringFunction(
+(value1, value2) => CosmosBoolean.Create(value1.StartsWith(value2, StringComparison.Ordinal)),
+str,
+prefix);
+        }
 
         /// <summary>
         /// Returns part of a string expression.
@@ -1247,9 +1363,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         /// </summary>
         /// <param name="str">The string to take the upper case of.</param>
         /// <returns>A string expression after converting lowercase character data to uppercase.</returns>
-        private static CosmosElement UPPER(CosmosElement str) => ExecuteOneArgumentStringFunction(
-            (value) => CosmosString.Create(value.ToUpper(CultureInfo.InvariantCulture)),
-            str);
+        private static CosmosElement UPPER(CosmosElement str)
+        {
+            return ExecuteOneArgumentStringFunction(
+(value) => CosmosString.Create(value.ToUpper(CultureInfo.InvariantCulture)),
+str);
+        }
 
         private static CosmosElement ExecuteZeroArgumentFunction(
             Func<CosmosElement> function,

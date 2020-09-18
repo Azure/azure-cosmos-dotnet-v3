@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             return cipherText.Select(b => (byte)(b - 1)).ToArray();
         }
-        
+
         internal static Stream ToStream<T>(T input)
         {
             string s = JsonConvert.SerializeObject(input);

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -43,8 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public object GetValue(uint id)
         {
-            object value;
-            if (this.valueDict.TryGetValue(id, out value))
+            if (this.valueDict.TryGetValue(id, out object value))
             {
                 return value;
             }
@@ -73,14 +71,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 strValue = value.ToString();
             }
 
-            return String.Format(CultureInfo.InvariantCulture, "\"{0}\":{1}", this.Name, strValue);
+            return string.Format(CultureInfo.InvariantCulture, "\"{0}\":{1}", this.Name, strValue);
         }
 
         public bool IsPresent(uint id)
         {
-            if (this.density == 1) return true;
+            if (this.density == 1)
+            {
+                return true;
+            }
 
-            if (this.density == 0) return false;
+            if (this.density == 0)
+            {
+                return false;
+            }
 
             return id % (uint)Math.Round(((1 - this.density) / this.density) + 1) == 0;
         }
@@ -99,7 +103,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public int Compare(KeyValuePair<uint, string> pair1, KeyValuePair<uint, string> pair2)
         {
-            if (this.order == 0) return 0;
+            if (this.order == 0)
+            {
+                return 0;
+            }
 
             IComparable value1 = this.field.GetValue(pair1.Key) as IComparable;
             IComparable value2 = this.field.GetValue(pair2.Key) as IComparable;
@@ -107,16 +114,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             int cmp = 0;
 
             if (value1 == null && value2 == null)
+            {
                 cmp = 0;
+            }
             else if (value1 == null)
+            {
                 cmp = -1;
+            }
             else if (value2 == null)
+            {
                 cmp = 1;
+            }
             else
+            {
                 cmp = value1.CompareTo(value2);
+            }
 
             if (cmp == 0)
+            {
                 cmp = pair1.Key.CompareTo(pair2.Key);
+            }
 
             return cmp * this.order;
         }
@@ -231,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         protected virtual string GetPointQuery(string point, T value)
         {
-            return String.Format(CultureInfo.InvariantCulture, "({0} {1} {2})", this.fieldName, point, value);
+            return string.Format(CultureInfo.InvariantCulture, "({0} {1} {2})", this.fieldName, point, value);
         }
 
         protected string GetRangeQuery(Comparison lower, T min, Comparison upper, T max)
@@ -241,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         protected string GetRangeQuery(string lower, T min, string upper, T max)
         {
-            return String.Format(
+            return string.Format(
                 CultureInfo.InvariantCulture,
                 "(({0} {1} {2}) AND ({3} {4} {5}))",
                 this.fieldName,
@@ -259,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         }
     }
 
-    public sealed class DoubleFieldQueryBuilder : FieldQueryBuilder<Double?>
+    public sealed class DoubleFieldQueryBuilder : FieldQueryBuilder<double?>
     {
         public DoubleFieldQueryBuilder(
             string fieldName,
@@ -268,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string lower = "",
             string upper = "",
             int seed = 0) :
-            base(fieldName, null, String.Empty, Math.Min(min, max), Math.Max(min, max), lower, upper, seed)
+            base(fieldName, null, string.Empty, Math.Min(min, max), Math.Max(min, max), lower, upper, seed)
         {
         }
 
@@ -284,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         }
 
         public DoubleFieldQueryBuilder(string fieldName, double value, string point = "", int seed = 0) :
-            base(fieldName, value, String.Empty, null, null, point, String.Empty, seed)
+            base(fieldName, value, string.Empty, null, null, point, string.Empty, seed)
         {
         }
 
@@ -300,7 +317,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public override string GetRangeQuery()
         {
-            if (this.singleValue.HasValue) return null;
+            if (this.singleValue.HasValue)
+            {
+                return null;
+            }
 
             double delta = (this.maxValue.Value - this.minValue.Value) / 4;
             return this.GetRangeQuery(
@@ -311,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         }
     }
 
-    public sealed class IntFieldQueryBuilder : FieldQueryBuilder<Int32?>
+    public sealed class IntFieldQueryBuilder : FieldQueryBuilder<int?>
     {
         public IntFieldQueryBuilder(
             string fieldName,
@@ -320,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string lower = "",
             string upper = "",
             int seed = 0) :
-            base(fieldName, null, String.Empty, Math.Min(min, max), Math.Max(min, max), lower, upper, seed)
+            base(fieldName, null, string.Empty, Math.Min(min, max), Math.Max(min, max), lower, upper, seed)
         {
         }
 
@@ -336,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         }
 
         public IntFieldQueryBuilder(string fieldName, int value, string point = "", int seed = 0) :
-            base(fieldName, value, point, null, null, String.Empty, String.Empty, seed)
+            base(fieldName, value, point, null, null, string.Empty, string.Empty, seed)
         {
         }
 
@@ -352,7 +372,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public override string GetRangeQuery()
         {
-            if (this.singleValue.HasValue) return null;
+            if (this.singleValue.HasValue)
+            {
+                return null;
+            }
 
             int delta = (this.maxValue.Value - this.minValue.Value) / 4;
             return this.GetRangeQuery(
@@ -363,15 +386,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         }
     }
 
-    public sealed class BooleanFieldQueryBuilder : FieldQueryBuilder<Boolean?>
+    public sealed class BooleanFieldQueryBuilder : FieldQueryBuilder<bool?>
     {
         public BooleanFieldQueryBuilder(string fieldName, int seed = 0) :
-            base(fieldName, null, String.Empty, null, null, String.Empty, String.Empty, seed)
+            base(fieldName, null, string.Empty, null, null, string.Empty, string.Empty, seed)
         {
         }
 
         public BooleanFieldQueryBuilder(string fieldName, bool value, string point = "", int seed = 0) :
-            base(fieldName, value, point, null, null, String.Empty, String.Empty, seed)
+            base(fieldName, value, point, null, null, string.Empty, string.Empty, seed)
         {
         }
 
@@ -382,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public override string GetPointQuery()
         {
-            return String.Format(
+            return string.Format(
                 CultureInfo.InvariantCulture,
                 "({0} {1} {2})",
                 this.fieldName,
@@ -396,10 +419,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         }
     }
 
-    public sealed class StringFieldQueryBuilder : FieldQueryBuilder<String>
+    public sealed class StringFieldQueryBuilder : FieldQueryBuilder<string>
     {
         public StringFieldQueryBuilder(string fieldName, string value, string point = "", int seed = 0) :
-            base(fieldName, value, point, null, null, String.Empty, String.Empty, seed)
+            base(fieldName, value, point, null, null, string.Empty, string.Empty, seed)
         {
         }
 
@@ -432,22 +455,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             this.disposed = false;
             if (string.Equals(rootName, "root"))
             {
-                this.query = String.Format(CultureInfo.InvariantCulture, QueryString, rootName, "");
+                this.query = string.Format(CultureInfo.InvariantCulture, QueryString, rootName, "");
             }
             else
             {
-                this.query = String.Format(CultureInfo.InvariantCulture, QueryString, rootName, rootName);
+                this.query = string.Format(CultureInfo.InvariantCulture, QueryString, rootName, rootName);
             }
 
             // Create FilterNode
             uint errorCode = NativeMethods.CreateFilterNode(strFilter, rootName, out this.pFilterNode);
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-            if (exception != null) throw exception;
+            if (exception != null)
+            {
+                throw exception;
+            }
 
             // Get String
             StringBuilder filterBuffer = new StringBuilder(strFilter.Length * 2);
-            uint resultSize;
-            errorCode = NativeMethods.GetString(this.pFilterNode, filterBuffer, (uint)filterBuffer.Capacity, out resultSize);
+            errorCode = NativeMethods.GetString(this.pFilterNode, filterBuffer, (uint)filterBuffer.Capacity, out uint resultSize);
 
             if (errorCode == DISP_E_BUFFERTOOSMALL)
             {
@@ -456,12 +481,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             }
 
             exception = Marshal.GetExceptionForHR((int)errorCode);
-            if (exception != null) throw exception;
+            if (exception != null)
+            {
+                throw exception;
+            }
 
             filterBuffer.Length = (int)resultSize;
 
             if (filterBuffer.Length > 0)
+            {
                 this.query += " WHERE " + filterBuffer.ToString();
+            }
 
             if (comparer != null && comparer.field != null && comparer.order != 0)
             {
@@ -485,21 +515,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         private void Dispose(bool disposing)
         {
-            if (this.disposed) return;
+            if (this.disposed)
+            {
+                return;
+            }
 
             uint errorCode = NativeMethods.DeleteFilterNode(this.pFilterNode);
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-            if (exception != null) throw exception;
+            if (exception != null)
+            {
+                throw exception;
+            }
 
             this.disposed = true;
         }
 
         public bool Evaluate(string document)
         {
-            bool result;
-            uint errorCode = NativeMethods.Evaluate(this.pFilterNode, document, out result);
+            uint errorCode = NativeMethods.Evaluate(this.pFilterNode, document, out bool result);
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-            if (exception != null) throw exception;
+            if (exception != null)
+            {
+                throw exception;
+            }
 
             return result;
         }
@@ -534,15 +572,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             {
                 StringBuilder builder = new StringBuilder();
                 foreach (IField field in fields)
+                {
                     if (field.IsPresent((uint)id))
+                    {
                         builder.Append(",").Append(field.ToString((uint)id));
-                this.documents.Add(String.Format(CultureInfo.InvariantCulture, DocumentFormat, id, builder.ToString()));
+                    }
+                }
+
+                this.documents.Add(string.Format(CultureInfo.InvariantCulture, DocumentFormat, id, builder.ToString()));
             }
 
             return this.documents;
         }
 
-        protected virtual string GetFilterString(List<IFieldQueryBuilder> fieldQueryBuilders, uint maxFilters = Int32.MaxValue)
+        protected virtual string GetFilterString(List<IFieldQueryBuilder> fieldQueryBuilders, uint maxFilters = int.MaxValue)
         {
             StringBuilder builder = new StringBuilder();
             IFieldQueryBuilder[] fieldQueryBuilderArray = fieldQueryBuilders.ToArray();
@@ -552,7 +595,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 IFieldQueryBuilder fieldQueryBuilder = fieldQueryBuilderArray[this.rand.Next(fieldQueryBuilderArray.Count())];
                 // Random OR/AND
                 if (builder.Length > 0)
+                {
                     builder.Append(this.rand.Next(2) == 0 ? " OR " : " AND ");
+                }
 
                 builder.Append(fieldQueryBuilder);
 
@@ -566,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             return builder.ToString();
         }
 
-        protected virtual IEnumerable<Query> GetQueries(List<IFieldQueryBuilder> fieldQueryBuilders, uint numberOfQueries, uint maxFilters = Int32.MaxValue, List<IField> fields = null)
+        protected virtual IEnumerable<Query> GetQueries(List<IFieldQueryBuilder> fieldQueryBuilders, uint numberOfQueries, uint maxFilters = int.MaxValue, List<IField> fields = null)
         {
             for (int i = 0; i < numberOfQueries; ++i)
             {
@@ -578,7 +623,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         {
             List<KeyValuePair<uint, string>> idList = new List<KeyValuePair<uint, string>>();
             for (uint i = 1; i <= this.documents.Count(); ++i)
+            {
                 idList.Add(new KeyValuePair<uint, string>(i, this.documents[(int)(i - 1)]));
+            }
 
             if (query.Comparer != null)
             {
@@ -589,7 +636,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             foreach (KeyValuePair<uint, string> pair in idList)
             {
                 if (query.Evaluate(pair.Value))
-                    expected.Add(String.Format(CultureInfo.InvariantCulture, DocumentFormat, pair.Key, String.Empty));
+                {
+                    expected.Add(string.Format(CultureInfo.InvariantCulture, DocumentFormat, pair.Key, string.Empty));
+                }
             }
 
             List<string> actual = results as List<string> ?? results.ToList();
@@ -611,8 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
         public bool Validate(IEnumerable<string> results, Query query)
         {
-            bool valid;
-            this.Validate(results, query, out valid);
+            this.Validate(results, query, out bool valid);
             return valid;
         }
 
@@ -632,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 List<dynamic> expected = new List<dynamic>(this.documents.Count());
                 for (int i = 0; i < this.documents.Count(); ++i)
                 {
-                    expected.Add(JsonConvert.DeserializeObject(String.Format(CultureInfo.InvariantCulture, DocumentFormat, i + 1, String.Empty)));
+                    expected.Add(JsonConvert.DeserializeObject(string.Format(CultureInfo.InvariantCulture, DocumentFormat, i + 1, string.Empty)));
                 }
 
                 queriedDocuments.Sort((doc1, doc2) => int.Parse(doc1.id).CompareTo(int.Parse(doc2.id)));
@@ -643,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
                 if (!expectedIds.SequenceEqual(actualIds))
                 {
-                    System.Diagnostics.Trace.TraceInformation("Failed to insert all the documents, queried documents are:" + Environment.NewLine + String.Join(Environment.NewLine, queriedDocuments));
+                    System.Diagnostics.Trace.TraceInformation("Failed to insert all the documents, queried documents are:" + Environment.NewLine + string.Join(Environment.NewLine, queriedDocuments));
                     return -1;
                 }
 
@@ -684,8 +732,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 }
                 numberOfQueries++;
 
-                bool valid;
-                IEnumerable<string> expected = this.Validate(queriedDocuments, query, out valid);
+                IEnumerable<string> expected = this.Validate(queriedDocuments, query, out bool valid);
                 if (!valid)
                 {
                     System.Diagnostics.Trace.TraceInformation(
@@ -701,9 +748,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                         + "{3}"
                         + Environment.NewLine,
                         query.ToString(),
-                        String.Join(",", activityIDsAllQueryPages),
-                        String.Join(",", expected),
-                        String.Join(",", queriedDocuments));
+                        string.Join(",", activityIDsAllQueryPages),
+                        string.Join(",", expected),
+                        string.Join(",", queriedDocuments));
 
                     failedQueries.Add(query);
                 }
@@ -792,15 +839,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 userPool[id] = (uint)id;
 
                 if (id < this.numberOfUsers * 0.005)
+                {
                     userDocs[id] = (uint)(numberOfDocuments * 0.2 / (this.numberOfUsers * 0.005));
+                }
                 else if (id < this.numberOfUsers * (0.005 + 0.045))
+                {
                     userDocs[id] = (uint)(numberOfDocuments * 0.45 / (this.numberOfUsers * 0.045));
+                }
                 else if (id < this.numberOfUsers * (0.005 + 0.045 + 0.2))
+                {
                     userDocs[id] = (uint)(numberOfDocuments * 0.2 / (this.numberOfUsers * 0.2));
+                }
                 else if (id < this.numberOfUsers * (0.005 + 0.045 + 0.2 + 0.25))
+                {
                     userDocs[id] = (uint)(numberOfDocuments * 0.1 / (this.numberOfUsers * 0.25));
+                }
                 else
+                {
                     userDocs[id] = (uint)(numberOfDocuments * 0.05 / (this.numberOfUsers * 0.5));
+                }
             }
 
             for (int id = 0; id < numberOfDocuments; ++id)
@@ -811,7 +868,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 userIds[id] = user;
 
                 if (--userDocs[user] <= 0)
+                {
                     userPool[index] = userPool[--currentNumberOfUsers];
+                }
             }
 
             fields.Add(new Field<string>(
@@ -823,20 +882,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             this.maxDate = this.GetUnixTime(new DateTime(2014, 10, 31));
             fields.Add(new Field<int>(
                 "Date",
-                id => (int)(this.rand.Next(this.maxDate - this.minDate + 1) + this.minDate)));
+                id => this.rand.Next(this.maxDate - this.minDate + 1) + this.minDate));
 
             // Type
             this.typeLambda = id =>
             {
                 int value = this.rand.Next(10);
                 if (value < 6)
+                {
                     return "0";
+                }
+
                 if (value < 8)
+                {
                     return "1";
+                }
+
                 if (value < 9)
+                {
                     return "2";
+                }
                 else
+                {
                     return "3";
+                }
             };
             fields.Add(new Field<string>(
                 "Type",
@@ -860,12 +929,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 
             // Misc 
             for (int j = 0; j < 300; ++j)
+            {
                 fields.Add(new Field<int>(
                     "Misc_" + j,
                     id =>
                     {
                         return this.rand.Next(10000);
                     }));
+            }
 
             return this.GetDocuments(fields, numberOfDocuments);
         }
@@ -891,14 +962,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             {
                 string userId = this.rand.Next((int)this.numberOfUsers).ToString("D19");
                 for (int j = 0; j < 3; ++j)
-                    yield return new Query(String.Format(
+                {
+                    yield return new Query(string.Format(
                         CultureInfo.InvariantCulture,
                         "(({0} AND {1}) AND (({2} AND {3}) AND {4}))",
-                        String.Format(CultureInfo.InvariantCulture, "User = \"{0}\"", userId),
-                        String.Format(CultureInfo.InvariantCulture, "(Date >= {0} AND Date <= {1})", this.minDate, this.minDate + (3600 * 24 * durationLambda(j))),
-                        String.Format(CultureInfo.InvariantCulture, "Type = \"{0}\"", this.typeLambda(0)),
+                        string.Format(CultureInfo.InvariantCulture, "User = \"{0}\"", userId),
+                        string.Format(CultureInfo.InvariantCulture, "(Date >= {0} AND Date <= {1})", this.minDate, this.minDate + (3600 * 24 * durationLambda(j))),
+                        string.Format(CultureInfo.InvariantCulture, "Type = \"{0}\"", this.typeLambda(0)),
                         "TombstoneState = false",
                         "Domain = \"HNF\""));
+                }
             }
         }
 
@@ -935,10 +1008,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             this.totalDocuments = numberOfDocuments;
 
             if (factors != null)
+            {
                 this.uniquenessFactors = factors;
+            }
 
             for (int i = 0; i < this.uniquenessFactors.Length; ++i)
+            {
                 this.fields.Add(new Field<int>("field_" + i, id => this.rand.Next((int)((numberOfDocuments * this.uniquenessFactors[(id - 1) % this.uniquenessFactors.Length]) + 1))));
+            }
 
             return this.GetDocuments(this.fields, numberOfDocuments);
         }
@@ -966,28 +1043,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     {
         [DllImport("FilterNodeDll.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern
-        UInt32 CreateFilterNode(
-                [MarshalAs(UnmanagedType.LPWStr)] [In] string strFilter,
-                [MarshalAs(UnmanagedType.LPStr)] [In] string strPrefix,
+        uint CreateFilterNode(
+                [MarshalAs(UnmanagedType.LPWStr)][In] string strFilter,
+                [MarshalAs(UnmanagedType.LPStr)][In] string strPrefix,
                 [Out] out IntPtr pFilterNode);
 
         [DllImport("FilterNodeDll.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern
-        UInt32 Evaluate(
+        uint Evaluate(
                 [In] IntPtr pFilterNode,
-                [MarshalAs(UnmanagedType.LPStr)] [In] string strDocument,
+                [MarshalAs(UnmanagedType.LPStr)][In] string strDocument,
                 [MarshalAs(UnmanagedType.I1)][Out] out bool bResult);
 
         [DllImport("FilterNodeDll.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern
-        UInt32 GetString(
+        uint GetString(
                 [In] IntPtr pFilterNode,
                 [MarshalAs(UnmanagedType.LPStr)] StringBuilder filterBuffer,
-                [MarshalAs(UnmanagedType.U4)] [In] UInt32 filterBufferSize,
-                [Out] out UInt32 resultSize);
+                [MarshalAs(UnmanagedType.U4)][In] uint filterBufferSize,
+                [Out] out uint resultSize);
 
         [DllImport("FilterNodeDll.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern
-        UInt32 DeleteFilterNode([In] IntPtr pFilterNode);
+        uint DeleteFilterNode([In] IntPtr pFilterNode);
     }
 }

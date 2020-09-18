@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalLease);
-            var lease = (DocumentServiceLeaseCore)formatter.Deserialize(stream2);
+            DocumentServiceLeaseCore lease = (DocumentServiceLeaseCore)formatter.Deserialize(stream2);
 
             Assert.AreEqual(originalLease.Id, lease.Id);
             Assert.AreEqual(originalLease.ETag, lease.ETag);
@@ -84,13 +84,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateSerialization_NullFields()
         {
             DocumentServiceLeaseCore originalLease = new DocumentServiceLeaseCore();
-            byte[]buffer = new byte[4096];
+            byte[] buffer = new byte[4096];
             BinaryFormatter formatter = new BinaryFormatter();
             MemoryStream stream1 = new MemoryStream(buffer);
             MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalLease);
-            var lease = (DocumentServiceLeaseCore)formatter.Deserialize(stream2);
+            DocumentServiceLeaseCore lease = (DocumentServiceLeaseCore)formatter.Deserialize(stream2);
 
             Assert.IsNull(lease.Id);
             Assert.IsNull(lease.ETag);

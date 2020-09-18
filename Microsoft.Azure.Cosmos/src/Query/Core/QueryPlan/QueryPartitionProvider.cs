@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -93,7 +92,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                             this.queryengineConfiguration);
 
                         Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                        if (exception != null) throw exception;
+                        if (exception != null)
+                        {
+                            throw exception;
+                        }
                     }
                 }
             }
@@ -297,7 +299,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                                 out this.serviceProvider);
 
                             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                            if (exception != null) throw exception;
+                            if (exception != null)
+                            {
+                                throw exception;
+                            }
                         }
                     }
                 }

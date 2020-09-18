@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public void ReadFeedIteratorCore_Create_WithRange()
         {
-            Documents.Routing.Range<string>  range = new Documents.Routing.Range<string>("A", "B", true, false);
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("A", "B", true, false);
             FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
             FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(Mock.Of<ContainerInternal>(), feedRangeEPK, null, null);
             Assert.AreEqual(feedRangeEPK, feedTokenIterator.FeedRangeInternal);
@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
 
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();            
+            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
             cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
             cosmosClientContext
@@ -535,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     testHandler,
                 };
 
-            RequestHandler feedHandler =  ClientPipelineBuilder.CreatePipeline(feedPipeline);
+            RequestHandler feedHandler = ClientPipelineBuilder.CreatePipeline(feedPipeline);
 
             RequestHandler handler = clientContext.RequestHandler.InnerHandler;
             while (handler != null)
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
         private class MultiRangeMockDocumentClient : MockDocumentClient
         {
-            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+            private readonly List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
                 new Documents.PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, Id = "0" }
             };
 

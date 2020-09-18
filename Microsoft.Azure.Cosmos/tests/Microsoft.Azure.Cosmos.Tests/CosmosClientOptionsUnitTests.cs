@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -283,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 ConnectionMode = ConnectionMode.Gateway
             };
-            
+
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection; });
@@ -344,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             FieldInfo httpClient = cosmosClient.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
             CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)httpClient.GetValue(cosmosClient.DocumentClient);
             HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
-            
+
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
         }
 
@@ -386,18 +385,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void VerifyWebProxyHttpClientFactorySet()
         {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
-            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                WebProxy = Mock.Of<WebProxy>(),
+                HttpClientFactory = () => new HttpClient()
+            };
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void VerifyHttpClientFactoryWebProxySet()
         {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
-            cosmosClientOptions.WebProxy = Mock.Of<WebProxy>();
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                HttpClientFactory = () => new HttpClient(),
+                WebProxy = Mock.Of<WebProxy>()
+            };
         }
 
         [TestMethod]

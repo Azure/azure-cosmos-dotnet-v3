@@ -9,9 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             EventHandler<ReceivedResponseEventArgs> receivedResponse;
             sendingRequest = this.SendingRequestEventHandler;
             receivedResponse = this.ReceivedRequestEventHandler;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         {
             EventHandler<SendingRequestEventArgs> sendingRequest = null;
             EventHandler<ReceivedResponseEventArgs> receivedResponse = null;
-            ServerStoreModel storeModel = new ServerStoreModel(GetMockStoreClient(), sendingRequest, receivedResponse);
+            ServerStoreModel storeModel = new ServerStoreModel(this.GetMockStoreClient(), sendingRequest, receivedResponse);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -90,8 +88,10 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(0));
 
             // setup max replica set size on the config reader
-            ReplicationPolicy replicationPolicy = new ReplicationPolicy();
-            replicationPolicy.MaxReplicaSetSize = 4;
+            ReplicationPolicy replicationPolicy = new ReplicationPolicy
+            {
+                MaxReplicaSetSize = 4
+            };
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
 
@@ -110,13 +110,15 @@ namespace Microsoft.Azure.Cosmos
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
             // setup mock to return respone
-            StoreResponse mockStoreResponse = new StoreResponse();
-            mockStoreResponse.Headers = new DictionaryNameValueCollection(
+            StoreResponse mockStoreResponse = new StoreResponse
+            {
+                Headers = new DictionaryNameValueCollection(
                 new NameValueCollection()
                 {
                     { WFConstants.BackendHeaders.LSN, "110" },
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                })
+            };
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<Uri>(),
@@ -132,13 +134,15 @@ namespace Microsoft.Azure.Cosmos
             AddressInformation[] addressInformation = new AddressInformation[3];
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation();
-                addressInformation[i].PhysicalUri =
+                addressInformation[i] = new AddressInformation
+                {
+                    PhysicalUri =
                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/";
-                addressInformation[i].IsPrimary = i == 0 ? true : false;
-                addressInformation[i].Protocol = Protocol.Tcp;
-                addressInformation[i].IsPublic = true;
+                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    IsPrimary = i == 0 ? true : false,
+                    Protocol = Protocol.Tcp,
+                    IsPublic = true
+                };
             }
 
             Mock<IAddressResolver> mockAddressCache = new Mock<IAddressResolver>();

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Mock<RequestHandler> mockHandler = new Mock<RequestHandler>();
             mockHandler.Setup(x => x.SendAsync(It.IsAny<RequestMessage>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(failedResponse));
-            
+
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder => builder.AddCustomHandlers(mockHandler.Object));
             Container container = client.GetContainer("TestDb", "TestContainer");
             FeedIterator feedIterator = container.GetItemQueryStreamIterator("select * from t");

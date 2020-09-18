@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -50,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             .ReadItem("someId");
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
-                    batch, 
+                    batch,
                     typeof(ArgumentException),
                     ClientResources.BatchRequestOptionNotSupported,
                     batchOptions);
@@ -400,11 +399,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void FromItemRequestOptions_WithCustomValues()
         {
-            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
-            itemRequestOptions.IfMatchEtag = Guid.NewGuid().ToString();
-            itemRequestOptions.IfNoneMatchEtag = Guid.NewGuid().ToString();
-            itemRequestOptions.IndexingDirective = Cosmos.IndexingDirective.Exclude;
-            itemRequestOptions.Properties = new Dictionary<string, object>() { { "test", "test" } };
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions
+            {
+                IfMatchEtag = Guid.NewGuid().ToString(),
+                IfNoneMatchEtag = Guid.NewGuid().ToString(),
+                IndexingDirective = Cosmos.IndexingDirective.Exclude,
+                Properties = new Dictionary<string, object>() { { "test", "test" } }
+            };
 
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             Assert.AreEqual(itemRequestOptions.IfMatchEtag, batchItemRequestOptions.IfMatchEtag);
@@ -564,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     UriKind.Relative);
                 Assert.AreEqual(expectedRequestUri, request.RequestUri);
             }
-       }
+        }
 
         private class TestItem
         {

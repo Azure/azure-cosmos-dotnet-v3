@@ -11,11 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -34,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private const string Key = "test";
         private const string CollectionId = "test";
         private const string PartitionRangeKeyId = "138";
-        const string Continuation = "continuation";
+        private const string Continuation = "continuation";
 
         [TestMethod]
         public async Task VerifySendUsesOringianlContinuationOnNonSuccessfulResponse()
@@ -42,7 +38,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = this.GetPartitionRoutingHelperMock();
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
-            TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler(async (request, cancellationToken) =>
+            {
                 ResponseMessage errorResponse = await TestHandler.ReturnStatusCode(HttpStatusCode.Gone);
                 errorResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return errorResponse;
@@ -50,8 +47,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             partitionKeyRangeHandler.InnerHandler = testHandler;
 
             //Pass valid collections path because it is required by DocumentServiceRequest's constructor. This can't be mocked because ToDocumentServiceRequest() is an extension method
-            RequestMessage initialRequest = new RequestMessage(HttpMethod.Get, new Uri($"{Paths.DatabasesPathSegment}/test/{Paths.CollectionsPathSegment}/test", UriKind.Relative));
-            initialRequest.OperationType = OperationType.ReadFeed;
+            RequestMessage initialRequest = new RequestMessage(HttpMethod.Get, new Uri($"{Paths.DatabasesPathSegment}/test/{Paths.CollectionsPathSegment}/test", UriKind.Relative))
+            {
+                OperationType = OperationType.ReadFeed
+            };
             initialRequest.Headers.Add(HttpConstants.HttpHeaders.Continuation, Continuation);
             ResponseMessage response = await partitionKeyRangeHandler.SendAsync(initialRequest, CancellationToken.None);
 
@@ -79,7 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
-            TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
+            TestHandler testHandler = new TestHandler(async (request, cancellationToken) =>
+            {
                 ResponseMessage successResponse = await TestHandler.ReturnSuccess();
                 successResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return successResponse;
@@ -87,8 +87,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             partitionKeyRangeHandler.InnerHandler = testHandler;
 
             //Pass valid collections path because it is required by DocumentServiceRequest's constructor. This can't be mocked because ToDocumentServiceRequest() is an extension method
-            RequestMessage initialRequest = new RequestMessage(HttpMethod.Get, new Uri($"{Paths.DatabasesPathSegment}/test/{Paths.CollectionsPathSegment}/test", UriKind.Relative));
-            initialRequest.OperationType = OperationType.ReadFeed;
+            RequestMessage initialRequest = new RequestMessage(HttpMethod.Get, new Uri($"{Paths.DatabasesPathSegment}/test/{Paths.CollectionsPathSegment}/test", UriKind.Relative))
+            {
+                OperationType = OperationType.ReadFeed
+            };
             initialRequest.Headers.Add(HttpConstants.HttpHeaders.Continuation, Continuation);
             ResponseMessage response = await partitionKeyRangeHandler.SendAsync(initialRequest, CancellationToken.None);
 
@@ -107,8 +109,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken { Range = expectedRange, Token = expectedToken };
             string continuation = JsonConvert.SerializeObject(compositeContinuationToken);
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-            headers.Add(HttpConstants.HttpHeaders.Continuation, continuation);
+            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+            {
+                { HttpConstants.HttpHeaders.Continuation, continuation }
+            };
             Range<string> range = partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> compositeContinuationTokens);
             Assert.IsTrue(expectedRange.Equals(range));
             Assert.AreEqual(expectedToken, headers.Get(HttpConstants.HttpHeaders.Continuation)); //not a composite token
@@ -142,16 +146,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Range<string>>(),
                 It.Is<bool>(x => x == false)
             )).Returns(Task.FromResult(overlappingRanges)).Verifiable();
-            
+
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
             ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
-                providedRanges, 
-                routingMapProvider.Object, 
-                CollectionId, 
-                range, 
-                suppliedTokens, 
+                providedRanges,
+                routingMapProvider.Object,
+                CollectionId,
+                range,
+                suppliedTokens,
                 RntdbEnumerationDirection.Reverse);
             Assert.AreEqual(overlappingRanges.Last().Id, resolvedRangeInfo.ResolvedRange.Id);
             CollectionAssert.AreEqual(suppliedTokens, resolvedRangeInfo.ContinuationTokens);
@@ -318,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(replacedRanges.Count, resolvedRangeInfo.ContinuationTokens.Count);
             Assert.AreEqual(resolvedRangeInfo.ContinuationTokens[0].Token, Token);
 
-            for(int i = 0; i < resolvedRangeInfo.ContinuationTokens.Count; i++)
+            for (int i = 0; i < resolvedRangeInfo.ContinuationTokens.Count; i++)
             {
                 Assert.IsTrue(reversedReplacedRanges[i].ToRange().Equals(resolvedRangeInfo.ContinuationTokens[i].Range));
             }
@@ -425,8 +429,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             )).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(null)).Verifiable();
 
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-            headers.Add(HttpConstants.HttpHeaders.Continuation, "something");
+            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+            {
+                { HttpConstants.HttpHeaders.Continuation, "something" }
+            };
             bool result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                 headers,
                 null,
@@ -641,7 +647,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy( null);
+            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(null);
 
             ShouldRetryResult exceptionResult = await retryPolicyMock.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
             Assert.IsNotNull(exceptionResult);

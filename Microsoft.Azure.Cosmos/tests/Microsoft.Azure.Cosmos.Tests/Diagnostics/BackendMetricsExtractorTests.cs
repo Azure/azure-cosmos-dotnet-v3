@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;

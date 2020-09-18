@@ -3,13 +3,13 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosCrossPartitionQueryExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
 
     [TestClass]
     public class ContinuationResumeLogicTests

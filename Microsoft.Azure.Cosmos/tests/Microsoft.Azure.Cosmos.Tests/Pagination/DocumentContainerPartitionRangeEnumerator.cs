@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                   {
                       Id = partitionKeyRangeId.ToString(),
                       MinInclusive = partitionKeyRangeId.ToString(),
-                      MaxExclusive  = partitionKeyRangeId.ToString()
+                      MaxExclusive = partitionKeyRangeId.ToString()
                   },
                   state ?? new DocumentContainerState(resourceIdentifier: 0))
         {
@@ -37,12 +36,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             this.pageSize = pageSize;
         }
 
-        public override ValueTask DisposeAsync() => default;
+        public override ValueTask DisposeAsync()
+        {
+            return default;
+        }
 
-        protected override Task<TryCatch<DocumentContainerPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.documentContainer.MonadicReadFeedAsync(
-            partitionKeyRangeId: this.partitionKeyRangeId,
-            resourceIdentifer: this.State.ResourceIdentifer,
-            pageSize: this.pageSize,
-            cancellationToken: default);
+        protected override Task<TryCatch<DocumentContainerPage>> GetNextPageAsync(CancellationToken cancellationToken = default)
+        {
+            return this.documentContainer.MonadicReadFeedAsync(
+partitionKeyRangeId: this.partitionKeyRangeId,
+resourceIdentifer: this.State.ResourceIdentifer,
+pageSize: this.pageSize,
+cancellationToken: default);
+        }
     }
 }

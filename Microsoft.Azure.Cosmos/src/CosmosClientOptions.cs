@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -137,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit )
+                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit)
                 {
                     throw new ArgumentException($"{nameof(this.httpClientFactory)} can not be set along with {nameof(this.GatewayModeMaxConnectionLimit)}. This must be set on the HttpClientHandler.MaxConnectionsPerServer property.");
                 }
@@ -616,7 +615,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             UserAgentContainer userAgent = this.BuildUserAgentContainer();
-            
+
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -796,7 +795,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 userAgent.SetFeatures(features.ToString());
             }
-            
+
             if (!string.IsNullOrEmpty(this.ApplicationName))
             {
                 userAgent.Suffix = this.ApplicationName;
@@ -822,7 +821,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return null;
             }
-            
+
             return Convert.ToString((int)features, 2).PadLeft(8, '0');
         }
 

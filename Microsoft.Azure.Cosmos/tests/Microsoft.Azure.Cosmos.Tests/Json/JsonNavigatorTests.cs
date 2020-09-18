@@ -7,14 +7,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Text;
-    using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class JsonNavigatorTests
@@ -733,9 +733,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             if (performCorrectnessCheck)
             {
                 // Get the tokens again through .TryGetObjectProperty
-                List<JsonToken> tokensFromTryGetProperty = new List<JsonToken>();
-
-                tokensFromTryGetProperty.Add(JsonToken.ObjectStart());
+                List<JsonToken> tokensFromTryGetProperty = new List<JsonToken>
+                {
+                    JsonToken.ObjectStart()
+                };
                 foreach (ObjectProperty objectProperty in properties)
                 {
                     string fieldname = navigator.GetStringValue(objectProperty.NameNode);
@@ -774,8 +775,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             if (performCorrectnessCheck)
             {
                 // Get tokens once again through indexer
-                List<JsonToken> tokensFromIndexer = new List<JsonToken>();
-                tokensFromIndexer.Add(JsonToken.ArrayStart());
+                List<JsonToken> tokensFromIndexer = new List<JsonToken>
+                {
+                    JsonToken.ArrayStart()
+                };
                 for (int i = 0; i < navigator.GetArrayItemCount(node); ++i)
                 {
                     tokensFromIndexer.AddRange(JsonNavigatorTests.GetTokensFromNode(navigator.GetArrayItemAt(node, i), navigator, performCorrectnessCheck));

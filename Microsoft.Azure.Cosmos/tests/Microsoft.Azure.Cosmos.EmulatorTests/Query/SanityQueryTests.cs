@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
-                foreach(WeakReference weakReference in weakReferences)
+                foreach (WeakReference weakReference in weakReferences)
                 {
                     Assert.IsFalse(weakReference.IsAlive);
                 }

@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     internal static class SqlInterpreter
     {

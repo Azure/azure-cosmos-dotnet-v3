@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -172,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             value.Id = Guid.NewGuid();
 
             // this should create the document successfully with jobnumber of 2
-            Job createdItem2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions:  new ItemRequestOptions
+            Job createdItem2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
             {
                 PreTriggers = new List<string> { "SetJobNumber" }
             });
@@ -206,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 //swallow
             }
-            
+
             ToDoActivity item = new ToDoActivity()
             {
                 id = Guid.NewGuid().ToString(),

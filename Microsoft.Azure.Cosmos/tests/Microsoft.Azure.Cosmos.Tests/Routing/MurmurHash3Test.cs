@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
-    using System.IO;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -29,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Assert.AreEqual(
                 MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetHigh(),
-                Cosmos.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetHigh());
+                Cosmos.MurmurHash3.Hash128(bytes.AsSpan(), seed: 0).GetHigh());
 
             Assert.AreEqual(
                 MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetLow(),
-                Cosmos.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetLow());
+                Cosmos.MurmurHash3.Hash128(bytes.AsSpan(), seed: 0).GetLow());
         }
 
         /// <summary>
@@ -48,11 +47,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Assert.AreEqual(
                 MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetHigh(),
-                Cosmos.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetHigh());
+                Cosmos.MurmurHash3.Hash128(bytes.AsSpan(), seed: 0).GetHigh());
 
             Assert.AreEqual(
                 MurmurHash3.Hash128(bytes, bytes.Length, seed: 0).GetLow(),
-                Cosmos.MurmurHash3.Hash128((ReadOnlySpan<byte>)bytes.AsSpan(), seed: 0).GetLow());
+                Cosmos.MurmurHash3.Hash128(bytes.AsSpan(), seed: 0).GetLow());
         }
     }
 }

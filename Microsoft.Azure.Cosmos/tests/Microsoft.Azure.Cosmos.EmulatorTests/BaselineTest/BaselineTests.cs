@@ -11,12 +11,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Text;
     using System.Text.RegularExpressions;
     using System.Xml;
-    using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using System.Text;
     using Newtonsoft.Json;
+    using VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// Base class for all baseline tests.
@@ -116,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             int commonPrefixLength = 0;
             foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
             {
-                if(characters.Item1 == characters.Item2)
+                if (characters.Item1 == characters.Item2)
                 {
                     commonPrefixLength++;
                 }
@@ -213,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         public class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-            private JsonSerializer serializer;
+            private readonly JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
                 this.serializer = JsonSerializer.Create(jsonSerializerSettings);

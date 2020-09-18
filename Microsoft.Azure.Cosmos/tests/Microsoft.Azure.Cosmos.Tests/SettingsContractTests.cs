@@ -4,12 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.ObjectModel;
     using System.IO;
@@ -17,6 +11,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class SettingsContractTests
@@ -62,13 +61,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void OperationKindMatchesDirect()
         {
-            AssertEnums<Cosmos.OperationKind, Documents.OperationKind>();
+            this.AssertEnums<Cosmos.OperationKind, OperationKind>();
         }
 
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
+            this.AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -242,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void PartitionKeyDefinitionVersionValuesTest()
         {
-            AssertEnums<Cosmos.PartitionKeyDefinitionVersion, Documents.PartitionKeyDefinitionVersion>();
+            this.AssertEnums<Cosmos.PartitionKeyDefinitionVersion, PartitionKeyDefinitionVersion>();
         }
 
         [TestMethod]
@@ -483,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 },
             };
 
-            
+
             string documentJsonString = null;
             using (MemoryStream memoryStream = new MemoryStream())
             {
@@ -526,17 +525,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CosmosAccountSettingsSerializationTest()
         {
-            AccountProperties cosmosAccountSettings = new AccountProperties();
-            cosmosAccountSettings.Id = "someId";
-            cosmosAccountSettings.EnableMultipleWriteLocations = true;
-            cosmosAccountSettings.ResourceId = "/uri";
-            cosmosAccountSettings.ETag = "etag";
-            cosmosAccountSettings.WriteLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region1", Endpoint = "endpoint1" } };
-            cosmosAccountSettings.ReadLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region2", Endpoint = "endpoint2" } };
-            cosmosAccountSettings.AddressesLink = "link";
-            cosmosAccountSettings.Consistency = new AccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
-            cosmosAccountSettings.ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true };
-            cosmosAccountSettings.ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 };
+            AccountProperties cosmosAccountSettings = new AccountProperties
+            {
+                Id = "someId",
+                EnableMultipleWriteLocations = true,
+                ResourceId = "/uri",
+                ETag = "etag",
+                WriteLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region1", Endpoint = "endpoint1" } },
+                ReadLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region2", Endpoint = "endpoint2" } },
+                AddressesLink = "link",
+                Consistency = new AccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness },
+                ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true },
+                ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 }
+            };
 
             string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosAccountSettings);
 

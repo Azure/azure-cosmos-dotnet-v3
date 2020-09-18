@@ -5,20 +5,20 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Newtonsoft.Json.Converters;
-    using BaselineTest;
     using System.Linq.Dynamic;
     using System.Text;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
+    using BaselineTest;
+    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Spatial;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Container testContainer;
 
         [ClassInitialize]
-        public async static Task Initialize(TestContext textContext)
+        public static async Task Initialize(TestContext textContext)
         {
             string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             Uri uri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [ClassCleanup]
-        public async static Task CleanUp()
+        public static async Task CleanUp()
         {
             if (testDb != null)
             {
@@ -90,13 +90,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public static bool ObjectSequenceEquals<T>(IEnumerable<T> enumA, IEnumerable<T> enumB)
         {
-            if (enumA == null || enumB == null) return enumA == enumB;
+            if (enumA == null || enumB == null)
+            {
+                return enumA == enumB;
+            }
+
             return enumA.SequenceEqual(enumB);
         }
 
         public static bool ObjectEquals(object objA, object objB)
         {
-            if (objA == null || objB == null) return objA == objB;
+            if (objA == null || objB == null)
+            {
+                return objA == objB;
+            }
+
             return objA.Equals(objB);
         }
 
@@ -155,55 +163,55 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 // Byte
                 new LinqTestInput("Byte 1", b => getQuery(b).Select(doc => new { value = 1 })),
-                new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = Byte.MinValue })),
-                new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = Byte.MaxValue })),
+                new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = byte.MinValue })),
+                new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = byte.MaxValue })),
                 // SByte
                 new LinqTestInput("SByte 2", b => getQuery(b).Select(doc => new { value = 2 })),
-                new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = SByte.MinValue })),
-                new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = SByte.MaxValue })),
+                new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = sbyte.MinValue })),
+                new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = sbyte.MaxValue })),
                 // UInt16
                 new LinqTestInput("UInt16 3", b => getQuery(b).Select(doc => new { value = 3 })),
-                new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = UInt16.MinValue })),
-                new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = UInt16.MaxValue })),
+                new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = ushort.MinValue })),
+                new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = ushort.MaxValue })),
                 // UInt32
                 new LinqTestInput("UInt32 4", b => getQuery(b).Select(doc => new { value = 4 })),
-                new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = UInt32.MinValue })),
-                new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = UInt32.MaxValue })),
+                new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = uint.MinValue })),
+                new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = uint.MaxValue })),
                 // UInt64
                 new LinqTestInput("UInt64 5", b => getQuery(b).Select(doc => new { value = 5 })),
-                new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = UInt64.MinValue })),
-                new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = UInt64.MaxValue })),
+                new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = ulong.MinValue })),
+                new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = ulong.MaxValue })),
                 // Int16
                 new LinqTestInput("Int16 6", b => getQuery(b).Select(doc => new { value = 6 })),
-                new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = Int16.MinValue })),
-                new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = Int16.MaxValue })),
+                new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = short.MinValue })),
+                new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = short.MaxValue })),
                 // Int32
                 new LinqTestInput("Int32 7", b => getQuery(b).Select(doc => new { value = 7 })),
-                new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = Int32.MinValue })),
-                new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = Int32.MaxValue })),
+                new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = int.MinValue })),
+                new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = int.MaxValue })),
                 // Int64
                 new LinqTestInput("Int64 8", b => getQuery(b).Select(doc => new { value = 8 })),
-                new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = Int64.MinValue })),
-                new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = Int64.MaxValue })),
+                new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = long.MinValue })),
+                new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = long.MaxValue })),
                 // Decimal
                 new LinqTestInput("Decimal 9", b => getQuery(b).Select(doc => new { value = 9 })),
-                new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = Decimal.MinValue })),
-                new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = Decimal.MaxValue })),
+                new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = decimal.MinValue })),
+                new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = decimal.MaxValue })),
                 // Double
                 new LinqTestInput("Double 10", b => getQuery(b).Select(doc => new { value = 10 })),
-                new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = Double.MinValue })),
-                new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = Double.MaxValue })),
+                new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = double.MinValue })),
+                new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = double.MaxValue })),
                 // Single
                 new LinqTestInput("Single 11", b => getQuery(b).Select(doc => new { value = 11 })),
-                new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = Single.MinValue })),
-                new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = Single.MaxValue })),
+                new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = float.MinValue })),
+                new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = float.MaxValue })),
                 // Bool
                 new LinqTestInput("Bool true", b => getQuery(b).Select(doc => new { value = true })),
                 new LinqTestInput("Bool false", b => getQuery(b).Select(doc => new { value = false }))
             };
             // String
             string nullStr = null;
-            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty })));
+            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = string.Empty })));
             inputs.Add(new LinqTestInput("String str1", b => getQuery(b).Select(doc => new { value = "str1" })));
             inputs.Add(new LinqTestInput("String special", b => getQuery(b).Select(doc => new { value = "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890" })));
             inputs.Add(new LinqTestInput("String unicode", b => getQuery(b).Select(doc => new { value = "unicode 㐀㐁㨀㨁䶴䶵" })));
@@ -307,12 +315,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             DateTime midDateTime = new DateTime(2016, 9, 13, 0, 0, 0);
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.IsoTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
-                obj.UnixTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
-                obj.DefaultTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
-                obj.Id = Guid.NewGuid().ToString();
-                obj.Pk = "Test";
+                DataObject obj = new DataObject
+                {
+                    IsoTime = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    UnixTime = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    DefaultTime = LinqTestsCommon.RandomDateTime(random, midDateTime),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
                 return obj;
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -424,14 +434,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // the backend returns double values which got casted to the integer type
             // the casting is a rounded behavior e.g. 3.567 would become 4, whereas the casting behavior for data results is truncate
             // therefore, for test data, we just want to have real number with the decimal part < 0.5.
-            DataObject createDataObj(Random random) => new DataObject()
+            DataObject createDataObj(Random random)
             {
-                NumericField = (1.0 * random.Next()) + (random.NextDouble() / 2),
-                DecimalField = (decimal)((1.0 * random.Next()) + random.NextDouble()) / 2,
-                IntField = 1.0 * random.Next(),
-                Id = Guid.NewGuid().ToString(),
-                Pk = "Test"
-            };
+                return new DataObject()
+                {
+                    NumericField = (1.0 * random.Next()) + (random.NextDouble() / 2),
+                    DecimalField = (decimal)((1.0 * random.Next()) + random.NextDouble()) / 2,
+                    IntField = 1.0 * random.Next(),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+            }
+
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             // some scenarios below requires input to be within data type range in order to be correct
@@ -442,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Abs
                 new LinqTestInput("Abs decimal", b => getQuery(b).Select(doc => Math.Abs(doc.DecimalField))),
 
-                new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs((double)doc.NumericField))),
+                new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs(doc.NumericField))),
                 new LinqTestInput("Abs float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Abs((float)doc.NumericField))),
@@ -472,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Atan", b => getQuery(b).Select(doc => Math.Atan2(doc.NumericField, 1))),
                 // Ceiling
                 new LinqTestInput("Ceiling decimal", b => getQuery(b).Select(doc => Math.Ceiling((decimal)doc.NumericField))),
-                new LinqTestInput("Ceiling double", b => getQuery(b).Select(doc => Math.Ceiling((double)doc.NumericField))),
+                new LinqTestInput("Ceiling double", b => getQuery(b).Select(doc => Math.Ceiling(doc.NumericField))),
                 new LinqTestInput("Ceiling float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Ceiling((float)doc.NumericField))),
@@ -484,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .Select(doc => Math.Exp(doc.NumericField))),
                 // Floor
                 new LinqTestInput("Floor decimal", b => getQuery(b).Select(doc => Math.Floor((decimal)doc.NumericField))),
-                new LinqTestInput("Floor double", b => getQuery(b).Select(doc => Math.Floor((double)doc.NumericField))),
+                new LinqTestInput("Floor double", b => getQuery(b).Select(doc => Math.Floor(doc.NumericField))),
                 new LinqTestInput("Floor float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Floor((float)doc.NumericField))),
@@ -501,10 +515,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Pow
                 new LinqTestInput("Pow", b => getQuery(b).Select(doc => Math.Pow(doc.NumericField, 1))),
                 // Round
-                new LinqTestInput("Round double", b => getQuery(b).Select(doc => Math.Round((double)doc.NumericField))),
+                new LinqTestInput("Round double", b => getQuery(b).Select(doc => Math.Round(doc.NumericField))),
                 // Sign
                 new LinqTestInput("Sign decimal", b => getQuery(b).Select(doc => Math.Sign((decimal)doc.NumericField))),
-                new LinqTestInput("Sign double", b => getQuery(b).Select(doc => Math.Sign((double)doc.NumericField))),
+                new LinqTestInput("Sign double", b => getQuery(b).Select(doc => Math.Sign(doc.NumericField))),
                 new LinqTestInput("Sign float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Sign((float)doc.NumericField))),
@@ -522,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Sqrt", b => getQuery(b).Select(doc => Math.Sqrt(doc.NumericField))),
                 // Truncate
                 new LinqTestInput("Truncate decimal", b => getQuery(b).Select(doc => Math.Truncate((decimal)doc.NumericField))),
-                new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate((double)doc.NumericField)))
+                new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate(doc.NumericField)))
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -646,8 +660,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxArraySize = 50;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.ArrayField = new int[random.Next(MaxArraySize)];
+                DataObject obj = new DataObject
+                {
+                    ArrayField = new int[random.Next(MaxArraySize)]
+                };
                 for (int i = 0; i < obj.ArrayField.Length; ++i)
                 {
                     obj.ArrayField[i] = random.Next(MaxAbsValue * 2) - MaxAbsValue;
@@ -737,9 +753,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxArrayLength = 10;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.EnumerableField = new List<int>();
+                DataObject obj = new DataObject
+                {
+                    StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    EnumerableField = new List<int>()
+                };
                 for (int i = 0; i < random.Next(MaxArrayLength - 1) + 1; ++i)
                 {
                     obj.EnumerableField.Add(random.Next());
@@ -773,10 +791,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxAbsValue = 10;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
-                obj.ArrayField = new int[random.Next(MaxArrayLength)];
+                DataObject obj = new DataObject
+                {
+                    StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue,
+                    ArrayField = new int[random.Next(MaxArrayLength)]
+                };
                 for (int i = 0; i < obj.ArrayField.Length; ++i)
                 {
                     obj.ArrayField[i] = random.Next(MaxAbsValue * 2) - MaxAbsValue;
@@ -803,12 +823,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.StringField2 = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.NumericField = random.Next();
-                obj.Id = Guid.NewGuid().ToString();
-                obj.Pk = "Test";
+                DataObject obj = new DataObject
+                {
+                    StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    StringField2 = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = random.Next(),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
                 return obj;
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -832,8 +854,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength))
+                };
                 obj.StringField2 = random.NextDouble() < 0.5 ? obj.StringField : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
@@ -918,9 +942,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxCoordinateValue = 200;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
+                DataObject obj = new DataObject
+                {
+                    StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue
+                };
                 List<double> coordinates = new List<double>
                 {
                     random.NextDouble() < 0.5 ? 10 : random.Next(MaxCoordinateValue),
@@ -1006,10 +1032,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Random random = new Random(seed);
             for (int i = 0; i < Records; ++i)
             {
-                DataObject obj = new DataObject();
-                obj.NumericField = random.Next(NumAbsMax * 2) - NumAbsMax;
-                obj.Id = Guid.NewGuid().ToString();
-                obj.Pk = "Test";
+                DataObject obj = new DataObject
+                {
+                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
                 data.Add(obj);
             }
 
@@ -1028,8 +1056,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int NumAbsMax = 10000;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new DataObject();
-                obj.EnumerableField = new List<int>();
+                DataObject obj = new DataObject
+                {
+                    EnumerableField = new List<int>()
+                };
                 int listSize = random.Next(ListSizeMax);
                 for (int j = 0; j < listSize; ++j)
                 {

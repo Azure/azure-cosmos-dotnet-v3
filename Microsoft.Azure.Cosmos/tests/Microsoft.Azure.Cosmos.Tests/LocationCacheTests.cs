@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -24,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     [TestClass]
     public sealed class LocationCacheTests
     {
-        private static Uri DefaultEndpoint = new Uri("https://default.documents.azure.com");
-        private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
-        private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
-        private static Uri Location3Endpoint = new Uri("https://location3.documents.azure.com");
-        private static Uri Location4Endpoint = new Uri("https://location4.documents.azure.com");
-        private static Uri[] WriteEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location3Endpoint };
-        private static Uri[] ReadEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location4Endpoint };
-        private static Dictionary<string, Uri> EndpointByLocation = new Dictionary<string, Uri>()
+        private static readonly Uri DefaultEndpoint = new Uri("https://default.documents.azure.com");
+        private static readonly Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
+        private static readonly Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
+        private static readonly Uri Location3Endpoint = new Uri("https://location3.documents.azure.com");
+        private static readonly Uri Location4Endpoint = new Uri("https://location4.documents.azure.com");
+        private static readonly Uri[] WriteEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location3Endpoint };
+        private static readonly Uri[] ReadEndpoints = new Uri[] { LocationCacheTests.Location1Endpoint, LocationCacheTests.Location2Endpoint, LocationCacheTests.Location4Endpoint };
+        private static readonly Dictionary<string, Uri> EndpointByLocation = new Dictionary<string, Uri>()
         {
             { "location1", LocationCacheTests.Location1Endpoint },
             { "location2", LocationCacheTests.Location2Endpoint },
@@ -124,8 +123,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                            headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
+                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                            {
+                                [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString()
+                            };
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
                             throw notFoundException;
@@ -195,8 +196,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                            headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
+                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                            {
+                                [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString()
+                            };
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
 
@@ -272,8 +275,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                            headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
+                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                            {
+                                [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString()
+                            };
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
 
@@ -347,8 +352,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             retryCount++;
 
-                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                            headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
+                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                            {
+                                [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString()
+                            };
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
 
 
@@ -396,8 +403,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
 
-                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                            headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.WriteForbidden).ToString();
+                            DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                            {
+                                [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.WriteForbidden).ToString()
+                            };
                             DocumentClientException forbiddenException = new ForbiddenException(RMResources.Forbidden, headers);
 
                             throw forbiddenException;
@@ -463,8 +472,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
 
-                                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                                headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.DatabaseAccountNotFound).ToString();
+                                DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                                {
+                                    [WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.DatabaseAccountNotFound).ToString()
+                                };
                                 DocumentClientException forbiddenException = new ForbiddenException(RMResources.NotFound, headers);
 
                                 throw forbiddenException;
@@ -506,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [Owner("atulk")]
         public async Task ValidateAsync()
         {
-            bool[] boolValues = new bool[] {true, false};
+            bool[] boolValues = new bool[] { true, false };
 
             foreach (bool useMultipleWriteEndpoints in boolValues)
             {
@@ -654,8 +665,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             this.cache.OnDatabaseAccountRead(this.databaseAccount);
 
             this.mockedClient = new Mock<IDocumentClientInternal>();
-            mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
+            this.mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
+            this.mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -668,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 connectionPolicy.PreferredLocations.Add(preferredLocation);
             }
 
-            this.endpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
+            this.endpointManager = new GlobalEndpointManager(this.mockedClient.Object, connectionPolicy);
         }
 
         private async Task ValidateLocationCacheAsync(
@@ -743,21 +754,21 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                                   CultureInfo.InvariantCulture) * 1000 * 2;
                     await Task.Delay(delayInMilliSeconds);
 
-                    string config =  $"Delay{expirationTime};" + 
+                    string config = $"Delay{expirationTime};" +
                                      $"useMultipleWriteLocations:{useMultipleWriteLocations};" +
                                      $"endpointDiscoveryEnabled:{endpointDiscoveryEnabled};" +
                                      $"isPreferredListEmpty:{isPreferredListEmpty}";
 
                     CollectionAssert.AreEqual(
-                        currentWriteEndpoints, 
-                        this.cache.WriteEndpoints, 
+                        currentWriteEndpoints,
+                        this.cache.WriteEndpoints,
                         "Write Endpoints failed;" +
                             $"config:{config};" +
                             $"Current:{string.Join(",", currentWriteEndpoints)};" +
                             $"Cache:{string.Join(",", this.cache.WriteEndpoints)};");
 
                     CollectionAssert.AreEqual(
-                        currentReadEndpoints, 
+                        currentReadEndpoints,
                         this.cache.ReadEndpoints,
                         "Read Endpoints failed;" +
                             $"config:{config};" +
@@ -777,18 +788,17 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool hasMoreThanOneWriteEndpoints,
             bool hasMoreThanOneReadEndpoints)
         {
-            bool canRefreshInBackground = false;
-            bool shouldRefreshEndpoints = this.cache.ShouldRefreshEndpoints(out canRefreshInBackground);
+            bool shouldRefreshEndpoints = this.cache.ShouldRefreshEndpoints(out bool canRefreshInBackground);
 
             bool isMostPreferredLocationUnavailableForRead = isFirstReadEndpointUnavailable;
             bool isMostPreferredLocationUnavailableForWrite = useMultipleWriteLocations ? false : isFirstWriteEndpointUnavailable;
             if (this.preferredLocations.Count > 0)
             {
-                string mostPreferredReadLocationName = this.preferredLocations.First(location => databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location));
+                string mostPreferredReadLocationName = this.preferredLocations.First(location => this.databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location));
                 Uri mostPreferredReadEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredReadLocationName];
                 isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints.Length == 0 ? true : (preferredAvailableReadEndpoints[0] != mostPreferredReadEndpoint);
 
-                string mostPreferredWriteLocationName = this.preferredLocations.First(location => databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location));
+                string mostPreferredWriteLocationName = this.preferredLocations.First(location => this.databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location));
                 Uri mostPreferredWriteEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredWriteLocationName];
 
                 if (useMultipleWriteLocations)

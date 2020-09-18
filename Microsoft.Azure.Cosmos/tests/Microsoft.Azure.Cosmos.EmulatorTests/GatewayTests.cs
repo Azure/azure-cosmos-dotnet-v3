@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
 
             response = collection.Scripts.ExecuteStoredProcedureAsync<TValue>(
-                storedProcedure.Id, 
+                storedProcedure.Id,
                 new Cosmos.PartitionKey(partitionKey),
                 null).Result;
             Assert.IsNotNull(response);
@@ -298,8 +298,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Documents.Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
             Logger.LogLine("Listing StoredProcedures");
             DocumentFeedResponse<StoredProcedure> storedProcedureCollection1 = await client.ReadStoredProcedureFeedAsync(collection1.StoredProceduresLink);
@@ -445,8 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Documents.Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
             Logger.LogLine("Listing Triggers");
             DocumentFeedResponse<Trigger> triggerCollection1 = client.ReadFeed<Trigger>(collection1.GetIdOrFullName());
@@ -611,8 +609,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Documents.Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
             Logger.LogLine("Listing UserDefinedFunctions");
             DocumentFeedResponse<UserDefinedFunction> userDefinedFunctionCollection1 = client.ReadFeed<UserDefinedFunction>(collection1.ResourceId);
@@ -1484,7 +1481,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Scripts scripts = collection.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
                 string result = await scripts.ExecuteStoredProcedureAsync<string>(
-                    "scriptId", 
+                    "scriptId",
                     partitionKey: new Cosmos.PartitionKey(document.Id),
                     parameters: null);
             }
@@ -1518,7 +1515,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             Container collection = await database.CreateContainerAsync(collectionSpec);
 
-            Scripts scripts = collection.Scripts;            
+            Scripts scripts = collection.Scripts;
             string input = "foobar";
 
             string result = string.Empty;

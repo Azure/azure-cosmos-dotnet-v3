@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class CosmosGatewayTimeoutTests
@@ -106,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private class TransientHttpClientCreatorHandler : DelegatingHandler
         {
             public int Count { get; private set; } = 0;
-        
+
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (this.Count++ <= 3)

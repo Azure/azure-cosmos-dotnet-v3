@@ -266,7 +266,10 @@
                 };
 
                 specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
-                object getPropertyValueFunction(SpecialPropertyDocument d) => d.GetType().GetProperty(args.Name).GetValue(d);
+                object getPropertyValueFunction(SpecialPropertyDocument d)
+                {
+                    return d.GetType().GetProperty(args.Name).GetValue(d);
+                }
 
                 ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
                 dynamic returnedDoc = response.Resource;

@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 permissionResponse = await user.GetPermission(permissionId).ReadAsync();
                 Assert.Fail();
             }
-            catch(CosmosException ex)
+            catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
             }
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = containerResponse.Container;
-            
+
             //create permission
             string permissionId = Guid.NewGuid().ToString();
             PermissionProperties permissionProperties = new PermissionProperties(permissionId, PermissionMode.Read, container);
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(HttpStatusCode.Forbidden, ex.StatusCode);
                 }
             }
-           
+
             //update permission to PermissionMode.All
             permissionProperties = new PermissionProperties(permissionId, PermissionMode.All, container);
             permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);

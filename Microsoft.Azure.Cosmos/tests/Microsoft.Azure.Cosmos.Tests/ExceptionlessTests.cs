@@ -12,10 +12,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -27,9 +25,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ExceptionlessTests
     {
-        private static Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
+        private static readonly Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
 
-        [TestMethod]        
+        [TestMethod]
         [ExpectedException(typeof(NotFoundException))]
         public void TransportClient_DoesThrowFor404WithReadSessionNotAvailable_WithUseStatusCodeForFailures()
         {
@@ -43,8 +41,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null))
             {
                 request.UseStatusCodeForFailures = true;
-                StoreResponse mockStoreResponse404 = new StoreResponse();
-                mockStoreResponse404.Headers = new DictionaryNameValueCollection();
+                StoreResponse mockStoreResponse404 = new StoreResponse
+                {
+                    Headers = new DictionaryNameValueCollection()
+                };
                 mockStoreResponse404.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]        
+        [TestMethod]
         [DataRow((int)HttpStatusCode.NotFound)]
         [DataRow((int)HttpStatusCode.PreconditionFailed)]
         [DataRow((int)HttpStatusCode.Conflict)]
@@ -74,8 +74,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null))
             {
                 request.UseStatusCodeForFailures = true;
-                StoreResponse mockStoreResponse4XX = new StoreResponse();
-                mockStoreResponse4XX.Status = statusCode;
+                StoreResponse mockStoreResponse4XX = new StoreResponse
+                {
+                    Status = statusCode
+                };
 
 
                 TransportClient.ThrowServerException(
@@ -87,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]        
+        [TestMethod]
         public void TransportClient_DoesNotThrowFor429_WithUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =
@@ -100,8 +102,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null))
             {
                 request.UseStatusCodeFor429 = true;
-                StoreResponse mockStoreResponse429 = new StoreResponse();
-                mockStoreResponse429.Status = (int)StatusCodes.TooManyRequests;
+                StoreResponse mockStoreResponse429 = new StoreResponse
+                {
+                    Status = (int)StatusCodes.TooManyRequests
+                };
 
                 TransportClient.ThrowServerException(
                     string.Empty,
@@ -112,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]        
+        [TestMethod]
         public async Task GatewayStoreClient_DoesNotThrowFor429_WithUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =
@@ -202,7 +206,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// <param name="goThroughGateway">Whether or not to run the scenario using Gateway. If false, Direct will be used.</param>
         private static async Task<MockTransportHandler> TransportHandlerRunScenario(int responseStatusCode, bool goThroughGateway = true)
         {
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode) {
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode)
+            {
                 Content = new StringContent("{}"),
                 RequestMessage = httpRequest
             });
@@ -224,7 +229,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
-                (builder) => {
+                (builder) =>
+                {
                     builder
                         .AddCustomHandlers(retryHandler, transportHandler);
                 });
@@ -249,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private static ServerStoreModel MockServerStoreModel(
-            object sessionContainer, 
+            object sessionContainer,
             Func<Uri, DocumentServiceRequest, StoreResponse> sendDirectFunc)
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
@@ -262,8 +268,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             AddressInformation[] addressInformation = GetMockAddressInformation();
             Mock<IAddressResolver> mockAddressCache = GetMockAddressCache(addressInformation);
 
-            ReplicationPolicy replicationPolicy = new ReplicationPolicy();
-            replicationPolicy.MaxReplicaSetSize = 1;
+            ReplicationPolicy replicationPolicy = new ReplicationPolicy
+            {
+                MaxReplicaSetSize = 1
+            };
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -283,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// Sends a request with a particular response status code through the GatewayStoreModel
         /// </summary>
         private static async Task GatewayStoreClientRunScenario(
-            DocumentServiceRequest request, 
+            DocumentServiceRequest request,
             int responseStatusCode)
         {
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode));
@@ -338,13 +346,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation();
-                addressInformation[i].PhysicalUri =
+                addressInformation[i] = new AddressInformation
+                {
+                    PhysicalUri =
                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/";
-                addressInformation[i].IsPrimary = i == 0 ? true : false;
-                addressInformation[i].Protocol = Protocol.Tcp;
-                addressInformation[i].IsPublic = true;
+                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    IsPrimary = i == 0 ? true : false,
+                    Protocol = Protocol.Tcp,
+                    IsPublic = true
+                };
             }
             return addressInformation;
         }
@@ -367,12 +377,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// <summary>
         /// This TransportHandler sends the request and watches for DocumentClientExceptions and set a readable flag.
         /// </summary>
-        private class MockTransportHandler: TransportHandler
+        private class MockTransportHandler : TransportHandler
         {
             public bool ProcessMessagesAsyncThrew { get; private set; }
             public int SendAsyncCalls { get; private set; }
 
-            public MockTransportHandler(CosmosClient client): base(client)
+            public MockTransportHandler(CosmosClient client) : base(client)
             {
             }
 

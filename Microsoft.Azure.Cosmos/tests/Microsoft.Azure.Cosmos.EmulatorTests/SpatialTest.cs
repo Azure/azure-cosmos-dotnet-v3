@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SpatialTest
     {
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         private class SpatialSampleClass
         {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestDistanceAndWithin()
         {
-            await TestDistanceAndWithin(true);
+            await this.TestDistanceAndWithin(true);
         }
 
         [TestMethod]
@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database.SelfLink,
                 collectionDefinition);
 
-            var invalidGeometry = new SpatialSampleClass
+            SpatialSampleClass invalidGeometry = new SpatialSampleClass
             {
                 Location = new Point(20, 180),
                 Id = Guid.NewGuid().ToString()
             };
             await this.client.CreateDocumentAsync(collection.SelfLink, invalidGeometry);
 
-            var validGeometry = new SpatialSampleClass
+            SpatialSampleClass validGeometry = new SpatialSampleClass
             {
                 Location = new Point(50, 50),
                 Id = Guid.NewGuid().ToString()
@@ -104,9 +104,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IOrderedQueryable<SpatialSampleClass> invalidDetailed =
                 this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableCrossPartitionQuery = true });
 
-            var query = invalidDetailed
+            IQueryable<GeometryValidationResult> query = invalidDetailed
                 .Where(f => !f.Location.IsValid()).Select(f => f.Location.IsValidDetailed());
-            var isNotValidDetailedQuery = query.ToArray();
+            GeometryValidationResult[] isNotValidDetailedQuery = query.ToArray();
 
             Assert.AreEqual(1, isNotValidDetailedQuery.Count());
             Assert.AreEqual("Latitude values must be between -90 and 90 degrees.", isNotValidDetailedQuery[0].Reason);
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestDistanceAndWithinUsingIndex()
         {
-            await TestDistanceAndWithin(false);
+            await this.TestDistanceAndWithin(false);
         }
 
         private async Task TestDistanceAndWithin(bool allowScan)
@@ -161,14 +161,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 collection = await this.client.CreateDocumentCollectionAsync(database.SelfLink, collectionDefinition);
             }
 
-            var class1 = new SpatialSampleClass
+            SpatialSampleClass class1 = new SpatialSampleClass
             {
                 Location = new Point(20, 20),
                 Id = Guid.NewGuid().ToString()
             };
             await this.client.CreateDocumentAsync(collection.SelfLink, class1);
 
-            var class2 = new SpatialSampleClass
+            SpatialSampleClass class2 = new SpatialSampleClass
             {
                 Location = new Point(100, 100),
                 Id = Guid.NewGuid().ToString()

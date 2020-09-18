@@ -5,9 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 {
-    using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Utility class for Offline Query Engine.

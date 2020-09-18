@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(1, int.Parse(ranges[0].Id));
                 Assert.AreEqual(2, int.Parse(ranges[1].Id));
             }
-            
+
             await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
             await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(5, int.Parse(ranges[0].Id));
                 Assert.AreEqual(6, int.Parse(ranges[1].Id));
             }
-            
+
             async Task<int> AssertChildPartitionAsync(int partitionKeyRangeId)
             {
                 DocumentContainerPage page = await documentContainer.ReadFeedAsync(

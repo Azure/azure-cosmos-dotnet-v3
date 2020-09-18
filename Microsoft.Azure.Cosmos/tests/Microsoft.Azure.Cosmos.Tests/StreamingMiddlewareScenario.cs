@@ -1,10 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using System.Threading.Tasks;
-    using System.Web;
 
     /// Generic MVC controller are strongly typed => pay the ser-de cost 
     ///         Request  Path: stream (Incoming reqeust) -> Type -> stream (Outgoing request)

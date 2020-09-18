@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -35,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Uri databaseUri;
         private Uri collectionUri;
         private Uri partitionedCollectionUri;
-        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         internal abstract DocumentClient CreateDocumentClient(
             Uri hostUri,
@@ -123,15 +122,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestDateParseHandlingOnReadDocument()
         {
             const string jsonProperty = "jsonString";
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             // Verify round-trip create and read document
             RequestOptions applyRequestOptions = this.ApplyRequestOptions(new RequestOptions(), serializerSettings);
@@ -160,15 +157,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestDateParseHandlingOnDocumentQuery()
         {
             const string jsonProperty = "jsonString";
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             FeedOptions options = this.ApplyFeedOptions(new FeedOptions() { EnableCrossPartitionQuery = true }, serializerSettings);
 
@@ -184,20 +179,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             const string jsonProperty = "jsonString";
 
-            DocumentClient client;
-            Document originalDocument, createdDocument, partitionedDocument;
 
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
             {
                 DateParseHandling = DateParseHandling.None
             };
 
-            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
+            this.SetupDateTimeScenario(serializerSettings, jsonProperty, out DocumentClient client, out Document originalDocument, out Document createdDocument, out Document partitionedDocument);
 
             // Verify with stored procedure
-            StoredProcedure storedProcedure = new StoredProcedure();
-            storedProcedure.Id = "storeProcedure1";
-            storedProcedure.Body = @"function ReadAll(prefix) {
+            StoredProcedure storedProcedure = new StoredProcedure
+            {
+                Id = "storeProcedure1",
+                Body = @"function ReadAll(prefix) {
             var collection = getContext().getCollection();
             var responseBody = {
                 createdDocuments: []
@@ -214,7 +208,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     });
 
                     if (!isAccepted) throw new Error('The query was not accepted by the server.');
-                } ";
+                } "
+            };
 
             RequestOptions applyRequestOptions = this.ApplyRequestOptions(new RequestOptions(), serializerSettings);
             applyRequestOptions.PartitionKey = new PartitionKey("test");
@@ -235,15 +230,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MissingMemberHandling = MissingMemberHandling.Error,
             };
 
-            StoredProcedure storedProcedureDef = new StoredProcedure();
-            storedProcedureDef.Id = "testStoredProcJsonSerializerSettings" + Guid.NewGuid().ToString("N");
-            storedProcedureDef.Body = @"function() {
+            StoredProcedure storedProcedureDef = new StoredProcedure
+            {
+                Id = "testStoredProcJsonSerializerSettings" + Guid.NewGuid().ToString("N"),
+                Body = @"function() {
                     var docToReturn = {
                         id: 1
                     };
 
                     __.response.setBody(docToReturn);
-                }";
+                }"
+            };
 
             DocumentClient client = new DocumentClient(this.hostUri, this.masterKey, serializerSettings);
 
@@ -263,13 +260,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-        public async Task  TestJsonSerializerSettings(bool useGateway)
+        public async Task TestJsonSerializerSettings(bool useGateway)
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+            {
                 if (useGateway)
                 {
                     cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).WithConnectionModeGateway();
-                } else
+                }
+                else
                 {
                     cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).WithConnectionModeDirect();
 
@@ -467,7 +466,7 @@ function bulkImport(docs) {
             }
 
             QueryDefinition cosmosSqlQueryDefinition1 = new QueryDefinition("SELECT * FROM root");
-            FeedIterator<MyObject> setIterator1 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition1, requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount =-1 });
+            FeedIterator<MyObject> setIterator1 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition1, requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount = -1 });
 
             QueryDefinition cosmosSqlQueryDefinition2 = new QueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
             FeedIterator<MyObject> setIterator2 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition2, requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount = -1 });
@@ -588,7 +587,7 @@ function bulkImport(docs) {
         private class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-            private JsonSerializer serializer;
+            private readonly JsonSerializer serializer;
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
                 this.serializer = JsonSerializer.Create(jsonSerializerSettings);
@@ -630,7 +629,7 @@ function bulkImport(docs) {
                 return streamPayload;
             }
         }
-    
+
 
         [TestClass]
         public sealed class OnDocumentClientTests : CustomSerializationTests
@@ -716,9 +715,13 @@ function bulkImport(docs) {
                 JsonSerializer serializer)
             {
                 if (value == null)
+                {
                     writer.WriteNull();
+                }
                 else
+                {
                     serializer.Serialize(writer, this.Serializer((TSource)value));
+                }
             }
 
             public override object ReadJson(
@@ -783,13 +786,13 @@ function bulkImport(docs) {
             }
         }
 
-        class PlayDocument
+        private class PlayDocument
         {
             public string id { get; set; }
             public string jsonString { get; set; }
         }
 
-        class TestDocument
+        private class TestDocument
         {
             public KerberosTicketHashKey KerberosTicketHashKey { get; set; }
             public Dictionary<int, KerberosTicketHashKey> Dic1 { get; set; }
@@ -814,7 +817,7 @@ function bulkImport(docs) {
             }
         }
 
-        readonly struct KerberosTicketHashKey : IEquatable<KerberosTicketHashKey>
+        private readonly struct KerberosTicketHashKey : IEquatable<KerberosTicketHashKey>
         {
             private readonly int _hashCode;
 
@@ -862,8 +865,8 @@ function bulkImport(docs) {
                 byte fourthByte,
                 bool isLittleEndian = false)
             {
-                int firstShort = (int)ToUInt16(firstByte, secondByte, isLittleEndian);
-                int secondShort = (int)ToUInt16(thirdByte, fourthByte, isLittleEndian);
+                int firstShort = ToUInt16(firstByte, secondByte, isLittleEndian);
+                int secondShort = ToUInt16(thirdByte, fourthByte, isLittleEndian);
 
                 return isLittleEndian
                     ? (secondShort << 16) | firstShort
@@ -889,7 +892,7 @@ function bulkImport(docs) {
             }
         }
 
-        sealed class ByteArrayComparer : IEqualityComparer<byte[]>
+        private sealed class ByteArrayComparer : IEqualityComparer<byte[]>
         {
             public static readonly ByteArrayComparer Comparer = new ByteArrayComparer();
 
@@ -931,7 +934,7 @@ function bulkImport(docs) {
             }
         }
 
-        class MyObject
+        private class MyObject
         {
             public string id { get; set; }
             public string pk { get; set; }
@@ -954,7 +957,7 @@ function bulkImport(docs) {
             public override string ToString() { return this.Guid + " - " + this.SerializedObject; }
         }
 
-        class SerializedObject
+        private class SerializedObject
         {
             public string Name { get; set; }
 
@@ -967,7 +970,7 @@ function bulkImport(docs) {
             public static SerializedObject Parse(string name) { return new SerializedObject() { Name = name }; }
         }
 
-        sealed class ObjectStringJsonConverter<TSource> : ObjectJsonConverter<TSource, string>
+        private sealed class ObjectStringJsonConverter<TSource> : ObjectJsonConverter<TSource, string>
         {
             public ObjectStringJsonConverter(Func<string, TSource> deserializer)
                 : base(

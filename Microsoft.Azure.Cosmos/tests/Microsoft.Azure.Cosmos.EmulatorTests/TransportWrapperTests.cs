@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using CpuMonitor = Microsoft.Azure.Documents.Rntbd.CpuMonitor;
     using CpuLoadHistory = Microsoft.Azure.Documents.Rntbd.CpuLoadHistory;
+    using CpuMonitor = Microsoft.Azure.Documents.Rntbd.CpuMonitor;
 
     [TestClass]
     public class TransportWrapperTests
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (ResponseMessage responseMessage = await streamIterator.ReadNextAsync())
             {
                 this.ValidateTransportException(responseMessage);
-            }   
+            }
         }
 
         private void ValidateTransportException(CosmosException cosmosException, bool cpuMonitorInjected)

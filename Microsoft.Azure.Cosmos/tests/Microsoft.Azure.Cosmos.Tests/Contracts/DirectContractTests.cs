@@ -9,11 +9,9 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Text;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestCategory("Windows")]
     [TestClass]
@@ -34,8 +32,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
 
             string configJson = "{}";
-            IntPtr provider;
-            uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out provider);
+            uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out IntPtr provider);
         }
 
         [TestMethod]

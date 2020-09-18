@@ -8,14 +8,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.SqlObjects;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using OfflineEngine;
-    using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using OfflineEngine;
+    using VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// CosmosElementEqualityComparerUnitTests Class.

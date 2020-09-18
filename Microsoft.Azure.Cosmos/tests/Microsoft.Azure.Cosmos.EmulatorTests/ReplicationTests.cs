@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task.Delay(this.serverStalenessIntervalInSeconds * 1000);
             }
         }
-#region Replication Validation Helpers
+        #region Replication Validation Helpers
         internal static bool ResourceDoesnotExists<T>(string resourceId,
             DocumentClient client,
             string ownerId = null) where T : Resource, new()
@@ -58,8 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (typeof(T) != typeof(Attachment))
                 {
-                    INameValueCollection responseHeaders;
-                    nonExistingResource = TestCommon.ReadWithRetry<T>(client, resourceId, out responseHeaders);
+                    nonExistingResource = TestCommon.ReadWithRetry<T>(client, resourceId, out INameValueCollection responseHeaders);
                 }
                 else
                 {
@@ -279,9 +278,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             where T : Resource, new()
         {
             if (headers != null)
+            {
                 headers = new DictionaryNameValueCollection(headers); // dont mess with the input headers
+            }
             else
+            {
                 headers = new DictionaryNameValueCollection();
+            }
 
             int maxTries = 5;
             const int minIndexInterval = 5000; // 5 seconds
@@ -319,7 +322,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         foreach (T resource in resourceFeed)
                         {
                             if (queryProperty.Equals("name", StringComparison.CurrentCultureIgnoreCase))
+                            {
                                 Assert.AreEqual(resource.Id, queryPropertyValue, "Result contain invalid result");
+                            }
                         }
                         return;
                     }
@@ -379,9 +384,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    TestCommon.ForceRefreshNamingServiceConfigs(callingComponent, FabricServiceType.ServerService).Wait();
         //}
 
-#endregion
+        #endregion
 
-#region Environment Configuration Helpers
+        #region Environment Configuration Helpers
 
         internal static DocumentClient[] GetClientsLocked(bool useGateway = false, Protocol protocol = Protocol.Tcp, int timeoutInSeconds = 10, ConsistencyLevel? defaultConsistencyLevel = null, AuthorizationTokenType tokenType = AuthorizationTokenType.PrimaryMasterKey)
         {
@@ -394,6 +399,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             return toReturn;
         }
-#endregion
+        #endregion
     }
 }

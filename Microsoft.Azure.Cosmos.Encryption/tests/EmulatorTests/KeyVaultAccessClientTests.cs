@@ -1,17 +1,17 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Security.Cryptography;
     using System.Threading;
-    using System.Threading.Tasks;    
-    using Moq;
+    using System.Threading.Tasks;
+    using Castle.Core.Internal;
     using global::Azure;
     using global::Azure.Core;
     using global::Azure.Security.KeyVault.Keys;
     using global::Azure.Security.KeyVault.Keys.Cryptography;
-    using System.IO;
-    using System.Security.Cryptography;
-    using System.Collections.Generic;
-    using Castle.Core.Internal;
+    using Moq;
 
     internal class KeyVaultAccessClientTests
     {
@@ -20,13 +20,13 @@
         /// </summary>
         internal class TestKeyClient : KeyClient
         {
-            Uri vaultUri { get; }
-            TokenCredential credential { get; }
+            private Uri vaultUri { get; }
+            private TokenCredential credential { get; }
 
-            Dictionary<string, string> keyinfo = new Dictionary<string, string>
+            private readonly Dictionary<string, string> keyinfo = new Dictionary<string, string>
             {
                 {"testkey1","Recoverable"},
-                {"testkey2","nothingset"}               
+                {"testkey2","nothingset"}
             };
 
             /// <summary>
@@ -36,7 +36,7 @@
             /// <param name="credential"> Token Credentials </param>
             internal TestKeyClient(Uri vaultUri, TokenCredential credential)
             {
-                if( vaultUri == null || credential == null)
+                if (vaultUri == null || credential == null)
                 {
                     throw new ArgumentNullException("Value is null.");
                 }
@@ -57,23 +57,23 @@
                 Console.WriteLine("Accessing Key via Test GetKeyAsync");
 
                 // simulate a RequestFailed Exception
-                if(name.Contains(KeyVaultTestConstants.ValidateRequestFailedEx))
+                if (name.Contains(KeyVaultTestConstants.ValidateRequestFailedEx))
                 {
                     throw new RequestFailedException("Service Unavailable");
                 }
 
                 // simulate a case to return a Null Key.
                 if (name.Contains(KeyVaultTestConstants.ValidateNullKeyVaultKey))
-                {   
+                {
                     Mock<Response<KeyVaultKey>> mockedResponseNullKeyVault = new Mock<Response<KeyVaultKey>>();
                     mockedResponseNullKeyVault.SetupGet(r => r.Value).Returns((KeyVaultKey)null);
                     return Task.FromResult(mockedResponseNullKeyVault.Object);
                 }
 
                 this.keyinfo.TryGetValue(name, out string recoverlevel);
-                KeyProperties tp = KeyModelFactory.KeyProperties(recoveryLevel:recoverlevel);
+                KeyProperties tp = KeyModelFactory.KeyProperties(recoveryLevel: recoverlevel);
                 JsonWebKey jwk = KeyModelFactory.JsonWebKey(KeyType.Ec, curveName: "invalid", keyOps: new[] { KeyOperation.Sign, KeyOperation.Verify });
-                KeyVaultKey mockKey = KeyModelFactory.KeyVaultKey(properties:tp,key: jwk);
+                KeyVaultKey mockKey = KeyModelFactory.KeyVaultKey(properties: tp, key: jwk);
 
                 Mock<Response<KeyVaultKey>> mockedResponseKeyVault = new Mock<Response<KeyVaultKey>>();
                 mockedResponseKeyVault.SetupGet(r => r.Value).Returns(mockKey);
@@ -89,8 +89,8 @@
         internal class KeyClientTestFactory : KeyClientFactory
         {
             public override KeyClient GetKeyClient(KeyVaultKeyUriProperties keyVaultKeyUriProperties, TokenCredential tokenCred)
-            {                
-                return new TestKeyClient(keyVaultKeyUriProperties.KeyUri, tokenCred);               
+            {
+                return new TestKeyClient(keyVaultKeyUriProperties.KeyUri, tokenCred);
             }
         }
 
@@ -99,11 +99,11 @@
         /// </summary>
         internal class TestCryptographyClient : CryptographyClient
         {
-            Uri keyId { get; }
-            TokenCredential credential { get; }
+            private Uri keyId { get; }
+            private TokenCredential credential { get; }
 
-            byte[] secretkey = new byte[16] { 0x12, 0x10, 0x20, 0x40, 060, 0x23, 0x12, 0x19, 0x22, 0x10, 0x09, 0x12, 0x99, 0x12, 0x11, 0x22 };
-            byte[] iv = new byte[16] { 0x99, 0x99, 0x88, 0x88, 0x77, 0x77, 0x66, 0x66, 0x55, 0x55, 0x44, 0x44, 0x33, 0x33, 0x22, 0x22 };
+            private readonly byte[] secretkey = new byte[16] { 0x12, 0x10, 0x20, 0x40, 060, 0x23, 0x12, 0x19, 0x22, 0x10, 0x09, 0x12, 0x99, 0x12, 0x11, 0x22 };
+            private readonly byte[] iv = new byte[16] { 0x99, 0x99, 0x88, 0x88, 0x77, 0x77, 0x66, 0x66, 0x55, 0x55, 0x44, 0x44, 0x33, 0x33, 0x22, 0x22 };
 
             /// <summary>
             /// Initializes a new instance of the TestCryptographyClient class for the specified keyid.
@@ -112,7 +112,7 @@
             /// <param name="credential"></param>
             internal TestCryptographyClient(Uri keyid, TokenCredential credential)
             {
-                if( keyid == null || credential == null)
+                if (keyid == null || credential == null)
                 {
                     throw new ArgumentNullException("Value is null.");
                 }
@@ -130,7 +130,7 @@
             public override Task<WrapResult> WrapKeyAsync(KeyWrapAlgorithm algorithm, byte[] key, CancellationToken cancellationToken = default)
             {
 
-                if(key.IsNullOrEmpty())
+                if (key.IsNullOrEmpty())
                 {
                     throw new ArgumentNullException("Key is Null.");
                 }
@@ -144,8 +144,8 @@
                 }
 
                 string keyid = "12345678910";
-                WrapResult mockWrapResult = CryptographyModelFactory.WrapResult(keyId: keyid, key:wrappedKey, algorithm: KeyVaultConstants.RsaOaep256);
-                
+                WrapResult mockWrapResult = CryptographyModelFactory.WrapResult(keyId: keyid, key: wrappedKey, algorithm: KeyVaultConstants.RsaOaep256);
+
                 return Task.FromResult(mockWrapResult);
             }
 
@@ -172,7 +172,7 @@
                 }
 
                 string keyid = "12345678910";
-                UnwrapResult mockUnwrapResult = CryptographyModelFactory.UnwrapResult(keyId: keyid, key:unwrappedKey, algorithm: KeyVaultConstants.RsaOaep256);
+                UnwrapResult mockUnwrapResult = CryptographyModelFactory.UnwrapResult(keyId: keyid, key: unwrappedKey, algorithm: KeyVaultConstants.RsaOaep256);
                 return Task.FromResult(mockUnwrapResult);
             }
 

@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Paths.AttachmentsPathSegment + "/" + attachmentName;
         }
 
-        async static Task<List<dynamic>> QueryAllRetry(Func<Task<IQueryable<dynamic>>> queryFn, int trys = 1)
+        private static async Task<List<dynamic>> QueryAllRetry(Func<Task<IQueryable<dynamic>>> queryFn, int trys = 1)
         {
             List<dynamic> results = new List<dynamic>();
 
@@ -220,7 +220,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     results.AddRange(await DocumentQuery.ExecuteNextAsync());
                 }
-                if (results.Count > 0) return results;
+                if (results.Count > 0)
+                {
+                    return results;
+                }
 
                 await Task.Delay(1000);
 
@@ -229,14 +232,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return results;
         }
 
-        async static Task<List<T>> ReadFeedAllRetry<T>(Func<string, Task<DocumentFeedResponse<T>>> listFn, int trys = 1)
+        private static async Task<List<T>> ReadFeedAllRetry<T>(Func<string, Task<DocumentFeedResponse<T>>> listFn, int trys = 1)
         {
             List<T> results = null;
 
             for (int t = 1; t <= trys; t++)
             {
                 results = await ReadFeedAll(listFn);
-                if (results.Count > 0) return results;
+                if (results.Count > 0)
+                {
+                    return results;
+                }
 
                 await Task.Delay(1000);
 
@@ -246,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return results;
         }
 
-        async static Task<List<T>> ReadFeedAll<T>(Func<string, Task<DocumentFeedResponse<T>>> listFn)
+        private static async Task<List<T>> ReadFeedAll<T>(Func<string, Task<DocumentFeedResponse<T>>> listFn)
         {
             List<T> results = new List<T>();
             string continuation = null;
@@ -270,9 +276,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string uniqDatabaseName = string.Format("SmokeTest_{0}", Guid.NewGuid().ToString("N"));
             RequestOptions options = new RequestOptions { OfferThroughput = 50000 };
-            Database  database = sharedOffer ? await client.CreateDatabaseAsync(new Database  { Id = uniqDatabaseName }, options) : await client.CreateDatabaseAsync(new Database  { Id = uniqDatabaseName });
+            Database database = sharedOffer ? await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName }, options) : await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
             Assert.AreEqual(database.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName));
-            Database  readbackdatabase = await client.ReadDatabaseAsync(database.SelfLink);
+            Database readbackdatabase = await client.ReadDatabaseAsync(database.SelfLink);
             List<dynamic> results = await ClientTestsUtils.SqlQueryDatabases(client, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqDatabaseName), 10);
             Assert.AreEqual(1, results.Count, "Should have queried and found 1 document");
             Assert.AreEqual(database.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -317,13 +323,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testCollections.Add(collection);
 
                 string uniqDocumentName = "SmokeTestDocument" + Guid.NewGuid().ToString("N");
-                LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book();
-                myDocument.Id = uniqDocumentName;
-                myDocument.Title = "My Book"; //Simple Property.
-                myDocument.Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
-                myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
-                myDocument.Price = 9.99;
-                myDocument.Editions = new List<LinqGeneralBaselineTests.Edition>() { new LinqGeneralBaselineTests.Edition() { Name = "First", Year = 2001 }, new LinqGeneralBaselineTests.Edition() { Name = "Second", Year = 2005 } };
+                LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book
+                {
+                    Id = uniqDocumentName,
+                    Title = "My Book", //Simple Property.
+                    Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }, //Array Property
+                    Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }, //Complex Property
+                    Price = 9.99,
+                    Editions = new List<LinqGeneralBaselineTests.Edition>() { new LinqGeneralBaselineTests.Edition() { Name = "First", Year = 2001 }, new LinqGeneralBaselineTests.Edition() { Name = "Second", Year = 2005 } }
+                };
                 Document document = await client.CreateDocumentAsync(collection.SelfLink, myDocument);
                 Assert.AreEqual(document.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, uniqDocumentName, typeof(Document)));
                 results = await SqlQueryDocuments(client, collection.SelfLink, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqDocumentName), 10);  // query through collection link

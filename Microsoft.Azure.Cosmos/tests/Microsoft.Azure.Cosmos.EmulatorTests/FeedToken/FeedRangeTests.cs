@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             List<FeedRangeContinuation> deserialized = new List<FeedRangeContinuation>();
-            foreach(string serialized in serializations)
+            foreach (string serialized in serializations)
             {
                 Assert.IsTrue(FeedRangeContinuation.TryParse(serialized, out FeedRangeContinuation token));
                 deserialized.Add(token);
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             for (int i = 0; i < tokens.Count; i++)
             {
-                FeedRangeCompositeContinuation originalToken = tokens[i] as FeedRangeCompositeContinuation;
+                FeedRangeCompositeContinuation originalToken = tokens[i];
                 FeedRangeCompositeContinuation deserializedToken = deserialized[i] as FeedRangeCompositeContinuation;
                 Assert.AreEqual(originalToken.GetContinuation(), deserializedToken.GetContinuation());
                 Assert.AreEqual(originalToken.ContainerRid, deserializedToken.ContainerRid);
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             int pkRangesCount = ranges.Count;
             List<FeedRange> tokens = (await this.Container.GetFeedRangesAsync()).ToList();
             List<string> resolvedRanges = new List<string>();
-            foreach(FeedRange token in tokens)
+            foreach (FeedRange token in tokens)
             {
                 resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token));
             }
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string continuationToken = "TBD";
             string containerRid = Guid.NewGuid().ToString();
             FeedRangePartitionKey feedTokenPartitionKey = new FeedRangePartitionKey(partitionKey);
-            FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(containerRid, feedTokenPartitionKey, new List<Documents.Routing.Range<string>>() { Documents.Routing.Range<string>.GetEmptyRange("AA") },continuationToken);
+            FeedRangeCompositeContinuation feedRangeSimpleContinuation = new FeedRangeCompositeContinuation(containerRid, feedTokenPartitionKey, new List<Documents.Routing.Range<string>>() { Documents.Routing.Range<string>.GetEmptyRange("AA") }, continuationToken);
             string serialized = feedRangeSimpleContinuation.ToString();
             Assert.IsTrue(FeedRangeContinuation.TryParse(serialized, out FeedRangeContinuation deserialized));
             FeedRangeCompositeContinuation deserializedContinuation = deserialized as FeedRangeCompositeContinuation;

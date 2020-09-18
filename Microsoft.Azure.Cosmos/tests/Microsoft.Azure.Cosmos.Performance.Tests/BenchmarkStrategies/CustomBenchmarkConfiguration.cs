@@ -17,7 +17,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
     /// </summary>
     public class CustomBenchmarkConfiguration : ManualConfig
     {
-        public static string GetReportPath(CosmosDBConfiguration configuration) => configuration.ReportsPath;
+        public static string GetReportPath(CosmosDBConfiguration configuration)
+        {
+            return configuration.ReportsPath;
+        }
 
         public CustomBenchmarkConfiguration(CosmosDBConfiguration configuration)
         {

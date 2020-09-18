@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
-    using System;
-
     public class ToDoActivity
     {
         public string id { get; set; }
@@ -19,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public ToDoActivity[] children { get; set; }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
-            if (! (obj is ToDoActivity input))
+            if (!(obj is ToDoActivity input))
             {
                 return false;
             }

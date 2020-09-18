@@ -5,23 +5,18 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
     internal static class MockItemProducerFactory
@@ -53,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxPageSize = 50,
             ItemProducer.ProduceAsyncCompleteDelegate completeDelegate = null,
             Action executeCallback = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (responseMessagesPageSize == null)
             {
@@ -124,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IComparer<ItemProducerTree> itemProducerTreeComparer = null,
             ItemProducerTree.ProduceAsyncCompleteDelegate completeDelegate = null,
             Action executeCallback = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (responseMessagesPageSize == null)
             {

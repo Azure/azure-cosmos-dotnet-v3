@@ -45,7 +45,7 @@
         [TestMethod]
         public void TestNull()
         {
-            ReadOnlyMemory<byte> result = JsonSerializer.Serialize((object)null);
+            ReadOnlyMemory<byte> result = JsonSerializer.Serialize(null);
             CosmosNull cosmosNull = (CosmosNull)CosmosElement.CreateFromBuffer(result);
         }
 

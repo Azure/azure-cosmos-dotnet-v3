@@ -7,14 +7,14 @@ using Microsoft.Azure.Documents.Collections;
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using System.Threading;
     using System.Net;
+    using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Tests;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.

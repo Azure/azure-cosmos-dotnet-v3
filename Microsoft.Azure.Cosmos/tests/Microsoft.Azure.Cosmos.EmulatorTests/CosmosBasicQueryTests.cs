@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -211,8 +210,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (callCount > 1)
                     {
-                        INameValueCollection headers = new DictionaryNameValueCollection();
-                        headers.Add(Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42");
+                        INameValueCollection headers = new DictionaryNameValueCollection
+                        {
+                            { Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "42" }
+                        };
                         activityId = Guid.NewGuid().ToString();
                         headers.Add(Documents.HttpConstants.HttpHeaders.ActivityId, activityId);
                         Documents.DocumentServiceResponse response = new Documents.DocumentServiceResponse(

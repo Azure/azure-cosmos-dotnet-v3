@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                                 }
                             }
                         },
-                        default(CancellationToken),
+                        default,
                         TaskCreationOptions.DenyChildAttach,
                         TaskScheduler.Current)
                             .Unwrap()));

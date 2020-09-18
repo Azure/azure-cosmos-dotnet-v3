@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -30,10 +29,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (input) => toCount++);
 
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
-            SqlQuerySpec querySpec = new SqlQuerySpec("select * from T where T.id = @id");
-            querySpec.Parameters = new SqlParameterCollection()
+            SqlQuerySpec querySpec = new SqlQuerySpec("select * from T where T.id = @id")
+            {
+                Parameters = new SqlParameterCollection()
             {
                 new SqlParameter("@id", "testValue")
+            }
             };
 
             try

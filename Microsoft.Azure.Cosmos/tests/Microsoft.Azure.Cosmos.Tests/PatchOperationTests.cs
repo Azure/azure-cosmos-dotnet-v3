@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 PatchOperation.CreateAddOperation(null, "1");
                 Assert.Fail();
             }
-            catch(ArgumentNullException ex)
+            catch (ArgumentNullException ex)
             {
                 Assert.AreEqual(ex.ParamName, "path");
             }
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, current);
 
             dynamic complexObject = new { a = "complex", b = 12.34, c = true };
-            operation = PatchOperation.CreateAddOperation(path,  complexObject);
+            operation = PatchOperation.CreateAddOperation(path, complexObject);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, complexObject);
 
             operation = PatchOperation.CreateRemoveOperation(path);
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Stream stream = cosmosSerializer.ToStream(value);
                 using (StreamReader streamReader = new StreamReader(stream))
                 {
-                     expected = streamReader.ReadToEnd();
+                    expected = streamReader.ReadToEnd();
                 }
 
                 Assert.IsTrue(patchOperation.TrySerializeValueParameter(new CustomSerializer(), out string valueParam));
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private class CustomSerializer : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
 
             public override T FromStream<T>(Stream stream)
             {

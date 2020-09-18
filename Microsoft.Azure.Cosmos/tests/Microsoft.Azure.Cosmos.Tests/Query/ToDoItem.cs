@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Text;
 using Microsoft.Azure.Documents;
 
 namespace Microsoft.Azure.Cosmos.Tests
@@ -18,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static ToDoItem Create(string idPrefix, ResourceId itemRid = null)
         {
-            if(idPrefix == null)
+            if (idPrefix == null)
             {
                 idPrefix = string.Empty;
             }
@@ -37,20 +35,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         public static IList<ToDoItem> CreateItems(
-            int count, 
-            string idPrefix, 
+            int count,
+            string idPrefix,
             string containerRid = null)
         {
             List<ToDoItem> items = new List<ToDoItem>();
             for (uint i = 0; i < count; i++)
             {
                 ResourceId rid = null;
-                if(containerRid != null)
+                if (containerRid != null)
                 {
                     // id 0 returns null for resource id
-                    rid = ToDoItem.NewDocumentId(containerRid, i+1);
+                    rid = ToDoItem.NewDocumentId(containerRid, i + 1);
                 }
-                
+
                 items.Add(ToDoItem.Create(idPrefix, rid));
             }
 
@@ -86,12 +84,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             ToDoItem a = x as ToDoItem;
             ToDoItem b = y as ToDoItem;
 
-            if(a == null || b == null)
+            if (a == null || b == null)
             {
                 throw new ArgumentException("Invalid type");
             }
 
-            if(a.isDone != b.isDone
+            if (a.isDone != b.isDone
                 || a.count != b.count
                 || a.cost != b.cost
                 || !string.Equals(a.id, b.id)

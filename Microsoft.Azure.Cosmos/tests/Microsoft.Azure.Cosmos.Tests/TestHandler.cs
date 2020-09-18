@@ -36,8 +36,10 @@
             return Task.Factory.StartNew(
                 () =>
                 {
-                    ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-                    responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"));
+                    ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"))
+                    };
                     return responseMessage;
                 });
         }

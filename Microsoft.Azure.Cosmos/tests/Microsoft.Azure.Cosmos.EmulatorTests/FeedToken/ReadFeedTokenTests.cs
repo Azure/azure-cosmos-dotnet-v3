@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } );
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =

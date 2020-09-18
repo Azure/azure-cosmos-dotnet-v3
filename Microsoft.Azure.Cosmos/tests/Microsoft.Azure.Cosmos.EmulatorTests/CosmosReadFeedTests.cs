@@ -8,11 +8,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class CosmosReadFeedTests : BaseCosmosClientHelper
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string lastKnownContinuationToken = null;
             FeedIterator iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
-                continuationToken: lastKnownContinuationToken, 
+                continuationToken: lastKnownContinuationToken,
                 requestOptions: requestOptions);
 
             int count = 0;
@@ -95,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     lastKnownContinuationToken = response.Headers.ContinuationToken;
                     Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
-                    
+
                     using (StreamReader reader = new StreamReader(response.Content))
                     {
                         string json = await reader.ReadToEndAsync();

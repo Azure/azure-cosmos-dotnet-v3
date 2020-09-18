@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Fluent
 {
     using System;
-    using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;

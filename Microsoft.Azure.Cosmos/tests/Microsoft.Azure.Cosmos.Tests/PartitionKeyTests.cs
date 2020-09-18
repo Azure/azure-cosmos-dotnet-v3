@@ -115,13 +115,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCosmosPartitionKeyComparison()
         {
-            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("pk")));
+            Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals((object)new Cosmos.PartitionKey("pk")));
             Assert.IsTrue(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("pk")));
             Assert.IsTrue(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("pk"));
             Assert.IsTrue(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("other_pk"));
             Assert.IsTrue(new Cosmos.PartitionKey("pk").GetHashCode() == new Cosmos.PartitionKey("pk").GetHashCode());
 
-            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals((object) new Cosmos.PartitionKey("other_pk")));
+            Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals((object)new Cosmos.PartitionKey("other_pk")));
             Assert.IsFalse(new Cosmos.PartitionKey("pk").Equals(new Cosmos.PartitionKey("other_pk")));
             Assert.IsFalse(new Cosmos.PartitionKey("pk") == new Cosmos.PartitionKey("other_pk"));
             Assert.IsFalse(new Cosmos.PartitionKey("pk") != new Cosmos.PartitionKey("pk"));

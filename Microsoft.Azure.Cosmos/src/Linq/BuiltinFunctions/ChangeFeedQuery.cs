@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly string ifModifiedSince;
         private HttpStatusCode lastStatusCode = HttpStatusCode.OK;
         private string nextIfNoneMatch;
-        
+
         #endregion Fields
 
         #region Constructor

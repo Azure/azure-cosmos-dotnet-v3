@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 {
                                     string json = await reader.ReadToEndAsync();
                                     JArray documents = (JArray)JObject.Parse(json).SelectToken("Documents");
-                                    foreach(JObject document in documents)
+                                    foreach (JObject document in documents)
                                     {
                                         results.Add(document.SelectToken("id").ToString());
                                     }

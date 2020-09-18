@@ -1,11 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     internal abstract class PathToken : IEquatable<PathToken>, IComparable<PathToken>
     {
@@ -114,8 +110,14 @@
             }
         }
 
-        public static implicit operator PathToken(int index) => new IntegerPathToken(index);
+        public static implicit operator PathToken(int index)
+        {
+            return new IntegerPathToken(index);
+        }
 
-        public static implicit operator PathToken(string propertyName) => new StringPathToken(propertyName);
+        public static implicit operator PathToken(string propertyName)
+        {
+            return new StringPathToken(propertyName);
+        }
     }
 }

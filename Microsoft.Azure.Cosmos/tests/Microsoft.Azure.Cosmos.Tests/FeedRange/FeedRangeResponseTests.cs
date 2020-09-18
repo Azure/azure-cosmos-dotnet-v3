@@ -5,11 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -59,8 +55,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 new RequestMessage(),
                 new Headers(),
                 CosmosExceptionFactory.CreateBadRequestException("test"),
-                CosmosDiagnosticsContext.Create(new RequestOptions()));
-            original.Content = Mock.Of<MemoryStream>();
+                CosmosDiagnosticsContext.Create(new RequestOptions()))
+            {
+                Content = Mock.Of<MemoryStream>()
+            };
             Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
 
             ResponseMessage feedRangeResponse = FeedRangeResponse.CreateSuccess(original, feedContinuation.Object);

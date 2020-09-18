@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
     using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             StringBuilder sb = new StringBuilder();
             CosmosElement element = CosmosObject.Create(
-                new Dictionary<string, CosmosElement>() {{"item", CosmosString.Create("asdf")}});
+                new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } });
             element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
                 @"{""item"":""asdf""}",

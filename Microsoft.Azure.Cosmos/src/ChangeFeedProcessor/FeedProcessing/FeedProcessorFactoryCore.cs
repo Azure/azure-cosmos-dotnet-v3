@@ -24,10 +24,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             DocumentServiceLeaseCheckpointer leaseCheckpointer,
             CosmosSerializerCore serializerCore)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
-            if (changeFeedProcessorOptions == null) throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
-            if (leaseCheckpointer == null) throw new ArgumentNullException(nameof(leaseCheckpointer));
-            if (serializerCore == null) throw new ArgumentNullException(nameof(serializerCore));
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            if (changeFeedProcessorOptions == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
+            }
+
+            if (leaseCheckpointer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseCheckpointer));
+            }
+
+            if (serializerCore == null)
+            {
+                throw new ArgumentNullException(nameof(serializerCore));
+            }
 
             this.container = container;
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
@@ -37,8 +52,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
         {
-            if (observer == null) throw new ArgumentNullException(nameof(observer));
-            if (lease == null) throw new ArgumentNullException(nameof(lease));
+            if (observer == null)
+            {
+                throw new ArgumentNullException(nameof(observer));
+            }
+
+            if (lease == null)
+            {
+                throw new ArgumentNullException(nameof(lease));
+            }
 
             ProcessorOptions options = new ProcessorOptions
             {

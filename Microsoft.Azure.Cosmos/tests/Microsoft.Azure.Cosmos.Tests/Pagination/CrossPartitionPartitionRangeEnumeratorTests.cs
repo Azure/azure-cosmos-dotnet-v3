@@ -8,14 +8,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class CrossPartitionPartitionRangeEnumeratorTests 
+    public sealed class CrossPartitionPartitionRangeEnumeratorTests
     {
         [TestMethod]
         public async Task Test429sAsync()
@@ -136,11 +135,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
                     PartitionKeyRange range,
-                    DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
-                        inMemoryCollection,
-                        partitionKeyRangeId: int.Parse(range.Id),
-                        pageSize: 10,
-                        state: state);
+                    DocumentContainerState state)
+                {
+                    return new DocumentContainerPartitionRangeEnumerator(
+inMemoryCollection,
+partitionKeyRangeId: int.Parse(range.Id),
+pageSize: 10,
+state: state);
+                }
 
                 return new CrossPartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
                     feedRangeProvider: inMemoryCollection,
@@ -155,11 +157,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
                     PartitionKeyRange range,
-                    DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
-                        inMemoryCollection,
-                        partitionKeyRangeId: int.Parse(range.Id),
-                        pageSize: 10,
-                        state: state);
+                    DocumentContainerState state)
+                {
+                    return new DocumentContainerPartitionRangeEnumerator(
+inMemoryCollection,
+partitionKeyRangeId: int.Parse(range.Id),
+pageSize: 10,
+state: state);
+                }
 
                 CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                     feedRangeProvider: inMemoryCollection,

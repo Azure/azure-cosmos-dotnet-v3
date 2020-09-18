@@ -3,15 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
@@ -119,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = Guid.NewGuid().ToString(),
                 cost = 9001,
                 description = "udf_test_item",
-                status = "Done", 
+                status = "Done",
                 taskNum = 1
             };
 
@@ -131,11 +129,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = "calculateTax",
                     Body = @"function(amt) { return amt * 0.05; }"
                 });
-            
-             QueryDefinition sqlQuery = new QueryDefinition(
-             "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
-                 .WithParameter("@expensive", 9000)
-                 .WithParameter("@status", "Done");
+
+            QueryDefinition sqlQuery = new QueryDefinition(
+            "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
+                .WithParameter("@expensive", 9000)
+                .WithParameter("@status", "Done");
             HashSet<string> iterIds = new HashSet<string>();
             using (FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
                  queryDefinition: sqlQuery))

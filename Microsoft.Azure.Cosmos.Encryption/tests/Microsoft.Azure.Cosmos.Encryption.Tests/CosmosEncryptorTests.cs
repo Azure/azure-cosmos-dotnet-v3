@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    
+
     [TestClass]
     public class CosmosEncryptorTests
     {
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CosmosEncryptorTests.mockDataEncryptionKey.Verify(
                 m => m.EncryptData(plainText),
                 Times.Once);
-            
+
             byte[] decryptedText = await CosmosEncryptorTests.cosmosEncryptor.DecryptAsync(
                 cipherText,
                 CosmosEncryptorTests.dekId,

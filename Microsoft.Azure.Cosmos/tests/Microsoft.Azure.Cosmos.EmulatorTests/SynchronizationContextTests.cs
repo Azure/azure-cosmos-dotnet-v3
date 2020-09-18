@@ -5,29 +5,10 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
-    using System.Net;
-    using System.Text;
     using System.Threading;
-    using System.Threading.Tasks;
-    using System.Xml.Linq;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using JsonReader = Json.JsonReader;
-    using JsonWriter = Json.JsonWriter;
 
     [TestClass]
     public class SynchronizationContextTests
@@ -78,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             container.CreateItemAsync<ToDoActivity>(item: tempItem, cancellationToken: cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
                             Assert.Fail("Should have thrown a cancellation token");
 
-                        }catch(CosmosOperationCanceledException oe)
+                        }
+                        catch (CosmosOperationCanceledException oe)
                         {
                             string exception = oe.ToString();
                             Assert.IsTrue(exception.Contains("SynchronizationContext"));
@@ -153,11 +135,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
 
             public override void Post(SendOrPostCallback d, object state)
             {
-                lock (locker)
+                lock (this.locker)
                 {
                     d(state);
                 }

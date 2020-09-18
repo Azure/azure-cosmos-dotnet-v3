@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 routingMap.GetOverlappingRanges(new[]
                                                     {
                                                         new Range<string>(
-                                                            "0000000040", 
+                                                            "0000000040",
                                                             "0000000040",
                                                             true,
                                                             true)
@@ -95,17 +95,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                routingMap.GetOverlappingRanges(new[]
                                                     {
                                                         new Range<string>(
-                                                            "0000000040", 
+                                                            "0000000040",
                                                             "0000000045",
                                                             true,
                                                             true),
                                                         new Range<string>(
-                                                            "0000000045", 
+                                                            "0000000045",
                                                             "0000000046",
                                                             true,
                                                             true),
                                                        new Range<string>(
-                                                            "0000000046", 
+                                                            "0000000046",
                                                             "0000000050",
                                                             true,
                                                             true)

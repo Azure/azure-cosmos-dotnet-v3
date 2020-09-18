@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     {
         private class MockRoutingMapProvider : IRoutingMapProvider
         {
-            readonly CollectionRoutingMap routingMap;
+            private readonly CollectionRoutingMap routingMap;
 
             public MockRoutingMapProvider(IList<PartitionKeyRange> ranges)
             {

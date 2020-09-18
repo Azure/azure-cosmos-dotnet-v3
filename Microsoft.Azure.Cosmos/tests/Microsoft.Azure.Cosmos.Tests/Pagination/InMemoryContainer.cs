@@ -47,9 +47,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
-                FullRange,
-                cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            return this.MonadicGetChildRangeAsync(
+FullRange,
+cancellationToken);
+        }
 
         public async Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
@@ -197,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     partitionKeyMatches = true;
                 }
-                else if((candidatePartitionKey != null) && (partitionKey != null))
+                else if ((candidatePartitionKey != null) && (partitionKey != null))
                 {
                     partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
                 }
@@ -436,9 +439,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public int Count => this.storage.Count;
 
-            public IEnumerator<Record> GetEnumerator() => this.storage.GetEnumerator();
+            public IEnumerator<Record> GetEnumerator()
+            {
+                return this.storage.GetEnumerator();
+            }
 
-            IEnumerator IEnumerable.GetEnumerator() => this.storage.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.storage.GetEnumerator();
+            }
 
             public Record Add(CosmosObject payload)
             {

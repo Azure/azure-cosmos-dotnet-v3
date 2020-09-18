@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
@@ -12,15 +13,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -32,9 +32,15 @@ namespace Microsoft.Azure.Cosmos
         {
             public Action<string> Callback { get; set; }
             public override bool IsThreadSafe => true;
-            public override void Write(string message) => this.Callback(message);
-            public override void WriteLine(string message) => this.Callback(message);
+            public override void Write(string message)
+            {
+                this.Callback(message);
+            }
 
+            public override void WriteLine(string message)
+            {
+                this.Callback(message);
+            }
         }
 
         /// <summary>
@@ -125,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -327,7 +333,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -389,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -453,7 +459,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -492,7 +498,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionConsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -503,7 +509,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
         }
 
@@ -514,7 +520,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionInconsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -525,7 +531,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
         }
 
@@ -536,7 +542,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenAvailability()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = this.GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -547,7 +553,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
             using (DocumentServiceRequest request =
@@ -559,7 +565,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
             {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
         }
@@ -582,7 +588,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 HttpResponseMessage response = new HttpResponseMessage(httpStatusCode);
                 response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
-                response.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());                
+                response.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
                 return Task.FromResult(response);
             };
 
@@ -599,7 +605,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -665,7 +671,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -708,7 +714,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Func<HttpRequestMessage, Task<HttpResponseMessage>> messageHandler = async request =>
             {
-                String content = await request.Content.ReadAsStringAsync();
+                string content = await request.Content.ReadAsStringAsync();
                 if (content.Equals("document"))
                 {
                     IEnumerable<string> sessionTokens = request.Headers.GetValues("x-ms-session-token");
@@ -722,8 +728,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    IEnumerable<string> enumerable;
-                    Assert.IsFalse(request.Headers.TryGetValues("x-ms-session-token", out enumerable));
+                    Assert.IsFalse(request.Headers.TryGetValues("x-ms-session-token", out IEnumerable<string> enumerable));
                 }
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
             };

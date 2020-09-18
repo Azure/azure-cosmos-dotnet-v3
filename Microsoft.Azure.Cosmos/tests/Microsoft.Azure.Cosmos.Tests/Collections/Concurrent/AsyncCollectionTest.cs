@@ -181,20 +181,11 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
                 throw new NotImplementedException();
             }
 
-            public int Count
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public int Count => throw new NotImplementedException();
 
-            public bool IsSynchronized
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public bool IsSynchronized => throw new NotImplementedException();
 
-            public object SyncRoot
-            {
-                get { throw new NotImplementedException(); }
-            }
+            public object SyncRoot => throw new NotImplementedException();
         }
     }
 }

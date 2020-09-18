@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
-            if(failureConfigs != null)
+            if (failureConfigs != null)
             {
                 monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
             }

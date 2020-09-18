@@ -7,7 +7,6 @@
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -20,7 +19,6 @@
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class OrderByQueryTests : QueryTestsBase
@@ -154,11 +152,15 @@
                                     string orderByField = "field_" + rand.Next(10);
                                     IEnumerable<CosmosObject> filteredDocuments;
 
-                                    string getTop() =>
-                                        hasTop ? string.Format(CultureInfo.InvariantCulture, "TOP {0} ", isParametrized ? topValueName : top.ToString()) : string.Empty;
+                                    string getTop()
+                                    {
+                                        return hasTop ? string.Format(CultureInfo.InvariantCulture, "TOP {0} ", isParametrized ? topValueName : top.ToString()) : string.Empty;
+                                    }
 
-                                    string getOrderBy() =>
-                                        hasOrderBy ? string.Format(CultureInfo.InvariantCulture, " ORDER BY r.{0} {1}", orderByField, sortOrder) : string.Empty;
+                                    string getOrderBy()
+                                    {
+                                        return hasOrderBy ? string.Format(CultureInfo.InvariantCulture, " ORDER BY r.{0} {1}", orderByField, sortOrder) : string.Empty;
+                                    }
 
                                     if (fanOut)
                                     {

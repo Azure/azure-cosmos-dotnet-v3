@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     [MemoryDiagnoser]
     public class Utf8vsUtf16StringBenchmark
     {
-        private static readonly Payload StringLength8Payload =  Payload.CreateStringLength(length: 8);
-        private static readonly Payload StringLength32Payload =  Payload.CreateStringLength(length: 32);
-        private static readonly Payload StringLength256Payload =  Payload.CreateStringLength(length: 256);
-        private static readonly Payload StringLength1024Payload =  Payload.CreateStringLength(length: 1024);
-        private static readonly Payload StringLength4096Payload =  Payload.CreateStringLength(length: 4096);
+        private static readonly Payload StringLength8Payload = Payload.CreateStringLength(length: 8);
+        private static readonly Payload StringLength32Payload = Payload.CreateStringLength(length: 32);
+        private static readonly Payload StringLength256Payload = Payload.CreateStringLength(length: 256);
+        private static readonly Payload StringLength1024Payload = Payload.CreateStringLength(length: 1024);
+        private static readonly Payload StringLength4096Payload = Payload.CreateStringLength(length: 4096);
 
         [Benchmark]
         public void ReadUtf16StringLength8()
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                 ReadOnlyMemory<byte> binary = jsonTextWriter.GetResult();
 
                 return new Payload(
-                    text: text, 
+                    text: text,
                     binary: binary,
                     utf8StringToken: Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(stringValue)),
                     utf16StringToken: stringValue);

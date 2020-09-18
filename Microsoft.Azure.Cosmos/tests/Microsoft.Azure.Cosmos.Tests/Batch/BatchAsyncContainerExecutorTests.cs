@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests)
+                new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests)
                 {
                     ETag = itemBatchOperation.Id
                 });

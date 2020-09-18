@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             await timer.StartTimerAsync();
         }
 
-        public void DoNothing(Object state) { }
+        public void DoNothing(object state) { }
 
         public class WorkerWithTimer : IDisposable
         {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 return this.taskCompletionSource.Task;
             }
 
-            public void OnTimer(Object stateInfo)
+            public void OnTimer(object stateInfo)
             {
                 this.taskCompletionSource.TrySetResult(null);
             }

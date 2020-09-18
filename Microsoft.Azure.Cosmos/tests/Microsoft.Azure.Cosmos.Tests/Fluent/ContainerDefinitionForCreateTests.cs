@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests.Fluent
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -55,9 +53,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
-                    It.IsAny<int?>(), 
-                    It.IsAny<RequestOptions>(), 
+                    It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 

@@ -107,9 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                 {
-                    Aggregate aggregate;
                     return !sqlFunctionCallScalarExpression.IsUdf &&
-                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out aggregate);
+                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out Aggregate aggregate);
                 }
 
                 public override bool Visit(SqlInScalarExpression sqlInScalarExpression)

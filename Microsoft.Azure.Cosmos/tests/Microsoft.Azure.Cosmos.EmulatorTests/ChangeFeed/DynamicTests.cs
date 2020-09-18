@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             // Generate the payload
             await scripts.ExecuteStoredProcedureAsync<object>(
-                sprocId, 
+                sprocId,
                 new PartitionKey(partitionKey),
                 new dynamic[] { 0 });
 

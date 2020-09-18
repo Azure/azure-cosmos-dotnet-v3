@@ -11,8 +11,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class SinglePartitionRequestOptionsFactory : RequestOptionsFactory
     {
-        public override FeedOptions CreateFeedOptions() => null;
+        public override FeedOptions CreateFeedOptions()
+        {
+            return null;
+        }
 
-        public override PartitionKey GetPartitionKey(string itemId) => PartitionKey.None;
+        public override PartitionKey GetPartitionKey(string itemId)
+        {
+            return PartitionKey.None;
+        }
     }
 }

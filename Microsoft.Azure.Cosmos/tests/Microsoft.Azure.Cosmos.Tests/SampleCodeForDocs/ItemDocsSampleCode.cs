@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
 {
-    class ItemDocsSampleCode
+    internal class ItemDocsSampleCode
     {
         private CosmosClient cosmosClient;
 

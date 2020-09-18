@@ -4,10 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
 {
-    using Microsoft.Azure.Cosmos.Scripts;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
 
-    class CustomDocsSampleCode
+    internal class CustomDocsSampleCode
     {
         private CosmosClient cosmosClient;
 

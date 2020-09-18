@@ -5,10 +5,10 @@ namespace Microsoft.Azure.Cosmos.Contracts
 {
     using System;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Reflection;
-    using Microsoft.Azure.Documents;
     using System.Text;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ContractTests
@@ -18,10 +18,10 @@ namespace Microsoft.Azure.Cosmos.Contracts
         {
             try
             {
-                new CosmosClient((string)null);
+                new CosmosClient(null);
                 Assert.Fail();
             }
-            catch(ArgumentNullException)
+            catch (ArgumentNullException)
             { }
 
             Assert.AreEqual(HttpConstants.Versions.v2018_12_31, HttpConstants.Versions.CurrentVersion);

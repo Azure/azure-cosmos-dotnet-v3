@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json.Linq;
 
     internal static class DiagnosticValidator
@@ -59,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             string info = cosmosDiagnosticsContext.ToString();
             Assert.IsNotNull(info);
             JObject jObject = JObject.Parse(info.ToString());
-            Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
+            Assert.IsNotNull(jObject["DiagnosticVersion"].ToString());
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
             Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"));
@@ -109,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             if (totalElapsedTime.HasValue)
             {
                 Assert.IsTrue(
-                    scopeTotalElapsedTime <= totalElapsedTime, 
+                    scopeTotalElapsedTime <= totalElapsedTime,
                     $"RequestHandlerScope should not have larger time than the entire context. Scope: {scopeTotalElapsedTime} Total: {totalElapsedTime.Value}");
             }
 
@@ -282,11 +281,11 @@ namespace Microsoft.Azure.Cosmos
                 this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
                 // Buffered pages are normal and have 0 request. This causes most validation to fail.
-                if(cosmosDiagnosticsContext.GetTotalRequestCount() > 0)
+                if (cosmosDiagnosticsContext.GetTotalRequestCount() > 0)
                 {
                     DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
                 }
-                
+
                 foreach (CosmosDiagnosticsInternal diagnosticsInternal in cosmosDiagnosticsContext)
                 {
                     diagnosticsInternal.Accept(this);
@@ -302,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
 
             public override void Visit(RequestHandlerScope requestHandlerScope)
             {
-               // This will be visited if it is gateway query plan
+                // This will be visited if it is gateway query plan
             }
 
             public override void Visit(CosmosSystemInfo cpuLoadHistory)

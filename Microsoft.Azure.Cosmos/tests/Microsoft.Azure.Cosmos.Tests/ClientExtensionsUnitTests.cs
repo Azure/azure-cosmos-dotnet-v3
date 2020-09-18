@@ -22,10 +22,11 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestBadRequestParseHandling()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "https://localhost:8081");
-            HttpResponseMessage message = new HttpResponseMessage(HttpStatusCode.BadRequest);
-            
-            message.ReasonPhrase = "Invalid Parameter";
-            message.RequestMessage = httpRequestMessage;
+            HttpResponseMessage message = new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                ReasonPhrase = "Invalid Parameter",
+                RequestMessage = httpRequestMessage
+            };
             message.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
             message.Content = new StringContent("<html>Your response text</html>", encoding: Encoding.Default, mediaType: "text/html");
 
@@ -45,13 +46,14 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestJsonParseHandling()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "https://localhost:8081");
-            HttpResponseMessage message = new HttpResponseMessage(HttpStatusCode.Conflict);
-
-            message.ReasonPhrase = "Id already exists";
-            message.RequestMessage = httpRequestMessage;
+            HttpResponseMessage message = new HttpResponseMessage(HttpStatusCode.Conflict)
+            {
+                ReasonPhrase = "Id already exists",
+                RequestMessage = httpRequestMessage
+            };
             message.Headers.Add("x-ms-activity-id", Guid.NewGuid().ToString());
             message.Content = new StringContent(
-                @"{ ""id"": ""test"", ""message"": ""Conflict"", ""Code"": ""409""}", 
+                @"{ ""id"": ""test"", ""message"": ""Conflict"", ""Code"": ""409""}",
                 encoding: Encoding.Default,
                 mediaType: "application/json");
 

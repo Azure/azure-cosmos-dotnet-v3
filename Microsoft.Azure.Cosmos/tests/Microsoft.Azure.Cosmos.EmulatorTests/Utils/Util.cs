@@ -430,8 +430,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedure newStoredProcedure)
         {
             StoredProcedure result = (from proc in client.CreateStoredProcedureQuery(collection.SelfLink)
-                          where proc.Id == newStoredProcedure.Id
-                          select proc).AsEnumerable().FirstOrDefault();
+                                      where proc.Id == newStoredProcedure.Id
+                                      select proc).AsEnumerable().FirstOrDefault();
             if (result != null)
             {
                 return result;

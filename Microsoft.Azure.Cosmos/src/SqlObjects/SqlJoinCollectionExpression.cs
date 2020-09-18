@@ -28,18 +28,39 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public static SqlJoinCollectionExpression Create(
             SqlCollectionExpression left,
-            SqlCollectionExpression right) => new SqlJoinCollectionExpression(left, right);
+            SqlCollectionExpression right)
+        {
+            return new SqlJoinCollectionExpression(left, right);
+        }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
 
-        public override void Accept(SqlCollectionExpressionVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlCollectionExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlCollectionExpressionVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlCollectionExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlCollectionExpressionVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlCollectionExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
     }
 }

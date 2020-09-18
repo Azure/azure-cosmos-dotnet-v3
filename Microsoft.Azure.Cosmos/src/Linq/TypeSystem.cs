@@ -128,19 +128,26 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="type">Type to check.</param>
         /// <returns>Trye if the type is anonymous.</returns>
-        public static Boolean IsAnonymousType(this Type type)
+        public static bool IsAnonymousType(this Type type)
         {
-            Boolean hasCompilerGeneratedAttribute = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Any();
-            Boolean nameContainsAnonymousType = type.FullName.Contains("AnonymousType");
-            Boolean isAnonymousType = hasCompilerGeneratedAttribute && nameContainsAnonymousType;
+            bool hasCompilerGeneratedAttribute = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Any();
+            bool nameContainsAnonymousType = type.FullName.Contains("AnonymousType");
+            bool isAnonymousType = hasCompilerGeneratedAttribute && nameContainsAnonymousType;
 
             return isAnonymousType;
         }
 
         public static bool IsEnumerable(this Type type)
         {
-            if (type == typeof(Enumerable)) return true;
-            if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) return true;
+            if (type == typeof(Enumerable))
+            {
+                return true;
+            }
+
+            if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                return true;
+            }
 
             IEnumerable<Type> types = type.GetInterfaces().Where(interfaceType => interfaceType.IsGenericType() && interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             return types.FirstOrDefault() != null;

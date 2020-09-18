@@ -6,16 +6,16 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
+    using System.Globalization;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System.Globalization;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class NewtonsoftInteropTests
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 if (value is DateTime time)
                 {
-                    Int64 totalSeconds = (Int64)(time - UnixStartTime).TotalSeconds;
+                    long totalSeconds = (long)(time - UnixStartTime).TotalSeconds;
                     writer.WriteValue(totalSeconds);
                 }
                 else

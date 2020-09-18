@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
     using System.Collections.Generic;
 
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Newtonsoft.Json;
@@ -33,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                    ""extra"":1,
                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
                   }";
-            var lineString = JsonConvert.DeserializeObject<LineString>(json);
+            LineString lineString = JsonConvert.DeserializeObject<LineString>(json);
 
             Assert.AreEqual(2, lineString.Positions.Count);
             Assert.AreEqual(new Position(20, 30), lineString.Positions[0]);
@@ -45,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, lineString.AdditionalProperties.Count);
             Assert.AreEqual(1L, lineString.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.LineString, geom.Type);
 
             Assert.AreEqual(geom, lineString);
 
             string json1 = JsonConvert.SerializeObject(lineString);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestLineStringEqualsHashCode()
         {
-            var lineString1 = new LineString(
+            LineString lineString1 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -70,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var lineString2 = new LineString(
+            LineString lineString2 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -79,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var lineString3 = new LineString(
+            LineString lineString3 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 41) },
                 new GeometryParams
                 {
@@ -88,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var lineString4 = new LineString(
+            LineString lineString4 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var lineString5 = new LineString(
+            LineString lineString5 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -106,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var lineString6 = new LineString(
+            LineString lineString6 = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -147,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestLineStringConstructors()
         {
-            var lineString = new LineString(
+            LineString lineString = new LineString(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {

@@ -6,15 +6,9 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for "PriorityQueue" class.
@@ -339,8 +333,8 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
             for (int trial = 0; trial < 20; ++trial)
             {
-                foreach (IComparer<int> comparer in new[] 
-                { 
+                foreach (IComparer<int> comparer in new[]
+                {
                     Comparer<int>.Default,
                     Comparer<int>.Create((i1, i2) => i2.CompareTo(i1)),
                 })

@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -25,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using JsonReader = Json.JsonReader;
-    using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
 
     [TestClass]
@@ -181,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             { }
 
             // Both items have null description
-            dynamic testItem = new { id = id1, status = pk, description = (string)null};
+            dynamic testItem = new { id = id1, status = pk, description = (string)null };
             dynamic testItem2 = new { id = id2, status = pk, description = (string)null };
 
             // Create a client that ignore null
@@ -360,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                    await testContainer.GetNonePartitionKeyValueAsync(default);
                     Assert.Fail();
                 }
                 catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -378,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                await testContainer.GetNonePartitionKeyValueAsync(default);
             }
 
             // expected once post create 
@@ -388,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRIDAsync(default(CancellationToken));
+                await testContainer.GetRIDAsync(default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -399,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRoutingMapAsync(default(CancellationToken));
+                await testContainer.GetRoutingMapAsync(default);
                 expected = count;
             }
 
@@ -1333,9 +1331,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
-            List<PatchOperation> patchOperations = new List<PatchOperation>();
-            patchOperations.Add(PatchOperation.CreateAddOperation("/nonExistentParent/Child", "bar"));
-            patchOperations.Add(PatchOperation.CreateRemoveOperation("/cost"));
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.CreateAddOperation("/nonExistentParent/Child", "bar"),
+                PatchOperation.CreateRemoveOperation("/cost")
+            };
 
             // item does not exist - 404 Resource Not Found error
             try
@@ -1350,7 +1350,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-                Assert.IsTrue(ex.Message.Contains("Resource Not Found"));                
+                Assert.IsTrue(ex.Message.Contains("Resource Not Found"));
             }
 
             // adding a child when parent / ancestor does not exist - 400 BadRequest response
@@ -1498,7 +1498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(itemResponse.Resource);
             Assert.AreEqual("patched", itemResponse.Resource.children[1].status);
             Assert.IsNull(itemResponse.Resource.description);
-            Assert.AreEqual(testItem.taskNum+1, itemResponse.Resource.taskNum);
+            Assert.AreEqual(testItem.taskNum + 1, itemResponse.Resource.taskNum);
 
             // Delete
             using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
@@ -1578,8 +1578,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 patchOperations: patchOperations,
                 requestOptions);
 
-            JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
-            jsonSettings.DateFormatString = "dd / MM / yy hh:mm";
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+            {
+                DateFormatString = "dd / MM / yy hh:mm"
+            };
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);

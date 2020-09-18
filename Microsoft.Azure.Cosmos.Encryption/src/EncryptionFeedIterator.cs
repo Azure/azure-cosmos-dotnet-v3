@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
                 {
-                    decryptedResponse.Add(property.Name, (JToken)result);
+                    decryptedResponse.Add(property.Name, result);
                 }
                 else
                 {

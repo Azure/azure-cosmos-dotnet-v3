@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosPermissionUnitTests
@@ -21,8 +21,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.AreEqual(tokenExpiryInSeconds, int.Parse(request.Headers[Documents.HttpConstants.HttpHeaders.ResourceTokenExpiry]));
                 testHandlerHitCount++;
-                ResponseMessage response = new ResponseMessage(HttpStatusCode.OK, request, errorMessage: null);
-                response.Content = request.Content;
+                ResponseMessage response = new ResponseMessage(HttpStatusCode.OK, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 
@@ -31,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Database database = client.GetDatabase("testdb");
             await database.GetUser("testUser").CreatePermissionAsync(
-                new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId")), 
+                new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId")),
                 tokenExpiryInSeconds: tokenExpiryInSeconds
             );
 

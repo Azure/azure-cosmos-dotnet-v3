@@ -562,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             uint unsignedInt32 = ToUInt32(doubleValue);
             if (unsignedInt32 >= Math.Pow(2, 31))
             {
-                return (int)((long)unsignedInt32 - (long)Math.Pow(2, 32));
+                return (int)(unsignedInt32 - (long)Math.Pow(2, 32));
             }
             else
             {
@@ -584,15 +584,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             public static readonly SqlLiteralToCosmosElement Singleton = new SqlLiteralToCosmosElement();
 
-            public override CosmosElement Visit(SqlNumberLiteral literal) => CosmosNumber64.Create(literal.Value);
+            public override CosmosElement Visit(SqlNumberLiteral literal)
+            {
+                return CosmosNumber64.Create(literal.Value);
+            }
 
-            public override CosmosElement Visit(SqlStringLiteral literal) => CosmosString.Create(literal.Value);
+            public override CosmosElement Visit(SqlStringLiteral literal)
+            {
+                return CosmosString.Create(literal.Value);
+            }
 
-            public override CosmosElement Visit(SqlUndefinedLiteral literal) => null;
+            public override CosmosElement Visit(SqlUndefinedLiteral literal)
+            {
+                return null;
+            }
 
-            public override CosmosElement Visit(SqlNullLiteral literal) => CosmosNull.Create();
+            public override CosmosElement Visit(SqlNullLiteral literal)
+            {
+                return CosmosNull.Create();
+            }
 
-            public override CosmosElement Visit(SqlBooleanLiteral literal) => CosmosBoolean.Create(literal.Value);
+            public override CosmosElement Visit(SqlBooleanLiteral literal)
+            {
+                return CosmosBoolean.Create(literal.Value);
+            }
         }
 
         private sealed class MemberIndexerVisitor : ICosmosElementVisitor<CosmosElement, CosmosElement>
@@ -645,17 +660,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return propertyValue;
             }
 
-            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosBinary cosmosBinary, CosmosElement indexer)
+            {
+                return Undefined;
+            }
 
-            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosBoolean cosmosBoolean, CosmosElement indexer)
+            {
+                return Undefined;
+            }
 
-            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosGuid cosmosGuid, CosmosElement indexer)
+            {
+                return Undefined;
+            }
 
-            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosNull cosmosNull, CosmosElement indexer)
+            {
+                return Undefined;
+            }
 
-            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosNumber cosmosNumber, CosmosElement indexer)
+            {
+                return Undefined;
+            }
 
-            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer) => Undefined;
+            public CosmosElement Visit(CosmosString cosmosString, CosmosElement indexer)
+            {
+                return Undefined;
+            }
         }
     }
 }

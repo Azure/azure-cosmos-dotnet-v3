@@ -88,10 +88,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 for (int j = 0; j < 10; j++)
                 {
                     int key = j;
-                    tasks1.Add(cache.GetAsync(key, key * 2 , () => refreshFunc1(key, CancellationToken.None), CancellationToken.None));
+                    tasks1.Add(cache.GetAsync(key, key * 2, () => refreshFunc1(key, CancellationToken.None), CancellationToken.None));
                 }
             }
-            
+
             await Task.WhenAll(tasks1);
 
             Assert.AreEqual(20, numberOfCacheRefreshes);
@@ -134,14 +134,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             // assert that the tasks haven't completed.
             Assert.IsFalse(getTask2.IsCompleted);
             Assert.IsFalse(getTask1.IsCompleted);
-            
+
             // cancel the first task's cancellation token.
             cancellationTokenSource.Cancel();
 
             // neither task is complete at this point.
             Assert.IsFalse(getTask2.IsCompleted);
             Assert.IsFalse(getTask1.IsCompleted);
-            
+
             try
             {
                 await getTask1;

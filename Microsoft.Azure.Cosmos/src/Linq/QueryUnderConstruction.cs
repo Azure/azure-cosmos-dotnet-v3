@@ -36,13 +36,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// The parameter expression to be used as this query's alias.
         /// </summary>
-        public ParameterExpression Alias
-        {
-            get
-            {
-                return this.alias.Value;
-            }
-        }
+        public ParameterExpression Alias => this.alias.Value;
 
         private readonly Func<string, ParameterExpression> aliasCreatorFunc;
 
@@ -107,7 +101,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (first)
                 {
                     first = false;
-                    if (inputCollectionExpression != null) continue;
+                    if (inputCollectionExpression != null)
+                    {
+                        continue;
+                    }
                 }
 
                 ParameterExpression parameter = paramDef.Parameter;
@@ -239,7 +236,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
-                if (flattenQuery != null) break;
+                if (flattenQuery != null)
+                {
+                    break;
+                }
 
                 if (((query.topSpec != null || query.offsetSpec != null || query.limitSpec != null) && seenAnyNonSelectOp) ||
                     (query.selectClause != null && query.selectClause.HasDistinct && seenSelect))
@@ -260,7 +260,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 parentQuery = query;
             }
 
-            if (flattenQuery == null) flattenQuery = this.Flatten();
+            if (flattenQuery == null)
+            {
+                flattenQuery = this.Flatten();
+            }
 
             return flattenQuery;
         }
@@ -566,7 +569,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             result.selectClause = select;
-            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) result.AddBinding(binding);
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings())
+            {
+                result.AddBinding(binding);
+            }
 
             return result;
         }
@@ -576,7 +582,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             QueryUnderConstruction result = context.PackageCurrentQueryIfNeccessary();
 
             result.orderByClause = orderBy;
-            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) result.AddBinding(binding);
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings())
+            {
+                result.AddBinding(binding);
+            }
 
             return result;
         }
@@ -587,7 +596,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             items.AddRange(thenBy.OrderbyItems);
             context.currentQuery.orderByClause = SqlOrderbyClause.Create(items.ToImmutableArray());
 
-            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.currentQuery.AddBinding(binding);
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings())
+            {
+                context.currentQuery.AddBinding(binding);
+            }
 
             return context.currentQuery;
         }
@@ -787,7 +799,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             whereClause = QueryUnderConstruction.CombineWithConjunction(result.whereClause, whereClause);
             result.whereClause = whereClause;
-            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) result.AddBinding(binding);
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings())
+            {
+                result.AddBinding(binding);
+            }
 
             return result;
         }

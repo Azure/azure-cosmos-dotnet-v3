@@ -24,9 +24,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task AllowsMultipleConcurrentOperations()
         {
             InterlockIncrementCheck check = new InterlockIncrementCheck(2);
-            List<Task> tasks = new List<Task>(2);
-            tasks.Add(this.RunLock(check));
-            tasks.Add(this.RunLock(check));
+            List<Task> tasks = new List<Task>(2)
+            {
+                this.RunLock(check),
+                this.RunLock(check)
+            };
             await Task.WhenAll(tasks);
         }
 
@@ -35,9 +37,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ThrowsOnMultipleConcurrentOperations()
         {
             InterlockIncrementCheck check = new InterlockIncrementCheck(1);
-            List<Task> tasks = new List<Task>(2);
-            tasks.Add(this.RunLock(check));
-            tasks.Add(this.RunLock(check));
+            List<Task> tasks = new List<Task>(2)
+            {
+                this.RunLock(check),
+                this.RunLock(check)
+            };
             await Task.WhenAll(tasks);
         }
 

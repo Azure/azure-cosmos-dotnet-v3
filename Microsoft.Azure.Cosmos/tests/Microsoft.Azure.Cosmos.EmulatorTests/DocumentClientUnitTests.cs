@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Utils;
@@ -43,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void RetryExceedingMaxTimeLimit()
         {
             Mock<IStoreModel> mockStoreModel = new Mock<IStoreModel>();
-            mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)))
+            mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default))
                 .Throws(this.CreateTooManyRequestException(100));
 
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy() 
-            { 
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
                 EnableEndpointDiscovery = false,
                 RetryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = 100, MaxRetryWaitTimeInSeconds = 1 }
             };
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throttled = true;
             }
 
-            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(expectedExecutionTimes));
+            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default), Times.Exactly(expectedExecutionTimes));
             Assert.IsTrue(throttled);
         }
 
@@ -99,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void TestRetryOnThrottled(int? numberOfRetries)
         {
             Mock<IStoreModel> mockStoreModel = new Mock<IStoreModel>();
-            mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)))
+            mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default))
                 .Throws(this.CreateTooManyRequestException(100));
 
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy() 
-            { 
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
                 EnableEndpointDiscovery = false,
             };
 
@@ -137,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throttled = true;
             }
 
-            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(expectedExecutionTimes));
+            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default), Times.Exactly(expectedExecutionTimes));
             Assert.IsTrue(throttled);
 
             throttled = false;
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throttled = true;
             }
 
-            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(2 * expectedExecutionTimes));
+            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default), Times.Exactly(2 * expectedExecutionTimes));
             Assert.IsTrue(throttled);
 
             throttled = false;
@@ -167,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throttled = true;
             }
 
-            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(3 * expectedExecutionTimes));
+            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default), Times.Exactly(3 * expectedExecutionTimes));
             Assert.IsTrue(throttled);
 
             throttled = false;
@@ -182,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throttled = true;
             }
 
-            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(4 * expectedExecutionTimes));
+            mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default), Times.Exactly(4 * expectedExecutionTimes));
             Assert.IsTrue(throttled);
         }
 

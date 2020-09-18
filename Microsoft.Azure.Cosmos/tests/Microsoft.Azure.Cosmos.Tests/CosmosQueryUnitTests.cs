@@ -15,13 +15,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -191,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
             {
-                QueryResponseCore response = await component.DrainAsync(1, default(CancellationToken));
+                QueryResponseCore response = await component.DrainAsync(1, default);
                 Assert.AreEqual(setupContext.response, response);
             }
         }
@@ -348,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
             CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
-            diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
+            diagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
                     Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
@@ -389,7 +387,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(CosmosElement x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
+            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(CosmosElement x)
+            {
+                return Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
+            }
+
             return (callBack, failure);
         }
     }

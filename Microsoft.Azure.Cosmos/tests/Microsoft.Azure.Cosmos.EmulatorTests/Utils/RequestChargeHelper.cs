@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     internal sealed class RequestChargeHelper
     {
-        private Dictionary<DocumentClientType, double> chargeStore;
+        private readonly Dictionary<DocumentClientType, double> chargeStore;
 
         internal RequestChargeHelper()
         {
@@ -31,8 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal void SetOrAddValue(DocumentClientType type, double charge)
         {
-            double curr;
-            if (this.chargeStore.TryGetValue(type, out curr))
+            if (this.chargeStore.TryGetValue(type, out double curr))
             {
                 this.chargeStore[type] = curr + charge;
             }

@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 return await tryMonad.CatchAsync(
                     onError: async (exception) =>
                     {
-                        if(!(exception is RequestRateTooLargeException requestRateTooLargeExecption))
+                        if (!(exception is RequestRateTooLargeException requestRateTooLargeExecption))
                         {
                             return TryCatch<T>.FromException(exception);
                         }

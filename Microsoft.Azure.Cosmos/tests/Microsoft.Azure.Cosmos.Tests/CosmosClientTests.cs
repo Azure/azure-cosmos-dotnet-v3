@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 try
                 {
-                   await asyncFunc();
+                    await asyncFunc();
                     Assert.Fail("Should throw ObjectDisposedException");
                 }
                 catch (ObjectDisposedException) { }

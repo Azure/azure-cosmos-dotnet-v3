@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 detectedEstimationCorrectly = estimation == detectedEstimation;
 
                 return Task.CompletedTask;
-            },  TimeSpan.FromSeconds(1));
+            }, TimeSpan.FromSeconds(1));
 
             Mock<RemainingWorkEstimator> mockedEstimator = new Mock<RemainingWorkEstimator>();
             mockedEstimator.Setup(e => e.GetEstimatedRemainingWorkAsync(It.IsAny<CancellationToken>())).ReturnsAsync(estimation);

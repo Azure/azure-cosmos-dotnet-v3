@@ -31,13 +31,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return false;
         }
 
-        public bool Visit(CosmosBinary cosmosBinary) => false;
+        public bool Visit(CosmosBinary cosmosBinary)
+        {
+            return false;
+        }
 
-        public bool Visit(CosmosBoolean cosmosBoolean) => false;
+        public bool Visit(CosmosBoolean cosmosBoolean)
+        {
+            return false;
+        }
 
-        public bool Visit(CosmosGuid cosmosGuid) => false;
+        public bool Visit(CosmosGuid cosmosGuid)
+        {
+            return false;
+        }
 
-        public bool Visit(CosmosNull cosmosNull) => false;
+        public bool Visit(CosmosNull cosmosNull)
+        {
+            return false;
+        }
 
         public bool Visit(CosmosNumber cosmosNumber)
         {
@@ -67,6 +79,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return false;
         }
 
-        public bool Visit(CosmosString cosmosString) => false;
+        public bool Visit(CosmosString cosmosString)
+        {
+            return false;
+        }
     }
 }

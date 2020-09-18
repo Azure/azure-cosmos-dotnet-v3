@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             sd,
                             new JsonSerializerSettings()
                             {
-                                
+
                             }),
                         partitionKeyDefinition);
 
@@ -410,7 +410,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
                 if (reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Null)
+                {
                     return null;
+                }
 
                 if (reader.TokenType != JsonToken.Integer)
                 {

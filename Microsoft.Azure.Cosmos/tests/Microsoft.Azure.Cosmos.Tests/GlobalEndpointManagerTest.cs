@@ -26,24 +26,32 @@ namespace Microsoft.Azure.Cosmos
             // Setup dummpy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-            AccountRegion writeLocation = new AccountRegion();
-            writeLocation.Name = "WriteLocation";
-            writeLocation.Endpoint = "https://writeendpoint.net/";
+            AccountRegion writeLocation = new AccountRegion
+            {
+                Name = "WriteLocation",
+                Endpoint = "https://writeendpoint.net/"
+            };
 
-            AccountRegion readLocation1 = new AccountRegion();
-            readLocation1.Name = "ReadLocation1";
-            readLocation1.Endpoint = "https://readendpoint1.net/";
+            AccountRegion readLocation1 = new AccountRegion
+            {
+                Name = "ReadLocation1",
+                Endpoint = "https://readendpoint1.net/"
+            };
 
-            AccountRegion readLocation2 = new AccountRegion();
-            readLocation2.Name = "ReadLocation2";
-            readLocation2.Endpoint = "https://readendpoint2.net/";
+            AccountRegion readLocation2 = new AccountRegion
+            {
+                Name = "ReadLocation2",
+                Endpoint = "https://readendpoint2.net/"
+            };
 
             readableLocations.Add(writeLocation);
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            AccountProperties databaseAccount = new AccountProperties();
-            databaseAccount.ReadLocationsInternal = readableLocations;
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = readableLocations
+            };
 
             //Setup mock owner "document client"
             Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
@@ -103,24 +111,32 @@ namespace Microsoft.Azure.Cosmos
             // Setup dummpy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-            AccountRegion writeLocation = new AccountRegion();
-            writeLocation.Name = "WriteLocation";
-            writeLocation.Endpoint = "https://writeendpoint.net/";
+            AccountRegion writeLocation = new AccountRegion
+            {
+                Name = "WriteLocation",
+                Endpoint = "https://writeendpoint.net/"
+            };
 
-            AccountRegion readLocation1 = new AccountRegion();
-            readLocation1.Name = "ReadLocation1";
-            readLocation1.Endpoint = "https://readendpoint1.net/";
+            AccountRegion readLocation1 = new AccountRegion
+            {
+                Name = "ReadLocation1",
+                Endpoint = "https://readendpoint1.net/"
+            };
 
-            AccountRegion readLocation2 = new AccountRegion();
-            readLocation2.Name = "ReadLocation2";
-            readLocation2.Endpoint = "https://readendpoint2.net/";
+            AccountRegion readLocation2 = new AccountRegion
+            {
+                Name = "ReadLocation2",
+                Endpoint = "https://readendpoint2.net/"
+            };
 
             readableLocations.Add(writeLocation);
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            AccountProperties databaseAccount = new AccountProperties();
-            databaseAccount.ReadLocationsInternal = readableLocations;
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = readableLocations
+            };
 
             //Setup mock owner "document client"
             Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();

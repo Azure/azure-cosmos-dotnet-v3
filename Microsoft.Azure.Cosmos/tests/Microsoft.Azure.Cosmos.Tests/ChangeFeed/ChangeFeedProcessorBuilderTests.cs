@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 {
                     Assert.AreEqual(leaseContainerForBuilder.Id, leaseContainer.Id);
                 };
-            
+
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
@@ -242,13 +242,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static Action<DocumentServiceLeaseStoreManager, Container, string, string, ChangeFeedLeaseOptions, ChangeFeedProcessorOptions, Container> GetEmptyInitialization()
         {
-            return (DocumentServiceLeaseStoreManager leaseStoreManager, 
-                Container leaseContainer, 
-                string leaseContainerPrefix, 
-                string instanceName, 
+            return (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
+                string leaseContainerPrefix,
+                string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                Container monitoredContainer) => { };
+                Container monitoredContainer) =>
+            { };
         }
     }
 }

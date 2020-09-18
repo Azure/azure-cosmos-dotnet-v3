@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.NetworkInformation;
     using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -95,21 +94,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 });
 
-                LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
-                myBook.Id = Guid.NewGuid().ToString();
-                myBook.Title = "Azure DocumentDB 101";
+                LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Title = "Azure DocumentDB 101"
+                };
 
                 Document doc = (await client.CreateDocumentAsync(coll.SelfLink, myBook)).Resource;
 
                 myBook.Title = "Azure DocumentDB 201";
                 await client.ReplaceDocumentAsync(doc.SelfLink, myBook);
 
-                AccessCondition condition = new AccessCondition();
-                condition.Type = AccessConditionType.IfMatch;
-                condition.Condition = doc.ETag;
+                AccessCondition condition = new AccessCondition
+                {
+                    Type = AccessConditionType.IfMatch,
+                    Condition = doc.ETag
+                };
 
-                RequestOptions requestOptions = new RequestOptions();
-                requestOptions.AccessCondition = condition;
+                RequestOptions requestOptions = new RequestOptions
+                {
+                    AccessCondition = condition
+                };
 
                 myBook.Title = "Azure DocumentDB 301";
 
@@ -402,14 +407,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string testPid = Process.GetCurrentProcess().Id.ToString();
             using (Process p = new Process())
             {
-                ProcessStartInfo ps = new ProcessStartInfo();
-                ps.Arguments = "-a -n -o";
-                ps.FileName = "netstat.exe";
-                ps.UseShellExecute = false;
-                ps.WindowStyle = ProcessWindowStyle.Hidden;
-                ps.RedirectStandardInput = true;
-                ps.RedirectStandardOutput = true;
-                ps.RedirectStandardError = true;
+                ProcessStartInfo ps = new ProcessStartInfo
+                {
+                    Arguments = "-a -n -o",
+                    FileName = "netstat.exe",
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
 
                 p.StartInfo = ps;
                 p.Start();

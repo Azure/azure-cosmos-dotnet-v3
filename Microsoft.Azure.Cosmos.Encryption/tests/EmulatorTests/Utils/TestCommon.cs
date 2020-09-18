@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 {
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Utils;
-    using Newtonsoft.Json;
     using System;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Utils;
+    using Newtonsoft.Json;
 
     internal static class TestCommon
     {

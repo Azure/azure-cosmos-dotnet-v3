@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Transforms a projection with an aggregate to be rewritten with the result.
@@ -251,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 throw new ArgumentException($"Unknown {nameof(Aggregate)} {aggregate}");
                         }
 
-                        if(aggregationResult != Undefined)
+                        if (aggregationResult != Undefined)
                         {
                             rewrittenExpression = aggregationResult.Accept(CosmosElementToSqlScalarExpression.Singleton);
                         }
@@ -259,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         {
                             rewrittenExpression = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
                         }
-                        
+
                     }
                     else
                     {

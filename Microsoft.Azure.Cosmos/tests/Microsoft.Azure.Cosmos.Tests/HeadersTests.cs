@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
-    using System.Reflection;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -22,8 +21,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string value1 = Guid.NewGuid().ToString();
             string value2 = Guid.NewGuid().ToString();
-            Headers Headers = new Headers();
-            Headers.Add(Key, value1);
+            Headers Headers = new Headers
+            {
+                { Key, value1 }
+            };
             Assert.AreEqual(value1, Headers.Get(Key));
             Headers.Set(Key, value2);
             Assert.AreEqual(value2, Headers.Get(Key));
@@ -117,10 +118,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string value2 = Guid.NewGuid().ToString();
                 string value3 = Guid.NewGuid().ToString();
                 string value4 = Guid.NewGuid().ToString();
-                Headers Headers = new Headers();
-                Headers.ContinuationToken = value1;
-                Headers.PartitionKey = value2;
-                Headers.PartitionKeyRangeId = value3;
+                Headers Headers = new Headers
+                {
+                    ContinuationToken = value1,
+                    PartitionKey = value2,
+                    PartitionKeyRangeId = value3
+                };
                 Assert.AreEqual(value1, Headers.ContinuationToken);
                 Assert.AreEqual(value2, Headers.PartitionKey);
                 Assert.AreEqual(value3, Headers.PartitionKeyRangeId);

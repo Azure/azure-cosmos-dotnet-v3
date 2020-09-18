@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
     using System;
-    using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Linq;
@@ -105,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="options">the request options for the request.</param>
         /// <param name="disableAutomaticIdGeneration">Disables the automatic id generation, will throw an exception if id is missing.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<Document>> CreateDocumentAsync(this DocumentClient client, DocumentCollection owner, 
+        public static Task<ResourceResponse<Document>> CreateDocumentAsync(this DocumentClient client, DocumentCollection owner,
                 object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false)
         {
             return client.CreateDocumentAsync(owner.GetLink(), document, options, disableAutomaticIdGeneration);
@@ -286,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             SwapLinkIfNeeded(documentCollection);
             return client.ReplaceDocumentCollectionAsync(documentCollection, options);
         }
-        
+
         /// <summary>
         /// Replace the specified stored procedure.
         /// </summary>
@@ -424,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             return client.ReadSchemaAsync(schema.GetLink(), options);
         }
-#endregion
+        #endregion
 
         #region Feed read
         /// <summary>
@@ -566,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(this DocumentClient client, Documents.Database owner,  FeedOptions feedOptions = null)
+        public static IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(this DocumentClient client, Documents.Database owner, FeedOptions feedOptions = null)
         {
             return new DocumentQuery<DocumentCollection>(client, ResourceType.Collection, typeof(Documents.Database), owner.GetLink(), feedOptions);
         }
@@ -840,7 +838,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             if (owner == null)
             {
                 throw new ArgumentNullException("owner");
-            } 
+            }
 
             return client.CreateDocumentChangeFeedQuery(owner.GetLink(), feedOptions);
         }
@@ -920,10 +918,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="triggersLink">The link for triggers</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Trigger}"/> instance.</returns>
-        public static ResourceFeedReader<Trigger > CreateTriggerFeedReader(this DocumentClient client, DocumentCollection owner,
+        public static ResourceFeedReader<Trigger> CreateTriggerFeedReader(this DocumentClient client, DocumentCollection owner,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<Trigger >(client, ResourceType.Trigger, options, owner.GetLink());
+            return new ResourceFeedReader<Trigger>(client, ResourceType.Trigger, options, owner.GetLink());
         }
 
         /// <summary>

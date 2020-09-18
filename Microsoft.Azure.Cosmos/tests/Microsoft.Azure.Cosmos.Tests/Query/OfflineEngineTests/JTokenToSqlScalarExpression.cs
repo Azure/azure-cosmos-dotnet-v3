@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                     {
                         List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
 
-                        foreach (JProperty prop in (JToken)token)
+                        foreach (JProperty prop in token)
                         {
                             SqlPropertyName name = SqlPropertyName.Create(prop.Name);
                             JToken value = prop.Value;

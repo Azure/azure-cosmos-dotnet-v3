@@ -3,12 +3,11 @@
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan

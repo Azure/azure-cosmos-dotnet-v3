@@ -10,15 +10,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Services
 
     public static class ConfigurationService
     {
-        public static CosmosDBConfiguration Configuration
-        {
-            get
-            {
-                return cosmosDBConfiguration.Value;
-            }
-        }
+        public static CosmosDBConfiguration Configuration => cosmosDBConfiguration.Value;
 
-        private static Lazy<CosmosDBConfiguration> cosmosDBConfiguration = new Lazy<CosmosDBConfiguration>(CreateConfiguration);
+        private static readonly Lazy<CosmosDBConfiguration> cosmosDBConfiguration = new Lazy<CosmosDBConfiguration>(CreateConfiguration);
 
         private static CosmosDBConfiguration CreateConfiguration()
         {
@@ -27,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Services
 
             return new CosmosDBConfiguration()
             {
-                    ReportsPath = configuration.GetValue<string>("PERFORMANCE_REPORT_PATH")
+                ReportsPath = configuration.GetValue<string>("PERFORMANCE_REPORT_PATH")
             };
         }
     }

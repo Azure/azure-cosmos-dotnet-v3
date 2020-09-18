@@ -20,7 +20,10 @@ namespace Microsoft.Azure.Cosmos
 
         protected override IEnumerable<Task> GetScheduledTasks() { throw new NotSupportedException(); }
 
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
+        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+        {
+            return false;
+        }
 
         protected override void QueueTask(Task task)
         {

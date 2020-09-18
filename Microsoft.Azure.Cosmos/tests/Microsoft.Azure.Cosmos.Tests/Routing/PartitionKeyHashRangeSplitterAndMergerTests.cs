@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 // Complex Merge
                 VerifyMerge(
                     expectedMergedRange: CreateRange(1, 15),
-                    CreateRange(1, 3), CreateRange(3, 9), CreateRange(9, 15) );
+                    CreateRange(1, 3), CreateRange(3, 9), CreateRange(9, 15));
             }
 
             {

@@ -233,9 +233,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection headers,
             string key)
         {
-            if (string.IsNullOrEmpty(verb)) throw new ArgumentException("verb");
-            if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
-            if (headers == null) throw new ArgumentNullException("headers");
+            if (string.IsNullOrEmpty(verb))
+            {
+                throw new ArgumentException("verb");
+            }
+
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException("key");
+            }
+
+            if (headers == null)
+            {
+                throw new ArgumentNullException("headers");
+            }
 
             string xDate = DateTime.UtcNow.ToString("r");
 
@@ -444,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (documentCollections.Count == 0)
             {
-                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk","/key" }), Kind = PartitionKind.MultiHash };
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk", "/key" }), Kind = PartitionKind.MultiHash };
                 DocumentCollection documentCollection1 = new DocumentCollection
                 {
                     Id = Guid.NewGuid().ToString("N"),
@@ -1241,7 +1252,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Logger.LogLine("Unexpected exception. ActivityId: {0}, {1}", clientException.ActivityId, clientException);
                     }
-                    if (numberOfRetry == 1) throw;
+                    if (numberOfRetry == 1)
+                    {
+                        throw;
+                    }
                 }
 
                 if (retryAfter > TimeSpan.Zero)
@@ -1258,7 +1272,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
                 queryDefinition: null,
-                continuationToken: null, 
+                continuationToken: null,
                 requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
 
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10

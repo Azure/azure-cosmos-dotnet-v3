@@ -4,19 +4,19 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using System.Threading;
-    using System.Net;
-    using System.Text;
-    using System.Collections.ObjectModel;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Documents;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     /// <summary>
     /// Tests for <see cref="GatewayAddressCache"/>.
@@ -25,12 +25,12 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayAddressCacheTests
     {
         private const string DatabaseAccountApiEndpoint = "https://endpoint.azure.com";
-        private Mock<IAuthorizationTokenProvider> mockTokenProvider;
-        private Mock<IServiceConfigurationReader> mockServiceConfigReader;
-        private int targetReplicaSetSize = 4;
-        private PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
-        private ServiceIdentity serviceIdentity;
-        private Uri serviceName;
+        private readonly Mock<IAuthorizationTokenProvider> mockTokenProvider;
+        private readonly Mock<IServiceConfigurationReader> mockServiceConfigReader;
+        private readonly int targetReplicaSetSize = 4;
+        private readonly PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
+        private readonly ServiceIdentity serviceIdentity;
+        private readonly Uri serviceName;
 
         public GatewayAddressCacheTests()
         {
@@ -49,8 +49,10 @@ namespace Microsoft.Azure.Cosmos
         public void TestGatewayAddressCacheAutoRefreshOnSuboptimalPartition()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Https,
@@ -84,8 +86,10 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestGatewayAddressCacheUpdateOnConnectionResetAsync()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Https,
@@ -152,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                         routingMapProvider: null,
                         serviceConfigReader: this.mockServiceConfigReader.Object,
                         connectionPolicy: connectionPolicy,
-                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
+                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
                     ConnectionStateListener connectionStateListener = new ConnectionStateListener(globalAddressResolver);
                     connectionStateListener.OnConnectionEvent(ConnectionEvent.ReadEof, DateTime.Now, new Documents.Rntbd.ServerKey(new Uri("https://endpoint.azure.com:4040/")));
@@ -230,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
             public override void Post(SendOrPostCallback d, object state)
             {
                 lock (this.locker)

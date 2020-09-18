@@ -14,13 +14,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
-        private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
+        private readonly DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
         private Container container;
         private RequestOptionsFactory requestOptionsFactory;
 
         public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
         {
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
 
             this.container = leaseContainer;
             return this;
@@ -28,7 +31,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public DocumentServiceLeaseStoreManagerBuilder WithLeasePrefix(string leasePrefix)
         {
-            if (leasePrefix == null) throw new ArgumentNullException(nameof(leasePrefix));
+            if (leasePrefix == null)
+            {
+                throw new ArgumentNullException(nameof(leasePrefix));
+            }
 
             this.options.ContainerNamePrefix = leasePrefix;
             return this;
@@ -36,7 +42,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public DocumentServiceLeaseStoreManagerBuilder WithRequestOptionsFactory(RequestOptionsFactory requestOptionsFactory)
         {
-            if (requestOptionsFactory == null) throw new ArgumentNullException(nameof(requestOptionsFactory));
+            if (requestOptionsFactory == null)
+            {
+                throw new ArgumentNullException(nameof(requestOptionsFactory));
+            }
 
             this.requestOptionsFactory = requestOptionsFactory;
             return this;
@@ -44,7 +53,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public DocumentServiceLeaseStoreManagerBuilder WithHostName(string hostName)
         {
-            if (hostName == null) throw new ArgumentNullException(nameof(hostName));
+            if (hostName == null)
+            {
+                throw new ArgumentNullException(nameof(hostName));
+            }
 
             this.options.HostName = hostName;
             return this;
@@ -53,11 +65,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public Task<DocumentServiceLeaseStoreManager> BuildAsync()
         {
             if (this.container == null)
+            {
                 throw new InvalidOperationException(nameof(this.container) + " was not specified");
-            if (this.requestOptionsFactory == null)
-                throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
+            }
 
-            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
+            if (this.requestOptionsFactory == null)
+            {
+                throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
+            }
+
+            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
             return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
         }
     }

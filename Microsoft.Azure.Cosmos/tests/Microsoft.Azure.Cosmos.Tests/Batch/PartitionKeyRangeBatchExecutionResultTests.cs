@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
-            cancellationToken: default(CancellationToken));
+            cancellationToken: default);
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
-            cancellationToken: default(CancellationToken));
+            cancellationToken: default);
 
             ResponseMessage response = new ResponseMessage(statusCode) { Content = responseContent };
             response.Headers.SubStatusCode = subStatusCode;

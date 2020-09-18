@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
     using System.Collections.Generic;
 
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Newtonsoft.Json;
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
 
-            var polygon = JsonConvert.DeserializeObject<Polygon>(json);
+            Polygon polygon = JsonConvert.DeserializeObject<Polygon>(json);
 
             Assert.AreEqual(2, polygon.Rings.Count);
             Assert.AreEqual(5, polygon.Rings[0].Positions.Count);
@@ -45,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, polygon.AdditionalProperties.Count);
             Assert.AreEqual(1L, polygon.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.Polygon, geom.Type);
 
             Assert.AreEqual(geom, polygon);
 
             string json1 = JsonConvert.SerializeObject(polygon);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPolygonEqualsHashCode()
         {
-            var polygon1 =
+            Polygon polygon1 =
                 new Polygon(
                     new[]
                         {
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         Crs = Crs.Named("SomeCrs")
                     });
 
-            var polygon2 = new Polygon(
+            Polygon polygon2 = new Polygon(
                 new[]
                     {
                         new LinearRing(
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var polygon3 = new Polygon(
+            Polygon polygon3 = new Polygon(
                 new[]
                     {
                         new LinearRing(
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var polygon4 = new Polygon(
+            Polygon polygon4 = new Polygon(
                 new[]
                     {
                         new LinearRing(
@@ -142,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var polygon5 = new Polygon(
+            Polygon polygon5 = new Polygon(
                 new[]
                     {
                         new LinearRing(
@@ -162,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var polygon6 = new Polygon(
+            Polygon polygon6 = new Polygon(
                 new[]
                     {
                         new LinearRing(
@@ -214,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPolygonConstructors()
         {
-            var polygon = new Polygon(
+            Polygon polygon = new Polygon(
                 new[]
                     {
                         new LinearRing(

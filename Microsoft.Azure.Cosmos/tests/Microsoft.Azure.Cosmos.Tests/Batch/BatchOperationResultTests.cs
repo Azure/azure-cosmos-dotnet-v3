@@ -9,16 +9,20 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class BatchOperationResultTests
     {
-        static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContextCore();
-        static TransactionalBatchOperationResult CreateTestResult() => new TransactionalBatchOperationResult(HttpStatusCode.Unused)
+        private static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContextCore();
+
+        private static TransactionalBatchOperationResult CreateTestResult()
         {
-            SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,
-            ETag = "TestETag",
-            ResourceStream = new MemoryStream(),
-            RequestCharge = 1.5,
-            RetryAfter = TimeSpan.FromMilliseconds(1234),
-            DiagnosticsContext = CosmosDiagnostics
-        };
+            return new TransactionalBatchOperationResult(HttpStatusCode.Unused)
+            {
+                SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,
+                ETag = "TestETag",
+                ResourceStream = new MemoryStream(),
+                RequestCharge = 1.5,
+                RetryAfter = TimeSpan.FromMilliseconds(1234),
+                DiagnosticsContext = CosmosDiagnostics
+            };
+        }
 
         [TestMethod]
         public void StatusCodeIsSetThroughCtor()
@@ -41,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(other.RetryAfter, result.RetryAfter);
             Assert.AreSame(other.ResourceStream, result.ResourceStream);
         }
-        
+
         [TestMethod]
         public void PropertiesAreSetThroughGenericCtor()
         {

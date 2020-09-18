@@ -5,9 +5,9 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using Newtonsoft.Json;
 
     #region Family classes
 
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     {
         public DateTime Date;
         public long Amount;
-        public TransactionType Type; 
+        public TransactionType Type;
     }
 
     public enum TransactionType

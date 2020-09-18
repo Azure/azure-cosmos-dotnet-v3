@@ -2,10 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public ToDoActivity[] children { get; set; }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             ToDoActivity input = obj as ToDoActivity;
             if (input == null)

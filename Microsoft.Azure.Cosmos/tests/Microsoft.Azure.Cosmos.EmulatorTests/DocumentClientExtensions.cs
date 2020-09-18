@@ -5,10 +5,6 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Globalization;
-    using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     //Internal Test hooks.

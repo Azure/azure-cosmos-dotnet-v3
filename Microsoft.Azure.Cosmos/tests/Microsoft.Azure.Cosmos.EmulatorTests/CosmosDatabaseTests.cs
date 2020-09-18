@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -397,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         using (ResponseMessage response = await feedIterator.ReadNextAsync(this.cancellationToken))
                         {
                             response.EnsureSuccessStatusCode();
-                            using(StreamReader streamReader = new StreamReader(response.Content))
+                            using (StreamReader streamReader = new StreamReader(response.Content))
                             using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
                             {
                                 // Output will be:
@@ -422,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ids.AddRange(iterator);
                     }
                 }
-                
+
                 Assert.IsTrue(ids.Count >= 2);
             }
             finally

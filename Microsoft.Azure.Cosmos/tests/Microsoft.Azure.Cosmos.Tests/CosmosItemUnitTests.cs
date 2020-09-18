@@ -10,13 +10,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
-    using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -119,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
-                    default(CancellationToken));
+                    default);
                 if (pk is bool boolValue)
                 {
                     Assert.AreEqual(poco.pk, boolValue);
@@ -165,14 +161,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     await container.GetPartitionKeyValueFromStreamAsync(
                         MockCosmosUtil.Serializer.ToStream(poco),
-                        default(CancellationToken));
+                        default);
                 });
             }
 
             //null should return null
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(
                 MockCosmosUtil.Serializer.ToStream(new { pk = (object)null }),
-                default(CancellationToken));
+                default);
             Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
         }
 
@@ -452,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> {new List<string> { "a", "b", "c" }}));
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "a", "b", "c" } }));
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
@@ -517,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 object pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
-                    default(CancellationToken));
+                    default);
                 Assert.IsTrue(object.Equals(Cosmos.PartitionKey.None, pk));
             }
         }
@@ -537,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>) new List<IReadOnlyList<string>> { new List<string> { "a", "b", "c" }, new List<string> { "a","e","f" } }));
+                .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "a", "b", "c" }, new List<string> { "a", "e", "f" } }));
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
@@ -629,7 +625,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco.Item1),
-                    default(CancellationToken));
+                    default);
                 string partitionKeyString = pk.InternalKey.ToJsonString();
                 Assert.AreEqual(poco.Item2, partitionKeyString);
             }
@@ -755,8 +751,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
-                response.Content = request.Content;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 

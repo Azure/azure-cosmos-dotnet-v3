@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class OfferTests
     {
 
-        private PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+        private readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
         private readonly struct TestCase
         {
@@ -234,8 +234,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string collPrefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new DictionaryNameValueCollection();
-                headers.Add("x-ms-offer-throughput", "8000");
+                INameValueCollection headers = new DictionaryNameValueCollection
+                {
+                    { "x-ms-offer-throughput", "8000" }
+                };
 
                 DocumentCollection[] collections = (from index in Enumerable.Range(1, 1)
                                                     select client.Create<DocumentCollection>(dbResponse.Resource.ResourceId,
@@ -299,8 +301,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dbprefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new DictionaryNameValueCollection();
-                headers.Add("x-ms-offer-throughput", "8000");
+                INameValueCollection headers = new DictionaryNameValueCollection
+                {
+                    { "x-ms-offer-throughput", "8000" }
+                };
 
                 List<DocumentCollection> collections = new List<DocumentCollection>();
                 foreach (Database db in databases)
@@ -429,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     continuation = response.ResponseContinuation;
                     ++reads;
                 }
-                while (!String.IsNullOrEmpty(continuation));
+                while (!string.IsNullOrEmpty(continuation));
 
                 Assert.IsTrue(reads >= Math.Ceiling((double)numCollections / pageSize));
                 Assert.AreEqual(numCollections, readOffers.Count);
@@ -1087,7 +1091,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static bool IsThrottleDuetoOfferScaleDownRateLimit(DocumentClientException exception)
         {
-            int substatuscode = Int32.Parse(exception.ResponseHeaders.Get(WFConstants.BackendHeaders.SubStatus));
+            int substatuscode = int.Parse(exception.ResponseHeaders.Get(WFConstants.BackendHeaders.SubStatus));
 
             return exception.Message.Contains("Request rate is large") &&
                 substatuscode == 3204;
@@ -1118,7 +1122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static void ValidateOfferResponse(Offer expectedOffer, Offer actualOffer)
         {
             string expectedOfferVersion = Constants.Offers.OfferVersion_V1;
-            if (!String.IsNullOrEmpty(expectedOffer.OfferVersion))
+            if (!string.IsNullOrEmpty(expectedOffer.OfferVersion))
             {
                 expectedOfferVersion = expectedOffer.OfferVersion;
             }
@@ -1126,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (expectedOfferVersion == Constants.Offers.OfferVersion_V1)
             {
                 // version in actual payload must be V1 or empty
-                Assert.IsTrue(String.IsNullOrEmpty(actualOffer.OfferVersion) || (actualOffer.OfferVersion == expectedOfferVersion));
+                Assert.IsTrue(string.IsNullOrEmpty(actualOffer.OfferVersion) || (actualOffer.OfferVersion == expectedOfferVersion));
             }
             else
             {
@@ -1135,7 +1139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(expectedOffer.OfferType, actualOffer.OfferType);
 
-            switch (expectedOfferVersion ?? String.Empty)
+            switch (expectedOfferVersion ?? string.Empty)
             {
                 case Constants.Offers.OfferVersion_V1:
                 case Constants.Offers.OfferVersion_None:

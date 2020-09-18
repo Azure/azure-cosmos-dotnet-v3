@@ -4,10 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 {
-    using System;
-    using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class IndexUtilizationInfoTests

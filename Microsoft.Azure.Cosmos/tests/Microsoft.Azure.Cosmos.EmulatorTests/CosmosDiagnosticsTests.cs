@@ -4,23 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.EmulatorTests.Query;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
@@ -209,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     (uri, operation, request) =>
                 {
                     Assert.AreNotEqual(Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
-                    
+
                     if (request.ResourceType == Documents.ResourceType.Document)
                     {
                         if (activityIdScope == Guid.Empty)
@@ -282,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 int currLength = stringLength[i];
                 int nextLength = stringLength[i + 1];
-                Assert.IsTrue( nextLength < currLength * 2,
+                Assert.IsTrue(nextLength < currLength * 2,
                     $"The diagnostic string is growing faster than linear. Length: {currLength}, Next Length: {nextLength}");
             }
         }
@@ -472,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(
+            FeedIterator changeFeedIterator = (container as ContainerInlineCore).GetChangeFeedStreamIterator(
                 ChangeFeedStartFrom.Beginning(),
                 changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
@@ -813,7 +806,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class RequestHandlerSleepHelper : RequestHandler
         {
-            TimeSpan timeToSleep;
+            private TimeSpan timeToSleep;
 
             public RequestHandlerSleepHelper(TimeSpan timeToSleep)
             {

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -335,8 +334,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void TestMidPoint()
         {
-            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition();
-            partitionKey.Kind = PartitionKind.Hash;
+            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Hash
+            };
             string middle1 = PartitionKeyInternal.GetMiddleRangeEffectivePartitionKey(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -356,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string middle2Left = PartitionKeyInternal.GetMinInclusiveEffectivePartitionKey(384, 1024, partitionKey);
             string middle2Right = PartitionKeyInternal.GetMaxExclusiveEffectivePartitionKey(384, 1024, partitionKey);
 
-            Assert.IsTrue(StringComparer.Ordinal.Compare(middle2, middle2Left) >=0);
+            Assert.IsTrue(StringComparer.Ordinal.Compare(middle2, middle2Left) >= 0);
             Assert.IsTrue(StringComparer.Ordinal.Compare(middle2, middle2Right) < 0);
 
             string middle3 = PartitionKeyInternal.GetMiddleRangeEffectivePartitionKey(
@@ -376,9 +377,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void TestMidPointV2()
         {
-            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition();
-            partitionKey.Kind = PartitionKind.Hash;
-            partitionKey.Version = PartitionKeyDefinitionVersion.V2;
+            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2
+            };
             string middle1 = PartitionKeyInternal.GetMiddleRangeEffectivePartitionKey(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -521,9 +524,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString(partitionKeyRangeJson);
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            partitionKeyDefinition.Kind = PartitionKind.Hash;
-            partitionKeyDefinition.Version = PartitionKeyDefinitionVersion.V2;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2
+            };
             for (int i = 0; i < partitionKey.Components.Count; i++)
             {
                 partitionKeyDefinition.Paths.Add("/path" + i);
@@ -538,8 +543,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString(partitionKeyRangeJson);
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            partitionKeyDefinition.Kind = PartitionKind.Range;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Range
+            };
             for (int i = 0; i < partitionKey.Components.Count; i++)
             {
                 partitionKeyDefinition.Paths.Add("/path" + i);

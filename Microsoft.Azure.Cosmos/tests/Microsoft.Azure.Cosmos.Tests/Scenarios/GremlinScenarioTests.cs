@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosNumber intValueLazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(edgeLazyObject, intName);
             Assert.IsTrue(intValueLazyNumber is CosmosNumber64);
             Assert.IsTrue(intValueLazyNumber.Value.IsInteger);
-            Assert.AreEqual((long)intValue, intValueLazyNumber.Value);
+            Assert.AreEqual(intValue, intValueLazyNumber.Value);
 
             CosmosNumber longValueLazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(edgeLazyObject, longName);
             Assert.IsTrue(intValueLazyNumber is CosmosNumber64);
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosNumber floatValueLazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(edgeLazyObject, floatName);
             Assert.IsTrue(intValueLazyNumber is CosmosNumber64);
             Assert.IsTrue(floatValueLazyNumber.Value.IsDouble);
-            Assert.AreEqual((double)floatValue, floatValueLazyNumber.Value);
+            Assert.AreEqual(floatValue, floatValueLazyNumber.Value);
 
             CosmosNumber doubleValueLazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(edgeLazyObject, doubleName);
             Assert.IsTrue(intValueLazyNumber is CosmosNumber64);
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosNumber intValue0ValueLazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(intValue0LazyObject, GremlinKeywords.KW_PROPERTY_VALUE);
             Assert.IsTrue(intValue0ValueLazyNumber is CosmosNumber64);
             Assert.IsTrue(intValue0ValueLazyNumber.Value.IsInteger);
-            Assert.AreEqual((long)intValue, intValue0ValueLazyNumber.Value);
+            Assert.AreEqual(intValue, intValue0ValueLazyNumber.Value);
 
             CosmosObject intValue1LazyObject = this.GetAndAssertArrayValue<CosmosObject>(intLazyArray, 1);
             CosmosString intValue1IdLazyString = this.GetAndAssertObjectProperty<CosmosString>(intValue1LazyObject, GremlinKeywords.KW_PROPERTY_ID);
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosNumber floatValue0ValueLazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(floatValue0LazyObject, GremlinKeywords.KW_PROPERTY_VALUE);
             Assert.IsTrue(floatValue0ValueLazyNumber is CosmosNumber64);
             Assert.IsTrue(floatValue0ValueLazyNumber.Value.IsDouble);
-            Assert.AreEqual((double)floatValue, floatValue0ValueLazyNumber.Value);
+            Assert.AreEqual(floatValue, floatValue0ValueLazyNumber.Value);
 
             CosmosObject floatValue1LazyObject = this.GetAndAssertArrayValue<CosmosObject>(floatLazyArray, 1);
             CosmosString floatValue1IdLazyString = this.GetAndAssertObjectProperty<CosmosString>(floatValue1LazyObject, GremlinKeywords.KW_PROPERTY_ID);
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             CosmosNumber stringValue0MetaValue1LazyNumber = this.GetAndAssertObjectProperty<CosmosNumber>(stringValue0MetaLazyObject, metaProperty1Name);
             Assert.IsTrue(stringValue0MetaValue1LazyNumber is CosmosNumber64);
             Assert.IsTrue(stringValue0MetaValue1LazyNumber.Value.IsInteger);
-            Assert.AreEqual((long)metaProperty1Value, stringValue0MetaValue1LazyNumber.Value);
+            Assert.AreEqual(metaProperty1Value, stringValue0MetaValue1LazyNumber.Value);
         }
 
         internal void DeserializeModifyAndSerializeVertexDocumentTest(JsonSerializationFormat jsonSerializationFormat)

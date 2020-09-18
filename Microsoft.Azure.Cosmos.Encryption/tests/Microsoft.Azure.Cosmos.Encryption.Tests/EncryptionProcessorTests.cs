@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
                     dekId == EncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
             EncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => 
+                .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) =>
                     dekId == EncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
         }
 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CancellationToken.None);
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
-            
+
             Assert.AreEqual(testDoc.Id, encryptedDoc.Property("id").Value.Value<string>());
             Assert.AreEqual(testDoc.PK, encryptedDoc.Property(nameof(TestDoc.PK)).Value.Value<string>());
             Assert.AreEqual(testDoc.NonSensitive, encryptedDoc.Property(nameof(TestDoc.NonSensitive)).Value.Value<string>());

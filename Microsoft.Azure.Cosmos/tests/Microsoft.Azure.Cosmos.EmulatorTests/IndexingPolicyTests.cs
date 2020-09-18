@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task CompositeIndexImplementation()
-        { 
+        {
             Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
                 Automatic = true,
@@ -336,10 +336,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                      }
                     }
-                };
+            };
 
-            Cosmos.GeospatialConfig geospatialConfig = new Cosmos.GeospatialConfig();
-            geospatialConfig.GeospatialType = Cosmos.GeospatialType.Geometry;
+            Cosmos.GeospatialConfig geospatialConfig = new Cosmos.GeospatialConfig
+            {
+                GeospatialType = Cosmos.GeospatialType.Geometry
+            };
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy, geospatialConfig);
         }
 

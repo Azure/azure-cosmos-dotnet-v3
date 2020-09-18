@@ -12,9 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Moq;
 
@@ -109,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     bool isFailureResponse = itemsInPage.Length == 1 && itemsInPage[0] < 0;
                     if (isFailureResponse)
                     {
-                        if(itemsInPage[0] == MockPartitionResponse.MessageWithToManyRequestFailure)
+                        if (itemsInPage[0] == MockPartitionResponse.MessageWithToManyRequestFailure)
                         {
                             queryResponse = QueryResponseMessageFactory.CreateFailureToManyRequestResponse();
                         }

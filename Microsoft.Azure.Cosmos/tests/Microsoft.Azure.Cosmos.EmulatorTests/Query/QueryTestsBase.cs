@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         await client.GetDatabase(db.Id).DeleteAsync();
                     }
                 }
-            } 
+            }
         }
 
         internal async Task RunWithApiVersion(string apiVersion, Func<Task> function)

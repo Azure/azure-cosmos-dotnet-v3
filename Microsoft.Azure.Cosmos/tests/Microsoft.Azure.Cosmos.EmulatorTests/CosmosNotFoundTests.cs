@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class CosmosNotFoundTests

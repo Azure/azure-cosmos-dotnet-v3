@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.IO;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Documents;
@@ -54,38 +53,20 @@ namespace Microsoft.Azure.Cosmos
         {
             public SampleEnum Field1
             {
-                get
-                {
-                    return base.GetValue<SampleEnum>("field1");
-                }
-                set
-                {
-                    base.SetValue("field1", value);
-                }
+                get => base.GetValue<SampleEnum>("field1");
+                set => base.SetValue("field1", value);
             }
 
             public SampleEnum2 Field2
             {
-                get
-                {
-                    return base.GetValue<SampleEnum2>("field2");
-                }
-                set
-                {
-                    base.SetValue("field2", value);
-                }
+                get => base.GetValue<SampleEnum2>("field2");
+                set => base.SetValue("field2", value);
             }
 
             public SampleEnum3 Field3
             {
-                get
-                {
-                    return base.GetValue<SampleEnum3>("field3");
-                }
-                set
-                {
-                    base.SetValue("field3", value);
-                }
+                get => base.GetValue<SampleEnum3>("field3");
+                set => base.SetValue("field3", value);
             }
         }
 
@@ -95,10 +76,12 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void TestEnumSerializeDeserialize()
         {
-            SampleSerializable serializable = new SampleSerializable();
-            serializable.Field1 = SampleEnum.Splitting;
-            serializable.Field2 = SampleEnum2.Splitting;
-            serializable.Field3 = SampleEnum3.Splitting;
+            SampleSerializable serializable = new SampleSerializable
+            {
+                Field1 = SampleEnum.Splitting,
+                Field2 = SampleEnum2.Splitting,
+                Field3 = SampleEnum3.Splitting
+            };
 
             using (MemoryStream ms = new MemoryStream())
             {

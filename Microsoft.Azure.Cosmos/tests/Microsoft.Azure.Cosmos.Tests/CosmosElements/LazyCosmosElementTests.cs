@@ -135,13 +135,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 this.cosmosObject = cosmosObject;
             }
 
-            public string Name
-            {
-                get
-                {
-                    return (this.cosmosObject[nameof(Person.Name)] as CosmosString).Value;
-                }
-            }
+            public string Name => (this.cosmosObject[nameof(Person.Name)] as CosmosString).Value;
 
             public int Age
             {

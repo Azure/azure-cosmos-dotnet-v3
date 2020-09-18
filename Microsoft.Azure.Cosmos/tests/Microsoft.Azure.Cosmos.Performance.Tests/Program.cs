@@ -4,12 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
-    using System;
     using BenchmarkDotNet.Running;
 
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             //CosmosDBConfiguration environmentConfiguration = ConfigurationService.Configuration;
             //Console.WriteLine($"Starting benchmark and dropping results on {environmentConfiguration.ReportsPath}.");

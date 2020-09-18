@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>

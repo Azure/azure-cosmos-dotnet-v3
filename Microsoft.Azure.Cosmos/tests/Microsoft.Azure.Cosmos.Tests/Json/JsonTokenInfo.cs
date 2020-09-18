@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         public static JsonToken Boolean(bool value)
         {
-            return value ? (JsonToken)new JsonTrueToken() : (JsonToken)new JsonFalseToken();
+            return value ? new JsonTrueToken() : (JsonToken)new JsonFalseToken();
         }
 
         public static JsonToken Null()

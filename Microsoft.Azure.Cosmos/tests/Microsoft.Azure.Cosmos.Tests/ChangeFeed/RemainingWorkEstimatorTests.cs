@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-using Microsoft.Azure.Cosmos.Query.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -210,10 +209,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             message.Headers.Add(Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
             if (!string.IsNullOrEmpty(itemLsn))
             {
-                JObject firstDocument = new JObject();
-                firstDocument["_lsn"] = itemLsn;
+                JObject firstDocument = new JObject
+                {
+                    ["_lsn"] = itemLsn
+                };
 
-                message.Content = new CosmosJsonDotNetSerializer().ToStream( new { Documents = new List<JObject>() { firstDocument } });
+                message.Content = new CosmosJsonDotNetSerializer().ToStream(new { Documents = new List<JObject>() { firstDocument } });
             }
 
             return message;

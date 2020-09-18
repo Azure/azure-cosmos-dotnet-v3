@@ -52,18 +52,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the SchedulingMetricsTimeSpan, which is a readonly snapshot of the SchedulingMetrics.
         /// </summary>
         /// <returns>the SchedulingMetricsResult.</returns>
-        public SchedulingTimeSpan Elapsed
-        {
-            get
-            {
-                return new SchedulingTimeSpan(
+        public SchedulingTimeSpan Elapsed => new SchedulingTimeSpan(
                     this.turnaroundTimeStopwatch.Elapsed,
                     this.responseTimeStopwatch.Elapsed,
                     this.runTimeStopwatch.Elapsed,
                     this.turnaroundTimeStopwatch.Elapsed - this.runTimeStopwatch.Elapsed,
                     this.numPreemptions);
-            }
-        }
 
         /// <summary>
         /// Tells the SchedulingStopwatch know that the process is in a state where it is ready to be worked on,

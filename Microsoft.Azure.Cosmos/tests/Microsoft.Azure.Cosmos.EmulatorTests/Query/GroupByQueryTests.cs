@@ -173,8 +173,8 @@
                         .Select(grouping => CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                { "age", (grouping.Key as CosmosObject)["age"] },
-                                { "name", (grouping.Key as CosmosObject)["name"] }
+                                { "age", grouping.Key["age"] },
+                                { "name", grouping.Key["name"] }
                             }))
                         .ToList()
                 ),

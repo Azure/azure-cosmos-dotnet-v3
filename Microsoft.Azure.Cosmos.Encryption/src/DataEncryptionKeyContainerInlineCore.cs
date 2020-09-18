@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
            string id,
            EncryptionKeyWrapMetadata newWrapMetadata,
            ItemRequestOptions requestOptions = null,
-           CancellationToken cancellationToken = default(CancellationToken))
+           CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {

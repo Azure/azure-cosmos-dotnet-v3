@@ -23,7 +23,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             Debug.Assert(source != null, "source is null");
             Debug.Assert(worker != null, "worker is null");
             if (maxParallelTaskCount <= 0)
+            {
                 maxParallelTaskCount = 100;
+            }
 
             return Task.WhenAll(
                 Partitioner.Create(source)

@@ -17,47 +17,57 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         static SpatialBuiltinFunctions()
         {
-            SpatialBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
-
-            SpatialBuiltinFunctionDefinitions.Add("Distance",
-                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StDistance,
+            SpatialBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
+            {
+                {
+                    "Distance",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StDistance,
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(Geometry)},
-                    }));
+                    })
+                },
 
-            SpatialBuiltinFunctionDefinitions.Add("Within",
-                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StWithin,
+                {
+                    "Within",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StWithin,
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(Geometry)},
-                    }));
+                    })
+                },
 
-            SpatialBuiltinFunctionDefinitions.Add("IsValidDetailed",
-                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIsvaliddetailed,
+                {
+                    "IsValidDetailed",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIsvaliddetailed,
                     true,
-                    new List<Type[]>()));
+                    new List<Type[]>())
+                },
 
-            SpatialBuiltinFunctionDefinitions.Add("IsValid",
-                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIsvalid,
+                {
+                    "IsValid",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIsvalid,
                     true,
-                    new List<Type[]>()));
+                    new List<Type[]>())
+                },
 
-            SpatialBuiltinFunctionDefinitions.Add("Intersects",
-                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIntersects,
+                {
+                    "Intersects",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIntersects,
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(Geometry)},
-                    }));
+                    })
+                }
+            };
         }
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (SpatialBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
+            if (SpatialBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor))
             {
                 return visitor.Visit(methodCallExpression, context);
             }

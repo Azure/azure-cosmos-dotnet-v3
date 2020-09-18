@@ -51,8 +51,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 IEnumerable dataEnumerable = dataIter.Current as IEnumerable;
                 if (queryEnumerable == null && dataEnumerable == null)
                 {
-                    if (!queryIter.Current.Equals(dataIter.Current)) return false;
-
+                    if (!queryIter.Current.Equals(dataIter.Current))
+                    {
+                        return false;
+                    }
                 }
 
                 else if (queryEnumerable == null || dataEnumerable == null)
@@ -62,7 +64,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
                 else
                 {
-                    if (!LinqTestsCommon.NestedListsSequenceEqual(queryEnumerable, dataEnumerable)) return false;
+                    if (!LinqTestsCommon.NestedListsSequenceEqual(queryEnumerable, dataEnumerable))
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -78,7 +83,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns>true if the two </returns>
         private static bool CompareListOfArrays(List<object> queryResults, List<dynamic> dataResults)
         {
-            if (NestedListsSequenceEqual(queryResults, dataResults)) return true;
+            if (NestedListsSequenceEqual(queryResults, dataResults))
+            {
+                return true;
+            }
 
             bool resultMatched = true;
 
@@ -146,11 +154,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 || value is decimal;
         }
 
-        public static Boolean IsAnonymousType(Type type)
+        public static bool IsAnonymousType(Type type)
         {
-            Boolean hasCompilerGeneratedAttribute = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Count() > 0;
-            Boolean nameContainsAnonymousType = type.FullName.Contains("AnonymousType");
-            Boolean isAnonymousType = hasCompilerGeneratedAttribute && nameContainsAnonymousType;
+            bool hasCompilerGeneratedAttribute = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Count() > 0;
+            bool nameContainsAnonymousType = type.FullName.Contains("AnonymousType");
+            bool isAnonymousType = hasCompilerGeneratedAttribute && nameContainsAnonymousType;
 
             return isAnonymousType;
         }
@@ -229,9 +237,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             string assertMsg = string.Empty;
             if (!resultMatched)
             {
-                if (actualStr == null) actualStr = JsonConvert.SerializeObject(queryResultsList);
+                if (actualStr == null)
+                {
+                    actualStr = JsonConvert.SerializeObject(queryResultsList);
+                }
 
-                if (expectedStr == null) expectedStr = JsonConvert.SerializeObject(dataResultsList);
+                if (expectedStr == null)
+                {
+                    expectedStr = JsonConvert.SerializeObject(dataResultsList);
+                }
 
                 resultMatched |= actualStr.Equals(expectedStr);
                 if (!resultMatched)
@@ -303,7 +317,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
             // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
             // to this getQuery method.
-            IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
+            IQueryable<T> getQuery(bool useQuery)
+            {
+                return useQuery ? query : data.AsQueryable();
+            }
 
             return getQuery;
         }
@@ -490,7 +507,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
             // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
             // to this getQuery method.
-            IQueryable<Data> getQuery(bool useQuery) => useQuery ? query : testData.AsQueryable();
+            IQueryable<Data> getQuery(bool useQuery)
+            {
+                return useQuery ? query : testData.AsQueryable();
+            }
+
             return getQuery;
         }
 
@@ -515,14 +536,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
             catch (Exception e)
             {
-                while (e.InnerException != null) e = e.InnerException;
+                while (e.InnerException != null)
+                {
+                    e = e.InnerException;
+                }
 
                 string message;
                 if (e is CosmosException cosmosException)
                 {
                     message = $"Status Code: {cosmosException.StatusCode}";
                 }
-                else if(e is DocumentClientException documentClientException)
+                else if (e is DocumentClientException documentClientException)
                 {
                     message = documentClientException.RawErrorMessage;
                 }
@@ -557,8 +581,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             if (!(obj is LinqTestObject &&
                 obj.GetType().IsAssignableFrom(this.GetType()) &&
-                this.GetType().IsAssignableFrom(obj.GetType()))) return false;
-            if (obj == null) return false;
+                this.GetType().IsAssignableFrom(obj.GetType())))
+            {
+                return false;
+            }
+
+            if (obj == null)
+            {
+                return false;
+            }
 
             return this.ToString().Equals(obj.ToString());
         }
@@ -683,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ErrorMessage = errorMsg;
         }
 
-        public static String FormatSql(string sqlQuery)
+        public static string FormatSql(string sqlQuery)
         {
             const string subqueryCue = "(SELECT";
             bool hasSubquery = sqlQuery.IndexOf(subqueryCue, StringComparison.OrdinalIgnoreCase) > 0;
@@ -694,7 +725,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 sb.Replace(kv.Key, kv.Value);
             }
 
-            if (!hasSubquery) return sb.ToString();
+            if (!hasSubquery)
+            {
+                return sb.ToString();
+            }
 
             const string oneTab = "    ";
             const string startCue = "SELECT";
@@ -708,8 +742,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 if (tokens[i].StartsWith(startCue, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!firstSelect) indentSb.Append(oneTab); else firstSelect = false;
-
+                    if (!firstSelect)
+                    {
+                        indentSb.Append(oneTab);
+                    }
+                    else
+                    {
+                        firstSelect = false;
+                    }
                 }
                 else if (tokens[i].StartsWith(endCue, StringComparison.OrdinalIgnoreCase))
                 {

@@ -7,14 +7,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
-    using System.Net.Http;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public sealed class MultiRegionStrongTests
@@ -40,22 +40,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.CollectionName = Guid.NewGuid().ToString();
 
             this.read0 = TestCommon.CreateClient(false, enableEndpointDiscovery: false, tokenType: AuthorizationTokenType.SystemAll, createForGeoRegion: true);
-            read0.LockClient(0);
+            this.read0.LockClient(0);
 
             this.read1 = TestCommon.CreateClient(false, enableEndpointDiscovery: false, tokenType: AuthorizationTokenType.SystemAll, createForGeoRegion: true);
-            read1.LockClient(1);
+            this.read1.LockClient(1);
 
             this.read2 = TestCommon.CreateClient(false, enableEndpointDiscovery: false, tokenType: AuthorizationTokenType.SystemAll, createForGeoRegion: true);
-            read2.LockClient(2);
+            this.read2.LockClient(2);
 
             this.write0 = TestCommon.CreateClient(false, enableEndpointDiscovery: false, tokenType: AuthorizationTokenType.SystemAll, createForGeoRegion: false);
-            write0.LockClient(0);
+            this.write0.LockClient(0);
 
             this.write1 = TestCommon.CreateClient(false, enableEndpointDiscovery: false, tokenType: AuthorizationTokenType.SystemAll, createForGeoRegion: false);
-            write1.LockClient(1);
+            this.write1.LockClient(1);
 
             this.write2 = TestCommon.CreateClient(false, enableEndpointDiscovery: false, tokenType: AuthorizationTokenType.SystemAll, createForGeoRegion: false);
-            write2.LockClient(2);
+            this.write2.LockClient(2);
         }
 
         private async Task<DocumentCollection> SetupSingleCollectionScenario()
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DocumentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(collectionSelfLink);
                 readFeedCount++;
 
-                foreach (var doc in response)
+                foreach (dynamic doc in response)
                 {
                     await client.ReadDocumentAsync(doc.SelfLink);
                     readCount++;

@@ -61,7 +61,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string leaseToken, string continuationToken)
         {
             if (leaseToken == null)
+            {
                 throw new ArgumentNullException(nameof(leaseToken));
+            }
 
             string leaseDocId = this.GetDocumentId(leaseToken);
             DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
@@ -87,7 +89,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task ReleaseAsync(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
             DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
@@ -127,7 +131,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
             // Get fresh lease. The assumption here is that checkpointing is done with higher frequency than lease renewal so almost
             // certainly the lease was updated in between.
@@ -155,7 +161,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public override async Task<DocumentServiceLease> UpdatePropertiesAsync(DocumentServiceLease lease)
         {
-            if (lease == null) throw new ArgumentNullException(nameof(lease));
+            if (lease == null)
+            {
+                throw new ArgumentNullException(nameof(lease));
+            }
 
             if (lease.Owner != this.options.HostName)
             {

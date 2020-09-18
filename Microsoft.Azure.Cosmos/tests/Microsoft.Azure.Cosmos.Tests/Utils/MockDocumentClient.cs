@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.IO;
     using System.Net.Http;
     using System.Security;
     using System.Threading;
@@ -23,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider, ICosmosAuthorizationTokenProvider
     {
-        Mock<ClientCollectionCache> collectionCache;
-        Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
-        Mock<GlobalEndpointManager> globalEndpointManager;
-        private Cosmos.ConsistencyLevel accountConsistencyLevel;
+        private Mock<ClientCollectionCache> collectionCache;
+        private Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
+        private Mock<GlobalEndpointManager> globalEndpointManager;
+        private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
@@ -127,14 +126,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        internal override Task<QueryPartitionProvider> QueryPartitionProvider
-        {
-            get
-            {
-                return Task.FromResult(new QueryPartitionProvider(
+        internal override Task<QueryPartitionProvider> QueryPartitionProvider => Task.FromResult(new QueryPartitionProvider(
 JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLength\":262144,\"maxJoinsPerSqlQuery\":5,\"maxLogicalAndPerSqlQuery\":500,\"maxLogicalOrPerSqlQuery\":500,\"maxUdfRefPerSqlQuery\":10,\"maxInExpressionItemsCount\":16000,\"queryMaxInMemorySortDocumentCount\":500,\"maxQueryRequestTimeoutFraction\":0.9,\"sqlAllowNonFiniteNumbers\":false,\"sqlAllowAggregateFunctions\":true,\"sqlAllowSubQuery\":true,\"sqlAllowScalarSubQuery\":true,\"allowNewKeywords\":true,\"sqlAllowLike\":false,\"sqlAllowGroupByClause\":false,\"maxSpatialQueryCells\":12,\"spatialMaxGeometryPointCount\":256,\"sqlAllowTop\":true,\"enableSpatialIndexing\":true}")));
-            }
-        }
 
         ValueTask<(string token, string payload)> IAuthorizationTokenProvider.GetUserAuthorizationAsync(
             string resourceAddress,
@@ -158,7 +151,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
         internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
         {
-            return (IReadOnlyList<PartitionKeyRange>) new List<Documents.PartitionKeyRange>() {new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } };
+            return new List<Documents.PartitionKeyRange>() { new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } };
         }
 
         private void Init()
@@ -192,7 +185,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(() => {
+                ).Returns(() =>
+                {
                     ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
                     containerSettings.PartitionKey.Paths = new Collection<string>() { pkPath };
                     return Task.FromResult(containerSettings);

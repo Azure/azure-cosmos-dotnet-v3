@@ -5,18 +5,13 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
-    using System.Linq.Dynamic;
-    using System.Net;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     internal static class TransportClientHelper
     {
@@ -68,11 +63,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
-                headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
-                headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
-                headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));
+                DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                {
+                    { HttpConstants.HttpHeaders.ActivityId, activityId.ToString() },
+                    { WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture) },
+                    { HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture) },
+                    { HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture) }
+                };
 
                 StoreResponse storeResponse = new StoreResponse()
                 {
@@ -118,10 +115,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
-                headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
-                headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
-                headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));
+                DictionaryNameValueCollection headers = new DictionaryNameValueCollection
+                {
+                    { HttpConstants.HttpHeaders.ActivityId, activityId.ToString() },
+                    { WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture) },
+                    { HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture) }
+                };
 
                 ForbiddenException forbiddenException = new ForbiddenException(
                     errorMessage,

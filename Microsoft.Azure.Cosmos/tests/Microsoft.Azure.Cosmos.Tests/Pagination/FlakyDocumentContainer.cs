@@ -107,27 +107,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch> MonadicSplitAsync(
             int partitionKeyRangeId,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicSplitAsync(
-                partitionKeyRangeId,
-                cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicSplitAsync(
+partitionKeyRangeId,
+cancellationToken);
+        }
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
-                partitionKeyRange,
-                cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicGetChildRangeAsync(
+partitionKeyRange,
+cancellationToken);
+        }
 
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
-                cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicGetFeedRangesAsync(
+cancellationToken);
+        }
 
-        private bool ShouldReturn429() => (this.failureConfigs != null)
-            && this.failureConfigs.Inject429s
-            && ((this.random.Next() % 2) == 0);
+        private bool ShouldReturn429()
+        {
+            return (this.failureConfigs != null)
+&& this.failureConfigs.Inject429s
+&& ((this.random.Next() % 2) == 0);
+        }
 
-        private bool ShouldReturnEmptyPage() => (this.failureConfigs != null)
-            && this.failureConfigs.InjectEmptyPages
-            && ((this.random.Next() % 2) == 0);
+        private bool ShouldReturnEmptyPage()
+        {
+            return (this.failureConfigs != null)
+&& this.failureConfigs.InjectEmptyPages
+&& ((this.random.Next() % 2) == 0);
+        }
 
         public sealed class FailureConfigs
         {

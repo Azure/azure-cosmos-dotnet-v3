@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -70,18 +69,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchResponseDeserializationAsync()
         {
             ContainerInternal containerCore = (ContainerInlineCore)MockCosmosUtil.CreateMockCosmosClient().GetDatabase("db").GetContainer("cont");
-            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+            {
+                new TransactionalBatchOperationResult(HttpStatusCode.Conflict),
 
-            results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
-
-            results.Add(
                 new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     RequestCharge = 2.5,
                     ETag = "1234",
                     RetryAfter = TimeSpan.FromMilliseconds(360)
-                });
+                }
+            };
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
