@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/> to provide AAD token for auth.</param>
         /// <param name="clientOptions">(Optional) client options</param>
-#if INTERNAL || AAD
+#if PREVIEW
         public
 #else
         internal

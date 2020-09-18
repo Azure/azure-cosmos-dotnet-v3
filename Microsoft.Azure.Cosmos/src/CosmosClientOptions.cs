@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Default value is 300 seconds.
         /// </value>
-#if INTERNAL || AAD
+#if PREVIEW
         public
 #else
         internal

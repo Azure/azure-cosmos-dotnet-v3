@@ -97,6 +97,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions);
 
+            DocumentClient documentClient = aadClient.ClientContext.DocumentClient;
+            TokenCredentialCache tokenCredentialCache = (TokenCredentialCache)documentClient.GetType().GetField(
+                "tokenCredentialCache",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(documentClient);
+
+            Assert.AreEqual(TimeSpan.FromSeconds(1), tokenCredentialCache.backgroundTokenCredentialRefreshInterval);
             Assert.AreEqual(1, getAadTokenCount);
 
             await aadClient.ReadAccountAsync();
