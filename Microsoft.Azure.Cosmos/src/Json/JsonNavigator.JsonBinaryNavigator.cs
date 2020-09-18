@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonBinaryNavigator : JsonNavigator
         {
-            private readonly ReadOnlyMemory<byte> buffer;
+            private readonly ReadOnlyMemory<byte> rootBuffer;
             private readonly IReadOnlyJsonStringDictionary jsonStringDictionary;
             private readonly BinaryNavigatorNode rootNode;
 
@@ -60,9 +60,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 buffer = buffer.Slice(0, jsonValueLength);
 
-                this.buffer = buffer;
+                this.rootBuffer = buffer;
                 this.jsonStringDictionary = jsonStringDictionary;
-                this.rootNode = new BinaryNavigatorNode(this.buffer, JsonBinaryEncoding.NodeTypes.GetNodeType(this.buffer.Span[0]));
+                this.rootNode = new BinaryNavigatorNode(this.rootBuffer, JsonBinaryEncoding.NodeTypes.GetNodeType(this.rootBuffer.Span[0]));
             }
 
             /// <inheritdoc />
@@ -101,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     stringNode);
 
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
-                    Utf8Memory.UnsafeCreateNoValidation(buffer),
+                    this.rootBuffer,
+                    buffer,
                     this.jsonStringDictionary,
                     out value);
             }
@@ -113,7 +114,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     JsonNodeType.String,
                     stringNode);
                 return JsonBinaryEncoding.GetStringValue(
-                    Utf8Memory.UnsafeCreateNoValidation(buffer),
+                    this.rootBuffer,
+                    buffer,
                     this.jsonStringDictionary);
             }
 
@@ -563,9 +565,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.FieldName:
                         bool fieldName = binaryNavigatorNode.JsonNodeType == JsonNodeType.FieldName;
 
-                        Utf8Memory utf8Buffer = Utf8Memory.UnsafeCreateNoValidation(buffer);
                         if (JsonBinaryEncoding.TryGetBufferedStringValue(
-                            utf8Buffer,
+                            this.rootBuffer,
+                            buffer,
                             this.jsonStringDictionary,
                             out Utf8Memory bufferedStringValue))
                         {
@@ -581,7 +583,8 @@ namespace Microsoft.Azure.Cosmos.Json
                         else
                         {
                             string value = JsonBinaryEncoding.GetStringValue(
-                                utf8Buffer,
+                                this.rootBuffer,
+                                buffer,
                                 this.jsonStringDictionary);
                             if (fieldName)
                             {

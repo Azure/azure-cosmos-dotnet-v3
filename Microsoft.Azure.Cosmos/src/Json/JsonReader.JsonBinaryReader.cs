@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     abstract partial class JsonReader : IJsonReader
     {
-        private static readonly JsonTokenType[] TypeMarkerToTokenType = new JsonTokenType[256]
+        private static readonly ImmutableArray<JsonTokenType> TypeMarkerToTokenType = new JsonTokenType[256]
         {
             // Encoded literal integer value (32 values)
             JsonTokenType.Number, JsonTokenType.Number, JsonTokenType.Number, JsonTokenType.Number, JsonTokenType.Number, JsonTokenType.Number, JsonTokenType.Number, JsonTokenType.Number,
@@ -36,11 +37,38 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
     
-            // Encoded 2-byte user string (32 values)
+            // Encoded 2-byte user string (8 values)
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
-            JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
-            JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
-            JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
+
+            // String Values [0x68, 0x70)
+            JsonTokenType.String,  // <empty> 0x68
+            JsonTokenType.String,  // <empty> 0x69
+            JsonTokenType.String,  // <empty> 0x6A
+            JsonTokenType.String,  // <empty> 0x6B
+            JsonTokenType.String,  // <empty> 0x6C
+            JsonTokenType.String,  // <empty> 0x6D
+            JsonTokenType.String,  // <empty> 0x6E
+            JsonTokenType.String,  // <empty> 0x6F
+
+            // String Values [0x70, 0x78)
+            JsonTokenType.String,  // <empty> 0x70
+            JsonTokenType.String,  // <empty> 0x71
+            JsonTokenType.String,  // <empty> 0x72
+            JsonTokenType.String,  // <empty> 0x73
+            JsonTokenType.String,  // <empty> 0x74
+            JsonTokenType.String,  // StrGL (Lowercase GUID string)
+            JsonTokenType.String,  // StrGU (Uppercase GUID string)
+            JsonTokenType.String,  // StrGQ (Double-quoted lowercase GUID string)
+
+            // Compressed strings [JsonTokenType.Stringx78, JsonTokenType.Stringx8JsonTokenType.String)
+            JsonTokenType.String,  // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
+            JsonTokenType.String,  // String 1-byte length - Uppercase hexadecimal digits encoded as 4-bit characters
+            JsonTokenType.String,  // String 1-byte length - Date-time character set encoded as 4-bit characters
+            JsonTokenType.String,  // String 1-byte Length - 4-bit packed characters relative to a base value
+            JsonTokenType.String,  // String 1-byte Length - 5-bit packed characters relative to a base value
+            JsonTokenType.String,  // String 1-byte Length - 6-bit packed characters relative to a base value
+            JsonTokenType.String,  // String 1-byte Length - 7-bit packed characters
+            JsonTokenType.String,  // String 2-byte Length - 7-bit packed characters
 
             // TypeMarker-encoded string length (64 values)
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
@@ -52,14 +80,14 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
             JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String, JsonTokenType.String,
 
-            // Variable Length String Values / Binary Values
+            // Variable Length String Values
             JsonTokenType.String,       // StrL1 (1-byte length)
             JsonTokenType.String,       // StrL2 (2-byte length)
             JsonTokenType.String,       // StrL4 (4-byte length)
-            JsonTokenType.Binary,       // BinL1 (1-byte length)
-            JsonTokenType.Binary,       // BinL2 (2-byte length)
-            JsonTokenType.Binary,       // BinL4 (4-byte length)
-            JsonTokenType.NotStarted,   // <empty> 0xC6
+            JsonTokenType.String,       // StrR1 (Reference string of 1-byte offset)
+            JsonTokenType.String,       // StrR2 (Reference string of 2-byte offset)
+            JsonTokenType.String,       // StrR3 (Reference string of 3-byte offset)
+            JsonTokenType.String,       // StrR4 (Reference string of 4-byte offset)
             JsonTokenType.NotStarted,   // <empty> 0xC7
 
             // Number Values
@@ -76,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.Null,         // Null
             JsonTokenType.False,        // False
             JsonTokenType.True,         // True
-            JsonTokenType.Guid,         // Guid
+            JsonTokenType.Guid,         // GUID
             JsonTokenType.NotStarted,   // <empty> 0xD4
             JsonTokenType.NotStarted,   // <empty> 0xD5
             JsonTokenType.NotStarted,   // <empty> 0xD6
@@ -87,9 +115,9 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.Int32,        // Int32
             JsonTokenType.Int64,        // Int64
             JsonTokenType.UInt32,       // UInt32
-            JsonTokenType.NotStarted,   // <empty> 0xDD
-            JsonTokenType.NotStarted,   // <empty> 0xDE
-            JsonTokenType.NotStarted,   // <empty> 0xDF
+            JsonTokenType.Binary,       // BinL1 (1-byte length)
+            JsonTokenType.Binary,       // BinL2 (2-byte length)
+            JsonTokenType.Binary,       // BinL4 (4-byte length)
 
             // Array Type Markers
             JsonTokenType.BeginArray,   // Arr0
@@ -130,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.NotStarted,   // <special value reserved> 0xFD
             JsonTokenType.NotStarted,   // <special value reserved> 0xFE
             JsonTokenType.NotStarted,   // Invalid
-        };
+        }.ToImmutableArray();
 
         /// <summary>
         /// JsonReader that can read from a json serialized in binary <see cref="JsonBinaryEncoding"/>.
@@ -154,6 +182,8 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             private readonly Stack<int> arrayAndObjectEndStack;
 
+            private readonly ReadOnlyMemory<byte> rootBuffer;
+
             private int currentTokenPosition;
 
             public JsonBinaryReader(
@@ -172,9 +202,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException("buffer is shorter than the length prefix.");
                 }
 
-                buffer = buffer.Slice(0, jsonValueLength);
+                this.rootBuffer = buffer.Slice(0, jsonValueLength);
 
-                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(buffer);
+                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(this.rootBuffer);
                 this.arrayAndObjectEndStack = new Stack<int>();
                 this.jsonStringDictionary = jsonStringDictionary;
             }
@@ -304,7 +334,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetStringValue(
-                    Utf8Memory.UnsafeCreateNoValidation(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition)),
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
                     this.jsonStringDictionary);
             }
 
@@ -319,7 +350,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
-                    Utf8Memory.UnsafeCreateNoValidation(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition)),
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition),
                     this.jsonStringDictionary,
                     out bufferedUtf8StringValue);
             }

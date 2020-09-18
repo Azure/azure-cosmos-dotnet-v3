@@ -11,8 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -370,9 +368,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(short.MaxValue)
             };
 
-            List<byte> maxShortInput = new List<byte>();
-            maxShortInput.Add(BinaryFormat);
-            maxShortInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt16);
+            List<byte> maxShortInput = new List<byte>
+            {
+                BinaryFormat,
+                JsonBinaryEncoding.TypeMarker.NumberInt16
+            };
             maxShortInput.AddRange(BitConverter.GetBytes(short.MaxValue));
 
             this.VerifyReader(short.MaxValue.ToString(), maxShortTokens);
@@ -384,9 +384,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(int.MinValue)
             };
 
-            List<byte> minIntInput = new List<byte>();
-            minIntInput.Add(BinaryFormat);
-            minIntInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt32);
+            List<byte> minIntInput = new List<byte>
+            {
+                BinaryFormat,
+                JsonBinaryEncoding.TypeMarker.NumberInt32
+            };
             minIntInput.AddRange(BitConverter.GetBytes(int.MinValue));
 
             this.VerifyReader(int.MinValue.ToString(), minIntTokens);
@@ -588,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
+            while (JsonBinaryEncoding.SystemStrings.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
                 string input = "\"" + systemString.Utf16String + "\"";
                 byte[] binaryInput =

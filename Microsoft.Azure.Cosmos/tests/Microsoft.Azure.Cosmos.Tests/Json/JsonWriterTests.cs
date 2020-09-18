@@ -401,7 +401,7 @@
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
+            while (JsonBinaryEncoding.SystemStrings.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
                 string expectedString = "\"" + systemString.Utf16String + "\"";
                 // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.

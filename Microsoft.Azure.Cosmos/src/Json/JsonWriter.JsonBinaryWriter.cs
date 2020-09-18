@@ -633,9 +633,10 @@ namespace Microsoft.Azure.Cosmos.Json
                         case JsonNodeType.String:
                             {
                                 if (!JsonBinaryEncoding.TryGetBufferedStringValue(
-                                Utf8Memory.UnsafeCreateNoValidation(rawJsonValue),
-                                jsonStringDictionary,
-                                out Utf8Memory bufferedStringValue))
+                                    ReadOnlyMemory<byte>.Empty,
+                                    rawJsonValue,
+                                    jsonStringDictionary,
+                                    out Utf8Memory bufferedStringValue))
                                 {
                                     throw new InvalidOperationException("Excepted to get the buffered string value.");
                                 }

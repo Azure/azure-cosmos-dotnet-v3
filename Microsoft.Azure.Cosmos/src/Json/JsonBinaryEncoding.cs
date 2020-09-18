@@ -47,6 +47,31 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         public const int FourByteCount = 4;
 
+        /// <summary>
+        /// For compressed strings we use a single byte base character.
+        /// </summary>
+        public const int OneByteBaseChar = 1;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 1 byte offset reference strings.
+        /// </summary>
+        public const int OneByteOffset = 1;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 2 byte offset reference strings.
+        /// </summary>
+        public const int TwoByteOffset = 2;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 2 byte offset reference strings.
+        /// </summary>
+        public const int ThreeByteOffset = 3;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 4 byte offset reference strings.
+        /// </summary>
+        public const int FourByteOffset = 4;
+
         public static Guid GetGuidValue(ReadOnlySpan<byte> guidToken)
         {
             if (!JsonBinaryEncoding.TryGetGuidValue(guidToken, out Guid guidValue))
@@ -59,13 +84,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetGuidValue(
             ReadOnlySpan<byte> guidToken,
-            out Guid guidValue)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
+            out Guid guidValue) => JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
                 guidToken,
                 JsonBinaryEncoding.TypeMarker.Guid,
                 out guidValue);
-        }
 
         public static ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryToken)
         {
@@ -202,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Json
             out T fixedWidthValue)
             where T : struct
         {
-            fixedWidthValue = default(T);
+            fixedWidthValue = default;
             int sizeofType = Marshal.SizeOf(fixedWidthValue);
             if (token.Length < 1 + sizeofType)
             {
@@ -217,6 +239,34 @@ namespace Microsoft.Azure.Cosmos.Json
 
             fixedWidthValue = MemoryMarshal.Read<T>(token.Slice(1));
             return true;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 3)]
+        private readonly struct UInt24
+        {
+            public UInt24(byte byte1, byte byte2, byte byte3)
+            {
+                this.Byte1 = byte1;
+                this.Byte2 = byte2;
+                this.Byte3 = byte3;
+            }
+            public byte Byte1 { get; }
+            public byte Byte2 { get; }
+            public byte Byte3 { get; }
+
+            public static implicit operator int(UInt24 value) => (value.Byte1 << 16) | (value.Byte2 << 8) | (value.Byte3 << 0);
+            public static explicit operator UInt24(int value)
+            {
+                if ((value & 0xFF000000) != 0)
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(value)} must not have any of the top 8 bits set.");
+                }
+
+                return new UInt24(
+                    byte1: (byte)((value & 0x00FF0000) >> 16),
+                    byte2: (byte)((value & 0x0000FF00) >> 8),
+                    byte3: (byte)((value & 0x000000FF) >> 0));
+            }
         }
     }
 }
