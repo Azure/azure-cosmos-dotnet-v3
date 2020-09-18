@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -421,7 +419,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -433,16 +431,16 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 (diagnostics) =>
                 {
-                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
+                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                    ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
-                return this.CreateDatabaseInternalAsync(
-                    databaseProperties: databaseProperties,
-                    throughputProperties: throughputProperties,
-                    requestOptions: requestOptions,
-                    diagnosticsContext: diagnostics,
-                    cancellationToken: cancellationToken);
-            });
+                    return this.CreateDatabaseInternalAsync(
+                        databaseProperties: databaseProperties,
+                        throughputProperties: throughputProperties,
+                        requestOptions: requestOptions,
+                        diagnosticsContext: diagnostics,
+                        cancellationToken: cancellationToken);
+                });
         }
 
         /// <summary>
@@ -467,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -525,14 +523,11 @@ namespace Microsoft.Azure.Cosmos
             string id,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            return this.ClientContext.OperationHelperAsync(
+            return string.IsNullOrEmpty(id)
+                ? throw new ArgumentNullException(nameof(id))
+                : this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
                 async (diagnostics) =>
@@ -611,7 +606,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
@@ -851,7 +846,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {
@@ -920,7 +915,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {

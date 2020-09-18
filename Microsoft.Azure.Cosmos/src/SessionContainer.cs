@@ -472,14 +472,6 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 this.hostName = hostName;
             }
-
-            ~SessionContainerState()
-            {
-                if (this.rwlock != null)
-                {
-                    this.rwlock.Dispose();
-                }
-            }
         }
 
         private sealed class SessionContainerSnapshot

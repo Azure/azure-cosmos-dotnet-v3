@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
-    using System.Threading;
 
     /// <summary>
     /// The exception that is thrown in a thread upon cancellation of an operation that

@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.

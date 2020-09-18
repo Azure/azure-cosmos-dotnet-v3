@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Newtonsoft.Json;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -29,13 +28,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.getResultCallback = getResultCallback ?? throw new ArgumentNullException(nameof(getResultCallback));
         }
 
-        public override long CurrentLength
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override long CurrentLength => throw new NotImplementedException();
 
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 

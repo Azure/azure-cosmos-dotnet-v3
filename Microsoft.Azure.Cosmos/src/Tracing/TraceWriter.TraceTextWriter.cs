@@ -288,7 +288,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.toStringValue = queryMetricsTraceDatum.QueryMetrics.ToString();
                 }
 
-                public override string ToString() => this.toStringValue;
+                public override string ToString()
+                {
+                    return this.toStringValue;
+                }
 
                 public void Visit(CosmosDiagnosticsTraceDatum cosmosDiagnosticsTraceDatum)
                 {
@@ -363,39 +366,42 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 public string Blank { get; }
 
-                public static AsciiTreeIndents Create(AsciiTreeCharacters asciiTreeCharacters) => new AsciiTreeIndents(
-                    child: new string(
-                        new char[]
-                        {
+                public static AsciiTreeIndents Create(AsciiTreeCharacters asciiTreeCharacters)
+                {
+                    return new AsciiTreeIndents(
+child: new string(
+new char[]
+{
                         asciiTreeCharacters.Child,
                         asciiTreeCharacters.Dash,
                         asciiTreeCharacters.Dash,
                         asciiTreeCharacters.Blank
-                        }),
-                    parent: new string(
-                        new char[]
-                        {
+}),
+parent: new string(
+new char[]
+{
                         asciiTreeCharacters.Parent,
                         asciiTreeCharacters.Blank,
                         asciiTreeCharacters.Blank,
                         asciiTreeCharacters.Blank
-                        }),
-                    last: new string(
-                        new char[]
-                        {
+}),
+last: new string(
+new char[]
+{
                         asciiTreeCharacters.Last,
                         asciiTreeCharacters.Dash,
                         asciiTreeCharacters.Dash,
                         asciiTreeCharacters.Blank
-                        }),
-                    blank: new string(
-                        new char[]
-                        {
+}),
+blank: new string(
+new char[]
+{
                         asciiTreeCharacters.Blank,
                         asciiTreeCharacters.Blank,
                         asciiTreeCharacters.Blank,
                         asciiTreeCharacters.Blank
-                        }));
+}));
+                }
             }
         }
     }

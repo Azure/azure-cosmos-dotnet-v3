@@ -14,15 +14,29 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
         }
 
-        public override FeedRange Visit(ChangeFeedStartFromNow startFromNow) => startFromNow.FeedRange;
+        public override FeedRange Visit(ChangeFeedStartFromNow startFromNow)
+        {
+            return startFromNow.FeedRange;
+        }
 
-        public override FeedRange Visit(ChangeFeedStartFromTime startFromTime) => startFromTime.FeedRange;
+        public override FeedRange Visit(ChangeFeedStartFromTime startFromTime)
+        {
+            return startFromTime.FeedRange;
+        }
 
         public override FeedRange Visit(ChangeFeedStartFromContinuation startFromContinuation)
-            => throw new NotSupportedException($"{nameof(ChangeFeedStartFromContinuation)} does not have a feed range.");
+        {
+            throw new NotSupportedException($"{nameof(ChangeFeedStartFromContinuation)} does not have a feed range.");
+        }
 
-        public override FeedRange Visit(ChangeFeedStartFromBeginning startFromBeginning) => startFromBeginning.FeedRange;
+        public override FeedRange Visit(ChangeFeedStartFromBeginning startFromBeginning)
+        {
+            return startFromBeginning.FeedRange;
+        }
 
-        public override FeedRange Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange) => startFromContinuationAndFeedRange.FeedRange;
+        public override FeedRange Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange)
+        {
+            return startFromContinuationAndFeedRange.FeedRange;
+        }
     }
 }

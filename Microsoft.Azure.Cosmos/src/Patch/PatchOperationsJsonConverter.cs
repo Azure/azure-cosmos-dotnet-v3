@@ -20,7 +20,10 @@ namespace Microsoft.Azure.Cosmos
             this.userSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
         }
 
-        public override bool CanConvert(Type objectType) => true;
+        public override bool CanConvert(Type objectType)
+        {
+            return true;
+        }
 
         public override bool CanRead => false;
 

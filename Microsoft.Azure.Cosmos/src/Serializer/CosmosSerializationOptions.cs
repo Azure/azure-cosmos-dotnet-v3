@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Newtonsoft.Json.Serialization;
-
     /// <summary>
     /// This class provides a way to configure basic
     /// serializer settings.

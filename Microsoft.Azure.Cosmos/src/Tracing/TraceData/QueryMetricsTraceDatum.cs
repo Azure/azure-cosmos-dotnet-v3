@@ -16,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public QueryMetrics QueryMetrics { get; }
 
-        public void Accept(ITraceDatumVisitor traceDatumVisitor) => traceDatumVisitor.Visit(this);
+        public void Accept(ITraceDatumVisitor traceDatumVisitor)
+        {
+            traceDatumVisitor.Visit(this);
+        }
     }
 }

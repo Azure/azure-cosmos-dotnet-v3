@@ -92,7 +92,10 @@ namespace Microsoft.Azure.Cosmos.Json
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
-            public override IJsonNavigatorNode GetRootNode() => this.rootNode;
+            public override IJsonNavigatorNode GetRootNode()
+            {
+                return this.rootNode;
+            }
 
             /// <inheritdoc />
             public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
@@ -415,22 +418,25 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonReader.Create(JsonSerializationFormat.Text, buffer);
             }
 
-            private static ReadOnlyMemory<byte> GetNodeBuffer(JsonTextNavigatorNode jsonTextNavigatorNode) => jsonTextNavigatorNode switch
+            private static ReadOnlyMemory<byte> GetNodeBuffer(JsonTextNavigatorNode jsonTextNavigatorNode)
             {
-                LazyNode lazyNode => lazyNode.BufferedValue,
-                ArrayNode arrayNode => arrayNode.BufferedValue,
-                FalseNode falseNode => SingletonBuffers.False,
-                StringNodeBase stringNodeBase => stringNodeBase.BufferedValue.Memory,
-                NullNode nullNode => SingletonBuffers.Null,
-                NumberNode numberNode => numberNode.BufferedToken,
-                ObjectNode objectNode => objectNode.BufferedValue,
-                TrueNode trueNode => SingletonBuffers.True,
-                GuidNode guidNode => guidNode.BufferedToken,
-                BinaryNode binaryNode => binaryNode.BufferedToken,
-                IntegerNode intNode => intNode.BufferedToken,
-                FloatNode floatNode => floatNode.BufferedToken,
-                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
-            };
+                return jsonTextNavigatorNode switch
+                {
+                    LazyNode lazyNode => lazyNode.BufferedValue,
+                    ArrayNode arrayNode => arrayNode.BufferedValue,
+                    FalseNode falseNode => SingletonBuffers.False,
+                    StringNodeBase stringNodeBase => stringNodeBase.BufferedValue.Memory,
+                    NullNode nullNode => SingletonBuffers.Null,
+                    NumberNode numberNode => numberNode.BufferedToken,
+                    ObjectNode objectNode => objectNode.BufferedValue,
+                    TrueNode trueNode => SingletonBuffers.True,
+                    GuidNode guidNode => guidNode.BufferedToken,
+                    BinaryNode binaryNode => binaryNode.BufferedToken,
+                    IntegerNode intNode => intNode.BufferedToken,
+                    FloatNode floatNode => floatNode.BufferedToken,
+                    _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonTextNavigatorNode)} type: {jsonTextNavigatorNode.GetType()}."),
+                };
+            }
 
             #region JsonTextParser
             /// <summary>
@@ -777,7 +783,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public static ArrayNode Create(
                     IReadOnlyList<JsonTextNavigatorNode> items,
-                    ReadOnlyMemory<byte> bufferedValue) => new ArrayNode(items, bufferedValue);
+                    ReadOnlyMemory<byte> bufferedValue)
+                {
+                    return new ArrayNode(items, bufferedValue);
+                }
             }
 
             private sealed class FalseNode : JsonTextNavigatorNode
@@ -909,7 +918,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public static ObjectNode Create(
                     IReadOnlyList<ObjectProperty> properties,
-                    ReadOnlyMemory<byte> bufferedValue) => new ObjectNode(properties, bufferedValue);
+                    ReadOnlyMemory<byte> bufferedValue)
+                {
+                    return new ObjectNode(properties, bufferedValue);
+                }
             }
 
             private sealed class StringNode : StringNodeBase
@@ -981,7 +993,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Int8;
 
-                public static Int8Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int8Node(bufferedToken);
+                public static Int8Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new Int8Node(bufferedToken);
+                }
             }
 
             private sealed class Int16Node : IntegerNode
@@ -993,7 +1008,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Int16;
 
-                public static Int16Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int16Node(bufferedToken);
+                public static Int16Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new Int16Node(bufferedToken);
+                }
             }
 
             private sealed class Int32Node : IntegerNode
@@ -1005,7 +1023,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Int32;
 
-                public static Int32Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int32Node(bufferedToken);
+                public static Int32Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new Int32Node(bufferedToken);
+                }
             }
 
             private sealed class Int64Node : IntegerNode
@@ -1017,7 +1038,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Int64;
 
-                public static Int64Node Create(ReadOnlyMemory<byte> bufferedToken) => new Int64Node(bufferedToken);
+                public static Int64Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new Int64Node(bufferedToken);
+                }
             }
 
             private sealed class UInt32Node : IntegerNode
@@ -1029,7 +1053,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.UInt32;
 
-                public static UInt32Node Create(ReadOnlyMemory<byte> bufferedToken) => new UInt32Node(bufferedToken);
+                public static UInt32Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new UInt32Node(bufferedToken);
+                }
             }
 
             private abstract class FloatNode : JsonTextNavigatorNode
@@ -1051,7 +1078,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Float32;
 
-                public static Float32Node Create(ReadOnlyMemory<byte> bufferedToken) => new Float32Node(bufferedToken);
+                public static Float32Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new Float32Node(bufferedToken);
+                }
             }
 
             private sealed class Float64Node : FloatNode
@@ -1063,7 +1093,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Float64;
 
-                public static Float64Node Create(ReadOnlyMemory<byte> bufferedToken) => new Float64Node(bufferedToken);
+                public static Float64Node Create(ReadOnlyMemory<byte> bufferedToken)
+                {
+                    return new Float64Node(bufferedToken);
+                }
             }
 
             private sealed class GuidNode : JsonTextNavigatorNode
@@ -1077,7 +1110,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Guid;
 
-                public static GuidNode Create(ReadOnlyMemory<byte> value) => new GuidNode(value);
+                public static GuidNode Create(ReadOnlyMemory<byte> value)
+                {
+                    return new GuidNode(value);
+                }
             }
 
             private sealed class BinaryNode : JsonTextNavigatorNode
@@ -1091,7 +1127,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public override JsonNodeType Type => JsonNodeType.Binary;
 
-                public static BinaryNode Create(ReadOnlyMemory<byte> value) => new BinaryNode(value);
+                public static BinaryNode Create(ReadOnlyMemory<byte> value)
+                {
+                    return new BinaryNode(value);
+                }
             }
 
             private abstract class LazyNode : JsonTextNavigatorNode

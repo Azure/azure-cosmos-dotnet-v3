@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Buffers.Text;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Common utility class for JsonTextReader and JsonTextNavigator.
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(long).FullName}");
             }
 
-            return (long)value;
+            return value;
         }
 
         public static uint GetUInt32Value(ReadOnlySpan<byte> intToken)
