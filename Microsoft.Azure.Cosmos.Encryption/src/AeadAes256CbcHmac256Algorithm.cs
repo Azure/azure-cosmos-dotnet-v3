@@ -181,7 +181,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             outBuffer[0] = this.algorithmVersion;
             Buffer.BlockCopy(iv, 0, outBuffer, ivStartIndex, iv.Length);
 
-
             // Try to get a provider from the pool.
             // If no provider is available, create a new one.
             if (!this.cryptoProviderPool.TryDequeue(out AesCryptoServiceProvider aesAlg))

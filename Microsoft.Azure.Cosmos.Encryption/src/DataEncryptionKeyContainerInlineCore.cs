@@ -14,12 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public DataEncryptionKeyContainerInlineCore(DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore)
         {
-            if (dataEncryptionKeyContainerCore == null)
-            {
-                throw new ArgumentNullException(nameof(dataEncryptionKeyContainerCore));
-            }
-
-            this.dataEncryptionKeyContainerCore = dataEncryptionKeyContainerCore;
+            this.dataEncryptionKeyContainerCore = dataEncryptionKeyContainerCore ?? throw new ArgumentNullException(nameof(dataEncryptionKeyContainerCore));
         }
 
         public override FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(

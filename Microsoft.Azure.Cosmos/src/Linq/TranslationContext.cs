@@ -472,13 +472,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public Collection(SqlCollection collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException("collection");
-            }
-
             this.isOuter = false;
-            this.inner = collection;
+            this.inner = collection ?? throw new ArgumentNullException("collection");
         }
     }
 }

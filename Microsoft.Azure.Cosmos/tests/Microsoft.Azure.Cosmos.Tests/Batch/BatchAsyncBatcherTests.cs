@@ -157,15 +157,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
         private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
-            = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
-            {
-                throw expectedException;
-            };
+            = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) => throw expectedException;
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
-        {
-            return Task.CompletedTask;
-        };
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -173,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesSize(int size)
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(size, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            _ = new BatchAsyncBatcher(size, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
         }
 
         [DataTestMethod]
@@ -182,28 +176,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesByteSize(int size)
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, size, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            _ = new BatchAsyncBatcher(1, size, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, null, this.Retrier);
+            _ = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, null, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesRetrier()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, this.Executor, null);
+            _ = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, this.Executor, null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, null, this.Executor, this.Retrier);
+            _ = new BatchAsyncBatcher(1, 1, null, this.Executor, this.Retrier);
         }
 
         [TestMethod]
@@ -421,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             internal override async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)
             {
-                (PartitionKeyRangeServerBatchRequest serverRequest, ArraySegment<ItemBatchOperation> pendingOperations) = await base.CreateServerRequestAsync(cancellationToken);
+                (PartitionKeyRangeServerBatchRequest serverRequest, _) = await base.CreateServerRequestAsync(cancellationToken);
 
                 // Returning a pending operation to retry
                 return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(serverRequest, new ArraySegment<ItemBatchOperation>(serverRequest.Operations.ToArray(), 1, 1));

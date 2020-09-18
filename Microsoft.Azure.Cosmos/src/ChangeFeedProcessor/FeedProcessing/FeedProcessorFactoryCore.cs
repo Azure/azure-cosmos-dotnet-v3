@@ -24,11 +24,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             DocumentServiceLeaseCheckpointer leaseCheckpointer,
             CosmosSerializerCore serializerCore)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
             if (changeFeedProcessorOptions == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
@@ -44,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 throw new ArgumentNullException(nameof(serializerCore));
             }
 
-            this.container = container;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             this.leaseCheckpointer = leaseCheckpointer;
             this.serializerCore = serializerCore;
