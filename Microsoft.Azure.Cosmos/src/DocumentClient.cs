@@ -1376,11 +1376,7 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = null;
             }
 
-            if (this.AddressResolver != null)
-            {
-                this.AddressResolver.Dispose();
-                this.AddressResolver = null;
-            }
+            this.AddressResolver = null;
 
             if (this.httpClient != null)
             {
