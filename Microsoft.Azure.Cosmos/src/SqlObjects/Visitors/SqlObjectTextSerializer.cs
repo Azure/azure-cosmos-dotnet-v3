@@ -642,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
         }
 
-        unsafe private static void WriteNumber64(StringBuilder stringBuilder, Number64 value)
+        private static unsafe void WriteNumber64(StringBuilder stringBuilder, Number64 value)
         {
             const int MaxNumberLength = 32;
             Span<byte> buffer = stackalloc byte[MaxNumberLength];
@@ -671,7 +671,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
         }
 
-        unsafe private static void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
+        private static unsafe void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
         {
             while (!unescapedString.IsEmpty)
             {
@@ -743,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                             break;
 
                         default:
-                            char wideCharToEscape = (char)character;
+                            char wideCharToEscape = character;
                             // We got a control character (U+0000 through U+001F).
                             stringBuilder.Append('\\');
                             stringBuilder.Append('u');

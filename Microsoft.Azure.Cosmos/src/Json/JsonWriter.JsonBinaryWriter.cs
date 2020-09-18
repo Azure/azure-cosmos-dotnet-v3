@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Buffers.Binary;
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -86,22 +85,10 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Binary;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
-            public override long CurrentLength
-            {
-                get
-                {
-                    return this.binaryWriter.Position;
-                }
-            }
+            public override long CurrentLength => this.binaryWriter.Position;
 
             /// <inheritdoc />
             public override void WriteObjectStart()
@@ -562,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         else
                         {
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
-                            this.binaryWriter.Write((long)value);
+                            this.binaryWriter.Write(value);
                         }
                     }
                     else
@@ -571,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         if (value < int.MinValue)
                         {
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
-                            this.binaryWriter.Write((long)value);
+                            this.binaryWriter.Write(value);
                         }
                         else if (value < short.MinValue)
                         {

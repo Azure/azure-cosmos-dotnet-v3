@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using Antlr4.Runtime.Tree;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member

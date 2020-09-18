@@ -30,26 +30,56 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public abstract uint GetValue();
 
-        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
+        {
+            cosmosNumberVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
+        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor)
+        {
+            return cosmosNumberVisitor.Visit(this);
+        }
 
-        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
+        {
+            return cosmosNumberVisitor.Visit(this, input);
+        }
 
-        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is CosmosUInt32 cosmosUInt32 && this.Equals(cosmosUInt32);
+        public override bool Equals(CosmosNumber cosmosNumber)
+        {
+            return cosmosNumber is CosmosUInt32 cosmosUInt32 && this.Equals(cosmosUInt32);
+        }
 
-        public bool Equals(CosmosUInt32 cosmosUInt32) => this.GetValue() == cosmosUInt32.GetValue();
+        public bool Equals(CosmosUInt32 cosmosUInt32)
+        {
+            return this.GetValue() == cosmosUInt32.GetValue();
+        }
 
-        public override int GetHashCode() => (int)MurmurHash3.Hash32(this.GetValue(), 3771427877);
+        public override int GetHashCode()
+        {
+            return (int)MurmurHash3.Hash32(this.GetValue(), 3771427877);
+        }
 
-        public int CompareTo(CosmosUInt32 cosmosUInt32) => this.GetValue().CompareTo(cosmosUInt32.GetValue());
+        public int CompareTo(CosmosUInt32 cosmosUInt32)
+        {
+            return this.GetValue().CompareTo(cosmosUInt32.GetValue());
+        }
 
-        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteUInt32Value(this.GetValue());
+        public override void WriteTo(IJsonWriter jsonWriter)
+        {
+            jsonWriter.WriteUInt32Value(this.GetValue());
+        }
 
         public static CosmosUInt32 Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosUInt32(jsonNavigator, jsonNavigatorNode);
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosUInt32(jsonNavigator, jsonNavigatorNode);
+        }
 
-        public static CosmosUInt32 Create(uint number) => new EagerCosmosUInt32(number);
+        public static CosmosUInt32 Create(uint number)
+        {
+            return new EagerCosmosUInt32(number);
+        }
     }
 }

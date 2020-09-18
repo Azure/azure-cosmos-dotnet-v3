@@ -47,15 +47,17 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            RequestOptions requestOptions = itemRequestOptions as RequestOptions;
-            TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions();
-            batchItemRequestOptions.IndexingDirective = itemRequestOptions.IndexingDirective;
-            batchItemRequestOptions.IfMatchEtag = itemRequestOptions.IfMatchEtag;
-            batchItemRequestOptions.IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag;
-            batchItemRequestOptions.Properties = itemRequestOptions.Properties;
-            batchItemRequestOptions.EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite;
-            batchItemRequestOptions.EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead;
-            batchItemRequestOptions.IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting;
+            RequestOptions requestOptions = itemRequestOptions;
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions
+            {
+                IndexingDirective = itemRequestOptions.IndexingDirective,
+                IfMatchEtag = itemRequestOptions.IfMatchEtag,
+                IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag,
+                Properties = itemRequestOptions.Properties,
+                EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite,
+                EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead,
+                IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting
+            };
             return batchItemRequestOptions;
         }
     }

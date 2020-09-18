@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
@@ -58,7 +57,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
         {
             IReadOnlyList<RemainingLeaseTokenWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
-            if (leaseTokens.Count == 0) return 1;
+            if (leaseTokens.Count == 0)
+            {
+                return 1;
+            }
 
             return leaseTokens.Sum(leaseToken => leaseToken.RemainingWork);
         }
@@ -83,7 +85,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             DocumentServiceLease item = partition.Current;
                             try
                             {
-                                if (string.IsNullOrEmpty(item?.CurrentLeaseToken)) continue;
+                                if (string.IsNullOrEmpty(item?.CurrentLeaseToken))
+                                {
+                                    continue;
+                                }
+
                                 long result = await this.GetRemainingWorkAsync(item, cancellationToken);
                                 partialResults.Add(new RemainingLeaseTokenWork(item.CurrentLeaseToken, result));
                             }
@@ -158,8 +164,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private static long TryConvertToNumber(string number)
         {
-            long parsed = 0;
-            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out long parsed))
             {
                 DefaultTrace.TraceWarning("Cannot parse number '{0}'.", number);
                 return 0;

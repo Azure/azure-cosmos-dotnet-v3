@@ -55,22 +55,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Collections
             this.Comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
         }
 
-        public int Count
-        {
-            get
-            {
-                return this.queue.Count;
-            }
-        }
+        public int Count => this.queue.Count;
 
         public IComparer<T> Comparer { get; }
 
         public bool IsSynchronized { get; }
 
-        public object SyncRoot
-        {
-            get { return this; }
-        }
+        public object SyncRoot => this;
 
         public void CopyTo(T[] array, int index)
         {

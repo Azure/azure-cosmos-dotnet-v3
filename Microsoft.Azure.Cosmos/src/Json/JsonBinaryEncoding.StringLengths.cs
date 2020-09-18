@@ -140,13 +140,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 NotStr,     // Invalid
             };
 
-            public static IReadOnlyList<int> Lengths
-            {
-                get
-                {
-                    return StringLengths.lengths;
-                }
-            }
+            public static IReadOnlyList<int> Lengths => StringLengths.lengths;
         }
     }
 }

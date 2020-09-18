@@ -32,15 +32,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract bool TryGetBufferedValue(out Utf8Memory bufferedUtf8Value);
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        {
+            cosmosElementVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            return cosmosElementVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
+        {
+            return cosmosElementVisitor.Visit(this, input);
+        }
 
-        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosString cosmosString && this.Equals(cosmosString);
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            return cosmosElement is CosmosString cosmosString && this.Equals(cosmosString);
+        }
 
-        public bool Equals(CosmosString cosmosString) => this.Value == cosmosString.Value;
+        public bool Equals(CosmosString cosmosString)
+        {
+            return this.Value == cosmosString.Value;
+        }
 
         public override int GetHashCode()
         {
@@ -50,31 +65,58 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosString cosmosString) => string.CompareOrdinal(this.Value, cosmosString.Value);
+        public int CompareTo(CosmosString cosmosString)
+        {
+            return string.CompareOrdinal(this.Value, cosmosString.Value);
+        }
 
         public static CosmosString Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosString(jsonNavigator, jsonNavigatorNode);
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosString(jsonNavigator, jsonNavigatorNode);
+        }
 
-        public static CosmosString Create(string value) => value.Length == 0 ? EagerCosmosString.Empty : new EagerCosmosString(value);
+        public static CosmosString Create(string value)
+        {
+            return value.Length == 0 ? EagerCosmosString.Empty : new EagerCosmosString(value);
+        }
 
-        public static new CosmosString CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosString>(buffer);
+        public static new CosmosString CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosString>(buffer);
+        }
 
-        public static new CosmosString Parse(string json) => CosmosElement.Parse<CosmosString>(json);
+        public static new CosmosString Parse(string json)
+        {
+            return CosmosElement.Parse<CosmosString>(json);
+        }
 
         public static bool TryCreateFromBuffer(
             ReadOnlyMemory<byte> buffer,
-            out CosmosString cosmosString) => CosmosElement.TryCreateFromBuffer<CosmosString>(buffer, out cosmosString);
+            out CosmosString cosmosString)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosString>(buffer, out cosmosString);
+        }
 
         public static bool TryParse(
             string json,
-            out CosmosString cosmosString) => CosmosElement.TryParse<CosmosString>(json, out cosmosString);
+            out CosmosString cosmosString)
+        {
+            return CosmosElement.TryParse<CosmosString>(json, out cosmosString);
+        }
 
         public static new class Monadic
         {
-            public static TryCatch<CosmosString> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosString>(buffer);
+            public static TryCatch<CosmosString> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosString>(buffer);
+            }
 
-            public static TryCatch<CosmosString> Parse(string json) => CosmosElement.Monadic.Parse<CosmosString>(json);
+            public static TryCatch<CosmosString> Parse(string json)
+            {
+                return CosmosElement.Monadic.Parse<CosmosString>(json);
+            }
         }
     }
 #if INTERNAL

@@ -129,13 +129,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 0,      // Invalid
             };
 
-            public static IReadOnlyList<int> Offsets
-            {
-                get
-                {
-                    return FirstValueOffsets.offsets;
-                }
-            }
+            public static IReadOnlyList<int> Offsets => FirstValueOffsets.offsets;
         }
     }
 }

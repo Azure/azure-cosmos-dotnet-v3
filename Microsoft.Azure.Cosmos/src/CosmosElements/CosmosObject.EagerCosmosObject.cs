@@ -47,9 +47,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override int Count => this.properties.Count;
 
-            public override bool ContainsKey(string key) => this.TryGetValue(key, out _);
+            public override bool ContainsKey(string key)
+            {
+                return this.TryGetValue(key, out _);
+            }
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this.properties.GetEnumerator();
+            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
+            {
+                return this.properties.GetEnumerator();
+            }
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {

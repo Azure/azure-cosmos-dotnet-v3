@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -217,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The transactional batch instance with the operation added.</returns>
         public abstract TransactionalBatch PatchItem(
                 string id,
-                IReadOnlyList<PatchOperation> patchOperations,
+                System.Collections.Generic.IReadOnlyList<PatchOperation> patchOperations,
                 TransactionalBatchItemRequestOptions requestOptions = null);
 #endif
 
@@ -249,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// Use <see cref="TransactionalBatchResponse.IsSuccessStatusCode"/> on the response returned to ensure that the transactional batch succeeded.
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes the transactional batch at the Azure Cosmos service as an asynchronous operation.
@@ -281,6 +280,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
            TransactionalBatchRequestOptions requestOptions,
-           CancellationToken cancellationToken = default(CancellationToken));
+           CancellationToken cancellationToken = default);
     }
 }

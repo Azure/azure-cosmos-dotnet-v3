@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
 
     internal sealed class NoOpTrace : ITrace
     {
@@ -49,10 +48,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
             string name,
             string memberName = "",
             string sourceFilePath = "",
-            int sourceLineNumber = 0) => this.StartChild(
-                name,
-                component: this.Component,
-                level: TraceLevel.Info);
+            int sourceLineNumber = 0)
+        {
+            return this.StartChild(
+name,
+component: this.Component,
+level: TraceLevel.Info);
+        }
 
         public ITrace StartChild(
             string name,
