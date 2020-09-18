@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    sealed class UtfAllString
+    sealed class UtfAllString : IEquatable<UtfAllString>
     {
         private UtfAllString(
             Utf8Memory utf8String,
@@ -64,6 +64,21 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Memory utf8EscapedString = Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(utf16EscapedString));
 
             return new UtfAllString(utf8String, utf16String, utf8EscapedString, utf16EscapedString);
+        }
+
+        public bool Equals(UtfAllString other)
+        {
+            if (object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (other == null)
+            {
+                return false;
+            }
+
+            return this.Utf8String.Span.Span.SequenceEqual(other.Utf8String.Span.Span);
         }
     }
 }

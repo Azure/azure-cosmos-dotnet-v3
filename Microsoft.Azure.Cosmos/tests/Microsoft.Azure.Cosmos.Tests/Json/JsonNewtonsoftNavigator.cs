@@ -192,12 +192,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return false;
         }
 
-        public override bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson)
-        {
-            bufferedRawJson = null;
-            return false;
-        }
-
         public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Span bufferedUtf8StringValue)
         {
             bufferedUtf8StringValue = default;

@@ -299,5 +299,20 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Brazil Southeast region in the Azure Cosmos DB service.
         /// </summary>
         public const string BrazilSoutheast = "Brazil Southeast";
+
+        /// <summary>
+        /// Name of the Azure West US 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string WestUS3 = "West US 3";
+
+        /// <summary>
+        /// Name of the Azure Jio India Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string JioIndiaCentral = "Jio India Central";
+
+        /// <summary>
+        /// Name of the Azure Jio India West region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string JioIndiaWest = "Jio India West";
     }
 }

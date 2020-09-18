@@ -17,7 +17,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal static class EncryptionProcessor
     {
-        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer();
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
+            new JsonSerializerSettings()
+            {
+                DateParseHandling = DateParseHandling.None,
+            });
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
