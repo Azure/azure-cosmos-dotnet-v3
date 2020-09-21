@@ -2,8 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using Microsoft.Azure.Documents.Collections;
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -14,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Tests;
 
     /// <summary>
