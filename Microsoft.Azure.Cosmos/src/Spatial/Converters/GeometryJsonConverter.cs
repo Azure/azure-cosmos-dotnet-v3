@@ -66,41 +66,17 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
                 throw new JsonSerializationException(RMResources.SpatialInvalidGeometryType);
             }
 
-            Geometry result;
-            switch (typeToken.Value<string>())
+            Geometry result = (typeToken.Value<string>()) switch
             {
-                case "Point":
-                    result = new Point();
-                    break;
-
-                case "MultiPoint":
-                    result = new MultiPoint();
-                    break;
-
-                case "LineString":
-                    result = new LineString();
-                    break;
-
-                case "MultiLineString":
-                    result = new MultiLineString();
-                    break;
-
-                case "Polygon":
-                    result = new Polygon();
-                    break;
-
-                case "MultiPolygon":
-                    result = new MultiPolygon();
-                    break;
-
-                case "GeometryCollection":
-                    result = new GeometryCollection();
-                    break;
-
-                default:
-                    throw new JsonSerializationException(RMResources.SpatialInvalidGeometryType);
-            }
-
+                "Point" => new Point(),
+                "MultiPoint" => new MultiPoint(),
+                "LineString" => new LineString(),
+                "MultiLineString" => new MultiLineString(),
+                "Polygon" => new Polygon(),
+                "MultiPolygon" => new MultiPolygon(),
+                "GeometryCollection" => new GeometryCollection(),
+                _ => throw new JsonSerializationException(RMResources.SpatialInvalidGeometryType),
+            };
             serializer.Populate(token.CreateReader(), result);
             return result;
         }
