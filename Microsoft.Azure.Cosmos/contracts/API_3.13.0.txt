@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public Headers();
         public virtual string ActivityId { get; }
-        public virtual string ContentLength { get; }
+        public virtual string ContentLength { get; set; }
         public virtual string ContentType { get; }
         public virtual string ContinuationToken { get; }
         public virtual string ETag { get; }
@@ -395,6 +395,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual void Add(string headerName, string value);
         public virtual string[] AllKeys();
         public virtual string Get(string headerName);
+        public virtual IEnumerator<string> GetEnumerator();
         public virtual T GetHeaderValue<T>(string headerName);
         public virtual string GetValueOrDefault(string headerName);
         public virtual void Remove(string headerName);
