@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.rootBuffer = buffer;
                 this.jsonStringDictionary = jsonStringDictionary;
-                this.rootNode = new BinaryNavigatorNode(this.rootBuffer, JsonBinaryEncoding.NodeTypes.GetNodeType(this.rootBuffer.Span[0]));
+                this.rootNode = new BinaryNavigatorNode(this.rootBuffer, JsonBinaryEncoding.NodeTypes.Lookup[this.rootBuffer.Span[0]]);
             }
 
             /// <inheritdoc />
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return new BinaryNavigatorNode(
                     arrayItem,
-                    JsonBinaryEncoding.NodeTypes.GetNodeType(arrayItem.Span[0]));
+                    JsonBinaryEncoding.NodeTypes.Lookup[arrayItem.Span[0]]);
             }
 
             /// <inheritdoc />
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private IEnumerable<BinaryNavigatorNode> GetArrayItemsInternal(ReadOnlyMemory<byte> buffer) => JsonBinaryEncoding.Enumerator
                 .GetArrayItems(buffer)
-                .Select(arrayItem => new BinaryNavigatorNode(arrayItem, JsonBinaryEncoding.NodeTypes.GetNodeType(arrayItem.Span[0])));
+                .Select(arrayItem => new BinaryNavigatorNode(arrayItem, JsonBinaryEncoding.NodeTypes.Lookup[arrayItem.Span[0]]));
 
             /// <inheritdoc />
             public override int GetObjectPropertyCount(IJsonNavigatorNode objectNode)
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 .GetObjectProperties(buffer)
                 .Select(property => new ObjectPropertyInternal(
                     new BinaryNavigatorNode(property.Name, JsonNodeType.FieldName),
-                    new BinaryNavigatorNode(property.Value, JsonBinaryEncoding.NodeTypes.GetNodeType(property.Value.Span[0]))));
+                    new BinaryNavigatorNode(property.Value, JsonBinaryEncoding.NodeTypes.Lookup[property.Value.Span[0]])));
 
             public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
             {
@@ -498,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"Node must not be empty.");
                 }
 
-                JsonNodeType actual = JsonBinaryEncoding.NodeTypes.GetNodeType(buffer.Span[0]);
+                JsonNodeType actual = JsonBinaryEncoding.NodeTypes.Lookup[buffer.Span[0]];
                 if (actual != expected)
                 {
                     throw new ArgumentException($"Node needs to be of type {expected}.");
@@ -524,9 +524,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     jsonBinaryWriter.WriteRawJsonValue(
+                        this.rootNode.Buffer,
                         binaryNavigatorNode.Buffer,
                         isFieldName,
-                        isRootNode: object.ReferenceEquals(jsonNavigatorNode, this.rootNode),
                         this.jsonStringDictionary);
                 }
                 else

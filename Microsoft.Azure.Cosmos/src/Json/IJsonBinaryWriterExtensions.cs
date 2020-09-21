@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Json
     internal interface IJsonBinaryWriterExtensions : IJsonWriter
     {
         void WriteRawJsonValue(
+            ReadOnlyMemory<byte> rootBuffer,
             ReadOnlyMemory<byte> rawJsonValue,
             bool isFieldName,
-            bool isRootNode,
             IReadOnlyJsonStringDictionary jsonStringDictionary = null);
     }
 }
