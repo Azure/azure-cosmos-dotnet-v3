@@ -34,32 +34,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyHashRanges,
                 out PartitionKeyHashRanges partitionedSortedEffectiveRanges);
 
-            switch (createStatus)
+            return createStatus switch
             {
-                case CreateOutcome.DuplicatePartitionKeyRange:
-                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have duplicate values.");
-
-                case CreateOutcome.EmptyPartitionKeyRange:
-                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have an empty range.");
-
-                case CreateOutcome.NoPartitionKeyRanges:
-                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not be empty.");
-
-                case CreateOutcome.NullPartitionKeyRanges:
-                    throw new ArgumentNullException(nameof(partitionKeyHashRanges));
-
-                case CreateOutcome.RangesAreNotContiguous:
-                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must have contiguous ranges.");
-
-                case CreateOutcome.RangesOverlap:
-                    throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not overlapping ranges.");
-
-                case CreateOutcome.Success:
-                    return partitionedSortedEffectiveRanges;
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(CreateOutcome)}: {createStatus}.");
-            }
+                CreateOutcome.DuplicatePartitionKeyRange => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have duplicate values."),
+                CreateOutcome.EmptyPartitionKeyRange => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have an empty range."),
+                CreateOutcome.NoPartitionKeyRanges => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not be empty."),
+                CreateOutcome.NullPartitionKeyRanges => throw new ArgumentNullException(nameof(partitionKeyHashRanges)),
+                CreateOutcome.RangesAreNotContiguous => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must have contiguous ranges."),
+                CreateOutcome.RangesOverlap => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not overlapping ranges."),
+                CreateOutcome.Success => partitionedSortedEffectiveRanges,
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(CreateOutcome)}: {createStatus}."),
+            };
         }
 
         public static CreateOutcome TryCreate(

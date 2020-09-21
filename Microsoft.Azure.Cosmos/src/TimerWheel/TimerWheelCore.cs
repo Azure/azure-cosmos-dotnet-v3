@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Timers
         private readonly ConcurrentDictionary<int, ConcurrentQueue<TimerWheelTimer>> timers;
         private readonly int resolutionInTicks;
         private readonly int resolutionInMs;
-        private readonly int buckets;        
+        private readonly int buckets;
         private readonly Timer timer;
         private readonly object subscriptionLock;
         private readonly object timerConcurrencyLock;
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Timers
             }
         }
 
-        public void OnTimer(Object stateInfo)
+        public void OnTimer(object stateInfo)
         {
             lock (this.timerConcurrencyLock)
             {

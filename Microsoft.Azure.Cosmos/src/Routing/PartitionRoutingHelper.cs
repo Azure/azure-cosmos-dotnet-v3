@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class PartitionRoutingHelper
     {
         public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
-            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             bool enableCrossPartitionQuery,
             bool parallelizeCrossPartitionQuery,

@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
 
-    internal sealed class ErrorListener<S> : ConsoleErrorListener<S>
+    internal sealed class ErrorListener<S> : IAntlrErrorListener<S>
     {
-        public bool hadError;
+        public ParseException parseException;
         private readonly Parser parser;
         private readonly Lexer lexer;
         private readonly CommonTokenStream tokenStream;
@@ -29,10 +29,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             this.firstTime = true;
         }
 
-        public override void SyntaxError(TextWriter output, IRecognizer recognizer, S offendingSymbol, int line,
-            int col, string msg, RecognitionException e)
+        public void SyntaxError(
+            TextWriter output,
+            IRecognizer recognizer,
+            S offendingSymbol,
+            int line,
+            int col,
+            string msg,
+            RecognitionException recognitionException)
         {
-            this.hadError = true;
             if (this.firstTime)
             {
                 try
@@ -41,29 +46,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     LASets la_sets = new LASets();
                     IntervalSet set = la_sets.Compute(this.parser, this.tokenStream, line, col);
                     List<string> result = new List<string>();
+
                     foreach (int r in set.ToList())
                     {
                         string rule_name = this.parser.Vocabulary.GetSymbolicName(r);
                         result.Add(rule_name);
                     }
+
+                    string message;
                     if (result.Any())
                     {
-                        System.Console.Error.WriteLine("Parse error line/col " + line + "/" + col
-                                                       + ", expecting "
-                                                       + string.Join(", ", result));
+                        message = $"Parse error line:{line}, col:{col}, expecting: {string.Join(", ", result)}";
+
                     }
                     else
                     {
-                        base.SyntaxError(output, recognizer, offendingSymbol, line, col, msg, e);
+                        message = $"Parse error: message:{msg} offendingSymbol: {offendingSymbol}, line:{line}, col:{col}";
                     }
 
-                    return;
+                    this.parseException = new ParseException(message, recognitionException);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    this.parseException = new ParseException($"Unknown parse exception", ex);
                 }
             }
-            base.SyntaxError(output, recognizer, offendingSymbol, line, col, msg, e);
         }
     }
 }

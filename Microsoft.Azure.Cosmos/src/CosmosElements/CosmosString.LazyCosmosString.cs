@@ -38,11 +38,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override string Value => this.lazyString.Value;
 
-            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue) => this.jsonNavigator.TryGetBufferedStringValue(
-                this.jsonNavigatorNode,
-                out bufferedValue);
+            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue)
+            {
+                return this.jsonNavigator.TryGetBufferedStringValue(
+this.jsonNavigatorNode,
+out bufferedValue);
+            }
 
-            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+            public override void WriteTo(IJsonWriter jsonWriter)
+            {
+                this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
+            }
         }
     }
 #if INTERNAL

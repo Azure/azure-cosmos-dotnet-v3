@@ -38,5 +38,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// The lease is gone. This can be due to partition split.
         /// </summary>
         LeaseGone,
+
+        /// <summary>
+        /// Indicates a "read session not available" warning related to <see cref="ConsistencyLevel.Session"/>.
+        /// Note: SDK retries on this error.
+        /// </summary>
+        ReadSessionNotAvailable,
     }
 }

@@ -1,13 +1,15 @@
-﻿// ------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-// ------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Diagnostics.Contracts;
+    using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
@@ -54,14 +56,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
         }
 
-        public override SqlObject VisitProgram(sqlParser.ProgramContext context)
+        public override SqlObject VisitProgram([NotNull] sqlParser.ProgramContext context)
         {
             Contract.Requires(context != null);
 
             return this.Visit(context.sql_query());
         }
 
-        public override SqlObject VisitSql_query(sqlParser.Sql_queryContext context)
+        public override SqlObject VisitSql_query([NotNull] sqlParser.Sql_queryContext context)
         {
             Contract.Requires(context != null);
 
@@ -126,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 sqlOffsetLimitClause);
         }
 
-    #region SELECT
-        public override SqlObject VisitSelect_clause(sqlParser.Select_clauseContext context)
+        #region SELECT
+        public override SqlObject VisitSelect_clause([NotNull] sqlParser.Select_clauseContext context)
         {
             SqlSelectSpec sqlSelectSpec = (SqlSelectSpec)this.Visit(context.selection());
             SqlTopSpec sqlTopSpec;
@@ -145,14 +147,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlSelectClause.Create(sqlSelectSpec, sqlTopSpec, distinct);
         }
 
-        public override SqlObject VisitSelect_star_spec(sqlParser.Select_star_specContext context)
+        public override SqlObject VisitSelect_star_spec([NotNull] sqlParser.Select_star_specContext context)
         {
             Contract.Requires(context != null);
 
             return SqlSelectStarSpec.Create();
         }
 
-        public override SqlObject VisitSelect_value_spec(sqlParser.Select_value_specContext context)
+        public override SqlObject VisitSelect_value_spec([NotNull] sqlParser.Select_value_specContext context)
         {
             Contract.Requires(context != null);
 
@@ -161,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return sqlSelectValueSpec;
         }
 
-        public override SqlObject VisitSelect_list_spec(sqlParser.Select_list_specContext context)
+        public override SqlObject VisitSelect_list_spec([NotNull] sqlParser.Select_list_specContext context)
         {
             Contract.Requires(context != null);
 
@@ -172,10 +174,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 sqlSelectItems.Add(selectItem);
             }
 
-            return SqlSelectListSpec.Create(sqlSelectItems);
+            return SqlSelectListSpec.Create(sqlSelectItems.ToImmutableArray());
         }
 
-        public override SqlObject VisitSelect_item(sqlParser.Select_itemContext context)
+        public override SqlObject VisitSelect_item([NotNull] sqlParser.Select_itemContext context)
         {
             Contract.Requires(context != null);
 
@@ -193,16 +195,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlSelectItem.Create(sqlScalarExpression, alias);
         }
 
-        public override SqlObject VisitTop_spec(sqlParser.Top_specContext context)
+        public override SqlObject VisitTop_spec([NotNull] sqlParser.Top_specContext context)
         {
             Contract.Requires(context != null);
 
-            Number64 topCount = CstToAstVisitor.GetNumber64ValueFromNode(context.NUMERIC_LITERAL());
-            return SqlTopSpec.Create(SqlNumberLiteral.Create(topCount));
+            SqlTopSpec sqlTopSpec;
+            if (context.NUMERIC_LITERAL() != null)
+            {
+                Number64 topCount = CstToAstVisitor.GetNumber64ValueFromNode(context.NUMERIC_LITERAL());
+                sqlTopSpec = SqlTopSpec.Create(SqlNumberLiteral.Create(topCount));
+            }
+            else if (context.PARAMETER() != null)
+            {
+                sqlTopSpec = SqlTopSpec.Create(SqlParameter.Create(context.PARAMETER().GetText()));
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
+
+            return sqlTopSpec;
         }
-    #endregion
-    #region FROM
-        public override SqlObject VisitFrom_clause(sqlParser.From_clauseContext context)
+        #endregion
+        #region FROM
+        public override SqlObject VisitFrom_clause([NotNull] sqlParser.From_clauseContext context)
         {
             Contract.Requires(context != null);
 
@@ -211,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlFromClause.Create(collectionExpression);
         }
 
-        public override SqlObject VisitAliasedCollectionExpression(sqlParser.AliasedCollectionExpressionContext context)
+        public override SqlObject VisitAliasedCollectionExpression([NotNull] sqlParser.AliasedCollectionExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -229,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlAliasedCollectionExpression.Create(sqlCollection, alias);
         }
 
-        public override SqlObject VisitArrayIteratorCollectionExpression(sqlParser.ArrayIteratorCollectionExpressionContext context)
+        public override SqlObject VisitArrayIteratorCollectionExpression([NotNull] sqlParser.ArrayIteratorCollectionExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -239,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlArrayIteratorCollectionExpression.Create(identifier, sqlCollection);
         }
 
-        public override SqlObject VisitJoinCollectionExpression(sqlParser.JoinCollectionExpressionContext context)
+        public override SqlObject VisitJoinCollectionExpression([NotNull] sqlParser.JoinCollectionExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -249,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlJoinCollectionExpression.Create(left, right);
         }
 
-        public override SqlObject VisitInputPathCollection(sqlParser.InputPathCollectionContext context)
+        public override SqlObject VisitInputPathCollection([NotNull] sqlParser.InputPathCollectionContext context)
         {
             Contract.Requires(context != null);
 
@@ -267,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlInputPathCollection.Create(identifier, pathExpression);
         }
 
-        public override SqlObject VisitSubqueryCollection(sqlParser.SubqueryCollectionContext context)
+        public override SqlObject VisitSubqueryCollection([NotNull] sqlParser.SubqueryCollectionContext context)
         {
             Contract.Requires(context != null);
 
@@ -276,12 +292,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlSubqueryCollection.Create(subQuery);
         }
 
-        public override SqlObject VisitEpsilonPathExpression(sqlParser.EpsilonPathExpressionContext context)
+        public override SqlObject VisitEpsilonPathExpression([NotNull] sqlParser.EpsilonPathExpressionContext context)
         {
             return null;
         }
 
-        public override SqlObject VisitIdentifierPathExpression(sqlParser.IdentifierPathExpressionContext context)
+        public override SqlObject VisitIdentifierPathExpression([NotNull] sqlParser.IdentifierPathExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -291,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlIdentifierPathExpression.Create(parentPath: pathExpression, value: identifier);
         }
 
-        public override SqlObject VisitNumberPathExpression(sqlParser.NumberPathExpressionContext context)
+        public override SqlObject VisitNumberPathExpression([NotNull] sqlParser.NumberPathExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -301,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlNumberPathExpression.Create(pathExpression, number);
         }
 
-        public override SqlObject VisitStringPathExpression(sqlParser.StringPathExpressionContext context)
+        public override SqlObject VisitStringPathExpression([NotNull] sqlParser.StringPathExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -310,17 +326,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return SqlStringPathExpression.Create(pathExpression, stringIndex);
         }
-    #endregion
-    #region WHERE
-        public override SqlObject VisitWhere_clause(sqlParser.Where_clauseContext context)
+        #endregion
+        #region WHERE
+        public override SqlObject VisitWhere_clause([NotNull] sqlParser.Where_clauseContext context)
         {
             Contract.Requires(context != null);
             SqlScalarExpression sqlScalarExpression = (SqlScalarExpression)this.Visit(context.scalar_expression());
             return SqlWhereClause.Create(sqlScalarExpression);
         }
-    #endregion
-    #region GROUP BY
-        public override SqlObject VisitGroup_by_clause(sqlParser.Group_by_clauseContext context)
+        #endregion
+        #region GROUP BY
+        public override SqlObject VisitGroup_by_clause([NotNull] sqlParser.Group_by_clauseContext context)
         {
             Contract.Requires(context != null);
 
@@ -330,62 +346,119 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 groupByColumns.Add((SqlScalarExpression)this.Visit(scalarExpressionContext));
             }
 
-            return SqlGroupByClause.Create(groupByColumns);
+            return SqlGroupByClause.Create(groupByColumns.ToImmutableArray());
         }
-    #endregion
-    #region ORDER BY
-        public override SqlObject VisitOrder_by_clause(sqlParser.Order_by_clauseContext context)
+        #endregion
+        #region ORDER BY
+        public override SqlObject VisitOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context)
         {
             Contract.Requires(context != null);
 
             List<SqlOrderByItem> orderByItems = new List<SqlOrderByItem>();
             foreach (sqlParser.Order_by_itemContext orderByItemContext in context.order_by_items().order_by_item())
             {
-                SqlScalarExpression expression = (SqlScalarExpression)this.Visit(orderByItemContext.scalar_expression());
-                bool isDescending = false;
-                if (orderByItemContext.sort_order() != null)
-                {
-                    if (orderByItemContext.sort_order().K_ASC() != null)
-                    {
-                        isDescending = false;
-                    }
-                    else if (orderByItemContext.sort_order().K_DESC() != null)
-                    {
-                        isDescending = true;
-                    }
-                    else
-                    {
-                        throw new ArgumentOutOfRangeException($"Unknown sort order : {orderByItemContext.sort_order()}.");
-                    }
-                }
-
-                SqlOrderByItem orderByItem = SqlOrderByItem.Create(expression, isDescending);
+                SqlOrderByItem orderByItem = (SqlOrderByItem)this.VisitOrder_by_item(orderByItemContext);
                 orderByItems.Add(orderByItem);
             }
 
-            return SqlOrderbyClause.Create(orderByItems);
+            return SqlOrderbyClause.Create(orderByItems.ToImmutableArray());
         }
-    #endregion
-    #region OFFSET LIMIT
-        public override SqlObject VisitOffset_limit_clause(sqlParser.Offset_limit_clauseContext context)
+
+        public override SqlObject VisitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context)
         {
             Contract.Requires(context != null);
 
-            SqlOffsetSpec sqlOffsetSpec = SqlOffsetSpec.Create(
-                SqlNumberLiteral.Create(
-                    CstToAstVisitor.GetNumber64ValueFromNode(
-                        context.offset_count().NUMERIC_LITERAL())));
+            SqlScalarExpression expression = (SqlScalarExpression)this.Visit(context.scalar_expression());
+            bool isDescending = false;
+            if (context.sort_order() != null)
+            {
+                if (context.sort_order().K_ASC() != null)
+                {
+                    isDescending = false;
+                }
+                else if (context.sort_order().K_DESC() != null)
+                {
+                    isDescending = true;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException($"Unknown sort order : {context.sort_order()}.");
+                }
+            }
 
-            SqlLimitSpec sqlLimitSpec = SqlLimitSpec.Create(
-                SqlNumberLiteral.Create(
-                    CstToAstVisitor.GetNumber64ValueFromNode(
-                        context.limit_count().NUMERIC_LITERAL())));
+            return SqlOrderByItem.Create(expression, isDescending);
+        }
+
+        #endregion
+        #region OFFSET LIMIT
+        public override SqlObject VisitOffset_limit_clause([NotNull] sqlParser.Offset_limit_clauseContext context)
+        {
+            Contract.Requires(context != null);
+            Contract.Requires(context.offset_count() != null);
+            Contract.Requires(context.limit_count() != null);
+
+            SqlOffsetSpec sqlOffsetSpec = (SqlOffsetSpec)this.Visit(context.offset_count());
+            SqlLimitSpec sqlLimitSpec = (SqlLimitSpec)this.Visit(context.limit_count());
 
             return SqlOffsetLimitClause.Create(sqlOffsetSpec, sqlLimitSpec);
         }
-    #endregion
-    #region ScalarExpressions
-        public override SqlObject VisitArrayCreateScalarExpression(sqlParser.ArrayCreateScalarExpressionContext context)
+
+        public override SqlObject VisitOffset_count([NotNull] sqlParser.Offset_countContext context)
+        {
+            Contract.Requires(context != null);
+
+            SqlOffsetSpec sqlOffsetSpec;
+            if (context.NUMERIC_LITERAL() != null)
+            {
+                sqlOffsetSpec = SqlOffsetSpec.Create(
+                    SqlNumberLiteral.Create(
+                        CstToAstVisitor.GetNumber64ValueFromNode(
+                            context.NUMERIC_LITERAL())));
+            }
+            else if (context.PARAMETER() != null)
+            {
+                sqlOffsetSpec = SqlOffsetSpec.Create(
+                    SqlParameter.Create(
+                        context.PARAMETER().GetText()));
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            return sqlOffsetSpec;
+        }
+
+        public override SqlObject VisitLimit_count([NotNull] sqlParser.Limit_countContext context)
+        {
+            Contract.Requires(context != null);
+
+            SqlLimitSpec sqlLimitSpec;
+            if (context.NUMERIC_LITERAL() != null)
+            {
+                sqlLimitSpec = SqlLimitSpec.Create(
+                    SqlNumberLiteral.Create(
+                        CstToAstVisitor.GetNumber64ValueFromNode(
+                            context.NUMERIC_LITERAL())));
+            }
+            else if (context.PARAMETER() != null)
+            {
+                sqlLimitSpec = SqlLimitSpec.Create(
+                    SqlParameter.Create(
+                        context.PARAMETER().GetText()));
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            return sqlLimitSpec;
+
+        }
+        #endregion
+        #region ScalarExpressions
+
+        public override SqlObject VisitArrayCreateScalarExpression([NotNull] sqlParser.ArrayCreateScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             Contract.Requires(context.ChildCount >= 2); // start array and end array tokens
@@ -399,10 +472,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlArrayCreateScalarExpression.Create(arrayItems);
+            return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
         }
 
-        public override SqlObject VisitArrayScalarExpression(sqlParser.ArrayScalarExpressionContext context)
+        public override SqlObject VisitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context)
         {
             Contract.Requires(context != null);
 
@@ -410,39 +483,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlArrayScalarExpression.Create(sqlQuery);
         }
 
-        public override SqlObject VisitBetweenScalarExpression(sqlParser.BetweenScalarExpressionContext context)
+        public override SqlObject VisitBetweenScalarExpression([NotNull] sqlParser.BetweenScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // scalar_expression K_NOT? K_BETWEEN scalar_expression K_AND scalar_expression
 
-            SqlScalarExpression needle = (SqlScalarExpression)this.Visit(context.scalar_expression(0));
+            SqlScalarExpression needle = (SqlScalarExpression)this.Visit(context.binary_scalar_expression(0));
             bool not = context.K_NOT() != null;
-            SqlScalarExpression start = (SqlScalarExpression)this.Visit(context.scalar_expression(1));
-            SqlScalarExpression end = (SqlScalarExpression)this.Visit(context.scalar_expression(2));
+            SqlScalarExpression start = (SqlScalarExpression)this.Visit(context.binary_scalar_expression(1));
+            SqlScalarExpression end = (SqlScalarExpression)this.Visit(context.binary_scalar_expression(2));
 
             return SqlBetweenScalarExpression.Create(needle, start, end, not);
         }
 
-        public override SqlObject VisitBinaryScalarExpression(sqlParser.BinaryScalarExpressionContext context)
+        public override SqlObject VisitBinary_scalar_expression([NotNull] sqlParser.Binary_scalar_expressionContext context)
         {
             Contract.Requires(context != null);
-            // scalar_expression binary_operator scalar_expression
-            Contract.Requires(context.ChildCount == 3);
 
-            SqlScalarExpression left = (SqlScalarExpression)this.Visit(context.scalar_expression(0));
-            if (!CstToAstVisitor.binaryOperatorKindLookup.TryGetValue(
-                context.binary_operator().GetText(),
-                out SqlBinaryScalarOperatorKind operatorKind))
+            SqlObject sqlObject;
+            if (context.unary_scalar_expression() != null)
             {
-                throw new ArgumentOutOfRangeException($"Unknown binary operator: {context.binary_operator().GetText()}.");
+                sqlObject = (SqlScalarExpression)this.Visit(context.unary_scalar_expression());
+            }
+            else
+            {
+                // scalar_expression binary_operator scalar_expression
+                Contract.Requires(context.ChildCount == 3);
+
+                SqlScalarExpression left = (SqlScalarExpression)this.Visit(context.binary_scalar_expression(0));
+                if (!CstToAstVisitor.binaryOperatorKindLookup.TryGetValue(
+                    context.children[1].GetText(),
+                    out SqlBinaryScalarOperatorKind operatorKind))
+                {
+                    throw new ArgumentOutOfRangeException($"Unknown binary operator: {context.children[1].GetText()}.");
+                }
+
+                SqlScalarExpression right = (SqlScalarExpression)this.Visit(context.binary_scalar_expression(1));
+
+                sqlObject = SqlBinaryScalarExpression.Create(operatorKind, left, right);
             }
 
-            SqlScalarExpression right = (SqlScalarExpression)this.Visit(context.scalar_expression(1));
-
-            return SqlBinaryScalarExpression.Create(operatorKind, left, right);
+            return sqlObject;
         }
 
-        public override SqlObject VisitCoalesceScalarExpression(sqlParser.CoalesceScalarExpressionContext context)
+        public override SqlObject VisitCoalesceScalarExpression([NotNull] sqlParser.CoalesceScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // scalar_expression '??' scalar_expression
@@ -453,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlCoalesceScalarExpression.Create(left, right);
         }
 
-        public override SqlObject VisitConditionalScalarExpression(sqlParser.ConditionalScalarExpressionContext context)
+        public override SqlObject VisitConditionalScalarExpression([NotNull] sqlParser.ConditionalScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // scalar_expression '?' scalar_expression ':' scalar_expression
@@ -465,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlConditionalScalarExpression.Create(condition, consequent, alternative);
         }
 
-        public override SqlObject VisitExistsScalarExpression(sqlParser.ExistsScalarExpressionContext context)
+        public override SqlObject VisitExistsScalarExpression([NotNull] sqlParser.ExistsScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // K_EXISTS '(' sql_query ')'
@@ -475,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlExistsScalarExpression.Create(subquery);
         }
 
-        public override SqlObject VisitFunctionCallScalarExpression(sqlParser.FunctionCallScalarExpressionContext context)
+        public override SqlObject VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // (K_UDF '.')? IDENTIFIER '(' scalar_expression_list? ')'
@@ -491,15 +575,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlFunctionCallScalarExpression.Create(identifier, udf, arguments);
+            return SqlFunctionCallScalarExpression.Create(identifier, udf, arguments.ToImmutableArray());
         }
 
-        public override SqlObject VisitInScalarExpression(sqlParser.InScalarExpressionContext context)
+        public override SqlObject VisitIn_scalar_expression([NotNull] sqlParser.In_scalar_expressionContext context)
         {
             Contract.Requires(context != null);
             // scalar_expression K_NOT? K_IN '(' scalar_expression_list ')'
 
-            SqlScalarExpression needle = (SqlScalarExpression)this.Visit(context.scalar_expression());
+            SqlScalarExpression needle = (SqlScalarExpression)this.Visit(context.binary_scalar_expression());
             bool not = context.K_NOT() != null;
             List<SqlScalarExpression> searchList = new List<SqlScalarExpression>();
             foreach (sqlParser.Scalar_expressionContext scalarExpressionContext in context.scalar_expression_list().scalar_expression())
@@ -507,89 +591,111 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 searchList.Add((SqlScalarExpression)this.Visit(scalarExpressionContext));
             }
 
-            return SqlInScalarExpression.Create(needle, not, searchList);
+            return SqlInScalarExpression.Create(needle, not, searchList.ToImmutableArray());
         }
 
-        public override SqlObject VisitLiteralScalarExpression(sqlParser.LiteralScalarExpressionContext context)
+        public override SqlObject VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context)
         {
             Contract.Requires(context != null);
-            Contract.Requires(context.ChildCount == 1);
-            Contract.Requires(context.children[0].ChildCount == 1);
 
-            TerminalNodeImpl terminalNode = (TerminalNodeImpl)context.children[0].GetChild(0);
+            SqlLiteral sqlLiteral = (SqlLiteral)this.Visit(context.literal());
+            return SqlLiteralScalarExpression.Create(sqlLiteral);
+        }
 
-            SqlLiteralScalarExpression sqlLiteralScalarExpression;
+        public override SqlObject VisitLiteral([NotNull] sqlParser.LiteralContext context)
+        {
+            TerminalNodeImpl terminalNode = (TerminalNodeImpl)context.children[0];
+
+            SqlLiteral sqlLiteral;
             switch (terminalNode.Symbol.Type)
             {
                 case sqlParser.STRING_LITERAL:
                     string value = CstToAstVisitor.GetStringValueFromNode(terminalNode);
-                    sqlLiteralScalarExpression = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(value));
+                    sqlLiteral = SqlStringLiteral.Create(value);
                     break;
 
                 case sqlParser.NUMERIC_LITERAL:
                     Number64 number64 = CstToAstVisitor.GetNumber64ValueFromNode(terminalNode);
-                    sqlLiteralScalarExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(number64));
+                    sqlLiteral = SqlNumberLiteral.Create(number64);
                     break;
 
                 case sqlParser.K_TRUE:
-                    sqlLiteralScalarExpression = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true));
+                    sqlLiteral = SqlBooleanLiteral.Create(true);
                     break;
 
                 case sqlParser.K_FALSE:
-                    sqlLiteralScalarExpression = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(false));
+                    sqlLiteral = SqlBooleanLiteral.Create(false);
                     break;
 
                 case sqlParser.K_NULL:
-                    sqlLiteralScalarExpression = SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
+                    sqlLiteral = SqlNullLiteral.Create();
                     break;
 
                 case sqlParser.K_UNDEFINED:
-                    sqlLiteralScalarExpression = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+                    sqlLiteral = SqlUndefinedLiteral.Create();
                     break;
 
                 default:
                     throw new ArgumentOutOfRangeException($"Unknown symbol type: {terminalNode.Symbol.Type}");
             }
 
-            return sqlLiteralScalarExpression;
+            return sqlLiteral;
         }
 
-        public override SqlObject VisitMemberIndexerScalarExpression(sqlParser.MemberIndexerScalarExpressionContext context)
+        public override SqlObject VisitMemberIndexerScalarExpression([NotNull] sqlParser.MemberIndexerScalarExpressionContext context)
         {
             Contract.Requires(context != null);
-            // scalar_expression '[' scalar_expression ']'
+            // primary_expression '[' scalar_expression ']'
 
-            SqlScalarExpression memberExpression = (SqlScalarExpression)this.Visit(context.scalar_expression(0));
-            SqlScalarExpression indexExpression = (SqlScalarExpression)this.Visit(context.scalar_expression(1));
+            SqlScalarExpression memberExpression = (SqlScalarExpression)this.Visit(context.primary_expression());
+            SqlScalarExpression indexExpression = (SqlScalarExpression)this.Visit(context.scalar_expression());
 
             return SqlMemberIndexerScalarExpression.Create(memberExpression, indexExpression);
         }
 
-        public override SqlObject VisitObjectCreateScalarExpression(sqlParser.ObjectCreateScalarExpressionContext context)
+        public override SqlObject VisitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // '{' object_propertty_list? '}'
 
             List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
-            if (context.object_propertty_list() != null)
+            if (context.object_property_list() != null)
             {
-                sqlParser.Object_propertyContext[] propertyContexts = context.object_propertty_list().object_property();
+                sqlParser.Object_propertyContext[] propertyContexts = context.object_property_list().object_property();
                 foreach (sqlParser.Object_propertyContext objectPropertyContext in propertyContexts)
                 {
-                    string name = CstToAstVisitor.GetStringValueFromNode(objectPropertyContext.STRING_LITERAL());
-                    SqlScalarExpression value = (SqlScalarExpression)this.Visit(objectPropertyContext.scalar_expression());
-
-                    SqlObjectProperty property = SqlObjectProperty.Create(
-                        SqlPropertyName.Create(name),
-                        value);
+                    SqlObjectProperty property = (SqlObjectProperty)this.Visit(objectPropertyContext);
                     properties.Add(property);
                 }
             }
 
-            return SqlObjectCreateScalarExpression.Create(properties);
+            return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
         }
 
-        public override SqlObject VisitPropertyRefScalarExpressionBase(sqlParser.PropertyRefScalarExpressionBaseContext context)
+        public override SqlObject VisitObject_property([NotNull] sqlParser.Object_propertyContext context)
+        {
+            Contract.Requires(context != null);
+            Contract.Requires(context.STRING_LITERAL() != null);
+            Contract.Requires(context.scalar_expression() != null);
+
+            string name = CstToAstVisitor.GetStringValueFromNode(context.STRING_LITERAL());
+            SqlScalarExpression value = (SqlScalarExpression)this.Visit(context.scalar_expression());
+
+            SqlObjectProperty property = SqlObjectProperty.Create(
+                SqlPropertyName.Create(name),
+                value);
+
+            return property;
+        }
+
+        public override SqlObject VisitParameterRefScalarExpression([NotNull] sqlParser.ParameterRefScalarExpressionContext context)
+        {
+            Contract.Requires(context != null);
+
+            return SqlParameterRefScalarExpression.Create(SqlParameter.Create(context.PARAMETER().GetText()));
+        }
+
+        public override SqlObject VisitPropertyRefScalarExpressionBase([NotNull] sqlParser.PropertyRefScalarExpressionBaseContext context)
         {
             Contract.Requires(context != null);
             // IDENTIFIER
@@ -599,18 +705,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 SqlIdentifier.Create(context.IDENTIFIER().GetText()));
         }
 
-        public override SqlObject VisitPropertyRefScalarExpressionRecursive(sqlParser.PropertyRefScalarExpressionRecursiveContext context)
+        public override SqlObject VisitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context)
         {
             Contract.Requires(context != null);
-            // scalar_expression '.' IDENTIFIER
+            // primary_expression '.' IDENTIFIER
 
-            SqlScalarExpression memberExpression = (SqlScalarExpression)this.Visit(context.scalar_expression());
+            SqlScalarExpression memberExpression = (SqlScalarExpression)this.Visit(context.primary_expression());
             SqlIdentifier indentifier = SqlIdentifier.Create(context.IDENTIFIER().GetText());
 
             return SqlPropertyRefScalarExpression.Create(memberExpression, indentifier);
         }
 
-        public override SqlObject VisitSubqueryScalarExpression(sqlParser.SubqueryScalarExpressionContext context)
+        public override SqlObject VisitSubqueryScalarExpression([NotNull] sqlParser.SubqueryScalarExpressionContext context)
         {
             Contract.Requires(context != null);
             // '(' sql_query ')'
@@ -619,11 +725,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlSubqueryScalarExpression.Create(subquery);
         }
 
-        public override SqlObject VisitUnaryScalarExpression(sqlParser.UnaryScalarExpressionContext context)
+        public override SqlObject VisitUnary_scalar_expression([NotNull] sqlParser.Unary_scalar_expressionContext context)
         {
             Contract.Requires(context != null);
-            // unary_operator scalar_expression
-            Contract.Requires(context.ChildCount == 2);
+            if (context.primary_expression() != null)
+            {
+                return this.Visit(context.primary_expression());
+            }
 
             string unaryOperatorText = context.unary_operator().GetText();
             if (!CstToAstVisitor.unaryOperatorKindLookup.TryGetValue(
@@ -633,63 +741,108 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 throw new ArgumentOutOfRangeException($"Unknown unary operator: {unaryOperatorText}.");
             }
 
-            SqlScalarExpression expression = (SqlScalarExpression)this.Visit(context.scalar_expression());
+            SqlScalarExpression expression = (SqlScalarExpression)this.Visit(context.unary_scalar_expression());
 
             return SqlUnaryScalarExpression.Create(unaryOperator, expression);
         }
-    #endregion
+        #endregion
+        #region ArtificalScalarExpressions
+        public override SqlObject VisitParenthesizedScalarExperession([NotNull] sqlParser.ParenthesizedScalarExperessionContext context)
+        {
+            Contract.Requires(context != null);
+            Contract.Requires(context.ChildCount == 3); // open parens and close parens
 
-    #region NOT IMPLEMENTED ON PURPOSE
-        public override SqlObject VisitBinary_operator(sqlParser.Binary_operatorContext context)
+            IParseTree parseTree = context.children[1];
+            return this.Visit(parseTree);
+        }
+
+        public override SqlObject VisitLogical_scalar_expression([NotNull] sqlParser.Logical_scalar_expressionContext context)
+        {
+            Contract.Requires(context != null);
+
+            SqlObject sqlObject;
+            if (context.binary_scalar_expression() != null)
+            {
+                sqlObject = this.Visit(context.binary_scalar_expression());
+            }
+            else if (context.in_scalar_expression() != null)
+            {
+                sqlObject = this.Visit(context.in_scalar_expression());
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            return sqlObject;
+        }
+        #endregion
+        #region NOT IMPLEMENTED SINCE SUB ATOMIC SQL OBJECTS
+        public override SqlObject VisitAdditive_operator([NotNull] sqlParser.Additive_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitLimit_count(sqlParser.Limit_countContext context)
+        public override SqlObject VisitBitwise_and_operator([NotNull] sqlParser.Bitwise_and_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitLiteral(sqlParser.LiteralContext context)
+        public override SqlObject VisitBitwise_exclusive_or_operator([NotNull] sqlParser.Bitwise_exclusive_or_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitObject_propertty_list(sqlParser.Object_propertty_listContext context)
+        public override SqlObject VisitBitwise_inclusive_or_operator([NotNull] sqlParser.Bitwise_inclusive_or_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitObject_property(sqlParser.Object_propertyContext context)
+        public override SqlObject VisitEquality_operator([NotNull] sqlParser.Equality_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitOffset_count(sqlParser.Offset_countContext context)
+        public override SqlObject VisitMultiplicative_operator([NotNull] sqlParser.Multiplicative_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitOrder_by_item(sqlParser.Order_by_itemContext context)
+        public override SqlObject VisitRelational_operator([NotNull] sqlParser.Relational_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitOrder_by_items(sqlParser.Order_by_itemsContext context)
+        public override SqlObject VisitString_concat_operator([NotNull] sqlParser.String_concat_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitSort_order(sqlParser.Sort_orderContext context)
+        public override SqlObject VisitUnary_operator([NotNull] sqlParser.Unary_operatorContext context)
         {
             throw new NotSupportedException();
         }
 
-        public override SqlObject VisitScalar_expression_list(sqlParser.Scalar_expression_listContext context)
+        public override SqlObject VisitObject_property_list([NotNull] sqlParser.Object_property_listContext context)
         {
             throw new NotSupportedException();
         }
-    #endregion
+
+        public override SqlObject VisitOrder_by_items([NotNull] sqlParser.Order_by_itemsContext context)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override SqlObject VisitSort_order([NotNull] sqlParser.Sort_orderContext context)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override SqlObject VisitScalar_expression_list([NotNull] sqlParser.Scalar_expression_listContext context)
+        {
+            throw new NotSupportedException();
+        }
+        #endregion
 
         private sealed class UnknownSqlObjectException : ArgumentOutOfRangeException
         {

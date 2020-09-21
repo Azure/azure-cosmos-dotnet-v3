@@ -26,8 +26,6 @@
                             throw new InvalidEnumArgumentException($"{nameof(other)}");
                     }
 
-                    break;
-
                 case StringPathToken stringPathToken1:
                     switch (other)
                     {
@@ -40,8 +38,6 @@
                         default:
                             throw new InvalidEnumArgumentException($"{nameof(other)}");
                     }
-
-                    break;
 
                 default:
                     throw new InvalidEnumArgumentException($"this");
@@ -75,8 +71,6 @@
                             throw new InvalidEnumArgumentException($"{nameof(other)}");
                     }
 
-                    break;
-
                 case StringPathToken stringPathToken1:
                     switch (other)
                     {
@@ -89,8 +83,6 @@
                         default:
                             throw new InvalidEnumArgumentException($"{nameof(other)}");
                     }
-
-                    break;
 
                 default:
                     throw new InvalidEnumArgumentException($"this");

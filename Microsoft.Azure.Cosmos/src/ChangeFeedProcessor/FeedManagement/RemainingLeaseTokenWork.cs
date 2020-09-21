@@ -18,7 +18,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         /// <param name="remainingWork">The amount of documents remaining to be processed</param>
         public RemainingLeaseTokenWork(string leaseToken, long remainingWork)
         {
-            if (string.IsNullOrEmpty(leaseToken)) throw new ArgumentNullException(nameof(leaseToken));
+            if (string.IsNullOrEmpty(leaseToken))
+            {
+                throw new ArgumentNullException(nameof(leaseToken));
+            }
 
             this.LeaseToken = leaseToken;
             this.RemainingWork = remainingWork;

@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -278,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 if (utf8Length <= UnorderdDistinctMap.UInt128Length)
                 {
                     Span<byte> utf8Buffer = stackalloc byte[UInt128Length];
-                    Encoding.UTF8.GetBytes(value, utf8Buffer); 
+                    Encoding.UTF8.GetBytes(value, utf8Buffer);
                     if (utf8Length == 0)
                     {
                         added = this.AddSimpleValue(SimpleValues.EmptyString);

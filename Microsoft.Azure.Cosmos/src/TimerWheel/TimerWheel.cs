@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan resolution,
             int buckets)
         {
-            return new Timers.TimerWheelCore(resolution, buckets);   
+            return new Timers.TimerWheelCore(resolution, buckets);
         }
     }
 }

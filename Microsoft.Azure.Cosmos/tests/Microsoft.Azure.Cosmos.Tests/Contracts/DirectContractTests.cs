@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 CosmosClient client = new CosmosClient(connectionString: null);
                 Assert.Fail();
             }
-            catch(ArgumentNullException)
+            catch (ArgumentNullException)
             {
             }
 
@@ -62,10 +62,10 @@ namespace Microsoft.Azure.Cosmos.Contracts
                             .Select(e => e.Name)
                             .ToArray();
 
-            if(locationNames.Length > cosmosRegions.Length)
+            if (locationNames.Length > cosmosRegions.Length)
             {
                 HashSet<string> missingLocationNames = new HashSet<string>(locationNames);
-                foreach(string region in cosmosRegions)
+                foreach (string region in cosmosRegions)
                 {
                     missingLocationNames.Remove(region);
                 }
@@ -94,31 +94,42 @@ namespace Microsoft.Azure.Cosmos.Contracts
         public void ProjectPackageDependenciesTest()
         {
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
-            Dictionary<string, string> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
-            Dictionary<string, string> baselineDependencies = JsonConvert.DeserializeObject< Dictionary<string, string>>(
-                "{\"System.Numerics.Vectors\":\"4.5.0\",\"Newtonsoft.Json\":\"10.0.2\",\"System.Configuration.ConfigurationManager\":\"4.5.0\",\"System.Memory\":\"4.5.1\",\"System.Buffers\":\"4.5.1\",\"System.Runtime.CompilerServices.Unsafe\":\"4.5.1\",\"System.Threading.Tasks.Extensions\":\"4.5.1\",\"System.ValueTuple\":\"4.5.0\"}");
-
-            Assert.AreEqual(projDependencies.Count, baselineDependencies.Count);
-            foreach(KeyValuePair<string, string> projectDependency in projDependencies)
+            Dictionary<string, Version> projectDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
+            Dictionary<string, Version> baselineDependencies = new Dictionary<string, Version>()
             {
-                string baselineVersion = baselineDependencies[projectDependency.Key];
+                { "System.Collections.Immutable", new Version(1, 7, 0) },
+                { "System.Numerics.Vectors", new Version(4, 5, 0) },
+                { "Newtonsoft.Json", new Version(10, 0, 2) },
+                { "Microsoft.Bcl.AsyncInterfaces", new Version(1, 0, 0) },
+                { "System.Configuration.ConfigurationManager", new Version(4, 5, 0) },
+                { "System.Memory", new Version(4, 5, 3) },
+                { "System.Buffers", new Version(4, 5, 1) },
+                { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 2) },
+                { "System.Threading.Tasks.Extensions", new Version(4, 5, 2) },
+                { "System.ValueTuple", new Version(4, 5, 0) },
+                { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
+            };
+
+            Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
+            foreach (KeyValuePair<string, Version> projectDependency in projectDependencies)
+            {
+                Version baselineVersion = baselineDependencies[projectDependency.Key];
                 Assert.AreEqual(baselineVersion, projectDependency.Value);
             }
-
         }
 
         [TestMethod]
         public void PackageDependenciesTest()
         {
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
-            Dictionary<string, string> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
+            Dictionary<string, Version> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
 
             string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.nuspec");
-            Dictionary<string, string> allDependencies = new Dictionary<string, string>();
+            Dictionary<string, Version> allDependencies = new Dictionary<string, Version>();
             foreach (string nuspecFile in files)
             {
-                Dictionary<string, string> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);
-                foreach(KeyValuePair<string, string> e in nuspecDependencies)
+                Dictionary<string, Version> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);
+                foreach (KeyValuePair<string, Version> e in nuspecDependencies)
                 {
                     if (!allDependencies.ContainsKey(e.Key))
                     {
@@ -126,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                     }
                     else
                     {
-                        string existingValue = allDependencies[e.Key];
+                        Version existingValue = allDependencies[e.Key];
                         if (existingValue.CompareTo(e.Value) > 0)
                         {
                             allDependencies[e.Key] = e.Value;
@@ -136,15 +147,15 @@ namespace Microsoft.Azure.Cosmos.Contracts
             }
 
             // Dependency version should match
-            foreach(KeyValuePair<string, string> e in allDependencies)
+            foreach (KeyValuePair<string, Version> e in allDependencies)
             {
-                Assert.AreEqual(e.Value, projDependencies[e.Key]);
+                Assert.AreEqual(e.Value, projDependencies[e.Key], e.Key);
             }
 
             CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);
         }
 
-        private static Dictionary<string, string> GetPackageReferencies(string csprojName)
+        private static Dictionary<string, Version> GetPackageReferencies(string csprojName)
         {
             string fullCsprojName = Path.Combine(Directory.GetCurrentDirectory(), csprojName);
             Trace.TraceInformation($"Testing dependencies for csporj file {fullCsprojName}");
@@ -156,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             int prjRefCount = new Regex("<PackageReference").Matches(projContent).Count;
             Assert.AreEqual(prjRefCount, matches.Count, "CSPROJ PackageReference regex is broken");
 
-            Dictionary<string, string> projReferences = new Dictionary<string, string>();
+            Dictionary<string, Version> projReferences = new Dictionary<string, Version>();
             foreach (Match m in matches)
             {
                 if (m.Groups["PrivateAssets"].Captures.Count != 0)
@@ -165,14 +176,14 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 }
                 else
                 {
-                    projReferences[m.Groups["Include"].Value] = m.Groups["Version"].Value;
+                    projReferences[m.Groups["Include"].Value] = Version.Parse(m.Groups["Version"].Value);
                 }
             }
 
             return projReferences;
         }
 
-        private static Dictionary<string, string> GetNuspecDependencies(string nuspecFile)
+        private static Dictionary<string, Version> GetNuspecDependencies(string nuspecFile)
         {
             Trace.TraceInformation($"Testing dependencies for nuspec file {nuspecFile}");
             string nuspecContent = File.ReadAllText(nuspecFile);
@@ -183,10 +194,10 @@ namespace Microsoft.Azure.Cosmos.Contracts
             int dependencyCount = new Regex("<dependency").Matches(nuspecContent).Count;
             Assert.AreEqual(dependencyCount, matches.Count, "Nuspec dependency regex is broken");
 
-            Dictionary<string, string> dependencies = new Dictionary<string, string>();
+            Dictionary<string, Version> dependencies = new Dictionary<string, Version>();
             foreach (Match m in matches)
             {
-                dependencies[m.Groups["id"].Value] = m.Groups["version"].Value;
+                dependencies[m.Groups["id"].Value] = Version.Parse(m.Groups["version"].Value);
             }
 
             return dependencies;

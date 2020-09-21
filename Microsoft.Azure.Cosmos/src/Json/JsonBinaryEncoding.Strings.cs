@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Json
             Utf8Span stringToken,
             out UtfAllString value)
         {
-            if (!JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken.Span[0]))
+            if (!JsonBinaryEncoding.TypeMarker.IsSystemString(stringToken.Span[0]))
             {
                 value = default;
                 return false;

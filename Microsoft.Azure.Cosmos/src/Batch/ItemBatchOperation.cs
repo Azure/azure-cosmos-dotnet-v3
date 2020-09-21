@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.Globalization;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -92,10 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.body;
             }
 
-            set
-            {
-                this.body = value;
-            }
+            set => this.body = value;
         }
 
         /// <summary>

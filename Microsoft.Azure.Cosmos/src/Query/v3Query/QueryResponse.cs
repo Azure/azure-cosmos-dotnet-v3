@@ -6,12 +6,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Serializer;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
@@ -61,13 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int Count { get; }
 
-        public override Stream Content
-        {
-            get
-            {
-                return this.memoryStream?.Value;
-            }
-        }
+        public override Stream Content => this.memoryStream?.Value;
 
         internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
 

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ClientOfficialVersion>3.11.0</ClientOfficialVersion>
-    <ClientPreviewVersion>3.11.0</ClientPreviewVersion>
-    <DirectVersion>3.11.3</DirectVersion>
-    <EncryptionVersion>1.0.0-preview4</EncryptionVersion>
-    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
+    <ClientOfficialVersion>3.12.0</ClientOfficialVersion>
+    <ClientPreviewVersion>3.13.0</ClientPreviewVersion>
+    <DirectVersion>3.13.2</DirectVersion>
+    <EncryptionVersion>1.0.0-preview6</EncryptionVersion>
+    <HybridRowVersion>1.1.0-preview1</HybridRowVersion>
     <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
-	<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
+    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
   </PropertyGroup>
   <Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>

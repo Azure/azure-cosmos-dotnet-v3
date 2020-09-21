@@ -1,0 +1,47 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: (SELECT * FROM c)]]></Description>
+      <Query><![CDATA[SELECT * FROM item IN (SELECT * FROM c)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM item IN (SELECT * FROM c)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c]]></Description>
+      <Query><![CDATA[SELECT * FROM item IN c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM item IN c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.age]]></Description>
+      <Query><![CDATA[SELECT * FROM item IN c.age]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM item IN c.age]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.arr[5]]]></Description>
+      <Query><![CDATA[SELECT * FROM item IN c.arr[5]]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM item IN c.arr[5]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[collection: c.blah['asdf']]]></Description>
+      <Query><![CDATA[SELECT * FROM item IN c.blah['asdf']]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM item IN c.blah["asdf"]]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>

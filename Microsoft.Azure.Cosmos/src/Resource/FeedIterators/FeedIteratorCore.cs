@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
             }
-            
+
             return responseMessage;
         }
 

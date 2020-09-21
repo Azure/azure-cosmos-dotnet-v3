@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolver
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly PartitionKeyRangeCache routingMapProvider;
         private readonly int maxEndpoints;
         private readonly IServiceConfigurationReader serviceConfigReader;
-        private readonly HttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyRangeCache routingMapProvider,
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
-            HttpClient httpClient)
+            CosmosHttpClient httpClient)
         {
             this.endpointManager = endpointManager;
             this.protocol = protocol;
@@ -135,8 +135,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
-                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryUpdate on all AddressCaches of all regions
-                tasks.Add(addressCache.Value.AddressCache.TryUpdateAddressAsync(serverKey, cancellationToken));
+                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
+                tasks.Add(addressCache.Value.AddressCache.TryRemoveAddressesAsync(serverKey, cancellationToken));
             }
 
             await Task.WhenAll(tasks);
@@ -151,14 +151,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri endpoint = this.endpointManager.ResolveServiceEndpoint(request);
 
             return this.GetOrAddEndpoint(endpoint).AddressResolver;
-        }
-
-        public void Dispose()
-        {
-            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
-            {
-                endpointCache.AddressCache.Dispose();
-            }
         }
 
         private EndpointCache GetOrAddEndpoint(Uri endpoint)
