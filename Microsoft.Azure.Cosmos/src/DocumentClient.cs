@@ -94,11 +94,6 @@ namespace Microsoft.Azure.Cosmos
         private const string RntbdReceiveHangDetectionTimeConfig = "CosmosDbTcpReceiveHangDetectionTimeSeconds";
         private const string RntbdSendHangDetectionTimeConfig = "CosmosDbTcpSendHangDetectionTimeSeconds";
         private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
-        private const string EnableAuthFailureTracesConfig = "enableAuthFailureTraces";
-
-        ////The MAC signature found in the HTTP request is not the same as the computed signature.Server used following string to sign
-        ////The input authorization token can't serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign
-        private const string MacSignatureString = "to sign";
 
         private const int MaxConcurrentConnectionOpenRequestsPerProcessor = 25;
         private const int DefaultMaxRequestsPerRntbdChannel = 30;
@@ -110,10 +105,11 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
-        private const bool EnableAuthFailureTraces = false;
-       
+
+        //Auth
+        private readonly CosmosAuthorization cosmosAuthorization;
+
         // Gateway has backoff/retry logic to hide transient errors.
-        private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
         private int maxConcurrentConnectionOpenRequests = Environment.ProcessorCount * MaxConcurrentConnectionOpenRequestsPerProcessor;
@@ -130,11 +126,6 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
-        private bool enableAuthFailureTraces = EnableAuthFailureTraces;
-
-        //Auth
-        private IComputeHash authKeyHashFunction;
-        private TokenCredentialCache tokenCredentialCache;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
@@ -167,8 +158,6 @@ namespace Microsoft.Azure.Cosmos
         //SessionContainer.
         internal ISessionContainer sessionContainer;
 
-        private readonly bool hasAuthKeyResourceToken;
-        private readonly string authKeyResourceToken = string.Empty;
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
@@ -219,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (authKey != null)
             {
-                this.authKeyHashFunction = new SecureStringHMACSHA256Helper(authKey);
+                this.cosmosAuthorization = new CosmosAuthorizationComputeHash(authKey);
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
@@ -370,13 +359,42 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+        internal DocumentClient(Uri serviceEndpoint,
+                      string authKeyOrResourceToken,
+                      EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
+                      ConnectionPolicy connectionPolicy = null,
+                      Documents.ConsistencyLevel? desiredConsistencyLevel = null,
+                      JsonSerializerSettings serializerSettings = null,
+                      ApiType apitype = ApiType.None,
+                      EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
+                      HttpMessageHandler handler = null,
+                      ISessionContainer sessionContainer = null,
+                      bool? enableCpuMonitor = null,
+                      Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
+                      IStoreClientFactory storeClientFactory = null)
+            : this(serviceEndpoint,
+                CosmosAuthorization.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                sendingRequestEventArgs,
+                connectionPolicy,
+                desiredConsistencyLevel,
+                serializerSettings,
+                apitype,
+                receivedResponseEventArgs,
+                handler,
+                sessionContainer,
+                enableCpuMonitor,
+                transportClientHandlerFactory,
+                storeClientFactory)
+        {
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified service endpoint, an authorization key (or resource token) and a connection policy
         /// for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="authKeyOrResourceToken">The authorization key or resource token to use to create the client.</param>
+        /// <param name="cosmosAuthorization">The cosmos authorization for the client.</param>
         /// <param name="sendingRequestEventArgs"> The event handler to be invoked before the request is sent.</param>
         /// <param name="receivedResponseEventArgs"> The event handler to be invoked after a response has been received.</param>
         /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
@@ -388,11 +406,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
-        /// <param name="tokenCredential"><see cref="TokenCredential"/> to provide AAD token for auth.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
-        /// If however you are connecting as a specific Azure Cosmos DB User, the value passed to <paramref name="authKeyOrResourceToken"/> is the ResourceToken obtained from the permission feed for the user.
+        /// If however you are connecting as a specific Azure Cosmos DB User, the value passed to is the ResourceToken obtained from the permission feed for the user.
         /// <para>
         /// Using Direct connectivity, wherever possible, is recommended.
         /// </para>
@@ -401,7 +418,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
         internal DocumentClient(Uri serviceEndpoint,
-                              string authKeyOrResourceToken,
+                              CosmosAuthorization cosmosAuthorization,
                               EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null,
@@ -412,20 +429,8 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null,
-                              TokenCredential tokenCredential = null)
+                              IStoreClientFactory storeClientFactory = null)
         {
-            // Backlog: Moving to an using model (instead of inheritence) of IAuthProvider
-            // will be the right abstraction forward.
-            if (authKeyOrResourceToken == null && tokenCredential == null)
-            {
-                throw new ArgumentNullException("authKeyOrResourceToken | tokenCredential");
-            }
-            else if (authKeyOrResourceToken != null && tokenCredential != null)
-            {
-                throw new ArgumentException("Both authKeyOrResourceToken and tokenCredential provided");
-            }
-
             if (sendingRequestEventArgs != null)
             {
                 this.sendingRequest += sendingRequestEventArgs;
@@ -443,19 +448,7 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse += receivedResponseEventArgs;
             }
 
-            if (tokenCredential == null)
-            {
-                if (AuthorizationHelper.IsResourceToken(authKeyOrResourceToken))
-                {
-                    this.hasAuthKeyResourceToken = true;
-                    this.authKeyResourceToken = authKeyOrResourceToken;
-                }
-                else
-                {
-                    this.authKeyHashFunction = new StringHMACSHA256Hash(authKeyOrResourceToken);
-                }
-            }
-
+            this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
 
             this.Initialize(
@@ -465,8 +458,7 @@ namespace Microsoft.Azure.Cosmos
                 handler: handler,
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory,
-                tokenCredential: tokenCredential);
+                storeClientFactory: storeClientFactory);
         }
 
         /// <summary>
@@ -532,176 +524,6 @@ namespace Microsoft.Azure.Cosmos
             : this(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified Azure Cosmos DB service endpoint for the Azure Cosmos DB service, a list of permission objects and a connection policy.
-        /// </summary>
-        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="permissionFeed">A list of Permission objects to use to create the client.</param>
-        /// <param name="connectionPolicy">(Optional) The <see cref="Microsoft.Azure.Cosmos.ConnectionPolicy"/> to use for this connection.</param>
-        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
-        /// <exception cref="System.ArgumentNullException">If <paramref name="permissionFeed"/> is not supplied.</exception>
-        /// <exception cref="System.ArgumentException">If <paramref name="permissionFeed"/> is not a valid permission link.</exception>
-        /// <remarks>
-        /// If no <paramref name="connectionPolicy"/> is provided, then the default <see cref="Microsoft.Azure.Cosmos.ConnectionPolicy"/> will be used.
-        /// Using Direct connectivity, wherever possible, is recommended.
-        /// </remarks>
-        /// <seealso cref="Uri"/>
-        /// <seealso cref="Permission"/>
-        /// <seealso cref="ConnectionPolicy"/>
-        /// <seealso cref="ConsistencyLevel"/>
-        public DocumentClient(
-            Uri serviceEndpoint,
-            IList<Documents.Permission> permissionFeed,
-            ConnectionPolicy connectionPolicy = null,
-            Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-            : this(serviceEndpoint,
-                    GetResourceTokens(permissionFeed),
-                    connectionPolicy,
-                    desiredConsistencyLevel)
-        {
-        }
-
-        private static List<ResourceToken> GetResourceTokens(IList<Documents.Permission> permissionFeed)
-        {
-            if (permissionFeed == null)
-            {
-                throw new ArgumentNullException("permissionFeed");
-            }
-
-            return permissionFeed.Select(
-                permission => new ResourceToken
-                {
-                    ResourceLink = permission.ResourceLink,
-                    ResourcePartitionKey = permission.ResourcePartitionKey != null ? permission.ResourcePartitionKey.InternalKey.ToObjectArray() : null,
-                    Token = permission.Token
-                }).ToList();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified Azure Cosmos DB service endpoint, a list of <see cref="ResourceToken"/> objects and a connection policy.
-        /// </summary>
-        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="resourceTokens">A list of <see cref="ResourceToken"/> objects to use to create the client.</param>
-        /// <param name="connectionPolicy">(Optional) The <see cref="Microsoft.Azure.Cosmos.ConnectionPolicy"/> to use for this connection.</param>
-        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
-        /// <exception cref="System.ArgumentNullException">If <paramref name="resourceTokens"/> is not supplied.</exception>
-        /// <exception cref="System.ArgumentException">If <paramref name="resourceTokens"/> is not a valid permission link.</exception>
-        /// <remarks>
-        /// If no <paramref name="connectionPolicy"/> is provided, then the default <see cref="Microsoft.Azure.Cosmos.ConnectionPolicy"/> will be used.
-        /// Using Direct connectivity, wherever possible, is recommended.
-        /// </remarks>
-        /// <seealso cref="Uri"/>
-        /// <seealso cref="Permission"/>
-        /// <seealso cref="ConnectionPolicy"/>
-        /// <seealso cref="ConsistencyLevel"/>
-        internal DocumentClient(Uri serviceEndpoint,
-                              IList<ResourceToken> resourceTokens,
-                              ConnectionPolicy connectionPolicy = null,
-                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-        {
-            if (resourceTokens == null)
-            {
-                throw new ArgumentNullException("resourceTokens");
-            }
-
-            this.resourceTokens = new Dictionary<string, List<PartitionKeyAndResourceTokenPair>>();
-
-            foreach (ResourceToken resourceToken in resourceTokens)
-            {
-                bool isNameBasedRequest = false;
-                bool isFeedRequest = false;
-                string resourceTypeString;
-                string resourceIdOrFullName;
-                if (!PathsHelper.TryParsePathSegments(resourceToken.ResourceLink, out isFeedRequest, out resourceTypeString, out resourceIdOrFullName, out isNameBasedRequest))
-                {
-                    throw new ArgumentException(RMResources.BadUrl, "resourceToken.ResourceLink");
-                }
-
-                List<PartitionKeyAndResourceTokenPair> tokenList;
-                if (!this.resourceTokens.TryGetValue(resourceIdOrFullName, out tokenList))
-                {
-                    tokenList = new List<PartitionKeyAndResourceTokenPair>();
-                    this.resourceTokens.Add(resourceIdOrFullName, tokenList);
-                }
-
-                tokenList.Add(new PartitionKeyAndResourceTokenPair(
-                    resourceToken.ResourcePartitionKey != null ? PartitionKeyInternal.FromObjectArray(resourceToken.ResourcePartitionKey, true) : PartitionKeyInternal.Empty,
-                    resourceToken.Token));
-            }
-
-            if (!this.resourceTokens.Any())
-            {
-                throw new ArgumentException("permissionFeed");
-            }
-
-            string firstToken = resourceTokens.First().Token;
-
-            if (AuthorizationHelper.IsResourceToken(firstToken))
-            {
-                this.hasAuthKeyResourceToken = true;
-                this.authKeyResourceToken = firstToken;
-                this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
-            }
-            else
-            {
-                this.authKeyHashFunction = new StringHMACSHA256Hash(firstToken);
-                this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
-            }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the Microsoft.Azure.Cosmos.DocumentClient class using the
-        /// specified Azure Cosmos DB service endpoint, a dictionary of resource tokens and a connection policy.
-        /// </summary>
-        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="resourceTokens">A dictionary of resource ids and resource tokens.</param>
-        /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
-        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
-        /// <remarks>Using Direct connectivity, wherever possible, is recommended</remarks>
-        /// <seealso cref="Uri"/>
-        /// <seealso cref="ConnectionPolicy"/>
-        /// <seealso cref="ConsistencyLevel"/>
-        [Obsolete("Please use the constructor that takes a permission list or a resource token list.")]
-        public DocumentClient(Uri serviceEndpoint,
-            IDictionary<string, string> resourceTokens,
-            ConnectionPolicy connectionPolicy = null,
-            Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-        {
-            if (resourceTokens == null)
-            {
-                throw new ArgumentNullException("resourceTokens");
-            }
-
-            if (resourceTokens.Count() == 0)
-            {
-                throw new DocumentClientException(RMResources.InsufficientResourceTokens, null, null);
-            }
-
-            this.resourceTokens = resourceTokens.ToDictionary(
-                pair => pair.Key,
-                pair => new List<PartitionKeyAndResourceTokenPair> { new PartitionKeyAndResourceTokenPair(PartitionKeyInternal.Empty, pair.Value) });
-
-            string firstToken = resourceTokens.ElementAt(0).Value;
-            if (string.IsNullOrEmpty(firstToken))
-            {
-                throw new DocumentClientException(RMResources.InsufficientResourceTokens, null, null);
-            }
-
-            if (AuthorizationHelper.IsResourceToken(firstToken))
-            {
-                this.hasAuthKeyResourceToken = true;
-                this.authKeyResourceToken = firstToken;
-                this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
-            }
-            else
-            {
-                this.authKeyHashFunction = new StringHMACSHA256Hash(firstToken);
-                this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
-            }
         }
 
         /// <summary>
@@ -987,16 +809,6 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
-
-                string enableAuthFailureTracesString = System.Configuration.ConfigurationManager.AppSettings[EnableAuthFailureTracesConfig];
-                if (!string.IsNullOrEmpty(enableAuthFailureTracesString))
-                {
-                    bool enableAuthFailureTracesFlag = false;
-                    if (bool.TryParse(enableAuthFailureTracesString, out enableAuthFailureTracesFlag))
-                    {
-                        this.enableAuthFailureTraces = enableAuthFailureTracesFlag;
-                    }
-                }
 #if NETSTANDARD20
             }
 #endif   
@@ -1054,14 +866,6 @@ namespace Microsoft.Azure.Cosmos
                 handler,
                 this.sendingRequest,
                 this.receivedResponse);
-
-            if (tokenCredential != null)
-            {
-                this.tokenCredentialCache = new TokenCredentialCache(
-                    tokenCredential,
-                    this.ServiceEndpoint.Host,
-                    this.ConnectionPolicy.TokenCredentialBackgroundRefreshInterval ?? ConnectionPolicy.DefaultTokenCredentialBackgroundRefreshInterval);
-            }
 
             if (sessionContainer != null)
             {
@@ -1306,45 +1110,13 @@ namespace Microsoft.Azure.Cosmos
         public ConnectionPolicy ConnectionPolicy { get; private set; }
 
         /// <summary>
-        /// Gets a dictionary of resource tokens used by the client from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// A dictionary of resource tokens used by the client.
-        /// </value>
-        /// <seealso cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>
-        [Obsolete]
-        public IDictionary<string, string> ResourceTokens
-        {
-            get
-            {
-                // NOTE: if DocumentClient was created using construction taking permission feed and there
-                // are duplicate resource links, we will choose arbitrary token for it here.
-                return (this.resourceTokens != null) ? this.resourceTokens.ToDictionary(pair => pair.Key, pair => pair.Value.First().ResourceToken) : null;
-            }
-        }
-
-        /// <summary>
         /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The AuthKey used by the client.
         /// </value>
         /// <seealso cref="System.Security.SecureString"/>
-        public SecureString AuthKey
-        {
-            get
-            {
-                if (this.authKeyHashFunction != null)
-                {
-                    return this.authKeyHashFunction.Key;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
+        public SecureString AuthKey => throw new NotSupportedException("Please use CosmosAuthorization");
         /// <summary>
         /// Gets the configured consistency level of the client from the Azure Cosmos DB service.
         /// </summary>
@@ -1416,16 +1188,9 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClient = null;
             }
 
-            if (this.tokenCredentialCache != null)
+            if (this.cosmosAuthorization != null)
             {
-                this.tokenCredentialCache.Dispose();
-                this.tokenCredentialCache = null;
-            }
-
-            if (this.authKeyHashFunction != null)
-            {
-                this.authKeyHashFunction.Dispose();
-                this.authKeyHashFunction = null;
+                this.cosmosAuthorization.Dispose();
             }
 
             if (this.GlobalEndpointManager != null)
@@ -1514,7 +1279,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(verb));
             }
 
-            (string authorization, string payload) = await ((IAuthorizationTokenProvider)this).GetUserAuthorizationAsync(
+            (string authorization, string payload) = await this.cosmosAuthorization.GetUserAuthorizationAsync(
                 request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 verb,
@@ -1535,34 +1300,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException dce)
             {
-                if (payload != null
-                    && dce.Message != null
-                    && dce.StatusCode.HasValue
-                    && dce.StatusCode.Value == HttpStatusCode.Unauthorized
-                    && dce.Message.Contains(DocumentClient.MacSignatureString))
-                {
-                    // The following code is added such that we get trace data on unexpected 401/HMAC errors and it is
-                    //   disabled by default. The trace will be trigger only when "enableAuthFailureTraces" named configuration 
-                    //   is set to true (currently true for CTL runs).
-                    //   For production we will work directly with specific customers in order to enable this configuration.
-                    string normalizedPayload = DocumentClient.NormalizeAuthorizationPayload(payload);
-                    if (this.enableAuthFailureTraces)
-                    {
-                        string tokenFirst5 = HttpUtility.UrlDecode(authorization).Split('&')[2].Split('=')[1].Substring(0, 5);
-                        ulong authHash = 0;
-                        if (this.authKeyHashFunction?.Key != null)
-                        {
-                            byte[] bytes = Encoding.UTF8.GetBytes(this.authKeyHashFunction?.Key?.ToString());
-                            authHash = Documents.Routing.MurmurHash3.Hash64(bytes, bytes.Length);
-                        }
-                        DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual payload={0}, token={1}..., hash={2:X}..., error={3}",
-                            normalizedPayload, tokenFirst5, authHash, dce.Message);
-                    }
-                    else
-                    {
-                        DefaultTrace.TraceError("Un-expected authorization payload mis-match. Actual {0} service expected {1}", normalizedPayload, dce.Message);
-                    }
-                }
+                this.cosmosAuthorization.TraceUnauthorized(
+                    dce,
+                    authorization,
+                    payload);
 
                 throw;
             }
@@ -6332,52 +6073,22 @@ namespace Microsoft.Azure.Cosmos
 
         #region IAuthorizationTokenProvider
 
-        private bool TryGetResourceToken(string resourceAddress, PartitionKeyInternal partitionKey, out string resourceToken)
-        {
-            resourceToken = null;
-            List<PartitionKeyAndResourceTokenPair> partitionKeyTokenPairs;
-            bool isPartitionKeyAndTokenPairListAvailable = this.resourceTokens.TryGetValue(resourceAddress, out partitionKeyTokenPairs);
-            if (isPartitionKeyAndTokenPairListAvailable)
-            {
-                PartitionKeyAndResourceTokenPair partitionKeyTokenPair = partitionKeyTokenPairs.FirstOrDefault(pair => pair.PartitionKey.Contains(partitionKey));
-                if (partitionKeyTokenPair != null)
-                {
-                    resourceToken = partitionKeyTokenPair.ResourceToken;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        async ValueTask<(string token, string payload)> IAuthorizationTokenProvider.GetUserAuthorizationAsync(
+        ValueTask<(string token, string payload)> IAuthorizationTokenProvider.GetUserAuthorizationAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType)
         {
-            (string authorizationToken, AuthorizationHelper.ArrayOwner arrayOwner) = await this.GetUserAuthorizationTokenCoreAsync(
+            return this.cosmosAuthorization.GetUserAuthorizationAsync(
                 resourceAddress,
                 resourceType,
                 requestVerb,
                 headers,
-                tokenType,
-                EmptyCosmosDiagnosticsContext.Singleton);
-
-            using (arrayOwner)
-            {
-                string payload = null;
-                if (arrayOwner.Buffer.Count > 0)
-                {
-                    payload = Encoding.UTF8.GetString(arrayOwner.Buffer.Array, arrayOwner.Buffer.Offset, (int)arrayOwner.Buffer.Count);
-                }
-
-                return (authorizationToken, payload);
-            }
+                tokenType);
         }
 
-        async ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
+        ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
@@ -6385,189 +6096,26 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             CosmosDiagnosticsContext diagnosticsContext)
         {
-            (string authorizationToken, AuthorizationHelper.ArrayOwner arrayOwner) = await this.GetUserAuthorizationTokenCoreAsync(
+            return this.cosmosAuthorization.GetUserAuthorizationTokenAsync(
                 resourceAddress,
                 resourceType,
                 requestVerb,
                 headers,
                 tokenType,
                 diagnosticsContext);
-
-            using (arrayOwner)
-            {
-                return authorizationToken;
-            }
         }
 
-        private async ValueTask<(string authorizationToken, AuthorizationHelper.ArrayOwner arrayOwner)> GetUserAuthorizationTokenCoreAsync(
-            string resourceAddress,
-            string resourceType,
-            string requestVerb,
-            INameValueCollection headers,
-            AuthorizationTokenType tokenType,
-            CosmosDiagnosticsContext diagnosticsContext) // unused, use token based upon what is passed in constructor 
-        {
-            if (this.hasAuthKeyResourceToken && this.resourceTokens == null)
-            {
-                // If the input auth token is a resource token, then use it as a bearer-token.
-                return (HttpUtility.UrlEncode(this.authKeyResourceToken), default);
-            }
-
-            if (this.tokenCredentialCache != null)
-            {
-                return (AuthorizationHelper.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(diagnosticsContext)), default);
-            }
-
-            if (this.authKeyHashFunction != null)
-            {
-                // this is masterkey authZ
-                headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-
-                string token = AuthorizationHelper.GenerateKeyAuthorizationSignature(
-                        requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out AuthorizationHelper.ArrayOwner payload);
-
-                return (token, payload);
-            }
-            else
-            {
-                PartitionKeyInternal partitionKey = PartitionKeyInternal.Empty;
-                string partitionKeyString = headers[HttpConstants.HttpHeaders.PartitionKey];
-                if (partitionKeyString != null)
-                {
-                    partitionKey = PartitionKeyInternal.FromJsonString(partitionKeyString);
-                }
-
-                if (PathsHelper.IsNameBased(resourceAddress))
-                {
-                    string resourceToken = null;
-                    bool isTokenAvailable = false;
-
-                    for (int index = 2; index < ResourceId.MaxPathFragment; index = index + 2)
-                    {
-                        string resourceParent = PathsHelper.GetParentByIndex(resourceAddress, index);
-                        if (resourceParent == null)
-                            break;
-
-                        isTokenAvailable = this.TryGetResourceToken(resourceParent, partitionKey, out resourceToken);
-                        if (isTokenAvailable)
-                            break;
-                    }
-
-                    // Get or Head for collection can be done with any child token
-                    if (!isTokenAvailable && PathsHelper.GetCollectionPath(resourceAddress) == resourceAddress
-                        && (requestVerb == HttpConstants.HttpMethods.Get
-                            || requestVerb == HttpConstants.HttpMethods.Head))
-                    {
-                        string resourceAddressWithSlash = resourceAddress.EndsWith("/", StringComparison.Ordinal)
-                                                              ? resourceAddress
-                                                              : resourceAddress + "/";
-                        foreach (KeyValuePair<string, List<PartitionKeyAndResourceTokenPair>> pair in this.resourceTokens)
-                        {
-                            if (pair.Key.StartsWith(resourceAddressWithSlash, StringComparison.Ordinal))
-                            {
-                                resourceToken = pair.Value[0].ResourceToken;
-                                isTokenAvailable = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!isTokenAvailable)
-                    {
-                        throw new UnauthorizedException(string.Format(
-                           CultureInfo.InvariantCulture, ClientResources.AuthTokenNotFound, resourceAddress));
-                    }
-
-                    return (HttpUtility.UrlEncode(resourceToken), default);
-                }
-                else
-                {
-                    string resourceToken = null;
-
-                    // In case there is no directly matching token, look for parent's token.
-                    ResourceId resourceId = ResourceId.Parse(resourceAddress);
-
-                    bool isTokenAvailable = false;
-                    if (resourceId.Attachment != 0 || resourceId.Permission != 0 || resourceId.StoredProcedure != 0
-                        || resourceId.Trigger != 0 || resourceId.UserDefinedFunction != 0)
-                    {
-                        // Use the leaf ID - attachment/permission/sproc/trigger/udf
-                        isTokenAvailable = this.TryGetResourceToken(resourceAddress, partitionKey, out resourceToken);
-                    }
-
-                    if (!isTokenAvailable &&
-                        (resourceId.Attachment != 0 || resourceId.Document != 0))
-                    {
-                        // Use DocumentID for attachment/document
-                        isTokenAvailable = this.TryGetResourceToken(resourceId.DocumentId.ToString(), partitionKey, out resourceToken);
-                    }
-
-                    if (!isTokenAvailable &&
-                        (resourceId.Attachment != 0 || resourceId.Document != 0 || resourceId.StoredProcedure != 0 || resourceId.Trigger != 0
-                        || resourceId.UserDefinedFunction != 0 || resourceId.DocumentCollection != 0))
-                    {
-                        // Use CollectionID for attachment/document/sproc/trigger/udf/collection
-                        isTokenAvailable = this.TryGetResourceToken(resourceId.DocumentCollectionId.ToString(), partitionKey, out resourceToken);
-                    }
-
-                    if (!isTokenAvailable &&
-                        (resourceId.Permission != 0 || resourceId.User != 0))
-                    {
-                        // Use UserID for permission/user
-                        isTokenAvailable = this.TryGetResourceToken(resourceId.UserId.ToString(), partitionKey, out resourceToken);
-                    }
-
-                    if (!isTokenAvailable)
-                    {
-                        // Use DatabaseId if all else fail
-                        isTokenAvailable = this.TryGetResourceToken(resourceId.DatabaseId.ToString(), partitionKey, out resourceToken);
-                    }
-
-                    // Get or Head for collection can be done with any child token
-                    if (!isTokenAvailable && resourceId.DocumentCollection != 0
-                        && (requestVerb == HttpConstants.HttpMethods.Get
-                            || requestVerb == HttpConstants.HttpMethods.Head))
-                    {
-                        foreach (KeyValuePair<string, List<PartitionKeyAndResourceTokenPair>> pair in this.resourceTokens)
-                        {
-                            ResourceId tokenRid;
-                            if (!PathsHelper.IsNameBased(pair.Key) &&
-                                ResourceId.TryParse(pair.Key, out tokenRid) &&
-                                tokenRid.DocumentCollectionId.Equals(resourceId))
-                            {
-                                resourceToken = pair.Value[0].ResourceToken;
-                                isTokenAvailable = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!isTokenAvailable)
-                    {
-                        throw new UnauthorizedException(string.Format(
-                            CultureInfo.InvariantCulture, ClientResources.AuthTokenNotFound, resourceAddress));
-                    }
-
-                    return (HttpUtility.UrlEncode(resourceToken), default);
-                }
-            }
-        }
-
-        async Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
+        Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
             DocumentServiceRequest request,
             string federationId,
             string verb,
             string resourceId)
         {
-            request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-
-            request.Headers[HttpConstants.HttpHeaders.Authorization] = (await ((IAuthorizationTokenProvider)this).GetUserAuthorizationAsync(
-                resourceId ?? request.ResourceAddress,
-                PathsHelper.GetResourcePath(request.ResourceType),
+            return this.cosmosAuthorization.AddSystemAuthorizationHeaderAsync(
+                request,
+                federationId,
                 verb,
-                request.Headers,
-                request.RequestAuthorizationTokenType)).token;
+                resourceId);
         }
 
         #endregion
@@ -6711,37 +6259,24 @@ namespace Microsoft.Azure.Cosmos
             {
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
-                    HttpRequestMessage request = new HttpRequestMessage();
-                    INameValueCollection headersCollection = new DictionaryNameValueCollection();
-                    string xDate = DateTime.UtcNow.ToString("r");
-                    headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
-                    request.Headers.Add(HttpConstants.HttpHeaders.XDate, xDate);
+                    HttpRequestMessage request = new HttpRequestMessage
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = serviceEndpoint
+                    };
 
-                    // Retrieve the CosmosAccountSettings from the gateway.
-                    string authorizationToken;
+                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
+                    await this.cosmosAuthorization.AddSystemAuthorizationHeaderAsync(
+                        headersCollection,
+                        serviceEndpoint,
+                        "GET",
+                        AuthorizationTokenType.PrimaryMasterKey);
 
-                    if (this.hasAuthKeyResourceToken)
+                    foreach (string key in headersCollection.AllKeys())
                     {
-                        authorizationToken = HttpUtility.UrlEncode(this.authKeyResourceToken);
-                    }
-                    else if (this.tokenCredentialCache != null)
-                    {
-                        authorizationToken = AuthorizationHelper.GenerateAadAuthorizationSignature(
-                            await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
-                    }
-                    else
-                    {
-                        authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
-                            HttpConstants.HttpMethods.Get,
-                            serviceEndpoint,
-                            headersCollection,
-                            this.authKeyHashFunction);
+                        request.Headers.Add(key, headersCollection[key]);
                     }
 
-                    request.Headers.Add(HttpConstants.HttpHeaders.Authorization, authorizationToken);
-
-                    request.Method = HttpMethod.Get;
-                    request.RequestUri = serviceEndpoint;
                     return request;
                 }
 
@@ -6964,10 +6499,7 @@ namespace Microsoft.Azure.Cosmos
         {
             GatewayAccountReader accountReader = new GatewayAccountReader(
                     serviceEndpoint: this.ServiceEndpoint,
-                    stringHMACSHA256Helper: this.authKeyHashFunction,
-                    hasResourceToken: this.hasAuthKeyResourceToken,
-                    resourceToken: this.authKeyResourceToken,
-                    this.tokenCredentialCache,
+                    cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient);
 

@@ -63,9 +63,12 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions.GatewayModeMaxConnectionLimit,
                 clientOptions.WebProxy);
 
+            CosmosAuthorization cosmosAuthorization = CosmosAuthorization.CreateWithResourceTokenOrAuthKey(
+                cosmosClient.AccountKey);
+
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
-               cosmosClient.AccountKey,
+               cosmosAuthorization,
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
@@ -74,8 +77,7 @@ namespace Microsoft.Azure.Cosmos
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
-               sessionContainer: clientOptions.SessionContainer,
-               tokenCredential: cosmosClient.TokenCredential);
+               sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
                 cosmosClient,

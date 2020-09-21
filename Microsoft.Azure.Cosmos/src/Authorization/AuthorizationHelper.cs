@@ -82,11 +82,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(headers));
             }
 
-            string resourceType = string.Empty;
-            string resourceIdValue = string.Empty;
-            bool isNameBased = false;
-
-            AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out isNameBased, out resourceType, out resourceIdValue, clientVersion);
+            AuthorizationHelper.GetResourceTypeAndIdOrFullName(
+                uri,
+                out _,
+                out string resourceType,
+                out string resourceIdValue,
+                clientVersion);
 
             string authToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                          resourceIdValue,
@@ -203,16 +204,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static string GenerateAadAuthorizationSignature(string aadToken)
-        {
-            return HttpUtility.UrlEncode(String.Format(
-                CultureInfo.InvariantCulture,
-                Constants.Properties.AuthorizationFormat,
-                Constants.Properties.AadToken,
-                Constants.Properties.TokenVersion,
-                aadToken));
-        }
-
         public static void ParseAuthorizationToken(
             string authorizationTokenString,
             out ReadOnlyMemory<char> typeOutput,
@@ -319,14 +310,13 @@ namespace Microsoft.Azure.Cosmos
                INameValueCollection headers,
                string key)
         {
-            ArraySegment<byte> payload;
             string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationCore(
                 verb,
                 resourceId,
                 resourceType,
                 headers,
                 key,
-                out payload);
+                out _);
 
             return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
                 || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
@@ -417,8 +407,13 @@ namespace Microsoft.Azure.Cosmos
 
             // Authorization code is fine with Uri not having resource id and path. 
             // We will just return empty in that case
-            bool isFeed = false;
-            if (!PathsHelper.TryParsePathSegments(uri.PathAndQuery, out isFeed, out resourceType, out resourceId, out isNameBased, clientVersion))
+            if (!PathsHelper.TryParsePathSegments(
+                uri.PathAndQuery,
+                out _,
+                out resourceType,
+                out resourceId,
+                out isNameBased,
+                clientVersion))
             {
                 resourceType = string.Empty;
                 resourceId = string.Empty;
@@ -566,8 +561,7 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            string value = null;
-            headerValues.TryGetValue(key, out value);
+            headerValues.TryGetValue(key, out string value);
             return value;
         }
 
@@ -653,8 +647,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new UnauthorizedException(RMResources.MissingDateForAuthorization);
             }
 
-            DateTime utcStartTime;
-            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out utcStartTime))
+            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out DateTime utcStartTime))
             {
                 throw new UnauthorizedException(RMResources.InvalidDateHeader);
             }

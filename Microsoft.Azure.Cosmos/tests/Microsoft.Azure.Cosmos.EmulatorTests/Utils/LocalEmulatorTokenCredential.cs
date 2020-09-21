@@ -13,14 +13,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public class LocalEmulatorTokenCredential : TokenCredential
     {
-        private string masterKey;
+        private readonly DateTime? DefaultDateTime = null;
         private readonly Action<TokenRequestContext, CancellationToken> GetTokenCallback;
+        private readonly string masterKey;
 
-        internal LocalEmulatorTokenCredential(string masterKey = null,
-            Action<TokenRequestContext, CancellationToken> getTokenCallback = null)
+        internal LocalEmulatorTokenCredential(
+            string masterKey = null,
+            Action<TokenRequestContext, CancellationToken> getTokenCallback = null,
+            DateTime? defaultDateTime = null)
         {
             this.masterKey = masterKey;
             this.GetTokenCallback = getTokenCallback;
+            this.DefaultDateTime = defaultDateTime;
         }
 
         public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
@@ -39,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestContext,
                 cancellationToken);
 
-            DateTimeOffset dateTimeOffsetStart = DateTimeOffset.UtcNow;
+            DateTimeOffset dateTimeOffsetStart = this.DefaultDateTime ?? DateTimeOffset.UtcNow;
             DateTimeOffset dateTimeOffsetExpiration = dateTimeOffsetStart.AddHours(1);
 
             string nbfValue = dateTimeOffsetStart.ToUnixTimeSeconds().ToString();
