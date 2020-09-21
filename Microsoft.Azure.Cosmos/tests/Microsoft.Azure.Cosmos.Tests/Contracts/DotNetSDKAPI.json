@@ -5371,6 +5371,32 @@
             }
           },
           "NestedTypes": {}
+        },
+        "TransactionalBatchRequestOptions": {
+          "Subclasses": {},
+          "Members": {
+            "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor()"
+            },
+            "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+            }
+          },
+          "NestedTypes": {}
         }
       },
       "Members": {
@@ -8048,6 +8074,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch UpsertItemStream(System.IO.Stream, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)"
         },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.TransactionalBatchResponse] ExecuteAsync(Microsoft.Azure.Cosmos.TransactionalBatchRequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.TransactionalBatchResponse] ExecuteAsync(Microsoft.Azure.Cosmos.TransactionalBatchRequestOptions, System.Threading.CancellationToken)"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.TransactionalBatchResponse] ExecuteAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -8220,6 +8251,32 @@
       },
       "NestedTypes": {}
     },
+    "TransactionalBatchRequestOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor()"
+        },
+        "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
+        }
+      },
+      "NestedTypes": {}
+    },
     "TransactionalBatchResponse": {
       "Subclasses": {},
       "Members": {
@@ -8233,11 +8290,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Double get_RequestCharge()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Double get_RequestCharge()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Double get_RequestCharge()"
         },
         "Double RequestCharge": {
@@ -8266,6 +8321,18 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
+        "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
+        },
+        "Microsoft.Azure.Cosmos.Headers Headers": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult get_Item(Int32)": {
           "Type": "Method",
@@ -8299,11 +8366,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Nullable`1[System.TimeSpan] get_RetryAfter()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.TimeSpan] get_RetryAfter()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] get_RetryAfter()"
         },
         "System.Nullable`1[System.TimeSpan] RetryAfter": {
@@ -8321,11 +8386,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.String get_ActivityId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ActivityId()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ActivityId()"
         },
         "System.String get_ErrorMessage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {

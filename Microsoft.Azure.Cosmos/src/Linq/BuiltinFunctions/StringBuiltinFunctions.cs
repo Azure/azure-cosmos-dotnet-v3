@@ -62,7 +62,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                if (methodCallExpression.Arguments.Count == 2)
+                if (methodCallExpression.Arguments.Count == 1)
+                {
+                    SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONTAINS", haystack, needle);
+                }
+                else if (methodCallExpression.Arguments.Count == 2)
                 {
                     SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
                     SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context);

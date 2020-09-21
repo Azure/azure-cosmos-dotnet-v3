@@ -301,6 +301,30 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                GatewayModeMaxConnectionLimit = 42
+            };
+
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            });
+
+            cosmosClientOptions = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient()
+            };
+
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                cosmosClientOptions.GatewayModeMaxConnectionLimit = 42;
+            });
+        }
+
+        [TestMethod]
         public void VerifyHttpClientHandlerIsSet()
         {
             string endpoint = AccountEndpoint;

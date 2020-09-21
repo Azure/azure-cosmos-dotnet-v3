@@ -543,17 +543,13 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        public override FeedIterator GetStandByFeedIterator(
-            string continuationToken = null,
-            int? maxItemCount = null,
+        internal override FeedIterator GetStandByFeedIterator(
             ChangeFeedRequestOptions requestOptions = null)
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
-                continuationToken: continuationToken,
-                maxItemCount: maxItemCount,
                 container: this,
                 options: cosmosQueryRequestOptions);
         }
@@ -761,32 +757,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
+        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement) => cosmosElement switch
         {
-            // TODO: Leverage original serialization and avoid re-serialization (bug)
-            switch (cosmosElement.Type)
-            {
-                case CosmosElementType.String:
-                    CosmosString cosmosString = cosmosElement as CosmosString;
-                    return new PartitionKey(cosmosString.Value);
-
-                case CosmosElementType.Number:
-                    CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    double value = Number64.ToDouble(cosmosNumber.Value);
-                    return new PartitionKey(value);
-
-                case CosmosElementType.Boolean:
-                    CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                    return new PartitionKey(cosmosBool.Value);
-
-                case CosmosElementType.Null:
-                    return PartitionKey.Null;
-
-                default:
-                    throw new ArgumentException(
-                        string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
-            }
-        }
+            CosmosString cosmosString => new PartitionKey(cosmosString.Value),
+            CosmosNumber cosmosNumber => new PartitionKey(Number64.ToDouble(cosmosNumber.Value)),
+            CosmosBoolean cosmosBoolean => new PartitionKey(cosmosBoolean.Value),
+            CosmosNull _ => PartitionKey.Null,
+            _ => throw new ArgumentException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        RMResources.UnsupportedPartitionKeyComponentValue,
+                        cosmosElement)),
+        };
 
         private string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
@@ -835,6 +817,77 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
             return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
+        }
+
+        public async Task<ItemResponse<T>> PatchItemAsync<T>(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                diagnosticsContext,
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
+        public Task<ResponseMessage> PatchItemStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (diagnosticsContext == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsContext));
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            Stream patchOperationsStream;
+            using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
+            {
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.GetResourceUri(
+                    requestOptions,
+                    OperationType.Patch,
+                    id),
+                resourceType: ResourceType.Document,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: patchOperationsStream,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
         }
     }
 }

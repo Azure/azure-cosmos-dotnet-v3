@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 return false;
             }
 
-            return first.Accept(SqlEqualityVisitor.Singleton, second);
+            return first.Accept(SqlObjectEqualityVisitor.Singleton, second);
         }
 
         public static bool operator ==(SqlObject first, SqlObject second) => SqlObject.Equals(first, second);
