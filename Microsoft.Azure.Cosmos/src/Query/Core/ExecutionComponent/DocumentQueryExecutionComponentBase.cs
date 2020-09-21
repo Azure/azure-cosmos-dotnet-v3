@@ -33,13 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// <summary>
         /// Gets a value indicating whether or not this component is done draining documents.
         /// </summary>
-        public virtual bool IsDone
-        {
-            get
-            {
-                return this.Source.IsDone;
-            }
-        }
+        public virtual bool IsDone => this.Source.IsDone;
 
         /// <summary>
         /// Disposes this context.

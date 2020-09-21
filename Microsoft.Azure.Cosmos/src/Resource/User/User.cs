@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<UserResponse> ReadAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replace a <see cref="UserProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<UserResponse> ReplaceAsync(
             UserProperties userProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="UserProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<UserResponse> DeleteAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns a reference to a permission object. 
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
             PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Upsert a permission as an asynchronous operation in the Azure Cosmos service.
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for permission under a user using a SQL statement. It returns a FeedIterator.

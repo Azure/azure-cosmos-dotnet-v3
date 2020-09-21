@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
 
-    internal class GatewayAddressCache : IAddressCache, IDisposable
+    internal class GatewayAddressCache : IAddressCache
     {
         private const string protocolFilterFormat = "{0} eq {1}";
 
@@ -513,11 +513,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return documentServiceResponse.GetResource<FeedResource<Address>>();
                 }
             }
-        }
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
         }
 
         internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)

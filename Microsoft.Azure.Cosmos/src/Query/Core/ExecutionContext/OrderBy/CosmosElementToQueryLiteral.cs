@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy
         {
             this.stringBuilder.AppendFormat(
                 "C_Binary(\"0x{0}\")",
-                PartitionKeyInternal.HexConvert.ToHex(cosmosBinary.Value.ToArray(), start: 0, length: (int)cosmosBinary.Value.Length));
+                PartitionKeyInternal.HexConvert.ToHex(cosmosBinary.Value.ToArray(), start: 0, length: cosmosBinary.Value.Length));
         }
 
         public void Visit(CosmosBoolean cosmosBoolean)

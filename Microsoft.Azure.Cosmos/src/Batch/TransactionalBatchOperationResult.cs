@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfter = this.RetryAfter,
                 RequestCharge = this.RequestCharge,
             };
-             
+
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: this.StatusCode,
                 requestMessage: null,

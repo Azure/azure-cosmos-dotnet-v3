@@ -37,8 +37,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod)
         {
-            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
-            if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
+            if (initialEstimateDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(initialEstimateDelegate));
+            }
+
+            if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
+            }
 
             this.initialEstimateDelegate = initialEstimateDelegate;
             this.estimatorPeriod = estimatorPeriod;
@@ -62,8 +69,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             ContainerInternal monitoredContainer)
         {
-            if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
-            if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
+            if (monitoredContainer == null)
+            {
+                throw new ArgumentNullException(nameof(monitoredContainer));
+            }
+
+            if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
