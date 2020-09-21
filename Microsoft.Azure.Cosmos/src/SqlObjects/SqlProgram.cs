@@ -22,12 +22,24 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public SqlQuery Query { get; }
 
-        public static SqlProgram Create(SqlQuery query) => new SqlProgram(query);
+        public static SqlProgram Create(SqlQuery query)
+        {
+            return new SqlProgram(query);
+        }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
     }
 }

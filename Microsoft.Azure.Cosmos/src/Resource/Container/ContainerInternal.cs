@@ -37,10 +37,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
             CancellationToken cancellationToken);
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellation);
 
         public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Throw an exception if the partition key is null or empty string
@@ -97,14 +97,14 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 #endif
 
 #if !PREVIEW
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
            string processorName,
            Container leaseContainer);
 
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,

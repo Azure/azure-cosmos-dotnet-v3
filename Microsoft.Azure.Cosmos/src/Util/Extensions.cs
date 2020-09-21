@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (string.IsNullOrEmpty(value))
             {
-                return default(T);
+                return default;
             }
 
             if (typeof(T) == typeof(double))

@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
             CosmosArray orderByItems = CosmosArray.Create(orderByItemsRaw);
 
-            CosmosElement filter = orderByContinuationToken.Filter == null ? (CosmosElement)CosmosNull.Create() : (CosmosElement)CosmosString.Create(orderByContinuationToken.Filter);
+            CosmosElement filter = orderByContinuationToken.Filter == null ? CosmosNull.Create() : (CosmosElement)CosmosString.Create(orderByContinuationToken.Filter);
 
             CosmosObject cosmosObject = CosmosObject.Create(
                 new Dictionary<string, CosmosElement>()

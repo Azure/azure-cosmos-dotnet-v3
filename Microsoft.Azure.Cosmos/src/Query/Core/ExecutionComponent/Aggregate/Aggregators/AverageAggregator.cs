@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -156,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                 }
 
                 long count = Number64.ToLong(cosmosCount.Value);
-                
+
                 return TryCatch<AverageInfo>.FromResult(new AverageInfo(sum, count));
             }
 
@@ -205,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
                     return null;
                 }
 
-                return CosmosNumber64.Create(this.Sum.Value / (double)this.Count);
+                return CosmosNumber64.Create(this.Sum.Value / this.Count);
             }
 
             public override string ToString()

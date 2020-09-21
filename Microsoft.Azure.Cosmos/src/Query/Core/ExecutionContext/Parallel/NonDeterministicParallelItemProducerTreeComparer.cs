@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
-    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// Implementation of <see cref="IComparer{ItemProducerTree}"/> that returns documents from the partition that has the most documents buffered first.

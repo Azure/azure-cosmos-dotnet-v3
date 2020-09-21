@@ -23,7 +23,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public EqualPartitionsBalancingStrategy(string hostName, int minPartitionCount, int maxPartitionCount, TimeSpan leaseExpirationInterval)
         {
-            if (hostName == null) throw new ArgumentNullException(nameof(hostName));
+            if (hostName == null)
+            {
+                throw new ArgumentNullException(nameof(hostName));
+            }
+
             this.hostName = hostName;
             this.minPartitionCount = minPartitionCount;
             this.maxPartitionCount = maxPartitionCount;
@@ -40,7 +44,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             int partitionCount = allPartitions.Count;
             int workerCount = workerToPartitionCount.Count;
             if (partitionCount <= 0)
+            {
                 return Enumerable.Empty<DocumentServiceLease>();
+            }
 
             int target = this.CalculateTargetPartitionCount(partitionCount, workerCount);
             int myCount = workerToPartitionCount[this.hostName];
@@ -59,7 +65,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 Math.Max(partitionsNeededForMe, 0));
 
             if (partitionsNeededForMe <= 0)
+            {
                 return Enumerable.Empty<DocumentServiceLease>();
+            }
 
             if (expiredLeases.Count > 0)
             {

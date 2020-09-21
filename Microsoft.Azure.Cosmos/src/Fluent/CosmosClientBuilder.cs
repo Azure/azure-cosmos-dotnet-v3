@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
-        
+
         /// <summary>
         /// Set the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>

@@ -29,7 +29,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ChangeFeedProcessorCore(ChangeFeedObserverFactory<T> observerFactory)
         {
-            if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));
+            if (observerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(observerFactory));
+            }
 
             this.observerFactory = observerFactory;
         }
@@ -42,9 +45,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             ContainerInternal monitoredContainer)
         {
-            if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
-            if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (instanceName == null) throw new ArgumentNullException("InstanceName is required for the processor to initialize.");
+            if (monitoredContainer == null)
+            {
+                throw new ArgumentNullException(nameof(monitoredContainer));
+            }
+
+            if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            if (instanceName == null)
+            {
+                throw new ArgumentNullException("InstanceName is required for the processor to initialize.");
+            }
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;

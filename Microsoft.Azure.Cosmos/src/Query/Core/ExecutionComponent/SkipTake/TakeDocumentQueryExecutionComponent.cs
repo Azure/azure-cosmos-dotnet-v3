@@ -81,12 +81,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
             return tryCreateComponentAsync;
         }
 
-        public override bool IsDone
-        {
-            get
-            {
-                return this.Source.IsDone || this.takeCount <= 0;
-            }
-        }
+        public override bool IsDone => this.Source.IsDone || this.takeCount <= 0;
     }
 }

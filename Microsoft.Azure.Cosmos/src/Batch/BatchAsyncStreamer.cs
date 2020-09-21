@@ -34,6 +34,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly int congestionDecreaseFactor = 5;
         private readonly int maxDegreeOfConcurrency;
         private readonly TimerWheel timerWheel;
+        private readonly SemaphoreSlim limiter;
+        private readonly BatchPartitionMetric oldPartitionMetric;
+        private readonly BatchPartitionMetric partitionMetric;
 
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerWheelTimer currentTimer;
@@ -41,12 +44,9 @@ namespace Microsoft.Azure.Cosmos
 
         private TimerWheelTimer congestionControlTimer;
         private Task congestionControlTask;
-        private SemaphoreSlim limiter;
 
         private int congestionDegreeOfConcurrency = 1;
         private long congestionWaitTimeInMilliseconds = 1000;
-        private BatchPartitionMetric oldPartitionMetric;
-        private BatchPartitionMetric partitionMetric;
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
