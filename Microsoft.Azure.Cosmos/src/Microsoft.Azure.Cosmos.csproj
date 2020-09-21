@@ -50,6 +50,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\ThirdPartyNotice.txt" Link="ThirdPartyNotice.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Batch\HybridRowBatchSchemas.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
