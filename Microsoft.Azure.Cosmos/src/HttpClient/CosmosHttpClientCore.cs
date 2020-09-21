@@ -107,19 +107,8 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (PlatformNotSupportedException)
             {
-                try
-                {
-                    //Some platforms might not support Proxy
-                    return new HttpClientHandler
-                    {
-                        MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
-                    };
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    // Proxy and MaxConnectionsPerServer are not supported
-                    return new HttpClientHandler();
-                }
+                // Proxy and MaxConnectionsPerServer are not supported on some platforms.
+                return new HttpClientHandler();
             }
         }
 
