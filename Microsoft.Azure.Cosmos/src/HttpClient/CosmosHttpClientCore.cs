@@ -97,11 +97,30 @@ namespace Microsoft.Azure.Cosmos
         public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy)
         {
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-            return new HttpClientHandler
+            try
             {
-                Proxy = webProxy,
-                MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
-            };
+                return new HttpClientHandler
+                {
+                    Proxy = webProxy,
+                    MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
+                };
+            }
+            catch (PlatformNotSupportedException)
+            {
+                try
+                {
+                    //Some platforms might not support Proxy
+                    return new HttpClientHandler
+                    {
+                        MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
+                    };
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Proxy and MaxConnectionsPerServer are not supported
+                    return new HttpClientHandler();
+                }
+            }
         }
 
         private static HttpMessageHandler CreateHttpMessageHandler(
