@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized && encryptionAlgorithm != CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
             {
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithm), nameof(encryptionAlgorithm));
             }
@@ -206,7 +206,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapResult keyWrapResponse;
             using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
             {
-                keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+                // AAP  DEK Wrap Provider (EncryptionKeyStoreProvider)
+                if (this.DekProvider.EncryptionKeyStoreProvider != null)
+                {
+                    AapKeyWrapProvider aapKeyWrapProvider = new AapKeyWrapProvider(this.DekProvider.EncryptionKeyStoreProvider);
+                    keyWrapResponse = await aapKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+                }
+                else
+                {
+                    // fallback to native methods.
+                    keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+                }
             }
 
             // Verify
@@ -228,13 +238,38 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyUnwrapResult unwrapResult;
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
             {
-                unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
-                    dekProperties.WrappedDataEncryptionKey,
-                    dekProperties.EncryptionKeyWrapMetadata,
-                    cancellationToken);
+                // AAP  DEK Wrap Provider (EncryptionKeyStoreProvider)
+                if (this.DekProvider.EncryptionKeyStoreProvider != null)
+                {
+                    AapKeyWrapProvider aapKeyWrapProvider = new AapKeyWrapProvider(this.DekProvider.EncryptionKeyStoreProvider);
+                    unwrapResult = await aapKeyWrapProvider.UnwrapKeyAsync(
+                        dekProperties.WrappedDataEncryptionKey,
+                        dekProperties.EncryptionKeyWrapMetadata,
+                        cancellationToken);
+                }
+                else
+                {
+                    unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+                        dekProperties.WrappedDataEncryptionKey,
+                        dekProperties.EncryptionKeyWrapMetadata,
+                        cancellationToken);
+                }
             }
 
-            DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
+            DataEncryptionKey dek = null;
+
+            if (dekProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
+            }
+            else if (dekProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
+            {
+                dek = new AapEncryptionAlgorithm(
+                    dekProperties,
+                    unwrapResult.DataEncryptionKey,
+                    Data.AAP_PH.Cryptography.EncryptionType.Randomized,
+                    this.DekProvider.EncryptionKeyStoreProvider);
+            }
 
             return new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);
         }

@@ -24,6 +24,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor)
         {
             return new EncryptionContainer(
+               container,
+               encryptor);
+        }
+
+        /// <summary>
+        /// Get container with <see cref="Encryptor"/> with encrypted properties for performing operations using client-side encryption.
+        /// </summary>
+        /// <param name="container"> Regular cosmos container. </param>
+        /// <param name="encryptor"> Provider that allows encrypting and decrypting data. </param>
+        /// <returns> Container to perform operations supporting property level inplace encryption via Item level Encryption Options </returns>
+        public static Container WithAapEncryptor(
+            this Container container,
+            Encryptor encryptor)
+        {
+            return new AapContainer(
                 container,
                 encryptor);
         }
@@ -52,16 +67,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            if (!(container is EncryptionContainer encryptionContainer))
+            if (container is AapContainer aapContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
+                return new AapFeedIterator<T>(
+                    (AapFeedIterator)aapContainer.ToEncryptionStreamIterator(
+                        query,
+                        queryRequestOptions),
+                    aapContainer.ResponseFactory);
             }
 
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(
-                    query,
-                    queryRequestOptions),
-                encryptionContainer.ResponseFactory);
+            if (container is EncryptionContainer encryptionContainer)
+            {
+                return new EncryptionFeedIterator<T>(
+                    (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(
+                        query,
+                        queryRequestOptions),
+                    encryptionContainer.ResponseFactory);
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)} or {nameof(AapContainer)}.");
         }
 
         /// <summary>
@@ -88,10 +112,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            if (!(container is EncryptionContainer encryptionContainer))
-            {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
-            }
 
             Action<DecryptionResult> decryptionResultHandler;
             if (queryRequestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
@@ -103,10 +123,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 decryptionResultHandler = null;
             }
 
-            return new EncryptionFeedIterator(
+            if (container is AapContainer aapContainer)
+            {
+                return new AapFeedIterator(
+                    query.ToStreamIterator(),
+                    aapContainer.Encryptor,
+                    decryptionResultHandler);
+            }
+
+            if (container is EncryptionContainer encryptionContainer)
+            {
+                return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
                 decryptionResultHandler);
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)} or {nameof(AapContainer)}.");
         }
     }
 }

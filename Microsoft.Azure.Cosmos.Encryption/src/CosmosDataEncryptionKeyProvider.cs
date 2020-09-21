@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Data.AAP_PH.Cryptography;
 
     /// <summary>
     /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.
@@ -41,6 +42,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
         /// <summary>
+        /// Gets AAP EncryptionKeyStoreProvider to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
+        /// </summary>
+        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+
+        /// <summary>
         /// Gets Container for data encryption keys.
         /// </summary>
         public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.dataEncryptionKeyContainerCore;
@@ -55,6 +61,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
+        /// </summary>
+        /// <param name="encryptionKeyStoreProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? dekPropertiesTimeToLive = null)
+        {
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
