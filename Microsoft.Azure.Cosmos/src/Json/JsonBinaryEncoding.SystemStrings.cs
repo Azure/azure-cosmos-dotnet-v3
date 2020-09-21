@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// List of system strings
             /// </summary>
-            private static readonly ImmutableArray<UtfAllString> Strings = new UtfAllString[]
+            public static readonly ImmutableArray<UtfAllString> Strings = new UtfAllString[]
             {
                 UtfAllString.Create("$s"),
                 UtfAllString.Create("$t"),

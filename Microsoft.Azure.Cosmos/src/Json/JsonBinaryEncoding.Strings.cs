@@ -13,6 +13,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
     internal static partial class JsonBinaryEncoding
     {
+        public const int GuidLength = 36;
+        public const int EncodedGuidLength = 17;
+        public const int GuidWithQuotesLength = GuidLength + 2;
+
         private const int MaxStackAlloc = 4 * 1024;
         private const int Min4BitCharSetStringLength = 16;
         private const int MinCompressedStringLength4 = 24;
@@ -261,6 +265,14 @@ namespace Microsoft.Azure.Cosmos.Json
             return false;
         }
 
+        public static bool TryGetDictionaryEncodedStringValue(
+            ReadOnlySpan<byte> stringToken,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
+            out UtfAllString value) => TryGetEncodedStringValue(
+                stringToken,
+                jsonStringDictionary,
+                out value);
+
         /// <summary>
         /// Try Get Encoded String Value
         /// </summary>
@@ -430,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         length = MemoryMarshal.Read<uint>(stringTokenSpan);
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.RefereceString1ByteOffset:
+                    case JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.OneByteOffset)
                         {
                             value = default;
@@ -607,14 +619,14 @@ namespace Microsoft.Azure.Cosmos.Json
             Invalid = 0xFF,
         }
 
-        private static bool TryEncodeGuidString(ReadOnlySpan<byte> guidString, Span<byte> destinationBuffer)
+        public static bool TryEncodeGuidString(ReadOnlySpan<byte> guidString, Span<byte> destinationBuffer)
         {
-            if (guidString.Length < 36)
+            if (guidString.Length < GuidLength)
             {
                 return false;
             }
 
-            if (destinationBuffer.Length < 17)
+            if (destinationBuffer.Length < EncodedGuidLength)
             {
                 return false;
             }
@@ -625,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.Json
             int dashIndex = 8;
             int oddEven = 0;
 
-            for (int index = 0; index < 36; index++)
+            for (int index = 0; index < GuidLength; index++)
             {
                 char c = (char)guidString[index];
 
@@ -650,16 +662,16 @@ namespace Microsoft.Azure.Cosmos.Json
                 else if ((c >= 'a') && (c <= 'f'))
                 {
                     value = (byte)(10 + c - 'a');
-                    flags = flags | EncodeGuidParseFlags.LowerCase;
+                    flags |= EncodeGuidParseFlags.LowerCase;
                 }
                 else if ((c >= 'A') && (c <= 'F'))
                 {
                     value = (byte)(10 + c - 'A');
-                    flags = flags | EncodeGuidParseFlags.UpperCase;
+                    flags |= EncodeGuidParseFlags.UpperCase;
                 }
                 else
                 {
-                    flags = flags | EncodeGuidParseFlags.Invalid;
+                    flags |= EncodeGuidParseFlags.Invalid;
                     break;
                 }
 
@@ -1050,19 +1062,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
                     {
-                        Span<byte> guidBuffer = stackalloc byte[36];
+                        Span<byte> guidBuffer = stackalloc byte[GuidLength];
                         DecodeGuidStringValue(encodedStringValue, isUpperCaseGuid: typeMarker == JsonBinaryEncoding.TypeMarker.UppercaseGuidString, guidBuffer);
                         return guidBuffer.SequenceEqual(stringValue);
                     }
 
                 case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
                     {
-                        if ((stringValue[0] != '"') || (stringValue[37] != '"'))
+                        if ((stringValue[0] != '"') || (stringValue[GuidWithQuotesLength - 1] != '"'))
                         {
                             return false;
                         }
 
-                        Span<byte> guidBuffer = stackalloc byte[36];
+                        Span<byte> guidBuffer = stackalloc byte[GuidLength];
                         DecodeGuidStringValue(encodedStringValue, isUpperCaseGuid: false, guidBuffer);
                         return guidBuffer.SequenceEqual(stringValue.Slice(start: 1, length: stringValue.Length - 2));
                     }
@@ -1130,13 +1142,17 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.Packed6BitString:
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
                     return stringToken[1];
+
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
                     return GetFixedSizedValue<ushort>(stringToken.Slice(start: 1));
+
                 case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
-                    return 36;
+                    return GuidLength;
+
                 case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
-                    return 38;
+                    return GuidWithQuotesLength;
+
                 default:
                     throw new ArgumentOutOfRangeException($"Unexpected type marker: {typeMarker}.");
             }
@@ -1152,16 +1168,22 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(stringToken[1], numberOfBits: 4);
+
                 case JsonBinaryEncoding.TypeMarker.Packed4BitString:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(stringToken[1], numberOfBits: 4);
+
                 case JsonBinaryEncoding.TypeMarker.Packed5BitString:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(stringToken[1], numberOfBits: 5);
+
                 case JsonBinaryEncoding.TypeMarker.Packed6BitString:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(stringToken[1], numberOfBits: 6);
+
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(stringToken[1], numberOfBits: 7);
+
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
                     return JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(GetFixedSizedValue<ushort>(stringToken.Slice(1)), numberOfBits: 7);
+
                 case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
@@ -1181,17 +1203,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
                 case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
                     return 0;
+
                 case JsonBinaryEncoding.TypeMarker.Packed4BitString:
                 case JsonBinaryEncoding.TypeMarker.Packed5BitString:
                 case JsonBinaryEncoding.TypeMarker.Packed6BitString:
                     return stringToken[1];
+
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
                     return 0;
+
                 case JsonBinaryEncoding.TypeMarker.LowercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
                     return 0;
+
                 default:
                     throw new ArgumentException($"Invalid type marker: {typeMarker}");
             }
@@ -1315,28 +1341,28 @@ namespace Microsoft.Azure.Cosmos.Json
                 long packedValue = MemoryMarshal.Cast<byte, long>(packedValueByteArray)[0];
 
                 destinationBuffer[index + 0] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 1] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 2] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 3] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 4] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 5] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 6] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 destinationBuffer[index + 7] = (byte)((packedValue & mask) + baseChar);
-                packedValue = packedValue >> numberOfBits;
+                packedValue >>= numberOfBits;
 
                 encodedString = encodedString.Slice(start: numberOfBits);
             }
@@ -1374,19 +1400,6 @@ namespace Microsoft.Azure.Cosmos.Json
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 30), byteLookupTable[encodedString[13]]);
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 32), byteLookupTable[encodedString[14]]);
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 34), byteLookupTable[encodedString[15]]);
-        }
-
-        private static void SetFixedSizedValue<TFixedType>(Span<byte> buffer, TFixedType value)
-            where TFixedType : struct
-        {
-            Span<TFixedType> bufferAsFixedType = MemoryMarshal.Cast<byte, TFixedType>(buffer);
-            bufferAsFixedType[0] = value;
-        }
-
-        private static TFixedType GetFixedSizedValue<TFixedType>(ReadOnlySpan<byte> buffer)
-            where TFixedType : struct
-        {
-            return MemoryMarshal.Cast<byte, TFixedType>(buffer)[0];
         }
     }
 }

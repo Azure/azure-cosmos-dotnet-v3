@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
 
     internal static partial class JsonBinaryEncoding
     {
@@ -46,6 +48,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
+            public static IEnumerable<Memory<byte>> GetMutableArrayItems(Memory<byte> buffer)
+            {
+                foreach (ReadOnlyMemory<byte> readOnlyArrayItem in Enumerator.GetArrayItems(buffer))
+                {
+                    if (!MemoryMarshal.TryGetArray(readOnlyArrayItem, out ArraySegment<byte> segment))
+                    {
+                        throw new InvalidOperationException("failed to get array segment.");
+                    }
+
+                    yield return buffer.Slice(segment.Offset, length: segment.Count);
+                }
+            }
+
             public static IEnumerable<ObjectProperty> GetObjectProperties(ReadOnlyMemory<byte> buffer)
             {
                 byte typeMarker = buffer.Span[0];
@@ -79,6 +94,27 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
+            public static IEnumerable<MutableObjectProperty> GetMutableObjectProperties(Memory<byte> buffer)
+            {
+                foreach (ObjectProperty objectProperty in GetObjectProperties(buffer))
+                {
+                    if (!MemoryMarshal.TryGetArray(objectProperty.Name, out ArraySegment<byte> nameSegment))
+                    {
+                        throw new InvalidOperationException("failed to get array segment.");
+                    }
+
+                    if (!MemoryMarshal.TryGetArray(objectProperty.Value, out ArraySegment<byte> valueSegment))
+                    {
+                        throw new InvalidOperationException("failed to get array segment.");
+                    }
+
+                    Memory<byte> mutableName = buffer.Slice(start: nameSegment.Offset, length: nameSegment.Count);
+                    Memory<byte> mutableValue = buffer.Slice(start: valueSegment.Offset, length: valueSegment.Count);
+
+                    yield return new MutableObjectProperty(mutableName, mutableValue);
+                }
+            }
+
             public readonly struct ObjectProperty
             {
                 public ObjectProperty(
@@ -91,6 +127,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public ReadOnlyMemory<byte> Name { get; }
                 public ReadOnlyMemory<byte> Value { get; }
+            }
+
+            public readonly struct MutableObjectProperty
+            {
+                public MutableObjectProperty(
+                    Memory<byte> name,
+                    Memory<byte> value)
+                {
+                    this.Name = name;
+                    this.Value = value;
+                }
+
+                public Memory<byte> Name { get; }
+                public Memory<byte> Value { get; }
             }
         }
     }

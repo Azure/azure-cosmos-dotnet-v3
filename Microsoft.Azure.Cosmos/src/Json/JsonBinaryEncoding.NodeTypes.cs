@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private const JsonNodeType UInt32 = JsonNodeType.UInt32;
             private const JsonNodeType Unknown = JsonNodeType.Unknown;
 
-            private static readonly ImmutableArray<JsonNodeType> Types = new JsonNodeType[]
+            public static readonly ImmutableArray<JsonNodeType> Lookup = new JsonNodeType[]
             {
                 // Encoded literal integer value (32 values)
                 Number, Number, Number, Number, Number, Number, Number, Number,
@@ -170,8 +170,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 Unknown,    // <special value reserved> 0xFE
                 Unknown,    // Invalid
             }.ToImmutableArray();
-
-            public static JsonNodeType GetNodeType(byte typeMarker) => NodeTypes.Types[typeMarker];
         }
     }
 }

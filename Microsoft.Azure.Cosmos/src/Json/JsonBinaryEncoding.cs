@@ -241,8 +241,21 @@ namespace Microsoft.Azure.Cosmos.Json
             return true;
         }
 
+        public static void SetFixedSizedValue<TFixedType>(Span<byte> buffer, TFixedType value)
+            where TFixedType : struct
+        {
+            Span<TFixedType> bufferAsFixedType = MemoryMarshal.Cast<byte, TFixedType>(buffer);
+            bufferAsFixedType[0] = value;
+        }
+
+        public static TFixedType GetFixedSizedValue<TFixedType>(ReadOnlySpan<byte> buffer)
+            where TFixedType : struct
+        {
+            return MemoryMarshal.Cast<byte, TFixedType>(buffer)[0];
+        }
+
         [StructLayout(LayoutKind.Sequential, Size = 3)]
-        private readonly struct UInt24
+        public readonly struct UInt24
         {
             public UInt24(byte byte1, byte byte2, byte byte3)
             {
@@ -250,6 +263,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.Byte2 = byte2;
                 this.Byte3 = byte3;
             }
+
             public byte Byte1 { get; }
             public byte Byte2 { get; }
             public byte Byte3 { get; }

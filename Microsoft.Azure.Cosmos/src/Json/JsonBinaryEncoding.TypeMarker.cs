@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Reference string of 1-byte offset
             /// </summary>
-            public const byte RefereceString1ByteOffset = 0xC3;
+            public const byte ReferenceString1ByteOffset = 0xC3;
 
             /// <summary>
             /// Reference string of 2-byte offset
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Reference string of 4-byte offset
             /// </summary>
             public const byte ReferenceString4ByteOffset = 0xC6;
-            
+
             // <empty> 0xC7
             #endregion
 
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a reference string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsReferenceString(byte typeMarker) => InRange(typeMarker, RefereceString1ByteOffset, ReferenceString4ByteOffset);
+            public static bool IsReferenceString(byte typeMarker) => InRange(typeMarker, ReferenceString1ByteOffset, ReferenceString4ByteOffset);
 
             /// <summary>
             /// Gets whether a typeMarker is for a GUID string.
@@ -577,9 +577,20 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Gets the type marker for an encoded string of a particular length.
             /// </summary>
             /// <param name="length">The length of the encoded string.</param>
-            /// <returns>The type marker for an encoded string of a particular length.</returns>
+            /// <param name="typeMarker">The type marker for the encoded string of particular length if valid.</param>
+            /// <returns>Whether or not the there is a typemarker for the string of a particular length.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static byte GetEncodedStringLengthTypeMarker(long length) => length < (EncodedStringLengthMax - EncodedStringLengthMin) ? (byte)(length | EncodedStringLengthMin) : Invalid;
+            public static bool TryGetEncodedStringLengthTypeMarker(long length, out byte typeMarker)
+            {
+                if (length >= (EncodedStringLengthMax - EncodedStringLengthMin))
+                {
+                    typeMarker = default;
+                    return false;
+                }
+
+                typeMarker = (byte)(length | EncodedStringLengthMin);
+                return true;
+            }
             #endregion
 
             #region Other Primitive Type Markers Utility Functions

@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public Span<byte> BufferAsSpan => this.buffer.AsSpan();
 
+        public Memory<byte> RawBuffer => this.buffer;
+
         public void Write(ReadOnlySpan<byte> value)
         {
             this.EnsureRemainingBufferSpace(value.Length);
