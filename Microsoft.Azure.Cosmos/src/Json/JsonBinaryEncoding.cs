@@ -257,6 +257,9 @@ namespace Microsoft.Azure.Cosmos.Json
         [StructLayout(LayoutKind.Sequential, Size = 3)]
         public readonly struct UInt24
         {
+            public static readonly UInt24 MinValue = new UInt24(byte1: byte.MinValue, byte2: byte.MinValue, byte3: byte.MinValue);
+            public static readonly UInt24 MaxValue = new UInt24(byte1: byte.MaxValue, byte2: byte.MaxValue, byte3: byte.MaxValue);
+
             public UInt24(byte byte1, byte byte2, byte byte3)
             {
                 this.Byte1 = byte1;
