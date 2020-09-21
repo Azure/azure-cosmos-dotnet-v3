@@ -17,6 +17,8 @@ required to debug changes to any libraries licensed under the GNU Lesser General
 
 ---------------------------------------------------------
 
+Antlr4 4.8.0 - BSD-3-Clause
+
 [The "BSD 3-clause license"]
 Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
 
