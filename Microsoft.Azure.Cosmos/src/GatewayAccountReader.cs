@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
             INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
-            await this.cosmosAuthorization.AddSystemAuthorizationHeaderAsync(
+            await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
                 serviceEndpoint,
                 HttpConstants.HttpMethods.Get,

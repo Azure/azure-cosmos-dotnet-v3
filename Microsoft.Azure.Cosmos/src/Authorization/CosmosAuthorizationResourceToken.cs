@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             return this.urlEncodedAuthKeyResourceTokenValueTask;
         }
 
-        public override ValueTask AddSystemAuthorizationHeaderAsync(
+        public override ValueTask AddAuthorizationHeaderAsync(
             INameValueCollection headersCollection,
             Uri requestAddress,
             string verb,

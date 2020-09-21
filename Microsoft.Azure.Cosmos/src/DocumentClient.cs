@@ -6266,7 +6266,7 @@ namespace Microsoft.Azure.Cosmos
                     };
 
                     INameValueCollection headersCollection = new StoreResponseNameValueCollection();
-                    await this.cosmosAuthorization.AddSystemAuthorizationHeaderAsync(
+                    await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                         headersCollection,
                         serviceEndpoint,
                         "GET",

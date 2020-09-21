@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     await this.tokenCredentialCache.GetTokenAsync(diagnosticsContext));
         }
 
-        public override async ValueTask AddSystemAuthorizationHeaderAsync(
+        public override async ValueTask AddAuthorizationHeaderAsync(
             INameValueCollection headersCollection,
             Uri requestAddress,
             string verb,

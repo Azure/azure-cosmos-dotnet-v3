@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
-        internal static readonly TimeSpan DefaultTokenCredentialBackgroundRefreshInterval = TimeSpan.FromMinutes(5);
 
         internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
@@ -37,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
             this.connectionProtocol = Protocol.Https;
             this.RequestTimeout = TimeSpan.FromSeconds(ConnectionPolicy.defaultRequestTimeout);
             this.MediaRequestTimeout = TimeSpan.FromSeconds(ConnectionPolicy.defaultMediaRequestTimeout);
-            this.TokenCredentialBackgroundRefreshInterval = null;
             this.ConnectionMode = ConnectionMode.Gateway;
             this.MaxConcurrentFanoutRequests = defaultMaxConcurrentFanoutRequests;
             this.MediaReadMode = MediaReadMode.Buffered;
@@ -116,20 +114,6 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is 300 seconds.
         /// </value>
         public TimeSpan MediaRequestTimeout
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// The interval the SDK will run a background task to refresh the token.
-        /// This avoid increased latency caused by waiting for the new token, and increases
-        /// reliability by always having a buffer for retries before the token expires.
-        /// </summary>
-        /// <value>
-        /// Default value is 5 minutes.
-        /// </value>
-        public TimeSpan? TokenCredentialBackgroundRefreshInterval
         {
             get;
             set;

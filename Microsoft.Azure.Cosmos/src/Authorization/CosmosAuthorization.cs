@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 request.RequestAuthorizationTokenType)).token;
         }
 
-        public abstract ValueTask AddSystemAuthorizationHeaderAsync(
+        public abstract ValueTask AddAuthorizationHeaderAsync(
             INameValueCollection headersCollection,
             Uri requestAddress,
             string verb,

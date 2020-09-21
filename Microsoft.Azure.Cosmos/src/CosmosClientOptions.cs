@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
-            this.TokenCredentialBackgroundRefreshInterval = ConnectionPolicy.Default.TokenCredentialBackgroundRefreshInterval;
+            this.TokenCredentialBackgroundRefreshInterval = null;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
@@ -156,12 +156,12 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
-        /// Time before expiry of the existing token at which SDK will try to refresh the token
-        /// to avoid refreshing it on expiry resulting in increased latency.
+        /// The SDK does a background refresh based on the time interveral set to refresh the token credentials.
+        /// This avoids latency issues because the old token is used until the new token is retrivied.
         /// </summary>
-        /// <value>
-        /// Default value is 300 seconds.
-        /// </value>
+        /// <remarks>
+        /// The recommended value minimum value is 5 minutes.
+        /// </remarks>
 #if PREVIEW
         public
 #else
@@ -636,7 +636,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
-                TokenCredentialBackgroundRefreshInterval = this.TokenCredentialBackgroundRefreshInterval,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
                 UserAgentContainer = userAgent,

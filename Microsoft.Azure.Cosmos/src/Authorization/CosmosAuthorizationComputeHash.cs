@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override ValueTask AddSystemAuthorizationHeaderAsync(
+        public override ValueTask AddAuthorizationHeaderAsync(
             INameValueCollection headersCollection,
             Uri requestAddress,
             string verb,
