@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
             GatewayAccountReader accountReader = new GatewayAccountReader(
                 serviceEndpoint: new Uri("https://localhost"),
-                cosmosAuthorization: Mock.Of<CosmosAuthorization>(),
+                cosmosAuthorization: Mock.Of<AuthorizationTokenProvider>(),
                 connectionPolicy: new ConnectionPolicy(),
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => staticHttpClient));
 

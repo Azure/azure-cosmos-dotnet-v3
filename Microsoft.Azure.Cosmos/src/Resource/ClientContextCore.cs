@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions.GatewayModeMaxConnectionLimit,
                 clientOptions.WebProxy);
 
-            CosmosAuthorization cosmosAuthorization = CosmosAuthorization.CreateWithResourceTokenOrAuthKey(
+            AuthorizationTokenProvider cosmosAuthorization = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(
                 cosmosClient.AccountKey);
 
             DocumentClient documentClient = new DocumentClient(

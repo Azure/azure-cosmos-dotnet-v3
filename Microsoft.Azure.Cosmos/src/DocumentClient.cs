@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
 
         //Auth
-        private readonly CosmosAuthorization cosmosAuthorization;
+        private readonly AuthorizationTokenProvider cosmosAuthorization;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (authKey != null)
             {
-                this.cosmosAuthorization = new CosmosAuthorizationComputeHash(authKey);
+                this.cosmosAuthorization = new AuthorizationTokenProviderMasterKey(authKey);
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos
                       Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                       IStoreClientFactory storeClientFactory = null)
             : this(serviceEndpoint,
-                CosmosAuthorization.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
                 sendingRequestEventArgs,
                 connectionPolicy,
                 desiredConsistencyLevel,
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
         internal DocumentClient(Uri serviceEndpoint,
-                              CosmosAuthorization cosmosAuthorization,
+                              AuthorizationTokenProvider cosmosAuthorization,
                               EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null,
@@ -1117,6 +1117,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="System.Security.SecureString"/>
         public SecureString AuthKey => throw new NotSupportedException("Please use CosmosAuthorization");
+
         /// <summary>
         /// Gets the configured consistency level of the client from the Azure Cosmos DB service.
         /// </summary>

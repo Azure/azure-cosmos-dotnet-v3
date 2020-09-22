@@ -11,14 +11,14 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     
-    internal sealed class CosmosAuthorizationResourceToken : CosmosAuthorization
+    internal sealed class AuthorizationTokenProviderResourceToken : AuthorizationTokenProvider
     {
         private readonly string urlEncodedAuthKeyResourceToken;
         private readonly ValueTask<string> urlEncodedAuthKeyResourceTokenValueTask;
         private readonly ValueTask<(string, string)> urlEncodedAuthKeyResourceTokenValueTaskWithPayload;
         private readonly ValueTask defaultValueTask;
 
-        public CosmosAuthorizationResourceToken(
+        public AuthorizationTokenProviderResourceToken(
             string authKeyResourceToken)
         {
             this.urlEncodedAuthKeyResourceToken = HttpUtility.UrlEncode(authKeyResourceToken);

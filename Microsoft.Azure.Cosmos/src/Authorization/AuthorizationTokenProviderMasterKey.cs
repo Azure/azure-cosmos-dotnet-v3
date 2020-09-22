@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal sealed class CosmosAuthorizationComputeHash : CosmosAuthorization
+    internal sealed class AuthorizationTokenProviderMasterKey : AuthorizationTokenProvider
     {
         ////The MAC signature found in the HTTP request is not the same as the computed signature.Server used following string to sign
         ////The input authorization token can't serve the request. Please check that the expected payload is built as per the protocol, and check the key being used. Server used the following payload to sign
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IComputeHash authKeyHashFunction;
         private bool isDisposed = false;
 
-        public CosmosAuthorizationComputeHash(IComputeHash computeHash)
+        public AuthorizationTokenProviderMasterKey(IComputeHash computeHash)
         {
             this.authKeyHashFunction = computeHash ?? throw new ArgumentNullException(nameof(computeHash));
             this.enableAuthFailureTraces = new Lazy<bool>(() =>
@@ -48,12 +48,12 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        public CosmosAuthorizationComputeHash(SecureString authKey)
+        public AuthorizationTokenProviderMasterKey(SecureString authKey)
             : this(new SecureStringHMACSHA256Helper(authKey))
         {
         }
 
-        public CosmosAuthorizationComputeHash(string authKey)
+        public AuthorizationTokenProviderMasterKey(string authKey)
             : this(new StringHMACSHA256Hash(authKey))
         {
         }
@@ -65,6 +65,9 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             AuthorizationTokenType tokenType)
         {
+            // this is masterkey authZ
+            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
             string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                 requestVerb,
                 resourceAddress,
@@ -138,13 +141,13 @@ namespace Microsoft.Azure.Cosmos
                 && dce.Message != null
                 && dce.StatusCode.HasValue
                 && dce.StatusCode.Value == HttpStatusCode.Unauthorized
-                && dce.Message.Contains(CosmosAuthorizationComputeHash.MacSignatureString))
+                && dce.Message.Contains(AuthorizationTokenProviderMasterKey.MacSignatureString))
             {
                 // The following code is added such that we get trace data on unexpected 401/HMAC errors and it is
                 //   disabled by default. The trace will be trigger only when "enableAuthFailureTraces" named configuration 
                 //   is set to true (currently true for CTL runs).
                 //   For production we will work directly with specific customers in order to enable this configuration.
-                string normalizedPayload = CosmosAuthorizationComputeHash.NormalizeAuthorizationPayload(payload);
+                string normalizedPayload = AuthorizationTokenProviderMasterKey.NormalizeAuthorizationPayload(payload);
                 if (this.enableAuthFailureTraces.Value)
                 {
                     string tokenFirst5 = HttpUtility.UrlDecode(authorizationToken).Split('&')[2].Split('=')[1].Substring(0, 5);

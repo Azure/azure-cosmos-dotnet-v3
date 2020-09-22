@@ -15,19 +15,19 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class GatewayAccountReader
     {
         private readonly ConnectionPolicy connectionPolicy;
-        private readonly CosmosAuthorization cosmosAuthorization;
+        private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
 
         // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
         public GatewayAccountReader(Uri serviceEndpoint,
-                CosmosAuthorization cosmosAuthorization,
+                AuthorizationTokenProvider cosmosAuthorization,
                 ConnectionPolicy connectionPolicy,
                 CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
-            this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(CosmosAuthorization));
+            this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(AuthorizationTokenProvider));
             this.connectionPolicy = connectionPolicy;
         }
 

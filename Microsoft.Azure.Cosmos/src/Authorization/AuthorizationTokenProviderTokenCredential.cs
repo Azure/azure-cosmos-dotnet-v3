@@ -15,12 +15,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal sealed class CosmosAuthorizationTokenCredential : CosmosAuthorization
+    internal sealed class AuthorizationTokenProviderTokenCredential : AuthorizationTokenProvider
     {
         internal readonly TokenCredentialCache tokenCredentialCache;
         private bool isDisposed = false;
 
-        public CosmosAuthorizationTokenCredential(
+        public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
             string accountEndpointHost,
             TimeSpan backgroundTokenCredentialRefreshInterval)
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             AuthorizationTokenType tokenType)
         {
-            string token = CosmosAuthorizationTokenCredential.GenerateAadAuthorizationSignature(
+            string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
                     await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
             return (token, default);
         }
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType,
             CosmosDiagnosticsContext diagnosticsContext)
         {
-            return CosmosAuthorizationTokenCredential.GenerateAadAuthorizationSignature(
+            return AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
                     await this.tokenCredentialCache.GetTokenAsync(diagnosticsContext));
         }
 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             string verb,
             AuthorizationTokenType tokenType)
         {
-            string token = CosmosAuthorizationTokenCredential.GenerateAadAuthorizationSignature(
+            string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
                     await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
 
             headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);

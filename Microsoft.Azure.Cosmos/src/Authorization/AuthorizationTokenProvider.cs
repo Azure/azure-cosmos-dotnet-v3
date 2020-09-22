@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal abstract class CosmosAuthorization : ICosmosAuthorizationTokenProvider, IAuthorizationTokenProvider, IDisposable
+    internal abstract class AuthorizationTokenProvider : ICosmosAuthorizationTokenProvider, IAuthorizationTokenProvider, IDisposable
     {
         public async Task AddSystemAuthorizationHeaderAsync(
             DocumentServiceRequest request, 
@@ -56,15 +56,15 @@ namespace Microsoft.Azure.Cosmos
             string authorizationToken,
             string payload);
 
-        public static CosmosAuthorization CreateWithResourceTokenOrAuthKey(string authKeyOrResourceToken)
+        public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string authKeyOrResourceToken)
         {
             if (AuthorizationHelper.IsResourceToken(authKeyOrResourceToken))
             {
-                return new CosmosAuthorizationResourceToken(authKeyOrResourceToken);
+                return new AuthorizationTokenProviderResourceToken(authKeyOrResourceToken);
             }
             else
             {
-                return new CosmosAuthorizationComputeHash(authKeyOrResourceToken);
+                return new AuthorizationTokenProviderMasterKey(authKeyOrResourceToken);
             }
         }
 
