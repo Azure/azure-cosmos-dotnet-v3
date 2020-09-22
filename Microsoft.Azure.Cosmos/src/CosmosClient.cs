@@ -205,6 +205,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
+            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
 
             this.ClientContext = ClientContextCore.Create(
                 this,
@@ -242,8 +243,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Endpoint = new Uri(accountEndpoint);
-
-            this.TokenCredential = tokenCredential;
+            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(tokenCredential,
+                accountEndpoint,
+                clientOptions?.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
                 this,
@@ -282,6 +284,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
+            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
 
             this.ClientContext = ClientContextCore.Create(
                  this,
@@ -327,9 +330,9 @@ namespace Microsoft.Azure.Cosmos
         internal string AccountKey { get; }
 
         /// <summary>
-        /// <see cref="global::Azure.Core.TokenCredential"/> to provide AAD token for auth.
+        /// Gets the AuthorizationTokenProvider used to generate the authroization token
         /// </summary>
-        internal TokenCredential TokenCredential { get; }
+        internal AuthorizationTokenProvider AuthorizationTokenProvider { get; }
 
         internal DocumentClient DocumentClient => this.ClientContext.DocumentClient;
         internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;

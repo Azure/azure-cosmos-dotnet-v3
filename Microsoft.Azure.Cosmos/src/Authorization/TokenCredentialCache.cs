@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class TokenCredentialCache : IDisposable
     {
+        // Default token expiration time is 1hr. 
+        public static readonly TimeSpan DefaultBackgroundTokenCredentialRefreshInterval = TimeSpan.FromMinutes(20);
+
         public readonly TimeSpan backgroundTokenCredentialRefreshInterval;
         private const string ScopeFormat = "https://{0}/.default";
         private readonly TokenRequestContext tokenRequestContext;
@@ -25,8 +28,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationToken cancellationToken;
 
-        private SemaphoreSlim getTokenRefreshLock = new SemaphoreSlim(1);
-        private SemaphoreSlim backgroundRefreshLock = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim getTokenRefreshLock = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim backgroundRefreshLock = new SemaphoreSlim(1);
 
         private AccessToken cachedAccessToken;
         private bool isBackgroundTaskRunning = false;
@@ -35,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         internal TokenCredentialCache(
             TokenCredential tokenCredential,
             string accountEndpointHost,
-            TimeSpan backgroundTokenCredentialRefreshInterval)
+            TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
             this.tokenCredential = tokenCredential;
             this.tokenRequestContext = new TokenRequestContext(new string[]
@@ -43,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
                 string.Format(TokenCredentialCache.ScopeFormat, accountEndpointHost)
             });
 
-            this.backgroundTokenCredentialRefreshInterval = backgroundTokenCredentialRefreshInterval;
+            this.backgroundTokenCredentialRefreshInterval = backgroundTokenCredentialRefreshInterval ?? TokenCredentialCache.DefaultBackgroundTokenCredentialRefreshInterval;
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
 
