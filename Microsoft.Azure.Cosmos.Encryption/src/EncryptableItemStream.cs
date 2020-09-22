@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="input">Input item stream.</param>
         public EncryptableItemStream(Stream input)
         {
-            this.StreamPayload = input;
+            this.StreamPayload = input ?? throw new ArgumentNullException(nameof(input));
         }
 
         internal void SetDecryptableItem(

@@ -538,10 +538,10 @@
           ],
           "MethodInfo": "System.String get_DataEncryptionKeyId()"
         },
-        "Void .ctor(System.Collections.Generic.List`1[System.String], System.String)": {
+        "Void .ctor(System.Collections.Generic.IReadOnlyList`1[System.String], System.String)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(System.Collections.Generic.List`1[System.String], System.String)"
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IReadOnlyList`1[System.String], System.String)"
         }
       },
       "NestedTypes": {}

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.IO;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -22,9 +23,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
-            this.decryptableContent = decryptableContent;
-            this.encryptor = encryptor;
-            this.cosmosSerializer = cosmosSerializer;
+            this.decryptableContent = decryptableContent ?? throw new ArgumentNullException(nameof(decryptableContent));
+            this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
         /// <summary>

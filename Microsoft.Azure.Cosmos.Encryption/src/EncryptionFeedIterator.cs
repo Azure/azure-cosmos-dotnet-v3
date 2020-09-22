@@ -56,16 +56,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNextWithoutDecryption"))
             {
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+                List<T> decryptableContent = null;
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    List<T> decryptableContent = this.ConvertResponseToDecryptableItems<T>(
+                    decryptableContent = this.ConvertResponseToDecryptableItems<T>(
                         responseMessage.Content);
 
                     return (responseMessage, decryptableContent);
                 }
 
-                return (responseMessage, null);
+                return (responseMessage, decryptableContent);
             }
         }
 
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
             }
 
-            List<T> decryptableItems = new List<T>();
+            List<T> decryptableItems = new List<T>(documents.Count);
 
             foreach (JToken value in documents)
             {
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
             {
-                throw new InvalidOperationException("Feed response Body Contract was violated. Feed response did not have an array of Documents");
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
             }
 
             foreach (JToken value in documents)

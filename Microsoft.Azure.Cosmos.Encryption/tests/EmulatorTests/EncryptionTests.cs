@@ -751,6 +751,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             string query = "SELECT VALUE COUNT(1) FROM c";
 
             await EncryptionTests.ValidateQueryResponseAsync(EncryptionTests.encryptionContainer, query);
+            await EncryptionTests.ValidateQueryResponseWithLazyDecryptionAsync(EncryptionTests.encryptionContainer, query);            
         }
 
         [TestMethod]
@@ -1223,6 +1224,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.IsTrue(response.IsSuccessStatusCode);
                 Assert.IsNull(response.ErrorMessage);
             }
+        }
+
+        private static async Task ValidateQueryResponseWithLazyDecryptionAsync(Container container,
+            string query = null)
+        {
+            FeedIterator<DecryptableItem> queryResponseIteratorForLazyDecryption = container.GetItemQueryIterator<DecryptableItem>(query);
+            FeedResponse<DecryptableItem> readDocsLazily = await queryResponseIteratorForLazyDecryption.ReadNextAsync();
+            Assert.AreEqual(null, readDocsLazily.ContinuationToken);
+            Assert.AreEqual(1, readDocsLazily.Count);
+            (dynamic readDoc, DecryptionInfo decryptionInfo) = await readDocsLazily.First().GetItemAsync<dynamic>();
+            Assert.IsTrue((long)readDoc >= 1);
+            Assert.IsNull(decryptionInfo);
         }
 
         /*

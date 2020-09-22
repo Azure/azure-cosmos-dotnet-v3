@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.IO;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -51,6 +52,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         public T Item { get; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EncryptableItem{T}"/> class.
+        /// </summary>
+        /// <param name="input">Item to be written.</param>
+        public EncryptableItem(T input)
+        {
+            this.Item = input ?? throw new ArgumentNullException(nameof(input));
+        }
+
         internal void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
@@ -74,15 +84,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.Validate(this.decryptableItem);
             return this.decryptableItem.GetItemAsStreamAsync();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EncryptableItem{T}"/> class.
-        /// </summary>
-        /// <param name="input">Item to be written.</param>
-        public EncryptableItem(T input)
-        {
-            this.Item = input;
         }
     }
 }

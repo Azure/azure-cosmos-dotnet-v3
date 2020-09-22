@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="pathsDecrypted">List of paths that were decrypted.</param>
         /// <param name="dataEncryptionKeyId">DataEncryptionKey id used for decryption.</param>
         public DecryptionInfo(
-            List<string> pathsDecrypted,
+            IReadOnlyList<string> pathsDecrypted,
             string dataEncryptionKeyId)
         {
             this.PathsDecrypted = pathsDecrypted ?? throw new ArgumentNullException(nameof(pathsDecrypted));

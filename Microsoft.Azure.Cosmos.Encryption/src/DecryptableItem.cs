@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.IO;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Allows for lazy decryption, which provides user a way to handle possible exceptions encountered as part of feed / query processing.
