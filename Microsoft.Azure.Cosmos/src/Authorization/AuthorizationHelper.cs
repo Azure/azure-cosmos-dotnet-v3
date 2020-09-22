@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             authorizationTokenString = HttpUtility.UrlDecode(authorizationTokenString);
-
+ 
             // Format of the token being deciphered is 
             // type=<master/resource/system>&ver=<version>&sig=<base64encodedstring>
 
