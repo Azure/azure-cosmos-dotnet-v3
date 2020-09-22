@@ -98,5 +98,22 @@ namespace Microsoft.Azure.Cosmos
                 path,
                 value);
         }
+
+        /// <summary>
+        /// Create <see cref="PatchOperation{T}"/> to Increment a value.
+        /// </summary>
+        /// <typeparam name="T">Type of <paramref name="value"/></typeparam>
+        /// <param name="path">Target location reference.</param>
+        /// <param name="value">The value to be Incremented by at the specified path.</param>
+        /// <returns>PatchOperation instance for specified input.</returns>
+        public static PatchOperation CreateIncrementOperation<T>(
+            string path,
+            T value)
+        {
+            return new PatchOperationCore<T>(
+                PatchOperationType.Increment,
+                path,
+                value);
+        }
     }
 }
