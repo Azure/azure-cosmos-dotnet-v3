@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public byte Byte2 { get; }
             public byte Byte3 { get; }
 
-            public static implicit operator int(UInt24 value) => (value.Byte1 << 16) | (value.Byte2 << 8) | (value.Byte3 << 0);
+            public static implicit operator int(UInt24 value) => (value.Byte3 << 16) | (value.Byte2 << 8) | (value.Byte1 << 0);
             public static explicit operator UInt24(int value)
             {
                 if ((value & 0xFF000000) != 0)
@@ -280,9 +280,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return new UInt24(
-                    byte1: (byte)((value & 0x00FF0000) >> 16),
+                    byte1: (byte)((value & 0x000000FF) >> 0),
                     byte2: (byte)((value & 0x0000FF00) >> 8),
-                    byte3: (byte)((value & 0x000000FF) >> 0));
+                    byte3: (byte)((value & 0x00FF0000) >> 16));
             }
         }
     }

@@ -762,6 +762,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
                 else if (!isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidWithQuotesLength)
+                    && (utf8Span.Span[0] == '"')
+                    && (utf8Span.Span[JsonBinaryEncoding.GuidWithQuotesLength - 1] == '"')
                     && JsonBinaryEncoding.TryEncodeGuidString(utf8Span.Span.Slice(start: 1), this.binaryWriter.Cursor)
                     && (this.binaryWriter.Cursor[0] == JsonBinaryEncoding.TypeMarker.LowercaseGuidString))
                 {

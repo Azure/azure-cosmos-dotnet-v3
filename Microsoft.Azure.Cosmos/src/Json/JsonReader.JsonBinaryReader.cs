@@ -195,16 +195,24 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"{nameof(buffer)} must not be empty.");
                 }
 
+                this.rootBuffer = buffer;
+
+                ReadOnlyMemory<byte> readerBuffer = this.rootBuffer;
+
+                // Skip the 0x80
+                readerBuffer = readerBuffer.Slice(start: 1);
+
                 // Only navigate the outer most json value and trim off trailing bytes
-                int jsonValueLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                if (buffer.Length < jsonValueLength)
+                int jsonValueLength = JsonBinaryEncoding.GetValueLength(readerBuffer.Span);
+                if (readerBuffer.Length < jsonValueLength)
                 {
                     throw new ArgumentException("buffer is shorter than the length prefix.");
                 }
 
-                this.rootBuffer = buffer.Slice(0, jsonValueLength);
+                readerBuffer = readerBuffer.Slice(0, jsonValueLength);
 
-                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(this.rootBuffer);
+                // offset for the 0x80 binary type marker
+                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(readerBuffer);
                 this.arrayAndObjectEndStack = new Stack<int>();
                 this.jsonStringDictionary = jsonStringDictionary;
             }

@@ -862,13 +862,15 @@ namespace Microsoft.Azure.Cosmos.Json
                     destinationBuffer[0] = (byte)baseCharByteCount;
                     destinationBuffer = destinationBuffer.Slice(start: 1);
                 }
+
+                EncodeStringValue(typeMarker, stringValue, baseChar, destinationBuffer);
             }
 
             bytesWritten = bufferLength;
             return true;
         }
 
-        private static void EncodeStringValue(byte typeMarker, ReadOnlySpan<byte> stringValue, byte baseChar, Span<byte> destinationBuffer, int bufferLength)
+        private static void EncodeStringValue(byte typeMarker, ReadOnlySpan<byte> stringValue, byte baseChar, Span<byte> destinationBuffer)
         {
             switch (typeMarker)
             {
@@ -1101,7 +1103,6 @@ namespace Microsoft.Azure.Cosmos.Json
             int lengthByteCount = (isHexadecimalString || isDateTimeString) ? 1 : (isCompressedString ? ((typeMarker == JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2) ? 2 : 1) : 0);
             int baseCharByteCount = JsonBinaryEncoding.TypeMarker.InRange(typeMarker, JsonBinaryEncoding.TypeMarker.Packed4BitString, TypeMarker.Packed6BitString + 1) ? 1 : 0;
             int prefixByteCount = TypeMarkerLength + lengthByteCount + baseCharByteCount;
-            int numberOfBits = (isHexadecimalString || isDateTimeString) ? 4 : (typeMarker >= JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1 ? 7 : (4 + typeMarker - JsonBinaryEncoding.TypeMarker.Packed4BitString));
 
             if (stringToken.Length < prefixByteCount)
             {
@@ -1124,7 +1125,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException("buffer is too small");
                 }
 
-                DecodeStringValue(typeMarker, stringToken.Slice(start: prefixByteCount), encodedLength, baseChar, destinationBuffer);
+                ReadOnlySpan<byte> encodedString = stringToken.Slice(start: prefixByteCount, length: encodedLength);
+
+                DecodeStringValue(typeMarker, encodedString, baseChar, destinationBuffer);
             }
         }
 
@@ -1223,7 +1226,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        private static void DecodeStringValue(byte typeMarker, ReadOnlySpan<byte> encodedString, int encodedLength, int baseChar, Span<byte> destinationBuffer)
+        private static void DecodeStringValue(byte typeMarker, ReadOnlySpan<byte> encodedString, int baseChar, Span<byte> destinationBuffer)
         {
             switch (typeMarker)
             {
@@ -1281,6 +1284,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     DecodeGuidStringValue(encodedString, isUpperCaseGuid: typeMarker == JsonBinaryEncoding.TypeMarker.UppercaseGuidString, destinationBuffer);
                     break;
 
+                case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
+                    destinationBuffer[0] = (byte)'"';
+                    DecodeGuidStringValue(encodedString, isUpperCaseGuid: false, destinationBuffer.Slice(start: 1));
+                    destinationBuffer[GuidWithQuotesLength - 1] = (byte)'"';
+                    break;
+
                 default:
                     throw new JsonInvalidTokenException();
             }
@@ -1298,6 +1307,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             ReadOnlySpan<byte> encodedStringBuffer = encodedString;
             Span<ushort> destinationBufferAsTwoByteChars = MemoryMarshal.Cast<byte, ushort>(destinationBuffer);
+
             for (int index = 0; index < destinationBuffer.Length / 2; index++)
             {
                 ushort value = chars.ByteToTwoChars[encodedStringBuffer[index]];
@@ -1311,7 +1321,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException();
                 }
 
-                destinationBuffer[destinationBuffer.Length - 1] = (byte)chars.List[encodedString.Length - 1];
+                destinationBuffer[destinationBuffer.Length - 1] = (byte)chars.List[encodedString[encodedString.Length - 1]];
             }
         }
 

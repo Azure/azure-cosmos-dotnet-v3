@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a GUID string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsGuidString(byte typeMarker) => InRange(typeMarker, LowercaseGuidString, UppercaseGuidString + 1);
+            public static bool IsGuidString(byte typeMarker) => InRange(typeMarker, LowercaseGuidString, DoubleQuotedLowercaseGuidString + 1);
 
             /// <summary>
             /// Gets whether a typeMarker is for a hexadecimal string.
