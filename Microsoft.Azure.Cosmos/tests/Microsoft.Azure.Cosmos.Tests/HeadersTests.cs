@@ -95,6 +95,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(value, Headers[header]);
                 return;
             }
+
+            IEnumerator<string> keys = Headers.GetEnumerator();
+            Assert.IsNull(keys.Current);
+            Assert.IsTrue(keys.MoveNext());
+            Assert.AreEqual(Key, keys.Current);
+            Assert.IsFalse(keys.MoveNext());
         }
 
         [TestMethod]
