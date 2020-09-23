@@ -79,4 +79,7 @@ stages:
         displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
         inputs:
           artifactName: Microsoft.Azure.Cosmos
+
+      - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+        displayName: 'Component Detection'
 #
