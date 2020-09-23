@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1757](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1757) Batch API: Fixes the size limit to reduce timeouts
 - [#1758](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1758) Connectivity: Fixes address resolution calls when using EnableTcpConnectionEndpointRediscovery
 - [#1788](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1788) Transient HTTP exceptions: Adds retry logic to all http requests
-- [#1863](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1863) HttpClientHandler: Fixes HttpClientHandler PlatformNotSupportedException exception
+- [#1863](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1863) HttpClientHandler: Fixes HttpClientHandler PlatformNotSupportedException
 
 ### <a name="3.13.0-preview"/> [3.13.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0-preview) - 2020-08-12
 
