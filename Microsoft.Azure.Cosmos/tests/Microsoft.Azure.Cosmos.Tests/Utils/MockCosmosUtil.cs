@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     internal class MockCosmosUtil
     {
         public static readonly CosmosSerializerCore Serializer = new CosmosSerializerCore();
+        public static readonly string RandomInvalidCorrectlyFormatedAuthKey = "CV60UDtH10CFKR0GxBl/Wg==";
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 documentClient = new MockDocumentClient();
             }
             
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             return cosmosClientBuilder.Build(documentClient);

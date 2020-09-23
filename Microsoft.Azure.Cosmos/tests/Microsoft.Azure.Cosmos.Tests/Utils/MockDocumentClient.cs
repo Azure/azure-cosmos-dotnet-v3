@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
-            : base(new Uri("http://localhost"), null)
+            : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
         {
             this.Init();
         }
