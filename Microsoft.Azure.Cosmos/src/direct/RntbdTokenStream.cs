@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Documents
     {
         private static Dictionary<ushort, int> TokenPositionMap;
         internal RntbdToken[] tokens;
+        private List<RntbdToken> presentTokens = new List<RntbdToken>(15);
 
         // Ideally we could use MemoryPool but a lot of the APIs for GetBytes() for
         // System.Text.Encoding and Write/Read for stream don't take Memory<> in NetStandard
@@ -61,12 +62,19 @@ namespace Microsoft.Azure.Documents
 #endif
         }
 
+        public void AddPresentToken(RntbdToken rntbd)
+        {
+            this.presentTokens.Add(rntbd);
+        }
+
         public void Reset()
         {
-            for (int i = 0; i < this.tokens.Length; i++)
+            for (int i = 0; i < this.presentTokens.Count; i++)
             {
-                this.tokens[i].isPresent = false;
+                this.presentTokens[i].isPresent = false;
             }
+
+            this.presentTokens.Clear();
 
 #if COSMOSCLIENT
             foreach (byte[] bytes in this.borrowedBytes)
@@ -93,7 +101,7 @@ namespace Microsoft.Azure.Documents
         public int CalculateLength()
         {
             int total = 0;
-            foreach(RntbdToken token in this.tokens)
+            foreach(RntbdToken token in this.presentTokens)
             {
                 if (!token.isPresent)
                 {
@@ -157,7 +165,7 @@ namespace Microsoft.Azure.Documents
         public void SerializeToBinaryWriter(ref BytesSerializer writer, out int tokensLength)
         {
             tokensLength = 0;
-            foreach(RntbdToken token in this.tokens)
+            foreach(RntbdToken token in this.presentTokens)
             {
                 int tokenLength = 0;
                 token.SerializeToBinaryWriter(ref writer, out tokenLength);
@@ -179,7 +187,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    token = new RntbdToken(false, type, identifier); // read the token content to a temp, if the token isn't recognized
+                    token = new RntbdToken(false, type, identifier, this.AddPresentToken); // read the token content to a temp, if the token isn't recognized
                 }
 
                 if (token.isPresent)

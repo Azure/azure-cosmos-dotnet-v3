@@ -84,20 +84,40 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class RntbdToken
     {
-        private ushort identifier;
-        private RntbdTokenTypes type;
-        private bool isRequired;
+        private readonly Action<RntbdToken> isPresentCallBack;
+        private readonly ushort identifier;
+        private readonly RntbdTokenTypes type;
+        private readonly bool isRequired;
 
-        public bool isPresent;
+        private bool isPresentHelper;
         public RntbdTokenValue value;
 
-        public RntbdToken(bool isRequired, RntbdTokenTypes type, ushort identifier)
+        public bool isPresent
+        {
+            get => this.isPresentHelper;
+            set
+            {
+                if (value)
+                {
+                    this.isPresentCallBack?.Invoke(this);
+                }
+                
+                this.isPresentHelper = value;
+            }
+        }
+
+        public RntbdToken(
+            bool isRequired,
+            RntbdTokenTypes type,
+            ushort identifier,
+            Action<RntbdToken> isPresentCallBack)
         {
             this.isRequired = isRequired;
             this.isPresent = false;
             this.type = type;
             this.identifier = identifier;
             this.value = new RntbdTokenValue();
+            this.isPresentCallBack = isPresentCallBack;
         }
 
         public RntbdTokenTypes GetTokenType()
