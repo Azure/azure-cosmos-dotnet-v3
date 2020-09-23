@@ -16,9 +16,17 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
+    /// <summary>
+    /// This is a token credential cache. 
+    /// It starts a background task that refreshes the token at a set interval. 
+    /// This way refreshing the token does not cause additional latency and also
+    /// allows for transient issue to resolve before the token expires.
+    /// </summary>
     internal sealed class TokenCredentialCache : IDisposable
     {
-        // Default token expiration time is 1hr. 
+        // Default token expiration time is 1hr.
+        // Making the default 20 minutes gives a 40 minute buffer for retries and other transient issue to resolve before the 
+        // token expires and causes an availability issue.
         public static readonly TimeSpan DefaultBackgroundTokenCredentialRefreshInterval = TimeSpan.FromMinutes(20);
 
         public readonly TimeSpan backgroundTokenCredentialRefreshInterval;
