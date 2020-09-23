@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Base abstract class for JSON readers.
@@ -84,6 +85,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}."),
             };
         }
+
+        internal static IJsonReader CreateBinaryFromOffset(
+            ReadOnlyMemory<byte> buffer,
+            int offset,
+            IReadOnlyJsonStringDictionary jsonStringDictionary = null) => new JsonBinaryReader(buffer, offset, jsonStringDictionary);
 
         /// <inheritdoc />
         public abstract bool Read();

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
             /// - Zero Value: The length is unknown (for instance an unassigned type marker)
             /// </summary>
-            private static readonly ImmutableArray<int> lengths = new int[]
+            public static readonly ImmutableArray<int> Lookup = new int[256]
             {
                 // Encoded literal integer value (32 values)
                 1, 1, 1, 1, 1, 1, 1, 1,
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public static long GetValueLength(ReadOnlySpan<byte> buffer)
             {
-                long length = ValueLengths.lengths[buffer[0]];
+                long length = ValueLengths.Lookup[buffer[0]];
                 if (length < 0)
                 {
                     // Length was negative meaning we need to look into the buffer to find the length

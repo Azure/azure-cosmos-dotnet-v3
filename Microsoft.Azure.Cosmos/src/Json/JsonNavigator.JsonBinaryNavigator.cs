@@ -48,6 +48,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("buffer must be binary encoded.");
                 }
 
+                this.rootBuffer = buffer;
+
                 // offset for the 0x80 (128) binary serialization type marker.
                 buffer = buffer.Slice(1);
 
@@ -60,9 +62,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 buffer = buffer.Slice(0, jsonValueLength);
 
-                this.rootBuffer = buffer;
                 this.jsonStringDictionary = jsonStringDictionary;
-                this.rootNode = new BinaryNavigatorNode(this.rootBuffer, JsonBinaryEncoding.NodeTypes.Lookup[this.rootBuffer.Span[0]]);
+                this.rootNode = new BinaryNavigatorNode(buffer, JsonBinaryEncoding.NodeTypes.Lookup[buffer.Span[0]]);
             }
 
             /// <inheritdoc />
@@ -423,7 +424,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
-                return JsonReader.Create(JsonSerializationFormat.Binary, buffer, this.jsonStringDictionary);
+                if (!MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
+                {
+                    throw new InvalidOperationException("Failed to get segment");
+                }
+
+                return JsonReader.CreateBinaryFromOffset(this.rootBuffer, segment.Offset, this.jsonStringDictionary);
             }
 
             private static int GetValueCount(ReadOnlySpan<byte> node)

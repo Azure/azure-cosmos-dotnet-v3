@@ -189,18 +189,33 @@ namespace Microsoft.Azure.Cosmos.Json
             public JsonBinaryReader(
                 ReadOnlyMemory<byte> buffer,
                 IReadOnlyJsonStringDictionary jsonStringDictionary = null)
+                : this(buffer, indexToStartFrom: null, jsonStringDictionary: jsonStringDictionary)
             {
-                if (buffer.IsEmpty)
+            }
+
+            internal JsonBinaryReader(
+                ReadOnlyMemory<byte> rootBuffer,
+                int? indexToStartFrom = null,
+                IReadOnlyJsonStringDictionary jsonStringDictionary = null)
+            {
+                if (rootBuffer.IsEmpty)
                 {
-                    throw new ArgumentException($"{nameof(buffer)} must not be empty.");
+                    throw new ArgumentException($"{nameof(rootBuffer)} must not be empty.");
                 }
 
-                this.rootBuffer = buffer;
+                this.rootBuffer = rootBuffer;
 
                 ReadOnlyMemory<byte> readerBuffer = this.rootBuffer;
 
-                // Skip the 0x80
-                readerBuffer = readerBuffer.Slice(start: 1);
+                if (indexToStartFrom.HasValue)
+                {
+                    readerBuffer = readerBuffer.Slice(start: indexToStartFrom.Value);
+                }
+                else
+                {
+                    // Skip the 0x80
+                    readerBuffer = readerBuffer.Slice(start: 1);
+                }
 
                 // Only navigate the outer most json value and trim off trailing bytes
                 int jsonValueLength = JsonBinaryEncoding.GetValueLength(readerBuffer.Span);
@@ -218,13 +233,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Binary;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
             public override bool Read()
