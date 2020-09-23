@@ -74,12 +74,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task AadMockRefreshTest()
         {
             int getAadTokenCount = 0;
-            Action<TokenRequestContext, CancellationToken> GetAadTokenCallBack = (
-                context,
-                token) =>
+            void GetAadTokenCallBack(
+                TokenRequestContext context,
+                CancellationToken token)
             {
                 getAadTokenCount++;
-            };
+            }
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
@@ -98,9 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 clientOptions);
 
             DocumentClient documentClient = aadClient.ClientContext.DocumentClient;
-            TokenCredentialCache tokenCredentialCache = (TokenCredentialCache)documentClient.GetType().GetField(
-                "tokenCredentialCache",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(documentClient);
+            TokenCredentialCache tokenCredentialCache = ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
 
             Assert.AreEqual(TimeSpan.FromSeconds(1), tokenCredentialCache.backgroundTokenCredentialRefreshInterval);
             Assert.AreEqual(1, getAadTokenCount);
@@ -120,9 +118,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task AadMockRefreshRetryTest()
         {
             int getAadTokenCount = 0;
-            Action<TokenRequestContext, CancellationToken> GetAadTokenCallBack = (
-                context,
-                token) =>
+            void GetAadTokenCallBack(
+                TokenRequestContext context,
+                CancellationToken token)
             {
                 getAadTokenCount++;
                 if (getAadTokenCount <= 2)
@@ -131,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         408,
                         "Test Failure");
                 }
-            };
+            }
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
@@ -164,15 +162,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int getAadTokenCount = 0;
             string errorMessage = "Test Failure" + Guid.NewGuid();
-            Action<TokenRequestContext, CancellationToken> GetAadTokenCallBack = (
-                context,
-                token) =>
+            void GetAadTokenCallBack(
+                TokenRequestContext context,
+                CancellationToken token)
             {
                 getAadTokenCount++;
                 throw new RequestFailedException(
                     408,
                     errorMessage);
-            };
+            }
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(

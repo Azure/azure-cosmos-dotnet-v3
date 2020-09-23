@@ -39,11 +39,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 documentClient = new MockDocumentClient();
             }
             
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             return cosmosClientBuilder.Build(documentClient);
         }
