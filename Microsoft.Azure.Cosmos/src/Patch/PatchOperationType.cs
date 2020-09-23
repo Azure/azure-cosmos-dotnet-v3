@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         Set,
 
         /// <summary>
-        /// Operation to Increment a value.
+        /// Operation to increment a value.
         /// </summary>
         [EnumMember(Value = PatchConstants.OperationTypeNames.Increment)]
         Increment,
