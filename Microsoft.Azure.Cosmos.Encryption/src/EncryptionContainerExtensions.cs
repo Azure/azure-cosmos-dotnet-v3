@@ -25,22 +25,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return new EncryptionContainer(
                container,
-               encryptor);
+               encryptor,
+               new LegacyEncryptionProcessor());
         }
 
         /// <summary>
-        /// Get container with <see cref="Encryptor"/> with encrypted properties for performing operations using client-side encryption.
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption.
         /// </summary>
-        /// <param name="container"> Regular cosmos container. </param>
-        /// <param name="encryptor"> Provider that allows encrypting and decrypting data. </param>
-        /// <returns> Container to perform operations supporting property level inplace encryption via Item level Encryption Options </returns>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static Container WithAapEncryptor(
             this Container container,
             Encryptor encryptor)
         {
-            return new AapContainer(
-                container,
-                encryptor);
+            return new EncryptionContainer(
+               container,
+               encryptor,
+               new AapEncryptionProcessor());
         }
 
         /// <summary>
@@ -67,14 +69,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
-            if (container is AapContainer aapContainer)
-            {
-                return new AapFeedIterator<T>(
-                    (AapFeedIterator)aapContainer.ToEncryptionStreamIterator(
-                        query,
-                        queryRequestOptions),
-                    aapContainer.ResponseFactory);
-            }
 
             if (container is EncryptionContainer encryptionContainer)
             {
@@ -85,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     encryptionContainer.ResponseFactory);
             }
 
-            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)} or {nameof(AapContainer)}.");
+            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
         }
 
         /// <summary>
@@ -123,23 +117,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 decryptionResultHandler = null;
             }
 
-            if (container is AapContainer aapContainer)
-            {
-                return new AapFeedIterator(
-                    query.ToStreamIterator(),
-                    aapContainer.Encryptor,
-                    decryptionResultHandler);
-            }
-
             if (container is EncryptionContainer encryptionContainer)
             {
                 return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
+                encryptionContainer.EncryptionProcessor,
                 decryptionResultHandler);
             }
 
-            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)} or {nameof(AapContainer)}.");
+            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
         }
     }
 }

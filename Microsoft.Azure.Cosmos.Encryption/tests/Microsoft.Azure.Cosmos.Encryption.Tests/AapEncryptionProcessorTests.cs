@@ -21,10 +21,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private static Mock<Encryptor> mockEncryptor;
         private static EncryptionOptions encryptionOptions;
         private const string dekId = "dekId";
+        private static AapEncryptionProcessor aapEncryptionProcessor;
 
         [ClassInitialize]
         public static void ClassInitilize(TestContext testContext)
         {
+            aapEncryptionProcessor = new AapEncryptionProcessor();
             AapEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
             {
                 DataEncryptionKeyId = AapEncryptionProcessorTests.dekId,
@@ -54,10 +56,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             try
             {
-                await AapEncryptionProcessor.EncryptAsync(
+                await AapEncryptionProcessorTests.aapEncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
                     AapEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
+                    new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
                 Assert.Fail("Invalid path to encrypt didn't result in exception.");
@@ -75,32 +78,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             testDoc.SensitiveStr = null;
             //Utf8JsonWriter outputWriter = null;
             JObject encryptedDoc = await AapEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
-            
 
-            EncryptionProperties encryptionProperties = new EncryptionProperties(
-                   encryptionFormatVersion: 3,
-                   AapEncryptionProcessorTests.encryptionOptions.EncryptionAlgorithm,
-                   AapEncryptionProcessorTests.encryptionOptions.DataEncryptionKeyId,
-                   encryptedData: null,
-                   AapEncryptionProcessorTests.encryptionOptions.PathsToEncrypt);
 
-            MemoryStream output = new MemoryStream();
-            using (Utf8JsonWriter writer = new Utf8JsonWriter(output))
-            using (JsonDocument doc = JsonDocument.Parse(TestCommon.ToStream(encryptedDoc)))
-            {
+            JObject decryptedDoc = await AapEncryptionProcessorTests.aapEncryptionProcessor.DecryptAsync(
+               encryptedDoc,
+               AapEncryptionProcessorTests.mockEncryptor.Object,
+               new CosmosDiagnosticsContext(),
+               CancellationToken.None);
 
-                await AapEncryptionProcessor.DecryptAndWriteAsync(
-                doc.RootElement,
-                AapEncryptionProcessorTests.mockEncryptor.Object,
-                writer,
-                encryptionProperties,
-                CancellationToken.None);
-            }
-
-            output.Seek(0, SeekOrigin.Begin);
-            JObject itemJObj = TestCommon.FromStream<JObject>(output);
             AapEncryptionProcessorTests.VerifyDecryptionSucceeded(
-                itemJObj,
+                decryptedDoc,
                 testDoc);
         }
 
@@ -111,27 +98,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             JObject encryptedDoc = await AapEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
-            EncryptionProperties encryptionProperties = new EncryptionProperties(
-                   encryptionFormatVersion: 3,
-                   AapEncryptionProcessorTests.encryptionOptions.EncryptionAlgorithm,
-                   AapEncryptionProcessorTests.encryptionOptions.DataEncryptionKeyId,
-                   encryptedData: null,
-                   AapEncryptionProcessorTests.encryptionOptions.PathsToEncrypt);
-
-            MemoryStream output = new MemoryStream();
-            using (Utf8JsonWriter writer = new Utf8JsonWriter(output))
-            using (JsonDocument doc = JsonDocument.Parse(TestCommon.ToStream(encryptedDoc)))
-            {
-                await AapEncryptionProcessor.DecryptAndWriteAsync(
-                doc.RootElement,
+            JObject decryptedDoc = await AapEncryptionProcessorTests.aapEncryptionProcessor.DecryptAsync(
+                encryptedDoc,
                 AapEncryptionProcessorTests.mockEncryptor.Object,
-                writer,
-                encryptionProperties,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
-            }
 
-            output.Seek(0, SeekOrigin.Begin);
-            JObject decryptedDoc = TestCommon.FromStream<JObject>(output);
             AapEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc);
@@ -142,34 +114,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             TestDoc testDoc = TestDoc.Create();
 
-            Stream encryptedStream = await AapEncryptionProcessor.EncryptAsync(
+            Stream encryptedStream = await AapEncryptionProcessorTests.aapEncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 AapEncryptionProcessorTests.mockEncryptor.Object,
                 AapEncryptionProcessorTests.encryptionOptions,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            EncryptionProperties encryptionProperties = new EncryptionProperties(
-                   encryptionFormatVersion: 3,
-                   AapEncryptionProcessorTests.encryptionOptions.EncryptionAlgorithm,
-                   AapEncryptionProcessorTests.encryptionOptions.DataEncryptionKeyId,
-                   encryptedData: null,
-                   AapEncryptionProcessorTests.encryptionOptions.PathsToEncrypt);
-
-            MemoryStream output = new MemoryStream();
-            using (Utf8JsonWriter writer = new Utf8JsonWriter(output))
-            using (JsonDocument doc = JsonDocument.Parse(encryptedStream))
-            {
-                await AapEncryptionProcessor.DecryptAndWriteAsync(
-                doc.RootElement,
+            Stream decryptedStream = await AapEncryptionProcessorTests.aapEncryptionProcessor.DecryptAsync(
+                encryptedStream,
                 AapEncryptionProcessorTests.mockEncryptor.Object,
-                writer,
-                encryptionProperties,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
-            }
 
-            output.Seek(0, SeekOrigin.Begin);
-
-            JObject decryptedDoc = AapEncryptionProcessor.BaseSerializer.FromStream<JObject>(output);
+            JObject decryptedDoc = AapEncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
             AapEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc);
@@ -181,48 +139,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             TestDoc testDoc = TestDoc.Create();
             Stream docStream = testDoc.ToStream();
 
-            MemoryStream output = new MemoryStream();
-            using (Utf8JsonWriter writer = new Utf8JsonWriter(output))
-            using (JsonDocument doc = JsonDocument.Parse(docStream))
-            {
-                await AapEncryptionProcessor.DecryptAndWriteAsync(
-                doc.RootElement,
+            Stream decryptedStream = await AapEncryptionProcessorTests.aapEncryptionProcessor.DecryptAsync(
+                docStream,
                 AapEncryptionProcessorTests.mockEncryptor.Object,
-                writer,
-                null,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
-            }
 
-            output.Seek(0, SeekOrigin.Begin);            
-
-            Assert.IsTrue(output.CanSeek);
-            Assert.AreEqual(docStream.Length, output.Length);
+            Assert.IsTrue(decryptedStream.CanSeek);
+            Assert.AreEqual(0, decryptedStream.Position);
+            Assert.AreEqual(docStream.Length, decryptedStream.Length);
         }
 
         private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
         {
-            Stream encryptedStream = await AapEncryptionProcessor.EncryptAsync(
-                testDoc.ToStream(),
-                AapEncryptionProcessorTests.mockEncryptor.Object,
-                AapEncryptionProcessorTests.encryptionOptions,
-                CancellationToken.None);
+            Stream encryptedStream = await AapEncryptionProcessorTests.aapEncryptionProcessor.EncryptAsync(
+                 testDoc.ToStream(),
+                 AapEncryptionProcessorTests.mockEncryptor.Object,
+                 AapEncryptionProcessorTests.encryptionOptions,
+                 new CosmosDiagnosticsContext(),
+                 CancellationToken.None);
 
-            JObject encryptedDoc = AapEncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
-            
+            JObject encryptedDoc = LegacyEncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
+
             Assert.AreEqual(testDoc.Id, encryptedDoc.Property("id").Value.Value<string>());
             Assert.AreEqual(testDoc.PK, encryptedDoc.Property(nameof(TestDoc.PK)).Value.Value<string>());
             Assert.AreEqual(testDoc.NonSensitive, encryptedDoc.Property(nameof(TestDoc.NonSensitive)).Value.Value<string>());
-
-            if (testDoc.SensitiveStr != null)
-            {
-                Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-            }
-            else
-            {
-                Assert.AreEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-            }
-
-            Assert.AreNotEqual(testDoc.SensitiveInt, encryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<string>());
+            //Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)));
+            //Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveInt)));
 
             JProperty eiJProp = encryptedDoc.Property(Constants.EncryptedInfo);
             Assert.IsNotNull(eiJProp);
@@ -233,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(AapEncryptionProcessorTests.dekId, encryptionProperties.DataEncryptionKeyId);
             Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
+            //Assert.IsNotNull(encryptionProperties.EncryptedData);
 
             return encryptedDoc;
         }

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Data.AlwaysProtected.Cryptography;
+    using Microsoft.Data.AAP_PH.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
         {
-            metadata1 = new EncryptionKeyWrapMetadata(value:masterKeyUri1.ToString(), name: "sample", path:masterKeyUri1.ToString());
-            metadata2 = new EncryptionKeyWrapMetadata(value:masterKeyUri2.ToString(), name: "sample1", path:masterKeyUri2.ToString());
-            metadata3 = new EncryptionKeyWrapMetadata(value: masterKeyUri3.ToString(), name: "sample2", path: masterKeyUri3.ToString());
+            metadata1 = new AapWrapMetadata(masterKeyUri1.ToString(), "sample");
+            metadata2 = new AapWrapMetadata(masterKeyUri2.ToString(), "sample1");
+            metadata3 = new AapWrapMetadata(masterKeyUri3.ToString(), "sample2");
 
             AapEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
             AapEncryptionTests.encryptor = new AapCosmosEncryptor(new TestAapEncryptionKeyStoreProvider());
@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (NotSupportedException ex)
             {
-                Assert.AreEqual("partitionKey cannot be null for operations using AapContainer.", ex.Message);
+                Assert.AreEqual("partitionKey cannot be null for operations using EncryptionContainer.", ex.Message);
             }
         }
 

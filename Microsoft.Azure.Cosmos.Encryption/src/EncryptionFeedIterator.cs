@@ -16,15 +16,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
         private readonly Action<DecryptionResult> decryptionResultHandler;
+        private readonly EncryptionProcessor encryptionProcessor;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
+            EncryptionProcessor encryptionProcessor,
             Action<DecryptionResult> decryptionResultHandler = null)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
             this.decryptionResultHandler = decryptionResultHandler;
+            this.encryptionProcessor = encryptionProcessor;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -55,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = LegacyEncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
             JArray result = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
@@ -73,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 try
                 {
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                    JObject decryptedDocument = await this.encryptionProcessor.DecryptAsync(
                         document,
                         this.encryptor,
                         diagnosticsContext,
@@ -90,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     result.Add(document);
 
-                    MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream(document);
+                    MemoryStream memoryStream = LegacyEncryptionProcessor.BaseSerializer.ToStream(document);
                     Debug.Assert(memoryStream != null);
                     bool wasBufferReturned = memoryStream.TryGetBuffer(out ArraySegment<byte> encryptedStream);
                     Debug.Assert(wasBufferReturned);
@@ -115,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
+            return LegacyEncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }

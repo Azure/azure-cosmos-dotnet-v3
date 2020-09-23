@@ -39,13 +39,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             MasterKey masterKey = new MasterKey(
                 dekProperties.EncryptionKeyWrapMetadata.Name,
-                dekProperties.EncryptionKeyWrapMetadata.Path,
+                dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
-            string wrappedDekHex = dekProperties.WrappedDataEncryptionKey.ToHexString();
-
-            // use direct Byte key? TODO
-            EncryptionKey encryptionKey = new EncryptionKey(dekProperties.Id, masterKey, wrappedDekHex);
+            EncryptionKey encryptionKey = new EncryptionKey(dekProperties.Id, masterKey, dekProperties.WrappedDataEncryptionKey);
 
             AapEncryptionSettings aapEncryptionSettingForKey = new AapEncryptionSettings
             {
@@ -75,35 +72,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override byte[] DecryptData(byte[] cipherText)
         {
             return this.encryptionSettings.Algorithm.DecryptData(cipherText);
-        }
-    }
-
-#pragma warning disable SA1402 // File may only contain a single type
-    internal class AapEncryptionSettings
-#pragma warning restore SA1402 // File may only contain a single type
-    {
-        internal MasterKey MasterKey { get; set; }
-
-        internal EncryptionKey EncryptionKey { get; set; }
-
-        internal Data.AAP_PH.Cryptography.EncryptionType EncryptionType { get; set; }
-
-        internal EncryptionAlgorithm Algorithm { get; set; }
-
-        internal static AapEncryptionSettings InitializeAapEncryptionAlogrithm(
-            AapEncryptionSettings aapEncryptionSettingForKey,
-            Data.AAP_PH.Cryptography.EncryptionType encryptionType)
-        {
-            return new AapEncryptionSettings()
-            {
-                EncryptionKey = aapEncryptionSettingForKey.EncryptionKey,
-                EncryptionType = encryptionType,
-
-                // safe enough to use get/create?
-                Algorithm = EncryptionAlgorithm.GetOrCreate(
-                    aapEncryptionSettingForKey.EncryptionKey,
-                    aapEncryptionSettingForKey.EncryptionType),
-            };
         }
     }
 }

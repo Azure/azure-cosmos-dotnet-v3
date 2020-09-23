@@ -22,21 +22,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
+        /// <param name="name">name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
-        public EncryptionKeyWrapMetadata(string value)
-            : this(type: "custom", value: value)
+        public EncryptionKeyWrapMetadata(string name, string value)
+            : this(type: "custom", value: value, name: name, algorithm: null)
         {
         }
 
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
-        /// <param name="value"> Value of the metadata. </param>
-        /// <param name="name"> Name of the Key </param>
-        /// <param name="path"> Path of the Key </param>
-        /// <param name="algorithm"> Algorithm </param>
-        public EncryptionKeyWrapMetadata(string value, string name, string path, string algorithm = null)
-            : this(type: "aap", value: value, name: name, path: path, algorithm: algorithm)
+        /// <param name="name">name of the metadata.</param>
+        /// <param name="value">Value of the metadata.</param>
+        public EncryptionKeyWrapMetadata(string value)
+            : this(type: "custom", value: value, name: null, algorithm: null)
         {
         }
 
@@ -45,23 +44,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
-            : this(source?.Type, source?.Value, source?.Algorithm)
+            : this(source?.Type, source?.Value, source?.Name, source?.Algorithm)
         {
         }
 
-        internal EncryptionKeyWrapMetadata(string type, string value, string algorithm = null)
+        internal EncryptionKeyWrapMetadata(string type, string value, string name, string algorithm)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
-            this.Algorithm = algorithm;
-        }
-
-        internal EncryptionKeyWrapMetadata(string type, string value, string name, string path, string algorithm = null)
-        {
-            this.Type = type ?? throw new ArgumentNullException(nameof(type));
-            this.Value = value ?? throw new ArgumentNullException(nameof(value));
-            this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Path = path ?? throw new ArgumentNullException(nameof(path));
+            this.Name = name;
             this.Algorithm = algorithm;
         }
 
@@ -78,14 +69,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         [JsonProperty(PropertyName = "name", NullValueHandling = NullValueHandling.Ignore)]
         public string Name { get; private set; }
-
-        /// <summary>
-        /// Gets serialized form of metadata.
-        /// Note: This value is saved in the Cosmos DB service.
-        /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
-        /// </summary>
-        [JsonProperty(PropertyName = "path", NullValueHandling = NullValueHandling.Ignore)]
-        public string Path { get; private set; }
 
         /// <summary>
         /// Gets serialized form of metadata.
@@ -110,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Algorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Value);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Name);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Path);
             return hashCode;
         }
 
@@ -127,8 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                    this.Type == other.Type &&
                    this.Algorithm == other.Algorithm &&
                    this.Value == other.Value &&
-                   this.Name == other.Name &&
-                   this.Path == other.Path;
+                   this.Name == other.Name;
         }
     }
 }

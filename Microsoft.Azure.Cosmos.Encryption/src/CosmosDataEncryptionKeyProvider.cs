@@ -42,11 +42,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
 
         /// <summary>
-        /// Gets AAP EncryptionKeyStoreProvider to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
-        /// </summary>
-        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
-
-        /// <summary>
         /// Gets Container for data encryption keys.
         /// </summary>
         public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.dataEncryptionKeyContainerCore;
@@ -74,7 +69,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
-            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            if (encryptionKeyStoreProvider == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            }
+
+            this.EncryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }

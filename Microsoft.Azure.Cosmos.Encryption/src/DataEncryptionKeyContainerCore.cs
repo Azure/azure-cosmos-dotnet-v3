@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Data.AAP_PH.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
     {
@@ -206,17 +207,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapResult keyWrapResponse;
             using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
             {
-                // AAP  DEK Wrap Provider (EncryptionKeyStoreProvider)
-                if (this.DekProvider.EncryptionKeyStoreProvider != null)
-                {
-                    AapKeyWrapProvider aapKeyWrapProvider = new AapKeyWrapProvider(this.DekProvider.EncryptionKeyStoreProvider);
-                    keyWrapResponse = await aapKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
-                }
-                else
-                {
-                    // fallback to native methods.
-                    keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
-                }
+                keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
             }
 
             // Verify
@@ -238,22 +229,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyUnwrapResult unwrapResult;
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
             {
-                // AAP  DEK Wrap Provider (EncryptionKeyStoreProvider)
-                if (this.DekProvider.EncryptionKeyStoreProvider != null)
-                {
-                    AapKeyWrapProvider aapKeyWrapProvider = new AapKeyWrapProvider(this.DekProvider.EncryptionKeyStoreProvider);
-                    unwrapResult = await aapKeyWrapProvider.UnwrapKeyAsync(
+                unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
                         dekProperties.WrappedDataEncryptionKey,
                         dekProperties.EncryptionKeyWrapMetadata,
                         cancellationToken);
-                }
-                else
-                {
-                    unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
-                        dekProperties.WrappedDataEncryptionKey,
-                        dekProperties.EncryptionKeyWrapMetadata,
-                        cancellationToken);
-                }
             }
 
             DataEncryptionKey dek = null;
@@ -264,11 +243,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else if (dekProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
             {
+                AapKeyWrapProvider aapKeyWrapProvider = (AapKeyWrapProvider)this.DekProvider.EncryptionKeyWrapProvider;
                 dek = new AapEncryptionAlgorithm(
                     dekProperties,
                     unwrapResult.DataEncryptionKey,
                     Data.AAP_PH.Cryptography.EncryptionType.Randomized,
-                    this.DekProvider.EncryptionKeyStoreProvider);
+                    aapKeyWrapProvider.EncryptionKeyStoreProvider);
             }
 
             return new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);

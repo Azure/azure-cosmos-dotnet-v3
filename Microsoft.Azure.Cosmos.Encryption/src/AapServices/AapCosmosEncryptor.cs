@@ -43,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="tokenCredential"> User provided TokenCredential for accessing Key Vault services. </param>
         public AapCosmosEncryptor(TokenCredential tokenCredential)
         {
-            EncryptionKeyStoreProvider wrapProvider = new AzureKeyVaultProvider(tokenCredential);
-            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new AzureKeyVaultProvider(tokenCredential);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyStoreProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 
