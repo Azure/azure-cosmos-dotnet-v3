@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (TransactionalBatchOperationResult result in results)
                 {
-                    if ((int)result.StatusCode != (int)StatusCodes.FailedDependency)
+                    if ((int)result.StatusCode != (int)StatusCodes.FailedDependency && (int)result.StatusCode >= (int)StatusCodes.StartingErrorCode)
                     {
                         responseStatusCode = result.StatusCode;
                         responseSubStatusCode = result.SubStatusCode;

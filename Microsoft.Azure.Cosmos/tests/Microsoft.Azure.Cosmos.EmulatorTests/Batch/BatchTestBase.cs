@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Text;
@@ -417,6 +418,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string[] tokenParts = sessionToken.Split(':');
             return SessionTokenHelper.Parse(tokenParts[1]);
+        }
+
+        internal static string GetDifferentLSNToken(string token, long lsnIncrement)
+        {
+            string[] tokenParts = token.Split(':');
+            ISessionToken sessionToken = SessionTokenHelper.Parse(tokenParts[1]);
+            ISessionToken differentSessionToken = BatchTestBase.CreateSessionToken(sessionToken, sessionToken.LSN + lsnIncrement);
+            return string.Format(CultureInfo.InvariantCulture, "{0}:{1}", tokenParts[0], differentSessionToken.ConvertToString());
+        }
+
+        internal static ISessionToken CreateSessionToken(ISessionToken from, long globalLSN)
+        {
+            // Creates session token with specified GlobalLSN
+            if (from is SimpleSessionToken)
+            {
+                return new SimpleSessionToken(globalLSN);
+            }
+            else
+            {
+                return new VectorSessionToken(from as VectorSessionToken, globalLSN);
+            }
         }
 
         private static bool PopulateRequestOptions(RequestOptions requestOptions, TestDoc doc, bool isSchematized, bool useEpk, int? ttlInSeconds)
