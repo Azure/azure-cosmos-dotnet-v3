@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/new", "patched")
+                PatchOperation.Add("/new", "patched")
             };
 
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/new", "patched")
+                PatchOperation.Add("/new", "patched")
             };
 
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);

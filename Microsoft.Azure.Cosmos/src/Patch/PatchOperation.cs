@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="path">Target location reference.</param>
         /// <param name="value">The value to be added.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
-        public static PatchOperation CreateAddOperation<T>(
+        public static PatchOperation Add<T>(
             string path,
             T value)
         {
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="path">Target location reference.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
-        public static PatchOperation CreateRemoveOperation(string path)
+        public static PatchOperation Remove(string path)
         {
             return new PatchOperationCore(
                 PatchOperationType.Remove,
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="path">Target location reference.</param>
         /// <param name="value">The new value.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
-        public static PatchOperation CreateReplaceOperation<T>(
+        public static PatchOperation Replace<T>(
             string path,
             T value)
         {
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="path">Target location reference.</param>
         /// <param name="value">The value to be set at the specified path.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
-        public static PatchOperation CreateSetOperation<T>(
+        public static PatchOperation Set<T>(
             string path,
             T value)
         {
@@ -100,17 +101,32 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create <see cref="PatchOperation{T}"/> to Increment a value.
+        /// Create <see cref="PatchOperation{Int64}"/> to Increment a value.
         /// </summary>
-        /// <typeparam name="T">Type of <paramref name="value"/></typeparam>
         /// <param name="path">Target location reference.</param>
         /// <param name="value">The value to be Incremented by at the specified path.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
-        public static PatchOperation CreateIncrementOperation<T>(
+        public static PatchOperation Increment(
             string path,
-            T value)
+            Int64 value)
         {
-            return new PatchOperationCore<T>(
+            return new PatchOperationCore<Int64>(
+                PatchOperationType.Increment,
+                path,
+                value);
+        }
+
+        /// <summary>
+        /// Create <see cref="PatchOperation{Double}"/> to Increment a value.
+        /// </summary>
+        /// <param name="path">Target location reference.</param>
+        /// <param name="value">The value to be Incremented by at the specified path.</param>
+        /// <returns>PatchOperation instance for specified input.</returns>
+        public static PatchOperation Increment(
+            string path,
+            Double value)
+        {
+            return new PatchOperationCore<Double>(
                 PatchOperationType.Increment,
                 path,
                 value);
