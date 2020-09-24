@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            JObject contentJObj = LegacyEncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
             JArray result = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     result.Add(document);
 
-                    MemoryStream memoryStream = LegacyEncryptionProcessor.BaseSerializer.ToStream(document);
+                    MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream(document);
                     Debug.Assert(memoryStream != null);
                     bool wasBufferReturned = memoryStream.TryGetBuffer(out ArraySegment<byte> encryptedStream);
                     Debug.Assert(wasBufferReturned);
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return LegacyEncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
+            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }

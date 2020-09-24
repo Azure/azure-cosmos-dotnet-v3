@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
             }
 
             if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))
@@ -89,7 +89,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultUriProperties, cancellationToken);
-            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, null, KeyVaultConstants.RsaOaep256);
+            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(
+                type: metadata.Type,
+                value: metadata.Value,
+                name: null,
+                algorithm: KeyVaultConstants.RsaOaep256);
+
             return new EncryptionKeyWrapResult(result, responseMetadata);
         }
     }

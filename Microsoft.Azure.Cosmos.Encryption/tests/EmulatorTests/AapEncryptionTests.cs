@@ -53,7 +53,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             metadata2 = new AapWrapMetadata(masterKeyUri2.ToString(), "sample1");
             metadata3 = new AapWrapMetadata(masterKeyUri3.ToString(), "sample2");
 
-            AapEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            AapEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
             AapEncryptionTests.encryptor = new AapCosmosEncryptor(new TestAapEncryptionKeyStoreProvider());
             AapEncryptionTests.client = TestCommon.CreateCosmosClient();
             AapEncryptionTests.database = await AapEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -108,8 +110,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(
                 AapEncryptionTests.metadata1,
                 dekProperties.EncryptionKeyWrapMetadata);
-            
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+
+
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
             await dekProvider.InitializeAsync(AapEncryptionTests.database, AapEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
@@ -136,8 +141,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(
                 AapEncryptionTests.metadata2,
                 dekProperties.EncryptionKeyWrapMetadata);
-            
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
             await dekProvider.InitializeAsync(AapEncryptionTests.database, AapEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
@@ -178,8 +185,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(
                 AapEncryptionTests.metadata3,
                 dekProperties.EncryptionKeyWrapMetadata);
-            
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
+
             await dekProvider.InitializeAsync(AapEncryptionTests.database, AapEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
@@ -190,8 +200,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             Container newKeyContainer = await AapEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
             try
-            {                
-                CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+            {
+                EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+                EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+                CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
+
                 await dekProvider.InitializeAsync(AapEncryptionTests.database, newKeyContainer.Id);
 
                 string contosoV1 = "Contoso_v001";
@@ -542,8 +555,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             PermissionProperties restrictedUserPermission = await restrictedUser.CreatePermissionAsync(
                 new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, AapEncryptionTests.itemContainer));
-            
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
+
             AapCosmosEncryptor encryptor = new AapCosmosEncryptor(dekProvider);
 
             CosmosClient clientForRestrictedUser = TestCommon.CreateCosmosClient(
@@ -595,7 +611,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             PermissionProperties keyManagerUserPermission = await keyManagerUser.CreatePermissionAsync(
                 new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, AapEncryptionTests.keyContainer));
 
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestAapEncryptionKeyStoreProvider());
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new TestAapEncryptionKeyStoreProvider();
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
 
             AapCosmosEncryptor encryptor = new AapCosmosEncryptor(dekProvider);
 
@@ -621,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (Exception ex)
             {
-                _ = ex;                  
+                Assert.IsTrue(ex.Message.Contains("PathsToEncrypt includes a invalid path: '/id'."));
             }
 
             try

@@ -6,20 +6,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.IO;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "To be fixed, tracked in issue #1575")]
     internal sealed class EncryptionTransactionalBatch : TransactionalBatch
     {
+        private readonly EncryptionProcessor encryptionProcessor;
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
         private TransactionalBatch transactionalBatch;
-        private readonly EncryptionProcessor encryptionProcessorEngine;
 
         public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
@@ -30,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
-            this.encryptionProcessorEngine = encryptionProcessor;
+            this.encryptionProcessor = encryptionProcessor;
         }
 
         public override TransactionalBatch CreateItem<T>(
@@ -63,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    streamPayload = this.encryptionProcessorEngine.EncryptAsync(
+                    streamPayload = this.encryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
@@ -135,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    streamPayload = this.encryptionProcessorEngine.EncryptAsync(
+                    streamPayload = this.encryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
@@ -182,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    streamPayload = this.encryptionProcessorEngine.EncryptAsync(
+                    streamPayload = this.encryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
@@ -214,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         if (result.ResourceStream != null)
                         {
-                            result.ResourceStream = await this.encryptionProcessorEngine.DecryptAsync(
+                            result.ResourceStream = await this.encryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
                                 diagnosticsContext,

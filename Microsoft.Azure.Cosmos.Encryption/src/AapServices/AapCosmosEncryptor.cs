@@ -44,7 +44,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public AapCosmosEncryptor(TokenCredential tokenCredential)
         {
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = new AzureKeyVaultProvider(tokenCredential);
-            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyStoreProvider);
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 
@@ -56,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public AapCosmosEncryptor(AzureKeyVaultProviderTokenCredential.AuthenticationCallback authenticationCallback)
         {
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = new AzureKeyVaultProvider(authenticationCallback);
-            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyStoreProvider);
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 
@@ -67,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionKeyStoreProvider"> AAP EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
         public AapCosmosEncryptor(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
-            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyStoreProvider);
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyWrapProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 

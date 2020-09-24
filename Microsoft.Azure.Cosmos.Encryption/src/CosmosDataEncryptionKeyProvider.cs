@@ -61,25 +61,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
-        /// </summary>
-        /// <param name="encryptionKeyStoreProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
-        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
-        public CosmosDataEncryptionKeyProvider(
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            TimeSpan? dekPropertiesTimeToLive = null)
-        {
-            if (encryptionKeyStoreProvider == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            }
-
-            this.EncryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
-            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
-            this.DekCache = new DekCache(dekPropertiesTimeToLive);
-        }
-
-        /// <summary>
         /// Initialize Cosmos DB container for CosmosDataEncryptionKeyProvider to store wrapped DEKs
         /// </summary>
         /// <param name="database">Database</param>

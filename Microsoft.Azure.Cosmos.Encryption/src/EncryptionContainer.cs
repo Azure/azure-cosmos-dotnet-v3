@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.EncryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.cosmosSerializer = this.Database.Client.ClientOptions.Serializer;
-            this.EncryptionProcessor = encryptionProcessor;
         }
 
         public override string Id => this.container.Id;

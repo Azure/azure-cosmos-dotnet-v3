@@ -76,9 +76,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {        
            TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
-            //Utf8JsonWriter outputWriter = null;
-            JObject encryptedDoc = await AapEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
+            JObject encryptedDoc = await AapEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
             JObject decryptedDoc = await AapEncryptionProcessorTests.aapEncryptionProcessor.DecryptAsync(
                encryptedDoc,

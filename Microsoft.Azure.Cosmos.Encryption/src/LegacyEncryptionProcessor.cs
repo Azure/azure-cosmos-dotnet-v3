@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            JObject itemJObj = LegacyEncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
             JObject toEncryptJObj = new JObject();
 
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj.Remove(propertyName);
             }
 
-            MemoryStream memoryStream = LegacyEncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
+            MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
             Debug.Assert(memoryStream != null);
             Debug.Assert(memoryStream.TryGetBuffer(out _));
             byte[] plainText = memoryStream.ToArray();
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
             input.Dispose();
-            return LegacyEncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         /// <remarks>
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             itemJObj.Remove(Constants.EncryptedInfo);
             input.Dispose();
-            return LegacyEncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         public override async Task<JObject> DecryptAsync(
