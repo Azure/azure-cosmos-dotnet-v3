@@ -89,8 +89,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
-                this.tokenCredentialCache.Dispose();
                 this.isDisposed = true;
+                this.tokenCredentialCache.Dispose();
             }
         }
     }

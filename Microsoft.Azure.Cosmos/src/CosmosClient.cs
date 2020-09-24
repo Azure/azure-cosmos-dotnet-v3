@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
         internal string AccountKey { get; }
 
         /// <summary>
-        /// Gets the AuthorizationTokenProvider used to generate the authroization token
+        /// Gets the AuthorizationTokenProvider used to generate the authorization token
         /// </summary>
         internal AuthorizationTokenProvider AuthorizationTokenProvider { get; }
 

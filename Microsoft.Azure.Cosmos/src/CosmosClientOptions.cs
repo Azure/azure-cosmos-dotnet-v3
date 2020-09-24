@@ -157,10 +157,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// The SDK does a background refresh based on the time interveral set to refresh the token credentials.
-        /// This avoids latency issues because the old token is used until the new token is retrivied.
+        /// This avoids latency issues because the old token is used until the new token is retrieved.
         /// </summary>
         /// <remarks>
-        /// The recommended value minimum value is 5 minutes.
+        /// The recommended minimum value is 5 minutes. The default value is 25% of the token expire time.
         /// </remarks>
 #if PREVIEW
         public

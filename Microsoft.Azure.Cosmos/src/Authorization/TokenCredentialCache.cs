@@ -25,20 +25,21 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class TokenCredentialCache : IDisposable
     {
         // Default token expiration time is 1hr.
-        // Making the default 20 minutes gives a 40 minute buffer for retries and other transient issue to resolve before the 
-        // token expires and causes an availability issue.
-        public static readonly TimeSpan DefaultBackgroundTokenCredentialRefreshInterval = TimeSpan.FromMinutes(20);
+        // Making the default 25% of the token life span. This gives 75% of the tokens life for transient error
+        // to get resolved before the token expires.
+        public static readonly double DefaultBackgroundTokenCredentialRefreshIntervalPercentage = .25;
 
-        public readonly TimeSpan backgroundTokenCredentialRefreshInterval;
         private const string ScopeFormat = "https://{0}/.default";
         private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationToken cancellationToken;
+        private readonly TimeSpan? userDefinedBackgroundTokenCredentialRefreshInterval;
 
         private readonly SemaphoreSlim getTokenRefreshLock = new SemaphoreSlim(1);
         private readonly SemaphoreSlim backgroundRefreshLock = new SemaphoreSlim(1);
 
+        private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private AccessToken cachedAccessToken;
         private bool isBackgroundTaskRunning = false;
         private bool isDisposed = false;
@@ -54,11 +55,13 @@ namespace Microsoft.Azure.Cosmos
                 string.Format(TokenCredentialCache.ScopeFormat, accountEndpointHost)
             });
 
-            this.backgroundTokenCredentialRefreshInterval = backgroundTokenCredentialRefreshInterval ?? TokenCredentialCache.DefaultBackgroundTokenCredentialRefreshInterval;
+            this.userDefinedBackgroundTokenCredentialRefreshInterval = backgroundTokenCredentialRefreshInterval;
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
-
         }
+
+        public TimeSpan? BackgroundTokenCredentialRefreshInterval =>
+            this.userDefinedBackgroundTokenCredentialRefreshInterval ?? this.systemBackgroundTokenCredentialRefreshInterval;
 
         internal async ValueTask<string> GetTokenAsync(
             CosmosDiagnosticsContext diagnosticsContext)
@@ -135,6 +138,12 @@ namespace Microsoft.Azure.Cosmos
                             this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
                                 this.tokenRequestContext,
                                 this.cancellationToken);
+                            if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
+                            {
+                                double totalSecondUntilExpire = (this.cachedAccessToken.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
+                                this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
+                            }
+                             
                             return;
                         }
                     }
@@ -214,7 +223,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    await Task.Delay(this.backgroundTokenCredentialRefreshInterval, this.cancellationToken);
+                    if (!this.BackgroundTokenCredentialRefreshInterval.HasValue)
+                    {
+                        throw new ArgumentException(nameof(this.BackgroundTokenCredentialRefreshInterval));
+                    }
+
+                    await Task.Delay(this.BackgroundTokenCredentialRefreshInterval.Value, this.cancellationToken);
 
                     DefaultTrace.TraceInformation("StartRefreshToken() - Invoking refresh");
 
@@ -228,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
 
-                    DefaultTrace.TraceCritical(
+                    DefaultTrace.TraceWarning(
                         "StartRefreshToken() - Unable to refresh token credential cache. Exception: {0}",
                         ex.ToString());
                 }

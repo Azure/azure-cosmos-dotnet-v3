@@ -46,6 +46,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions);
 
+            TokenCredentialCache tokenCredentialCache = ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+
+            // The refresh interval changes slightly based on how fast machine calculate the interval based on the expire time.
+            Assert.IsTrue(15 <= tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes, "Default background refresh should be 25% of the token life which is defaulted to 1hr");
+            Assert.IsTrue(tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes > 14.7 , "Default background refresh should be 25% of the token life which is defaulted to 1hr");
+
             Database aadDatabase = await aadClient.GetDatabase(databaseId).ReadAsync();
             Container aadContainer = await aadDatabase.GetContainer(containerId).ReadContainerAsync();
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
@@ -100,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient documentClient = aadClient.ClientContext.DocumentClient;
             TokenCredentialCache tokenCredentialCache = ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
 
-            Assert.AreEqual(TimeSpan.FromSeconds(1), tokenCredentialCache.backgroundTokenCredentialRefreshInterval);
+            Assert.AreEqual(TimeSpan.FromSeconds(1), tokenCredentialCache.BackgroundTokenCredentialRefreshInterval);
             Assert.AreEqual(1, getAadTokenCount);
 
             await aadClient.ReadAccountAsync();
