@@ -160,58 +160,101 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected override void WriteRetrievedDocumentCount(long retrievedDocumentCount)
         {
-            QueryMetricsTextWriter.AppendCountToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.RetrievedDocumentCount, retrievedDocumentCount, indentLevel: 0);
+            QueryMetricsTextWriter.AppendCountToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.RetrievedDocumentCount,
+retrievedDocumentCount,
+indentLevel: 0);
         }
 
         protected override void WriteRetrievedDocumentSize(long retrievedDocumentSize)
         {
-            QueryMetricsTextWriter.AppendBytesToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.RetrievedDocumentSize, retrievedDocumentSize, indentLevel: 0);
+            QueryMetricsTextWriter.AppendBytesToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.RetrievedDocumentSize,
+retrievedDocumentSize,
+indentLevel: 0);
         }
 
         protected override void WriteOutputDocumentCount(long outputDocumentCount)
         {
-            QueryMetricsTextWriter.AppendCountToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.OutputDocumentCount, outputDocumentCount, indentLevel: 0);
+            QueryMetricsTextWriter.AppendCountToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.OutputDocumentCount,
+outputDocumentCount,
+indentLevel: 0);
         }
 
         protected override void WriteOutputDocumentSize(long outputDocumentSize)
         {
-            QueryMetricsTextWriter.AppendBytesToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.OutputDocumentSize, outputDocumentSize, indentLevel: 0);
+            QueryMetricsTextWriter.AppendBytesToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.OutputDocumentSize,
+outputDocumentSize,
+indentLevel: 0);
         }
 
         protected override void WriteIndexHitRatio(double indexHitRatio)
         {
-            QueryMetricsTextWriter.AppendPercentageToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.IndexUtilization, indexHitRatio, indentLevel: 0);
+            QueryMetricsTextWriter.AppendPercentageToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.IndexUtilization,
+indexHitRatio,
+indentLevel: 0);
         }
 
         protected override void WriteTotalQueryExecutionTime(TimeSpan totalQueryExecutionTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.TotalQueryExecutionTime, totalQueryExecutionTime, indentLevel: 0);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.TotalQueryExecutionTime,
+totalQueryExecutionTime,
+indentLevel: 0);
         }
 
         #region QueryPreparationTimes
         protected override void WriteBeforeQueryPreparationTimes()
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.QueryPreparationTimes, indentLevel: 1);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.QueryPreparationTimes,
+indentLevel: 1);
         }
 
         protected override void WriteQueryCompilationTime(TimeSpan queryCompilationTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.QueryCompileTime, queryCompilationTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.QueryCompileTime,
+queryCompilationTime,
+indentLevel: 2);
         }
 
         protected override void WriteLogicalPlanBuildTime(TimeSpan logicalPlanBuildTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.LogicalPlanBuildTime, logicalPlanBuildTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.LogicalPlanBuildTime,
+logicalPlanBuildTime,
+indentLevel: 2);
         }
 
         protected override void WritePhysicalPlanBuildTime(TimeSpan physicalPlanBuildTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.PhysicalPlanBuildTime, physicalPlanBuildTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.PhysicalPlanBuildTime,
+physicalPlanBuildTime,
+indentLevel: 2);
         }
 
         protected override void WriteQueryOptimizationTime(TimeSpan queryOptimizationTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.QueryOptimizationTime, queryOptimizationTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.QueryOptimizationTime,
+queryOptimizationTime,
+indentLevel: 2);
         }
 
         protected override void WriteAfterQueryPreparationTimes()
@@ -222,12 +265,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected override void WriteIndexLookupTime(TimeSpan indexLookupTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.IndexLookupTime, indexLookupTime, indentLevel: 1);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.IndexLookupTime,
+indexLookupTime,
+indentLevel: 1);
         }
 
         protected override void WriteDocumentLoadTime(TimeSpan documentLoadTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.DocumentLoadTime, documentLoadTime, indentLevel: 1);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.DocumentLoadTime,
+documentLoadTime,
+indentLevel: 1);
         }
 
         protected override void WriteVMExecutionTime(TimeSpan vmExecutionTime)
@@ -238,22 +289,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         #region RuntimeExecutionTimes
         protected override void WriteBeforeRuntimeExecutionTimes()
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.RuntimeExecutionTimes, indentLevel: 1);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.RuntimeExecutionTimes,
+indentLevel: 1);
         }
 
         protected override void WriteQueryEngineExecutionTime(TimeSpan queryEngineExecutionTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.QueryEngineTimes, queryEngineExecutionTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.QueryEngineTimes,
+queryEngineExecutionTime,
+indentLevel: 2);
         }
 
         protected override void WriteSystemFunctionExecutionTime(TimeSpan systemFunctionExecutionTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.SystemFunctionExecuteTime, systemFunctionExecutionTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.SystemFunctionExecuteTime,
+systemFunctionExecutionTime,
+indentLevel: 2);
         }
 
         protected override void WriteUserDefinedFunctionExecutionTime(TimeSpan userDefinedFunctionExecutionTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.UserDefinedFunctionExecutionTime, userDefinedFunctionExecutionTime, 2);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.UserDefinedFunctionExecutionTime,
+userDefinedFunctionExecutionTime,
+indentLevel: 2);
         }
 
         protected override void WriteAfterRuntimeExecutionTimes()
@@ -264,23 +330,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected override void WriteDocumentWriteTime(TimeSpan documentWriteTime)
         {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.DocumentWriteTime, documentWriteTime, indentLevel: 1);
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.DocumentWriteTime,
+documentWriteTime,
+indentLevel: 1);
         }
 
         #region ClientSideMetrics
         protected override void WriteBeforeClientSideMetrics()
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.ClientSideQueryMetrics, indentLevel: 0);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.ClientSideQueryMetrics,
+indentLevel: 0);
         }
 
         protected override void WriteRetries(long retries)
         {
-            QueryMetricsTextWriter.AppendCountToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.Retries, retries, indentLevel: 1);
+            QueryMetricsTextWriter.AppendCountToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.Retries,
+retries,
+indentLevel: 1);
         }
 
         protected override void WriteRequestCharge(double requestCharge)
         {
-            QueryMetricsTextWriter.AppendRUToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.RequestCharge, requestCharge, indentLevel: 1);
+            QueryMetricsTextWriter.AppendRUToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.RequestCharge,
+requestCharge,
+indentLevel: 1);
         }
 
         protected override void WriteBeforePartitionExecutionTimeline()
@@ -332,21 +413,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         protected override void WriteAfterFetchExecutionRange()
         {
             QueryMetricsTextWriter.AppendHeaderToStringBuilder(
-                this.stringBuilder,
-                PartitionExecutionTimelineTable.GetRow(
-                    this.lastFetchPartitionId,
-                    this.lastActivityId,
-                    this.lastStartTime.ToUniversalTime().ToString(DateTimeFormat),
-                    this.lastEndTime.ToUniversalTime().ToString(DateTimeFormat),
-                    (this.lastEndTime - this.lastStartTime).TotalMilliseconds.ToString("0.00"),
-                    this.lastFetchDocumentCount,
-                    this.lastFetchRetryCount),
-                indentLevel: 1);
+this.stringBuilder,
+PartitionExecutionTimelineTable.GetRow(
+this.lastFetchPartitionId,
+this.lastActivityId,
+this.lastStartTime.ToUniversalTime().ToString(DateTimeFormat),
+this.lastEndTime.ToUniversalTime().ToString(DateTimeFormat),
+(this.lastEndTime - this.lastStartTime).TotalMilliseconds.ToString("0.00"),
+this.lastFetchDocumentCount,
+this.lastFetchRetryCount),
+indentLevel: 1);
         }
 
         protected override void WriteAfterPartitionExecutionTimeline()
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, PartitionExecutionTimelineTable.BottomLine, indentLevel: 1);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+this.stringBuilder,
+PartitionExecutionTimelineTable.BottomLine,
+indentLevel: 1);
         }
 
         protected override void WriteBeforeSchedulingMetrics()
@@ -398,20 +482,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         protected override void WriteAfterPartitionSchedulingTimeSpan()
         {
             QueryMetricsTextWriter.AppendHeaderToStringBuilder(
-                this.stringBuilder,
-                SchedulingMetricsTable.GetRow(
-                    this.lastSchedulingPartitionId,
-                    this.lastResponseTime.TotalMilliseconds.ToString("0.00"),
-                    this.lastRunTime.TotalMilliseconds.ToString("0.00"),
-                    this.lastWaitTime.TotalMilliseconds.ToString("0.00"),
-                    this.lastTurnaroundTime.TotalMilliseconds.ToString("0.00"),
-                    this.lastNumberOfPreemptions),
-                indentLevel: 1);
+this.stringBuilder,
+SchedulingMetricsTable.GetRow(
+this.lastSchedulingPartitionId,
+this.lastResponseTime.TotalMilliseconds.ToString("0.00"),
+this.lastRunTime.TotalMilliseconds.ToString("0.00"),
+this.lastWaitTime.TotalMilliseconds.ToString("0.00"),
+this.lastTurnaroundTime.TotalMilliseconds.ToString("0.00"),
+this.lastNumberOfPreemptions),
+indentLevel: 1);
         }
 
         protected override void WriteAfterSchedulingMetrics()
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, SchedulingMetricsTable.BottomLine, indentLevel: 1);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+this.stringBuilder,
+SchedulingMetricsTable.BottomLine,
+indentLevel: 1);
         }
 
         protected override void WriteAfterClientSideMetrics()
@@ -423,7 +510,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         #region IndexUtilizationInfo
         protected override void WriteBeforeIndexUtilizationInfo()
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, QueryMetricsTextWriter.IndexUtilizationInfo, indentLevel: 0);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+this.stringBuilder,
+QueryMetricsTextWriter.IndexUtilizationInfo,
+indentLevel: 0);
         }
 
         protected override void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo)
@@ -557,7 +647,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static void AppendNewlineToStringBuilder(StringBuilder stringBuilder)
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(stringBuilder, string.Empty, 0);
+            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+stringBuilder,
+string.Empty,
+indentLevel: 0);
         }
         #endregion
     }

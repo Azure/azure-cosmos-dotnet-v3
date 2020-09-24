@@ -20,9 +20,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         public AutoCheckpointer(CheckpointFrequency checkpointFrequency, ChangeFeedObserver<T> observer)
         {
             if (checkpointFrequency == null)
+            {
                 throw new ArgumentNullException(nameof(checkpointFrequency));
+            }
+
             if (observer == null)
+            {
                 throw new ArgumentNullException(nameof(observer));
+            }
 
             this.checkpointFrequency = checkpointFrequency;
             this.observer = observer;
@@ -59,11 +64,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
 
             if (this.processedDocCount >= this.checkpointFrequency.ProcessedDocumentCount)
+            {
                 return true;
+            }
 
             TimeSpan delta = DateTime.UtcNow - this.lastCheckpointTime;
             if (delta >= this.checkpointFrequency.TimeInterval)
+            {
                 return true;
+            }
 
             return false;
         }

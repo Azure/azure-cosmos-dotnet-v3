@@ -28,15 +28,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract Guid Value { get; }
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        {
+            cosmosElementVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            return cosmosElementVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
+        {
+            return cosmosElementVisitor.Visit(this, input);
+        }
 
-        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            return cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
+        }
 
-        public bool Equals(CosmosGuid cosmosGuid) => this.Value == cosmosGuid.Value;
+        public bool Equals(CosmosGuid cosmosGuid)
+        {
+            return this.Value == cosmosGuid.Value;
+        }
 
         public override int GetHashCode()
         {
@@ -45,7 +60,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosGuid cosmosGuid) => this.Value.CompareTo(cosmosGuid.Value);
+        public int CompareTo(CosmosGuid cosmosGuid)
+        {
+            return this.Value.CompareTo(cosmosGuid.Value);
+        }
 
         public static CosmosGuid Create(
             IJsonNavigator jsonNavigator,
@@ -54,27 +72,51 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosGuid(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosGuid Create(Guid value) => new EagerCosmosGuid(value);
+        public static CosmosGuid Create(Guid value)
+        {
+            return new EagerCosmosGuid(value);
+        }
 
-        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.WriteGuidValue(this.Value);
+        public override void WriteTo(IJsonWriter jsonWriter)
+        {
+            jsonWriter.WriteGuidValue(this.Value);
+        }
 
-        public static new CosmosGuid CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosGuid>(buffer);
+        public static new CosmosGuid CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosGuid>(buffer);
+        }
 
-        public static new CosmosGuid Parse(string json) => CosmosElement.Parse<CosmosGuid>(json);
+        public static new CosmosGuid Parse(string json)
+        {
+            return CosmosElement.Parse<CosmosGuid>(json);
+        }
 
         public static bool TryCreateFromBuffer(
             ReadOnlyMemory<byte> buffer,
-            out CosmosGuid cosmosGuid) => CosmosElement.TryCreateFromBuffer<CosmosGuid>(buffer, out cosmosGuid);
+            out CosmosGuid cosmosGuid)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosGuid>(buffer, out cosmosGuid);
+        }
 
         public static bool TryParse(
             string json,
-            out CosmosGuid cosmosGuid) => CosmosElement.TryParse<CosmosGuid>(json, out cosmosGuid);
+            out CosmosGuid cosmosGuid)
+        {
+            return CosmosElement.TryParse<CosmosGuid>(json, out cosmosGuid);
+        }
 
         public static new class Monadic
         {
-            public static TryCatch<CosmosGuid> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosGuid>(buffer);
+            public static TryCatch<CosmosGuid> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosGuid>(buffer);
+            }
 
-            public static TryCatch<CosmosGuid> Parse(string json) => CosmosElement.Monadic.Parse<CosmosGuid>(json);
+            public static TryCatch<CosmosGuid> Parse(string json)
+            {
+                return CosmosElement.Monadic.Parse<CosmosGuid>(json);
+            }
         }
     }
 #if INTERNAL

@@ -18,13 +18,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
         /// Gets a value indicating whether this <see cref="JsonConverter"/> can write JSON.
         /// </summary>
         /// <value><c>true</c> if this <see cref="JsonConverter"/> can write JSON; otherwise, <c>false</c>.</value>
-        public override bool CanWrite
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool CanWrite => false;
 
         /// <summary>
         /// Writes the JSON representation of the object.

@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         internal DatabaseInlineCore(
            CosmosClientContext clientContext,
            string databaseId)
-            : base (
+            : base(
                clientContext,
                databaseId)
         {
@@ -269,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerIfNotExistsAsync),

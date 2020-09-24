@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!KeyVaultKeyUriProperties.TryParse(new Uri(metadata.Value), out KeyVaultKeyUriProperties keyVaultUriProperties))
             {
-                throw new ArgumentException("KeyVault Key Uri {0} is invalid.",metadata.Value);
+                throw new ArgumentException("KeyVault Key Uri {0} is invalid.", metadata.Value);
             }
 
             if (!await this.keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken))

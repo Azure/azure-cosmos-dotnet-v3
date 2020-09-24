@@ -58,13 +58,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// The Coordinate Reference System for this geometry.
         /// </value>
-        public Crs Crs
-        {
-            get
-            {
-                return this.CrsForSerialization ?? Crs.Default;
-            }
-        }
+        public Crs Crs => this.CrsForSerialization ?? Crs.Default;
 
         /// <summary>
         /// Gets geometry type in the Azure Cosmos DB service.

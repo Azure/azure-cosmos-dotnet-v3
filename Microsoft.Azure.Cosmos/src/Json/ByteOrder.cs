@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>The reversed char.</returns>
         public static char Reverse(char value)
         {
-            ushort b1 = (ushort)(((ushort)value >> 0) & 0xff);
-            ushort b2 = (ushort)(((ushort)value >> 8) & 0xff);
+            ushort b1 = (ushort)((value >> 0) & 0xff);
+            ushort b2 = (ushort)((value >> 8) & 0xff);
 
             return (char)((b1 << 8) | (b2 << 0));
         }

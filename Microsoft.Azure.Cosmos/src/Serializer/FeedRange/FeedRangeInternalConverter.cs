@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         private const string RangePropertyName = "Range";
         private const string PartitionKeyPropertyName = "PK";
         private const string PartitionKeyRangeIdPropertyName = "PKRangeId";
-        private static RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
+        private static readonly RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
 
         public override bool CanConvert(Type objectType)
         {
