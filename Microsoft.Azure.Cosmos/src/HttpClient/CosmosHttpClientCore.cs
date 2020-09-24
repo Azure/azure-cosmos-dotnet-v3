@@ -228,6 +228,7 @@ namespace Microsoft.Azure.Cosmos
                                 HttpCompletionOption.ResponseHeadersRead,
                                 cancellationToken);
 
+                        // WebAssembly HttpClient does not set the RequestMessage property on SendAsync
                         if (responseMessage.RequestMessage == null)
                         {
                             responseMessage.RequestMessage = requestMessage;
