@@ -690,11 +690,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [ExpectedException(typeof(DocumentClientException))]
         public async Task WhenHttpClientSendAsyncSetsNoRequestMessage()
         {
+            Guid previousActivityId = Trace.CorrelationManager.ActivityId;
+            Guid testActivityId = Guid.NewGuid();
+            Trace.CorrelationManager.ActivityId = testActivityId;
             // We don't set the RequestMessage property on purpose on the Failed response
             // This will make it go through GatewayStoreClient.CreateDocumentClientExceptionAsync
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.NotFound)
+                {
+                    Content = new StringContent("test")
+                };
+
+                return Task.FromResult(response);
+            };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
@@ -712,6 +724,7 @@ namespace Microsoft.Azure.Cosmos
 
             DocumentServiceRequest documentServiceRequest = new DocumentServiceRequest(OperationType.Read, ResourceType.Database, "/dbs/test", body: null, AuthorizationTokenType.PrimaryMasterKey, null);
             await storeModel.ProcessMessageAsync(documentServiceRequest);
+            Trace.CorrelationManager.ActivityId = previousActivityId;
         }
 
         private class MockMessageHandler : HttpMessageHandler
