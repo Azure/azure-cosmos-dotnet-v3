@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -15,6 +16,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal abstract class EncryptionProcessor
     {
+        public static readonly CosmosJsonDotNetSerializer BaseSerializer =
+            new CosmosJsonDotNetSerializer(
+                new JsonSerializerSettings()
+                {
+                    DateParseHandling = DateParseHandling.None,
+                });
+
         /// <summary>
         /// Encrypt an input of stream data.
         /// </summary>

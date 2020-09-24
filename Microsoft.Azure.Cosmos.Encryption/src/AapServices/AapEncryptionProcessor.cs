@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -18,17 +17,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Allows encrypting items in a container using AAP .
+    /// Allows encrypting items in a container using AAP Encryption Algorithm .
     /// </summary>
     internal class AapEncryptionProcessor : EncryptionProcessor
     {
-        internal static readonly CosmosJsonDotNetSerializer BaseSerializer =
-            new CosmosJsonDotNetSerializer(
-                new JsonSerializerSettings()
-                {
-                    DateParseHandling = DateParseHandling.None,
-                });
-
         public override async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -104,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new ArgumentException($"Invalid path {pathToEncrypt ?? string.Empty}", nameof(encryptionOptions.PathsToEncrypt));
                     }
 
-                    if (!root.TryGetProperty(pathToEncrypt.Substring(1), out JsonElement jj))
+                    if (!root.TryGetProperty(pathToEncrypt.Substring(1), out JsonElement propertyValue))
                     {
                         throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
                     }
@@ -120,37 +112,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 foreach (JsonProperty property in root.EnumerateObject())
                 {
                     // nulls are not encrypted
-                    if (property.Value.ValueKind != JsonValueKind.Null &
-                        encryptionProperties != null)
+                    if (property.Value.ValueKind != JsonValueKind.Null &&
+                        encryptionProperties.EncryptedPaths.Any() &&
+                        encryptionProperties.EncryptedPaths.Contains('/' + property.Name))
                     {
-                        if (encryptionProperties.EncryptedPaths != null &&
-                            encryptionProperties.EncryptedPaths.Any() &&
-                            encryptionProperties.EncryptedPaths.Contains('/' + property.Name))
+                        try
                         {
-                            try
-                            {
-                                (TypeMarker typeMarker, byte[] plainText) = Serialize(property.Value);
+                            (TypeMarker typeMarker, byte[] plainText) = Serialize(property.Value);
 
-                                byte[] cipherText = await encryptor.EncryptAsync(
-                                    plainText,
-                                    encryptionOptions.DataEncryptionKeyId,
-                                    encryptionOptions.EncryptionAlgorithm);
+                            byte[] cipherText = await encryptor.EncryptAsync(
+                                plainText,
+                                encryptionOptions.DataEncryptionKeyId,
+                                encryptionOptions.EncryptionAlgorithm);
 
-                                byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                                cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                                Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                                writer.WriteBase64String(property.Name, cipherTextWithTypeMarker);
-                            }
-                            catch (Exception ex)
-                            {
-                                property.WriteTo(writer);
-                                encryption_failed = true;
-                                rethrow_ex = ex;
-                            }
+                            byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
+                            cipherTextWithTypeMarker[0] = (byte)typeMarker;
+                            Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+                            writer.WriteBase64String(property.Name, cipherTextWithTypeMarker);
                         }
-                        else
+                        catch (Exception ex)
                         {
                             property.WriteTo(writer);
+                            encryption_failed = true;
+                            rethrow_ex = ex;
                         }
                     }
                     else

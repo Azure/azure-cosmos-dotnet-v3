@@ -70,16 +70,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions queryRequestOptions = null)
         {
 
-            if (container is EncryptionContainer encryptionContainer)
+            if (!(container is EncryptionContainer encryptionContainer))
             {
-                return new EncryptionFeedIterator<T>(
-                    (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(
-                        query,
-                        queryRequestOptions),
-                    encryptionContainer.ResponseFactory);
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }
 
-            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(
+                    query,
+                    queryRequestOptions),
+                encryptionContainer.ResponseFactory);
         }
 
         /// <summary>
@@ -106,6 +106,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
+            if (!(container is EncryptionContainer encryptionContainer))
+            {
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
+            }
 
             Action<DecryptionResult> decryptionResultHandler;
             if (queryRequestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
@@ -117,16 +121,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 decryptionResultHandler = null;
             }
 
-            if (container is EncryptionContainer encryptionContainer)
-            {
-                return new EncryptionFeedIterator(
+            return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
                 encryptionContainer.EncryptionProcessor,
                 decryptionResultHandler);
-            }
-
-            throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
         }
     }
 }

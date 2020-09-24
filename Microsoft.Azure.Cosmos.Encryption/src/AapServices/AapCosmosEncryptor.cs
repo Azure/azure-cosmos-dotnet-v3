@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="authenticationCallback"> Auth CallBack</param>
         public AapCosmosEncryptor(AzureKeyVaultProviderTokenCredential.AuthenticationCallback authenticationCallback)
         {
-            EncryptionKeyStoreProvider wrapProvider = new AzureKeyVaultProvider(authenticationCallback);
-            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider = new AzureKeyVaultProvider(authenticationCallback);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyStoreProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 
@@ -64,10 +64,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Initializes a new instance of the <see cref="AapCosmosEncryptor"/> class.
         /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via EncryptionKeyStoreProvider.
         /// </summary>
-        /// <param name="wrapProvider"> User provided TokenCredential for accessing Key Vault services. </param>
-        public AapCosmosEncryptor(EncryptionKeyStoreProvider wrapProvider)
+        /// <param name="encryptionKeyStoreProvider"> AAP EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        public AapCosmosEncryptor(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
-            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(wrapProvider);
+            this.cosmosDekProvider = new CosmosDataEncryptionKeyProvider(encryptionKeyStoreProvider);
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
         }
 
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AapCosmosEncryptor"/> class.
-        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via AAP  Key Vault.
+        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key.
         /// </summary>
         /// <param name="dataEncryptionKeyProvider"> dataEncryptionKeyProvider </param>
         public AapCosmosEncryptor(DataEncryptionKeyProvider dataEncryptionKeyProvider)
