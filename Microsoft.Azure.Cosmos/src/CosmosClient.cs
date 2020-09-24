@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
-        /// <param name="tokenCredential"><see cref="TokenCredential"/> to provide AAD token for auth.</param>
+        /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
 #if PREVIEW
         public
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used for unit testing only.
         /// </summary>
-        /// <remarks>This constructor should be removed at some point. The mocking should happen in a derivied class.</remarks>
+        /// <remarks>This constructor should be removed at some point. The mocking should happen in a derived class.</remarks>
         internal CosmosClient(
             string accountEndpoint,
             string authKeyOrResourceToken,
