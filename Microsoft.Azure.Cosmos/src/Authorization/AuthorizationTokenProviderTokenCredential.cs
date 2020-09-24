@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
-    using System.Net.Http;
-    using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -77,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static string GenerateAadAuthorizationSignature(string aadToken)
         {
-            return HttpUtility.UrlEncode(String.Format(
+            return HttpUtility.UrlEncode(string.Format(
                 CultureInfo.InvariantCulture,
                 Constants.Properties.AuthorizationFormat,
                 Constants.Properties.AadToken,
