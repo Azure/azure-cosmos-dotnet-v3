@@ -128,7 +128,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[],"Infinity")</Range>
+            <Range>[[{}],[{}]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -161,7 +161,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[],"Infinity")</Range>
+            <Range>[[{}],[{}]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -194,7 +194,13 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[],"Infinity")</Range>
+            <Range>[["a"],["a"]]</Range>
+            <Range>[[{}],[{}]]</Range>
+            <Range>[[null],[null]]</Range>
+            <Range>[[false],[false]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[1.0],[1.0]]</Range>
+            <Range>[[true],[true]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>

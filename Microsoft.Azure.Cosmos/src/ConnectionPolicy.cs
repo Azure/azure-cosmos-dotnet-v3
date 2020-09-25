@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ConnectionPolicy
     {
-        internal UserAgentContainer UserAgentContainer;
         private const int defaultRequestTimeout = 10;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
 
+        internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
 
         private Protocol connectionProtocol;

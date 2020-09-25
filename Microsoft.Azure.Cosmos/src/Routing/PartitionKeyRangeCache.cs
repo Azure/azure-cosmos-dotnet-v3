@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                     ////authorizationToken =
-                    ////    this.authorizationTokenProvider.GetUserAuthorizationToken(
+                    ////    this.authorizationTokenProvider.GetUserAuthorizationTokenAsync(
                     ////        collection.AltLink,
                     ////        PathsHelper.GetResourcePath(request.ResourceType),
                     ////        HttpConstants.HttpMethods.Get,
