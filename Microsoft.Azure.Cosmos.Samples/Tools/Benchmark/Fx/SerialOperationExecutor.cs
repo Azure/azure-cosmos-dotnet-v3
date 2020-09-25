@@ -11,12 +11,12 @@ namespace CosmosBenchmark
 
     internal class SerialOperationExecutor : IExecutor
     {
-        private readonly IBenchmarkOperation operation;
+        private readonly IBenchmarkOperatrion operation;
         private readonly string executorId;
 
         public SerialOperationExecutor(
             string executorId,
-            IBenchmarkOperation benchmarkOperation)
+            IBenchmarkOperatrion benchmarkOperation)
         {
             this.executorId = executorId;
             this.operation = benchmarkOperation;
@@ -33,7 +33,7 @@ namespace CosmosBenchmark
         public async Task ExecuteAsync(
                 int iterationCount,
                 bool isWarmup,
-                bool traceFailures,
+                bool traceFaiures,
                 Action completionCallback)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
@@ -45,7 +45,7 @@ namespace CosmosBenchmark
                 {
                     OperationResult? operationResult = null;
 
-                    await this.operation.PrepareAsync();
+                    await this.operation.Prepare();
 
                     using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
                                 () => operationResult.Value,
@@ -61,7 +61,7 @@ namespace CosmosBenchmark
                         }
                         catch (Exception ex)
                         {
-                            if (traceFailures)
+                            if (traceFaiures)
                             {
                                 Console.WriteLine(ex.ToString());
                             }

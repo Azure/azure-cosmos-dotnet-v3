@@ -6,9 +6,9 @@ namespace CosmosBenchmark
 {
     using System.Threading.Tasks;
 
-    internal interface IBenchmarkOperation
+    internal interface IBenchmarkOperatrion
     {
-        Task PrepareAsync();
+        Task Prepare();
 
         Task<OperationResult> ExecuteOnceAsync();
     }

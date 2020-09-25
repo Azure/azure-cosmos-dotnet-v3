@@ -10,6 +10,7 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using HdrHistogram;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
     using System.Collections.Generic;
@@ -31,12 +32,7 @@ namespace CosmosBenchmark
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
-
-                if (config.EnableLatencyPercentiles)
-                {
-                    TelemetrySpan.IncludePercentile = true;
-                    TelemetrySpan.ResetLatencyHistogram(config.ItemCount);
-                }
+                TelemetrySpan.IncludePercentile = config.EnableLatencyPercentiles;
 
                 string accountKey = config.Key;
                 config.Key = null; // Don't print
@@ -45,6 +41,15 @@ namespace CosmosBenchmark
                 Program program = new Program();
 
                 RunSummary runSummary = await program.ExecuteAsync(config, accountKey);
+
+                if (TelemetrySpan.IncludePercentile)
+                {
+                    TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(Console.Out);
+                    using (StreamWriter fileWriter = new StreamWriter("HistogramResults.hgrm"))
+                    {
+                        TelemetrySpan.LatencyHistogram.OutputPercentileDistribution(fileWriter);
+                    }
+                }
             }
             finally
             {
@@ -89,7 +94,7 @@ namespace CosmosBenchmark
                 RunSummary runSummary;
                 using (DocumentClient documentClient = config.CreateDocumentClient(accountKey))
                 {
-                    Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
+                    Func<IBenchmarkOperatrion> benchmarkOperationFactory = this.GetBenchmarkFactory(
                         config,
                         partitionKeyPath,
                         cosmosClient,
@@ -147,7 +152,7 @@ namespace CosmosBenchmark
             }
         }
 
-        private Func<IBenchmarkOperation> GetBenchmarkFactory(
+        private Func<IBenchmarkOperatrion> GetBenchmarkFactory(
             BenchmarkConfig config,
             string partitionKeyPath,
             CosmosClient cosmosClient,
@@ -199,12 +204,12 @@ namespace CosmosBenchmark
                 throw new NotImplementedException($"Unsupported CTOR for workload type {config.WorkloadType} ");
             }
 
-            return () => (IBenchmarkOperation)ci.Invoke(ctorArguments);
+            return () => (IBenchmarkOperatrion)ci.Invoke(ctorArguments);
         }
 
         private static Type[] AvailableBenchmarks()
         {
-            Type benchmarkType = typeof(IBenchmarkOperation);
+            Type benchmarkType = typeof(IBenchmarkOperatrion);
             return typeof(Program).Assembly.GetTypes()
                 .Where(p => benchmarkType.IsAssignableFrom(p))
                 .ToArray();

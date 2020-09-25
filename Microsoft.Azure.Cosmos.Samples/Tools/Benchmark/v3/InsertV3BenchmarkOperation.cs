@@ -12,13 +12,13 @@ namespace CosmosBenchmark
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
-    internal class InsertV3BenchmarkOperation : IBenchmarkOperation
+    internal class InsertV3BenchmarkOperation : IBenchmarkOperatrion
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
 
-        private readonly string databaseName;
+        private readonly string databsaeName;
         private readonly string containerName;
 
         public InsertV3BenchmarkOperation(
@@ -28,10 +28,10 @@ namespace CosmosBenchmark
             string partitionKeyPath,
             string sampleJson)
         {
-            this.databaseName = dbName;
+            this.databsaeName = dbName;
             this.containerName = containerName;
 
-            this.container = cosmosClient.GetContainer(this.databaseName, this.containerName);
+            this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
@@ -39,19 +39,16 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
+            using (Stream input = JsonHelper.ToStream(this.sampleJObject))
             {
                 ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                         input,
                         new PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString()));
 
                 double ruCharges = itemResponse.Headers.RequestCharge;
-
-                System.Buffers.ArrayPool<byte>.Shared.Return(input.GetBuffer());
-
                 return new OperationResult()
                 {
-                    DatabseName = databaseName,
+                    DatabseName = databsaeName,
                     ContainerName = containerName,
                     RuCharges = ruCharges,
                     lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
@@ -59,7 +56,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public Task PrepareAsync()
+        public Task Prepare()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = Guid.NewGuid().ToString();

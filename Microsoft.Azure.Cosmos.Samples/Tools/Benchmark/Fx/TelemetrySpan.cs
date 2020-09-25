@@ -6,14 +6,11 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Threading;
+    using HdrHistogram;
 
     internal struct TelemetrySpan : IDisposable
     {
-        private static double[] latencyHistogram;
-        private static int latencyIndex = -1;
-
+        internal static HistogramBase LatencyHistogram = new IntConcurrentHistogram(1, 10 * 1000, 0);
         internal static bool IncludePercentile = true;
 
         private Stopwatch stopwatch;
@@ -42,7 +39,7 @@ namespace CosmosBenchmark
 
                 if (TelemetrySpan.IncludePercentile)
                 {
-                    RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
+                    TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
                 }
 
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
@@ -51,28 +48,6 @@ namespace CosmosBenchmark
                     (int)this.stopwatch.ElapsedMilliseconds,
                     operationResult.lazyDiagnostics);
             }
-        }
-
-        private static void RecordLatency(double elapsedMilliseoncds)
-        {
-            int index = Interlocked.Increment(ref latencyIndex);
-            latencyHistogram[index] = elapsedMilliseoncds;
-        }
-
-        internal static void ResetLatencyHistogram(int totalNumberOfIterations)
-        {
-            latencyHistogram = new double[totalNumberOfIterations];
-            latencyIndex = -1;
-        }
-
-        internal static double? GetLatencyPercentile(int percentile)
-        {
-            if (latencyHistogram == null)
-            {
-                return null;
-            }
-
-            return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
         }
     }
 }

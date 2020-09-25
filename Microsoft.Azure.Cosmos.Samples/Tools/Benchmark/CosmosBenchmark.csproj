@@ -6,19 +6,18 @@
     <AssemblyName>CosmosBenchmark</AssemblyName>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <None Include="KeyValue.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Player.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.5.0" />
-    <PackageReference Include="MathNet.Numerics" Version="4.12.0" />
+    <PackageReference Include="HdrHistogram" Version="2.5.0" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
   </ItemGroup>
 

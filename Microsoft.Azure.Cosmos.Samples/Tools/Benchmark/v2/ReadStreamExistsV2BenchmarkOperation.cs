@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class ReadStreamExistsV2BenchmarkOperation : IBenchmarkOperation
+    internal class ReadStreamExistsV2BenchmarkOperation : IBenchmarkOperatrion
     {
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
@@ -61,7 +61,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public async Task PrepareAsync()
+        public async Task Prepare()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
@@ -73,15 +73,12 @@ namespace CosmosBenchmark
                 this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
                 Uri collectionUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
-                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
+                using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
                     ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
                             collectionUri,
                             this.sampleJObject,
                             new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) });
-
-                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
-
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
                         throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");

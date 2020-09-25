@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     {
         public static IExecutionStrategy StartNew(
             BenchmarkConfig config,
-            Func<IBenchmarkOperation> benchmarkOperation)
+            Func<IBenchmarkOperatrion> benchmarkOperation)
         {
             return new ParallelExecutionStrategy(benchmarkOperation);
         }
