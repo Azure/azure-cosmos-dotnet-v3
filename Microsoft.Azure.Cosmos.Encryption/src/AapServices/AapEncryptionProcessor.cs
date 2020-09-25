@@ -79,43 +79,89 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
-            foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
+            EncryptionProperties encryptionProperties = null;
+
+            if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
             {
-                string propertyName = pathToEncrypt.Substring(1);
-                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                 {
-                    throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                    string propertyName = pathToEncrypt.Substring(1);
+                    if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                    {
+                        throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                    }
+
+                    if (propertyValue.Type == JTokenType.Null)
+                    {
+                        continue;
+                    }
+
+                    (TypeMarker typeMarker, byte[] plainText) = AapEncryptionProcessor.Serialize(propertyValue);
+
+                    byte[] cipherText = await encryptor.EncryptAsync(
+                        plainText,
+                        encryptionOptions.DataEncryptionKeyId,
+                        encryptionOptions.EncryptionAlgorithm);
+
+                    byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
+                    cipherTextWithTypeMarker[0] = (byte)typeMarker;
+                    Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+                    itemJObj[propertyName] = Convert.ToBase64String(cipherTextWithTypeMarker);
+
+                    if (cipherTextWithTypeMarker == null)
+                    {
+                        throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(this.EncryptAsync)}.");
+                    }
                 }
 
-                if (propertyValue.Type == JTokenType.Null)
+                // Update the Item with the Encryption Properties, Version and Algorithm.
+                encryptionProperties = new EncryptionProperties(
+                        encryptionFormatVersion: 3,
+                        encryptionOptions.EncryptionAlgorithm,
+                        encryptionOptions.DataEncryptionKeyId,
+                        encryptedData: null,
+                        encryptionOptions.PathsToEncrypt);
+            }
+            else if (encryptionOptions.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                JObject toEncryptJObj = new JObject();
+
+                foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                 {
-                    continue;
+                    string propertyName = pathToEncrypt.Substring(1);
+                    if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                    {
+                        throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                    }
+
+                    toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
+                    itemJObj.Remove(propertyName);
                 }
 
-                (TypeMarker typeMarker, byte[] plainText) = AapEncryptionProcessor.Serialize(propertyValue);
+                MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream<JObject>(toEncryptJObj);
+                Debug.Assert(memoryStream != null);
+                Debug.Assert(memoryStream.TryGetBuffer(out _));
+                byte[] plainText = memoryStream.ToArray();
 
                 byte[] cipherText = await encryptor.EncryptAsync(
                     plainText,
                     encryptionOptions.DataEncryptionKeyId,
-                    encryptionOptions.EncryptionAlgorithm);
+                    encryptionOptions.EncryptionAlgorithm,
+                    cancellationToken);
 
-                byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                itemJObj[propertyName] = Convert.ToBase64String(cipherTextWithTypeMarker);
-
-                if (cipherTextWithTypeMarker == null)
+                if (cipherText == null)
                 {
                     throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(this.EncryptAsync)}.");
                 }
-            }
 
-            EncryptionProperties encryptionProperties = new EncryptionProperties(
-                  encryptionFormatVersion: 3,
+                // Update the Item with the Encryption Properties, Version and Algorithm.
+                encryptionProperties = new EncryptionProperties(
+                  encryptionFormatVersion: 2,
                   encryptionOptions.EncryptionAlgorithm,
                   encryptionOptions.DataEncryptionKeyId,
-                  encryptedData: null,
+                  encryptedData: cipherText,
                   encryptionOptions.PathsToEncrypt);
+            }
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
             input.Dispose();
