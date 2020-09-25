@@ -1410,7 +1410,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Add("/children/1/status", "patched"),
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", newTaskNum),
-                PatchOperation.Increment("/taskNum", one)
+                //PatchOperation.Increment("/taskNum", one)
             };
 
             // without content response
@@ -1437,7 +1437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual("patched", response.Resource.children[1].status);
             Assert.IsNull(response.Resource.description);
-            Assert.AreEqual(newTaskNum + 1, response.Resource.taskNum);
+            Assert.AreEqual(newTaskNum, response.Resource.taskNum);
 
             patchOperations.Clear();
             patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
