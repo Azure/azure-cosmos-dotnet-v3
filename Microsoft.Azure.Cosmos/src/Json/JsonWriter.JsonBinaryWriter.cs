@@ -692,7 +692,8 @@ namespace Microsoft.Azure.Cosmos.Json
                                     break;
 
                                 default:
-                                    throw new InvalidOperationException($"Unknown {nameof(typeMarker)}: {typeMarker}.");
+                                    // Do Nothing
+                                    break;
                             }
                         }
                         break;
@@ -1190,7 +1191,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                         if (!this.stringLiteralDictionary.TryGetValue(key, out ulong value))
                         {
-                            keyValue = default;
+                            keyValue = (key, value);
                             return false;
                         }
 
@@ -1203,7 +1204,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         UInt128 key = MurmurHash3.Hash128(stringValue, seed: UInt128.Create((ulong)stringValue.Length, (ulong)stringValue.Length));
                         if (!this.stringHashDictionary.TryGetValue(key, out ulong value))
                         {
-                            keyValue = default;
+                            keyValue = (key, value);
                             return false;
                         }
 

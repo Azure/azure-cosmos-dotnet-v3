@@ -615,7 +615,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             // Object with 33 field names. This creates a user string with 2 byte type marker.
 
-            List<JsonToken> tokensToWrite = new List<JsonToken>() { JsonToken.ObjectStart() };
+            List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
             StringBuilder textInput = new StringBuilder("{");
             List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength, };
             List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength };
@@ -625,8 +625,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 string userEncodedString = "a" + i.ToString();
 
-                tokensToWrite.Add(JsonToken.FieldName(userEncodedString));
-                tokensToWrite.Add(JsonToken.String(userEncodedString));
+                expectedTokens.Add(JsonToken.FieldName(userEncodedString));
+                expectedTokens.Add(JsonToken.String(userEncodedString));
 
                 if (i > 0)
                 {
@@ -656,13 +656,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 binaryInputWithEncoding.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
             }
 
-            tokensToWrite.Add(JsonToken.ObjectEnd());
+            expectedTokens.Add(JsonToken.ObjectEnd());
             textInput.Append("}");
             binaryInput.Insert(2, (byte)(binaryInput.Count() - 2));
             binaryInputWithEncoding.Insert(2, (byte)(binaryInputWithEncoding.Count() - 2));
 
-            this.VerifyReader(textInput.ToString(), tokensToWrite.ToArray());
-            this.VerifyReader(binaryInput.ToArray(), tokensToWrite.ToArray());
+            this.VerifyReader(textInput.ToString(), expectedTokens.ToArray());
+            this.VerifyReader(binaryInput.ToArray(), expectedTokens.ToArray());
 
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
             for (int i = 0; i < OneByteCount + 1; i++)
@@ -672,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 Assert.AreEqual(i, index);
             }
 
-            this.VerifyReader(binaryInputWithEncoding.ToArray(), tokensToWrite.ToArray(), jsonStringDictionary);
+            this.VerifyReader(binaryInputWithEncoding.ToArray(), expectedTokens.ToArray(), jsonStringDictionary);
         }
 
         [TestMethod]
@@ -1415,7 +1415,155 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void PackedStringsTest()
         {
-            // TODO add tests for packed strings
+            {
+                // 4 bit packed string
+                string compressedString = "ababababababababababababababababg";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed4BitString,
+                    0x21, 0x61, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                    0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                    0x10, 0x10, 0xF6
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 5 bit packed string
+                string compressedString = "thequickbrownfoxjumpedoverthelazydog";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed5BitString,
+                    0x24, 0x61, 0xF3, 0x10, 0x48, 0x91, 0x50, 0x21,
+                    0x3A, 0xDB, 0x8A, 0xBB, 0x89, 0xB2, 0x47, 0x86,
+                    0xAB, 0x24, 0xCE, 0x43, 0x16, 0xC8, 0x78, 0x38,
+                    0xF3
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 6 bit packed string
+                string compressedString = "thequickbrownfoxjumpedoverthelazydogTHEQUICKBROWNFOXJUMPEDOVERTHELAZYDOG";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed6BitString,
+                    0x48, 0x41, 0xF3, 0x49, 0xC2, 0x34, 0x2A, 0xAA,
+                    0x61, 0xEC, 0xDA, 0x6D, 0xE9, 0xDE, 0x29, 0xCD,
+                    0xBE, 0xE4, 0xE8, 0xD6, 0x64, 0x3C, 0x9F, 0xE4,
+                    0x0A, 0xE6, 0xF8, 0xE8, 0x9A, 0xD3, 0x41, 0x40,
+                    0x14, 0x22, 0x28, 0x41, 0xE4, 0x58, 0x4D, 0xE1,
+                    0x5C, 0x09, 0xC5, 0x3C, 0xC4, 0xE0, 0x54, 0x44,
+                    0x34, 0x1D, 0xC4, 0x02, 0x64, 0xD8, 0xE0, 0x18
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 7 bit packed string length 1
+                string compressedString = "thequickbrownfoxjumpedoverthelazydogTHEQUICKBROWNFOXJUMPEDOVERTHELAZYDOG0123456789!@#$%^&*";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1,
+                    0x5A, 0x74, 0x74, 0x39, 0x5E, 0x4F, 0x8F, 0xD7,
+                    0x62, 0xF9, 0xFB, 0xEE, 0x36, 0xBF, 0xF1, 0xEA,
+                    0x7A, 0x1B, 0x5E, 0x26, 0xBF, 0xED, 0x65, 0x39,
+                    0x1D, 0x5D, 0x66, 0x87, 0xF5, 0x79, 0xF2, 0xFB,
+                    0x4C, 0x45, 0x16, 0xA3, 0xD5, 0xE4, 0x70, 0x29,
+                    0x94, 0x3E, 0xAF, 0x4E, 0xE3, 0x13, 0xAB, 0xAC,
+                    0x36, 0xA1, 0x45, 0xE2, 0xD3, 0x5A, 0x94, 0x52,
+                    0x91, 0x45, 0x66, 0x50, 0x9B, 0x25, 0x3E, 0x8F,
+                    0xB0, 0x98, 0x6C, 0x46, 0xAB, 0xD9, 0x6E, 0xB8,
+                    0x5C, 0x08, 0x38, 0x22, 0x95, 0xBC, 0x26, 0x15
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 7 bit packed string length 2
+                string compressedString = "thequickbrownfoxjumpedoverthelazydogTHEQUICKBROWNFOXJUMPEDOVERTHELAZYDOG0123456789!@#$%^&*";
+                compressedString = compressedString + compressedString + compressedString;
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2,
+                    0x0E, 0x01, 0x74, 0x74, 0x39, 0x5E, 0x4F, 0x8F,
+                    0xD7, 0x62, 0xF9, 0xFB, 0xEE, 0x36, 0xBF, 0xF1,
+                    0xEA, 0x7A, 0x1B, 0x5E, 0x26, 0xBF, 0xED, 0x65,
+                    0x39, 0x1D, 0x5D, 0x66, 0x87, 0xF5, 0x79, 0xF2,
+                    0xFB, 0x4C, 0x45, 0x16, 0xA3, 0xD5, 0xE4, 0x70,
+                    0x29, 0x94, 0x3E, 0xAF, 0x4E, 0xE3, 0x13, 0xAB,
+                    0xAC, 0x36, 0xA1, 0x45, 0xE2, 0xD3, 0x5A, 0x94,
+                    0x52, 0x91, 0x45, 0x66, 0x50, 0x9B, 0x25, 0x3E,
+                    0x8F, 0xB0, 0x98, 0x6C, 0x46, 0xAB, 0xD9, 0x6E,
+                    0xB8, 0x5C, 0x08, 0x38, 0x22, 0x95, 0xBC, 0x26,
+                    0x15, 0x1D, 0x5D, 0x8E, 0xD7, 0xD3, 0xE3, 0xB5,
+                    0x58, 0xFE, 0xBE, 0xBB, 0xCD, 0x6F, 0xBC, 0xBA,
+                    0xDE, 0x86, 0x97, 0xC9, 0x6F, 0x7B, 0x59, 0x4E,
+                    0x47, 0x97, 0xD9, 0x61, 0x7D, 0x9E, 0xFC, 0x3E,
+                    0x53, 0x91, 0xC5, 0x68, 0x35, 0x39, 0x5C, 0x0A,
+                    0xA5, 0xCF, 0xAB, 0xD3, 0xF8, 0xC4, 0x2A, 0xAB,
+                    0x4D, 0x68, 0x91, 0xF8, 0xB4, 0x16, 0xA5, 0x54,
+                    0x64, 0x91, 0x19, 0xD4, 0x66, 0x89, 0xCF, 0x23,
+                    0x2C, 0x26, 0x9B, 0xD1, 0x6A, 0xB6, 0x1B, 0x2E,
+                    0x17, 0x02, 0x8E, 0x48, 0x25, 0xAF, 0x49, 0x45,
+                    0x47, 0x97, 0xE3, 0xF5, 0xF4, 0x78, 0x2D, 0x96,
+                    0xBF, 0xEF, 0x6E, 0xF3, 0x1B, 0xAF, 0xAE, 0xB7,
+                    0xE1, 0x65, 0xF2, 0xDB, 0x5E, 0x96, 0xD3, 0xD1,
+                    0x65, 0x76, 0x58, 0x9F, 0x27, 0xBF, 0xCF, 0x54,
+                    0x64, 0x31, 0x5A, 0x4D, 0x0E, 0x97, 0x42, 0xE9,
+                    0xF3, 0xEA, 0x34, 0x3E, 0xB1, 0xCA, 0x6A, 0x13,
+                    0x5A, 0x24, 0x3E, 0xAD, 0x45, 0x29, 0x15, 0x59,
+                    0x64, 0x06, 0xB5, 0x59, 0xE2, 0xF3, 0x08, 0x8B,
+                    0xC9, 0x66, 0xB4, 0x9A, 0xED, 0x86, 0xCB, 0x85,
+                    0x80, 0x23, 0x52, 0xC9, 0x6B, 0x52, 0x01
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
         }
         #endregion
         #region Arrays

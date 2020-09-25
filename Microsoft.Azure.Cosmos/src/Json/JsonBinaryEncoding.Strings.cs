@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Rntbd;
 
     internal static partial class JsonBinaryEncoding
     {
@@ -641,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 char c = (char)guidString[index];
 
-                if ((index == dashIndex) && (index < 23))
+                if ((index == dashIndex) && (index <= 23))
                 {
                     if (c != '-')
                     {
@@ -671,11 +672,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
                 else
                 {
-                    flags |= EncodeGuidParseFlags.Invalid;
+                    flags = EncodeGuidParseFlags.Invalid;
                     break;
                 }
 
-                if ((index % 2) == 0)
+                if ((index % 2) == oddEven)
                 {
                     writePointer[0] = value;
                 }
@@ -724,19 +725,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (charValue >= 128)
                 {
                     bytesWritten = default;
-                    return true;
+                    return false;
                 }
 
                 valueCharSet.Set(charValue, true);
             }
 
             int firstSetBit = 0;
-            for (; (firstSetBit < valueCharSet.Length) && valueCharSet[firstSetBit]; firstSetBit++)
+            for (; (firstSetBit < valueCharSet.Length) && !valueCharSet[firstSetBit]; firstSetBit++)
             {
             }
 
             int lastSetBit = valueCharSet.Length - 1;
-            for (; (lastSetBit > 0) && valueCharSet[lastSetBit]; lastSetBit--)
+            for (; (lastSetBit > 0) && !valueCharSet[lastSetBit]; lastSetBit--)
             {
             }
 
@@ -826,7 +827,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             int lengthByteCount = (isHexadecimalString || isDateTimeString) ? 1 : (isCompressedString ? ((typeMarker == JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2) ? 2 : 1) : 0);
-            int baseCharByteCount = JsonBinaryEncoding.TypeMarker.InRange(typeMarker, JsonBinaryEncoding.TypeMarker.Packed4BitString, JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2 + 1) ? 1 : 0;
+            int baseCharByteCount = JsonBinaryEncoding.TypeMarker.InRange(typeMarker, JsonBinaryEncoding.TypeMarker.Packed4BitString, JsonBinaryEncoding.TypeMarker.Packed6BitString + 1) ? 1 : 0;
             int prefixByteCount = 1 + lengthByteCount + baseCharByteCount;
             int numberOfBits = (isHexadecimalString || isDateTimeString) ? 4 : (typeMarker >= JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1) ? 7 : (4 + typeMarker - JsonBinaryEncoding.TypeMarker.Packed4BitString);
 
@@ -853,15 +854,18 @@ namespace Microsoft.Azure.Cosmos.Json
                 else
                 {
                     SetFixedSizedValue<ushort>(destinationBuffer, (ushort)stringValue.Length);
-                    destinationBuffer = destinationBuffer.Slice(start: 1);
+                    destinationBuffer = destinationBuffer.Slice(start: 2);
                 }
 
                 // Write base char
                 if (baseCharByteCount == 1)
                 {
-                    destinationBuffer[0] = (byte)baseCharByteCount;
+                    destinationBuffer[0] = (byte)baseChar;
                     destinationBuffer = destinationBuffer.Slice(start: 1);
                 }
+
+                // trim the destination buffer to be only the encoded bytes
+                destinationBuffer = destinationBuffer.Slice(start: 0, encodedLength);
 
                 EncodeStringValue(typeMarker, stringValue, baseChar, destinationBuffer);
             }
@@ -908,7 +912,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 byte c = stringValue[index];
 
-                byte value = (byte)chars.ByteToTwoChars[c];
+                byte value = chars.CharToByte[c];
 
                 if ((index % 2) == 0)
                 {
@@ -927,27 +931,29 @@ namespace Microsoft.Azure.Cosmos.Json
             Span<ulong> packedValue = stackalloc ulong[1];
             int index = 0;
 
-            for (; index < (stringValue.Length / 8 * 8); index += 8)
+            for (; index < stringValue.Length / 8 * 8; index += 8)
             {
-                packedValue[0] = (ulong)((stringValue[index + 0] - baseChar) << (0 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 1] - baseChar) << (1 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 2] - baseChar) << (2 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 3] - baseChar) << (3 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 4] - baseChar) << (4 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 5] - baseChar) << (5 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 6] - baseChar) << (6 * numberOfBits));
-                packedValue[0] |= (uint)((stringValue[index + 7] - baseChar) << (7 * numberOfBits));
+                packedValue[0] = (((ulong)stringValue[index + 0]) - baseChar) << (0 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 1]) - baseChar) << (1 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 2]) - baseChar) << (2 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 3]) - baseChar) << (3 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 4]) - baseChar) << (4 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 5]) - baseChar) << (5 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 6]) - baseChar) << (6 * numberOfBits);
+                packedValue[0] |= (((ulong)stringValue[index + 7]) - baseChar) << (7 * numberOfBits);
 
                 Span<byte> packedValueAsBytes = MemoryMarshal.AsBytes(packedValue);
-                packedValueAsBytes.Slice(start: numberOfBits).CopyTo(destinationBuffer);
+                packedValueAsBytes.Slice(start: 0, length: numberOfBits).CopyTo(destinationBuffer);
                 destinationBuffer = destinationBuffer.Slice(start: numberOfBits);
             }
 
             if (index < stringValue.Length)
             {
                 Span<byte> paddedStringValue = stackalloc byte[8];
+                Span<byte> encodedPaddedStringValue = stackalloc byte[8];
                 stringValue.Slice(start: index).CopyTo(paddedStringValue);
-                EncodeCompressedStringValue(numberOfBits, paddedStringValue, baseChar, destinationBuffer);
+                EncodeCompressedStringValue(numberOfBits, paddedStringValue, baseChar, encodedPaddedStringValue);
+                encodedPaddedStringValue.Slice(start: 0, length: destinationBuffer.Length).CopyTo(destinationBuffer);
             }
         }
 
@@ -1127,7 +1133,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 ReadOnlySpan<byte> encodedString = stringToken.Slice(start: prefixByteCount, length: encodedLength);
 
-                DecodeStringValue(typeMarker, encodedString, baseChar, destinationBuffer);
+                DecodeStringValue(typeMarker, encodedString, baseChar, destinationBuffer.Slice(start: 0, length: bytesWritten));
             }
         }
 
@@ -1210,7 +1216,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.Packed4BitString:
                 case JsonBinaryEncoding.TypeMarker.Packed5BitString:
                 case JsonBinaryEncoding.TypeMarker.Packed6BitString:
-                    return stringToken[1];
+                    return stringToken[2];
 
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1:
                 case JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2:
@@ -1226,7 +1232,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        private static void DecodeStringValue(byte typeMarker, ReadOnlySpan<byte> encodedString, int baseChar, Span<byte> destinationBuffer)
+        private static void DecodeStringValue(byte typeMarker, ReadOnlySpan<byte> encodedString, byte baseChar, Span<byte> destinationBuffer)
         {
             switch (typeMarker)
             {
@@ -1328,7 +1334,7 @@ namespace Microsoft.Azure.Cosmos.Json
         private static void DecodeCompressedStringValue(
             int numberOfBits,
             ReadOnlySpan<byte> encodedString,
-            int baseChar,
+            byte baseChar,
             Span<byte> destinationBuffer)
         {
             if (numberOfBits > 8 || numberOfBits < 0)
@@ -1336,52 +1342,56 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentException("Invalid number of bits.");
             }
 
-            if (encodedString.Length != JsonBinaryEncoding.ValueLengths.GetCompressedStringLength(destinationBuffer.Length, numberOfBits: 4))
-            {
-                throw new ArgumentException("destination buffer is too small.");
-            }
-
             long mask = 0x000000FF >> (8 - numberOfBits);
             int index = 0;
             Span<byte> packedValueByteArray = stackalloc byte[8];
-            for (; index < destinationBuffer.Length / 8 * 8; index += 8)
+            int iterations = destinationBuffer.Length / 8 * 8;
+            for (; index < iterations; index += 8)
             {
                 encodedString.Slice(start: 0, length: numberOfBits).CopyTo(packedValueByteArray);
 
                 long packedValue = MemoryMarshal.Cast<byte, long>(packedValueByteArray)[0];
 
-                destinationBuffer[index + 0] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[0] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 1] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[1] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 2] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[2] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 3] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[3] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 4] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[4] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 5] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[5] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 6] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[6] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
 
-                destinationBuffer[index + 7] = (byte)((packedValue & mask) + baseChar);
+                destinationBuffer[7] = (byte)(((byte)(packedValue & mask)) + baseChar);
                 packedValue >>= numberOfBits;
+
+                if (packedValue != 0)
+                {
+                    throw new InvalidOperationException();
+                }
 
                 encodedString = encodedString.Slice(start: numberOfBits);
+                destinationBuffer = destinationBuffer.Slice(start: 8);
             }
 
-            if (index < destinationBuffer.Length)
+            if (!destinationBuffer.IsEmpty)
             {
-                Span<byte> bytes = stackalloc byte[8];
-                encodedString.CopyTo(bytes);
-                DecodeCompressedStringValue(numberOfBits, bytes, baseChar, destinationBuffer.Slice(start: index));
+                Span<byte> paddedString = stackalloc byte[8];
+                Span<byte> decodedPaddedString = stackalloc byte[8];
+                encodedString.CopyTo(paddedString);
+                DecodeCompressedStringValue(numberOfBits, paddedString, baseChar, decodedPaddedString);
+                decodedPaddedString.Slice(start: 0, length: destinationBuffer.Length).CopyTo(destinationBuffer);
             }
         }
 

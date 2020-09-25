@@ -15,7 +15,11 @@ namespace Microsoft.Azure.Cosmos.Json
             this.buffer = new byte[initialCapacity];
         }
 
-        public int Position { get; set; }
+        public int Position
+        {
+            get;
+            set;
+        }
 
         public Span<byte> Cursor => this.buffer.AsSpan().Slice(this.Position);
 

@@ -22,13 +22,11 @@ namespace Microsoft.Azure.Cosmos.Json
             private const int CS4L1 = -7;        // 4-bit Compressed string w/ 1-byte length
             private const int CS7L1 = -8;        // 7-bit Compressed string w/ 1-byte length
             private const int CS7L2 = -9;        // 7-bit Compressed string w/ 2-byte length
-            private const int CS2BL1 = -10;      // 2-bit Compressed string w/ 1-byte length followed by 1-byte base char
-            private const int CS3BL1 = -11;      // 3-bit Compressed string w/ 1-byte length followed by 1-byte base char
-            private const int CS4BL1 = -12;      // 4-bit Compressed string w/ 1-byte length followed by 1-byte base char
-            private const int CS5BL1 = -13;      // 5-bit Compressed string w/ 1-byte length followed by 1-byte base char
-            private const int CS6BL1 = -14;      // 6-bit Compressed string w/ 1-byte length followed by 1-byte base char
-            private const int Arr1 = -15;        // 1-item array
-            private const int Obj1 = -16;        // 1-property object
+            private const int CS4BL1 = -10;      // 4-bit Compressed string w/ 1-byte length followed by 1-byte base char
+            private const int CS5BL1 = -11;      // 5-bit Compressed string w/ 1-byte length followed by 1-byte base char
+            private const int CS6BL1 = -12;      // 6-bit Compressed string w/ 1-byte length followed by 1-byte base char
+            private const int Arr1 = -13;        // 1-item array
+            private const int Obj1 = -14;        // 1-property object
 
             /// <summary>
             /// Lookup table for encoded value length for each TypeMarker value (0 to 255)
@@ -233,15 +231,9 @@ namespace Microsoft.Azure.Cosmos.Json
                             length = TypeMarkerLength + OneByteLength + GetCompressedStringLength(buffer[1], numberOfBits: 7);
                             break;
                         case CS7L2:
-                            length = TypeMarkerLength + TwoByteLength + GetCompressedStringLength(buffer[1], numberOfBits: 7);
+                            length = TypeMarkerLength + TwoByteLength + GetCompressedStringLength(GetFixedSizedValue<ushort>(buffer.Slice(start: 1)), numberOfBits: 7);
                             break;
 
-                        case CS2BL1:
-                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 2);
-                            break;
-                        case CS3BL1:
-                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 3);
-                            break;
                         case CS4BL1:
                             length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 4);
                             break;

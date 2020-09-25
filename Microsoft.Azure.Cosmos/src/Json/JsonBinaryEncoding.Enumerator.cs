@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("failed to get array segment.");
                     }
 
-                    yield return buffer.Slice(segment.Offset, length: segment.Count);
+                    yield return segment;
                 }
             }
 
@@ -70,7 +70,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 int firstValueOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
+                int objectLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
+                // Scope to just the array
+                buffer = buffer.Slice(0, (int)objectLength);
+
+                // Seek to the first object property
                 buffer = buffer.Slice(firstValueOffset);
                 while (buffer.Length != 0)
                 {
@@ -79,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         throw new JsonInvalidTokenException();
                     }
+
                     ReadOnlyMemory<byte> name = buffer.Slice(0, nameNodeLength);
                     buffer = buffer.Slice(nameNodeLength);
 
@@ -87,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         throw new JsonInvalidTokenException();
                     }
+
                     ReadOnlyMemory<byte> value = buffer.Slice(0, valueNodeLength);
                     buffer = buffer.Slice(valueNodeLength);
 
@@ -108,10 +115,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("failed to get array segment.");
                     }
 
-                    Memory<byte> mutableName = buffer.Slice(start: nameSegment.Offset, length: nameSegment.Count);
-                    Memory<byte> mutableValue = buffer.Slice(start: valueSegment.Offset, length: valueSegment.Count);
-
-                    yield return new MutableObjectProperty(mutableName, mutableValue);
+                    yield return new MutableObjectProperty(nameSegment, valueSegment);
                 }
             }
 

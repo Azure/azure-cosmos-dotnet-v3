@@ -533,7 +533,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     {
                         IJsonNavigatorNode rootNode = jsonNavigator.GetRootNode();
                         JsonToken[] tokensFromNavigator = JsonNavigatorTests.GetTokensFromNode(rootNode, jsonNavigator, performExtraChecks);
-                        Assert.IsTrue(tokensFromNavigator.SequenceEqual(tokensFromReader));
+                        Assert.AreEqual(tokensFromNavigator.Length, tokensFromReader.Length);
+                        IEnumerable<(JsonToken, JsonToken)> zippedTokens = tokensFromNavigator.Zip(tokensFromReader, (first, second) => (first, second));
+                        foreach ((JsonToken tokenFromNavigator, JsonToken tokenFromReader) in zippedTokens)
+                        {
+                            if (!tokenFromNavigator.Equals(tokenFromReader))
+                            {
+                                Assert.Fail();
+                            }
+                        }
 
                         // Test materialize
                         JToken materializedToken = CosmosElement.Dispatch(jsonNavigator, rootNode).Materialize<JToken>();
