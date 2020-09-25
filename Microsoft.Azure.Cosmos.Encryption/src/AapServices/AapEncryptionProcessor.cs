@@ -159,63 +159,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-            JObject plainTextJObj = new JObject();
-            foreach (string path in encryptionProperties.EncryptedPaths)
+
+            if (encryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
             {
-                if (itemJObj.TryGetValue(path.Substring(1), out JToken propertyValue))
-                {
-                    byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
-
-                    if (cipherTextWithTypeMarker == null)
-                    {
-                        continue;
-                    }
-
-                    byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
-                    Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
-
-                    byte[] plainText = await AapEncryptionProcessor.DecryptContentAsync(
-                        encryptionProperties,
-                        cipherText,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    string key = path.Substring(1);
-                    AapEncryptionProcessor.DeserializeAndAddProperty(
-                                (TypeMarker)cipherTextWithTypeMarker[0],
-                                plainText,
-                                plainTextJObj,
-                                key);
-                }
-            }
-
-            foreach (JProperty property in plainTextJObj.Properties())
-            {
-                itemJObj[property.Name] = property.Value;
-            }
-
-            input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
-        }
-
-        public override async Task<JObject> DecryptAsync(
-            JObject document,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(document != null);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-
-            if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
-            {
-                EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
                 JObject plainTextJObj = new JObject();
                 foreach (string path in encryptionProperties.EncryptedPaths)
                 {
-                    if (document.TryGetValue(path.Substring(1), out JToken propertyValue))
+                    if (itemJObj.TryGetValue(path.Substring(1), out JToken propertyValue))
                     {
                         byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
 
@@ -235,7 +185,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             cancellationToken);
 
                         string key = path.Substring(1);
-
                         AapEncryptionProcessor.DeserializeAndAddProperty(
                                     (TypeMarker)cipherTextWithTypeMarker[0],
                                     plainText,
@@ -246,11 +195,133 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 foreach (JProperty property in plainTextJObj.Properties())
                 {
-                    document[property.Name] = property.Value;
+                    itemJObj[property.Name] = property.Value;
+                }
+            }
+            else if (encryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                JObject plainTextJObj = await AapEncryptionProcessor.DecryptContentAsync(
+                encryptionProperties,
+                encryptor,
+                diagnosticsContext,
+                cancellationToken);
+
+                foreach (JProperty property in plainTextJObj.Properties())
+                {
+                    itemJObj.Add(property.Name, property.Value);
+                }
+
+                itemJObj.Remove(Constants.EncryptedInfo);
+            }
+
+            input.Dispose();
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+        }
+
+        public override async Task<JObject> DecryptAsync(
+            JObject document,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(document != null);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
+            {
+                EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
+
+                if (encryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
+                {
+                    JObject plainTextJObj = new JObject();
+                    foreach (string path in encryptionProperties.EncryptedPaths)
+                    {
+                        if (document.TryGetValue(path.Substring(1), out JToken propertyValue))
+                        {
+                            byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
+
+                            if (cipherTextWithTypeMarker == null)
+                            {
+                                continue;
+                            }
+
+                            byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
+                            Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
+
+                            byte[] plainText = await AapEncryptionProcessor.DecryptContentAsync(
+                                encryptionProperties,
+                                cipherText,
+                                encryptor,
+                                diagnosticsContext,
+                                cancellationToken);
+
+                            string key = path.Substring(1);
+
+                            AapEncryptionProcessor.DeserializeAndAddProperty(
+                                        (TypeMarker)cipherTextWithTypeMarker[0],
+                                        plainText,
+                                        plainTextJObj,
+                                        key);
+                        }
+                    }
+
+                    foreach (JProperty property in plainTextJObj.Properties())
+                    {
+                        document[property.Name] = property.Value;
+                    }
+                }
+                else if (encryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+                {
+                    JObject plainTextJObj = await AapEncryptionProcessor.DecryptContentAsync(
+                        encryptionProperties,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    document.Remove(Constants.EncryptedInfo);
+
+                    foreach (JProperty property in plainTextJObj.Properties())
+                    {
+                        document.Add(property.Name, property.Value);
+                    }
                 }
             }
 
             return document;
+        }
+
+        private static async Task<JObject> DecryptContentAsync(
+            EncryptionProperties encryptionProperties,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (encryptionProperties.EncryptionFormatVersion != 2)
+            {
+                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+            }
+
+            byte[] plainText = await encryptor.DecryptAsync(
+                encryptionProperties.EncryptedData,
+                encryptionProperties.DataEncryptionKeyId,
+                encryptionProperties.EncryptionAlgorithm,
+                cancellationToken);
+
+            if (plainText == null)
+            {
+                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
+            }
+
+            JObject plainTextJObj;
+            using (MemoryStream memoryStream = new MemoryStream(plainText))
+            using (StreamReader streamReader = new StreamReader(memoryStream))
+            using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+            {
+                plainTextJObj = JObject.Load(jsonTextReader);
+            }
+
+            return plainTextJObj;
         }
 
         private static async Task<byte[]> DecryptContentAsync(
