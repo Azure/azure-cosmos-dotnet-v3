@@ -14,21 +14,27 @@ namespace CosmosBenchmark
         private static double[] latencyHistogram;
         private static int latencyIndex = -1;
 
-        internal static bool IncludePercentile = true;
+        internal static bool IncludePercentile = false;
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
         private bool disableTelemetry;
 
-        public static TelemetrySpan StartNew(
+        public static IDisposable StartNew(
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry)
         {
-            TelemetrySpan span = new TelemetrySpan();
-            span.stopwatch = Stopwatch.StartNew();
+            if (disableTelemetry || !TelemetrySpan.IncludePercentile)
+            {
+                return NoOpDisposable.Instance;
+            }
 
-            span.lazyOperationResult = lazyOperationResult;
-            span.disableTelemetry = disableTelemetry;
+            TelemetrySpan span = new TelemetrySpan
+            {
+                stopwatch = Stopwatch.StartNew(),
+                lazyOperationResult = lazyOperationResult,
+                disableTelemetry = disableTelemetry
+            };
 
             return span;
         }
@@ -73,6 +79,15 @@ namespace CosmosBenchmark
             }
 
             return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
+        }
+
+        private class NoOpDisposable : IDisposable
+        {
+            public static readonly NoOpDisposable Instance = new NoOpDisposable();
+
+            public void Dispose()
+            {
+            }
         }
     }
 }
