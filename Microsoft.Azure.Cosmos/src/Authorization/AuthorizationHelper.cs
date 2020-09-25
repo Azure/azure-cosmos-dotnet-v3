@@ -22,6 +22,10 @@ namespace Microsoft.Azure.Cosmos
         public const int MaxAuthorizationHeaderSize = 1024;
         public const int DefaultAllowedClockSkewInSeconds = 900;
         public const int DefaultMasterTokenExpiryInSeconds = 900;
+        private static readonly string AuthorizationFormatPrefixUrlEncoded = HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                Constants.Properties.MasterToken,
+                Constants.Properties.TokenVersion,
+                string.Empty));
 
         private static readonly Encoding AuthorizationEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
@@ -82,13 +86,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(headers));
             }
 
-            string resourceType = string.Empty;
-            string resourceIdValue = string.Empty;
-            bool isNameBased = false;
+            AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out _, out string resourceType, out string resourceIdValue, clientVersion);
 
-            AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out isNameBased, out resourceType, out resourceIdValue, clientVersion);
-
-            string authToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
+            string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                          resourceIdValue,
                          resourceType,
                          headers,
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                          out ArrayOwner arrayOwner);
             using (arrayOwner)
             {
-                return authToken;
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
         }
 
@@ -114,13 +114,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceId,
                 resourceType,
                 headers,
-                key,
-                out _,
-                bUseUtcNowForMissingXDate);
-            return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                Constants.Properties.MasterToken,
-                Constants.Properties.TokenVersion,
-                authorizationToken));
+                key);
+            return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
         }
 
         // This is a helper for both system and master keys
@@ -140,10 +135,7 @@ namespace Microsoft.Azure.Cosmos
                 out ArrayOwner payloadStream);
             using (payloadStream)
             {
-                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                    Constants.Properties.MasterToken,
-                    Constants.Properties.TokenVersion,
-                    authorizationToken));
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
         }
 
@@ -166,10 +158,7 @@ namespace Microsoft.Azure.Cosmos
             using (payloadStream)
             {
                 payload = AuthorizationHelper.AuthorizationEncoding.GetString(payloadStream.Buffer.Array, payloadStream.Buffer.Offset, (int)payloadStream.Buffer.Count);
-                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                    Constants.Properties.MasterToken,
-                    Constants.Properties.TokenVersion,
-                    authorizationToken));
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
         }
 
@@ -191,10 +180,7 @@ namespace Microsoft.Azure.Cosmos
                 out payload);
             try
             {
-                return HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                    Constants.Properties.MasterToken,
-                    Constants.Properties.TokenVersion,
-                    authorizationToken));
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
             }
             catch
             {
@@ -310,14 +296,12 @@ namespace Microsoft.Azure.Cosmos
                INameValueCollection headers,
                string key)
         {
-            ArraySegment<byte> payload;
             string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationCore(
                 verb,
                 resourceId,
                 resourceType,
                 headers,
-                key,
-                out payload);
+                key);
 
             return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
                 || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
@@ -408,8 +392,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Authorization code is fine with Uri not having resource id and path. 
             // We will just return empty in that case
-            bool isFeed = false;
-            if (!PathsHelper.TryParsePathSegments(uri.PathAndQuery, out isFeed, out resourceType, out resourceId, out isNameBased, clientVersion))
+            if (!PathsHelper.TryParsePathSegments(uri.PathAndQuery, out _, out resourceType, out resourceId, out isNameBased, clientVersion))
             {
                 resourceType = string.Empty;
                 resourceId = string.Empty;
@@ -557,8 +540,7 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            string value = null;
-            headerValues.TryGetValue(key, out value);
+            headerValues.TryGetValue(key, out string value);
             return value;
         }
 
@@ -644,8 +626,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new UnauthorizedException(RMResources.MissingDateForAuthorization);
             }
 
-            DateTime utcStartTime;
-            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out utcStartTime))
+            if (!DateTime.TryParse(dateToCompare, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal | DateTimeStyles.AllowWhiteSpaces, out DateTime utcStartTime))
             {
                 throw new UnauthorizedException(RMResources.InvalidDateHeader);
             }
@@ -748,12 +729,8 @@ namespace Microsoft.Azure.Cosmos
             string resourceId,
             string resourceType,
             INameValueCollection headers,
-            string key,
-            out ArraySegment<byte> payload,
-            bool bUseUtcNowForMissingXDate = false)
+            string key)
         {
-            string authorizationToken;
-
             // resourceId can be null for feed-read of /dbs
             if (string.IsNullOrEmpty(verb))
             {
@@ -788,21 +765,25 @@ namespace Microsoft.Azure.Cosmos
 
                 string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
                 int memoryStreamCapacity = AuthorizationHelper.ComputeMemoryCapacity(verbInput, authResourceId, resourceTypeInput);
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(memoryStreamCapacity);
-                using ArrayOwner owner = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, buffer.Length));
-                Span<byte> payloadBytes = buffer;
-                int length = AuthorizationHelper.SerializeMessagePayload(
-                    payloadBytes,
-                    verbInput,
-                    authResourceId,
-                    resourceTypeInput,
-                    headers);
+                byte[] arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(memoryStreamCapacity);
 
-                byte[] hashPayLoad = hmacSha256.ComputeHash(buffer, 0, length);
-                authorizationToken = Convert.ToBase64String(hashPayLoad);
+                try
+                {
+                    int length = AuthorizationHelper.SerializeMessagePayload(
+                        arrayPoolBuffer,
+                        verbInput,
+                        authResourceId,
+                        resourceTypeInput,
+                        headers);
+
+                    byte[] hashPayLoad = hmacSha256.ComputeHash(arrayPoolBuffer, 0, length);
+                    return Convert.ToBase64String(hashPayLoad);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
+                }
             }
-
-            return authorizationToken;
         }
 
         private static int Write(this Span<byte> stream, string contentToWrite)
