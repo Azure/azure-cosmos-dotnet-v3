@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
-               cosmosClient.AccountKey,
+               cosmosClient.AuthorizationTokenProvider,
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
