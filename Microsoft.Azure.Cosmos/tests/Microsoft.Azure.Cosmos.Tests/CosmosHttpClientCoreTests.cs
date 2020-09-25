@@ -4,18 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System.IO;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tests;
     using System;
     using System.Net.Http;
     using System.Net;
-    using System.Diagnostics;
     using System.Threading;
 
     [TestClass]
@@ -24,9 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ResponseMessageHasRequestMessageAsync()
         {
-            Guid previousActivityId = Trace.CorrelationManager.ActivityId;
-            Guid testActivityId = Guid.NewGuid();
-            Trace.CorrelationManager.ActivityId = testActivityId;
             // We don't set the RequestMessage property on purpose on the Failed response
             // This will make it go through GatewayStoreClient.CreateDocumentClientExceptionAsync
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
