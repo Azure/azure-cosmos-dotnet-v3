@@ -1401,7 +1401,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int originalTaskNum = testItem.taskNum;
             int newTaskNum = originalTaskNum + 1;
-            Int16 one = 1;
+            //Int16 one = 1;
 
             Assert.IsNull(testItem.children[1].status);
 
