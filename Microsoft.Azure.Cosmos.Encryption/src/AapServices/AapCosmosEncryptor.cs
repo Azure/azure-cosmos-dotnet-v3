@@ -32,11 +32,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public DataEncryptionKeyContainer DataEncryptionKeyContainer => this.cosmosDekProvider.DataEncryptionKeyContainer;
 
         /// <summary>
-        /// Gets DataEncryptionKeyProvider
-        /// </summary>
-        public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="AapCosmosEncryptor"/> class.
         /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key via AAP's AzureKeyVaultProvider.
         /// </summary>
@@ -83,17 +78,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.cosmosDekProvider = cosmosDataEncryptionKeyProvider;
             this.cosmosEncryptor = new CosmosEncryptor(this.cosmosDekProvider);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AapCosmosEncryptor"/> class.
-        /// Creates an Encryption Key Provider for wrap and unwrapping Data Encryption key.
-        /// </summary>
-        /// <param name="dataEncryptionKeyProvider"> dataEncryptionKeyProvider </param>
-        public AapCosmosEncryptor(DataEncryptionKeyProvider dataEncryptionKeyProvider)
-        {
-            this.DataEncryptionKeyProvider = dataEncryptionKeyProvider;
-            this.cosmosEncryptor = new CosmosEncryptor(this.DataEncryptionKeyProvider);
         }
 
         /// <summary>

@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
                 cipherTextWithTypeMarker[0] = (byte)typeMarker;
                 Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                itemJObj[propertyName] = cipherTextWithTypeMarker;
+                itemJObj[propertyName] = Convert.ToBase64String(cipherTextWithTypeMarker);
 
                 if (cipherTextWithTypeMarker == null)
                 {
@@ -279,12 +279,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return plainText;
         }
 
-        private static (TypeMarker, byte[]) Serialize(JToken element)
+        private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
-            switch (element.Type)
+            switch (propertyValue.Type)
             {
                 case JTokenType.Boolean:
-                    return (TypeMarker.Boolean, SerializerDefaultMappings.GetDefaultSerializer<bool>().Serialize(element.ToObject<bool>()));
+                    return (TypeMarker.Boolean, SerializerDefaultMappings.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>()));
                 case JTokenType.Undefined:
                     Debug.Assert(false, "Undefined value cannot be in the JSON");
                     return (default(TypeMarker), null);
@@ -292,15 +292,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     Debug.Assert(false, "Null type should have been handled by caller");
                     return (TypeMarker.Null, null);
                 case JTokenType.Float:
-                    return (TypeMarker.Float, SerializerDefaultMappings.GetDefaultSerializer<double>().Serialize(element.ToObject<double>()));
+                    return (TypeMarker.Float, SerializerDefaultMappings.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>()));
                 case JTokenType.Integer:
-                    return (TypeMarker.Integer, SerializerDefaultMappings.GetDefaultSerializer<int>().Serialize(element.ToObject<int>()));
+                    return (TypeMarker.Integer, SerializerDefaultMappings.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>()));
                 case JTokenType.String:
-                    return (TypeMarker.String, SerializerDefaultMappings.GetDefaultSerializer<string>().Serialize(element.ToObject<string>()));
+                    return (TypeMarker.String, SerializerDefaultMappings.GetDefaultSerializer<string>().Serialize(propertyValue.ToObject<string>()));
                 case JTokenType.Array:
-                    return (TypeMarker.Array, SerializerDefaultMappings.GetDefaultSerializer<string>().Serialize(element.ToString()));
+                    return (TypeMarker.Array, SerializerDefaultMappings.GetDefaultSerializer<string>().Serialize(propertyValue.ToString()));
                 default:
-                    return (TypeMarker.RawText, SerializerDefaultMappings.GetDefaultSerializer<string>().Serialize(element.ToString()));
+                    return (TypeMarker.RawText, SerializerDefaultMappings.GetDefaultSerializer<string>().Serialize(propertyValue.ToString()));
             }
         }
 
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     jObject.Add(key, SerializerDefaultMappings.GetDefaultSerializer<double>().Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Integer:
-                    jObject.Add(key, SerializerDefaultMappings.GetDefaultSerializer<int>().Deserialize(serializedBytes));
+                    jObject.Add(key, SerializerDefaultMappings.GetDefaultSerializer<long>().Deserialize(serializedBytes));
                     break;
                 case TypeMarker.String:
                     jObject.Add(key, SerializerDefaultMappings.GetDefaultSerializer<string>().Deserialize(serializedBytes));
