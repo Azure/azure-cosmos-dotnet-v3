@@ -43,6 +43,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpClientFactory", "HttpClientFactory\HttpClientFactory.csproj", "{D4CFD5B2-67A8-4383-947F-FAADD998043E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Geospatial", "Geospatial\Geospatial.csproj", "{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,10 @@ Global
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
