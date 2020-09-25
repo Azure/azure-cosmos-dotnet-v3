@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                          out ArrayOwner arrayOwner);
             using (arrayOwner)
             {
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return authorizationToken;
             }
         }
 
