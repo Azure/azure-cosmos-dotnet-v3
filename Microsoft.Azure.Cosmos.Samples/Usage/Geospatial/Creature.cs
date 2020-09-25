@@ -1,12 +1,11 @@
 ﻿namespace Cosmos.Samples.Geospatial
 {
+    using System;
     using Microsoft.Azure.Cosmos.Spatial;
     using Newtonsoft.Json;
-    using System;
 
-    class Creature
+    public partial class Creature
     {
-
         // <summary>
         /// Gets or sets the id of the creature.
         /// </summary>
@@ -30,6 +29,7 @@
         /// </summary>
         [JsonProperty(PropertyName = "location")]
         public Point Location { get; set; }
+        
         /// <summary>
         /// Returns the JSON string representation.
         /// </summary>

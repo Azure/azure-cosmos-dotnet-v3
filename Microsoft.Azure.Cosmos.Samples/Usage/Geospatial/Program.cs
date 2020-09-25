@@ -2,11 +2,8 @@
 {
     using System;
     using System.Threading.Tasks;
-    using System.Configuration;
     using System.Collections.Generic;
-    using System.Net;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Linq;
@@ -18,7 +15,7 @@
         private static CosmosClient cosmosClient;
 
         // The database we will create
-        private static Database database = null;
+        private static Database database;
 
         // The container we will create
         private static Container container;
@@ -31,10 +28,7 @@
         private static readonly string partitionKey = "/name";
 
         static async Task Main(string[] args)
-
-
         {
-
             try
             {
                 IConfigurationRoot configuration = new ConfigurationBuilder()
@@ -83,7 +77,6 @@
         /// Run the geospatial demo.
         /// </summary>
         /// <returns>The Task for asynchronous execution.</returns>
-
         private static async Task RunDemoAsync(CosmosClient cosmosClient)
         {
 
@@ -175,7 +168,7 @@
 
             // Check for points within a polygon. Now, we store polygons, and query for polygons that cover a specified point.
             await RunInverseWithinPolygonQuery();
-
+            await RunIntersectsQuery();
         }
 
         /// <summary>
@@ -184,7 +177,7 @@
         /// <param name="from">The position to measure distance from.</param>
         private static async Task RunDistanceQuery(Point from)
         {
-            // Cosmos DB uses the WGS-84 coordinate reference system (CRS). In this reference system, distance is measured in meters. So 30km = 3000m.
+            // Cosmos DB uses the WGS-84 coordinate reference system (CRS). In this reference system, distance is measured in meters. So 30km = 30000m.
             // There are several built-in SQL functions that follow the OGC naming standards and start with the "ST_" prefix for "spatial type".
 
             // SQL Query
@@ -200,14 +193,16 @@
 
             // LINQ query
             Console.WriteLine("Performing a ST_DISTANCE proximity query in LINQ");
-            using (FeedIterator<Creature> linqQueryIterator = container.GetItemLinqQueryable<Creature>(allowSynchronousQueryExecution: true).Where(a => a.Species == "Dragon" && a.Location.Distance(from) < 30000).ToFeedIterator<Creature>())
+            using (FeedIterator<Creature> linqQueryIterator = container.GetItemLinqQueryable<Creature>(allowSynchronousQueryExecution: true)
+                .Where(a => a.Species == "Dragon" && a.Location.Distance(from) < 30000)
+                .ToFeedIterator<Creature>())
             {
                 while (linqQueryIterator.HasMoreResults)
                 {
                     foreach (Creature item in await linqQueryIterator.ReadNextAsync())
                     {
                         {
-                            Console.WriteLine("LINQ QUERY: " + item.Name);
+                            Console.WriteLine("LINQ QUERY: " + item);
                         }
                     }
                 }
@@ -217,8 +212,8 @@
             // SQL w/ Parameters
             Console.WriteLine("Performing a ST_DISTANCE proximity query in parameterized SQL");
             QueryDefinition parameterizedSQLQuery = new QueryDefinition("SELECT * FROM e " +
-                "WHERE e.species = @dragon AND ST_DISTANCE(e.location, @human) < 30000")
-            .WithParameter("@dragon", "Dragon")
+                "WHERE e.species = @species AND ST_DISTANCE(e.location, @human) < 30000")
+            .WithParameter("@species", "Dragon")
             .WithParameter("@human", from);
             FeedResponse<Creature> parameterizedSQLQueryResults = await container.GetItemQueryIterator<Creature>(parameterizedSQLQuery).ReadNextAsync();
             List<Creature> parameterizedSQLQueryList = parameterizedSQLQueryResults.ToList();
@@ -227,6 +222,44 @@
                 Console.WriteLine("QUERY WITH PARAMETER: " + item.Name);
             }
             Console.WriteLine();
+        }
+
+        /// <summary>
+        /// Run a intersects query using SQL and LINQ to determine if a creature location intersects with a new line. 
+        /// </summary>
+        private static async Task RunIntersectsQuery()
+        {
+            // LINQ query
+            Console.WriteLine("Performing a ST_INTERSECTS query in LINQ");
+            using (FeedIterator<Creature> linqQueryIterator = container.GetItemLinqQueryable<Creature>(allowSynchronousQueryExecution: true)
+                .Where(a => a.Location.Intersects(new LineString(new[] 
+                    {
+                        new Position (32.33, -4.66),
+                        new Position (32.34, -4.66),
+                        new Position (31.87, -4.55)
+                 })))
+                .ToFeedIterator<Creature>())
+            {
+                while (linqQueryIterator.HasMoreResults)
+                {
+                    foreach (Creature result in await linqQueryIterator.ReadNextAsync())
+                    {
+                        Console.WriteLine("ST_INTERSECTS - LINQ QUERY:----" + result.Name);
+                    }
+                }
+            }
+
+            Console.WriteLine();
+
+            //SQL query
+            Console.WriteLine("Performing a ST_INTERSECTS query in SQL");
+            string sqlQuery = "SELECT * FROM e WHERE ST_INTERSECTS(e.location, {'type':'LineString', 'coordinates': [[32.33, -4.66],[32.34, -4.66],[31.87, -4.55]]})";
+            FeedResponse<Creature> results = await container.GetItemQueryIterator<Creature>(sqlQuery).ReadNextAsync();
+            List<Creature> list = results.ToList();
+            foreach (Creature item in list)
+            {
+                Console.WriteLine("ST_INTERSECTS - SQL QUERY:----" + item.Name);
+            }
         }
 
         /// <summary>
@@ -245,7 +278,7 @@
             }
 
             // LINQ query
-            Console.WriteLine("Performing a ST_DISTANCE proximity query in LINQ\n");
+            Console.WriteLine("Performing a ST_WITHIN proximity query in LINQ\n");
             using (FeedIterator<Creature> linqQueryIterator = container.GetItemLinqQueryable<Creature>(allowSynchronousQueryExecution: true).Where(a => a.Location
             .Within(new Polygon(new[] { new LinearRing(new[] { 
                 new Position(31.8, -5), 
@@ -311,14 +344,12 @@
             {
                 Console.WriteLine("SQL QUERY - ST_WITHIN A POLYGON: " + area);
             }
-
             Console.WriteLine();
 
             // LINQ Query
             Console.WriteLine("Performing an inverse ST_WITHIN proximity query in LINQ (polygons indexed by Cosmos DB, point supplied as argument)");
             using (FeedIterator<Area> linqQueryIterator = container.GetItemLinqQueryable<Area>(allowSynchronousQueryExecution: true)
-                .Where(a => new Point(31.9, -4.9)
-                .Within(a.Boundary))
+                .Where(a => new Point(31.9, -4.9).Within(a.Boundary))
                 .ToFeedIterator<Area>())
                 {
                     while (linqQueryIterator.HasMoreResults)
@@ -348,14 +379,27 @@
             return simpleContainer;
         }
 
-
         // Modifying geospatial indexing on a container
         private static async Task ModifyContainerWithSpatialIndexingAsync()
         {
             Container containerToUpdate = cosmosClient.GetContainer(databaseId, containerId);
 
             ContainerProperties updateContainerProperties = new ContainerProperties(containerId, Program.partitionKey);
-            SpatialPath locationPath = new SpatialPath { Path = "/location/?" };
+
+            //Changing the Geopspatial Config from the deafult of geography to geometry. This change will need to include the addition of a bounding box.
+            GeospatialConfig geospatialConfig = new GeospatialConfig(GeospatialType.Geometry);
+            updateContainerProperties.GeospatialConfig = geospatialConfig;
+            SpatialPath locationPath = new SpatialPath 
+            { 
+                Path = "/location/?",
+                BoundingBox = new BoundingBoxProperties()
+                {
+                    Xmin = 30,
+                    Ymin = -10,
+                    Xmax = 40,
+                    Ymax = 10
+                }
+            };
 
             Console.WriteLine("Updating CONTAINER w/ new spatial index...");
 
@@ -366,7 +410,5 @@
             updateContainerProperties.IndexingPolicy.SpatialIndexes.Add(locationPath);
             await containerToUpdate.ReplaceContainerAsync(updateContainerProperties);
         }
-
-
     }
 }

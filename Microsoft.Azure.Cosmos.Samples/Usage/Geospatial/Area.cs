@@ -1,12 +1,11 @@
 ﻿namespace Cosmos.Samples.Geospatial
 {
-    using Newtonsoft.Json;
     using System;
+    using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Spatial;
 
-    class Area
+    public partial class Area
     {
-
         [JsonProperty(PropertyName = "id")]
         public Guid Id { get; set; }
 
