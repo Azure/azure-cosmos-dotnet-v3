@@ -29,14 +29,12 @@ namespace CosmosBenchmark
                 return NoOpDisposable.Instance;
             }
 
-            TelemetrySpan span = new TelemetrySpan
+            return new TelemetrySpan
             {
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
                 disableTelemetry = disableTelemetry
             };
-
-            return span;
         }
 
         public void Dispose()
