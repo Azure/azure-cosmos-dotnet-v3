@@ -350,6 +350,32 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 innerException);
         }
 
+        internal static CosmosException CreateUnauthorizedException(
+            string message,
+            int subStatusCode,
+            Exception innerException,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.Unauthorized,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                error,
+                innerException);
+        }
+
         internal static CosmosException Create(
             HttpStatusCode statusCode,
             int subStatusCode,

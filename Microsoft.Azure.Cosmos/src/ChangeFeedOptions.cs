@@ -89,10 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DateTime? StartTime
         {
-            get
-            {
-                return this.startTime;
-            }
+            get => this.startTime;
 
             set
             {

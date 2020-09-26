@@ -107,21 +107,28 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
+        ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
+            AuthorizationTokenType tokenType,
+            CosmosDiagnosticsContext diagnosticsContext) // unused, use token based upon what is passed in constructor 
         {
             // this is masterkey authZ
             headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
             string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
-                    requestVerb, resourceAddress, resourceType, headers, this.authKeyHashFunction, out AuthorizationHelper.ArrayOwner payload);
+                    verb: requestVerb,
+                    resourceId: resourceAddress,
+                    resourceType: resourceType,
+                    headers: headers,
+                    stringHMACSHA256Helper: this.authKeyHashFunction,
+                    payload: out AuthorizationHelper.ArrayOwner payload);
+
             using (payload)
             {
-                return authorization;
+                return new ValueTask<string>(authorization);
             }
         }
 

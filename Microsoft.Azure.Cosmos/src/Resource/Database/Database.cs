@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a Database from the Azure Cosmos DB service as an asynchronous operation.
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<DatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
         /// <summary>
         /// Gets database throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
@@ -101,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<int?> ReadThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets database throughput in measurement of request units per second in the Azure Cosmos service.
@@ -142,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -217,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
                     ContainerProperties containerProperties,
                     ThroughputProperties throughputProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// <para>Check if a container exists, and if it doesn't, create it.
@@ -267,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -302,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
@@ -329,7 +328,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -351,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="DatabaseProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -371,7 +370,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns a reference to a container object. 
@@ -426,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -453,7 +452,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// <para>Check if a container exists, and if it doesn't, create it.
@@ -501,7 +500,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Check if a container exists, and if it doesn't, create it.
@@ -528,7 +527,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -561,7 +560,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns a reference to a user object.
@@ -602,7 +601,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<UserResponse> CreateUserAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Upserts a user as an asynchronous operation in the Azure Cosmos service.
@@ -622,7 +621,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<UserResponse> UpsertUserAsync(string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.

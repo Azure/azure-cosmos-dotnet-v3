@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq.Expressions;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -900,7 +899,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         else
                         {
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
-                            this.binaryWriter.Write((long)value);
+                            this.binaryWriter.Write(value);
                         }
                     }
                     else
@@ -909,7 +908,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         if (value < int.MinValue)
                         {
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
-                            this.binaryWriter.Write((long)value);
+                            this.binaryWriter.Write(value);
                         }
                         else if (value < short.MinValue)
                         {

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(DeleteAsync),
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReadCurrentAsync),

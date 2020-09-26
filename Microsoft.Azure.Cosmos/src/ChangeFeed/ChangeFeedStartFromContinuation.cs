@@ -32,8 +32,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         public string Continuation { get; }
 
-        internal override void Accept(ChangeFeedStartFromVisitor visitor) => visitor.Visit(this);
+        internal override void Accept(ChangeFeedStartFromVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        internal override TResult Accept<TResult>(ChangeFeedStartFromVisitor<TResult> visitor) => visitor.Visit(this);
+        internal override TResult Accept<TResult>(ChangeFeedStartFromVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
     }
 }

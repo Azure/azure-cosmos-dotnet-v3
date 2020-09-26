@@ -58,13 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int Count { get; }
 
-        public override Stream Content
-        {
-            get
-            {
-                return this.memoryStream?.Value;
-            }
-        }
+        public override Stream Content => this.memoryStream?.Value;
 
         internal virtual IReadOnlyList<CosmosElement> CosmosElements { get; }
 
