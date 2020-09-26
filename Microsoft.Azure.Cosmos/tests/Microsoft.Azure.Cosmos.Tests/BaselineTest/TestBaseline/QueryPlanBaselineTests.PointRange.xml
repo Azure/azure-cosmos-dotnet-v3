@@ -256,7 +256,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[{}],[{}]]</Range>
+            <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -289,7 +289,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[{}],[{}]]</Range>
+            <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
