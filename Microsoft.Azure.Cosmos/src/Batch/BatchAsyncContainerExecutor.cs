@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int DefaultDispatchTimerInSeconds = 1;
         private const int TimerWheelBucketCount = 20;
-        private readonly static TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
 
         private readonly ContainerInternal cosmosContainer;
         private readonly CosmosClientContext cosmosClientContext;
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (operation == null)
             {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (itemRequestOptions != null)
             {

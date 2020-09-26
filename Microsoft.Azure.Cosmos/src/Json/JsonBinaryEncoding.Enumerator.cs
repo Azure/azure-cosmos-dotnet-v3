@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
                 // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
+                buffer = buffer.Slice(0, arrayLength);
 
                 // Seek to the first array item
                 buffer = buffer.Slice(firstArrayItemOffset);

@@ -94,10 +94,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Longitude value.
         /// </value>
-        public double Longitude
-        {
-            get { return this.Coordinates[0]; }
-        }
+        public double Longitude => this.Coordinates[0];
 
         /// <summary>
         /// Gets latitude in the Azure Cosmos DB service.
@@ -105,10 +102,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Latitude value.
         /// </value>
-        public double Latitude
-        {
-            get { return this.Coordinates[1]; }
-        }
+        public double Latitude => this.Coordinates[1];
 
         /// <summary>
         /// Gets optional altitude in the Azure Cosmos DB service.
@@ -116,10 +110,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Altitude value.
         /// </value>
-        public double? Altitude
-        {
-            get { return this.Coordinates.Count > 2 ? (double?)this.Coordinates[2] : null; }
-        }
+        public double? Altitude => this.Coordinates.Count > 2 ? (double?)this.Coordinates[2] : null;
 
         /// <summary>
         /// Determines whether the specified <see cref="Position"/> is equal to the current <see cref="Position"/> in the Azure Cosmos DB service.

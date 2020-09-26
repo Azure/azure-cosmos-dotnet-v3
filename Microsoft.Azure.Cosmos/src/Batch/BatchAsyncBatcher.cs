@@ -56,27 +56,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(maxBatchByteSize));
             }
 
-            if (executor == null)
-            {
-                throw new ArgumentNullException(nameof(executor));
-            }
-
-            if (retrier == null)
-            {
-                throw new ArgumentNullException(nameof(retrier));
-            }
-
-            if (serializerCore == null)
-            {
-                throw new ArgumentNullException(nameof(serializerCore));
-            }
-
             this.batchOperations = new List<ItemBatchOperation>(maxBatchOperationCount);
-            this.executor = executor;
-            this.retrier = retrier;
+            this.executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this.retrier = retrier ?? throw new ArgumentNullException(nameof(retrier));
             this.maxBatchByteSize = maxBatchByteSize;
             this.maxBatchOperationCount = maxBatchOperationCount;
-            this.serializerCore = serializerCore;
+            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
         }
 
         public virtual bool TryAdd(ItemBatchOperation operation)
@@ -122,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task DispatchAsync(
             BatchPartitionMetric partitionMetric,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             this.interlockIncrementCheck.EnterLockCheck();
 
@@ -183,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
                             {
                                 response.DiagnosticsContext = batchResponse.DiagnosticsContext;
                             }
-                            
+
                             if (!response.IsSuccessStatusCode)
                             {
                                 Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);

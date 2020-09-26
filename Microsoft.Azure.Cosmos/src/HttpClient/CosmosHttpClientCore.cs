@@ -10,10 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -99,11 +97,19 @@ namespace Microsoft.Azure.Cosmos
         public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy)
         {
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-            return new HttpClientHandler
+            try
             {
-                Proxy = webProxy,
-                MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
-            };
+                return new HttpClientHandler
+                {
+                    Proxy = webProxy,
+                    MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
+                };
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Proxy and MaxConnectionsPerServer are not supported on some platforms.
+                return new HttpClientHandler();
+            }
         }
 
         private static HttpMessageHandler CreateHttpMessageHandler(
@@ -184,7 +190,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.SendHttpAsync(
                 CreateRequestMessage,
-                HttpCompletionOption.ResponseHeadersRead,
                 resourceType,
                 diagnosticsContext,
                 cancellationToken);
@@ -192,21 +197,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
-            ResourceType resourceType,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            return this.SendHttpAsync(
-                createRequestMessageAsync,
-                HttpCompletionOption.ResponseContentRead,
-                resourceType,
-                diagnosticsContext,
-                cancellationToken);
-        }
-
-        private Task<HttpResponseMessage> SendHttpAsync(
-            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
-            HttpCompletionOption httpCompletionOption,
             ResourceType resourceType,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -230,10 +220,19 @@ namespace Microsoft.Azure.Cosmos
                             resourceType.ToResourceTypeString(),
                             requestMessage.Headers);
 
+                        // Only read the header initially. The content gets copied into a memory stream later
+                        // if we read the content http client will buffer the message and then it will get buffered
+                        // again when it is copied to the memory stream.
                         HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
                                 requestMessage,
-                                httpCompletionOption,
+                                HttpCompletionOption.ResponseHeadersRead,
                                 cancellationToken);
+
+                        // WebAssembly HttpClient does not set the RequestMessage property on SendAsync
+                        if (responseMessage.RequestMessage == null)
+                        {
+                            responseMessage.RequestMessage = requestMessage;
+                        }
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
                         TimeSpan durationTimeSpan = receivedTimeUtc - sendTimeUtc;
@@ -258,7 +257,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            HttpRequestMessage GetHttpRequestMessage() => requestMessage;
+            HttpRequestMessage GetHttpRequestMessage()
+            {
+                return requestMessage;
+            }
+
             return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
                 callbackMethod: funcDelegate,
                 retryPolicy: new TransientHttpClientRetryPolicy(

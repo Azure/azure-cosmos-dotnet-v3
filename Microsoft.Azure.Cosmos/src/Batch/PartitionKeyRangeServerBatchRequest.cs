@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
 
     internal sealed class PartitionKeyRangeServerBatchRequest : ServerBatchRequest
     {

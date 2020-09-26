@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ComparableTask
 
         public abstract bool Equals(IComparableTask other);
 
-        public override abstract int GetHashCode();
+        public abstract override int GetHashCode();
 
         protected int CompareToByPriority(ComparableTask other)
         {

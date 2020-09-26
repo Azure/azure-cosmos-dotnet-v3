@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public async Task<TResult> ExecuteAsync<TResult>(
             Expression expression,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Type documentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             DocumentQuery<TResult> documentQuery = (DocumentQuery<TResult>)Activator.CreateInstance(
@@ -129,6 +129,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         Task<TResult> ExecuteAsync<TResult>(
             Expression expression,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

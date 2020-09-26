@@ -112,13 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// <summary>
         /// Gets a value indicating whether this execution context is done draining documents.
         /// </summary>
-        public override bool IsDone
-        {
-            get
-            {
-                return this.component.IsDone;
-            }
-        }
+        public override bool IsDone => this.component.IsDone;
 
         public static async Task<TryCatch<CosmosQueryExecutionContext>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,

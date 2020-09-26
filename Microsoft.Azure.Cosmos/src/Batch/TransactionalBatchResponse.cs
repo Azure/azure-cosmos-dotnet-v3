@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos
     public class TransactionalBatchResponse : IReadOnlyList<TransactionalBatchOperationResult>, IDisposable
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
-        private bool isDisposed;
-
         private List<TransactionalBatchOperationResult> results;
 
         /// <summary>
@@ -148,13 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="index">0-based index of the operation in the batch whose result needs to be returned.</param>
         /// <returns>Result of operation at the provided index in the batch.</returns>
-        public virtual TransactionalBatchOperationResult this[int index]
-        {
-            get
-            {
-                return this.results[index];
-            }
-        }
+        public virtual TransactionalBatchOperationResult this[int index] => this.results[index];
 
         /// <summary>
         /// Gets the result of the operation at the provided index in the batch - the returned result has a Resource of provided type.
@@ -166,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
         {
             TransactionalBatchOperationResult result = this.results[index];
 
-            T resource = default(T);
+            T resource = default;
             if (result.ResourceStream != null)
             {
                 resource = this.SerializerCore.FromStream<T>(result.ResourceStream);
@@ -204,7 +196,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc />
@@ -378,9 +369,10 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers,
                 responseMessage.DiagnosticsContext,
                 serverRequest.Operations,
-                serializer);
-
-            response.results = results;
+                serializer)
+            {
+                results = results
+            };
             return response;
         }
 
@@ -390,9 +382,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">Indicates whether to dispose managed resources or not.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !this.isDisposed)
+            if (disposing)
             {
-                this.isDisposed = true;
                 if (this.Operations != null)
                 {
                     foreach (ItemBatchOperation operation in this.Operations)
