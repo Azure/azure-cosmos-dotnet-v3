@@ -47,7 +47,7 @@ namespace CosmosBenchmark
 
                     await this.operation.PrepareAsync();
 
-                    using (TelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
+                    using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup))
                     {
