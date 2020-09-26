@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             private readonly ReadOnlyMemory<byte> rootBuffer;
             private readonly IReadOnlyJsonStringDictionary jsonStringDictionary;
-            private readonly BinaryNavigatorNode rootNode;
+            private readonly IJsonNavigatorNode rootNode;
 
             /// <summary>
             /// Initializes a new instance of the JsonBinaryNavigator class
@@ -529,9 +529,15 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException($"Expected writer to implement: {nameof(IJsonBinaryWriterExtensions)}.");
                     }
 
+                    if (!(this.rootNode is BinaryNavigatorNode binaryRootNode))
+                    {
+                        throw new InvalidOperationException($"Expected {nameof(this.rootNode)} to be a {nameof(BinaryNavigatorNode)}.");
+                    }
+
                     jsonBinaryWriter.WriteRawJsonValue(
-                        this.rootNode.Buffer,
+                        binaryRootNode.Buffer,
                         binaryNavigatorNode.Buffer,
+                        isRootNode: object.ReferenceEquals(jsonNavigatorNode, this.rootNode),
                         isFieldName,
                         this.jsonStringDictionary);
                 }
