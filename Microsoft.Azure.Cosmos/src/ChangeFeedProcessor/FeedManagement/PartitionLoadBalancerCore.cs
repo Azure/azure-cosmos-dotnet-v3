@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.runTask = this.RunAsync();
         }
 
-        public override async Task StopAsync()
+        public override Task StopAsync()
         {
             if (this.runTask == null)
             {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             this.cancellationTokenSource.Cancel();
-            await this.runTask.ConfigureAwait(false);
+            return this.runTask;
         }
 
         private async Task RunAsync()

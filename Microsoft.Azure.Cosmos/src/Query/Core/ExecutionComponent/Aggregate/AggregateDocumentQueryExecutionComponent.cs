@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
-        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             IReadOnlyList<AggregateOperator> aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
@@ -69,34 +69,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            TryCatch<IDocumentQueryExecutionComponent> tryCreateAggregate;
             switch (executionEnvironment)
             {
                 case ExecutionEnvironment.Client:
-                    tryCreateAggregate = await ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                    return ClientAggregateDocumentQueryExecutionComponent.TryCreateAsync(
                         aggregates,
                         aliasToAggregateType,
                         orderedAliases,
                         hasSelectValue,
                         continuationToken,
                         tryCreateSourceAsync);
-                    break;
 
                 case ExecutionEnvironment.Compute:
-                    tryCreateAggregate = await ComputeAggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                    return ComputeAggregateDocumentQueryExecutionComponent.TryCreateAsync(
                         aggregates,
                         aliasToAggregateType,
                         orderedAliases,
                         hasSelectValue,
                         continuationToken,
                         tryCreateSourceAsync);
-                    break;
 
                 default:
                     throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
-
-            return tryCreateAggregate;
         }
 
         /// <summary>

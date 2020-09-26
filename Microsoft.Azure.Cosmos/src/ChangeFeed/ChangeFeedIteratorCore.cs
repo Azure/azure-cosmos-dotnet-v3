@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 diagnosticsContext: diagnosticsScope,
                 cancellationToken: cancellationToken);
 
-            if (await this.ShouldRetryAsync(responseMessage, cancellationToken))
+            if ((await this.ShouldRetryAsync(responseMessage, cancellationToken)).ShouldRetry)
             {
                 string etag = this.FeedRangeContinuation.GetContinuation();
                 FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
@@ -178,23 +178,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private async Task<bool> ShouldRetryAsync(
+        private Task<ShouldRetryResult> ShouldRetryAsync(
             ResponseMessage responseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryOnNotModified = this.FeedRangeContinuation.HandleChangeFeedNotModified(responseMessage);
             if (shouldRetryOnNotModified.ShouldRetry)
             {
-                return true;
+                return Task.FromResult(shouldRetryOnNotModified);
             }
 
-            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.container, responseMessage, cancellationToken);
-            if (shouldRetryOnSplit.ShouldRetry)
-            {
-                return true;
-            }
-
-            return false;
+            return this.FeedRangeContinuation.HandleSplitAsync(this.container, responseMessage, cancellationToken);
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)

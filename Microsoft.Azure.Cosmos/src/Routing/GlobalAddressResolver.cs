@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
-        public async Task UpdateAsync(
+        public Task UpdateAsync(
             IReadOnlyList<AddressCacheToken> addressCacheTokens,
             CancellationToken cancellationToken)
         {
@@ -124,10 +124,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            await Task.WhenAll(tasks);
+            return Task.WhenAll(tasks);
         }
 
-        public async Task UpdateAsync(
+        public Task UpdateAsync(
             ServerKey serverKey,
             CancellationToken cancellationToken)
         {
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 tasks.Add(addressCache.Value.AddressCache.TryRemoveAddressesAsync(serverKey, cancellationToken));
             }
 
-            await Task.WhenAll(tasks);
+            return Task.WhenAll(tasks);
         }
 
         /// <summary>

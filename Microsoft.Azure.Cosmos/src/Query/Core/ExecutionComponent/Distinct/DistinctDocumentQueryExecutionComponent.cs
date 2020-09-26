@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
             this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
         }
 
-        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuation,
             Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
@@ -46,28 +46,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            TryCatch<IDocumentQueryExecutionComponent> tryCreateDistinctDocumentQueryExecutionComponent;
             switch (executionEnvironment)
             {
                 case ExecutionEnvironment.Client:
-                    tryCreateDistinctDocumentQueryExecutionComponent = await ClientDistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                    return ClientDistinctDocumentQueryExecutionComponent.TryCreateAsync(
                         requestContinuation,
                         tryCreateSourceAsync,
                         distinctQueryType);
-                    break;
 
                 case ExecutionEnvironment.Compute:
-                    tryCreateDistinctDocumentQueryExecutionComponent = await ComputeDistinctDocumentQueryExecutionComponent.TryCreateAsync(
+                    return ComputeDistinctDocumentQueryExecutionComponent.TryCreateAsync(
                         requestContinuation,
                         tryCreateSourceAsync,
                         distinctQueryType);
-                    break;
 
                 default:
                     throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}.");
             }
-
-            return tryCreateDistinctDocumentQueryExecutionComponent;
         }
     }
 }

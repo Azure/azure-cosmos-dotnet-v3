@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
 
         public override bool IsDone => this.groupingTable.IsDone;
 
-        public static async Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
+        public static Task<TryCatch<IDocumentQueryExecutionComponent>> TryCreateAsync(
             ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
@@ -70,32 +70,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.GroupBy
                 throw new ArgumentNullException(nameof(tryCreateSourceAsync));
             }
 
-            TryCatch<IDocumentQueryExecutionComponent> tryCreateGroupByComponent;
             switch (executionEnvironment)
             {
                 case ExecutionEnvironment.Client:
-                    tryCreateGroupByComponent = await ClientGroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                    return ClientGroupByDocumentQueryExecutionComponent.TryCreateAsync(
                         continuationToken,
                         tryCreateSourceAsync,
                         groupByAliasToAggregateType,
                         orderedAliases,
                         hasSelectValue);
-                    break;
 
                 case ExecutionEnvironment.Compute:
-                    tryCreateGroupByComponent = await ComputeGroupByDocumentQueryExecutionComponent.TryCreateAsync(
+                    return ComputeGroupByDocumentQueryExecutionComponent.TryCreateAsync(
                         continuationToken,
                         tryCreateSourceAsync,
                         groupByAliasToAggregateType,
                         orderedAliases,
                         hasSelectValue);
-                    break;
 
                 default:
                     throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}");
             }
-
-            return tryCreateGroupByComponent;
         }
 
         protected void AggregateGroupings(IReadOnlyList<CosmosElement> cosmosElements)

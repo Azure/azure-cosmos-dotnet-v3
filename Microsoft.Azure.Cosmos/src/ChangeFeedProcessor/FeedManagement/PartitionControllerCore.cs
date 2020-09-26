@@ -37,10 +37,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.synchronizer = synchronizer;
         }
 
-        public override async Task InitializeAsync()
+        public override Task InitializeAsync()
         {
             this.shutdownCts = new CancellationTokenSource();
-            await this.LoadLeasesAsync().ConfigureAwait(false);
+            return this.LoadLeasesAsync();
         }
 
         public override async Task AddOrUpdateLeaseAsync(DocumentServiceLease lease)
@@ -74,11 +74,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.ProcessPartitionAsync(supervisor, lease).LogException();
         }
 
-        public override async Task ShutdownAsync()
+        public override Task ShutdownAsync()
         {
             this.shutdownCts.Cancel();
-            IEnumerable<Task> leases = this.currentlyOwnedPartitions.Select(pair => pair.Value.Task).ToList();
-            await Task.WhenAll(leases).ConfigureAwait(false);
+            IEnumerable<Task> leases = this.currentlyOwnedPartitions.Select(pair => pair.Value.Task);
+            return Task.WhenAll(leases);
         }
 
         private async Task LoadLeasesAsync()
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 addLeaseTasks.Add(this.AddOrUpdateLeaseAsync(lease));
             }
 
-            await Task.WhenAll(addLeaseTasks.ToArray()).ConfigureAwait(false);
+            await Task.WhenAll(addLeaseTasks).ConfigureAwait(false);
         }
 
         private async Task RemoveLeaseAsync(DocumentServiceLease lease)

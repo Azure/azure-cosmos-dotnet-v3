@@ -58,7 +58,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return dce.ToCosmosResponseMessage(request);
             }
 
+#if DEBUG
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+#endif
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }

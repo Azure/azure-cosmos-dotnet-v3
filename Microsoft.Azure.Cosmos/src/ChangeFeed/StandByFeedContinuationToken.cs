@@ -24,19 +24,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private readonly string containerRid;
         private readonly PartitionKeyRangeCacheDelegate pkRangeCacheDelegate;
-        private readonly string inputContinuationToken;
 
         private Queue<CompositeContinuationToken> compositeContinuationTokens;
         private CompositeContinuationToken currentToken;
 
-        public static async Task<StandByFeedContinuationToken> CreateAsync(
+        public static Task<StandByFeedContinuationToken> CreateAsync(
             string containerRid,
             string initialStandByFeedContinuationToken,
             PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
         {
-            StandByFeedContinuationToken standByFeedContinuationToken = new StandByFeedContinuationToken(containerRid, initialStandByFeedContinuationToken, pkRangeCacheDelegate);
-            await standByFeedContinuationToken.EnsureInitializedAsync();
-            return standByFeedContinuationToken;
+            StandByFeedContinuationToken standByFeedContinuationToken = new StandByFeedContinuationToken(containerRid, pkRangeCacheDelegate);
+            if (string.IsNullOrEmpty(initialStandByFeedContinuationToken))
+            {
+                return standByFeedContinuationToken.InitializeAsync();
+            }
+            standByFeedContinuationToken.Initialize(initialStandByFeedContinuationToken);
+            return Task.FromResult(standByFeedContinuationToken);
         }
 
         public static string CreateForRange(
@@ -74,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private StandByFeedContinuationToken(
             string containerRid,
-            string initialStandByFeedContinuationToken,
             PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
         {
             if (string.IsNullOrWhiteSpace(containerRid))
@@ -89,13 +91,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.containerRid = containerRid;
             this.pkRangeCacheDelegate = pkRangeCacheDelegate;
-            this.inputContinuationToken = initialStandByFeedContinuationToken;
         }
 
         public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(bool forceRefresh = false)
         {
             Debug.Assert(this.compositeContinuationTokens != null);
-            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, forceRefresh: forceRefresh);
+            Documents.Routing.Range<string> targetRange = this.currentToken.Range;
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(targetRange, forceRefresh);
+            if (resolvedRanges.Count == 0) throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid range {targetRange.Min}-{targetRange.Max}");
+
             if (resolvedRanges.Count > 1)
             {
                 this.HandleSplit(resolvedRanges);
@@ -151,68 +155,53 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private async Task EnsureInitializedAsync()
+        private async Task<StandByFeedContinuationToken> InitializeAsync()
         {
-            if (this.compositeContinuationTokens == null)
-            {
-                IEnumerable<CompositeContinuationToken> tokens = await this.BuildCompositeTokensAsync(this.inputContinuationToken);
+            // Initialize composite token with all the ranges
+            IReadOnlyList<Documents.PartitionKeyRange> allRanges = await this.pkRangeCacheDelegate(
+                    this.containerRid,
+                    new Documents.Routing.Range<string>(
+                        Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        isMinInclusive: true,
+                        isMaxInclusive: false),
+                    false);
 
-                this.InitializeCompositeTokens(tokens);
-
-                Debug.Assert(this.compositeContinuationTokens.Count > 0);
-            }
+            Debug.Assert(allRanges.Count != 0);
+            // Initial state for a scenario where user does not provide any initial continuation token.
+            // StartTime and StartFromBeginning can handle the logic if the user wants to start reading from any particular point in time
+            // After the first iteration, token will be updated with a recent value
+            this.InitializeCompositeTokens(allRanges.Select(e => CreateCompositeContinuationTokenForRange(e.MinInclusive, e.MaxExclusive, null)));
+            return this;
         }
 
-        private async Task<IEnumerable<CompositeContinuationToken>> BuildCompositeTokensAsync(string initialContinuationToken)
+        private void Initialize(string initialContinuationToken)
         {
-            if (string.IsNullOrEmpty(initialContinuationToken))
-            {
-                // Initialize composite token with all the ranges
-                IReadOnlyList<Documents.PartitionKeyRange> allRanges = await this.pkRangeCacheDelegate(
-                        this.containerRid,
-                        new Documents.Routing.Range<string>(
-                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
-                        false);
-
-                Debug.Assert(allRanges.Count != 0);
-                // Initial state for a scenario where user does not provide any initial continuation token.
-                // StartTime and StartFromBeginning can handle the logic if the user wants to start reading from any particular point in time
-                // After the first iteration, token will be updated with a recent value
-                return allRanges.Select(e => StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(e.MinInclusive, e.MaxExclusive, null));
-            }
-
+            List<CompositeContinuationToken> tokens;
             try
             {
-                return StandByFeedContinuationToken.DeserializeTokens(initialContinuationToken);
+                tokens = DeserializeTokens(initialContinuationToken);
             }
             catch (JsonReaderException ex)
             {
                 throw new ArgumentOutOfRangeException($"Provided token has an invalid format: {initialContinuationToken}", ex);
             }
+            this.InitializeCompositeTokens(tokens);
         }
 
         private void InitializeCompositeTokens(IEnumerable<CompositeContinuationToken> tokens)
         {
-            this.compositeContinuationTokens = new Queue<CompositeContinuationToken>();
-
-            foreach (CompositeContinuationToken token in tokens)
-            {
-                this.compositeContinuationTokens.Enqueue(token);
-            }
-
+            this.compositeContinuationTokens = new Queue<CompositeContinuationToken>(tokens);
             this.currentToken = this.compositeContinuationTokens.Peek();
         }
 
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        private Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
             Documents.Routing.Range<string> targetRange,
             bool forceRefresh = false)
         {
             Debug.Assert(targetRange != null);
 
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.pkRangeCacheDelegate(
+            return this.pkRangeCacheDelegate(
                 this.containerRid,
                 new Documents.Routing.Range<string>(
                     targetRange.Min,
@@ -220,13 +209,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     isMaxInclusive: false,
                     isMinInclusive: true),
                 forceRefresh);
-
-            if (keyRanges.Count == 0)
-            {
-                throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid range {targetRange.Min}-{targetRange.Max}");
-            }
-
-            return keyRanges;
         }
     }
 }

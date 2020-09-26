@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             addedPartitionIds.ExceptWith(existingPartitionIds);
 
             await addedPartitionIds.ForEachAsync(
-                async addedRangeId => { await this.leaseManager.CreateLeaseIfNotExistAsync(addedRangeId, continuationToken: null).ConfigureAwait(false); },
+                addedRangeId => this.leaseManager.CreateLeaseIfNotExistAsync(addedRangeId, continuationToken: null),
                 this.degreeOfParallelism).ConfigureAwait(false);
         }
     }

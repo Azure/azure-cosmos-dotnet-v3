@@ -208,6 +208,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if DEBUG
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
         {
             if (this.IsMasterOperation())
@@ -215,7 +216,6 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-#if DEBUG
             try
             {
                 CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
@@ -230,10 +230,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Ignore container non-existence
             }
-#else
-            await Task.CompletedTask;
-#endif
         }
+#endif
 
         internal DocumentServiceRequest ToDocumentServiceRequest()
         {
