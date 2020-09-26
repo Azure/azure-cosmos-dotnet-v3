@@ -113,7 +113,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 pipelineStage = CreatePipeline(documentContainer, query, state);
 
-                await pipelineStage.MoveNextAsync();
+                if (!await pipelineStage.MoveNextAsync())
+                {
+                    break;
+                }
+
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
 
                 tryGetQueryPage.ThrowIfFailed();

@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 List<CosmosElement> distinctResults = new List<CosmosElement>();
                 foreach (CosmosElement document in sourcePage.Documents)
                 {
-                    if (this.distinctMap.Add(document, out UInt128 hash))
+                    if (this.distinctMap.Add(document, out UInt128 _))
                     {
                         distinctResults.Add(document);
                     }

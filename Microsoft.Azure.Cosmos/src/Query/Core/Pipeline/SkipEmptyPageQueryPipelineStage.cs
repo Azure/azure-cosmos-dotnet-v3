@@ -25,7 +25,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            await this.inputStage.MoveNextAsync();
+            if (!await this.inputStage.MoveNextAsync())
+            {
+                this.Current = default;
+                return false;
+            }
+
             TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
             if (tryGetSourcePage.Failed)
             {

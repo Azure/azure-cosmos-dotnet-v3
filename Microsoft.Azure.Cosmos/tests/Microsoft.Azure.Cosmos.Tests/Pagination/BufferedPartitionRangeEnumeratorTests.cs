@@ -62,10 +62,10 @@
         }
 
         [TestMethod]
-        public async Task TestConcurrentMoveNextAndBufferPageAsync()
+        public async Task TestMoveNextAndBufferPageAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestConcurrentMoveNextAndBufferPageAsync();
+            await implementation.TestMoveNextAndBufferPageAsync();
         }
 
         [TestClass]
@@ -151,7 +151,7 @@
             }
 
             [TestMethod]
-            public async Task TestConcurrentMoveNextAndBufferPageAsync()
+            public async Task TestMoveNextAndBufferPageAsync()
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -165,18 +165,20 @@
                         partitionKeyRangeId: 0,
                         pageSize: 10));
 
-                    // BufferMore
-                    // Fire and Forget this task.
-#pragma warning disable 4014
-                    Task.Run(() => this.BufferMoreInBackground(enumerator));
-#pragma warning restore 4014
+                    if ((random.Next() % 2) == 0)
+                    {
+                        await enumerator.PrefetchAsync();
+                    }
 
-                    // MoveNextAsync
                     int count = 0;
                     while (await enumerator.MoveNextAsync())
                     {
                         count += enumerator.Current.Result.Records.Count;
-                        await Task.Delay(random.Next(0, 10));
+                        
+                        if ((random.Next() % 2) == 0)
+                        {
+                            await enumerator.PrefetchAsync();
+                        }
                     }
 
                     Assert.AreEqual(numItems, count);

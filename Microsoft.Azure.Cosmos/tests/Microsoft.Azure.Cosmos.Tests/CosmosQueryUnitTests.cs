@@ -251,9 +251,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(await pipelineStage.MoveNextAsync());
             TryCatch<QueryPage> tryGetPage = pipelineStage.Current;
             Assert.IsTrue(tryGetPage.Failed);
-            Assert.AreEqual(HttpStatusCode.BadRequest, (tryGetPage.Exception as CosmosException).StatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (tryGetPage.InnerMostException as CosmosException).StatusCode);
             Assert.IsTrue(
-                (tryGetPage.Exception as CosmosException).ToString().Contains(exceptionMessage),
+                (tryGetPage.InnerMostException as CosmosException).ToString().Contains(exceptionMessage),
                 "response error message did not contain the proper substring.");
         }
     }
