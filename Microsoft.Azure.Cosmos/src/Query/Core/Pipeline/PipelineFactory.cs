@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 monadicCreatePipelineStage = (continuationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
+                    targetRanges: targetRanges,
                     pageSize: pageSize,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken);

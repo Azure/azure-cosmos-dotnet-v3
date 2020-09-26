@@ -185,11 +185,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                                 return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
-                                    cosmosQueryContext,
                                     inputParameters,
-                                    partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo(),
-                                    targetRanges,
-                                    containerQueryProperties.ResourceId);
+                                    targetRanges);
                             }
                         }
                     }
@@ -278,11 +275,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                     documentContainer,
-                    cosmosQueryContext,
                     inputParameters,
-                    partitionedQueryExecutionInfo,
-                    targetRanges,
-                    containerQueryProperties.ResourceId);
+                    targetRanges);
             }
             else
             {
@@ -322,8 +316,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext,
                     inputParameters,
                     partitionedQueryExecutionInfo,
-                    targetRanges,
-                    containerQueryProperties.ResourceId);
+                    targetRanges);
             }
 
             return tryCreatePipelineStage;
@@ -331,61 +324,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
             DocumentContainer documentContainer,
-            CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<Documents.PartitionKeyRange> targetRanges,
-            string collectionRid)
+            List<Documents.PartitionKeyRange> targetRanges)
         {
-            //CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-            //    sqlQuerySpec: inputParameters.SqlQuerySpec,
-            //    collectionRid: collectionRid,
-            //    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-            //    partitionKeyRanges: targetRanges,
-            //    initialPageSize: inputParameters.MaxItemCount,
-            //    maxConcurrency: inputParameters.MaxConcurrency,
-            //    maxItemCount: inputParameters.MaxItemCount,
-            //    maxBufferedItemCount: inputParameters.MaxBufferedItemCount,
-            //    returnResultsInDeterministicOrder: inputParameters.ReturnResultsInDeterministicOrder,
-            //    testSettings: inputParameters.TestInjections);
-
-            // Modify query plan
-            PartitionedQueryExecutionInfo passThroughQueryInfo = new PartitionedQueryExecutionInfo()
-            {
-                QueryInfo = new QueryInfo()
-                {
-                    Aggregates = null,
-                    DistinctType = DistinctQueryType.None,
-                    GroupByAliases = null,
-                    GroupByAliasToAggregateType = null,
-                    GroupByExpressions = null,
-                    HasSelectValue = false,
-                    Limit = null,
-                    Offset = null,
-                    OrderBy = null,
-                    OrderByExpressions = null,
-                    RewrittenQuery = null,
-                    Top = null,
-                },
-                QueryRanges = partitionedQueryExecutionInfo.QueryRanges,
-            };
-
-            //initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-            //    sqlQuerySpec: initParams.SqlQuerySpec,
-            //    collectionRid: initParams.CollectionRid,
-            //    partitionedQueryExecutionInfo: passThroughQueryInfo,
-            //    partitionKeyRanges: initParams.PartitionKeyRanges,
-            //    initialPageSize: initParams.MaxItemCount.GetValueOrDefault(1000),
-            //    maxConcurrency: initParams.MaxConcurrency,
-            //    maxItemCount: initParams.MaxItemCount,
-            //    maxBufferedItemCount: initParams.MaxBufferedItemCount,
-            //    returnResultsInDeterministicOrder: initParams.ReturnResultsInDeterministicOrder,
-            //    testSettings: initParams.TestSettings);
-
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
             return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
+                targetRanges: targetRanges,
                 pageSize: inputParameters.MaxItemCount,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 continuationToken: inputParameters.InitialUserContinuationToken);
@@ -396,8 +342,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<Documents.PartitionKeyRange> targetRanges,
-            string collectionRid)
+            List<Documents.PartitionKeyRange> targetRanges)
         {
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
 
@@ -520,16 +465,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             if ((inputParameters.Properties != null)
                 && inputParameters.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
             {
-                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
-                {
-                    partitionKeyDefinition = definition;
-                }
-                else
+                if (!(partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition))
                 {
                     throw new ArgumentException(
                         "partitionkeydefinition has invalid type",
                         nameof(partitionKeyDefinitionObject));
                 }
+
+                partitionKeyDefinition = definition;
             }
             else
             {

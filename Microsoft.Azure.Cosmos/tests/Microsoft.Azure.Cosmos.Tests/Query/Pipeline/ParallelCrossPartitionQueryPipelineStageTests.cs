@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: null);
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -58,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -73,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -92,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" } },
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
@@ -103,20 +108,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
-            ParallelContinuationToken token = new ParallelContinuationToken(
+            ParallelContinuationToken token1 = new ParallelContinuationToken(
                 token: "asdf",
-                range: new Documents.Routing.Range<string>("A", "B", true, false));
+                range: new Documents.Routing.Range<string>("A", "B", true, false)); 
+
+            ParallelContinuationToken token2 = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>("B", "C", true, false));
 
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: new List<PartitionKeyRange>() 
+                { 
+                    new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" },
+                    new PartitionKeyRange() { Id = "0", MinInclusive = "B", MaxExclusive = "C" },
+                },
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
                     {
-                        ParallelContinuationToken.ToCosmosElement(token),
-                        ParallelContinuationToken.ToCosmosElement(token)
+                        ParallelContinuationToken.ToCosmosElement(token1),
+                        ParallelContinuationToken.ToCosmosElement(token2)
                     }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -130,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                 pageSize: 10,
                 maxConcurrency: 10,
                 continuationToken: default);
@@ -163,9 +178,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                     pageSize: 10,
                     maxConcurrency: 10,
                     continuationToken: queryState?.Value);
+                if (monadicCreate.Failed)
+                {
+                    Assert.Fail();
+                }
                 Assert.IsTrue(monadicCreate.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 

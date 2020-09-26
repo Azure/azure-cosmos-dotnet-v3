@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             string max = rawMax.Value;
 
-            Range<string> range = new Documents.Routing.Range<string>(min, max, true, false);
+            Range<string> range = new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false);
 
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(token, range);
 

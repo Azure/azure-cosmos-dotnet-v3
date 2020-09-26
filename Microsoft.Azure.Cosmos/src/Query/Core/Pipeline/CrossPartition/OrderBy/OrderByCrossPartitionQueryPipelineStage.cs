@@ -540,7 +540,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return TryCatch<PartitionMapping<OrderByContinuationToken>>.FromException(monadicExtractContinuationTokens.Exception);
             }
 
-            return MonadicGetPartitionMapping(
+            return PartitionMapper.MonadicGetPartitionMapping(
                 partitionKeyRanges,
                 monadicExtractContinuationTokens.Result);
         }

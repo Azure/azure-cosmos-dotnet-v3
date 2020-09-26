@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             ParallelContinuationToken compositeContinuationToken = new ParallelContinuationToken(
                 token,
-                new Documents.Routing.Range<string>("asdf", "asdf", false, false));
+                new Documents.Routing.Range<string>("asdf", "asdf", true, false));
 
             CosmosElement cosmosElementToken = ParallelContinuationToken.ToCosmosElement(compositeContinuationToken);
             TryCatch<ParallelContinuationToken> tryCompositeContinuationTokenFromCosmosElement = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosElementToken);

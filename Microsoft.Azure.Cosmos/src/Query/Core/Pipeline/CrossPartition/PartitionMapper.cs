@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal static class PartitionMapper
