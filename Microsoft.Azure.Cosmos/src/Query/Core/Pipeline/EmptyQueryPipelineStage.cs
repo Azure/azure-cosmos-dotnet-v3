@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
     internal sealed class EmptyQueryPipelineStage : IQueryPipelineStage
     {
-        public static readonly EmptyQueryPipelineStage Value = new EmptyQueryPipelineStage();
+        public static readonly EmptyQueryPipelineStage Singleton = new EmptyQueryPipelineStage();
 
         private readonly EmptyAsyncEnumerator<TryCatch<QueryPage>> emptyAsyncEnumerator;
 

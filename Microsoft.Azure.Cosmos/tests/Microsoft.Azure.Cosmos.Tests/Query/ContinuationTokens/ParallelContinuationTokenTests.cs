@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Newtonsoft.Json;
     using VisualStudio.TestTools.UnitTesting;
 

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;

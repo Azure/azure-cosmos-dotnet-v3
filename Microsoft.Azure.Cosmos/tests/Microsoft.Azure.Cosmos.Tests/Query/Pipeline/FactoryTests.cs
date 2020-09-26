@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -33,9 +33,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: 10,
                 requestContinuationToken: default);
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
-
-            IQueryPipelineStage pipelineStage = monadicCreatePipeline.Result;
-            Assert.IsTrue(pipelineStage is ParallelCrossPartitionQueryPipelineStage);
         }
     }
 }

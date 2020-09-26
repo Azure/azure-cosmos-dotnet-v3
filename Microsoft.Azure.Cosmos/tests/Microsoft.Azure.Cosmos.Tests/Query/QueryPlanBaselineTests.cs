@@ -14,7 +14,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.

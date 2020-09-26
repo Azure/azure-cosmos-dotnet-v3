@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;

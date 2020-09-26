@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Documents;
 
     internal interface IDocumentContainer : IMonadicDocumentContainer, IFeedRangeProvider, IQueryDataSource

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 {
     using System;
     using System.Collections.Generic;
@@ -31,61 +31,66 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
             this.crossPartitionRangePageAsyncEnumerator = crossPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionRangePageAsyncEnumerator));
         }
 
-        public TryCatch<QueryPage> Current
-        {
-            get
-            {
-                TryCatch<CrossPartitionPage<QueryPage, QueryState>> currentCrossPartitionPage = this.crossPartitionRangePageAsyncEnumerator.Current;
-                if (currentCrossPartitionPage.Failed)
-                {
-                    return TryCatch<QueryPage>.FromException(currentCrossPartitionPage.Exception);
-                }
-
-                CrossPartitionPage<QueryPage, QueryState> crossPartitionPageResult = currentCrossPartitionPage.Result;
-                QueryPage backendQueryPage = crossPartitionPageResult.Page;
-                CrossPartitionState<QueryState> crossPartitionState = crossPartitionPageResult.State;
-
-                QueryState queryState;
-                if (crossPartitionState == null)
-                {
-                    queryState = null;
-                }
-                else
-                {
-                    List<ParallelContinuationToken> parallelContinuationTokens = new List<ParallelContinuationToken>(crossPartitionState.Value.Count);
-                    foreach ((PartitionKeyRange range, QueryState state) in crossPartitionState.Value)
-                    {
-                        ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                            token: state != null ? ((CosmosString)state.Value).Value : null,
-                            range: range.ToRange());
-
-                        parallelContinuationTokens.Add(parallelContinuationToken);
-                    }
-
-                    List<CosmosElement> cosmosElementContinuationTokens = parallelContinuationTokens
-                        .Select(token => ParallelContinuationToken.ToCosmosElement(token))
-                        .ToList();
-                    CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
-
-                    queryState = new QueryState(cosmosElementParallelContinuationTokens);
-                }
-
-                QueryPage crossPartitionQueryPage = new QueryPage(
-                    backendQueryPage.Documents,
-                    backendQueryPage.RequestCharge,
-                    backendQueryPage.ActivityId,
-                    backendQueryPage.ResponseLengthInBytes,
-                    backendQueryPage.CosmosQueryExecutionInfo,
-                    backendQueryPage.DisallowContinuationTokenMessage,
-                    queryState);
-
-                return TryCatch<QueryPage>.FromResult(crossPartitionQueryPage);
-            }
-        }
+        public TryCatch<QueryPage> Current { get; private set; }
 
         public ValueTask DisposeAsync() => this.crossPartitionRangePageAsyncEnumerator.DisposeAsync();
 
-        public ValueTask<bool> MoveNextAsync() => this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync();
+        public async ValueTask<bool> MoveNextAsync()
+        {
+            if (!await this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync())
+            {
+                this.Current = default;
+                return false;
+            }
+
+            TryCatch<CrossPartitionPage<QueryPage, QueryState>> currentCrossPartitionPage = this.crossPartitionRangePageAsyncEnumerator.Current;
+            if (currentCrossPartitionPage.Failed)
+            {
+                this.Current = TryCatch<QueryPage>.FromException(currentCrossPartitionPage.Exception);
+                return true;
+            }
+
+            CrossPartitionPage<QueryPage, QueryState> crossPartitionPageResult = currentCrossPartitionPage.Result;
+            QueryPage backendQueryPage = crossPartitionPageResult.Page;
+            CrossPartitionState<QueryState> crossPartitionState = crossPartitionPageResult.State;
+
+            QueryState queryState;
+            if (crossPartitionState == null)
+            {
+                queryState = null;
+            }
+            else
+            {
+                List<ParallelContinuationToken> parallelContinuationTokens = new List<ParallelContinuationToken>(crossPartitionState.Value.Count);
+                foreach ((PartitionKeyRange range, QueryState state) in crossPartitionState.Value)
+                {
+                    ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                        token: state != null ? ((CosmosString)state.Value).Value : null,
+                        range: range.ToRange());
+
+                    parallelContinuationTokens.Add(parallelContinuationToken);
+                }
+
+                List<CosmosElement> cosmosElementContinuationTokens = parallelContinuationTokens
+                    .Select(token => ParallelContinuationToken.ToCosmosElement(token))
+                    .ToList();
+                CosmosArray cosmosElementParallelContinuationTokens = CosmosArray.Create(cosmosElementContinuationTokens);
+
+                queryState = new QueryState(cosmosElementParallelContinuationTokens);
+            }
+
+            QueryPage crossPartitionQueryPage = new QueryPage(
+                backendQueryPage.Documents,
+                backendQueryPage.RequestCharge,
+                backendQueryPage.ActivityId,
+                backendQueryPage.ResponseLengthInBytes,
+                backendQueryPage.CosmosQueryExecutionInfo,
+                backendQueryPage.DisallowContinuationTokenMessage,
+                queryState);
+
+            this.Current = TryCatch<QueryPage>.FromResult(crossPartitionQueryPage);
+            return true;
+        }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,

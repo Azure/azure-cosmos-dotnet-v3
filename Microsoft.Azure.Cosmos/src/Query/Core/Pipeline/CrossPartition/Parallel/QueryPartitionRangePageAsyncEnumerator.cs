@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 {
     using System;
     using System.Threading;

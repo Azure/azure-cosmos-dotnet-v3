@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using System.Collections.Generic;
@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 

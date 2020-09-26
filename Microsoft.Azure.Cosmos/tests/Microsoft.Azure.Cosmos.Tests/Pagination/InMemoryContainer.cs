@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
 
-            TryCatch<SqlQuery> monadicParse = QueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
+            TryCatch<SqlQuery> monadicParse = SqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
             if (monadicParse.Failed)
             {
                 return Task.FromResult(TryCatch<QueryPage>.FromException(monadicParse.Exception));
@@ -374,16 +374,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             queryPageResults = queryPageResults.Take(pageSize);
             List<CosmosElement> queryPageResultList = queryPageResults.ToList();
 
-            QueryState queryState;
-            if (queryPageResultList.Count == 0)
-            {
-                queryState = null;
-            }
-            else
-            {
-                queryState = new QueryState(((CosmosObject)queryPageResultList.Last())["_rid"]);
-            }
-
+            QueryState queryState = queryPageResultList.Count == 0 ? null : new QueryState(((CosmosObject)queryPageResultList.Last())["_rid"]);
             return Task.FromResult(
                 TryCatch<QueryPage>.FromResult(
                     new QueryPage(
@@ -588,16 +579,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public Record Add(CosmosObject payload)
             {
-                ResourceId previousResourceId;
-                if (this.Count == 0)
-                {
-                    previousResourceId = ResourceId.Empty;
-                }
-                else
-                {
-                    previousResourceId = this.storage[this.storage.Count - 1].ResourceIdentifier;
-                }
-
+                ResourceId previousResourceId = this.Count == 0 ? ResourceId.Empty : this.storage[this.storage.Count - 1].ResourceIdentifier;
                 Record record = Record.Create(previousResourceId, payload);
                 this.storage.Add(record);
                 return record;

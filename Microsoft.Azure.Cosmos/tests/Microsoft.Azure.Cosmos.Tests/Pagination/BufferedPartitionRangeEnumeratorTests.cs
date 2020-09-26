@@ -130,7 +130,7 @@
                 for (int i = 0; i < 10; i++)
                 {
                     // This call is idempotent;
-                    await enumerator.BufferAsync();
+                    await enumerator.PrefetchAsync();
                 }
 
                 Random random = new Random();
@@ -142,7 +142,7 @@
                         for (int i = 0; i < 10; i++)
                         {
                             // This call is idempotent;
-                            await enumerator.BufferAsync();
+                            await enumerator.PrefetchAsync();
                         }
                     }
                 }
@@ -213,7 +213,7 @@
             {
                 while (true)
                 {
-                    await enumerator.BufferAsync();
+                    await enumerator.PrefetchAsync();
                     await Task.Delay(10);
                 }
             }

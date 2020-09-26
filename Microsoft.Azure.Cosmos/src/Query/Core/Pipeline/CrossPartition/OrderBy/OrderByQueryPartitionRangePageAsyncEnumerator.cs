@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using System.Threading;
@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Documents;
 
-    internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IBufferable
+    internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IPrefetcher
     {
         private readonly InnerEnumerator innerEnumerator;
         private readonly BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState> bufferedEnumerator;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Remote.OrderBy
             return this.bufferedEnumerator.Current;
         }
 
-        public ValueTask BufferAsync() => this.bufferedEnumerator.BufferAsync();
+        public ValueTask PrefetchAsync() => this.bufferedEnumerator.PrefetchAsync();
 
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {

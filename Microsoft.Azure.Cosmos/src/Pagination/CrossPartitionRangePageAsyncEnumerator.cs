@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                 if (maxConcurrency.HasValue)
                 {
-                    await ParallelBuffering.BufferInParallelAsync(bufferedEnumerators, maxConcurrency.Value);
+                    await ParallelPrefetch.PrefetchInParallelAsync(bufferedEnumerators, maxConcurrency.Value);
                 }
 
                 PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>(

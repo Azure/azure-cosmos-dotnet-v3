@@ -8,18 +8,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    internal static class ParallelBuffering
+    internal static class ParallelPrefetch
     {
-        public static async Task BufferInParallelAsync(IEnumerable<IBufferable> bufferables, int maxConcurrency)
+        public static async Task PrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency)
         {
+            if (prefetchers == null)
+            {
+                throw new ArgumentNullException(nameof(prefetchers));
+            }
+
             HashSet<Task> tasks = new HashSet<Task>();
-            IEnumerator<IBufferable> bufferablesEnumerator = bufferables.GetEnumerator();
+            IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
             for (int i = 0; i < maxConcurrency; i++)
             {
-                if (bufferablesEnumerator.MoveNext())
+                if (prefetchersEnumerator.MoveNext())
                 {
-                    IBufferable bufferable = bufferablesEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await bufferable.BufferAsync()));
+                    IPrefetcher prefetcher = prefetchersEnumerator.Current;
+                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync()));
                 }
             }
 
@@ -45,10 +50,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     throw;
                 }
 
-                if (bufferablesEnumerator.MoveNext())
+                if (prefetchersEnumerator.MoveNext())
                 {
-                    IBufferable bufferable = bufferablesEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await bufferable.BufferAsync()));
+                    IPrefetcher bufferable = prefetchersEnumerator.Current;
+                    tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync()));
                 }
             }
         }
