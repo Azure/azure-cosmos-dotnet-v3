@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens
                 },
                 {
                     PipelineContinuationTokenV1_1.QueryPlanPropertyName,
-                    shouldSerializeQueryPlan ? (CosmosElement)CosmosString.Create(queryPlanString) : (CosmosElement)CosmosNull.Create()
+                    shouldSerializeQueryPlan ? CosmosString.Create(queryPlanString) : (CosmosElement)CosmosNull.Create()
                 },
                 {
                     PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,

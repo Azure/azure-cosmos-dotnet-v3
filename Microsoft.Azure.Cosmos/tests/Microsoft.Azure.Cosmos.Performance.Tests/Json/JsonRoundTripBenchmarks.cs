@@ -89,12 +89,12 @@
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
                 SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
                     JsonSerializationFormat.Binary,
-                    new JsonStringDictionary(capacity: 128)),
+                    sourceFormat == SerializationFormat.BinaryWithDictionaryEncoding ? payload.BinaryWithDictionaryEncoding.dictionary : new JsonStringDictionary(capacity: 128)),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            navigator.WriteTo(navigator.GetRootNode(), writer);
+            navigator.WriteNode(navigator.GetRootNode(), writer);
         }
 
         public enum SerializationFormat

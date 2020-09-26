@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The maximum value in the sequence.</returns>
         public static Task<Response<TSource>> MaxAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The minimum value in the sequence.</returns>
         public static Task<Response<TSource>> MinAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<decimal>> AverageAsync(
             this IQueryable<decimal> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<decimal?>> AverageAsync(
             this IQueryable<decimal?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double>> AverageAsync(
             this IQueryable<double> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double?>> AverageAsync(
             this IQueryable<double?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<float>> AverageAsync(
             this IQueryable<float> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<float?>> AverageAsync(
             this IQueryable<float?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double>> AverageAsync(
             this IQueryable<int> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double?>> AverageAsync(
             this IQueryable<int?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double>> AverageAsync(
             this IQueryable<long> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double?>> AverageAsync(
             this IQueryable<long?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<decimal>> SumAsync(
             this IQueryable<decimal> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<decimal?>> SumAsync(
             this IQueryable<decimal?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -516,7 +516,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double>> SumAsync(
             this IQueryable<double> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<double?>> SumAsync(
             this IQueryable<double?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<float>> SumAsync(
             this IQueryable<float> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<float?>> SumAsync(
             this IQueryable<float?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<int>> SumAsync(
             this IQueryable<int> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<int?>> SumAsync(
             this IQueryable<int?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -648,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<long>> SumAsync(
             this IQueryable<long> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -670,7 +670,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The average value in the sequence.</returns>
         public static Task<Response<long?>> SumAsync(
             this IQueryable<long?> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {
@@ -693,7 +693,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The number of elements in the input sequence.</returns>
         public static Task<Response<int>> CountAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!(source.Provider is CosmosLinqQueryProvider cosmosLinqQueryProvider))
             {

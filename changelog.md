@@ -3,6 +3,27 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.13.0"/> [3.13.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0) - 2020-09-21
+
+#### Added
+
+- [#1743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1743) Query Performance: Adds skipping getting query plan for non-aggregate single partition queries on non-Windows x64 systems when FeedOptions.PartitionKey is set
+- [#1768](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1768) Performance: Adds SessionToken optimization to reduce header size by removing session token for CRUD on stored procedure, triggers, and UDFs
+- [#1781](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1781) Performance: Adds headers optimization which can reduce response allocation by 10 KB per a request. 
+- [#1825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1825) RequestOptions.Properties: Adds the ability for applications to specify request context
+- [#1835](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1835) Performance: Add HttpClient optimization to avoid double buffering gateway responses
+- [#1837](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1837) Query SystemFunctions : Adds DateTime System Functions
+- [#1842](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1842) Query Performance: Adds Singleton QueryPartitionProvider. Helps when Container is getting recreated.
+- [#1857](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1857) Performance: Adds finalizer optimizations in a few places (Thanks to pentp)
+- [#1843](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1843) Performance: Adds Transport serialization, SessionTokenMismatchRetryPolicy, and store response dictionary optimizations
+
+#### Fixed
+
+- [#1757](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1757) Batch API: Fixes the size limit to reduce timeouts
+- [#1758](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1758) Connectivity: Fixes address resolution calls when using EnableTcpConnectionEndpointRediscovery
+- [#1788](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1788) Transient HTTP exceptions: Adds retry logic to all http requests
+- [#1863](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1863) HttpClientHandler: Fixes HttpClientHandler PlatformNotSupportedException
+
 ### <a name="3.13.0-preview"/> [3.13.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0-preview) - 2020-08-12
 
 #### Added

@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQuotaResponse(string quotaInfo)
         {
             this.source = quotaInfo;
-            ParseQuotaString(quotaInfo);
+            this.ParseQuotaString(quotaInfo);
         }
 
         /// <summary>

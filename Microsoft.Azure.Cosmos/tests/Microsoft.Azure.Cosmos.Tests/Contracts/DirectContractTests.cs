@@ -97,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             Dictionary<string, Version> projectDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
             Dictionary<string, Version> baselineDependencies = new Dictionary<string, Version>()
             {
+                { "System.Collections.Immutable", new Version(1, 7, 0) },
                 { "System.Numerics.Vectors", new Version(4, 5, 0) },
                 { "Newtonsoft.Json", new Version(10, 0, 2) },
                 { "Microsoft.Bcl.AsyncInterfaces", new Version(1, 0, 0) },
@@ -106,8 +107,8 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 2) },
                 { "System.Threading.Tasks.Extensions", new Version(4, 5, 2) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
-                { "Antlr4.Runtime.Standard", new Version(4, 8, 0) },
                 { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
+                { "Azure.Core", new Version(1, 3, 0) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);

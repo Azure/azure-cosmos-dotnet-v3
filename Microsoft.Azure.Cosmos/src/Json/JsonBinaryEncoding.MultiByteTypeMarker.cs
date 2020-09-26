@@ -4,10 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Json
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-
     internal static partial class JsonBinaryEncoding
     {
         /// <summary>

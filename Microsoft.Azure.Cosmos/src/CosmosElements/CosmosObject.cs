@@ -43,11 +43,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract bool TryGetValue(string key, out CosmosElement value);
 
-        public override void Accept(ICosmosElementVisitor cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+        public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
+        {
+            cosmosElementVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
+        public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
+        {
+            return cosmosElementVisitor.Visit(this);
+        }
 
-        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
+        public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
+        {
+            return cosmosElementVisitor.Visit(this, input);
+        }
 
         public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
             where TCosmosElement : CosmosElement
@@ -74,9 +83,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
 
-        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            return cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
+        }
 
         public bool Equals(CosmosObject cosmosObject)
         {
@@ -135,29 +150,56 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosObject Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
+        }
 
-        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary) => new EagerCosmosObject(dictionary.ToList());
+        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
+        {
+            return new EagerCosmosObject(dictionary.ToList());
+        }
 
-        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties) => new EagerCosmosObject(properties);
+        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
+        {
+            return new EagerCosmosObject(properties);
+        }
 
-        public static new CosmosObject CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosObject>(buffer);
+        public static new CosmosObject CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosObject>(buffer);
+        }
 
-        public static new CosmosObject Parse(string json) => CosmosElement.Parse<CosmosObject>(json);
+        public static new CosmosObject Parse(string json)
+        {
+            return CosmosElement.Parse<CosmosObject>(json);
+        }
 
         public static bool TryCreateFromBuffer(
             ReadOnlyMemory<byte> buffer,
-            out CosmosObject cosmosObject) => CosmosElement.TryCreateFromBuffer<CosmosObject>(buffer, out cosmosObject);
+            out CosmosObject cosmosObject)
+        {
+            return CosmosElement.TryCreateFromBuffer<CosmosObject>(buffer, out cosmosObject);
+        }
 
         public static bool TryParse(
             string json,
-            out CosmosObject cosmosObject) => CosmosElement.TryParse<CosmosObject>(json, out cosmosObject);
+            out CosmosObject cosmosObject)
+        {
+            return CosmosElement.TryParse<CosmosObject>(json, out cosmosObject);
+        }
 
         public static new class Monadic
         {
-            public static TryCatch<CosmosObject> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosObject>(buffer);
+            public static TryCatch<CosmosObject> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosObject>(buffer);
+            }
 
-            public static TryCatch<CosmosObject> Parse(string json) => CosmosElement.Monadic.Parse<CosmosObject>(json);
+            public static TryCatch<CosmosObject> Parse(string json)
+            {
+                return CosmosElement.Monadic.Parse<CosmosObject>(json);
+            }
         }
     }
 #if INTERNAL

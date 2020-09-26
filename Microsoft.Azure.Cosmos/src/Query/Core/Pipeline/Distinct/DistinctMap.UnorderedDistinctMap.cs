@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 if (utf8Length <= UnorderdDistinctMap.UInt128Length)
                 {
                     Span<byte> utf8Buffer = stackalloc byte[UInt128Length];
-                    Encoding.UTF8.GetBytes(value, utf8Buffer); 
+                    Encoding.UTF8.GetBytes(value, utf8Buffer);
                     if (utf8Length == 0)
                     {
                         added = this.AddSimpleValue(SimpleValues.EmptyString);

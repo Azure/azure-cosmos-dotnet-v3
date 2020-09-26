@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosGatewayTimeoutTests
@@ -38,17 +40,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     gatewayStore = (GatewayStoreModel)client.DocumentClient.GetStoreProxy(serviceRequest);
                 }
 
-                // Get the GatewayStoreClient
-                FieldInfo gatewayStoreClientProperty = gatewayStore.GetType().GetField("gatewayStoreClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                GatewayStoreClient storeClient = (GatewayStoreClient)gatewayStoreClientProperty.GetValue(gatewayStore);
+                DocumentClient documentClient = client.DocumentClient;
+                FieldInfo cosmosHttpClientProperty = client.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)cosmosHttpClientProperty.GetValue(documentClient);
 
                 // Set the http request timeout to 10 ms to cause a timeout exception
                 HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
-                FieldInfo httpClientProperty = storeClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                httpClientProperty.SetValue(storeClient, httpClient);
+                FieldInfo httpClientProperty = cosmosHttpClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
+                httpClientProperty.SetValue(cosmosHttpClient, httpClient);
+
+                FieldInfo gatewayRequestTimeoutProperty = cosmosHttpClient.GetType().GetField("GatewayRequestTimeout", BindingFlags.NonPublic | BindingFlags.Static);
+                gatewayRequestTimeoutProperty.SetValue(cosmosHttpClient, TimeSpan.FromSeconds(1));
 
                 // Verify the failure has the required info
-                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
                 try
                 {
                     await client.CreateDatabaseAsync("TestGatewayTimeoutDb" + Guid.NewGuid().ToString());
@@ -65,10 +69,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task CosmosHttpClientRetryValidation()
+        {
+            TransientHttpClientCreatorHandler handler = new TransientHttpClientCreatorHandler();
+            HttpClient httpClient = new HttpClient(handler);
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+                builder.WithConnectionModeGateway()
+                    .WithHttpClientFactory(() => httpClient)))
+            {
+                // Verify the failure has the required info
+                try
+                {
+                    await client.CreateDatabaseAsync("TestGatewayTimeoutDb" + Guid.NewGuid().ToString());
+                    Assert.Fail("Operation should have timed out:");
+                }
+                catch (CosmosException rte)
+                {
+                    Assert.IsTrue(handler.Count > 7);
+                    string message = rte.ToString();
+                    Assert.IsTrue(message.Contains("Start Time"), "Start Time:" + message);
+                    Assert.IsTrue(message.Contains("Total Duration"), "Total Duration:" + message);
+                    Assert.IsTrue(message.Contains("Http Client Timeout"), "Http Client Timeout:" + message);
+                }
+            }
+        }
+
         private class TimeOutHttpClientHandler : DelegatingHandler
         {
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                throw new TaskCanceledException();
+            }
+        }
+
+        private class TransientHttpClientCreatorHandler : DelegatingHandler
+        {
+            public int Count { get; private set; } = 0;
+        
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if (this.Count++ <= 3)
+                {
+                    throw new WebException();
+                }
+
                 throw new TaskCanceledException();
             }
         }

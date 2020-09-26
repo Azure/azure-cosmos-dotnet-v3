@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             }
             else
             {
-                globalMinMax = isMinAggregation ? (CosmosElement)ItemComparer.MaxValue : (CosmosElement)ItemComparer.MinValue;
+                globalMinMax = isMinAggregation ? ItemComparer.MaxValue : (CosmosElement)ItemComparer.MinValue;
             }
 
             return TryCatch<IAggregator>.FromResult(
@@ -332,10 +332,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                     throw new ArgumentNullException(nameof(minMaxContinuationToken));
                 }
 
-                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                dictionary.Add(
-                    MinMaxContinuationToken.PropertyNames.Type,
-                    EnumToCosmosString.ConvertEnumToCosmosString(minMaxContinuationToken.Type));
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>
+                {
+                    {
+                        MinMaxContinuationToken.PropertyNames.Type,
+                        EnumToCosmosString.ConvertEnumToCosmosString(minMaxContinuationToken.Type)
+                    }
+                };
                 if (minMaxContinuationToken.Value != null)
                 {
                     dictionary.Add(MinMaxContinuationToken.PropertyNames.Value, minMaxContinuationToken.Value);

@@ -15,50 +15,37 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class GatewayAccountReader
     {
         private readonly ConnectionPolicy connectionPolicy;
-        private readonly IComputeHash authKeyHashFunction;
-        private readonly bool hasAuthKeyResourceToken = false;
-        private readonly string authKeyResourceToken = string.Empty;
-        private readonly HttpClient httpClient;
+        private readonly AuthorizationTokenProvider cosmosAuthorization;
+        private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
 
+        // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
         public GatewayAccountReader(Uri serviceEndpoint,
-                IComputeHash stringHMACSHA256Helper,
-                bool hasResourceToken,
-                string resourceToken,
+                AuthorizationTokenProvider cosmosAuthorization,
                 ConnectionPolicy connectionPolicy,
-                HttpClient httpClient)
+                CosmosHttpClient httpClient)
         {
             this.httpClient = httpClient;
             this.serviceEndpoint = serviceEndpoint;
-            this.authKeyHashFunction = stringHMACSHA256Helper;
-            this.hasAuthKeyResourceToken = hasResourceToken;
-            this.authKeyResourceToken = resourceToken;
+            this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(AuthorizationTokenProvider));
             this.connectionPolicy = connectionPolicy;
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
             INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
-            string authorizationToken = string.Empty;
-            if (this.hasAuthKeyResourceToken)
-            {
-                authorizationToken = HttpUtility.UrlEncode(this.authKeyResourceToken);
-            }
-            else
-            {
-                // Retrieve the document service properties.
-                string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-                headers.Set(HttpConstants.HttpHeaders.XDate, xDate);
+            await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+                headersCollection: headers,
+                serviceEndpoint,
+                HttpConstants.HttpMethods.Get,
+                AuthorizationTokenType.PrimaryMasterKey);
 
-                authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
-                    HttpConstants.HttpMethods.Get,
-                    serviceEndpoint,
-                    headers,
-                    this.authKeyHashFunction);
-            }
-
-            headers.Set(HttpConstants.HttpHeaders.Authorization, authorizationToken);
-            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(serviceEndpoint, headers))
+            using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                uri: serviceEndpoint,
+                additionalHeaders: headers,
+                resourceType: ResourceType.DatabaseAccount,
+                diagnosticsContext: null,
+                cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

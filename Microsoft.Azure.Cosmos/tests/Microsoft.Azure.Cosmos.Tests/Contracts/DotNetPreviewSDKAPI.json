@@ -151,6 +151,36 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosClientOptions": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval()"
+        },
+        "System.Nullable`1[System.TimeSpan] TokenCredentialBackgroundRefreshInterval": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])"
         }
       },
       "NestedTypes": {}
@@ -275,27 +305,7 @@
           "NestedTypes": {}
         }
       },
-      "Members": {
-        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()"
-        },
-        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] Properties": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object])"
-        }
-      },
+      "Members": {},
       "NestedTypes": {}
     }
   },

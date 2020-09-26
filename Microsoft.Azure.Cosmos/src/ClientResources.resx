@@ -198,6 +198,9 @@
   <data name="FailedToEvaluateSpatialExpression" xml:space="preserve">
     <value>Expression tree cannot be processed because evaluation of Spatial expression failed.</value>
   </data>
+  <data name="FailedToGetAadToken" xml:space="preserve">
+    <value>Failed to get AAD token from the provided Azure.Core.TokenCredential.</value>
+  </data>
   <data name="InputIsNotIDocumentQuery" xml:space="preserve">
     <value>Input is not of type IDocumentQuery.</value>
   </data>
@@ -269,6 +272,9 @@
   </data>
   <data name="StringCompareToInvalidOperator" xml:space="preserve">
     <value>Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</value>
+  </data>
+  <data name="TokenRefreshInProgress" xml:space="preserve">
+    <value>Token refresh in progress.</value>
   </data>
   <data name="TypeCheckExtensionFunctionsNotImplemented" xml:space="preserve">
     <value>Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.</value>

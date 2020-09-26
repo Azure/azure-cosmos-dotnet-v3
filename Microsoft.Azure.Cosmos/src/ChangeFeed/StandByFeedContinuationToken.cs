@@ -44,10 +44,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string minInclusive,
             string maxExclusive)
         {
-            if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
+            if (string.IsNullOrWhiteSpace(containerRid))
+            {
+                throw new ArgumentNullException(nameof(containerRid));
+            }
             // MinInclusive can be an empty string
-            if (minInclusive == null) throw new ArgumentNullException(nameof(minInclusive));
-            if (string.IsNullOrWhiteSpace(maxExclusive)) throw new ArgumentNullException(nameof(maxExclusive));
+            if (minInclusive == null)
+            {
+                throw new ArgumentNullException(nameof(minInclusive));
+            }
+
+            if (string.IsNullOrWhiteSpace(maxExclusive))
+            {
+                throw new ArgumentNullException(nameof(maxExclusive));
+            }
+
             return StandByFeedContinuationToken.SerializeTokens(new CompositeContinuationToken[1] { StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(minInclusive, maxExclusive, null) });
         }
 
@@ -66,8 +77,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string initialStandByFeedContinuationToken,
             PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
         {
-            if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
-            if (pkRangeCacheDelegate == null) throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
+            if (string.IsNullOrWhiteSpace(containerRid))
+            {
+                throw new ArgumentNullException(nameof(containerRid));
+            }
+
+            if (pkRangeCacheDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
+            }
 
             this.containerRid = containerRid;
             this.pkRangeCacheDelegate = pkRangeCacheDelegate;
@@ -118,7 +136,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
-            if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
+            if (keyRanges == null)
+            {
+                throw new ArgumentNullException(nameof(keyRanges));
+            }
 
             // Update current
             Documents.PartitionKeyRange firstRange = keyRanges[0];

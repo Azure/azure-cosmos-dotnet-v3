@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 }
 
                 long count = Number64.ToLong(cosmosCount.Value);
-                
+
                 return TryCatch<AverageInfo>.FromResult(new AverageInfo(sum, count));
             }
 
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                     return null;
                 }
 
-                return CosmosNumber64.Create(this.Sum.Value / (double)this.Count);
+                return CosmosNumber64.Create(this.Sum.Value / this.Count);
             }
 
             public override string ToString()

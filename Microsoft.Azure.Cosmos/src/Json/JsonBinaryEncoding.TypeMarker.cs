@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Json
 {
-    using System;
-    using System.Collections.Generic;
     using System.Runtime.CompilerServices;
-    using System.Text;
 
     internal static partial class JsonBinaryEncoding
     {
@@ -368,17 +365,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
             #region String Type Markers Utility Functions
             /// <summary>
-            /// Gets whether a typeMarker is for a one byte encoded system string.
-            /// </summary>
-            /// <param name="typeMarker">The input type marker.</param>
-            /// <returns>Whether the typeMarker is for a one byte encoded system string.</returns>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsOneByteEncodedSystemString(byte typeMarker)
-            {
-                return InRange(typeMarker, SystemString1ByteLengthMin, SystemString1ByteLengthMax);
-            }
-
-            /// <summary>
             /// Gets whether a typeMarker is for a system string.
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
@@ -386,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsSystemString(byte typeMarker)
             {
-                return IsOneByteEncodedSystemString(typeMarker);
+                return InRange(typeMarker, SystemString1ByteLengthMin, SystemString1ByteLengthMax);
             }
 
             /// <summary>
@@ -575,6 +561,16 @@ namespace Microsoft.Azure.Cosmos.Json
             #endregion
 
             #region Array/Object Type Markers
+            /// <summary>
+            /// Gets whether a type marker is the empty array type marker.
+            /// </summary>
+            /// <param name="typeMarker">The input type marker.</param>
+            /// <returns>Whether the type marker is the empty array type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsEmptyArray(byte typeMarker)
+            {
+                return typeMarker == EmptyArray;
+            }
 
             /// <summary>
             /// Gets whether a type marker is for an array.
@@ -585,6 +581,17 @@ namespace Microsoft.Azure.Cosmos.Json
             public static bool IsArray(byte typeMarker)
             {
                 return InRange(typeMarker, EmptyArray, Array4ByteLengthAndCount + 1);
+            }
+
+            /// <summary>
+            /// Gets whether a type marker is the empty object type marker.
+            /// </summary>
+            /// <param name="typeMarker">The input type marker.</param>
+            /// <returns>Whether the type marker is the empty object type marker.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsEmptyObject(byte typeMarker)
+            {
+                return typeMarker == EmptyObject;
             }
 
             /// <summary>

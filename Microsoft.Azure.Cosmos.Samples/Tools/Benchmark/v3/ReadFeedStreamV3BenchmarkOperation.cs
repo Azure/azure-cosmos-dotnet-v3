@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadFeedStreamV3BenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadFeedStreamV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -63,7 +63,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public async Task Prepare()
+        public async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
@@ -74,11 +74,14 @@ namespace CosmosBenchmark
                 this.sampleJObject["id"] = this.nextExecutionItemId;
                 this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
-                using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
+                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
                     ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                             inputStream,
                             new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey));
+
+                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
                         throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");

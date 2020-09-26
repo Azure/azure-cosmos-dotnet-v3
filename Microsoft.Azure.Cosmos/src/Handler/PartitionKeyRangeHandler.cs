@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class PartitionKeyRangeHandler : RequestHandler
     {
         private readonly CosmosClient client;
-        private PartitionRoutingHelper partitionRoutingHelper;
+        private readonly PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
             if (client == null)

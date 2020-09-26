@@ -366,8 +366,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
                 public override CosmosElement GetCosmosElementContinuationToken()
                 {
-                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                    dictionary.Add(nameof(this.initialized), CosmosBoolean.Create(this.initialized));
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>
+                    {
+                        { nameof(this.initialized), CosmosBoolean.Create(this.initialized) }
+                    };
 
                     if (this.value != null)
                     {

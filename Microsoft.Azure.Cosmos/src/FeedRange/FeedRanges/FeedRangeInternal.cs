@@ -36,7 +36,10 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract override string ToString();
 
-        public override string ToJsonString() => JsonConvert.SerializeObject(this);
+        public override string ToJsonString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
 
         public static bool TryParse(
             string jsonString,

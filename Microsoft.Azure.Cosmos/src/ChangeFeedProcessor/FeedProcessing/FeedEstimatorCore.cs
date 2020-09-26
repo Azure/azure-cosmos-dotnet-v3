@@ -37,7 +37,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 catch (TaskCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         throw;
+                    }
 
                     Extensions.TraceException(new Exception("exception within estimator", canceledException));
 

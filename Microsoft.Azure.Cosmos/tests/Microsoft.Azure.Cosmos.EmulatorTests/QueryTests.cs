@@ -54,11 +54,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // The Public emulator has only 1 MasterKey, no read-only keys
             this.primaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
-                         ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
+                         ConfigurationManager.AppSettings["MasterKey"],
+                         (HttpMessageHandler)null,
+                         connectionPolicy: null);
 
             this.secondaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
-                         ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
+                         ConfigurationManager.AppSettings["MasterKey"],
+                         (HttpMessageHandler)null,
+                         connectionPolicy: null);
 
             this.CleanUp();
         }

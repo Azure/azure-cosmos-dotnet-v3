@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<PermissionResponse> ReadAsync(
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replace a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. This will not revoke existing ResourceTokens.
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
             PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="PermissionProperties"/> from the Azure Cosmos DB service as an asynchronous operation. This will not revoke existing ResourceTokens.
@@ -109,6 +109,6 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<PermissionResponse> DeleteAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

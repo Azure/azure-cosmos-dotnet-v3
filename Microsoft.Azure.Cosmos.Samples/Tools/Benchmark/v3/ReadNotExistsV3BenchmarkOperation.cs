@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
 
@@ -54,7 +54,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public Task Prepare()
+        public Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))

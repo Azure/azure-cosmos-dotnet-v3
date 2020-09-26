@@ -3074,6 +3074,13 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()[System.Runtime.CompilerServices.IteratorStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Headers+<GetEnumerator>d__63))]": {
+          "Type": "Method",
+          "Attributes": [
+            "IteratorStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()"
+        },
         "System.String ActivityId": {
           "Type": "Property",
           "Attributes": [],
@@ -3198,6 +3205,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Set(System.String, System.String)"
+        },
+        "Void set_ContentLength(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_ContentLength(System.String)"
         },
         "Void set_Item(System.String, System.String)": {
           "Type": "Method",
@@ -4622,6 +4634,16 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String JioIndiaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String JioIndiaWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String KoreaCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -4773,6 +4795,11 @@
           "MethodInfo": null
         },
         "System.String WestUS2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String WestUS3": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
@@ -5362,6 +5389,18 @@
         }
       },
       "Members": {
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()"
+        },
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] Properties": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String get_IfMatchEtag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5404,6 +5443,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+        },
+        "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Properties(System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object])"
         }
       },
       "NestedTypes": {}
