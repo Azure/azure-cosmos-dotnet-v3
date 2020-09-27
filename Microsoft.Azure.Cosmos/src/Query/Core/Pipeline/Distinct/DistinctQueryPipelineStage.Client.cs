@@ -29,8 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             private ClientDistinctQueryPipelineStage(
                 DistinctQueryType distinctQueryType,
                 DistinctMap distinctMap,
-                IQueryPipelineStage source)
-                : base(distinctMap, source)
+                IQueryPipelineStage source,
+                CancellationToken cancellationToken)
+                : base(distinctMap, source, cancellationToken)
             {
                 if ((distinctQueryType != DistinctQueryType.Unordered) && (distinctQueryType != DistinctQueryType.Ordered))
                 {
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 DistinctQueryType distinctQueryType)
             {
@@ -67,16 +69,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         distinctMapToken: null);
                 }
 
-                CosmosElement distinctMapToken;
-                if (distinctContinuationToken.DistinctMapToken != null)
-                {
-                    distinctMapToken = CosmosString.Create(distinctContinuationToken.DistinctMapToken);
-                }
-                else
-                {
-                    distinctMapToken = null;
-                }
-
+                CosmosElement distinctMapToken = distinctContinuationToken.DistinctMapToken != null 
+                    ? CosmosString.Create(distinctContinuationToken.DistinctMapToken) 
+                    : null;
                 TryCatch<DistinctMap> tryCreateDistinctMap = DistinctMap.TryCreate(
                     distinctQueryType,
                     distinctMapToken);
@@ -104,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken, cancellationToken);
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);
@@ -114,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     new ClientDistinctQueryPipelineStage(
                         distinctQueryType,
                         tryCreateDistinctMap.Result,
-                        tryCreateSource.Result));
+                        tryCreateSource.Result,
+                        cancellationToken));
             }
 
             protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
@@ -133,6 +129,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 List<CosmosElement> distinctResults = new List<CosmosElement>();
                 foreach (CosmosElement document in sourcePage.Documents)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     if (this.distinctMap.Add(document, out UInt128 _))
                     {
                         distinctResults.Add(document);

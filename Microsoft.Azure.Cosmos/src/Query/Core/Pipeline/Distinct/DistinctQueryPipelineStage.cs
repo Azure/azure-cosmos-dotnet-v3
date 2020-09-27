@@ -30,8 +30,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
         protected DistinctQueryPipelineStage(
             DistinctMap distinctMap,
-            IQueryPipelineStage source)
-            : base(source)
+            IQueryPipelineStage source,
+            CancellationToken cancellationToken)
+            : base(source, cancellationToken)
         {
             this.distinctMap = distinctMap ?? throw new ArgumentNullException(nameof(distinctMap));
         }
@@ -39,15 +40,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuation,
+            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage,
             DistinctQueryType distinctQueryType) => executionEnvironment switch
             {
                 ExecutionEnvironment.Client => ClientDistinctQueryPipelineStage.MonadicCreate(
                     requestContinuation,
+                    cancellationToken,
                     monadicCreatePipelineStage,
                     distinctQueryType),
                 ExecutionEnvironment.Compute => ComputeDistinctQueryPipelineStage.MonadicCreate(
                     requestContinuation,
+                    cancellationToken,
                     monadicCreatePipelineStage,
                     distinctQueryType),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),

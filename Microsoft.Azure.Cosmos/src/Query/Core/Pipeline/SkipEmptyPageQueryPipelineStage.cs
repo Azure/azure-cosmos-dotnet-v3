@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -13,10 +14,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
+        private CancellationToken cancellationToken;
 
-        public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage)
+        public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
         {
             this.inputStage = inputStage ?? throw new ArgumentNullException(nameof(inputStage));
+            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<QueryPage> Current { get; private set; }
@@ -67,6 +70,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             this.Current = TryCatch<QueryPage>.FromResult(cumulativeQueryPage);
             return true;
+        }
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            this.cancellationToken = cancellationToken;
         }
     }
 }

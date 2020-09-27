@@ -25,15 +25,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             private static readonly string UseTryGetContinuationTokenMessage = $"Use TryGetContinuationToken";
 
             private ComputeDistinctQueryPipelineStage(
-                DistinctQueryType distinctQueryType,
                 DistinctMap distinctMap,
-                IQueryPipelineStage source)
-                : base(distinctMap, source)
+                IQueryPipelineStage source,
+                CancellationToken cancellationToken)
+                : base(distinctMap, source, cancellationToken)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 DistinctQueryType distinctQueryType)
             {
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateDistinctMap.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(distinctContinuationToken.SourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(distinctContinuationToken.SourceToken, cancellationToken);
                 if (!tryCreateSource.Succeeded)
                 {
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSource.Exception);
@@ -73,9 +74,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
                 return TryCatch<IQueryPipelineStage>.FromResult(
                     new ComputeDistinctQueryPipelineStage(
-                        distinctQueryType,
                         tryCreateDistinctMap.Result,
-                        tryCreateSource.Result));
+                        tryCreateSource.Result,
+                        cancellationToken));
             }
 
             protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)

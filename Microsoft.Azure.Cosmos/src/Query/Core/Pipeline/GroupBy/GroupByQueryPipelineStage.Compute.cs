@@ -26,15 +26,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
             private ComputeGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
+                CancellationToken cancellationToken,
                 GroupingTable groupingTable)
-                : base(
-                      source,
-                      groupingTable)
+                : base(source, cancellationToken, groupingTable)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 }
                 else
                 {
-                    tryCreateSource = monadicCreatePipelineStage(groupByContinuationToken.SourceContinuationToken);
+                    tryCreateSource = monadicCreatePipelineStage(groupByContinuationToken.SourceContinuationToken, cancellationToken);
                 }
 
                 if (!tryCreateSource.Succeeded)
@@ -87,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return TryCatch<IQueryPipelineStage>.FromResult(
                     new ComputeGroupByQueryPipelineStage(
                         tryCreateSource.Result,
+                        cancellationToken,
                         tryCreateGroupingTable.Result));
             }
 

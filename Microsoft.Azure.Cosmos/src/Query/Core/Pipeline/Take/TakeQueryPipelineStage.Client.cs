@@ -22,9 +22,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
             private ClientTakeQueryPipelineStage(
                 IQueryPipelineStage source,
+                CancellationToken cancellationToken,
                 int takeCount,
                 TakeEnum takeEnum)
-                : base(source, takeCount)
+                : base(source, cancellationToken, takeCount)
             {
                 this.takeEnum = takeEnum;
             }
@@ -32,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
                 int limitCount,
                 CosmosElement requestContinuationToken,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (limitCount < 0)
@@ -85,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -93,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ClientTakeQueryPipelineStage(
                     tryCreateSource.Result,
+                    cancellationToken,
                     limitContinuationToken.Limit,
                     TakeEnum.Limit);
 
@@ -102,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
                 int topCount,
                 CosmosElement requestContinuationToken,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (topCount < 0)
@@ -155,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     sourceToken = null;
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(sourceToken, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -163,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ClientTakeQueryPipelineStage(
                     tryCreateSource.Result,
+                    cancellationToken,
                     topContinuationToken.Top,
                     TakeEnum.Top);
 

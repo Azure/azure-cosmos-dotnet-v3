@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Reactive;
@@ -24,5 +25,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         public ValueTask DisposeAsync() => this.emptyAsyncEnumerator.DisposeAsync();
 
         public ValueTask<bool> MoveNextAsync() => this.emptyAsyncEnumerator.MoveNextAsync();
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            // No work to do since this enumerator is fully sync.
+        }
     }
 }

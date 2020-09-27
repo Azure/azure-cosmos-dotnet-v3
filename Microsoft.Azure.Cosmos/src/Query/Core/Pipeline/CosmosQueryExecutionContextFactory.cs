@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             inputParameters,
                             innerCancellationToken));
 
-                    LazyQueryPipelineStage lazyQueryPipelineStage = new LazyQueryPipelineStage(lazyTryCreateStage: lazyTryCreateStage);
+                    LazyQueryPipelineStage lazyQueryPipelineStage = new LazyQueryPipelineStage(lazyTryCreateStage: lazyTryCreateStage, cancellationToken: default);
                     return lazyQueryPipelineStage;
                 });
 
-            CatchAllQueryPipelineStage catchAllQueryPipelineStage = new CatchAllQueryPipelineStage(nameCacheStaleRetryQueryPipelineStage);
+            CatchAllQueryPipelineStage catchAllQueryPipelineStage = new CatchAllQueryPipelineStage(nameCacheStaleRetryQueryPipelineStage, cancellationToken: default);
             return catchAllQueryPipelineStage;
         }
 
@@ -334,6 +334,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 targetRanges: targetRanges,
                 pageSize: inputParameters.MaxItemCount,
                 maxConcurrency: inputParameters.MaxConcurrency,
+                cancellationToken: default,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -380,7 +381,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
                 pageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,
-                requestContinuationToken: inputParameters.InitialUserContinuationToken);
+                requestContinuationToken: inputParameters.InitialUserContinuationToken,
+                requestCancellationToken: default);
         }
 
         /// <summary>

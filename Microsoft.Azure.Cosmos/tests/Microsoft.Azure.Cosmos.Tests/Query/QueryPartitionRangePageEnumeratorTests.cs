@@ -96,7 +96,8 @@
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRange: range,
                             pageSize: 10,
-                            state: state));
+                            state: state,
+                            cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
@@ -135,7 +136,8 @@
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRange: range,
                         pageSize: 10,
-                        state: state));
+                        state: state,
+                        cancellationToken: default));
             }
 
             public override IAsyncEnumerator<TryCatch<QueryPage>> CreateEnumerator(
@@ -149,7 +151,8 @@
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                     feedRange: ranges[0],
                     pageSize: 10,
-                    state: state);
+                    state: state,
+                    cancellationToken: default);
             }
         }
     }

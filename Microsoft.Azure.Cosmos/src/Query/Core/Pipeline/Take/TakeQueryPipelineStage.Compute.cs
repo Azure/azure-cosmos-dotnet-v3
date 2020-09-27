@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Newtonsoft.Json;
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
     {
@@ -21,8 +20,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
         {
             private ComputeTakeQueryPipelineStage(
                 IQueryPipelineStage source,
+                CancellationToken cancellationToken,
                 int takeCount)
-                : base(source, takeCount)
+                : base(source, cancellationToken, takeCount)
             {
                 // Work is done in the base class.
             }
@@ -30,22 +30,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
                 int takeCount,
                 CosmosElement requestContinuationToken,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage) => ComputeTakeQueryPipelineStage.MonadicCreate(
                     takeCount,
                     requestContinuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage);
 
             public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
                 int takeCount,
                 CosmosElement requestContinuationToken,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage) => ComputeTakeQueryPipelineStage.MonadicCreate(
                     takeCount,
                     requestContinuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage);
 
             private static TryCatch<IQueryPipelineStage> MonadicCreate(
                 int takeCount,
                 CosmosElement requestContinuationToken,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (takeCount < 0)
@@ -80,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                             $"{nameof(TakeContinuationToken.TakeCount)} in {nameof(TakeContinuationToken)}: {requestContinuationToken}: {takeContinuationToken.TakeCount} can not be greater than the limit count in the query: {takeCount}."));
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(takeContinuationToken.SourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(takeContinuationToken.SourceToken, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -88,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ComputeTakeQueryPipelineStage(
                     tryCreateSource.Result,
+                    cancellationToken,
                     takeContinuationToken.TakeCount);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);

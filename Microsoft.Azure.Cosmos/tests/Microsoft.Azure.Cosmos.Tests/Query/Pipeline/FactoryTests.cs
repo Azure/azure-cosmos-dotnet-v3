@@ -27,11 +27,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>(),
+                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 queryInfo: new QueryInfo() { },
                 pageSize: 10,
                 maxConcurrency: 10,
-                requestContinuationToken: default);
+                requestCancellationToken: default,
+                requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
     }

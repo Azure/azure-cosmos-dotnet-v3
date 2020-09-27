@@ -151,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 try
                 {
                     // This catches exception thrown by the pipeline and converts it to QueryResponse
+                    this.queryPipelineStage.SetCancellationToken(cancellationToken);
                     await this.queryPipelineStage.MoveNextAsync();
                     tryGetQueryPage = this.queryPipelineStage.Current;
                 }

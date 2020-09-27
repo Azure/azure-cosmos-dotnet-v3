@@ -20,15 +20,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
             private ClientGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
+                CancellationToken cancellationToken,
                 GroupingTable groupingTable)
-                : base(
-                      source,
-                      groupingTable)
+                : base(source, cancellationToken, groupingTable)
             {
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 CosmosElement requestContinuation,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateGroupingTable.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(requestContinuation, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 IQueryPipelineStage stage = new ClientGroupByQueryPipelineStage(
                     tryCreateSource.Result,
+                    cancellationToken,
                     tryCreateGroupingTable.Result);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
@@ -71,6 +72,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 while (await this.inputStage.MoveNextAsync())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     // Stage 1: 
                     // Drain the groupings fully from all continuation and all partitions
                     TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;

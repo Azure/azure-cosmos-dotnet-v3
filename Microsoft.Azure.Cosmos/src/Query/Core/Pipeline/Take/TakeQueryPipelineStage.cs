@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 {
     using System;
     using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
@@ -17,8 +15,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
         protected TakeQueryPipelineStage(
             IQueryPipelineStage source,
+            CancellationToken cancellationToken,
             int takeCount)
-            : base(source)
+            : base(source, cancellationToken)
         {
             this.takeCount = takeCount;
         }
@@ -27,15 +26,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             ExecutionEnvironment executionEnvironment,
             int limitCount,
             CosmosElement requestContinuationToken,
+            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
                 ExecutionEnvironment.Client => ClientTakeQueryPipelineStage.MonadicCreateLimitStage(
                     limitCount,
                     requestContinuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 ExecutionEnvironment.Compute => ComputeTakeQueryPipelineStage.MonadicCreateLimitStage(
                     limitCount,
                     requestContinuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };
@@ -44,15 +46,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             ExecutionEnvironment executionEnvironment,
             int limitCount,
             CosmosElement requestContinuationToken,
+            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
                 ExecutionEnvironment.Client => ClientTakeQueryPipelineStage.MonadicCreateTopStage(
                     limitCount,
                     requestContinuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 ExecutionEnvironment.Compute => ComputeTakeQueryPipelineStage.MonadicCreateTopStage(
                     limitCount,
                     requestContinuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };

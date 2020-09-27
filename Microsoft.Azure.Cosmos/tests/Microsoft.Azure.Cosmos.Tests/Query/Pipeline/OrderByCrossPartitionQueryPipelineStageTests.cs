@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -59,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -79,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -99,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -130,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosString.Create(
                     CosmosArray.Create(
                         new List<CosmosElement>()
@@ -143,10 +148,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void MonadicCreate_MultipleOrderByContinuationToken()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
-
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             ParallelContinuationToken parallelContinuationToken1 = new ParallelContinuationToken(
                 token: "asdf",
@@ -184,6 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosString.Create(
                     CosmosArray.Create(
                         new List<CosmosElement>()
@@ -214,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -260,6 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     pageSize: 10,
                     maxConcurrency: 10,
+                    cancellationToken: default,
                     continuationToken: queryState?.Value);
                 Assert.IsTrue(monadicCreate.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -306,6 +310,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -362,6 +367,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                     pageSize: 10,
                     maxConcurrency: 10,
+                    cancellationToken: default,
                     continuationToken: queryState?.Value);
                 Assert.IsTrue(monadicCreate.Succeeded);
                 IQueryPipelineStage queryPipelineStage = monadicCreate.Result;

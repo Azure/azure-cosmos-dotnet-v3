@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private TryCatch<TPage>? bufferedPage;
 
-        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator)
-            : base(enumerator.Range, enumerator.State)
+        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, CancellationToken cancellationToken)
+            : base(enumerator.Range, cancellationToken, enumerator.State)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
         }
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken)
         {
-            await this.PrefetchAsync();
+            await this.PrefetchAsync(cancellationToken);
 
             // Serve from the buffered page first.
             TryCatch<TPage> returnValue = this.bufferedPage.Value;
@@ -34,8 +34,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return returnValue;
         }
 
-        public async ValueTask PrefetchAsync()
+        public async ValueTask PrefetchAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (this.bufferedPage.HasValue)
             {
                 return;

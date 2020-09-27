@@ -51,8 +51,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
         protected GroupByQueryPipelineStage(
             IQueryPipelineStage source,
+            CancellationToken cancellationToken,
             GroupingTable groupingTable)
-            : base(source)
+            : base(source, cancellationToken)
         {
             this.groupingTable = groupingTable ?? throw new ArgumentNullException(nameof(groupingTable));
         }
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
+            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
@@ -67,12 +69,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             {
                 ExecutionEnvironment.Client => ClientGroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage,
                     groupByAliasToAggregateType,
                     orderedAliases,
                     hasSelectValue),
                 ExecutionEnvironment.Compute => ComputeGroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage,
                     groupByAliasToAggregateType,
                     orderedAliases,

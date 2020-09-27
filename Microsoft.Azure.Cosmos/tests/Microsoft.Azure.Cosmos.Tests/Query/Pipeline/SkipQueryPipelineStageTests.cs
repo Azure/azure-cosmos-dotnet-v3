@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -49,7 +50,8 @@
                 executionEnvironment: executionEnvironment,
                 offsetCount: offsetCount,
                 continuationToken: continuationToken,
-                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));
+                cancellationToken: default,
+                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken token) => TryCatch<IQueryPipelineStage>.FromResult(source));
             Assert.IsTrue(tryCreateSkipQueryPipelineStage.Succeeded);
 
             IQueryPipelineStage aggregateQueryPipelineStage = tryCreateSkipQueryPipelineStage.Result;

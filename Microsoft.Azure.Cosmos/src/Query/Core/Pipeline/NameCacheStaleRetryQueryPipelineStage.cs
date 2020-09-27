@@ -62,5 +62,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             return true;
         }
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            // No work to do since this enumerator is fully sync.
+        }
     }
 }

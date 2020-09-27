@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private int pageIndex;
 
         public MockQueryPipelineStage(IReadOnlyList<IReadOnlyList<CosmosElement>> pages)
-            : base(EmptyQueryPipelineStage.Singleton)
+            : base(EmptyQueryPipelineStage.Singleton, cancellationToken: default)
         {
             this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
         }

@@ -17,10 +17,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TPage : Page<TState>
         where TState : State
     {
-        protected PartitionRangePageAsyncEnumerator(PartitionKeyRange range, TState state = default)
+        private CancellationToken cancellationToken;
+
+        protected PartitionRangePageAsyncEnumerator(PartitionKeyRange range, CancellationToken cancellationToken, TState state = default)
         {
             this.Range = range;
             this.State = state;
+            this.cancellationToken = cancellationToken;
         }
 
         public PartitionKeyRange Range { get; }
@@ -40,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 return false;
             }
 
-            this.Current = await this.GetNextPageAsync(cancellationToken: default);
+            this.Current = await this.GetNextPageAsync(cancellationToken: this.cancellationToken);
             if (this.Current.Succeeded)
             {
                 this.State = this.Current.Result.State;
@@ -53,5 +56,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
         protected abstract Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken);
 
         public abstract ValueTask DisposeAsync();
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            this.cancellationToken = cancellationToken;
+        }
     }
 }

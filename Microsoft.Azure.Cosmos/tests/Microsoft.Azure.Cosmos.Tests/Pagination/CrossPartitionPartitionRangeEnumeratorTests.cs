@@ -141,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         inMemoryCollection,
                         partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
+                        cancellationToken: default,
                         state: state);
 
                 return new CrossPartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
@@ -161,6 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         inMemoryCollection,
                         partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
+                        cancellationToken: default,
                         state: state);
 
                 CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
@@ -168,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
+                    cancellationToken: default,
                     state: state);
 
                 return enumerator;

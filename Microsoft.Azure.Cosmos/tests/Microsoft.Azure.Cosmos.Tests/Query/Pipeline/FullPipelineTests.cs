@@ -179,6 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 GetQueryPlan(query),
                 pageSize: 10,
                 maxConcurrency: 10,
+                requestCancellationToken: default,
                 requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();

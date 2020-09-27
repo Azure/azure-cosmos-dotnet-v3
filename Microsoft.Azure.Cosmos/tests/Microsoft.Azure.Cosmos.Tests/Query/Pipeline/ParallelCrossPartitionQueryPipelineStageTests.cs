@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -79,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
@@ -99,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" } },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
         }
@@ -126,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
                     {
@@ -147,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                 pageSize: 10,
                 maxConcurrency: 10,
+                cancellationToken: default,
                 continuationToken: default);
             Assert.IsTrue(monadicCreate.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
@@ -181,6 +188,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                     pageSize: 10,
                     maxConcurrency: 10,
+                    cancellationToken: default,
                     continuationToken: queryState?.Value);
                 if (monadicCreate.Failed)
                 {

@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
     internal sealed class CatchAllQueryPipelineStage : QueryPipelineStageBase
     {
-        public CatchAllQueryPipelineStage(IQueryPipelineStage inputStage)
-            : base(inputStage)
+        public CatchAllQueryPipelineStage(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
+            : base(inputStage, cancellationToken)
         {
         }
 

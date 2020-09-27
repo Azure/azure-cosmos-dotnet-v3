@@ -105,6 +105,7 @@
                                 inMemoryCollection,
                                 partitionKeyRangeId: int.Parse(range.Id),
                                 pageSize: 10,
+                                cancellationToken: default,
                                 state: state));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -123,14 +124,16 @@
                     new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
                         partitionKeyRangeId: 0,
-                        pageSize: 10));
+                        pageSize: 10,
+                        cancellationToken: default),
+                    cancellationToken: default);
 
                 int count = 0;
 
                 for (int i = 0; i < 10; i++)
                 {
                     // This call is idempotent;
-                    await enumerator.PrefetchAsync();
+                    await enumerator.PrefetchAsync(default);
                 }
 
                 Random random = new Random();
@@ -142,7 +145,7 @@
                         for (int i = 0; i < 10; i++)
                         {
                             // This call is idempotent;
-                            await enumerator.PrefetchAsync();
+                            await enumerator.PrefetchAsync(default);
                         }
                     }
                 }
@@ -163,11 +166,13 @@
                     new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
                         partitionKeyRangeId: 0,
-                        pageSize: 10));
+                        pageSize: 10,
+                        cancellationToken: default),
+                    cancellationToken: default);
 
                     if ((random.Next() % 2) == 0)
                     {
-                        await enumerator.PrefetchAsync();
+                        await enumerator.PrefetchAsync(default);
                     }
 
                     int count = 0;
@@ -177,7 +182,7 @@
                         
                         if ((random.Next() % 2) == 0)
                         {
-                            await enumerator.PrefetchAsync();
+                            await enumerator.PrefetchAsync(default);
                         }
                     }
 
@@ -200,7 +205,9 @@
                             documentContainer,
                             partitionKeyRangeId: int.Parse(range.Id),
                             pageSize: 10,
-                            state: state)));
+                            cancellationToken: default,
+                            state: state),
+                        cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<DocumentContainerPage>> CreateEnumerator(
                 IDocumentContainer inMemoryCollection,
@@ -209,13 +216,15 @@
                         inMemoryCollection,
                         partitionKeyRangeId: 0,
                         pageSize: 10,
-                        state: state));
+                        cancellationToken: default,
+                        state: state),
+                    cancellationToken: default);
 
             private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator)
             {
                 while (true)
                 {
-                    await enumerator.PrefetchAsync();
+                    await enumerator.PrefetchAsync(default);
                     await Task.Delay(10);
                 }
             }

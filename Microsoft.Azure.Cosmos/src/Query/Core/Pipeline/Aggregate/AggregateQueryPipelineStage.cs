@@ -7,12 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using System;
     using System.Collections.Generic;
     using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
-    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.PipelineFactory;
 
     /// <summary>
     /// Stage that is able to aggregate local aggregates from multiple continuations and partitions.
@@ -47,12 +44,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
         /// <param name="source">The source component that will supply the local aggregates from multiple continuations and partitions.</param>
         /// <param name="singleGroupAggregator">The single group aggregator that we will feed results into.</param>
         /// <param name="isValueQuery">Whether or not the query has the 'VALUE' keyword.</param>
+        /// <param name="cancellationToken">The cancellation token for cooperative yeilding.</param>
         /// <remarks>This constructor is private since there is some async initialization that needs to happen in CreateAsync().</remarks>
         public AggregateQueryPipelineStage(
             IQueryPipelineStage source,
             SingleGroupAggregator singleGroupAggregator,
-            bool isValueQuery)
-            : base(source)
+            bool isValueQuery,
+            CancellationToken cancellationToken)
+            : base(source, cancellationToken)
         {
             this.singleGroupAggregator = singleGroupAggregator ?? throw new ArgumentNullException(nameof(singleGroupAggregator));
             this.isValueQuery = isValueQuery;
@@ -65,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             CosmosElement continuationToken,
+            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage) => executionEnvironment switch
             {
                 ExecutionEnvironment.Client => ClientAggregateQueryPipelineStage.MonadicCreate(
@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     orderedAliases,
                     hasSelectValue,
                     continuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 ExecutionEnvironment.Compute => ComputeAggregateQueryPipelineStage.MonadicCreate(
                     aggregates,
@@ -80,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     orderedAliases,
                     hasSelectValue,
                     continuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}."),
             };

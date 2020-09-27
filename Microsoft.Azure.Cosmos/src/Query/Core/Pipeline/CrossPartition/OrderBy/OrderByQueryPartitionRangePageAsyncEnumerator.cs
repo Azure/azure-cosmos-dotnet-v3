@@ -23,8 +23,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             PartitionKeyRange feedRange,
             int pageSize,
             string filter,
+            CancellationToken cancellationToken,
             QueryState state = default)
-            : base(feedRange, state)
+            : base(feedRange, cancellationToken, state)
         {
             this.StartOfPageState = state;
             this.innerEnumerator = new InnerEnumerator(
@@ -33,9 +34,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 feedRange,
                 pageSize,
                 filter,
+                cancellationToken,
                 state);
             this.bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(
-                this.innerEnumerator);
+                this.innerEnumerator,
+                cancellationToken);
         }
 
         public SqlQuerySpec SqlQuerySpec => this.innerEnumerator.SqlQuerySpec;
@@ -55,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return this.bufferedEnumerator.Current;
         }
 
-        public ValueTask PrefetchAsync() => this.bufferedEnumerator.PrefetchAsync();
+        public ValueTask PrefetchAsync(CancellationToken cancellationToken) => this.bufferedEnumerator.PrefetchAsync(cancellationToken);
 
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
@@ -67,8 +70,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PartitionKeyRange feedRange,
                 int pageSize,
                 string filter,
+                CancellationToken cancellationToken,
                 QueryState state = default)
-                : base(feedRange, state)
+                : base(feedRange, cancellationToken, state)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));

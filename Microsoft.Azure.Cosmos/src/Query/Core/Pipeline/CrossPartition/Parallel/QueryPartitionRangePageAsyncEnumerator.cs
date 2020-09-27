@@ -23,8 +23,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyRange feedRange,
             int pageSize,
+            CancellationToken cancellationToken,
             QueryState state = default)
-            : base(feedRange, state)
+            : base(feedRange, cancellationToken, state)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));

@@ -18,15 +18,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
     {
         private sealed class ComputeSkipQueryPipelineStage : SkipQueryPipelineStage
         {
-            private ComputeSkipQueryPipelineStage(IQueryPipelineStage source, long skipCount)
-                : base(source, skipCount)
+            private ComputeSkipQueryPipelineStage(IQueryPipelineStage source, CancellationToken cancellationToken, long skipCount)
+                : base(source, cancellationToken, skipCount)
             {
                 // Work is done in base constructor.
             }
 
             public static TryCatch<IQueryPipelineStage> MonadicCreate(
                 int offsetCount,
-                CosmosElement continuationToken,
+                CosmosElement continuationToken, 
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (monadicCreatePipelineStage == null)
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                                 "offset count in continuation token can not be greater than the offsetcount in the query."));
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(offsetContinuationToken.SourceToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(offsetContinuationToken.SourceToken, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -66,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 
                 IQueryPipelineStage stage = new ComputeSkipQueryPipelineStage(
                     tryCreateSource.Result,
+                    cancellationToken,
                     offsetContinuationToken.Offset);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);

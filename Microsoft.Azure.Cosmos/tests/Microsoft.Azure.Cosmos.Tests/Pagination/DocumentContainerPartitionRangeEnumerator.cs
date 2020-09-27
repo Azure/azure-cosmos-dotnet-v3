@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -22,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IDocumentContainer documentContainer,
             int partitionKeyRangeId,
             int pageSize,
+            CancellationToken cancellationToken,
             DocumentContainerState state = null)
             : base(
                   new PartitionKeyRange()
@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                       MinInclusive = partitionKeyRangeId.ToString(),
                       MaxExclusive  = partitionKeyRangeId.ToString()
                   },
+                  cancellationToken,
                   state ?? new DocumentContainerState(resourceIdentifier: ResourceId.Empty))
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
@@ -43,6 +44,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             partitionKeyRangeId: this.partitionKeyRangeId,
             resourceIdentifer: this.State.ResourceIdentifer,
             pageSize: this.pageSize,
-            cancellationToken: default);
+            cancellationToken: cancellationToken);
     }
 }

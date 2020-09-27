@@ -19,8 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 
         protected SkipQueryPipelineStage(
             IQueryPipelineStage source,
+            CancellationToken cancellationToken,
             long skipCount)
-            : base(source)
+            : base(source, cancellationToken)
         {
             if (skipCount > int.MaxValue)
             {
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
             ExecutionEnvironment executionEnvironment,
             int offsetCount,
             CosmosElement continuationToken,
+            CancellationToken cancellationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {
             TryCatch<IQueryPipelineStage> tryCreate = executionEnvironment switch
@@ -41,10 +43,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 ExecutionEnvironment.Client => ClientSkipQueryPipelineStage.MonadicCreate(
                     offsetCount,
                     continuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 ExecutionEnvironment.Compute => ComputeSkipQueryPipelineStage.MonadicCreate(
                     offsetCount,
                     continuationToken,
+                    cancellationToken,
                     monadicCreatePipelineStage),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
             };

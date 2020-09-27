@@ -6,11 +6,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
 
     internal static class ParallelPrefetch
     {
-        public static async Task PrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency)
+        public static async Task PrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency, CancellationToken cancellationToken)
         {
             if (prefetchers == null)
             {
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 if (prefetchersEnumerator.MoveNext())
                 {
                     IPrefetcher prefetcher = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync()));
+                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(cancellationToken)));
                 }
             }
 
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 if (prefetchersEnumerator.MoveNext())
                 {
                     IPrefetcher bufferable = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync()));
+                    tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(cancellationToken)));
                 }
             }
         }

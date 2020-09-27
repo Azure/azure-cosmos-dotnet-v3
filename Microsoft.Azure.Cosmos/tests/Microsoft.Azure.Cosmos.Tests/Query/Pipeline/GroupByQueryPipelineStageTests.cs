@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
@@ -55,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> tryCreateGroupByStage = GroupByQueryPipelineStage.MonadicCreate(
                 executionEnvironment: executionEnvironment,
                 continuationToken: continuationToken,
-                monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
+                cancellationToken: default,
+                monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
                 groupByAliasToAggregateType: groupByAliasToAggregateType,
                 orderedAliases: orderedAliases,
                 hasSelectValue: hasSelectValue);

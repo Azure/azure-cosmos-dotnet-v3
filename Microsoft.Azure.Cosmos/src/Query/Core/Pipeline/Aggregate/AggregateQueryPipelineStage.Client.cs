@@ -20,8 +20,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
             private ClientAggregateQueryPipelineStage(
                 IQueryPipelineStage source,
                 SingleGroupAggregator singleGroupAggregator,
-                bool isValueAggregateQuery)
-                : base(source, singleGroupAggregator, isValueAggregateQuery)
+                bool isValueAggregateQuery,
+                CancellationToken cancellationToken)
+                : base(source, singleGroupAggregator, isValueAggregateQuery, cancellationToken)
             {
                 // all the work is done in the base constructor.
             }
@@ -32,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 IReadOnlyList<string> orderedAliases,
                 bool hasSelectValue,
                 CosmosElement continuationToken,
+                CancellationToken cancellationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
                 if (monadicCreatePipelineStage == null)
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     return TryCatch<IQueryPipelineStage>.FromException(tryCreateSingleGroupAggregator.Exception);
                 }
 
-                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken);
+                TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
                     return tryCreateSource;
@@ -59,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 ClientAggregateQueryPipelineStage stage = new ClientAggregateQueryPipelineStage(
                     tryCreateSource.Result,
                     tryCreateSingleGroupAggregator.Result,
-                    hasSelectValue);
+                    hasSelectValue,
+                    cancellationToken);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
@@ -90,6 +93,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
                             this.isValueQuery,
                             element);

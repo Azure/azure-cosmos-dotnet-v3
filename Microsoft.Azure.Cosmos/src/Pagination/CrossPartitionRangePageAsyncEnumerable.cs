@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.createPartitionRangeEnumerator,
                 this.comparer,
                 this.maxConcurrency,
+                cancellationToken,
                 this.state);
         }
     }
