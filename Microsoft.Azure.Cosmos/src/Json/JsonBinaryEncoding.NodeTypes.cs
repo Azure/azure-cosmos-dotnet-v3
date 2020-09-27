@@ -142,7 +142,10 @@ namespace Microsoft.Azure.Cosmos.Json
                     Unknown,    // Invalid
             };
 
-            public static JsonNodeType GetNodeType(byte typeMarker) => NodeTypes.Types[typeMarker];
+            public static JsonNodeType GetNodeType(byte typeMarker)
+            {
+                return NodeTypes.Types[typeMarker];
+            }
         }
     }
 }

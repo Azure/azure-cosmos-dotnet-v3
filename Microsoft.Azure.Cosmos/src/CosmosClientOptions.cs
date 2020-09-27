@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
+            this.TokenCredentialBackgroundRefreshInterval = null;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
@@ -153,6 +154,20 @@ namespace Microsoft.Azure.Cosmos
         /// <value>Default value is 1 minute.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
+
+        /// <summary>
+        /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
+        /// This avoids latency issues because the old token is used until the new token is retrieved.
+        /// </summary>
+        /// <remarks>
+        /// The recommended minimum value is 5 minutes. The default value is 25% of the token expire time.
+        /// </remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process

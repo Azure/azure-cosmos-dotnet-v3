@@ -7,12 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
     {
@@ -44,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
 
-        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
+        private readonly Dictionary<int, DateTime> RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
 
         public List<Uri> ContactedReplicas { get; set; }
 

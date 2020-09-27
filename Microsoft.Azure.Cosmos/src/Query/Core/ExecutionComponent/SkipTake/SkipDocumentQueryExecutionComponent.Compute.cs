@@ -6,16 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Documents;
 
     internal abstract partial class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {

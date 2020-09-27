@@ -74,10 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets a value indicating whether there are additional results to retrieve from the Azure Cosmos DB service.
         /// </summary>
         /// <returns>Returns true if there are additional results to retrieve. Returns false otherwise.</returns>
-        public bool HasMoreResults
-        {
-            get { return this.documentQuery.HasMoreResults; }
-        }
+        public bool HasMoreResults => this.documentQuery.HasMoreResults;
 
         /// <summary>
         /// Retrieves an <see cref="IEnumerator{T}"/> that can be used to iterate over the resources from the Azure Cosmos DB service.
@@ -105,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The response from a single call to ReadFeed for the specified resource.</returns>
-        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default)
         {
             return TaskHelper.InlineIfPossible(() => this.InternalExecuteNextAsync(cancellationToken), null, cancellationToken);
         }

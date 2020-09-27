@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
-               cosmosClient.AccountKey,
+               cosmosClient.AuthorizationTokenProvider,
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,

@@ -29,12 +29,24 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public static SqlOrderByItem Create(
             SqlScalarExpression expression,
-            bool isDescending) => new SqlOrderByItem(expression, isDescending);
+            bool isDescending)
+        {
+            return new SqlOrderByItem(expression, isDescending);
+        }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
     }
 }

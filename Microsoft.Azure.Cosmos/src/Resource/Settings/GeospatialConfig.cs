@@ -3,10 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
