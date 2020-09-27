@@ -76,21 +76,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Collections
             throw new NotSupportedException($"The IProducerConsumerCollection type of {typeof(T)} is not supported.");
         }
 
-        public int Count
-        {
-            get
-            {
-                return this.collection.Count;
-            }
-        }
+        public int Count => this.collection.Count;
 
-        public bool IsUnbounded
-        {
-            get
-            {
-                return this.boundingCapacity >= int.MaxValue;
-            }
-        }
+        public bool IsUnbounded => this.boundingCapacity >= int.MaxValue;
 
         public async Task AddAsync(T item, CancellationToken token = default)
         {

@@ -407,8 +407,9 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludeTentativeWrites, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.PreserveFullContent, request);
 
-            // Max polling interval for change feed.
+            // Max polling interval and start full fidelity LSN (ETag) for change feed.
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, request);
 
             if (resourceOperation.operationType == OperationType.Batch)
             {
@@ -534,6 +535,7 @@ namespace Microsoft.Azure.Documents
                     break;
 
                 case OperationType.ServiceReservation:
+                case OperationType.GetFederationConfigurations:
                     httpRequestMessage.RequestUri = physicalAddress;
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);

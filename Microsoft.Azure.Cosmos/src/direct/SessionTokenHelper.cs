@@ -12,6 +12,9 @@ namespace Microsoft.Azure.Documents
 
     internal static class SessionTokenHelper
     {
+        public static readonly char[] CharArrayWithColon = new char[] { ':' };
+        public static readonly char[] CharArrayWithComma = new char[] { ',' };
+
         public static void SetOriginalSessionToken(DocumentServiceRequest request, string originalSessionToken)
         {
             if (request == null)
@@ -114,7 +117,7 @@ namespace Microsoft.Azure.Documents
             //          2:425344,748:2341234,99:42344
             // Local session token is single <partitionkeyrangeid>:<lsn> pair.
             // Backend only cares about pair which relates to the range owned by the partition.
-            string[] partitionKeyRangesToken = globalSessionToken.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] partitionKeyRangesToken = globalSessionToken.Split(SessionTokenHelper.CharArrayWithComma, StringSplitOptions.RemoveEmptyEntries);
             HashSet<string> partitionKeyRangeSet = new HashSet<string>(StringComparer.Ordinal);
             partitionKeyRangeSet.Add(partitionKeyRangeId);
 
@@ -127,7 +130,7 @@ namespace Microsoft.Azure.Documents
 
             foreach (string partitionKeyRangeToken in partitionKeyRangesToken)
             {
-                string[] items = partitionKeyRangeToken.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] items = partitionKeyRangeToken.Split(SessionTokenHelper.CharArrayWithColon, StringSplitOptions.RemoveEmptyEntries);
 
                 if (items.Length != 2)
                 {
@@ -181,9 +184,7 @@ namespace Microsoft.Azure.Documents
 
         internal static ISessionToken Parse(string sessionToken)
         {
-            ISessionToken partitionKeyRangeSessionToken = null;
-
-            if (SessionTokenHelper.TryParse(sessionToken, out partitionKeyRangeSessionToken))
+            if (SessionTokenHelper.TryParse(sessionToken, out ISessionToken partitionKeyRangeSessionToken))
             {
                 return partitionKeyRangeSessionToken;
             }
@@ -198,9 +199,15 @@ namespace Microsoft.Azure.Documents
             parsedSessionToken = null;
             if (!string.IsNullOrEmpty(sessionToken))
             {
-                string[] sessionTokenSegments = sessionToken.Split(new char[] { ':' });
-                return SimpleSessionToken.TryCreate(sessionTokenSegments.Last(), out parsedSessionToken)
-                    || VectorSessionToken.TryCreate(sessionTokenSegments.Last(), out parsedSessionToken);
+                string lastSessionTokenSegment = sessionToken;
+                int lastIndex = sessionToken.LastIndexOf(':');
+                if (lastIndex >= 0)
+                {
+                    lastSessionTokenSegment = lastSessionTokenSegment.Substring(startIndex: lastIndex + 1);
+                }
+
+                return VectorSessionToken.TryCreate(lastSessionTokenSegment, out parsedSessionToken)
+                    || SimpleSessionToken.TryCreate(lastSessionTokenSegment, out parsedSessionToken);
             }
             else
             {
@@ -212,7 +219,7 @@ namespace Microsoft.Azure.Documents
         {
             if (!string.IsNullOrEmpty(sessionToken))
             {
-                string[] sessionTokenSegments = sessionToken.Split(new char[] { ':' });
+                string[] sessionTokenSegments = sessionToken.Split(SessionTokenHelper.CharArrayWithColon);
 
                 ISessionToken parsedSessionToken;
                 if (VersionUtility.IsLaterThan(version, HttpConstants.VersionDates.v2018_06_18))

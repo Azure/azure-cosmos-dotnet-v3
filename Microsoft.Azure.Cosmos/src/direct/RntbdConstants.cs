@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Documents
             ForcePartitionBackup = 0x002E,
             CompleteUserTransaction = 0x002F,
             MasterInitiatedProgressCoordination = 0x0030,
+            MetadataCheckAccess = 0x0031,
         }
 
         public enum ConnectionContextRequestTokenIdentifiers : ushort
@@ -403,7 +404,8 @@ namespace Microsoft.Azure.Documents
             RetriableWriteRequestId = 0x0096,
             IsRetriedWriteReqeuest = 0x0097,
             RetriableWriteRequestStartTimestamp = 0x0098,
-            AddResourcePropertiesToResponse = 0x0099
+            AddResourcePropertiesToResponse = 0x0099,
+            ChangeFeedStartFullFidelityIfNoneMatch = 0x009A,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -546,6 +548,7 @@ namespace Microsoft.Azure.Documents
             public RntbdToken isRetriedWriteRequest;
             public RntbdToken retriableWriteRequestStartTimestamp;
             public RntbdToken addResourcePropertiesToResponse;
+            public RntbdToken changeFeedStartFullFidelityIfNoneMatch;
 
             public Request()
             {
@@ -687,6 +690,8 @@ namespace Microsoft.Azure.Documents
                 this.isRetriedWriteRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsRetriedWriteReqeuest, this.AddPresentToken);
                 this.retriableWriteRequestStartTimestamp = new RntbdToken(false, RntbdTokenTypes.ULongLong, (ushort)RequestIdentifiers.RetriableWriteRequestStartTimestamp, this.AddPresentToken);
                 this.addResourcePropertiesToResponse = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AddResourcePropertiesToResponse, this.AddPresentToken);
+                this.changeFeedStartFullFidelityIfNoneMatch = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedStartFullFidelityIfNoneMatch, this.AddPresentToken);
+
                 base.SetTokens(new RntbdToken[]
                 {
                     this.resourceId,
@@ -826,7 +831,8 @@ namespace Microsoft.Azure.Documents
                     this.retriableWriteRequestId,
                     this.isRetriedWriteRequest,
                     this.retriableWriteRequestStartTimestamp,
-                    this.addResourcePropertiesToResponse
+                    this.addResourcePropertiesToResponse,
+                    this.changeFeedStartFullFidelityIfNoneMatch,
                 });
             }
         }

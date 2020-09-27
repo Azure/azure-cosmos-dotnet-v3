@@ -105,10 +105,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetryHandlerHttpClientExceptionRefreshesLocations()
         {
-            DocumentClient dc = new MockDocumentClient(RetryHandlerTests.TestUri, "test");
+            DocumentClient dc = new MockDocumentClient(RetryHandlerTests.TestUri, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             CosmosClient client = new CosmosClient(
-                RetryHandlerTests.TestUri.OriginalString, 
-                Guid.NewGuid().ToString(), 
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, 
                 new CosmosClientOptions(), 
                 dc);
 

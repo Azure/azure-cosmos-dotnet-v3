@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel
         private static readonly Func<ItemProducerTree, int> FetchPriorityFunction = documentProducerTree => int.Parse(documentProducerTree.PartitionKeyRange.Id);
 
         private readonly bool returnResultsInDeterministicOrder;
-        
+
         /// <summary>
         /// Initializes a new instance of the CosmosParallelItemQueryExecutionContext class.
         /// </summary>

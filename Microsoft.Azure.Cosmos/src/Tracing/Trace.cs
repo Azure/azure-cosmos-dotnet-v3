@@ -63,13 +63,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
             string name,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0) => this.StartChild(
-            name,
-            level: TraceLevel.Verbose,
-            component: this.Component,
-            memberName: memberName,
-            sourceFilePath: sourceFilePath,
-            sourceLineNumber: sourceLineNumber);
+            [CallerLineNumber] int sourceLineNumber = 0)
+        {
+            return this.StartChild(
+name,
+level: TraceLevel.Verbose,
+component: this.Component,
+memberName: memberName,
+sourceFilePath: sourceFilePath,
+sourceLineNumber: sourceLineNumber);
+        }
 
         public ITrace StartChild(
             string name,
@@ -89,10 +92,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return child;
         }
 
-        public static Trace GetRootTrace(string name) => Trace.GetRootTrace(
-            name,
-            component: TraceComponent.Unknown,
-            level: TraceLevel.Verbose);
+        public static Trace GetRootTrace(string name)
+        {
+            return Trace.GetRootTrace(
+name,
+component: TraceComponent.Unknown,
+level: TraceLevel.Verbose);
+        }
 
         public static Trace GetRootTrace(
             string name,
@@ -100,15 +106,24 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TraceLevel level,
             [CallerMemberName] string memberName = "",
             [CallerFilePath] string sourceFilePath = "",
-            [CallerLineNumber] int sourceLineNumber = 0) => new Trace(
-                name: name,
-                callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
-                level: level,
-                component: component,
-                parent: null);
+            [CallerLineNumber] int sourceLineNumber = 0)
+        {
+            return new Trace(
+name: name,
+callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
+level: level,
+component: component,
+parent: null);
+        }
 
-        public void AddDatum(string key, ITraceDatum traceDatum) => this.data.Add(key, traceDatum);
+        public void AddDatum(string key, ITraceDatum traceDatum)
+        {
+            this.data.Add(key, traceDatum);
+        }
 
-        public void AddDatum(string key, object value) => this.data.Add(key, value);
+        public void AddDatum(string key, object value)
+        {
+            this.data.Add(key, value);
+        }
     }
 }

@@ -105,6 +105,11 @@ namespace Microsoft.Azure.Documents
             public const string backupTime = "x_ms_backupTime";
         }
 
+        public static class CosmosDBRequestProperties
+        {
+            public const string IsAllowedOrigin = "isAllowedOrigin";
+        }
+
         public static class Offers
         {
             public const string OfferVersion_None = "";
@@ -820,8 +825,12 @@ namespace Microsoft.Azure.Documents
             // Property to enable storage analytics
             public const string EnableAnalyticalStorage = "enableAnalyticalStorage";
 
-            //property to enable MaterializedViews
-            public const string EnableMaterializedViews = "enableMaterializedViews";
+            //properties to enable MaterializedViews 
+            public const string EnableMaterializedViews = "enableMaterializedViews"; //at DB account level.
+            public const string AllowMaterializedViews = "allowMaterializedViews"; //at collection level.
+
+            // property to enable full fidelity change feed (change feed with retention from remote+local storage).
+            public const string EnableFullFidelityChangeFeed = "enableFullFidelityChangeFeed";
 
             // Enable API type check
             public const string EnableApiTypeCheck = "enableApiTypeCheck";

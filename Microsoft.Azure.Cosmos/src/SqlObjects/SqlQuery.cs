@@ -43,11 +43,20 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public SqlOffsetLimitClause OffsetLimitClause { get; }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
 
         public static SqlQuery Create(
             SqlSelectClause selectClause,
@@ -55,12 +64,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
             SqlOrderbyClause orderByClause,
-            SqlOffsetLimitClause offsetLimitClause) => new SqlQuery(
-                selectClause,
-                fromClause,
-                whereClause,
-                groupByClause,
-                orderByClause,
-                offsetLimitClause);
+            SqlOffsetLimitClause offsetLimitClause)
+        {
+            return new SqlQuery(
+selectClause,
+fromClause,
+whereClause,
+groupByClause,
+orderByClause,
+offsetLimitClause);
+        }
     }
 }

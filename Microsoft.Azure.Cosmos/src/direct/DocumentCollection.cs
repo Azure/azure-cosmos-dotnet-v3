@@ -638,6 +638,27 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets if creation of MaterializedViews is allowed on the collection.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value must be either true or false
+        /// By default, AllowMaterializedViews is set to false meaning the creation of materializedViews is not allowed on collection;
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.AllowMaterializedViews, NullValueHandling = NullValueHandling.Ignore)]
+        internal bool? AllowMaterializedViews
+        {
+            get
+            {
+                return base.GetValue<bool?>(Constants.Properties.AllowMaterializedViews);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.AllowMaterializedViews, value);
+            }
+        }
+
+        /// <summary>
         /// Gets the <see cref="CollectionBackupPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>

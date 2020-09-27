@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -69,7 +68,10 @@ namespace Microsoft.Azure.Cosmos.Json
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
-            public override IJsonNavigatorNode GetRootNode() => this.rootNode;
+            public override IJsonNavigatorNode GetRootNode()
+            {
+                return this.rootNode;
+            }
 
             /// <inheritdoc />
             public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
@@ -298,9 +300,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 return this.GetArrayItemsInternal(buffer).Select((node) => (IJsonNavigatorNode)node);
             }
 
-            private IEnumerable<BinaryNavigatorNode> GetArrayItemsInternal(ReadOnlyMemory<byte> buffer) => JsonBinaryEncoding.Enumerator
-                .GetArrayItems(buffer)
-                .Select(arrayItem => new BinaryNavigatorNode(arrayItem, JsonBinaryEncoding.NodeTypes.GetNodeType(arrayItem.Span[0])));
+            private IEnumerable<BinaryNavigatorNode> GetArrayItemsInternal(ReadOnlyMemory<byte> buffer)
+            {
+                return JsonBinaryEncoding.Enumerator
+.GetArrayItems(buffer)
+.Select(arrayItem => new BinaryNavigatorNode(arrayItem, JsonBinaryEncoding.NodeTypes.GetNodeType(arrayItem.Span[0])));
+            }
 
             /// <inheritdoc />
             public override int GetObjectPropertyCount(IJsonNavigatorNode objectNode)
@@ -407,11 +412,14 @@ namespace Microsoft.Azure.Cosmos.Json
                         objectPropertyInternal.ValueNode));
             }
 
-            private IEnumerable<ObjectPropertyInternal> GetObjectPropertiesInternal(ReadOnlyMemory<byte> buffer) => JsonBinaryEncoding.Enumerator
-                .GetObjectProperties(buffer)
-                .Select(property => new ObjectPropertyInternal(
-                    new BinaryNavigatorNode(property.Name, JsonNodeType.FieldName),
-                    new BinaryNavigatorNode(property.Value, JsonBinaryEncoding.NodeTypes.GetNodeType(property.Value.Span[0]))));
+            private IEnumerable<ObjectPropertyInternal> GetObjectPropertiesInternal(ReadOnlyMemory<byte> buffer)
+            {
+                return JsonBinaryEncoding.Enumerator
+.GetObjectProperties(buffer)
+.Select(property => new ObjectPropertyInternal(
+new BinaryNavigatorNode(property.Name, JsonNodeType.FieldName),
+new BinaryNavigatorNode(property.Value, JsonBinaryEncoding.NodeTypes.GetNodeType(property.Value.Span[0]))));
+            }
 
             public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
             {
@@ -449,7 +457,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
                 // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
+                buffer = buffer.Slice(0, arrayLength);
 
                 // Seek to the first array item
                 buffer = buffer.Slice(firstArrayItemOffset);
