@@ -25,15 +25,11 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class VectorSessionToken : ISessionToken
     {
-        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
         private const char SegmentSeparator = '#';
-        private const string SegmentSeparatorString = "#";
         private const char RegionProgressSeparator = '=';
         private readonly string sessionToken;
         private readonly long version;
-#pragma warning disable IDE0032 // Use auto property
         private readonly long globalLsn;
-#pragma warning restore IDE0032 // Use auto property
         private readonly IReadOnlyDictionary<uint, long> localLsnByRegion;
 
         private VectorSessionToken(long version, long globalLsn, IReadOnlyDictionary<uint, long> localLsnByRegion, string sessionToken = null)
@@ -45,13 +41,9 @@ namespace Microsoft.Azure.Documents
 
             if (this.sessionToken == null)
             {
-                string regionProgress = null;
-                if (localLsnByRegion.Any())
-                {
-                    regionProgress = string.Join(
-                        VectorSessionToken.SegmentSeparatorString,
-                        localLsnByRegion.Select(kvp => string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", kvp.Key, VectorSessionToken.RegionProgressSeparator, kvp.Value)));
-                }
+                string regionProgress = string.Join(
+                    VectorSessionToken.SegmentSeparator.ToString(),
+                    localLsnByRegion.Select(kvp => string.Format(CultureInfo.InvariantCulture, "{0}{1}{2}", kvp.Key, VectorSessionToken.RegionProgressSeparator, kvp.Value)));
 
                 if (string.IsNullOrEmpty(regionProgress))
                 {
@@ -59,7 +51,7 @@ namespace Microsoft.Azure.Documents
                         CultureInfo.InvariantCulture,
                         "{0}{1}{2}",
                         this.version,
-                        VectorSessionToken.SegmentSeparatorString,
+                        VectorSessionToken.SegmentSeparator,
                         this.globalLsn);
                 }
                 else
@@ -68,28 +60,31 @@ namespace Microsoft.Azure.Documents
                         CultureInfo.InvariantCulture,
                         "{0}{1}{2}{3}{4}",
                         this.version,
-                        VectorSessionToken.SegmentSeparatorString,
+                        VectorSessionToken.SegmentSeparator,
                         this.globalLsn,
-                        VectorSessionToken.SegmentSeparatorString,
+                        VectorSessionToken.SegmentSeparator,
                         regionProgress);
                 }
             }
         }
 
         public VectorSessionToken(VectorSessionToken other, long globalLSN)
-            : this(other.version, globalLSN, other.localLsnByRegion)
+            : this(other.version, globalLSN, other.localLsnByRegion.ToDictionary(kvp => kvp.Key, kvp => kvp.Value))
         {
         }
 
         public static bool TryCreate(string sessionToken, out ISessionToken parsedSessionToken)
         {
             parsedSessionToken = null;
+            long version = -1;
+            long globalLsn = -1;
+            IReadOnlyDictionary<uint, long> localLsnByRegion;
 
             if (VectorSessionToken.TryParseSessionToken(
                 sessionToken,
-                out long version,
-                out long globalLsn,
-                out IReadOnlyDictionary<uint, long> localLsnByRegion))
+                out version,
+                out globalLsn,
+                out localLsnByRegion))
             {
                 parsedSessionToken = new VectorSessionToken(version, globalLsn, localLsnByRegion, sessionToken);
                 return true;
@@ -100,11 +95,19 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public long LSN => this.globalLsn;
+        public long LSN
+        {
+            get
+            {
+                return this.globalLsn;
+            }
+        }
 
         public bool Equals(ISessionToken obj)
         {
-            if (!(obj is VectorSessionToken other))
+            VectorSessionToken other = obj as VectorSessionToken;
+
+            if (other == null)
             {
                 return false;
             }
@@ -116,7 +119,9 @@ namespace Microsoft.Azure.Documents
 
         public bool IsValid(ISessionToken otherSessionToken)
         {
-            if (!(otherSessionToken is VectorSessionToken other))
+            VectorSessionToken other = otherSessionToken as VectorSessionToken;
+
+            if (other == null)
             {
                 throw new ArgumentNullException(nameof(otherSessionToken));
             }
@@ -168,7 +173,9 @@ namespace Microsoft.Azure.Documents
         // Merge is commutative operation, so a.Merge(b).Equals(b.Merge(a))
         public ISessionToken Merge(ISessionToken obj)
         {
-            if (!(obj is VectorSessionToken other))
+            VectorSessionToken other = obj as VectorSessionToken;
+
+            if (other == null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
@@ -177,30 +184,6 @@ namespace Microsoft.Azure.Documents
             {
                 throw new InternalServerErrorException(
                     string.Format(CultureInfo.InvariantCulture, RMResources.InvalidRegionsInSessionToken, this.sessionToken, other.sessionToken));
-            }
-
-            // If one of the existing tokens has the all the max values then 
-            // just return it instead of creating a new one.
-            if (this.version >= other.version &&
-                this.globalLsn > other.globalLsn)
-            {
-                if (VectorSessionToken.AreAllLocalLsnByRegionsGreaterThanOrEqual(
-                    higherToken: this,
-                    lowerToken: other))
-                {
-                    return this;
-                }
-
-            }
-            else if (other.version >= this.version &&
-                other.globalLsn >= this.globalLsn)
-            {
-                if (VectorSessionToken.AreAllLocalLsnByRegionsGreaterThanOrEqual(
-                    higherToken: other,
-                    lowerToken: this))
-                {
-                    return other;
-                }
             }
 
             VectorSessionToken sessionTokenWithHigherVersion;
@@ -216,9 +199,9 @@ namespace Microsoft.Azure.Documents
                 sessionTokenWithLowerVersion = other;
                 sessionTokenWithHigherVersion = this;
             }
+            
+            Dictionary<uint, long> highestLocalLsnByRegion = new Dictionary<uint, long>();
 
-            // Create a new token with the highest values of both
-            Dictionary<uint, long> highestLocalLsnByRegion = new Dictionary<uint, long>(sessionTokenWithHigherVersion.localLsnByRegion.Count);
             foreach (KeyValuePair<uint, long> kvp in sessionTokenWithHigherVersion.localLsnByRegion)
             {
                 uint regionId = kvp.Key;
@@ -262,48 +245,14 @@ namespace Microsoft.Azure.Documents
             {
                 uint regionId = kvp.Key;
                 long localLsn1 = kvp.Value;
-                if (other.TryGetValue(regionId, out long localLsn2))
+                long localLsn2 = -1;
+
+                if (other.TryGetValue(regionId, out localLsn2))
                 {
                     if (localLsn1 != localLsn2)
                     {
                         return false;
                     }
-                }
-            }
-
-            return true;
-        }
-
-        private static bool AreAllLocalLsnByRegionsGreaterThanOrEqual(
-            VectorSessionToken higherToken,
-            VectorSessionToken lowerToken)
-        {
-            if (higherToken.localLsnByRegion.Count != lowerToken.localLsnByRegion.Count)
-            {
-                return false;
-            }
-
-            if (!higherToken.localLsnByRegion.Any())
-            {
-                return true;
-            }
-
-            foreach (KeyValuePair<uint, long> kvp in higherToken.localLsnByRegion)
-            {
-                uint higherRegionId = kvp.Key;
-                long higherLocalLsn = kvp.Value;
-                if (lowerToken.localLsnByRegion.TryGetValue(higherRegionId, out long lowerLocalLsn))
-                {
-                    if (lowerLocalLsn > higherLocalLsn)
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    // Both dictionaries have the same count so this means they both
-                    // have a region that does not exist in the other.
-                    return false;
                 }
             }
 
@@ -326,50 +275,39 @@ namespace Microsoft.Azure.Documents
                 return false;
             }
 
-            int index = 0;
-            if (!TryParseLongSegment(
-                sessionToken,
-                ref index,
-                out version))
+            string[] segments = sessionToken.Split(VectorSessionToken.SegmentSeparator);
+
+            if (segments.Length < 2)
             {
-                DefaultTrace.TraceCritical($"Unexpected session token version number from token: {sessionToken} .");
                 return false;
             }
 
-            if (!TryParseLongSegment(
-                sessionToken,
-                ref index,
-                out globalLsn))
+            if (!long.TryParse(segments[0], NumberStyles.Number, CultureInfo.InvariantCulture, out version)
+                || !long.TryParse(segments[1], NumberStyles.Number, CultureInfo.InvariantCulture, out globalLsn))
             {
-                DefaultTrace.TraceCritical($"Unexpected session token global lsn from token: {sessionToken} .");
+                DefaultTrace.TraceCritical("Unexpected session token version number '{0}' OR global lsn '{1}'.", segments[0], segments[1]);
                 return false;
-            }
-
-            if (index >= sessionToken.Length)
-            {
-                localLsnByRegion = VectorSessionToken.DefaultLocalLsnByRegion;
-                return true;
             }
 
             Dictionary<uint, long> lsnByRegion = new Dictionary<uint, long>();
 
-            while (index < sessionToken.Length)
+            foreach (string regionSegment in segments.Skip(2))
             {
-                if (!TryParseUintTillRegionProgressSeparator(
-                    sessionToken,
-                    ref index,
-                    out uint regionId))
+                string[] regionIdWithLsn = regionSegment.Split(VectorSessionToken.RegionProgressSeparator);
+
+                if(regionIdWithLsn.Length != 2)
                 {
-                    DefaultTrace.TraceCritical($"Unexpected region progress segment in session token: {sessionToken}.");
+                    DefaultTrace.TraceCritical("Unexpected region progress segment length '{0}' in session token.", regionIdWithLsn.Length);
                     return false;
                 }
 
-                if (!TryParseLongSegment(
-                    sessionToken,
-                    ref index,
-                    out long localLsn))
+                uint regionId = 0;
+                long localLsn = -1;
+
+                if (!uint.TryParse(regionIdWithLsn[0], NumberStyles.Number, CultureInfo.InvariantCulture, out regionId)
+                    || !long.TryParse(regionIdWithLsn[1], NumberStyles.Number, CultureInfo.InvariantCulture, out localLsn))
                 {
-                    DefaultTrace.TraceCritical($"Unexpected local lsn for region id {regionId.ToString(CultureInfo.InvariantCulture)} for segment in session token: {sessionToken}.");
+                    DefaultTrace.TraceCritical("Unexpected region progress '{0}' for region '{1}' in session token.", regionIdWithLsn[0], regionIdWithLsn[1]);
                     return false;
                 }
 
@@ -377,97 +315,6 @@ namespace Microsoft.Azure.Documents
             }
 
             localLsnByRegion = lsnByRegion;
-
-            return true;
-        }
-
-        private static bool TryParseUintTillRegionProgressSeparator(
-            string input,
-            ref int index,
-            out uint value)
-        {
-            value = 0;
-            if (index >= input.Length)
-            {
-                return false;
-            }
-
-            long longValue = 0;
-            while (index < input.Length)
-            {
-                char c = input[index];
-                if (c >= '0' && c <= '9')
-                {
-                    longValue = (longValue * 10) + (c - '0');
-                    index++;
-                }
-                else
-                {
-                    if (c == VectorSessionToken.RegionProgressSeparator)
-                    {
-                        // Always increase index pass stop character
-                        index++;
-                        break;
-                    }
-
-                    return false;
-                }
-            }
-
-            if (longValue > uint.MaxValue ||
-                longValue < 0)
-            {
-                return false;
-            }
-
-            value = (uint)longValue;
-            return true;
-        }
-
-        private static bool TryParseLongSegment(
-            string input,
-            ref int index,
-            out long value)
-        {
-            value = 0;
-            if (index >= input.Length)
-            {
-                return false;
-            }
-
-            bool isNegative = false;
-            if (input[index] == '-')
-            {
-                index++;
-                isNegative = true;
-            }
-
-            while (index < input.Length)
-            {
-                char c = input[index];
-                if (c >= '0' && c <= '9')
-                {
-                    value = (value * 10) + (c - '0');
-                    index++;
-                }
-                else
-                {
-                    if (c == VectorSessionToken.SegmentSeparator)
-                    {
-                        // Always increase index pass stop character
-                        index++;
-                        break;
-                    }
-
-                    return false;
-                }
-            }
-
-            if (isNegative)
-            {
-                value *= -1;
-            }
-
             return true;
         }
     }
