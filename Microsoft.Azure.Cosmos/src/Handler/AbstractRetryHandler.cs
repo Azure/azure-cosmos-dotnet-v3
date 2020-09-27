@@ -19,26 +19,27 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
-            request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
+          //  IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+          //  request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
             try
             {
-                return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
-                    {
-                        return base.SendAsync(request, cancellationToken);
-                    },
-                    callShouldRetry: (cosmosResponseMessage, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                    },
-                    callShouldRetryException: (exception, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                    },
-                    diagnosticsContext: request.DiagnosticsContext,
-                    cancellationToken: cancellationToken);
+                return await base.SendAsync(request, cancellationToken);
+                //return await RetryHandler.ExecuteHttpRequestAsync(
+                //    callbackMethod: () =>
+                //    {
+                //        return base.SendAsync(request, cancellationToken);
+                //    },
+                //    callShouldRetry: (cosmosResponseMessage, token) =>
+                //    {
+                //        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                //    },
+                //    callShouldRetryException: (exception, token) =>
+                //    {
+                //        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                //    },
+                //    diagnosticsContext: request.DiagnosticsContext,
+                //    cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
             {
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             finally
             {
-                request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
+              //  request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
             }
         }
 
