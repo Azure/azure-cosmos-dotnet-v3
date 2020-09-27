@@ -1,18 +1,18 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
-namespace Microsoft.Azure.Cosmos.Common
+namespace Microsoft.Azure.Documents.Client
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Text;
-    using System.Threading;
-    using Microsoft.Azure.Cosmos.Core.Trace;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class SessionContainer : ISessionContainer
     {
@@ -154,14 +154,10 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     if (self.collectionNameByResourceId.ContainsKey(collectionName))
                     {
-                        string ignoreString;
-                        ulong ignoreUlong;
-
                         ulong rid = self.collectionNameByResourceId[collectionName];
-                        ConcurrentDictionary<string, ISessionToken> ignored;
-                        self.sessionTokensRIDBased.TryRemove(rid, out ignored);
-                        self.collectionResourceIdByName.TryRemove(rid, out ignoreString);
-                        self.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
+                        self.sessionTokensRIDBased.TryRemove(rid, out _);
+                        self.collectionResourceIdByName.TryRemove(rid, out _);
+                        self.collectionNameByResourceId.TryRemove(collectionName, out _);
                     }
                 }
                 finally
@@ -283,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Common
         {
             string partitionKeyRangeId;
             ISessionToken token;
-            if (VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2015_12_16))
+            if (VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2015_12_16))
             {
                 string[] tokenParts = encodedToken.Split(':');
                 partitionKeyRangeId = tokenParts[0];
@@ -351,27 +347,30 @@ namespace Microsoft.Azure.Cosmos.Common
 
         private static void AddSessionToken(SessionContainerState self, ulong rid, string partitionKeyRangeId, ISessionToken token)
         {
-            self.sessionTokensRIDBased.AddOrUpdate(
-                rid,
-                (ridKey) =>
+            // Avoid using GetOrAdd because it adds lock contention with the inner AddOrUpdate call
+            if (!self.sessionTokensRIDBased.TryGetValue(rid, out ConcurrentDictionary<string, ISessionToken> tokens))
+            {
+                tokens = new ConcurrentDictionary<string, ISessionToken>();
+                if (!self.sessionTokensRIDBased.TryAdd(rid, tokens))
                 {
-                    ConcurrentDictionary<string, ISessionToken> tokens = new ConcurrentDictionary<string, ISessionToken>();
-                    tokens[partitionKeyRangeId] = token;
-                    return tokens;
-                },
-                (ridKey, tokens) =>
-                {
-                    tokens.AddOrUpdate(
-                        partitionKeyRangeId,
-                        token,
-                        (existingPartitionKeyRangeId, existingToken) => existingToken.Merge(token));
-                    return tokens;
-                });
+                    // Handle if there was a race condition and a different thread did
+                    // the add after the initial read
+                    if (!self.sessionTokensRIDBased.TryGetValue(rid, out tokens))
+                    {
+                        throw new InternalServerErrorException("AddSessionToken failed to get or add the session token dictionary.");
+                    }
+                }
+            }
+
+            tokens.AddOrUpdate(
+                key: partitionKeyRangeId,
+                addValue: token,
+                updateValueFactory: (existingPartitionKeyRangeId, existingToken) => existingToken.Merge(token));
         }
 
         private static string GetSessionTokenString(ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap)
         {
-            if (VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2015_12_16))
+            if (VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2015_12_16))
             {
                 StringBuilder sb = new StringBuilder();
                 foreach (KeyValuePair<string, ISessionToken> pair in partitionKeyRangeIdToTokenMap)
@@ -507,28 +506,39 @@ namespace Microsoft.Azure.Cosmos.Common
 
             public override bool Equals(object obj)
             {
-                if (obj == null || GetType() != obj.GetType())
+                if (obj == null || !(obj is SessionContainerSnapshot sibling))
                 {
                     return false;
                 }
 
-                SessionContainerSnapshot sibling = (SessionContainerSnapshot)obj;
+                if (this.collectionNameByResourceId.Count != sibling.collectionNameByResourceId.Count
+                    || this.collectionResourceIdByName.Count != sibling.collectionResourceIdByName.Count
+                    || this.sessionTokensRIDBased.Count != sibling.sessionTokensRIDBased.Count)
+                {
+                    return false;
+                }
 
-                if (!AreDictionariesEqual(collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
+                if (!AreDictionariesEqual(this.collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
+                if (!AreDictionariesEqual(this.collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
+                if (!AreDictionariesEqual(this.sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
 
                 return true;
             }
 
             private static bool AreDictionariesEqual<T, U>(Dictionary<T, U> left, Dictionary<T, U> right, Func<U, U, bool> areEqual)
             {
-                if (left.Count != right.Count) return false;
-
-                foreach (T key in left.Keys)
+                if (left.Count != right.Count)
                 {
-                    if (!right.ContainsKey(key)) return false;
-                    if (!areEqual(left[key], right[key])) return false;
+                    return false;
+                }
+
+                foreach (KeyValuePair<T, U> keyValuePair in left)
+                {
+                    if (!right.TryGetValue(keyValuePair.Key, out U valueFromLeft)
+                        || !areEqual(keyValuePair.Value, valueFromLeft))
+                    {
+                        return false;
+                    }
                 }
 
                 return true;
