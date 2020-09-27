@@ -151,6 +151,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             { WFConstants.BackendHeaders.MergeCheckPointGLSN,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.MergeCheckPointGLSN, rntbdRequest.mergeCheckpointGlsnKeyName, rntbdRequest)},
             { WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, rntbdRequest.populateUnflushedMergeEntryCount, rntbdRequest)},
             { WFConstants.BackendHeaders.AddResourcePropertiesToResponse,  (headerValue, documentServiceRequest, rntbdRequest) =>TransportSerialization.FillTokenWithValue(headerValue, WFConstants.BackendHeaders.AddResourcePropertiesToResponse, rntbdRequest.addResourcePropertiesToResponse, rntbdRequest)},
+            { HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch,  (headerValue, documentServiceRequest, rntbdRequest) => TransportSerialization.FillTokenWithValue(headerValue, HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, rntbdRequest.changeFeedStartFullFidelityIfNoneMatch, rntbdRequest)},
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -626,6 +627,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdOperationType.ForcePartitionBackup;
             case OperationType.MasterInitiatedProgressCoordination:
                 return RntbdConstants.RntbdOperationType.MasterInitiatedProgressCoordination;
+            case OperationType.MetadataCheckAccess:
+                return RntbdConstants.RntbdOperationType.MetadataCheckAccess;
 #endif
                 case OperationType.AddComputeGatewayRequestCharges:
                     return RntbdConstants.RntbdOperationType.AddComputeGatewayRequestCharges;

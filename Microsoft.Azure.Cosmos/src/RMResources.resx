@@ -1072,4 +1072,16 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="ResourceIdCannotBeEmpty" xml:space="preserve">
     <value>Resource id cannot be empty.</value>
   </data>
+  <data name="SystemDatabaseAccountDeleteNotSupported" xml:space="preserve">
+    <value>System database account {0} delete is not supported through this endpoint.</value>
+  </data>
+  <data name="InvalidSystemDatabaseAccountDelete" xml:space="preserve">
+    <value>Only system database account delete is supported through this endpoint. Supplied account {0}	</value>
+  </data>
+  <data name="SystemDatabaseAccountNotFound" xml:space="preserve">
+    <value>System database account with name {0} and type {1} not found.</value>
+  </data>
+  <data name="InvalidStoreTypeSpecified" xml:space="preserve">
+    <value>Invalid store type specified {0}.</value>
+  </data>
 </root>

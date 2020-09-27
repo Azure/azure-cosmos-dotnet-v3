@@ -2809,6 +2809,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to System database account with name {0} and type {1} not found.
+        /// </summary>
+        internal static string SystemDatabaseAccountNotFound
+        {
+            get
+            {
+                return ResourceManager.GetString("SystemDatabaseAccountNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to PartitionKey has fewer components than defined the collection resource..
         /// </summary>
         internal static string TooFewPartitionKeyComponents
@@ -3565,6 +3576,39 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("UpdateToManualThroughputNotAllowed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to System database account {0} delete is not supported through this endpoint.
+        /// </summary>
+        internal static string SystemDatabaseAccountDeleteNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("SystemDatabaseAccountDeleteNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Only system database account delete is supported through this endpoint. Supplied account {0}.
+        /// </summary>
+        internal static string InvalidSystemDatabaseAccountDelete
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidSystemDatabaseAccountDelete", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid store type specified {0}.
+        /// </summary>
+        internal static string InvalidStoreTypeSpecified
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidStoreTypeSpecified", resourceCulture);
             }
         }
     }
