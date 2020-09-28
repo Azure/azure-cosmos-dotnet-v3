@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 .FromAssembly(typeof(Program).Assembly)
                 .Run(args);
 
+            // If any of the operations have NA then something failed. Returning -1 will cause the gates to fail.
             foreach (Summary summary in summaries)
             {
                 string[] content = summary.Table.Columns.First(x => string.Equals(@"Op/s", x.Header)).Content;
