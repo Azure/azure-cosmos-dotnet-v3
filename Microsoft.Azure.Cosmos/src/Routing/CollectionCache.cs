@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Common
         protected InternalCache GetCache(string apiVersion)
         {
             // Non Partitioned Migration Version. Need this to flight V3 SDK till we make this the Current Version
-            if (string.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.Versions.v2018_12_31))
+            if (string.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.VersionDates.v2018_12_31))
             {
                 return this.cacheByApiList[1];
             }
