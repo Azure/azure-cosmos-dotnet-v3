@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const int timerTimeout = 1000;
             const int buckets = 20;
             const int resolution = 500;
-            TimerWheelCore wheel = new TimerWheelCore(TimeSpan.FromMilliseconds(resolution), buckets); // 20 buckets of 500 ms go up to 10000ms
+            using TimerWheelCore wheel = new TimerWheelCore(TimeSpan.FromMilliseconds(resolution), buckets); // 20 buckets of 500 ms go up to 10000ms
             List<Task<(int, long)>> tasks = new List<Task<(int, long)>>();
             for (int i = 0; i < 10; i++)
             {
