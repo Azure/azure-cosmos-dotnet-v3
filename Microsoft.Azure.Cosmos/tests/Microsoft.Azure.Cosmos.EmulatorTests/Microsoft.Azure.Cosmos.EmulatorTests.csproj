@@ -225,6 +225,9 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\QueryContinuationTokenBaselineTests.RunBaselinesAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpecialMethods.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

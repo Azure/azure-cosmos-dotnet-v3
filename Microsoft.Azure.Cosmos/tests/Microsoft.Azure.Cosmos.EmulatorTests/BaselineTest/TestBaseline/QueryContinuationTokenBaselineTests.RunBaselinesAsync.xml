@@ -1,0 +1,72 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <QueryText>SELECT * FROM c</QueryText>
+    </Input>
+    <Output>
+      <ContinuationTokens>
+        <continuationToken>[{"token":"-RID:~T88LANYxK0gKAAAAAAAAAA==#RT:1#TRC:10#ISV:2#IEO:65551","range":{"min":"","max":"05C1C9CD673398"}}]</continuationToken>
+        <continuationToken>[{"token":null,"range":{"min":"05C1C9CD673398","max":"05C1D9CD673398"}}]</continuationToken>
+        <continuationToken>[{"token":"-RID:~T88LANYxK0gKAAAAAAAACA==#RT:1#TRC:10#ISV:2#IEO:65551","range":{"min":"05C1C9CD673398","max":"05C1D9CD673398"}}]</continuationToken>
+        <continuationToken>[{"token":null,"range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}}]</continuationToken>
+        <continuationToken>[{"token":"-RID:~T88LANYxK0gKAAAAAAAABA==#RT:1#TRC:10#ISV:2#IEO:65551","range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}}]</continuationToken>
+        <continuationToken>[{"token":null,"range":{"min":"05C1E399CD6732","max":"05C1E9CD673398"}}]</continuationToken>
+        <continuationToken>[{"token":"-RID:~T88LANYxK0gKAAAAAAAADA==#RT:1#TRC:10#ISV:2#IEO:65551","range":{"min":"05C1E399CD6732","max":"05C1E9CD673398"}}]</continuationToken>
+        <continuationToken>[{"token":null,"range":{"min":"05C1E9CD673398","max":"FF"}}]</continuationToken>
+        <continuationToken>[{"token":"-RID:~T88LANYxK0gKAAAAAAAAAg==#RT:1#TRC:10#ISV:2#IEO:65551","range":{"min":"05C1E9CD673398","max":"FF"}}]</continuationToken>
+        <continuationToken />
+      </ContinuationTokens>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <QueryText>SELECT VALUE COUNT(1) FROM c</QueryText>
+    </Input>
+    <Output>
+      <ContinuationTokens>
+        <continuationToken />
+      </ContinuationTokens>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <QueryText>SELECT * FROM c ORDER BY c._ts</QueryText>
+    </Input>
+    <Output>
+      <ContinuationTokens>
+        <continuationToken>[{"compositeToken":{"token":null,"range":{"min":"05C1C9CD673398","max":"05C1D9CD673398"}},"orderByItems":[{"item":1601332542}],"rid":"T88LANYxK0gDAAAAAAAACA==","skipCount":0,"filter":null}]</continuationToken>
+        <continuationToken>[{"compositeToken":{"token":null,"range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}},"orderByItems":[{"item":1601332542}],"rid":"T88LANYxK0gFAAAAAAAABA==","skipCount":0,"filter":null}]</continuationToken>
+        <continuationToken>[{"compositeToken":{"token":null,"range":{"min":"05C1E399CD6732","max":"05C1E9CD673398"}},"orderByItems":[{"item":1601332542}],"rid":"T88LANYxK0gDAAAAAAAADA==","skipCount":0,"filter":null}]</continuationToken>
+        <continuationToken>[{"compositeToken":{"token":null,"range":{"min":"","max":"05C1C9CD673398"}},"orderByItems":[{"item":1601332543}],"rid":"T88LANYxK0gKAAAAAAAAAA==","skipCount":0,"filter":null}]</continuationToken>
+        <continuationToken>[{"compositeToken":{"token":"+RID:~T88LANYxK0gKAAAAAAAABA==#RT:1#TRC:10#RTD:HPJJmKT1uZqlBBnGyNSOBMHX7ycp+A==#ISV:2#IEO:65551","range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}},"orderByItems":[{"item":1601332543}],"rid":"T88LANYxK0gOAAAAAAAABA==","skipCount":0,"filter":null}]</continuationToken>
+        <continuationToken>[{"compositeToken":{"token":null,"range":{"min":"05C1E9CD673398","max":"FF"}},"orderByItems":[{"item":1601332543}],"rid":"T88LANYxK0gJAAAAAAAAAg==","skipCount":0,"filter":null}]</continuationToken>
+        <continuationToken />
+      </ContinuationTokens>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <QueryText>SELECT TOP 10 * FROM c</QueryText>
+    </Input>
+    <Output>
+      <ContinuationTokens>
+        <continuationToken />
+      </ContinuationTokens>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <QueryText>SELECT * FROM c OFFSET 20 LIMIT 20</QueryText>
+    </Input>
+    <Output>
+      <ContinuationTokens>
+        <continuationToken>{"limit":20,"sourceToken":"{\"offset\":10,\"sourceToken\":\"[{\\\"token\\\":\\\"-RID:~T88LANYxK0gKAAAAAAAAAA==#RT:1#TRC:10#ISV:2#IEO:65551\\\",\\\"range\\\":{\\\"min\\\":\\\"\\\",\\\"max\\\":\\\"05C1C9CD673398\\\"}}]\"}"}</continuationToken>
+        <continuationToken>{"limit":20,"sourceToken":"{\"offset\":9,\"sourceToken\":\"[{\\\"token\\\":null,\\\"range\\\":{\\\"min\\\":\\\"05C1C9CD673398\\\",\\\"max\\\":\\\"05C1D9CD673398\\\"}}]\"}"}</continuationToken>
+        <continuationToken>{"limit":19,"sourceToken":"{\"offset\":0,\"sourceToken\":\"[{\\\"token\\\":\\\"-RID:~T88LANYxK0gKAAAAAAAACA==#RT:1#TRC:10#ISV:2#IEO:65551\\\",\\\"range\\\":{\\\"min\\\":\\\"05C1C9CD673398\\\",\\\"max\\\":\\\"05C1D9CD673398\\\"}}]\"}"}</continuationToken>
+        <continuationToken>{"limit":14,"sourceToken":"{\"offset\":0,\"sourceToken\":\"[{\\\"token\\\":null,\\\"range\\\":{\\\"min\\\":\\\"05C1D9CD673398\\\",\\\"max\\\":\\\"05C1E399CD6732\\\"}}]\"}"}</continuationToken>
+        <continuationToken>{"limit":4,"sourceToken":"{\"offset\":0,\"sourceToken\":\"[{\\\"token\\\":\\\"-RID:~T88LANYxK0gKAAAAAAAABA==#RT:1#TRC:10#ISV:2#IEO:65551\\\",\\\"range\\\":{\\\"min\\\":\\\"05C1D9CD673398\\\",\\\"max\\\":\\\"05C1E399CD6732\\\"}}]\"}"}</continuationToken>
+        <continuationToken />
+      </ContinuationTokens>
+    </Output>
+  </Result>
+</Results>
