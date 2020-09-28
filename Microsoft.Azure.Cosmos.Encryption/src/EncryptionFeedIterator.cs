@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                (JObject decryptedDocument, DecryptionInfo _) = await EncryptionProcessor.DecryptAsync(
+                (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
                     document,
                     this.encryptor,
                     diagnosticsContext,

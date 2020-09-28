@@ -28,15 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     ///         return;
     ///     }
     ///
-    ///     (Stream responseStream, DecryptionInfo _) = await item.GetItemAsStreamAsync();
-    ///     using (responseStream)
-    ///     {
-    ///         //Read or do other operations with the stream
-    ///         using (StreamReader streamReader = new StreamReader(responseStream))
-    ///         {
-    ///             string responseContentAsString = await streamReader.ReadToEndAsync();
-    ///         }
-    ///     }
+    ///     (T inputType, DecryptionContext _) = await item.GetItemAsync<T>();
     /// ]]>
     /// </code>
     /// </example>
@@ -70,17 +62,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <inheritdoc/>
-        public override Task<(T, DecryptionInfo)> GetItemAsync<T>()
+        public override Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
             this.Validate(this.decryptableItem);
             return this.decryptableItem.GetItemAsync<T>();
-        }
-
-        /// <inheritdoc/>
-        public override Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync()
-        {
-            this.Validate(this.decryptableItem);
-            return this.decryptableItem.GetItemAsStreamAsync();
         }
 
         /// <inheritdoc/>

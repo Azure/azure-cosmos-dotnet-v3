@@ -428,15 +428,10 @@
         "EncryptableItem`1": {
           "Subclasses": {},
           "Members": {
-            "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()": {
+            "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()"
-            },
-            "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()"
+              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()"
             },
             "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -473,15 +468,10 @@
               "Attributes": [],
               "MethodInfo": null
             },
-            "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()": {
+            "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()"
-            },
-            "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()"
+              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()"
             },
             "Void .ctor(System.IO.Stream)": {
               "Type": "Constructor",
@@ -498,15 +488,33 @@
         }
       },
       "Members": {
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()": {
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()"
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "DecryptionContext": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.DecryptionInfo] DecryptionInfoList": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()": {
+        "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.DecryptionInfo] get_DecryptionInfoList()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.DecryptionInfo] get_DecryptionInfoList()"
+        },
+        "Void .ctor(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.DecryptionInfo])": {
+          "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()"
+          "MethodInfo": "Void .ctor(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.Encryption.DecryptionInfo])"
         }
       },
       "NestedTypes": {}
@@ -579,15 +587,10 @@
     "EncryptableItem`1": {
       "Subclasses": {},
       "Members": {
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()": {
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()"
-        },
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()"
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()"
         },
         "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -624,15 +627,10 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()": {
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsStreamAsync()"
-        },
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionInfo]] GetItemAsync[T]()"
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()"
         },
         "Void .ctor(System.IO.Stream)": {
           "Type": "Constructor",
@@ -670,6 +668,41 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "EncryptionException": {
+      "Subclasses": {},
+      "Members": {
+        "System.String DataEncryptionKeyId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String EncryptedContent": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String get_DataEncryptionKeyId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DataEncryptionKeyId()"
+        },
+        "System.String get_EncryptedContent()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_EncryptedContent()"
+        },
+        "Void .ctor(System.String, System.String, System.Exception)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, System.String, System.Exception)"
         }
       },
       "NestedTypes": {}

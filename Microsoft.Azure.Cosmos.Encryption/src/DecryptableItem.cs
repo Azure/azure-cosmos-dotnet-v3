@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.IO;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -33,10 +32,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     ///         {
     ///             try
     ///             {
-    ///                 (ToDoActivity toDo, DecryptionInfo _) = await item.GetItemAsync<ToDoActivity>();
+    ///                 (ToDoActivity toDo, DecryptionContext _) = await item.GetItemAsync<ToDoActivity>();
     ///             }
-    ///             catch (Exception)
-    ///             {}
+    ///             catch (EncryptionException encryptionException)
+    ///             {
+    ///                 string dataEncryptionKeyId = encryptionException.DataEncryptionKeyId;
+    ///                 string rawPayload = encryptionException.EncryptedContent;
+    ///             }
     ///         }
     ///     }
     /// }
@@ -49,14 +51,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Decrypts and deserializes the content.
         /// </summary>
         /// <typeparam name="T">The type of item to be returned.</typeparam>
-        /// <returns>The requested item and the decryption information.</returns>
-        public abstract Task<(T, DecryptionInfo)> GetItemAsync<T>();
-
-        /// <summary>
-        /// Decrypts the content and outputs stream.
-        /// </summary>
-        /// <returns>Decrypted stream response and the decryption information.</returns>
-        public abstract Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync();
+        /// <returns>The requested item and the decryption operation related context.</returns>
+        public abstract Task<(T, DecryptionContext)> GetItemAsync<T>();
 
         /// <summary>
         /// Validate that the DecryptableItem is initialized.

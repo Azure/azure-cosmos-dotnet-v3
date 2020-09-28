@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.IO;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
@@ -28,35 +27,35 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
-        /// <summary>
-        /// Decrypts and deserializes the content.
-        /// </summary>
-        /// <typeparam name="T">The type of item to be returned.</typeparam>
-        /// <returns>The requested item and the decryption information.</returns>
-        public override async Task<(T, DecryptionInfo)> GetItemAsync<T>()
-        {
-            (Stream decryptedStream, DecryptionInfo decryptionInfo) = await this.GetItemAsStreamAsync();
-            return (this.cosmosSerializer.FromStream<T>(decryptedStream), decryptionInfo);
-        }
-
-        /// <summary>
-        /// Decrypts the content and outputs stream.
-        /// </summary>
-        /// <returns>Decrypted stream response and the decryption information.</returns>
-        public override async Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync()
+        public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
             if (!(this.decryptableContent is JObject document))
             {
-                return (EncryptionProcessor.BaseSerializer.ToStream(this.decryptableContent), null);
+                return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(this.decryptableContent)), null);
             }
 
-            (JObject decryptedItem, DecryptionInfo decryptionInfo) = await EncryptionProcessor.DecryptAsync(
-                document,
-                this.encryptor,
-                new CosmosDiagnosticsContext(),
-                cancellationToken: default);
+            try
+            {
+                (JObject decryptedItem, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                    document,
+                    this.encryptor,
+                    new CosmosDiagnosticsContext(),
+                    cancellationToken: default);
 
-            return (EncryptionProcessor.BaseSerializer.ToStream(decryptedItem), decryptionInfo);
+                return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(decryptedItem)), decryptionContext);
+            }
+            catch (Exception exception)
+            {
+                string dataEncryptionKeyId = !(document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
+                    (encryptedInfo is JObject encryptedInfoObject))
+                    ? null
+                    : (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
+
+                throw new EncryptionException(
+                    dataEncryptionKeyId,
+                    this.decryptableContent.ToString(),
+                    exception);
+            }
         }
     }
 }

@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public static async Task<(Stream, DecryptionInfo)> DecryptAsync(
+        public static async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -182,12 +182,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 pathsDecrypted,
                 encryptionProperties.DataEncryptionKeyId);
 
+            DecryptionContext decryptionContext = new DecryptionContext(
+                new List<DecryptionInfo>() { decryptionInfo });
+
             itemJObj.Remove(Constants.EncryptedInfo);
             input.Dispose();
-            return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), decryptionInfo);
+            return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
-        public static async Task<(JObject, DecryptionInfo)> DecryptAsync(
+        public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -223,7 +226,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 pathsDecrypted,
                 encryptionProperties.DataEncryptionKeyId);
 
-            return (document, decryptionInfo);
+            DecryptionContext decryptionContext = new DecryptionContext(
+                new List<DecryptionInfo>() { decryptionInfo });
+
+            return (document, decryptionContext);
         }
 
         private static async Task<JObject> DecryptContentAsync(

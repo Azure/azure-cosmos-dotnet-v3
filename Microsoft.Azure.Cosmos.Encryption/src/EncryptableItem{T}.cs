@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     ///     return;
     /// }
     ///
-    /// (ToDoActivity toDo, DecryptionInfo _) = await item.GetItemAsync<ToDoActivity>();
+    /// (ToDoActivity toDo, DecryptionContext _) = await item.GetItemAsync<ToDoActivity>();
     /// ]]>
     /// </code>
     /// </example>
@@ -73,17 +73,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <inheritdoc/>
-        public override Task<(T, DecryptionInfo)> GetItemAsync<T>()
+        public override Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
             this.Validate(this.decryptableItem);
             return this.decryptableItem.GetItemAsync<T>();
-        }
-
-        /// <inheritdoc/>
-        public override Task<(Stream, DecryptionInfo)> GetItemAsStreamAsync()
-        {
-            this.Validate(this.decryptableItem);
-            return this.decryptableItem.GetItemAsStreamAsync();
         }
     }
 }
