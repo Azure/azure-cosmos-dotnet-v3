@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
