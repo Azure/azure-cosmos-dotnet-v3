@@ -33,7 +33,10 @@ namespace CosmosBenchmark
 
         public static MemoryStream ToStream<T>(T input)
         {
-            MemoryStream memStreamPayload = new MemoryStream(JsonHelper.DefaultCapacity);
+            byte[] blob = System.Buffers.ArrayPool<byte>.Shared.Rent(JsonHelper.DefaultCapacity);
+            MemoryStream memStreamPayload = new MemoryStream(blob, 0, JsonHelper.DefaultCapacity, writable: true, publiclyVisible: true);
+            memStreamPayload.SetLength(0);
+            memStreamPayload.Position = 0;
             using (StreamWriter streamWriter = new StreamWriter(memStreamPayload,
                 encoding: JsonHelper.DefaultEncoding,
                 bufferSize: JsonHelper.DefaultCapacity,

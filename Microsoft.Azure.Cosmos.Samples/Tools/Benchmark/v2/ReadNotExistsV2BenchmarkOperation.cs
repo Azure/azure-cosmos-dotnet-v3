@@ -13,7 +13,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class ReadNotExistsV2BenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadNotExistsV2BenchmarkOperation : IBenchmarkOperation
     {
         private readonly string databsaeName;
         private readonly string containerName;
@@ -66,7 +66,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public Task Prepare()
+        public Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
