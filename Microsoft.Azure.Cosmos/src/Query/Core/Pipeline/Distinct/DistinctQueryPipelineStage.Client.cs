@@ -69,8 +69,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         distinctMapToken: null);
                 }
 
-                CosmosElement distinctMapToken = distinctContinuationToken.DistinctMapToken != null 
-                    ? CosmosString.Create(distinctContinuationToken.DistinctMapToken) 
+                CosmosElement distinctMapToken = distinctContinuationToken.DistinctMapToken != null
+                    ? CosmosString.Create(distinctContinuationToken.DistinctMapToken)
                     : null;
                 TryCatch<DistinctMap> tryCreateDistinctMap = DistinctMap.TryCreate(
                     distinctQueryType,
@@ -113,15 +113,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         cancellationToken));
             }
 
-            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            public override async ValueTask<bool> MoveNextAsync()
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                this.cancellationToken.ThrowIfCancellationRequested();
 
-                await this.inputStage.MoveNextAsync();
+                if (!await this.inputStage.MoveNextAsync())
+                {
+                    this.Current = default;
+                    return false;
+                }
+
                 TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
                 if (tryGetSourcePage.Failed)
                 {
-                    return tryGetSourcePage;
+                    this.Current = tryGetSourcePage;
+                    return true;
                 }
 
                 QueryPage sourcePage = tryGetSourcePage.Result;
@@ -129,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 List<CosmosElement> distinctResults = new List<CosmosElement>();
                 foreach (CosmosElement document in sourcePage.Documents)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    this.cancellationToken.ThrowIfCancellationRequested();
 
                     if (this.distinctMap.Add(document, out UInt128 _))
                     {
@@ -145,9 +151,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     if (sourcePage.State != null)
                     {
                         string updatedContinuationToken = new DistinctContinuationToken(
-                            sourceToken: ((CosmosString)sourcePage.State.Value).Value,
+                            sourceToken: sourcePage.State.Value.ToString(),
                             distinctMapToken: this.distinctMap.GetContinuationToken()).ToString();
-                        state = new QueryState(CosmosString.Create(updatedContinuationToken));
+                        state = new QueryState(CosmosElement.Parse(updatedContinuationToken));
                     }
                     else
                     {
@@ -175,7 +181,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         state: null);
                 }
 
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                return true;
             }
 
             /// <summary>

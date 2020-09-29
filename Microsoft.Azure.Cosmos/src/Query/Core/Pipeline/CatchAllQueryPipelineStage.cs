@@ -16,14 +16,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         {
         }
 
-        protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        public override async ValueTask<bool> MoveNextAsync()
         {
+            this.cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
-                await this.inputStage.MoveNextAsync();
-                return this.inputStage.Current;
+                if (!await this.inputStage.MoveNextAsync())
+                {
+                    this.Current = default;
+                    return false;
+                }
+
+                this.Current = this.inputStage.Current;
+                return true;
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (this.cancellationToken.IsCancellationRequested)
             {
                 // Per cancellationToken.ThrowIfCancellationRequested(); line above, this function should still throw OperationCanceledException.
                 throw;
@@ -31,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             catch (Exception ex)
             {
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(ex);
-                return TryCatch<QueryPage>.FromException(cosmosException);
+                this.Current = TryCatch<QueryPage>.FromException(cosmosException);
+                return true;
             }
         }
     }

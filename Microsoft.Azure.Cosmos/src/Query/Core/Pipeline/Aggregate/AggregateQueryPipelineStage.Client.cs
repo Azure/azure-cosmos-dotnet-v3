@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
-    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.PipelineFactory;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
@@ -67,9 +66,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            public override async ValueTask<bool> MoveNextAsync()
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (this.returnedFinalPage)
+                {
+                    return false;
+                }
 
                 // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
                 // Note-2019-07-11-brchon: We can return empty pages until all the documents are drained,
@@ -80,10 +84,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 while (await this.inputStage.MoveNextAsync())
                 {
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
-
                     if (tryGetPageFromSource.Failed)
                     {
-                        return tryGetPageFromSource;
+                        this.Current = tryGetPageFromSource;
+                        return true;
                     }
 
                     QueryPage sourcePage = tryGetPageFromSource.Result;
@@ -93,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        this.cancellationToken.ThrowIfCancellationRequested();
 
                         RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
                             this.isValueQuery,
@@ -118,7 +122,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     disallowContinuationTokenMessage: default,
                     state: default);
 
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                this.returnedFinalPage = true;
+                return true;
             }
         }
     }

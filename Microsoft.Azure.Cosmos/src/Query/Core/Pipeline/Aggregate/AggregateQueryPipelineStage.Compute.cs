@@ -94,9 +94,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            public override async ValueTask<bool> MoveNextAsync()
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (this.returnedFinalPage)
+                {
+                    this.Current = default;
+                    return false;
+                }
 
                 // Draining aggregates is broken down into two stages
                 QueryPage queryPage;
@@ -108,13 +114,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
                     if (tryGetSourcePage.Failed)
                     {
-                        return tryGetSourcePage;
+                        this.Current = tryGetSourcePage;
+                        return true;
                     }
 
                     QueryPage sourcePage = tryGetSourcePage.Result;
                     foreach (CosmosElement element in sourcePage.Documents)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
+                        this.cancellationToken.ThrowIfCancellationRequested();
 
                         RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
                             this.isValueQuery,
@@ -158,9 +165,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         state: default);
 
                     queryPage = finalPage;
+                    this.returnedFinalPage = true;
                 }
 
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                return true;
             }
 
             private sealed class AggregateContinuationToken

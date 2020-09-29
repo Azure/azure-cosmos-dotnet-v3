@@ -328,10 +328,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             // Create the continuation token.
-            string continuationTokenString;
+            CosmosElement state;
             if ((this.enumerators.Count == 0) && (this.uninitializedEnumeratorsAndTokens.Count == 0))
             {
-                continuationTokenString = null;
+                state = null;
             }
             else
             {
@@ -347,10 +347,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 CosmosElement cosmosElementOrderByContinuationToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
                 CosmosArray continuationTokenList = CosmosArray.Create(new List<CosmosElement>() { cosmosElementOrderByContinuationToken });
 
-                continuationTokenString = continuationTokenList.ToString();
+                state = continuationTokenList;
             }
 
-            this.state = continuationTokenString != null ? new QueryState(CosmosString.Create(continuationTokenString)) : null;
+            this.state = state != null ? new QueryState(state) : null;
 
             // Return a page of results
             // No stats to report, since we already reported it when we moved to this page.
@@ -570,25 +570,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return TryCatch<List<OrderByContinuationToken>>.FromResult(default);
             }
 
-            if (!(continuationToken is CosmosString continuationTokenString))
+            if (!(continuationToken is CosmosArray cosmosArray))
             {
                 return TryCatch<List<OrderByContinuationToken>>.FromException(
                     new MalformedContinuationTokenException(
-                        $"Order by continuation token must be a string: {continuationToken}."));
+                        $"Order by continuation token must be an array: {continuationToken}."));
             }
 
-            string rawJson = continuationTokenString.Value;
-
-            TryCatch<CosmosArray> monadicCosmosArray = CosmosArray.Monadic.Parse(rawJson);
-            if (monadicCosmosArray.Failed)
-            {
-                return TryCatch<List<OrderByContinuationToken>>.FromException(
-                    new MalformedContinuationTokenException(
-                        $"Order by continuation token must be an array: {continuationToken}.",
-                        monadicCosmosArray.Exception));
-            }
-
-            CosmosArray cosmosArray = monadicCosmosArray.Result;
             if (cosmosArray.Count == 0)
             {
                 return TryCatch<List<OrderByContinuationToken>>.FromException(

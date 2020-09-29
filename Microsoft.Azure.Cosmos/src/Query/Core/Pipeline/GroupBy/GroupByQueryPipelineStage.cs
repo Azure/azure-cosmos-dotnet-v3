@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
     {
         private readonly GroupingTable groupingTable;
+        protected bool returnedLastPage;
 
         protected GroupByQueryPipelineStage(
             IQueryPipelineStage source,

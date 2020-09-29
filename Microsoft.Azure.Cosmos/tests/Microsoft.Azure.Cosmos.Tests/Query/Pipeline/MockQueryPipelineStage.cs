@@ -23,8 +23,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
         }
 
-        protected override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        public override ValueTask<bool> MoveNextAsync()
         {
+            if (this.pageIndex == this.pages.Count)
+            {
+                this.Current = default;
+                return new ValueTask<bool>(false);
+            }
+
             IReadOnlyList<CosmosElement> documents = this.pages[this.pageIndex++];
             QueryState state = (this.pageIndex == this.pages.Count) ? null : new QueryState(CosmosString.Create(this.pageIndex.ToString()));
             QueryPage page = new QueryPage(
@@ -35,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 cosmosQueryExecutionInfo: default,
                 disallowContinuationTokenMessage: default,
                 state: state);
-            return Task.FromResult(TryCatch<QueryPage>.FromResult(page));
+            this.Current = TryCatch<QueryPage>.FromResult(page);
+            return new ValueTask<bool>(true);
         }
     }
 }

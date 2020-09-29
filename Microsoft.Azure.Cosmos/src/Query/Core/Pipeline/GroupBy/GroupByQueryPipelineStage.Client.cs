@@ -59,9 +59,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            public override async ValueTask<bool> MoveNextAsync()
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (this.returnedLastPage)
+                {
+                    this.Current = default;
+                    return false;
+                }
 
                 // Draining GROUP BY is broken down into two stages:
 
@@ -72,14 +78,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 while (await this.inputStage.MoveNextAsync())
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    this.cancellationToken.ThrowIfCancellationRequested();
 
                     // Stage 1: 
                     // Drain the groupings fully from all continuation and all partitions
                     TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
                     if (tryGetSourcePage.Failed)
                     {
-                        return tryGetSourcePage;
+                        this.Current = tryGetSourcePage;
+                        return true;
                     }
 
                     QueryPage sourcePage = tryGetSourcePage.Result;
@@ -94,6 +101,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 // Stage 2:
                 // Emit the results from the grouping table page by page
                 IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(maxPageSize);
+                if (this.groupingTable.Count == 0)
+                {
+                    this.returnedLastPage = true;
+                }
 
                 QueryPage queryPage = new QueryPage(
                     documents: results,
@@ -104,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
                     state: null);
 
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                return true;
             }
         }
     }

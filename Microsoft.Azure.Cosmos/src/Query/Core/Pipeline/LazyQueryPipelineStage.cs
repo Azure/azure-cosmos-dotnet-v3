@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IQueryPipelineStage stage = tryCreateStage.Result;
             if (!await stage.MoveNextAsync())
             {
+                this.Current = default;
                 return false;
             }
 

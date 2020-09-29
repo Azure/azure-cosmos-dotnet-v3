@@ -91,9 +91,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         tryCreateGroupingTable.Result));
             }
 
-            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            public override async ValueTask<bool> MoveNextAsync()
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (this.returnedLastPage)
+                {
+                    this.Current = default;
+                    return false;
+                }
 
                 // Draining GROUP BY is broken down into two stages:
                 QueryPage queryPage;
@@ -104,7 +110,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
                     if (tryGetSourcePage.Failed)
                     {
-                        return tryGetSourcePage;
+                        this.Current = tryGetSourcePage;
+                        return true;
                     }
 
                     QueryPage sourcePage = tryGetSourcePage.Result;
@@ -137,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     if (this.groupingTable.IsDone)
                     {
                         state = default;
+                        this.returnedLastPage = true;
                     }
                     else
                     {
@@ -156,7 +164,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         state: state);
                 }
 
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                return true;
             }
 
             private readonly struct GroupByContinuationToken

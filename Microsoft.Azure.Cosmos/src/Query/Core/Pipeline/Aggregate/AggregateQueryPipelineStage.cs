@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
         /// </summary>
         private readonly bool isValueQuery;
 
+        protected bool returnedFinalPage;
+
         /// <summary>
         /// Initializes a new instance of the AggregateDocumentQueryExecutionComponent class.
         /// </summary>

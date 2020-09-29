@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     {
         protected readonly IQueryPipelineStage inputStage;
         protected CancellationToken cancellationToken;
-        private bool hasStarted;
 
         protected QueryPipelineStageBase(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
         {
@@ -21,33 +20,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             this.cancellationToken = cancellationToken;
         }
 
-        public TryCatch<QueryPage> Current { get; private set; }
-
-        public QueryState State { get; protected set; }
-
-        public bool HasMoreResults => !this.hasStarted || (this.State != default);
+        public TryCatch<QueryPage> Current { get; protected set; }
 
         public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
 
-        protected abstract Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken);
-
-        public async ValueTask<bool> MoveNextAsync()
-        {
-            if (!this.HasMoreResults)
-            {
-                return false;
-            }
-
-            this.hasStarted = true;
-
-            this.Current = await this.GetNextPageAsync(this.cancellationToken);
-            if (this.Current.Succeeded)
-            {
-                this.State = this.Current.Result.State;
-            }
-
-            return true;
-        }
+        public abstract ValueTask<bool> MoveNextAsync();
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -20,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
         private sealed class ClientSkipQueryPipelineStage : SkipQueryPipelineStage
         {
             private ClientSkipQueryPipelineStage(
-                IQueryPipelineStage source, 
-                CancellationToken cancellationToken, 
+                IQueryPipelineStage source,
+                CancellationToken cancellationToken,
                 long skipCount)
                 : base(source, cancellationToken, skipCount)
             {
@@ -94,15 +93,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            protected override async Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            public override async ValueTask<bool> MoveNextAsync()
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                this.cancellationToken.ThrowIfCancellationRequested();
 
-                await this.inputStage.MoveNextAsync();
+                if (!await this.inputStage.MoveNextAsync())
+                {
+                    this.Current = default;
+                    return false;
+                }
+
                 TryCatch<QueryPage> tryGetSourcePage = this.inputStage.Current;
                 if (tryGetSourcePage.Failed)
                 {
-                    return tryGetSourcePage;
+                    this.Current = tryGetSourcePage;
+                    return true;
                 }
 
                 QueryPage sourcePage = tryGetSourcePage.Result;
@@ -135,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     state: state);
 
-                return TryCatch<QueryPage>.FromResult(queryPage);
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                return true;
             }
 
             /// <summary>

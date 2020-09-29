@@ -5,12 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     internal sealed class SkipEmptyPageQueryPipelineStage : IQueryPipelineStage
     {
+        private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
+
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
@@ -28,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public async ValueTask<bool> MoveNextAsync()
         {
+            this.cancellationToken.ThrowIfCancellationRequested();
+
             if (!await this.inputStage.MoveNextAsync())
             {
                 this.Current = default;
@@ -46,6 +52,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 this.cumulativeRequestCharge += sourcePage.RequestCharge;
                 this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                if (sourcePage.State == null)
+                {
+                    QueryPage queryPage = new QueryPage(
+                        documents: EmptyPage,
+                        requestCharge: sourcePage.RequestCharge + this.cumulativeRequestCharge,
+                        activityId: sourcePage.ActivityId,
+                        responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
+                        cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        state: default);
+                    this.cumulativeRequestCharge = 0;
+                    this.cumulativeResponseLengthInBytes = 0;
+                    this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                    return true;
+                }
+
                 return await this.MoveNextAsync();
             }
 
