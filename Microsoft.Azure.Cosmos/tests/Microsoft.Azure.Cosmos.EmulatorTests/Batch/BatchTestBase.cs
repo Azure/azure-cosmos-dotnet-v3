@@ -435,9 +435,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return new SimpleSessionToken(globalLSN);
             }
-            else
+            else if (from is VectorSessionToken)
             {
                 return new VectorSessionToken(from as VectorSessionToken, globalLSN);
+            }
+            else
+            {
+                throw new ArgumentException();
             }
         }
 
