@@ -46,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         return null;
                     }
 
+                    response.EnsureSuccessStatusCode();
+
                     return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
                 }
             }
