@@ -313,6 +313,17 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to get AAD token from the provided Azure.Core.TokenCredential..
+        /// </summary>
+        internal static string FailedToGetAadToken
+        {
+            get
+            {
+                return ResourceManager.GetString("FailedToGetAadToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot define EffectivePartitionKeyRouting and FeedRange simultaneously..
         /// </summary>
         internal static string FeedToken_EffectivePartitionKeyRouting {
@@ -570,6 +581,15 @@ namespace Microsoft.Azure.Cosmos {
         internal static string StringCompareToInvalidOperator {
             get {
                 return ResourceManager.GetString("StringCompareToInvalidOperator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Token refresh in progress..
+        /// </summary>
+        internal static string TokenRefreshInProgress {
+            get {
+                return ResourceManager.GetString("TokenRefreshInProgress", resourceCulture);
             }
         }
         

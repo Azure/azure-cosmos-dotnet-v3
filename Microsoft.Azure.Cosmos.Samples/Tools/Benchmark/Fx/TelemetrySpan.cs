@@ -6,28 +6,35 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Diagnostics;
-    using HdrHistogram;
+    using System.Linq;
+    using System.Threading;
 
     internal struct TelemetrySpan : IDisposable
     {
-        internal static HistogramBase LatencyHistogram = new IntConcurrentHistogram(1, 10 * 1000, 0);
-        internal static bool IncludePercentile = true;
+        private static double[] latencyHistogram;
+        private static int latencyIndex = -1;
+
+        internal static bool IncludePercentile = false;
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
         private bool disableTelemetry;
 
-        public static TelemetrySpan StartNew(
+        public static IDisposable StartNew(
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry)
         {
-            TelemetrySpan span = new TelemetrySpan();
-            span.stopwatch = Stopwatch.StartNew();
+            if (disableTelemetry || !TelemetrySpan.IncludePercentile)
+            {
+                return NoOpDisposable.Instance;
+            }
 
-            span.lazyOperationResult = lazyOperationResult;
-            span.disableTelemetry = disableTelemetry;
-
-            return span;
+            return new TelemetrySpan
+            {
+                stopwatch = Stopwatch.StartNew(),
+                lazyOperationResult = lazyOperationResult,
+                disableTelemetry = disableTelemetry
+            };
         }
 
         public void Dispose()
@@ -39,7 +46,7 @@ namespace CosmosBenchmark
 
                 if (TelemetrySpan.IncludePercentile)
                 {
-                    TelemetrySpan.LatencyHistogram.RecordValue(this.stopwatch.ElapsedMilliseconds);
+                    RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
@@ -47,6 +54,37 @@ namespace CosmosBenchmark
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
                     operationResult.lazyDiagnostics);
+            }
+        }
+
+        private static void RecordLatency(double elapsedMilliseoncds)
+        {
+            int index = Interlocked.Increment(ref latencyIndex);
+            latencyHistogram[index] = elapsedMilliseoncds;
+        }
+
+        internal static void ResetLatencyHistogram(int totalNumberOfIterations)
+        {
+            latencyHistogram = new double[totalNumberOfIterations];
+            latencyIndex = -1;
+        }
+
+        internal static double? GetLatencyPercentile(int percentile)
+        {
+            if (latencyHistogram == null)
+            {
+                return null;
+            }
+
+            return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
+        }
+
+        private class NoOpDisposable : IDisposable
+        {
+            public static readonly NoOpDisposable Instance = new NoOpDisposable();
+
+            public void Dispose()
+            {
             }
         }
     }

@@ -102,8 +102,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
-            processor.ApplyBuildConfiguration(
+            ChangeFeedProcessorCore<MyDocument> processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+                processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
                 "instanceName",
@@ -111,11 +114,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 new ChangeFeedProcessorOptions(),
                 ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
 
-            await processor.StartAsync();
-            Mock.Get(leaseStore.Object)
-                .Verify(store => store.IsInitializedAsync(), Times.Once);
-            Mock.Get(leaseContainer.Object)
-                .Verify(store => store.GetOwnedLeasesAsync(), Times.Once);
+                await processor.StartAsync();
+                Mock.Get(leaseStore.Object)
+                    .Verify(store => store.IsInitializedAsync(), Times.Once);
+                Mock.Get(leaseContainer.Object)
+                    .Verify(store => store.GetOwnedLeasesAsync(), Times.Once);
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
         }
 
         [TestMethod]
@@ -141,8 +152,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-            ChangeFeedProcessorCore<MyDocument> processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
-            processor.ApplyBuildConfiguration(
+            ChangeFeedProcessorCore<MyDocument> processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
+                processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
                 "instanceName",
@@ -150,13 +164,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 new ChangeFeedProcessorOptions(),
                 ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
 
-            await processor.StartAsync();
+                await processor.StartAsync();
 
-            Mock.Get(factory.Object)
-                .Verify(mock => mock.CreateObserver(), Times.Once);
+                Mock.Get(factory.Object)
+                    .Verify(mock => mock.CreateObserver(), Times.Once);
 
-            Mock.Get(observer.Object)
-                .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedObserverContext>((context) => context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
+                Mock.Get(observer.Object)
+                    .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedObserverContext>((context) => context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
+            }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
         }
 
         [TestMethod]

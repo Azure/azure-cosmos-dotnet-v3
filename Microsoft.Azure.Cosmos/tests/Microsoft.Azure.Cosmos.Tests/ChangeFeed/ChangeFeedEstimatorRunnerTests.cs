@@ -120,33 +120,44 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
 
-            ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
-            estimator.ApplyBuildConfiguration(
-                leaseStoreManager.Object,
-                null,
-                "instanceName",
-                new ChangeFeedLeaseOptions(),
-                new ChangeFeedProcessorOptions(),
-                ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
+            ChangeFeedEstimatorRunner estimator = null;
+            try
+            { 
+                estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
+                estimator.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    new ChangeFeedProcessorOptions(),
+                    ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
 
-            Mock<FeedResponse<RemainingLeaseWork>> mockedResponse = new Mock<FeedResponse<RemainingLeaseWork>>();
-            mockedResponse.Setup(r => r.Count).Returns(1);
-            mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<RemainingLeaseWork>() { new RemainingLeaseWork(string.Empty, remainingWork, string.Empty) }.GetEnumerator());
+                Mock<FeedResponse<RemainingLeaseWork>> mockedResponse = new Mock<FeedResponse<RemainingLeaseWork>>();
+                mockedResponse.Setup(r => r.Count).Returns(1);
+                mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<RemainingLeaseWork>() { new RemainingLeaseWork(string.Empty, remainingWork, string.Empty) }.GetEnumerator());
 
-            Mock<FeedIterator<RemainingLeaseWork>> mockedIterator = new Mock<FeedIterator<RemainingLeaseWork>>();
-            mockedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(mockedResponse.Object);
+                Mock<FeedIterator<RemainingLeaseWork>> mockedIterator = new Mock<FeedIterator<RemainingLeaseWork>>();
+                mockedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(mockedResponse.Object);
 
-            remainingWorkEstimator.Setup(e => e.GetRemainingLeaseWorkIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
+                remainingWorkEstimator.Setup(e => e.GetRemainingLeaseWorkIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
 
-            await estimator.StartAsync();
+                await estimator.StartAsync();
 
-            int waitIterations = 0; // Failsafe in case someone breaks the estimator so this does not run forever
-            while (!receivedEstimation && waitIterations++ < 3)
-            {
-                Thread.Sleep(TimeSpan.FromSeconds(10));
+                int waitIterations = 0; // Failsafe in case someone breaks the estimator so this does not run forever
+                while (!receivedEstimation && waitIterations++ < 3)
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(10));
+                }
+
+                Assert.AreEqual(remainingWork, estimationDelegateValue);
             }
-
-            Assert.AreEqual(remainingWork, estimationDelegateValue);
+            finally
+            {
+                if (estimator != null)
+                {
+                    await estimator.StopAsync();
+                }
+            }
         }
 
         private static ChangeFeedEstimatorRunner CreateEstimator(ChangesEstimationHandler estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator)
