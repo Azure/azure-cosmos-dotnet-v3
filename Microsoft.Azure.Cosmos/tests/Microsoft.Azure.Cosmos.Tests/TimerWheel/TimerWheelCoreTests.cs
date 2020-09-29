@@ -111,7 +111,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Stopwatch stopwatch = Stopwatch.StartNew();
             await timer.StartTimerAsync();
             stopwatch.Stop();
-            Assert.IsTrue(stopwatch.ElapsedMilliseconds >= timerTimeout - resolution && stopwatch.ElapsedMilliseconds <= timerTimeout + resolution);
+            Assert.IsTrue(stopwatch.ElapsedMilliseconds >= timerTimeout - resolution, $"{stopwatch.ElapsedMilliseconds} >= {timerTimeout - resolution}, timerTimeout: {timerTimeout}, resolution: {resolution}");
+            Assert.IsTrue(stopwatch.ElapsedMilliseconds <= timerTimeout + resolution, $"{stopwatch.ElapsedMilliseconds} <= {timerTimeout + resolution}, timerTimeout: {timerTimeout}, resolution: {resolution}");
         }
 
         [TestMethod]
