@@ -3,10 +3,10 @@
     "ChangeFeedEstimator": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.RemainingLeaseWork] GetRemainingLeaseWorkIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeedProcessorState] GetCurrentStateIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.RemainingLeaseWork] GetRemainingLeaseWorkIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeedProcessorState] GetCurrentStateIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)"
         }
       },
       "NestedTypes": {}
@@ -37,6 +37,53 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "ChangeFeedProcessorState": {
+      "Subclasses": {},
+      "Members": {
+        "Int64 EstimatedLag": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Int64 get_EstimatedLag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_EstimatedLag()"
+        },
+        "System.String get_InstanceName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_InstanceName()"
+        },
+        "System.String get_LeaseToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_LeaseToken()"
+        },
+        "System.String InstanceName": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String LeaseToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void .ctor(System.String, Int64, System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, Int64, System.String)"
         }
       },
       "NestedTypes": {}
@@ -282,53 +329,6 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "RemainingLeaseWork": {
-      "Subclasses": {},
-      "Members": {
-        "Int64 get_RemainingWork()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Int64 get_RemainingWork()"
-        },
-        "Int64 RemainingWork": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String get_InstanceName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_InstanceName()"
-        },
-        "System.String get_LeaseToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_LeaseToken()"
-        },
-        "System.String InstanceName": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.String LeaseToken": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Void .ctor(System.String, Int64, System.String)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String, Int64, System.String)"
         }
       },
       "NestedTypes": {}
