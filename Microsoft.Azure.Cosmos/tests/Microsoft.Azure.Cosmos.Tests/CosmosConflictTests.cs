@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static CosmosClientContext GetMockedClientContext(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
                client,
                new MockDocumentClient(),

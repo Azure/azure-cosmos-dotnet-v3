@@ -36,36 +36,47 @@ namespace Microsoft.Azure.Cosmos.Test
                     Assert.AreEqual(false, task.IsCompleted);
                 }
 
-                ComparableTaskScheduler scheduler;
-                if (useConstructorToAddTasks)
+                ComparableTaskScheduler scheduler = null;
+                try
                 {
-                    scheduler = new ComparableTaskScheduler(
-                        tasks.Select(task => new TestComparableTask(tasks.IndexOf(task), task)),
-                        maximumConcurrencyLevel);
-                }
-                else
-                {
-                    scheduler = new ComparableTaskScheduler(maximumConcurrencyLevel);
-                    for (int i = 0; i < maximumConcurrencyLevel; ++i)
+                    if (useConstructorToAddTasks)
                     {
-                        Assert.AreEqual(true, scheduler.TryQueueTask(new TestComparableTask(i, tasks[i])));
+                        scheduler = new ComparableTaskScheduler(
+                            tasks.Select(task => new TestComparableTask(tasks.IndexOf(task), task)),
+                            maximumConcurrencyLevel);
+                    }
+                    else
+                    {
+                        scheduler = new ComparableTaskScheduler(maximumConcurrencyLevel);
+                        for (int i = 0; i < maximumConcurrencyLevel; ++i)
+                        {
+                            Assert.AreEqual(true, scheduler.TryQueueTask(new TestComparableTask(i, tasks[i])));
+                        }
+                    }
+
+                    bool completionStatus = Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(10));
+                    Assert.IsTrue(completionStatus);
+
+                    foreach (Task task in tasks)
+                    {
+                        Assert.AreEqual(true, task.IsCompleted, $"Is overloaded constructor {useConstructorToAddTasks} and status {task.Status.ToString()}");
                     }
                 }
-
-                bool completionStatus = Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(10));
-                Assert.IsTrue(completionStatus);
-
-                foreach (Task task in tasks)
+                finally
                 {
-                    Assert.AreEqual(true, task.IsCompleted, $"Is overloaded constructor {useConstructorToAddTasks} and status {task.Status.ToString()}");
+                    if (scheduler != null)
+                    {
+                        scheduler.Dispose();
+                    }
                 }
+                
             }
         }
 
         [TestMethod]
         public void TestMaximumConcurrencyLevel()
         {
-            ComparableTaskScheduler scheduler = new ComparableTaskScheduler(10);
+            using ComparableTaskScheduler scheduler = new ComparableTaskScheduler(10);
             Assert.AreEqual(10, scheduler.MaximumConcurrencyLevel);
 
             scheduler = new ComparableTaskScheduler();
@@ -87,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Test
         [TestMethod]
         public void TestStop()
         {
-            ComparableTaskScheduler scheduler = new ComparableTaskScheduler();
+            using ComparableTaskScheduler scheduler = new ComparableTaskScheduler();
             Assert.AreEqual(true, scheduler.TryQueueTask(new TestComparableTask(0, Task.FromResult(false))));
             scheduler.Stop();
             Assert.AreEqual(false, scheduler.TryQueueTask(new TestComparableTask(0, Task.FromResult(false))));
