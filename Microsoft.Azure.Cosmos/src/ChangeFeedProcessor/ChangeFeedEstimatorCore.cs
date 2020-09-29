@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
         }
 
-        public override FeedIterator<RemainingLeaseWork> GetRemainingLeaseWorkIterator(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions = null)
+        public override FeedIterator<ChangeFeedProcessorState> GetCurrentStateIterator(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions = null)
         {
             return new ChangeFeedEstimatorIterator(
                 this.processorName,

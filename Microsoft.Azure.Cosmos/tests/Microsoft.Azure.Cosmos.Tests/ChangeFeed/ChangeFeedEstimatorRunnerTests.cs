@@ -24,16 +24,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void NullDelegateThrows()
         {
             ChangesEstimationHandler changesEstimationHandler = null;
-            ChangeFeedEstimatorRunnerTests.CreateEstimator(changesEstimationHandler, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
+            ChangeFeedEstimatorRunnerTests.CreateEstimator(changesEstimationHandler, out Mock<ChangeFeedEstimator> _);
         }
 
         [TestMethod]
         public void ApplyBuildConfiguration_ValidCustomStore()
         {
-            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
+            static Task estimationDelegate(long estimation, CancellationToken token)
             {
                 return Task.CompletedTask;
-            };
+            }
 
             ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
@@ -48,10 +48,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidContainerStore()
         {
-            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
+            static Task estimationDelegate(long estimation, CancellationToken token)
             {
                 return Task.CompletedTask;
-            };
+            }
 
             ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
@@ -67,10 +67,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullStore()
         {
-            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
+            static Task estimationDelegate(long estimation, CancellationToken token)
             {
                 return Task.CompletedTask;
-            };
+            }
 
             ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
@@ -86,10 +86,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
-            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
+            static Task estimationDelegate(long estimation, CancellationToken token)
             {
                 return Task.CompletedTask;
-            };
+            }
 
             ChangeFeedEstimatorRunner estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
             estimator.ApplyBuildConfiguration(
@@ -107,12 +107,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             const long remainingWork = 15;
             long estimationDelegateValue = 0;
             bool receivedEstimation = false;
-            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
+            Task estimationDelegate(long estimation, CancellationToken token)
             {
                 estimationDelegateValue = estimation;
                 receivedEstimation = true;
                 return Task.CompletedTask;
-            };
+            }
 
             Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
             leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             ChangeFeedEstimatorRunner estimator = null;
             try
-            { 
+            {
                 estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
                 estimator.ApplyBuildConfiguration(
                     leaseStoreManager.Object,
@@ -132,14 +132,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     new ChangeFeedProcessorOptions(),
                     ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
 
-                Mock<FeedResponse<RemainingLeaseWork>> mockedResponse = new Mock<FeedResponse<RemainingLeaseWork>>();
+                Mock<FeedResponse<ChangeFeedProcessorState>> mockedResponse = new Mock<FeedResponse<ChangeFeedProcessorState>>();
                 mockedResponse.Setup(r => r.Count).Returns(1);
-                mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<RemainingLeaseWork>() { new RemainingLeaseWork(string.Empty, remainingWork, string.Empty) }.GetEnumerator());
+                mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<ChangeFeedProcessorState>() { new ChangeFeedProcessorState(string.Empty, remainingWork, string.Empty) }.GetEnumerator());
 
-                Mock<FeedIterator<RemainingLeaseWork>> mockedIterator = new Mock<FeedIterator<RemainingLeaseWork>>();
+                Mock<FeedIterator<ChangeFeedProcessorState>> mockedIterator = new Mock<FeedIterator<ChangeFeedProcessorState>>();
                 mockedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(mockedResponse.Object);
 
-                remainingWorkEstimator.Setup(e => e.GetRemainingLeaseWorkIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
+                remainingWorkEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
 
                 await estimator.StartAsync();
 

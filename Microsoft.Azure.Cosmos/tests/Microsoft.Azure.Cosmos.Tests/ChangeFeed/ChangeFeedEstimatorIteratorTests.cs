@@ -103,8 +103,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             long estimation = 0;
             while (remainingWorkEstimator.HasMoreResults)
             {
-                FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
-                estimation += response.Sum(e => e.RemainingWork);
+                FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+                estimation += response.Sum(e => e.EstimatedLag);
             }
 
             Assert.AreEqual(expectedTotal, estimation);
@@ -161,8 +161,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             long estimation = 0;
             while (remainingWorkEstimator.HasMoreResults)
             {
-                FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
-                estimation += response.Sum(e => e.RemainingWork);
+                FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+                estimation += response.Sum(e => e.EstimatedLag);
             }
 
             Assert.AreEqual(expectedTotal, estimation);
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 feedCreator,
                 changeFeedEstimatorRequestOptions);
 
-            FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+            FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
 
             Assert.IsFalse(remainingWorkEstimator.HasMoreResults);
             Assert.AreEqual(ranges.Count, response.Count);
@@ -238,12 +238,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 feedCreator,
                 new ChangeFeedEstimatorRequestOptions() { MaxItemCount = pageSize }); // Expect multiple pages
 
-            FeedResponse<RemainingLeaseWork> firstResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+            FeedResponse<ChangeFeedProcessorState> firstResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
 
             Assert.IsTrue(remainingWorkEstimator.HasMoreResults);
             Assert.AreEqual(pageSize, firstResponse.Count);
 
-            FeedResponse<RemainingLeaseWork> secondResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+            FeedResponse<ChangeFeedProcessorState> secondResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
 
             Assert.IsFalse(remainingWorkEstimator.HasMoreResults);
             Assert.AreEqual(pageSize, secondResponse.Count);
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 feedCreator,
                 null);
 
-            FeedResponse<RemainingLeaseWork> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+            FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
 
             Assert.AreEqual(2, response.Headers.RequestCharge, "Should contain the sum of all RU charges for each partition read."); // Each request costs 1 RU
             string diagnotics = response.Diagnostics.ToString();
@@ -321,9 +321,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 feedCreator,
                 null);
 
-            FeedResponse<RemainingLeaseWork> firstResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
+            FeedResponse<ChangeFeedProcessorState> firstResponse = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
 
-            RemainingLeaseWork remainingLeaseWork = firstResponse.First();
+            ChangeFeedProcessorState remainingLeaseWork = firstResponse.First();
 
             Assert.AreEqual(instanceName, remainingLeaseWork.InstanceName);
             Assert.AreEqual(leaseToken, remainingLeaseWork.LeaseToken);

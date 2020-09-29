@@ -26,6 +26,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="changeFeedEstimatorRequestOptions">(Optional) Customize the estimation iterator.</param>
         /// <returns>An iterator that yields an estimation of pending work in amount of documents per distributed lease token.</returns>
-        public abstract FeedIterator<RemainingLeaseWork> GetRemainingLeaseWorkIterator(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions = null);
+        public abstract FeedIterator<ChangeFeedProcessorState> GetCurrentStateIterator(ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions = null);
     }
 }

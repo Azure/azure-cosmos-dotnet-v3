@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class ChangeFeedEstimatorIterator : FeedIterator<RemainingLeaseWork>
+    internal sealed class ChangeFeedEstimatorIterator : FeedIterator<ChangeFeedProcessorState>
     {
         private const string EstimatorDefaultHostName = "Estimator";
         private const char PKRangeIdSeparator = ':';
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override async Task<FeedResponse<RemainingLeaseWork>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(requestOptions: null);
             using (diagnostics.GetOverallScope())
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private async Task<FeedResponse<RemainingLeaseWork>> ReadNextInternalAsync(
+        private async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -168,11 +168,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             IEnumerable<DocumentServiceLease> leasesForCurrentPage = this.lazyLeaseDocuments.Result.Result.Skip(this.currentPage * this.pageSize).Take(this.pageSize);
-            IEnumerable<Task<List<(RemainingLeaseWork, double)>>> tasks = Partitioner.Create(leasesForCurrentPage)
+            IEnumerable<Task<List<(ChangeFeedProcessorState, double)>>> tasks = Partitioner.Create(leasesForCurrentPage)
                 .GetPartitions(this.pageSize)
                 .Select(partition => Task.Run(async () =>
                 {
-                    List<(RemainingLeaseWork, double)> partialResults = new List<(RemainingLeaseWork, double)>();
+                    List<(ChangeFeedProcessorState, double)> partialResults = new List<(ChangeFeedProcessorState, double)>();
                     using (partition)
                     {
                         while (!cancellationToken.IsCancellationRequested && partition.MoveNext())
@@ -183,18 +183,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                             // Attach each diagnostics
                             diagnosticsContext.AddDiagnosticsInternal(responseMessage.DiagnosticsContext);
-                            partialResults.Add((new RemainingLeaseWork(item.CurrentLeaseToken, estimation, item.Owner), responseMessage.Headers.RequestCharge));
+                            partialResults.Add((new ChangeFeedProcessorState(item.CurrentLeaseToken, estimation, item.Owner), responseMessage.Headers.RequestCharge));
                         }
                     }
 
                     return partialResults;
                 })).ToArray();
 
-            IEnumerable<List<(RemainingLeaseWork, double)>> partitionResults = await Task.WhenAll(tasks);
+            IEnumerable<List<(ChangeFeedProcessorState, double)>> partitionResults = await Task.WhenAll(tasks);
 
-            IEnumerable<(RemainingLeaseWork, double)> unifiedResults = partitionResults.SelectMany(r => r);
+            IEnumerable<(ChangeFeedProcessorState, double)> unifiedResults = partitionResults.SelectMany(r => r);
 
-            ReadOnlyCollection<RemainingLeaseWork> estimations = unifiedResults.Select(r => r.Item1).ToList().AsReadOnly();
+            ReadOnlyCollection<ChangeFeedProcessorState> estimations = unifiedResults.Select(r => r.Item1).ToList().AsReadOnly();
 
             double totalRUCost = unifiedResults.Sum(r => r.Item2);
 
@@ -337,15 +337,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private class ChangeFeedEstimatorFeedResponse : FeedResponse<RemainingLeaseWork>
+        private class ChangeFeedEstimatorFeedResponse : FeedResponse<ChangeFeedProcessorState>
         {
             private readonly CosmosDiagnostics cosmosDiagnostics;
-            private readonly ReadOnlyCollection<RemainingLeaseWork> remainingLeaseWorks;
+            private readonly ReadOnlyCollection<ChangeFeedProcessorState> remainingLeaseWorks;
             private readonly Headers headers;
 
             public ChangeFeedEstimatorFeedResponse(
                 CosmosDiagnostics cosmosDiagnostics,
-                ReadOnlyCollection<RemainingLeaseWork> remainingLeaseWorks,
+                ReadOnlyCollection<ChangeFeedProcessorState> remainingLeaseWorks,
                 double ruCost)
             {
                 this.cosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
@@ -360,18 +360,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override Headers Headers => this.headers;
 
-            public override IEnumerable<RemainingLeaseWork> Resource => this.remainingLeaseWorks;
+            public override IEnumerable<ChangeFeedProcessorState> Resource => this.remainingLeaseWorks;
 
             public override HttpStatusCode StatusCode => HttpStatusCode.OK;
 
             public override CosmosDiagnostics Diagnostics => this.cosmosDiagnostics;
 
-            public override IEnumerator<RemainingLeaseWork> GetEnumerator() => this.remainingLeaseWorks.GetEnumerator();
+            public override IEnumerator<ChangeFeedProcessorState> GetEnumerator() => this.remainingLeaseWorks.GetEnumerator();
         }
 
-        private class ChangeFeedEstimatorEmptyFeedResponse : FeedResponse<RemainingLeaseWork>
+        private class ChangeFeedEstimatorEmptyFeedResponse : FeedResponse<ChangeFeedProcessorState>
         {
-            private readonly static IEnumerable<RemainingLeaseWork> remainingLeaseWorks = Enumerable.Empty<RemainingLeaseWork>();
+            private readonly static IEnumerable<ChangeFeedProcessorState> remainingLeaseWorks = Enumerable.Empty<ChangeFeedProcessorState>();
             private readonly CosmosDiagnostics cosmosDiagnostics;
             private readonly Headers headers;
 
@@ -387,13 +387,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override Headers Headers => throw new NotImplementedException();
 
-            public override IEnumerable<RemainingLeaseWork> Resource => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks;
+            public override IEnumerable<ChangeFeedProcessorState> Resource => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks;
 
             public override HttpStatusCode StatusCode => HttpStatusCode.OK;
 
             public override CosmosDiagnostics Diagnostics => this.cosmosDiagnostics;
 
-            public override IEnumerator<RemainingLeaseWork> GetEnumerator() => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks.GetEnumerator();
+            public override IEnumerator<ChangeFeedProcessorState> GetEnumerator() => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks.GetEnumerator();
         }
     }
 }

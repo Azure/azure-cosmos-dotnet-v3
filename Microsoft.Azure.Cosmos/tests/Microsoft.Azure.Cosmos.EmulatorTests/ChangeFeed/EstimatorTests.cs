@@ -57,11 +57,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     this.LeaseContainer);
 
             long receivedEstimation = 0;
-            using FeedIterator<RemainingLeaseWork> feedIterator = estimator.GetRemainingLeaseWorkIterator();
+            using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<RemainingLeaseWork> response = await feedIterator.ReadNextAsync();
-                receivedEstimation += response.Sum(r => r.RemainingWork);
+                FeedResponse<ChangeFeedProcessorState> response = await feedIterator.ReadNextAsync();
+                receivedEstimation += response.Sum(r => r.EstimatedLag);
             }
 
             Assert.AreEqual(0, receivedEstimation);
@@ -75,10 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenLeasesHaveContinuationTokenNullReturn0()
         {
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                {
-                    return Task.CompletedTask;
-                })
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
@@ -107,10 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenLeasesHaveContinuationTokenNullReturn0_Pull()
         {
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                {
-                    return Task.CompletedTask;
-                })
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
@@ -124,11 +118,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     processorName: "test",
                     this.LeaseContainer);
 
-            using FeedIterator<RemainingLeaseWork> feedIterator = estimator.GetRemainingLeaseWorkIterator();
+            using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<RemainingLeaseWork> response = await feedIterator.ReadNextAsync();
-                receivedEstimation += response.Sum(r => r.RemainingWork);
+                FeedResponse<ChangeFeedProcessorState> response = await feedIterator.ReadNextAsync();
+                receivedEstimation += response.Sum(r => r.EstimatedLag);
             }
 
             Assert.AreEqual(0, receivedEstimation);
@@ -144,10 +138,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilder(
                     processorName: "test",
-                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                    {
-                        return Task.CompletedTask;
-                    })
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer)
                 .Build();
@@ -199,10 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilder(
                     processorName: "test",
-                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                    {
-                        return Task.CompletedTask;
-                    })
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer)
                 .Build();
@@ -235,11 +223,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
-            using FeedIterator<RemainingLeaseWork> feedIterator = estimator.GetRemainingLeaseWorkIterator();
+            using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<RemainingLeaseWork> response = await feedIterator.ReadNextAsync();
-                receivedEstimation += response.Sum(r => r.RemainingWork);
+                FeedResponse<ChangeFeedProcessorState> response = await feedIterator.ReadNextAsync();
+                receivedEstimation += response.Sum(r => r.EstimatedLag);
                 Assert.IsTrue(response.Headers.RequestCharge > 0);
                 Assert.IsNotNull(response.Diagnostics);
                 Assert.IsTrue(response.Diagnostics.ToString().Length > 0);
