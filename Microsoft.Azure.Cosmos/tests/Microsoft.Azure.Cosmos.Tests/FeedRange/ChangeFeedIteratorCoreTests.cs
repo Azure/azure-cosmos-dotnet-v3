@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         private static CosmosClientContext GetMockedClientContext(
             Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
                client,
                new MockDocumentClient(),
