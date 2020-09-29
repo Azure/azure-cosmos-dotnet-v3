@@ -101,32 +101,32 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create <see cref="PatchOperation{Int64}"/> to Increment a value.
+        /// Create <see cref="PatchOperation"/> to Increment a value.
         /// </summary>
         /// <param name="path">Target location reference.</param>
         /// <param name="value">The value to be Incremented by at the specified path.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
         public static PatchOperation Increment(
             string path,
-            Int64 value)
+            long value)
         {
-            return new PatchOperationCore<Int64>(
+            return new PatchOperationCore<long>(
                 PatchOperationType.Increment,
                 path,
                 value);
         }
 
         /// <summary>
-        /// Create <see cref="PatchOperation{Double}"/> to Increment a value.
+        /// Create <see cref="PatchOperation"/> to Increment a value.
         /// </summary>
         /// <param name="path">Target location reference.</param>
         /// <param name="value">The value to be Incremented by at the specified path.</param>
         /// <returns>PatchOperation instance for specified input.</returns>
         public static PatchOperation Increment(
             string path,
-            Double value)
+            double value)
         {
-            return new PatchOperationCore<Double>(
+            return new PatchOperationCore<double>(
                 PatchOperationType.Increment,
                 path,
                 value);
