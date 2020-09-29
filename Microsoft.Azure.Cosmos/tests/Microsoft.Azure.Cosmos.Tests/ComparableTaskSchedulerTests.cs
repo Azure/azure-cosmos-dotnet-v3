@@ -76,10 +76,10 @@ namespace Microsoft.Azure.Cosmos.Test
         [TestMethod]
         public void TestMaximumConcurrencyLevel()
         {
-            using ComparableTaskScheduler scheduler = new ComparableTaskScheduler(10);
-            Assert.AreEqual(10, scheduler.MaximumConcurrencyLevel);
+            using ComparableTaskScheduler firstScheduler = new ComparableTaskScheduler(10);
+            Assert.AreEqual(10, firstScheduler.MaximumConcurrencyLevel);
 
-            scheduler = new ComparableTaskScheduler();
+            using ComparableTaskScheduler scheduler = new ComparableTaskScheduler();
             Assert.AreEqual(Environment.ProcessorCount, scheduler.MaximumConcurrencyLevel);
 
             scheduler.IncreaseMaximumConcurrencyLevel(1);
