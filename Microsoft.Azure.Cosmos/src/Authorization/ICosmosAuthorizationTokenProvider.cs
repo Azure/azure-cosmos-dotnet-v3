@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -16,11 +17,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Generates a Authorization Token for a given resource type, address and action.
         /// </summary>
-        string GetUserAuthorizationToken(
+        ValueTask<string> GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType);
+            AuthorizationTokenType tokenType,
+            CosmosDiagnosticsContext diagnosticsContext);
     }
 }

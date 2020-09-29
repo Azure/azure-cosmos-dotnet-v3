@@ -3074,6 +3074,13 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()[System.Runtime.CompilerServices.IteratorStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Headers+<GetEnumerator>d__63))]": {
+          "Type": "Method",
+          "Attributes": [
+            "IteratorStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()"
+        },
         "System.String ActivityId": {
           "Type": "Property",
           "Attributes": [],
@@ -3198,6 +3205,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Set(System.String, System.String)"
+        },
+        "Void set_ContentLength(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_ContentLength(System.String)"
         },
         "Void set_Item(System.String, System.String)": {
           "Type": "Method",

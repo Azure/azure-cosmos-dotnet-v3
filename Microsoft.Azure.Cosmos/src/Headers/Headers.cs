@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ContentLength
         {
             get => this.GetString(HttpConstants.HttpHeaders.ContentLength);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.ContentLength, value);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ContentLength, value);
         }
 
         /// <summary>
@@ -218,6 +218,18 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.CosmosMessageHeaders[headerName];
             set => this.CosmosMessageHeaders[headerName] = value;
+        }
+
+        /// <summary>
+        /// Enumerates all the HTTP headers names in the <see cref="Headers"/>.
+        /// </summary>
+        /// <returns>An enumator for all headers.</returns>
+        public virtual IEnumerator<string> GetEnumerator()
+        {
+            foreach (string key in this.CosmosMessageHeaders.AllKeys())
+            {
+                yield return key;
+            }
         }
 
         /// <summary>
