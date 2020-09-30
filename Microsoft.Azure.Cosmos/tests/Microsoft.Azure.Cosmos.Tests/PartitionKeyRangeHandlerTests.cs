@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task InvalidPartitionRetryPolicyWithNextRetryPolicy()
         {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             Mock<IDocumentClientRetryPolicy> nextRetryPolicyMock = new Mock<IDocumentClientRetryPolicy>();
 
             nextRetryPolicyMock
@@ -639,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task InvalidPartitionRetryPolicyWithoutNextRetryPolicy()
         {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy( null);
 

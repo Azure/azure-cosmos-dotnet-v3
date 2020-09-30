@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 

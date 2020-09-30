@@ -123,27 +123,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
 
-            ChangeFeedEstimatorCore estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
-            estimator.ApplyBuildConfiguration(
-                leaseStoreManager.Object,
-                null,
-                "something",
-                "instanceName",
-                new ChangeFeedLeaseOptions(),
-                new ChangeFeedProcessorOptions(),
-                ChangeFeedEstimatorCoreTests.GetMockedContainer("monitored"));
-
-            remainingWorkEstimator.Setup(r => r.GetEstimatedRemainingWorkAsync(It.IsAny<CancellationToken>())).ReturnsAsync(remainingWork);
-
-            await estimator.StartAsync();
-
-            int waitIterations = 0; // Failsafe in case someone breaks the estimator so this does not run forever
-            while (!receivedEstimation && waitIterations++ < 3)
+            ChangeFeedEstimatorCore estimator = null;
+            try
             {
-                Thread.Sleep(TimeSpan.FromSeconds(10));
-            }
+                estimator = ChangeFeedEstimatorCoreTests.CreateEstimator(estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator);
+                estimator.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "something",
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    new ChangeFeedProcessorOptions(),
+                    ChangeFeedEstimatorCoreTests.GetMockedContainer("monitored"));
 
-            Assert.AreEqual(remainingWork, estimationDelegateValue);
+                remainingWorkEstimator.Setup(r => r.GetEstimatedRemainingWorkAsync(It.IsAny<CancellationToken>())).ReturnsAsync(remainingWork);
+
+                await estimator.StartAsync();
+
+                int waitIterations = 0; // Failsafe in case someone breaks the estimator so this does not run forever
+                while (!receivedEstimation && waitIterations++ < 3)
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(10));
+                }
+
+                Assert.AreEqual(remainingWork, estimationDelegateValue);
+            }
+            finally
+            {
+                if (estimator != null)
+                {
+                    await estimator.StopAsync();
+                }
+            }
         }
 
         private static ChangeFeedEstimatorCore CreateEstimator(ChangesEstimationHandler estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
@@ -167,7 +178,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.Client).Returns(mockClient.Object);
-            //mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             return mockContext.Object;
         }
     }

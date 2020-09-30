@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal class KeyVaultAccessException : RequestFailedException
     {
-        public KeyVaultAccessException(int statusCode, string keyVaultErrorCode, string? errorMessage, Exception? innerException)
+        public KeyVaultAccessException(int statusCode, string keyVaultErrorCode, string errorMessage, Exception innerException)
             : base(statusCode, keyVaultErrorCode, errorMessage, innerException)
         {
         }

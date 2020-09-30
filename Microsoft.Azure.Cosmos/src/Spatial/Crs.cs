@@ -29,24 +29,12 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <summary>
         /// Gets default CRS in the Azure Cosmos DB service. Default CRS is named CRS with the name "urn:ogc:def:crs:OGC:1.3:CRS84".
         /// </summary>
-        public static Crs Default
-        {
-            get
-            {
-                return new NamedCrs("urn:ogc:def:crs:OGC:1.3:CRS84");
-            }
-        }
+        public static Crs Default => new NamedCrs("urn:ogc:def:crs:OGC:1.3:CRS84");
 
         /// <summary>
         /// Gets "Unspecified" CRS in the Azure Cosmos DB service. No CRS can be assumed for Geometries having "Unspecified" CRS.
         /// </summary>
-        public static Crs Unspecified
-        {
-            get
-            {
-                return new UnspecifiedCrs();
-            }
-        }
+        public static Crs Unspecified => new UnspecifiedCrs();
 
         /// <summary>
         /// Gets CRS type in the Azure Cosmos DB service.

@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings);
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
             GatewayStoreModel.ApplySessionToken(
                 request,
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage, CancellationToken cancellationToken = default)
         {
             AccountProperties databaseAccount = null;
 
@@ -145,7 +145,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private void CaptureSessionToken(

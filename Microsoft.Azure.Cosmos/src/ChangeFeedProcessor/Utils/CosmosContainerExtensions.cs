@@ -46,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         return null;
                     }
 
+                    response.EnsureSuccessStatusCode();
+
                     return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
                 }
             }
@@ -96,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         public static async Task<string> GetMonitoredContainerRidAsync(
             this Container monitoredContainer,
             string suggestedMonitoredRid,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (!string.IsNullOrEmpty(suggestedMonitoredRid))
             {

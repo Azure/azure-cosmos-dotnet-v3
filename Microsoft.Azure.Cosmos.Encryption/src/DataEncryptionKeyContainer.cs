@@ -109,14 +109,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
         /// </summary>
-        /// <param name="startId">(Optional) Starting value of the range (inclusive) of ids of data encryption keys for which properties needs to be returned.</param>
-        /// <param name="endId">(Optional) Ending value of the range (inclusive) of ids of data encryption keys for which properties needs to be returned.</param>
-        /// <param name="isDescending">Whether the results should be returned sorted in descending order of id.</param>
+        /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
+        /// <typeparam name="T">The type of object to query.</typeparam>
         /// <returns>An iterator over data encryption keys.</returns>
         /// <example>
-        /// This create the type feed iterator for containers with queryDefinition as input.
+        /// This creates the type feed iterator for containers with query text as input.
         /// <code language="c#">
         /// <![CDATA[
         /// FeedIterator<DataEncryptionKeyProperties> resultSet = this.cosmosDatabase.GetDataEncryptionKeyQueryIterator();
@@ -135,6 +134,41 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </remarks>
         public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
             string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Returns an iterator that can be iterated to get properties of data encryption keys.
+        /// </summary>
+        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
+        /// <typeparam name="T">The type of object to query.</typeparam>
+        /// <returns>An iterator over data encryption keys.</returns>
+        /// <example>
+        /// This creates the type feed iterator for containers with queryDefinition as input.
+        /// The example is to get all the DataEncryptionKeyProperties that have id in the range ["DEK_005", "DEK_015"].
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * from c where c.id >= @startId and c.id <= @endId")
+        ///     .WithParameter("@startId", "DEK_005")
+        ///     .WithParameter("@endId", "DEK_015");
+        /// FeedIterator<DataEncryptionKeyProperties> resultSet = this.cosmosDatabase.GetDataEncryptionKeyQueryIterator(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (DataEncryptionKeyProperties properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
+        /// </remarks>
+        public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

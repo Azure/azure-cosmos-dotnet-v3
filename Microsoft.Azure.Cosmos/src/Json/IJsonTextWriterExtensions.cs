@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
 
     internal interface IJsonTextWriterExtensions : IJsonWriter
     {

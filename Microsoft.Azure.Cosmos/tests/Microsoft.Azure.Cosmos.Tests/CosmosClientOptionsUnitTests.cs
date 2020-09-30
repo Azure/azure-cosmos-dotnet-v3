@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
         {
             string endpoint = AccountEndpoint;
-            string key = Guid.NewGuid().ToString();
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
             string region = Regions.WestCentralUS;
             ConnectionMode connectionMode = ConnectionMode.Gateway;
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
@@ -404,10 +404,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void HttpClientFactoryBuildsConnectionPolicy()
         {
             string endpoint = AccountEndpoint;
-            string key = Guid.NewGuid().ToString();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                authKeyOrResourceToken: key)
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
                 .WithHttpClientFactory(this.HttpClientFactoryDelegate);
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
@@ -422,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: AccountEndpoint,
-                authKeyOrResourceToken: Guid.NewGuid().ToString());
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
 
             CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsFalse(cosmosClientOptions.LimitToEndpoint);

@@ -206,6 +206,11 @@
     "DataEncryptionKeyContainer": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetDataEncryptionKeyQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetDataEncryptionKeyQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetDataEncryptionKeyQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],

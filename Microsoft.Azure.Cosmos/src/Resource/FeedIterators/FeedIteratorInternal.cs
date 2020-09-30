@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Internal feed iterator API for casting and mocking purposes.

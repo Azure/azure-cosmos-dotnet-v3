@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
     using System.Net;
     using System.Threading;
@@ -74,12 +73,21 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(partitionKeyRanges);
         }
 
-        public override void Accept(IFeedRangeVisitor visitor) => visitor.Visit(this);
+        public override void Accept(IFeedRangeVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
         public override Task<TResult> AcceptAsync<TResult>(
             IFeedRangeAsyncVisitor<TResult> visitor,
-            CancellationToken cancellationToken = default) => visitor.VisitAsync(this, cancellationToken);
+            CancellationToken cancellationToken = default)
+        {
+            return visitor.VisitAsync(this, cancellationToken);
+        }
 
-        public override string ToString() => this.PartitionKeyRangeId;
+        public override string ToString()
+        {
+            return this.PartitionKeyRangeId;
+        }
     }
 }

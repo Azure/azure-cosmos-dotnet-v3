@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
-    using System;
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
@@ -15,15 +14,21 @@ namespace Microsoft.Azure.Cosmos.Tracing
             TextWriter writer,
             ITrace trace,
             TraceLevel level = TraceLevel.Verbose,
-            AsciiType asciiType = AsciiType.Default) => TraceTextWriter.WriteTrace(
-                writer,
-                trace,
-                level,
-                asciiType);
+            AsciiType asciiType = AsciiType.Default)
+        {
+            TraceTextWriter.WriteTrace(
+writer,
+trace,
+level,
+asciiType);
+        }
 
         public static void WriteTrace(
             IJsonWriter writer,
-            ITrace trace) => TraceJsonWriter.WriteTrace(writer, trace);
+            ITrace trace)
+        {
+            TraceJsonWriter.WriteTrace(writer, trace);
+        }
 
         public static string TraceToText(
             ITrace trace,
