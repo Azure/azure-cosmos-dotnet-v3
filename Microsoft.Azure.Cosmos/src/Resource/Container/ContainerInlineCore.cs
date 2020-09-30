@@ -359,6 +359,13 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedEstimatorBuilder(processorName, estimationDelegate, estimationPeriod);
         }
 
+        public override ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer)
+        {
+            return base.GetChangeFeedEstimator(processorName, leaseContainer);
+        }
+
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return base.CreateTransactionalBatch(partitionKey);

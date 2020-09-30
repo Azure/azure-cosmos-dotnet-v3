@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchRequestSerializationAsync()
         {
             const string partitionKey1 = "pk1";
-            ContainerInternal containerCore = (ContainerInlineCore)MockCosmosUtil.CreateMockCosmosClient().GetDatabase("db").GetContainer("cont");
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ContainerInternal containerCore = (ContainerInlineCore)cosmosClient.GetDatabase("db").GetContainer("cont");
 
             ItemBatchOperation[] operations = new ItemBatchOperation[]
             {
@@ -69,7 +70,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchResponseDeserializationAsync()
         {
-            ContainerInternal containerCore = (ContainerInlineCore)MockCosmosUtil.CreateMockCosmosClient().GetDatabase("db").GetContainer("cont");
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ContainerInternal containerCore = (ContainerInlineCore)cosmosClient.GetDatabase("db").GetContainer("cont");
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
 
             results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));

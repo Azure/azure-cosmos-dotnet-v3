@@ -1200,7 +1200,7 @@ namespace Microsoft.Azure.Cosmos
                 this.GlobalEndpointManager = null;
             }
 
-            if (this.queryPartitionProvider.IsValueCreated)
+            if (this.queryPartitionProvider != null && this.queryPartitionProvider.IsValueCreated)
             {
                 this.queryPartitionProvider.Value.Dispose();
             }
