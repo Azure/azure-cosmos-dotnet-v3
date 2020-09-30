@@ -542,13 +542,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                        partitionKeyRangeIdentity.PartitionKeyRangeId,
                        addressInfo.PhysicalUri);
 
-                    this.serverPartitionAddressToPkRangeIdMap.AddOrUpdate(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)), new HashSet<PartitionKeyRangeIdentity>() { partitionKeyRangeIdentity },
-                        (serverKey, pkRangeIds) =>
-                        {
-                            pkRangeIds.Add(partitionKeyRangeIdentity);
-                            return pkRangeIds;
-                        });
+                    HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
+                        new ServerKey(new Uri(addressInfo.PhysicalUri)), new HashSet<PartitionKeyRangeIdentity>());
+                    lock (pkRangeIdSet)
+                    {
+                        pkRangeIdSet.Add(partitionKeyRangeIdentity);
+                    }
                 }
             }
 
