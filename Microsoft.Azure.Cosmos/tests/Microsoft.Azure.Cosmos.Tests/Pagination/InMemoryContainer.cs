@@ -373,8 +373,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             queryPageResults = queryPageResults.Take(pageSize);
             List<CosmosElement> queryPageResultList = queryPageResults.ToList();
+            QueryState queryState;
+            if (queryPageResultList.Count == 0)
+            {
+                queryState = default;
+            }
+            else if (queryPageResultList.Last() is CosmosObject lastDocument)
+            {
+                queryState = new QueryState(lastDocument["_rid"]);
+            }
+            else
+            {
+                queryState = default;
+            }
 
-            QueryState queryState = queryPageResultList.Count == 0 ? null : new QueryState(((CosmosObject)queryPageResultList.Last())["_rid"]);
             return Task.FromResult(
                 TryCatch<QueryPage>.FromResult(
                     new QueryPage(

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal sealed class QueryIterator : FeedIteratorInternal
     {
+        private static readonly IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
+
         private readonly CosmosQueryContextCore cosmosQueryContext;
         private readonly IQueryPipelineStage queryPipelineStage;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
@@ -152,7 +155,27 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     // This catches exception thrown by the pipeline and converts it to QueryResponse
                     this.queryPipelineStage.SetCancellationToken(cancellationToken);
-                    await this.queryPipelineStage.MoveNextAsync();
+                    if (!await this.queryPipelineStage.MoveNextAsync())
+                    {
+                        this.hasMoreResults = false;
+                        return QueryResponse.CreateSuccess(
+                            result: EmptyPage,
+                            count: EmptyPage.Count,
+                            responseLengthBytes: default,
+                            diagnostics: default,
+                            serializationOptions: this.cosmosSerializationFormatOptions,
+                            responseHeaders: new CosmosQueryResponseMessageHeaders(
+                                continauationToken: default,
+                                disallowContinuationTokenMessage: default,
+                                this.cosmosQueryContext.ResourceTypeEnum,
+                                this.cosmosQueryContext.ContainerResourceId)
+                            {
+                                RequestCharge = default,
+                                ActivityId = Guid.Empty.ToString(),
+                                SubStatusCode = Documents.SubStatusCodes.Unknown
+                            });
+                    }
+
                     tryGetQueryPage = this.queryPipelineStage.Current;
                 }
                 catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
@@ -168,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (tryGetQueryPage.Succeeded)
                 {
-                    if (tryGetQueryPage.Result.State == null)
+                    if ((tryGetQueryPage.Result.State == null) && (tryGetQueryPage.Result.DisallowContinuationTokenMessage == null))
                     {
                         this.hasMoreResults = false;
                     }

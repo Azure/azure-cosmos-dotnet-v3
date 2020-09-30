@@ -119,12 +119,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 this.skipCount -= numberOfDocumentsSkipped;
 
                 QueryState state;
-                if (sourcePage.DisallowContinuationTokenMessage == null)
+                if ((sourcePage.State != null) && (sourcePage.DisallowContinuationTokenMessage == null))
                 {
                     string token = new OffsetContinuationToken(
                         offset: this.skipCount,
-                        sourceToken: sourcePage.State != null ? ((CosmosString)sourcePage.State.Value).Value : null).ToString();
-                    state = new QueryState(CosmosString.Create(token));
+                        sourceToken: sourcePage.State?.Value.ToString()).ToString();
+                    state = new QueryState(CosmosElement.Parse(token));
                 }
                 else
                 {

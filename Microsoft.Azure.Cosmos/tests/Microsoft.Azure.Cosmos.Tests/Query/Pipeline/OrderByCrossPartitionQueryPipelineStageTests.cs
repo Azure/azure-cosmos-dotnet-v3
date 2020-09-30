@@ -387,7 +387,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             int numItems = 1000;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
 
-            Random random = new Random();
+            int seed = new Random().Next();
+            Random random = new Random(seed);
             List<CosmosElement> documents = new List<CosmosElement>();
             QueryState queryState = null;
 
@@ -403,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                     orderByColumns: new List<OrderByColumn>()
                     {
-                    new OrderByColumn("c._ts", SortOrder.Ascending)
+                        new OrderByColumn("c._ts", SortOrder.Ascending)
                     },
                     pageSize: 10,
                     maxConcurrency: 10,
@@ -436,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             } while (queryState != null);
 
             Assert.AreEqual(numItems, documents.Count);
-            Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents));
+            Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents), $"Failed with seed: {seed}");
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(

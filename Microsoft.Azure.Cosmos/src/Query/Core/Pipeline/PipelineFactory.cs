@@ -35,6 +35,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             CosmosElement requestContinuationToken,
             CancellationToken requestCancellationToken)
         {
+            if (documentContainer == null)
+            {
+                throw new ArgumentNullException(nameof(documentContainer));
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (targetRanges == null)
+            {
+                throw new ArgumentNullException(nameof(targetRanges));
+            }
+
+            if (targetRanges.Count == 0)
+            {
+                throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
+            }
+
+            if (queryInfo == null)
+            {
+                throw new ArgumentNullException(nameof(queryInfo));
+            }
+
+            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery) : sqlQuerySpec;
+
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {

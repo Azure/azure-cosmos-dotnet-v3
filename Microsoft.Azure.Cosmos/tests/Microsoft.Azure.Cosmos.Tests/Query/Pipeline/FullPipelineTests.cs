@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -73,6 +72,88 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(expected: documents.Count, actual: documentsQueried.Count);
         }
 
+        [TestMethod]
+        public async Task OrderBy()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT * FROM c ORDER BY c._ts",
+                documents: documents);
+
+            Assert.AreEqual(expected: documents.Count, actual: documentsQueried.Count);
+        }
+
+        [TestMethod]
+        public async Task Top()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT TOP 10 * FROM c",
+                documents: documents);
+
+            Assert.AreEqual(expected: 10, actual: documentsQueried.Count);
+        }
+
+        [TestMethod]
+        public async Task OffsetLimit()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT * FROM c OFFSET 10 LIMIT 103",
+                documents: documents);
+
+            Assert.AreEqual(expected: 103, actual: documentsQueried.Count);
+        }
+
+        [TestMethod]
+        public async Task Aggregates()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT VALUE COUNT(1) FROM c",
+                documents: documents);
+
+            Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
+        }
+
+        [TestMethod]
+        [Ignore]
+        // Need to implement group by continuation token on the in memory collection.
+        public async Task GroupBy()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT VALUE COUNT(1) FROM c GROUP BY c.pk",
+                documents: documents);
+
+            Assert.AreEqual(expected: documents.Count, actual: documentsQueried.Count);
+        }
+
         private static async Task<List<CosmosElement>> ExecuteQueryAsync(
             string query,
             IReadOnlyList<CosmosObject> documents)
@@ -85,6 +166,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.IsTrue(resultsFromDrainWithoutState.SequenceEqual(resultsFromDrainWithState));
 
             return resultsFromDrainWithoutState;
+        }
+
+        [TestMethod]
+        public async Task Fuzz()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT * FROM c ORDER BY c._ts OFFSET 1 LIMIT 500",
+                documents: documents);
+
+            Assert.AreEqual(expected: 249, actual: documentsQueried.Count);
         }
 
         private static async Task<List<CosmosElement>> DrainWithoutStateAsync(string query, IDocumentContainer documentContainer)
@@ -119,7 +216,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
 
                 TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
-
                 tryGetQueryPage.ThrowIfFailed();
 
                 elements.AddRange(tryGetQueryPage.Result.Documents);

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Reactive
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Reactive
 
         public JustAsyncEnumerator(params T[] items)
         {
-            this.enumerator = (IEnumerator<T>)items.GetEnumerator();
+            this.enumerator = items.ToList().GetEnumerator();
         }
 
         public T Current => this.enumerator.Current;

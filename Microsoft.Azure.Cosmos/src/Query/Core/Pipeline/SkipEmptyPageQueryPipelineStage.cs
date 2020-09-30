@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
         private CancellationToken cancellationToken;
+        private bool returnedFinalStats;
 
         public SkipEmptyPageQueryPipelineStage(IQueryPipelineStage inputStage, CancellationToken cancellationToken)
         {
@@ -36,6 +37,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (!await this.inputStage.MoveNextAsync())
             {
+                if (!this.returnedFinalStats)
+                {
+                    QueryPage queryPage = new QueryPage(
+                        documents: EmptyPage,
+                        requestCharge: this.cumulativeRequestCharge,
+                        activityId: Guid.Empty.ToString(),
+                        responseLengthInBytes: this.cumulativeResponseLengthInBytes,
+                        cosmosQueryExecutionInfo: default,
+                        disallowContinuationTokenMessage: default,
+                        state: default);
+                    this.cumulativeRequestCharge = 0;
+                    this.cumulativeResponseLengthInBytes = 0;
+                    this.returnedFinalStats = true;
+                    this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                    return true;
+                }
+
                 this.Current = default;
                 return false;
             }

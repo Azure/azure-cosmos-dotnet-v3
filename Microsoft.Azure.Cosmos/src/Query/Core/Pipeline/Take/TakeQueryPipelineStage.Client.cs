@@ -203,14 +203,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     {
                         TakeEnum.Limit => new LimitContinuationToken(
                             limit: this.takeCount,
-                            sourceToken: ((CosmosString)sourcePage.State.Value).Value).ToString(),
+                            sourceToken: sourcePage.State?.Value.ToString()).ToString(),
                         TakeEnum.Top => new TopContinuationToken(
                             top: this.takeCount,
-                            sourceToken: ((CosmosString)sourcePage.State.Value).Value).ToString(),
+                            sourceToken: sourcePage.State?.Value.ToString()).ToString(),
                         _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}."),
                     };
 
-                    state = new QueryState(CosmosString.Create(updatedContinuationToken));
+                    state = new QueryState(CosmosElement.Parse(updatedContinuationToken));
                 }
                 else
                 {
