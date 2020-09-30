@@ -260,7 +260,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             List<Task> tasks = new List<Task>();
             if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
-                foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIds)
+                PartitionKeyRangeIdentity[] pkRangeIdsCopy;
+                lock (pkRangeIds)
+                {​​​​
+                    pkRangeIdsCopy = pkRangeIds.ToArray();
+                }​​​​
+
+                foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
                     DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
                        pkRangeId.CollectionRid,
