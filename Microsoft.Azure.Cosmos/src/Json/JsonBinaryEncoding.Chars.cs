@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
     internal static partial class JsonBinaryEncoding
     {
-        public readonly struct Chars
+        public readonly struct StringCompressionLookupTables
         {
-            public static readonly Chars DateTime = Chars.Create(
+            public static readonly StringCompressionLookupTables DateTime = StringCompressionLookupTables.Create(
                 list: new char[] { ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', '-', '.', 'T', 'Z' },
                 charSet: new byte[] { 0x00, 0x00, 0x00, 0x00, 0x01, 0x60, 0xff, 0x07, 0x00, 0x00, 0x10, 0x04, 0x00, 0x00, 0x00, 0x00 },
                 charToByte: new byte[]
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     0x5a37, 0x5a38, 0x5a39, 0x5a3a, 0x5a2d, 0x5a2e, 0x5a54, 0x5a5a,
                 });
 
-            public static readonly Chars LowercaseHex = Chars.Create(
+            public static readonly StringCompressionLookupTables LowercaseHex = StringCompressionLookupTables.Create(
                 list: new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' },
                 charSet: new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x03, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x00, 0x00 },
                 charToByte: new byte[]
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     0x6638, 0x6639, 0x6661, 0x6662, 0x6663, 0x6664, 0x6665, 0x6666,
                 });
 
-            public static readonly Chars UppercaseHex = Chars.Create(
+            public static readonly StringCompressionLookupTables UppercaseHex = StringCompressionLookupTables.Create(
                 list: new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' },
                 charSet: new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x03, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
                 charToByte: new byte[]
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     0x4638, 0x4639, 0x4641, 0x4642, 0x4643, 0x4644, 0x4645, 0x4646,
                 });
 
-            private Chars(
+            private StringCompressionLookupTables(
                 ImmutableArray<char> list,
                 BitArray bitmap,
                 ImmutableArray<byte> charToByte,
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public ImmutableArray<ushort> ByteToTwoChars { get; }
 
-            private static Chars Create(char[] list, byte[] charSet, byte[] charToByte, ushort[] byteToTwoChars)
+            private static StringCompressionLookupTables Create(char[] list, byte[] charSet, byte[] charToByte, ushort[] byteToTwoChars)
             {
                 if (list == null)
                 {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException(nameof(byteToTwoChars));
                 }
 
-                return new Chars(list.ToImmutableArray(), new BitArray(charSet), charToByte.ToImmutableArray(), byteToTwoChars.ToImmutableArray());
+                return new StringCompressionLookupTables(list.ToImmutableArray(), new BitArray(charSet), charToByte.ToImmutableArray(), byteToTwoChars.ToImmutableArray());
             }
         }
     }

@@ -10,13 +10,12 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Rntbd;
 
     internal static partial class JsonBinaryEncoding
     {
         public const int GuidLength = 36;
-        public const int EncodedGuidLength = 17;
         public const int GuidWithQuotesLength = GuidLength + 2;
+        public const int EncodedGuidLength = 17;
 
         private const int MaxStackAlloc = 4 * 1024;
         private const int Min4BitCharSetStringLength = 16;
@@ -29,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         ///  Determines whether a type-marker is potentially for a buffered string value
         /// </summary>
-        private static readonly ImmutableArray<bool> IsPotentiallyBufferedString = new bool[]
+        private static readonly ImmutableArray<bool> IsBufferedStringCandidate = new bool[]
         {
             // Encoded literal integer value (32 values)
             false, false, false, false, false, false, false, false,
@@ -199,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             byte typeMarker = stringToken.Span[0];
-            if (IsPotentiallyBufferedString[typeMarker])
+            if (IsBufferedStringCandidate[typeMarker])
             {
                 if (!TryGetBufferedStringValue(
                     buffer,
@@ -468,6 +467,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             buffer.Slice(start: MemoryMarshal.Read<ushort>(stringTokenSpan)),
                             jsonStringDictionary,
                             out value);
+
                     case JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.ThreeByteOffset)
                         {
@@ -741,33 +741,38 @@ namespace Microsoft.Azure.Cosmos.Json
             {
             }
 
-            int charRange = lastSetBit - firstSetBit + 1;
             int charCount = 0;
+            int firstBitSet = int.MaxValue;
+            int lastBitSet = int.MinValue;
             for (int i = 0; i < valueCharSet.Length; i++)
             {
                 if (valueCharSet[i])
                 {
                     charCount++;
+                    firstBitSet = Math.Min(firstBitSet, i);
+                    lastBitSet = Math.Max(lastBitSet, i);
                 }
             }
+
+            int charRange = lastSetBit - firstSetBit + 1;
 
             // Attempt to encode the string as 4-bit packed values over a defined character set
             if ((stringValue.Length <= 0xFF) && (charCount <= 16) && (stringValue.Length >= Min4BitCharSetStringLength))
             {
                 // DateTime character set
-                if (valueCharSet.IsSubset(Chars.DateTime.Bitmap))
+                if (valueCharSet.IsSubset(StringCompressionLookupTables.DateTime.Bitmap))
                 {
                     return TryEncodeString(JsonBinaryEncoding.TypeMarker.CompressedDateTimeString, stringValue, baseChar: 0, destinationBuffer, out bytesWritten);
                 }
 
                 // Lowercase hexadecimal character set
-                if (valueCharSet.IsSubset(Chars.LowercaseHex.Bitmap))
+                if (valueCharSet.IsSubset(StringCompressionLookupTables.LowercaseHex.Bitmap))
                 {
                     return TryEncodeString(JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString, stringValue, baseChar: 0, destinationBuffer, out bytesWritten);
                 }
 
                 // Uppercase hexadecimal character set
-                if (valueCharSet.IsSubset(Chars.UppercaseHex.Bitmap))
+                if (valueCharSet.IsSubset(StringCompressionLookupTables.UppercaseHex.Bitmap))
                 {
                     return TryEncodeString(JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString, stringValue, baseChar: 0, destinationBuffer, out bytesWritten);
                 }
@@ -879,13 +884,13 @@ namespace Microsoft.Azure.Cosmos.Json
             switch (typeMarker)
             {
                 case TypeMarker.CompressedLowercaseHexString:
-                    Encode4BitCharacterStringValue(Chars.LowercaseHex, stringValue, baseChar, destinationBuffer);
+                    Encode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, stringValue, baseChar, destinationBuffer);
                     break;
                 case TypeMarker.CompressedUppercaseHexString:
-                    Encode4BitCharacterStringValue(Chars.UppercaseHex, stringValue, baseChar, destinationBuffer);
+                    Encode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, stringValue, baseChar, destinationBuffer);
                     break;
                 case TypeMarker.CompressedDateTimeString:
-                    Encode4BitCharacterStringValue(Chars.DateTime, stringValue, baseChar, destinationBuffer);
+                    Encode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, stringValue, baseChar, destinationBuffer);
                     break;
 
                 case TypeMarker.Packed4BitString:
@@ -906,7 +911,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        private static void Encode4BitCharacterStringValue(Chars chars, ReadOnlySpan<byte> stringValue, byte baseChar, Span<byte> destinationBuffer)
+        private static void Encode4BitCharacterStringValue(StringCompressionLookupTables chars, ReadOnlySpan<byte> stringValue, byte baseChar, Span<byte> destinationBuffer)
         {
             for (int index = 0; index < stringValue.Length; index++)
             {
@@ -978,15 +983,15 @@ namespace Microsoft.Azure.Cosmos.Json
                         {
                             if (typeMarker == JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString)
                             {
-                                Decode4BitCharacterStringValue(Chars.LowercaseHex, encodedStringValue, buffer);
+                                Decode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, encodedStringValue, buffer);
                             }
                             else if (typeMarker == JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString)
                             {
-                                Decode4BitCharacterStringValue(Chars.UppercaseHex, encodedStringValue, buffer);
+                                Decode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, encodedStringValue, buffer);
                             }
                             else
                             {
-                                Decode4BitCharacterStringValue(Chars.DateTime, encodedStringValue, buffer);
+                                Decode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, encodedStringValue, buffer);
                             }
 
                             if (!buffer.SequenceEqual(stringValue.Slice(start: 0, length: 8)))
@@ -1005,15 +1010,15 @@ namespace Microsoft.Azure.Cosmos.Json
 
                             if (typeMarker == JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString)
                             {
-                                Decode4BitCharacterStringValue(Chars.LowercaseHex, input, buffer);
+                                Decode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, input, buffer);
                             }
                             else if (typeMarker == JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString)
                             {
-                                Decode4BitCharacterStringValue(Chars.UppercaseHex, input, buffer);
+                                Decode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, input, buffer);
                             }
                             else
                             {
-                                Decode4BitCharacterStringValue(Chars.DateTime, input, buffer);
+                                Decode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, input, buffer);
                             }
 
                             return input.SequenceEqual(stringValue.Slice(start: index));
@@ -1197,6 +1202,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonBinaryEncoding.TypeMarker.UppercaseGuidString:
                 case JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString:
                     return 16;
+
                 default:
                     throw new ArgumentException($"Invalid type marker: {typeMarker}");
             }
@@ -1242,7 +1248,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("base char needs to be 0.");
                     }
 
-                    Decode4BitCharacterStringValue(Chars.LowercaseHex, encodedString, destinationBuffer);
+                    Decode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, encodedString, destinationBuffer);
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString:
@@ -1251,7 +1257,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("base char needs to be 0.");
                     }
 
-                    Decode4BitCharacterStringValue(Chars.UppercaseHex, encodedString, destinationBuffer);
+                    Decode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, encodedString, destinationBuffer);
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.CompressedDateTimeString:
@@ -1260,7 +1266,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException("base char needs to be 0.");
                     }
 
-                    Decode4BitCharacterStringValue(Chars.DateTime, encodedString, destinationBuffer);
+                    Decode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, encodedString, destinationBuffer);
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.Packed4BitString:
@@ -1302,7 +1308,7 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         private static void Decode4BitCharacterStringValue(
-            Chars chars,
+            StringCompressionLookupTables chars,
             ReadOnlySpan<byte> encodedString,
             Span<byte> destinationBuffer)
         {
@@ -1397,7 +1403,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static void DecodeGuidStringValue(ReadOnlySpan<byte> encodedString, bool isUpperCaseGuid, Span<byte> destinationBuffer)
         {
-            ImmutableArray<ushort> byteLookupTable = isUpperCaseGuid ? Chars.UppercaseHex.ByteToTwoChars : Chars.LowercaseHex.ByteToTwoChars;
+            ImmutableArray<ushort> byteLookupTable = isUpperCaseGuid ? StringCompressionLookupTables.UppercaseHex.ByteToTwoChars : StringCompressionLookupTables.LowercaseHex.ByteToTwoChars;
 
             // GUID Format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
             SetFixedSizedValue<ushort>(destinationBuffer.Slice(start: 0), byteLookupTable[encodedString[0]]);

@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.String,  // StrGU (Uppercase GUID string)
             JsonTokenType.String,  // StrGQ (Double-quoted lowercase GUID string)
 
-            // Compressed strings [JsonTokenType.Stringx78, JsonTokenType.Stringx8JsonTokenType.String)
+            // Compressed strings [0x78, 0x80)
             JsonTokenType.String,  // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
             JsonTokenType.String,  // String 1-byte length - Uppercase hexadecimal digits encoded as 4-bit characters
             JsonTokenType.String,  // String 1-byte length - Date-time character set encoded as 4-bit characters
