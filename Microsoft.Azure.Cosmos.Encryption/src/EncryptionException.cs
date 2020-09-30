@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Encryption exception
     /// </summary>
-    public class EncryptionException : Exception
+    public sealed class EncryptionException : Exception
     {
         /// <summary>
         /// Gets the Data Encryption Key Id used.

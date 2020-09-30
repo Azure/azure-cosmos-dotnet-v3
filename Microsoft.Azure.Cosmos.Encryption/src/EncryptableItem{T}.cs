@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </example>
     public sealed class EncryptableItem<T> : DecryptableItem
     {
-        private DecryptableItemCore decryptableItem;
+        private DecryptableItemCore decryptableItem = null;
 
         /// <summary>
         /// Gets the input item.
@@ -66,6 +66,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
+            if (this.decryptableItem != null)
+            {
+                throw new InvalidOperationException();
+            }
+
             this.decryptableItem = new DecryptableItemCore(
                 decryptableContent,
                 encryptor,
