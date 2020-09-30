@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         public PrepareCallResult PrepareCall(DocumentServiceRequest request, Uri physicalAddress,
             ResourceOperation resourceOperation, Guid activityId)
         {
-            uint requestId = unchecked((uint) Interlocked.Increment(ref this.nextRequestId));
+            uint requestId = unchecked((uint)Interlocked.Increment(ref this.nextRequestId));
 
             // Hack: When timeouts occur, "request" can end up referenced by
             // multiple threads. Lock it while setting the transport request ID
@@ -596,7 +596,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 await this.connection.ReadResponseMetadataAsync(args.CommonArguments);
 
             // Full header and metadata are read now. Parse out more fields and handle them.
-            StatusCodes status = (StatusCodes) BitConverter.ToUInt32(responseMd.Header, 4);
+            StatusCodes status = (StatusCodes)BitConverter.ToUInt32(responseMd.Header, 4);
             byte[] responseActivityIdBytes = new byte[16];
             Buffer.BlockCopy(responseMd.Header, 8, responseActivityIdBytes, 0, 16);
             // Server should just be echoing back the ActivityId from the connection request, but retrieve it 
@@ -619,7 +619,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(this.serverProperties == null);
                 this.serverProperties = new ServerProperties(serverAgent, serverVersion);
 
-                if ((UInt32) status < 200 || (UInt32) status >= 400)
+                if ((UInt32)status < 200 || (UInt32)status >= 400)
                 {
                     byte[] errorResponse;
                     Debug.Assert(args.CommonArguments.UserPayload == false);
@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                                 RMResources.ExceptionMessage,
                                 error.ToString()),
                             null,
-                            (HttpStatusCode) status,
+                            (HttpStatusCode)status,
                             this.connection.ServerUri);
 
                         if (response.clientVersion.isPresent)
@@ -677,13 +677,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             CancellationToken cancellationToken = this.cancellation.Token;
             ChannelCommonArguments args = new ChannelCommonArguments(
                 Guid.Empty, TransportErrorCode.ReceiveTimeout, true);
-            ResponsePool.EntityOwner response = default;
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     args.ActivityId = Guid.Empty;
-                    response = ResponsePool.Instance.Get();
                     Connection.ResponseMetadata responseMd =
                         await this.connection.ReadResponseMetadataAsync(args);
                     byte[] metadata = responseMd.Metadata;
@@ -692,15 +690,16 @@ namespace Microsoft.Azure.Documents.Rntbd
                         TransportSerialization.DecodeRntbdHeader(responseMd.Header);
 
                     args.ActivityId = header.ActivityId;
+
+                    RntbdConstants.Response response = new RntbdConstants.Response();
                     using (MemoryStream readStream = new MemoryStream(metadata))
                     using (BinaryReader reader = new BinaryReader(readStream, Encoding.UTF8))
                     {
-                        Debug.Assert(response.Entity != null);
-                        response.Entity.ParseFrom(reader);
+                        response.ParseFrom(reader);
                     }
 
                     MemoryStream bodyStream = null;
-                    if (response.Entity.payloadPresent.value.valueByte != (byte) 0x00)
+                    if (response.payloadPresent.value.valueByte != (byte)0x00)
                     {
                         byte[] body = await this.connection.ReadResponseBodyAsync(args);
                         bodyStream = StreamExtension.CreateExportableMemoryStream(body);
@@ -712,17 +711,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             catch (OperationCanceledException)
             {
-                response.Dispose();
                 this.DispatchCancellation();
             }
             catch (ObjectDisposedException)
             {
-                response.Dispose();
                 this.DispatchCancellation();
             }
             catch (Exception e)
             {
-                response.Dispose();
                 this.DispatchChannelFailureException(e);
             }
 
@@ -749,29 +745,24 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         private void DispatchRntbdResponse(
-            ResponsePool.EntityOwner rntbdResponse,
+            RntbdConstants.Response rntbdResponse,
             TransportSerialization.RntbdHeader responseHeader,
             MemoryStream responseBody)
         {
-            if (!rntbdResponse.Entity.transportRequestID.isPresent ||
-                (rntbdResponse.Entity.transportRequestID.GetTokenType() != RntbdTokenTypes.ULong))
+            if (!rntbdResponse.transportRequestID.isPresent ||
+                (rntbdResponse.transportRequestID.GetTokenType() != RntbdTokenTypes.ULong))
             {
-                rntbdResponse.Dispose();
                 throw TransportExceptions.GetInternalServerErrorException(
                     this.serverUri,
                     RMResources.ServerResponseTransportRequestIdMissingError);
             }
 
-            CallInfo call = this.RemoveCall(rntbdResponse.Entity.transportRequestID.value.valueULong);
+            CallInfo call = this.RemoveCall(rntbdResponse.transportRequestID.value.valueULong);
             if (call != null)
             {
                 Debug.Assert(this.serverProperties != null);
                 Debug.Assert(this.serverProperties.Version != null);
                 call.SetResponse(rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
-            }
-            else
-            {
-                rntbdResponse.Dispose();
             }
         }
 
@@ -927,7 +918,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             public void SetResponse(
-                ResponsePool.EntityOwner rntbdResponse,
+                RntbdConstants.Response rntbdResponse,
                 TransportSerialization.RntbdHeader responseHeader,
                 MemoryStream responseBody,
                 string serverVersion)
@@ -950,12 +941,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                         StoreResponse storeResponse = null;
                         try
                         {
-                            using (rntbdResponse)
-                            {
-                                storeResponse = TransportSerialization.MakeStoreResponse(
-                                    responseHeader.Status, responseHeader.ActivityId,
-                                    rntbdResponse.Entity, responseBody, serverVersion);
-                            }
+                            storeResponse = TransportSerialization.MakeStoreResponse(
+                                responseHeader.Status, responseHeader.ActivityId,
+                                rntbdResponse, responseBody, serverVersion);
                         }
                         catch (Exception e)
                         {

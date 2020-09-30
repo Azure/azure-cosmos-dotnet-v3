@@ -351,65 +351,66 @@ namespace Microsoft.Azure.Documents.Rntbd
             Stream body,
             string serverVersion)
         {
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
             StoreResponse storeResponse = new StoreResponse()
             {
-                Headers = new StoreResponseNameValueCollection()
+                Headers = headers
             };
 
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.lastStateChangeDateTime, HttpConstants.HttpHeaders.LastStateChangeUtc, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.continuationToken, HttpConstants.HttpHeaders.Continuation, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.eTag, HttpConstants.HttpHeaders.ETag, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.retryAfterMilliseconds, HttpConstants.HttpHeaders.RetryAfterInMilliseconds, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.storageMaxResoureQuota, HttpConstants.HttpHeaders.MaxResourceQuota, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.storageResourceQuotaUsage, HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionPartitionIndex, WFConstants.BackendHeaders.CollectionPartitionIndex, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionServiceIndex, WFConstants.BackendHeaders.CollectionServiceIndex, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.LSN, WFConstants.BackendHeaders.LSN, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.itemCount, HttpConstants.HttpHeaders.ItemCount, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.schemaVersion, HttpConstants.HttpHeaders.SchemaVersion, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.ownerFullName, HttpConstants.HttpHeaders.OwnerFullName, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.ownerId, HttpConstants.HttpHeaders.OwnerId, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.databaseAccountId, WFConstants.BackendHeaders.DatabaseAccountId, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.quorumAckedLSN, WFConstants.BackendHeaders.QuorumAckedLSN, storeResponse.Headers);
-            TransportSerialization.AddResponseByteHeaderIfPresent(response.requestValidationFailure, WFConstants.BackendHeaders.RequestValidationFailure, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.subStatus, WFConstants.BackendHeaders.SubStatus, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionUpdateProgress, HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.currentWriteQuorum, WFConstants.BackendHeaders.CurrentWriteQuorum, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.currentReplicaSetSize, WFConstants.BackendHeaders.CurrentReplicaSetSize, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionLazyIndexProgress, HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.partitionKeyRangeId, WFConstants.BackendHeaders.PartitionKeyRangeId, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.logResults, HttpConstants.HttpHeaders.LogResults, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.xpRole, WFConstants.BackendHeaders.XPRole, storeResponse.Headers);
-            TransportSerialization.AddResponseByteHeaderIfPresent(response.isRUPerMinuteUsed, WFConstants.BackendHeaders.IsRUPerMinuteUsed, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.queryMetrics, WFConstants.BackendHeaders.QueryMetrics, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.queryExecutionInfo, WFConstants.BackendHeaders.QueryExecutionInfo, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.indexUtilization, WFConstants.BackendHeaders.IndexUtilization, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.globalCommittedLSN, WFConstants.BackendHeaders.GlobalCommittedLSN, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.numberOfReadRegions, WFConstants.BackendHeaders.NumberOfReadRegions, storeResponse.Headers);
-            TransportSerialization.AddResponseBoolHeaderIfPresent(response.offerReplacePending, WFConstants.BackendHeaders.OfferReplacePending, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.itemLSN, WFConstants.BackendHeaders.ItemLSN, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.restoreState, WFConstants.BackendHeaders.RestoreState, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.collectionSecurityIdentifier, WFConstants.BackendHeaders.CollectionSecurityIdentifier, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.transportRequestID, HttpConstants.HttpHeaders.TransportRequestID, storeResponse.Headers);
-            TransportSerialization.AddResponseBoolHeaderIfPresent(response.shareThroughput, WFConstants.BackendHeaders.ShareThroughput, storeResponse.Headers);
-            TransportSerialization.AddResponseBoolHeaderIfPresent(response.disableRntbdChannel, HttpConstants.HttpHeaders.DisableRntbdChannel, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.serverDateTimeUtc, HttpConstants.HttpHeaders.XDate, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.localLSN, WFConstants.BackendHeaders.LocalLSN, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.quorumAckedLocalLSN, WFConstants.BackendHeaders.QuorumAckedLocalLSN, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.itemLocalLSN, WFConstants.BackendHeaders.ItemLocalLSN, storeResponse.Headers);
-            TransportSerialization.AddResponseBoolHeaderIfPresent(response.hasTentativeWrites, WFConstants.BackendHeaders.HasTentativeWrites, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.sessionToken, HttpConstants.HttpHeaders.SessionToken, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.replicatorLSNToGLSNDelta, WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.replicatorLSNToLLSNDelta, WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.vectorClockLocalProgress, WFConstants.BackendHeaders.VectorClockLocalProgress, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.minimumRUsForOffer, WFConstants.BackendHeaders.MinimumRUsForOffer, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.xpConfigurationSesssionsCount, WFConstants.BackendHeaders.XPConfigurationSessionsCount, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.unflushedMergeLogEntryCount, WFConstants.BackendHeaders.UnflushedMergLogEntryCount, storeResponse.Headers);
-            TransportSerialization.AddResponseStringHeaderIfPresent(response.resourceName, WFConstants.BackendHeaders.ResourceId, storeResponse.Headers);
-            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.timeToLiveInSeconds, WFConstants.BackendHeaders.TimeToLiveInSeconds, storeResponse.Headers);
-            TransportSerialization.AddResponseBoolHeaderIfPresent(response.replicaStatusRevoked, WFConstants.BackendHeaders.ReplicaStatusRevoked, storeResponse.Headers);
-            TransportSerialization.AddResponseULongHeaderIfPresent(response.softMaxAllowedThroughput, WFConstants.BackendHeaders.SoftMaxAllowedThroughput, storeResponse.Headers);
-            TransportSerialization.AddResponseDoubleHeaderIfPresent(response.backendRequestDurationMilliseconds, HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, storeResponse.Headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.lastStateChangeDateTime, HttpConstants.HttpHeaders.LastStateChangeUtc, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.continuationToken, HttpConstants.HttpHeaders.Continuation, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.eTag, HttpConstants.HttpHeaders.ETag, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.retryAfterMilliseconds, HttpConstants.HttpHeaders.RetryAfterInMilliseconds, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.storageMaxResoureQuota, HttpConstants.HttpHeaders.MaxResourceQuota, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.storageResourceQuotaUsage, HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionPartitionIndex, WFConstants.BackendHeaders.CollectionPartitionIndex, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionServiceIndex, WFConstants.BackendHeaders.CollectionServiceIndex, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.LSN, WFConstants.BackendHeaders.LSN, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.itemCount, HttpConstants.HttpHeaders.ItemCount, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.schemaVersion, HttpConstants.HttpHeaders.SchemaVersion, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.ownerFullName, HttpConstants.HttpHeaders.OwnerFullName, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.ownerId, HttpConstants.HttpHeaders.OwnerId, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.databaseAccountId, WFConstants.BackendHeaders.DatabaseAccountId, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.quorumAckedLSN, WFConstants.BackendHeaders.QuorumAckedLSN, headers);
+            TransportSerialization.AddResponseByteHeaderIfPresent(response.requestValidationFailure, WFConstants.BackendHeaders.RequestValidationFailure, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.subStatus, WFConstants.BackendHeaders.SubStatus, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionUpdateProgress, HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.currentWriteQuorum, WFConstants.BackendHeaders.CurrentWriteQuorum, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.currentReplicaSetSize, WFConstants.BackendHeaders.CurrentReplicaSetSize, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.collectionLazyIndexProgress, HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.partitionKeyRangeId, WFConstants.BackendHeaders.PartitionKeyRangeId, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.logResults, HttpConstants.HttpHeaders.LogResults, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.xpRole, WFConstants.BackendHeaders.XPRole, headers);
+            TransportSerialization.AddResponseByteHeaderIfPresent(response.isRUPerMinuteUsed, WFConstants.BackendHeaders.IsRUPerMinuteUsed, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.queryMetrics, WFConstants.BackendHeaders.QueryMetrics, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.queryExecutionInfo, WFConstants.BackendHeaders.QueryExecutionInfo, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.indexUtilization, WFConstants.BackendHeaders.IndexUtilization, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.globalCommittedLSN, WFConstants.BackendHeaders.GlobalCommittedLSN, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.numberOfReadRegions, WFConstants.BackendHeaders.NumberOfReadRegions, headers);
+            TransportSerialization.AddResponseBoolHeaderIfPresent(response.offerReplacePending, WFConstants.BackendHeaders.OfferReplacePending, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.itemLSN, WFConstants.BackendHeaders.ItemLSN, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.restoreState, WFConstants.BackendHeaders.RestoreState, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.collectionSecurityIdentifier, WFConstants.BackendHeaders.CollectionSecurityIdentifier, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.transportRequestID, HttpConstants.HttpHeaders.TransportRequestID, headers);
+            TransportSerialization.AddResponseBoolHeaderIfPresent(response.shareThroughput, WFConstants.BackendHeaders.ShareThroughput, headers);
+            TransportSerialization.AddResponseBoolHeaderIfPresent(response.disableRntbdChannel, HttpConstants.HttpHeaders.DisableRntbdChannel, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.serverDateTimeUtc, HttpConstants.HttpHeaders.XDate, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.localLSN, WFConstants.BackendHeaders.LocalLSN, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.quorumAckedLocalLSN, WFConstants.BackendHeaders.QuorumAckedLocalLSN, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.itemLocalLSN, WFConstants.BackendHeaders.ItemLocalLSN, headers);
+            TransportSerialization.AddResponseBoolHeaderIfPresent(response.hasTentativeWrites, WFConstants.BackendHeaders.HasTentativeWrites, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.sessionToken, HttpConstants.HttpHeaders.SessionToken, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.replicatorLSNToGLSNDelta, WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.replicatorLSNToLLSNDelta, WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.vectorClockLocalProgress, WFConstants.BackendHeaders.VectorClockLocalProgress, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.minimumRUsForOffer, WFConstants.BackendHeaders.MinimumRUsForOffer, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.xpConfigurationSesssionsCount, WFConstants.BackendHeaders.XPConfigurationSessionsCount, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.unflushedMergeLogEntryCount, WFConstants.BackendHeaders.UnflushedMergLogEntryCount, headers);
+            TransportSerialization.AddResponseStringHeaderIfPresent(response.resourceName, WFConstants.BackendHeaders.ResourceId, headers);
+            TransportSerialization.AddResponseLongLongHeaderIfPresent(response.timeToLiveInSeconds, WFConstants.BackendHeaders.TimeToLiveInSeconds, headers);
+            TransportSerialization.AddResponseBoolHeaderIfPresent(response.replicaStatusRevoked, WFConstants.BackendHeaders.ReplicaStatusRevoked, headers);
+            TransportSerialization.AddResponseULongHeaderIfPresent(response.softMaxAllowedThroughput, WFConstants.BackendHeaders.SoftMaxAllowedThroughput, headers);
+            TransportSerialization.AddResponseDoubleHeaderIfPresent(response.backendRequestDurationMilliseconds, HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, headers);
 
             if (response.requestCharge.isPresent)
             {
@@ -472,65 +473,65 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         private static void AddResponseByteHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = token.value.valueByte.ToString(CultureInfo.InvariantCulture);
+                headers.SetLazy(header, new Lazy<string>(() => token.value.valueByte.ToString(CultureInfo.InvariantCulture)));
             }
         }
 
         private static void AddResponseBoolHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = (token.value.valueByte != 0).ToString().ToLowerInvariant();
+                headers.SetLazy(header, new Lazy<string>(() => (token.value.valueByte != 0).ToString().ToLowerInvariant()));
             }
         }
 
         private static unsafe void AddResponseStringHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = BytesSerializer.GetStringFromBytes(token.value.valueBytes);
+                headers.SetLazy(header, new Lazy<string>(() => BytesSerializer.GetStringFromBytes(token.value.valueBytes)));
             }
         }
 
         private static void AddResponseULongHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = token.value.valueULong.ToString(CultureInfo.InvariantCulture);
+                headers.SetLazy(header, new Lazy<string>(() => token.value.valueULong.ToString(CultureInfo.InvariantCulture)));
             }
         }
 
         private static void AddResponseDoubleHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = token.value.valueDouble.ToString(CultureInfo.InvariantCulture);
+                headers.SetLazy(header, new Lazy<string>(() => token.value.valueDouble.ToString(CultureInfo.InvariantCulture)));
             }
         }
 
         private static void AddResponseFloatHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = token.value.valueFloat.ToString(CultureInfo.InvariantCulture);
+                headers.SetLazy(header, new Lazy<string>(() => token.value.valueFloat.ToString(CultureInfo.InvariantCulture)));
             }
         }
 
         private static void AddResponseLongLongHeaderIfPresent(RntbdToken token, string header,
-            INameValueCollection headers)
+            StoreResponseNameValueCollection headers)
         {
             if (token.isPresent)
             {
-                headers[header] = token.value.valueLongLong.ToString(CultureInfo.InvariantCulture);
+                headers.SetLazy(header, new Lazy<string>(() => token.value.valueLongLong.ToString(CultureInfo.InvariantCulture)));
             }
         }
 

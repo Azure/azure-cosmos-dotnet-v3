@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Documents.Collections
     internal sealed class StoreResponseNameValueCollection: INameValueCollection
     {
         private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
-        private readonly Dictionary<string, string> dictionary;
+        private readonly Dictionary<string, Lazy<string>> dictionary;
 
         // The INameValueCollection interface is expected to be a replacement for NameValueCollection across the projects.
         // However, there are a few public API with NameValueCollection as return type, e.g. DocumentServiceResponse.ResponseHeaders and
@@ -35,15 +35,30 @@ namespace Microsoft.Azure.Documents.Collections
 
         public StoreResponseNameValueCollection()
         {
-            this.dictionary = new Dictionary<string, string>(StoreResponseNameValueCollection.DefaultStringComparer);
+            this.dictionary = new Dictionary<string, Lazy<string>>(StoreResponseNameValueCollection.DefaultStringComparer);
         }
 
         public StoreResponseNameValueCollection(int capacity)
         {
-            this.dictionary = new Dictionary<string, string>(capacity, StoreResponseNameValueCollection.DefaultStringComparer);
+            this.dictionary = new Dictionary<string, Lazy<string>>(capacity, StoreResponseNameValueCollection.DefaultStringComparer);
         }
 
         public void Add(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            this.dictionary.Add(key, new Lazy<string>(() => value));
+        }
+
+        public void AddLazy(string key, Lazy<string> value)
         {
             if (key == null)
             {
@@ -86,14 +101,29 @@ namespace Microsoft.Azure.Documents.Collections
                 throw new ArgumentNullException(nameof(value));
             }
 
+            this.dictionary[key] = new Lazy<string>(() => value);
+        }
+
+        public void SetLazy(string key, Lazy<string> value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             this.dictionary[key] = value;
         }
 
         public string Get(string key)
         {
-            if(this.dictionary.TryGetValue(key, out string value))
+            if(this.dictionary.TryGetValue(key, out Lazy<string> lazyValue))
             {
-                return value;
+                return lazyValue.Value;
             }
 
             return null;
@@ -101,9 +131,9 @@ namespace Microsoft.Azure.Documents.Collections
 
         public string[] GetValues(string key)
         {
-            if (this.dictionary.TryGetValue(key, out string value))
+            if (this.dictionary.TryGetValue(key, out Lazy<string> lazyValue))
             {
-                return new string[] { value };
+                return new string[] { lazyValue.Value };
             }
 
             return null;
