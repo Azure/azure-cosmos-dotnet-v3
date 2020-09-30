@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using System.Globalization;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
             cosmosClientBuilder.WithConnectionModeDirect();
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
