@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    sealed class ChangeFeedRequestOptions : RequestOptions
+    class ChangeFeedRequestOptions : RequestOptions
     {
         private int? pageSizeHint;
 
