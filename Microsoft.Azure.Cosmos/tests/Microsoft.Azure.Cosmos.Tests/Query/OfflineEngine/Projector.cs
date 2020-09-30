@@ -35,22 +35,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 CosmosElement value = sqlSelectItem.Expression.Accept(ScalarExpressionEvaluator.Singleton, document);
                 if (value != null)
                 {
-                    string key = default;
+                    string key;
                     if (sqlSelectItem.Alias != null)
                     {
                         key = sqlSelectItem.Alias.Value;
                     }
-                    else if (sqlSelectItem.Expression is SqlMemberIndexerScalarExpression memberIndexer)
+                    else if (
+                        sqlSelectItem.Expression is SqlMemberIndexerScalarExpression memberIndexer
+                        && Projector.GetLastMemberIndexerToken(memberIndexer) is SqlLiteralScalarExpression literalScalarExpression
+                        && literalScalarExpression.Literal is SqlStringLiteral stringLiteral)
                     {
-                        SqlScalarExpression lastToken = Projector.GetLastMemberIndexerToken(memberIndexer);
-
-                        if (lastToken is SqlLiteralScalarExpression literalScalarExpression)
-                        {
-                            if (literalScalarExpression.Literal is SqlStringLiteral stringLiteral)
-                            {
-                                key = stringLiteral.Value;
-                            }
-                        }
+                        key = stringLiteral.Value;
                     }
                     else if (sqlSelectItem.Expression is SqlPropertyRefScalarExpression propertyRef)
                     {
