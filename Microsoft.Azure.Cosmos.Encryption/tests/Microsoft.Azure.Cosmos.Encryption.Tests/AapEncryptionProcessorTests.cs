@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -166,15 +165,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(testDoc.NonSensitive, encryptedDoc.Property(nameof(TestDoc.NonSensitive)).Value.Value<string>());
             Assert.AreNotEqual(testDoc.SensitiveInt, encryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<string>()); // not equal since value is encrypted
 
-            if (testDoc.SensitiveStr == null)
-            {
-                Assert.AreEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // equal since value null value is not encrypted
-            }
-            else
-            {
-                Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // not equal since value is encrypted
-            }
-
             JProperty eiJProp = encryptedDoc.Property(Constants.EncryptedInfo);
             Assert.IsNotNull(eiJProp);
             Assert.IsNotNull(eiJProp.Value);
@@ -186,7 +176,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
-            Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count());
+
+            if (testDoc.SensitiveStr == null)
+            {
+                Assert.AreEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // equal since value null value is not encrypted
+                Assert.AreEqual(TestDoc.PathsToEncrypt.Count - 1, encryptionProperties.EncryptedPaths.Count());
+            }
+            else
+            {
+                Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // not equal since value is encrypted
+                Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count());
+            }
 
             return encryptedDoc;
         }

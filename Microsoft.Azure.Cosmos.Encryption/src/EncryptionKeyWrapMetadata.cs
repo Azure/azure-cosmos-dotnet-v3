@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="name">Name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
         public EncryptionKeyWrapMetadata(string name, string value)
-            : this(type: "custom", value: value, name: name)
+            : this(type: "custom", name: name, value: value)
         {
         }
 
@@ -43,20 +43,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
-            : this(source?.Type, source?.Value, source?.Name, source?.Algorithm)
+            : this(source?.Type, source?.Value, source?.Algorithm, source?.Name)
         {
         }
 
         internal EncryptionKeyWrapMetadata(
             string type,
             string value,
-            string name = null,
-            string algorithm = null)
+            string algorithm = null,
+            string name = null)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
-            this.Name = name;
             this.Algorithm = algorithm;
+            this.Name = name;
         }
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]

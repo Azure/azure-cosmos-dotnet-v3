@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(diagnosticsContext != null);
-
             this.ValidateInputForEncrypt(
                 input,
                 encryptor,

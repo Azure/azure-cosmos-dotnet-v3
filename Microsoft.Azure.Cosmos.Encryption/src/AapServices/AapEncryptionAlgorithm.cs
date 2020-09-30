@@ -11,11 +11,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class AapEncryptionAlgorithm : DataEncryptionKey
     {
-        /// <summary>
-        /// Data Encryption Key.
-        /// </summary>
         private readonly byte[] rawDek;
-        private readonly Data.AAP_PH.Cryptography.EncryptionAlgorithm aapEncryptionAlgorithm;
+        private readonly EncryptionAlgorithm aapEncryptionAlgorithm;
 
         public override byte[] RawKey => this.rawDek;
 
@@ -24,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Initializes a new instance of AapEncryptionAlgorithm.
         /// </summary>
-        /// <param name="dekProperties"> Data Encryption Key Properties for the Encryption Key </param>
-        /// <param name="rawDek"> Data Encryption Key </param>
+        /// <param name="dekProperties"> Data Encryption Key properties</param>
+        /// <param name="rawDek"> Raw bytes of Data Encryption Key </param>
         /// <param name="encryptionType"> Encryption type </param>
-        /// <param name="encryptionKeyStoreProvider"> AAP Key Store Provider for Wrapping and UnWrapping </param>
+        /// <param name="encryptionKeyStoreProvider"> EncryptionKeyStoreProvider for wrapping and unwrapping </param>
         public AapEncryptionAlgorithm(
             DataEncryptionKeyProperties dekProperties,
             byte[] rawDek,
@@ -36,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.rawDek = rawDek;
 
-            KeyEncryptionKey masterKey = new KeyEncryptionKey(
+            KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
                 dekProperties.EncryptionKeyWrapMetadata.Name,
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
@@ -62,10 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Decryption steps
-        /// 1. Validate version byte
-        /// 2. Validate Authentication tag
-        /// 3. Decrypt the message
+        /// Decrypt data using EncryptionAlgorithm
         /// </summary>
         /// <param name="cipherText">CipherText data to be decrypted</param>
         /// <returns>Returns the plaintext corresponding to the cipherText.</returns>

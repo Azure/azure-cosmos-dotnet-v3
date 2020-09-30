@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.AAP_PH.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
     {

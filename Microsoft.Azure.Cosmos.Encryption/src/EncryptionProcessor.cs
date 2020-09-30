@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// Encrypt an input of encrypted stream data.
+        /// Decrypt an input of encrypted stream data.
         /// </summary>
         /// <param name="input"> Input Stream to be decrypted </param>
         /// <param name="encryptor"> Encryptor </param>
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// Encrypt an input of encrypted JObject.
+        /// Decrypt an input of encrypted JObject.
         /// </summary>
         /// <param name="document"> Input JObject to be decrypted </param>
         /// <param name="encryptor"> Encryptor </param>

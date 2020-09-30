@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -19,6 +20,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class AapEncryptionProcessor : EncryptionProcessor
     {
+        /// <remarks>
+        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
         public override async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -26,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(diagnosticsContext != null);
-
             this.ValidateInputForEncrypt(
                 input,
                 encryptor,
@@ -52,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            List<string> pathsEncrypted = new List<string>();
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
@@ -82,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cipherTextWithTypeMarker[0] = (byte)typeMarker;
                 Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
                 itemJObj[propertyName] = cipherTextWithTypeMarker;
+                pathsEncrypted.Add(pathToEncrypt);
             }
 
             EncryptionProperties encryptionProperties = new EncryptionProperties(
@@ -89,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                   encryptionOptions.EncryptionAlgorithm,
                   encryptionOptions.DataEncryptionKeyId,
                   encryptedData: null,
-                  encryptionOptions.PathsToEncrypt);
+                  pathsEncrypted);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
             input.Dispose();
@@ -139,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             Debug.Assert(document != null);
             Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
 
             if (!document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
             {
@@ -234,14 +239,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             StandardSerializerFactory standardSerializerFactory = new StandardSerializerFactory();
             switch (propertyValue.Type)
             {
-                case JTokenType.Boolean:
-                    return (TypeMarker.Boolean, standardSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>()));
                 case JTokenType.Undefined:
                     Debug.Assert(false, "Undefined value cannot be in the JSON");
-                    return (default(TypeMarker), null);
+                    return (default, null);
                 case JTokenType.Null:
                     Debug.Assert(false, "Null type should have been handled by caller");
                     return (TypeMarker.Null, null);
+                case JTokenType.Boolean:
+                    return (TypeMarker.Boolean, standardSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>()));
                 case JTokenType.Float:
                     return (TypeMarker.Float, standardSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>()));
                 case JTokenType.Integer:
