@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void HandlerOrder()
         {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             Type[] types = new Type[]
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestPreProcessingHandler()
         {
             RequestHandler preProcessHandler = new PreProcessingTestHandler();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
 
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Documents.ConsistencyLevel> documentLevels = Enum.GetValues(typeof(Documents.ConsistencyLevel)).Cast<Documents.ConsistencyLevel>().ToList();
             CollectionAssert.AreEqual(cosmosLevels, documentLevels, new EnumComparer(), "Document consistency level is different from cosmos consistency level");
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
 
             foreach (Cosmos.ConsistencyLevel level in cosmosLevels)
             {
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
             {
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConsistencyLevelClient()
         {
             Cosmos.ConsistencyLevel clientLevel = Cosmos.ConsistencyLevel.Eventual;
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
                 customizeClientBuilder: builder => builder.WithConsistencyLevel(clientLevel));
 
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConsistencyLevelClientAndRequestOption()
         {
             Cosmos.ConsistencyLevel requestOptionLevel = Cosmos.ConsistencyLevel.BoundedStaleness;
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
                 customizeClientBuilder: builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual));
 
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
             {

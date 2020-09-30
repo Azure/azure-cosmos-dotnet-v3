@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(response);
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
             Database database = client.GetDatabase("testdb");
