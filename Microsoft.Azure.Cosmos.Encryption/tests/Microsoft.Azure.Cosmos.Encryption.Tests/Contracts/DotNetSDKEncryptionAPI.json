@@ -77,14 +77,14 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider()"
         },
-        "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>d__14))]": {
+        "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>d__16))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__15))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__17))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -95,6 +95,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
+        },
+        "Void .ctor(Microsoft.Data.AAP_PH.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(Microsoft.Data.AAP_PH.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
         }
       },
       "NestedTypes": {}
@@ -102,6 +107,11 @@
     "CosmosEncryptionAlgorithm": {
       "Subclasses": {},
       "Members": {
+        "System.String AapAEAes256CbcHmacSha256Randomized": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String AEAes256CbcHmacSha256Randomized": {
           "Type": "Field",
           "Attributes": [],
@@ -386,14 +396,14 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider()"
             },
-            "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>d__14))]": {
+            "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>d__16))]": {
               "Type": "Method",
               "Attributes": [
                 "AsyncStateMachineAttribute"
               ],
               "MethodInfo": "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)"
             },
-            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__15))]": {
+            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__17))]": {
               "Type": "Method",
               "Attributes": [
                 "AsyncStateMachineAttribute"
@@ -404,6 +414,11 @@
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])"
+            },
+            "Void .ctor(Microsoft.Data.AAP_PH.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(Microsoft.Data.AAP_PH.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])"
             }
           },
           "NestedTypes": {}
@@ -481,6 +496,13 @@
     "EncryptionContainerExtensions": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.Container WithAapEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Container WithAapEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor)"
+        },
         "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -619,12 +641,26 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetHashCode()"
         },
+        "System.String get_Name()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Name()"
+        },
         "System.String get_Value()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.String get_Value()"
+        },
+        "System.String Name[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"name\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": null
         },
         "System.String Value[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"value\")]": {
           "Type": "Property",
@@ -642,6 +678,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor(System.String)"
+        },
+        "Void .ctor(System.String, System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(System.String, System.String)"
         }
       },
       "NestedTypes": {}

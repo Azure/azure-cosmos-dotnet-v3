@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task EncryptDecryptPropertyWithNullValue()
         {        
-           TestDoc testDoc = TestDoc.Create();
+            TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
             JObject encryptedDoc = await AapEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
@@ -158,13 +159,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
-            JObject encryptedDoc = LegacyEncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
+            JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
 
             Assert.AreEqual(testDoc.Id, encryptedDoc.Property("id").Value.Value<string>());
             Assert.AreEqual(testDoc.PK, encryptedDoc.Property(nameof(TestDoc.PK)).Value.Value<string>());
             Assert.AreEqual(testDoc.NonSensitive, encryptedDoc.Property(nameof(TestDoc.NonSensitive)).Value.Value<string>());
-            //Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)));
-            //Assert.IsNull(encryptedDoc.Property(nameof(TestDoc.SensitiveInt)));
+            Assert.AreNotEqual(testDoc.SensitiveInt, encryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<string>()); // not equal since value is encrypted
+
+            if (testDoc.SensitiveStr == null)
+            {
+                Assert.AreEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // equal since value null value is not encrypted
+            }
+            else
+            {
+                Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // not equal since value is encrypted
+            }
 
             JProperty eiJProp = encryptedDoc.Property(Constants.EncryptedInfo);
             Assert.IsNotNull(eiJProp);
@@ -175,7 +184,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(AapEncryptionProcessorTests.dekId, encryptionProperties.DataEncryptionKeyId);
             Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
-            //Assert.IsNotNull(encryptionProperties.EncryptedData);
+            Assert.IsNull(encryptionProperties.EncryptedData);
+            Assert.IsNotNull(encryptionProperties.EncryptedPaths);
+            Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count());
 
             return encryptedDoc;
         }
@@ -186,8 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             Assert.AreEqual(expectedDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
-            //We keep the EI for further use.
-            //Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo));
+            Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo));
         }
     }
 }

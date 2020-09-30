@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private const string ContainerPartitionKeyPath = "/id";
 
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
+        private readonly EncryptionKeyStoreProvider encryptionKeyStoreProvider;
 
         private Container container;
 
@@ -56,6 +57,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
+        /// </summary>
+        /// <param name="encryptionKeyStoreProvider"> AAP EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? dekPropertiesTimeToLive = null)
+        {
+            if (encryptionKeyStoreProvider == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            }
+
+            this.EncryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
@@ -103,8 +123,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
-            (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
+            DataEncryptionKeyProperties dataEncryptionKeyProperties = await this.dataEncryptionKeyContainerCore.FetchDataEncryptionKeyPropertiesAsync(
                 id,
+                diagnosticsContext: CosmosDiagnosticsContext.Create(null),
+                cancellationToken: cancellationToken);
+
+            InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
+                dataEncryptionKeyProperties,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 

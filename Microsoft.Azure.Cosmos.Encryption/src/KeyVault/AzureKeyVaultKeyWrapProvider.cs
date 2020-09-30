@@ -92,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(
                 type: metadata.Type,
                 value: metadata.Value,
-                name: null,
                 algorithm: KeyVaultConstants.RsaOaep256);
 
             return new EncryptionKeyWrapResult(result, responseMetadata);

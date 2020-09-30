@@ -30,35 +30,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             Debug.Assert(diagnosticsContext != null);
 
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
-            if (encryptor == null)
-            {
-                throw new ArgumentNullException(nameof(encryptor));
-            }
-
-            if (encryptionOptions == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions));
-            }
-
-            if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
-            }
-
-            if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
-            }
-
-            if (encryptionOptions.PathsToEncrypt == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
-            }
+            this.ValidateInputForEncrypt(
+                input,
+                encryptor,
+                encryptionOptions);
 
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
@@ -102,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
+                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(this.EncryptAsync)}.");
             }
 
             EncryptionProperties encryptionProperties = new EncryptionProperties(
@@ -127,24 +102,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(input.CanSeek);
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            JObject itemJObj;
-            using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
-            {
-                itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
-            }
-
-            JProperty encryptionPropertiesJProp = itemJObj.Property(Constants.EncryptedInfo);
-            JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
-            {
-                encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
-            }
+            JObject itemJObj = this.RetrieveItem(input);
+            JObject encryptionPropertiesJObj = this.RetrieveEncryptionProperties(itemJObj);
 
             if (encryptionPropertiesJObj == null)
             {

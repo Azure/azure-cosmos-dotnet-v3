@@ -69,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IQueryable<T> query,
             QueryRequestOptions queryRequestOptions = null)
         {
-
             if (!(container is EncryptionContainer encryptionContainer))
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");

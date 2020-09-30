@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
+
     internal static class Constants
     {
         public const string DocumentsResourcePropertyName = "Documents";
@@ -13,5 +15,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string EncryptionDekId = "_en";
         public const string EncryptionFormatVersion = "_ef";
         public const string EncryptedPaths = "_ep";
+        public static readonly TimeSpan DefaultUnwrappedDekCacheTimeToLive = TimeSpan.FromHours(1);
     }
 }

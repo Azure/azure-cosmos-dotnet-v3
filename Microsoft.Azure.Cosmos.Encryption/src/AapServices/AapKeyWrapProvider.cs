@@ -14,8 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal class AapKeyWrapProvider : EncryptionKeyWrapProvider
     {
-        private readonly AapKeyVaultServices aapKeyVaultServices;
-        private readonly TimeSpan rawDekCacheTimeToLive;
+        private static TimeSpan rawDekCacheTimeToLive = Constants.DefaultUnwrappedDekCacheTimeToLive;
 
         public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
@@ -24,30 +23,37 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="encryptionKeyStoreProvider"> EncryptionKeyStoreProvider for Wrap/UnWrap services. </param>
         /// Amount of time the unencrypted form of the data encryption key can be cached on the client before <see cref="UnwrapKeyAsync"/> needs to be called again.
-        internal AapKeyWrapProvider(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
+        public AapKeyWrapProvider(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
-            this.rawDekCacheTimeToLive = TimeSpan.FromHours(1);
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider;
-
-            // TODO: do we use the default?
-            encryptionKeyStoreProvider.EncryptionKeyCacheTimeToLive = this.rawDekCacheTimeToLive;
-            this.aapKeyVaultServices = new AapKeyVaultServices(encryptionKeyStoreProvider);
         }
 
-        public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+        public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
+            byte[] wrappedKey,
+            EncryptionKeyWrapMetadata metadata,
+            CancellationToken cancellationToken)
         {
-            byte[] result = this.aapKeyVaultServices.UnwrapKey(wrappedKey, metadata.Name, metadata.Value);
-            return Task.FromResult(new EncryptionKeyUnwrapResult(result, this.rawDekCacheTimeToLive));
-        }
-
-        public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
-        {
-            byte[] result = this.aapKeyVaultServices.WrapKey(key, metadata.Name, metadata.Value);
-            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(
-                metadata.Type,
-                metadata.Value,
+            KeyEncryptionKey masterKey = new KeyEncryptionKey(
                 metadata.Name,
-                metadata.Algorithm);
+                metadata.Value,
+                this.EncryptionKeyStoreProvider);
+
+            byte[] result = masterKey.DecryptEncryptionKey(wrappedKey);
+            return Task.FromResult(new EncryptionKeyUnwrapResult(result, AapKeyWrapProvider.rawDekCacheTimeToLive));
+        }
+
+        public override Task<EncryptionKeyWrapResult> WrapKeyAsync(
+            byte[] key,
+            EncryptionKeyWrapMetadata metadata,
+            CancellationToken cancellationToken)
+        {
+            KeyEncryptionKey masterKey = new KeyEncryptionKey(
+                metadata.Name,
+                metadata.Value,
+                this.EncryptionKeyStoreProvider);
+
+            byte[] result = masterKey.EncryptEncryptionKey(key);
+            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata);
 
             return Task.FromResult(new EncryptionKeyWrapResult(result, responseMetadata));
         }

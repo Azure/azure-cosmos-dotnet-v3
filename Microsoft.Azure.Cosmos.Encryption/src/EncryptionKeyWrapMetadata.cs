@@ -22,20 +22,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
-        /// <param name="name">name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
-        public EncryptionKeyWrapMetadata(string name, string value)
-            : this(type: "custom", value: value, name: name, algorithm: null)
+        public EncryptionKeyWrapMetadata(string value)
+            : this(type: "custom", value: value)
         {
         }
 
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
-        /// <param name="name">name of the metadata.</param>
+        /// <param name="name">Name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
-        public EncryptionKeyWrapMetadata(string value)
-            : this(type: "custom", value: value, name: null, algorithm: null)
+        public EncryptionKeyWrapMetadata(string name, string value)
+            : this(type: "custom", value: value, name: name)
         {
         }
 
@@ -48,7 +47,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
         }
 
-        internal EncryptionKeyWrapMetadata(string type, string value, string name, string algorithm)
+        internal EncryptionKeyWrapMetadata(
+            string type,
+            string value,
+            string name = null,
+            string algorithm = null)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
@@ -63,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal string Algorithm { get; private set; }
 
         /// <summary>
-        /// Gets serialized form of metadata.
+        /// Gets the name of KeyEncryptionKey / MasterKey.
         /// Note: This name is saved in the Cosmos DB service.
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>

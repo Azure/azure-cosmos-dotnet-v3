@@ -4,7 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
+    using System.Diagnostics;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
@@ -66,5 +69,70 @@ namespace Microsoft.Azure.Cosmos.Encryption
            Encryptor encryptor,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
+
+        public void ValidateInputForEncrypt(
+            Stream input,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions)
+        {
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            if (encryptor == null)
+            {
+                throw new ArgumentNullException(nameof(encryptor));
+            }
+
+            if (encryptionOptions == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions));
+            }
+
+            if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
+            }
+
+            if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
+            }
+
+            if (encryptionOptions.PathsToEncrypt == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
+            }
+        }
+
+        public JObject RetrieveItem(
+            Stream input)
+        {
+            Debug.Assert(input != null);
+            Debug.Assert(input.CanSeek);
+
+            JObject itemJObj;
+            using (StreamReader sr = new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+            {
+                itemJObj = JsonSerializer.Create().Deserialize<JObject>(jsonTextReader);
+            }
+
+            return itemJObj;
+        }
+
+        public JObject RetrieveEncryptionProperties(
+            JObject item)
+        {
+            JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
+            JObject encryptionPropertiesJObj = null;
+            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            {
+                encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
+            }
+
+            return encryptionPropertiesJObj;
+        }
     }
 }

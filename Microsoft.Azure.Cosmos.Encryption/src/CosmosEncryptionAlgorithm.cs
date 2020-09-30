@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string AEAes256CbcHmacSha256Randomized = "AEAes256CbcHmacSha256Randomized";
 
         /// <summary>
-        /// AAP  Encryption Algorithm
+        /// AAP Randomized Encryption Algorithm
         /// </summary>
         public const string AapAEAes256CbcHmacSha256Randomized = "AapAEAes256CbcHmacSha256Randomized";
     }

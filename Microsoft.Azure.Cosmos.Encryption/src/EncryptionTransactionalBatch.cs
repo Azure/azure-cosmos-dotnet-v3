@@ -21,13 +21,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
             Encryptor encryptor,
-            EncryptionProcessor encryptionProcessor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            EncryptionProcessor encryptionProcessor)
         {
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
-            this.encryptionProcessor = encryptionProcessor;
+            this.encryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
         }
 
         public override TransactionalBatch CreateItem<T>(
