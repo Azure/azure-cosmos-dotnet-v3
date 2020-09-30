@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 Task<ResponseMessage> task = this.InnerHandler.SendAsync(request, cancellationToken);
-                _ = task.ContinueWith((_, state) => ((IDisposable)state).Dispose(), scope, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                _ = task.ContinueWith((_, state) => ((IDisposable)state).Dispose(), scope, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
                 scope = null;
                 return task;
             }

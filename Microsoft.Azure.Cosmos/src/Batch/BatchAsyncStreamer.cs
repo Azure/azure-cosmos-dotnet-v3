@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
             _ = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
                 this.DispatchTimer();
-            }, this.cancellationTokenSource.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
+            }, this.cancellationTokenSource.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Current);
         }
 
         private void StartCongestionControlTimer()
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             _ = this.congestionControlTimer.StartTimerAsync().ContinueWith((task) =>
             {
                 _ = this.RunCongestionControlAsync();
-            }, this.cancellationTokenSource.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
+            }, this.cancellationTokenSource.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Current);
         }
 
         private void DispatchTimer()

@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Common
             }
             else
             {
-                _ = task.ContinueWith(c => { _ = c.Exception; }, default, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                _ = task.ContinueWith(c => { _ = c.Exception; }, default, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
             }
         }
     }
