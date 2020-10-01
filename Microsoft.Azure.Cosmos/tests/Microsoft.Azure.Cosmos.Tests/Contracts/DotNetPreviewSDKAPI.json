@@ -1,6 +1,6 @@
 {
   "Subclasses": {
-    "ChangeFeedRequestOptions": {
+    "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[System.Int32] get_PageSizeHint()": {
@@ -62,7 +62,7 @@
       },
       "NestedTypes": {}
     },
-    "ChangeFeedStartFrom": {
+    "Microsoft.Azure.Cosmos.ChangeFeedStartFrom;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning()": {
@@ -103,7 +103,7 @@
       },
       "NestedTypes": {}
     },
-    "Container": {
+    "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
@@ -139,7 +139,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosClient": {
+    "Microsoft.Azure.Cosmos.CosmosClient;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()": {
@@ -160,7 +160,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosClientOptions": {
+    "Microsoft.Azure.Cosmos.CosmosClientOptions;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -185,7 +185,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosResponseFactory": {
+    "Microsoft.Azure.Cosmos.CosmosResponseFactory;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
@@ -206,7 +206,7 @@
       },
       "NestedTypes": {}
     },
-    "FeedRange": {
+    "Microsoft.Azure.Cosmos.FeedRange;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)": {
@@ -227,7 +227,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosLinqExtensions": {
+    "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
@@ -240,9 +240,9 @@
       },
       "NestedTypes": {}
     },
-    "RequestOptions": {
+    "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {
-        "ChangeFeedRequestOptions": {
+        "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.Nullable`1[System.Int32] get_PageSizeHint()": {

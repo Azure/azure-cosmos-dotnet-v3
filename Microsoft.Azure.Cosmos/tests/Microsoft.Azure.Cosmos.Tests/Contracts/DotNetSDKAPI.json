@@ -1,6 +1,6 @@
 {
   "Subclasses": {
-    "AccountConsistency": {
+    "Microsoft.Azure.Cosmos.AccountConsistency;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Int32 get_MaxStalenessIntervalInSeconds()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -54,7 +54,7 @@
       },
       "NestedTypes": {}
     },
-    "AccountProperties": {
+    "Microsoft.Azure.Cosmos.AccountProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.AccountConsistency Consistency[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"userConsistencyPolicy\")]": {
@@ -126,7 +126,7 @@
       },
       "NestedTypes": {}
     },
-    "AccountRegion": {
+    "Microsoft.Azure.Cosmos.AccountRegion;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String Endpoint[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"databaseAccountEndpoint\")]": {
@@ -165,7 +165,7 @@
       },
       "NestedTypes": {}
     },
-    "BoundingBoxProperties": {
+    "Microsoft.Azure.Cosmos.BoundingBoxProperties;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_Xmax()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -260,7 +260,7 @@
       },
       "NestedTypes": {}
     },
-    "ChangeFeedProcessor": {
+    "Microsoft.Azure.Cosmos.ChangeFeedProcessor;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Threading.Tasks.Task StartAsync()": {
@@ -276,7 +276,7 @@
       },
       "NestedTypes": {}
     },
-    "ChangeFeedProcessorBuilder": {
+    "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ChangeFeedProcessor Build()": {
@@ -317,7 +317,7 @@
       },
       "NestedTypes": {}
     },
-    "CompositePath": {
+    "Microsoft.Azure.Cosmos.CompositePath;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.CompositePathSortOrder get_Order()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -371,7 +371,7 @@
       },
       "NestedTypes": {}
     },
-    "CompositePathSortOrder": {
+    "Microsoft.Azure.Cosmos.CompositePathSortOrder;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -396,7 +396,7 @@
       },
       "NestedTypes": {}
     },
-    "ConflictProperties": {
+    "Microsoft.Azure.Cosmos.ConflictProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.OperationKind get_OperationKind()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -450,7 +450,7 @@
       },
       "NestedTypes": {}
     },
-    "ConflictResolutionMode": {
+    "Microsoft.Azure.Cosmos.ConflictResolutionMode;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -471,7 +471,7 @@
       },
       "NestedTypes": {}
     },
-    "ConflictResolutionPolicy": {
+    "Microsoft.Azure.Cosmos.ConflictResolutionPolicy;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ConflictResolutionMode get_Mode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -546,7 +546,7 @@
       },
       "NestedTypes": {}
     },
-    "Conflicts": {
+    "Microsoft.Azure.Cosmos.Conflicts;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedIterator GetConflictQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
@@ -587,7 +587,7 @@
       },
       "NestedTypes": {}
     },
-    "ConnectionMode": {
+    "Microsoft.Azure.Cosmos.ConnectionMode;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -608,7 +608,7 @@
       },
       "NestedTypes": {}
     },
-    "ConsistencyLevel": {
+    "Microsoft.Azure.Cosmos.ConsistencyLevel;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -644,7 +644,7 @@
       },
       "NestedTypes": {}
     },
-    "Container": {
+    "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(System.String, ChangesEstimationHandler, System.Nullable`1[System.TimeSpan])": {
@@ -839,7 +839,7 @@
         }
       },
       "NestedTypes": {
-        "ChangesEstimationHandler": {
+        "Microsoft.Azure.Cosmos.Container+ChangesEstimationHandler;System.MulticastDelegate;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:TrueIsGenericType:FalseIsSerializable:True": {
           "Subclasses": {},
           "Members": {
             "System.IAsyncResult BeginInvoke(Int64, System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
@@ -865,7 +865,7 @@
           },
           "NestedTypes": {}
         },
-        "ChangesHandler`1": {
+        "Microsoft.Azure.Cosmos.Container+ChangesHandler`1;System.MulticastDelegate;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:TrueIsGenericType:TrueIsSerializable:True": {
           "Subclasses": {},
           "Members": {
             "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
@@ -893,7 +893,7 @@
         }
       }
     },
-    "ChangesEstimationHandler": {
+    "Microsoft.Azure.Cosmos.Container+ChangesEstimationHandler;System.MulticastDelegate;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:TrueIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "System.IAsyncResult BeginInvoke(Int64, System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
@@ -919,7 +919,7 @@
       },
       "NestedTypes": {}
     },
-    "ChangesHandler`1": {
+    "Microsoft.Azure.Cosmos.Container+ChangesHandler`1;System.MulticastDelegate;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:TrueIsGenericType:TrueIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "System.IAsyncResult BeginInvoke(System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
@@ -945,7 +945,7 @@
       },
       "NestedTypes": {}
     },
-    "ContainerProperties": {
+    "Microsoft.Azure.Cosmos.ContainerProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ConflictResolutionPolicy ConflictResolutionPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
@@ -1187,7 +1187,7 @@
       },
       "NestedTypes": {}
     },
-    "ContainerRequestOptions": {
+    "Microsoft.Azure.Cosmos.ContainerRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_PopulateQuotaInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1217,7 +1217,7 @@
       },
       "NestedTypes": {}
     },
-    "ContainerResponse": {
+    "Microsoft.Azure.Cosmos.ContainerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -1318,7 +1318,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosClient": {
+    "Microsoft.Azure.Cosmos.CosmosClient;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Container GetContainer(System.String, System.String)": {
@@ -1421,7 +1421,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosClientOptions": {
+    "Microsoft.Azure.Cosmos.CosmosClientOptions;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean AllowBulkExecution": {
@@ -1807,7 +1807,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosDiagnostics": {
+    "Microsoft.Azure.Cosmos.CosmosDiagnostics;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String ToString()": {
@@ -1823,7 +1823,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosException": {
+    "Microsoft.Azure.Cosmos.CosmosException;System.Exception;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean TryGetHeader(System.String, System.String ByRef)": {
@@ -1948,7 +1948,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosOperationCanceledException": {
+    "Microsoft.Azure.Cosmos.CosmosOperationCanceledException;System.OperationCanceledException;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
@@ -2041,7 +2041,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosPropertyNamingPolicy": {
+    "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -2062,7 +2062,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosSerializationOptions": {
+    "Microsoft.Azure.Cosmos.CosmosSerializationOptions;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2130,7 +2130,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosSerializer": {
+    "Microsoft.Azure.Cosmos.CosmosSerializer;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.IO.Stream ToStream[T](T)": {
@@ -2146,7 +2146,7 @@
       },
       "NestedTypes": {}
     },
-    "Database": {
+    "Microsoft.Azure.Cosmos.Database;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Container GetContainer(System.String)": {
@@ -2307,7 +2307,7 @@
       },
       "NestedTypes": {}
     },
-    "DatabaseProperties": {
+    "Microsoft.Azure.Cosmos.DatabaseProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2383,7 +2383,7 @@
       },
       "NestedTypes": {}
     },
-    "DatabaseResponse": {
+    "Microsoft.Azure.Cosmos.DatabaseResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.DatabaseProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -2484,7 +2484,7 @@
       },
       "NestedTypes": {}
     },
-    "DataType": {
+    "Microsoft.Azure.Cosmos.DataType;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -2525,7 +2525,7 @@
       },
       "NestedTypes": {}
     },
-    "ExcludedPath": {
+    "Microsoft.Azure.Cosmos.ExcludedPath;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2557,7 +2557,7 @@
       },
       "NestedTypes": {}
     },
-    "FeedIterator": {
+    "Microsoft.Azure.Cosmos.FeedIterator;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_HasMoreResults()": {
@@ -2583,7 +2583,7 @@
       },
       "NestedTypes": {}
     },
-    "FeedIterator`1": {
+    "Microsoft.Azure.Cosmos.FeedIterator`1;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_HasMoreResults()": {
@@ -2609,7 +2609,7 @@
       },
       "NestedTypes": {}
     },
-    "FeedResponse`1": {
+    "Microsoft.Azure.Cosmos.FeedResponse`1;;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -2670,7 +2670,7 @@
       },
       "NestedTypes": {}
     },
-    "CompositeIndexDefinition`1": {
+    "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[T] Path(System.String)": {
@@ -2691,7 +2691,7 @@
       },
       "NestedTypes": {}
     },
-    "ConflictResolutionDefinition": {
+    "Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithCustomStoredProcedureResolution(System.String)": {
@@ -2712,7 +2712,7 @@
       },
       "NestedTypes": {}
     },
-    "ContainerBuilder": {
+    "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ContainerProperties Build()": {
@@ -2761,7 +2761,7 @@
       },
       "NestedTypes": {}
     },
-    "ContainerDefinition`1": {
+    "Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ContainerProperties Build()": {
@@ -2802,7 +2802,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosClientBuilder": {
+    "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.CosmosClient Build()": {
@@ -2898,7 +2898,7 @@
       },
       "NestedTypes": {}
     },
-    "IndexingPolicyDefinition`1": {
+    "Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithCompositeIndex()": {
@@ -2944,7 +2944,7 @@
       },
       "NestedTypes": {}
     },
-    "PathsDefinition`1": {
+    "Microsoft.Azure.Cosmos.Fluent.PathsDefinition`1;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Fluent.PathsDefinition`1[T] Path(System.String)": {
@@ -2960,7 +2960,7 @@
       },
       "NestedTypes": {}
     },
-    "SpatialIndexDefinition`1": {
+    "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[T] Path(System.String)": {
@@ -2981,7 +2981,7 @@
       },
       "NestedTypes": {}
     },
-    "UniqueKeyDefinition": {
+    "Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach()": {
@@ -2997,7 +2997,7 @@
       },
       "NestedTypes": {}
     },
-    "GeospatialConfig": {
+    "Microsoft.Azure.Cosmos.GeospatialConfig;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.GeospatialType GeospatialType[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"type\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
@@ -3035,7 +3035,7 @@
       },
       "NestedTypes": {}
     },
-    "GeospatialType": {
+    "Microsoft.Azure.Cosmos.GeospatialType;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -3056,7 +3056,7 @@
       },
       "NestedTypes": {}
     },
-    "Headers": {
+    "Microsoft.Azure.Cosmos.Headers;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean TryGetValue(System.String, System.String ByRef)": {
@@ -3219,7 +3219,7 @@
       },
       "NestedTypes": {}
     },
-    "IncludedPath": {
+    "Microsoft.Azure.Cosmos.IncludedPath;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3251,7 +3251,7 @@
       },
       "NestedTypes": {}
     },
-    "IndexingDirective": {
+    "Microsoft.Azure.Cosmos.IndexingDirective;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -3277,7 +3277,7 @@
       },
       "NestedTypes": {}
     },
-    "IndexingMode": {
+    "Microsoft.Azure.Cosmos.IndexingMode;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -3303,7 +3303,7 @@
       },
       "NestedTypes": {}
     },
-    "IndexingPolicy": {
+    "Microsoft.Azure.Cosmos.IndexingPolicy;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Automatic[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"automatic\")]": {
@@ -3413,7 +3413,7 @@
       },
       "NestedTypes": {}
     },
-    "IndexKind": {
+    "Microsoft.Azure.Cosmos.IndexKind;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -3439,7 +3439,7 @@
       },
       "NestedTypes": {}
     },
-    "ItemRequestOptions": {
+    "Microsoft.Azure.Cosmos.ItemRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Collections.Generic.IEnumerable`1[System.String] get_PostTriggers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3560,7 +3560,7 @@
       },
       "NestedTypes": {}
     },
-    "ItemResponse`1": {
+    "Microsoft.Azure.Cosmos.ItemResponse`1;;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -3644,7 +3644,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosLinqExtensions": {
+    "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean IsDefined(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
@@ -3853,7 +3853,7 @@
       },
       "NestedTypes": {}
     },
-    "OperationKind": {
+    "Microsoft.Azure.Cosmos.OperationKind;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -3891,7 +3891,7 @@
       },
       "NestedTypes": {}
     },
-    "PartitionKey": {
+    "Microsoft.Azure.Cosmos.PartitionKey;System.ValueType;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.PartitionKey)": {
@@ -3962,7 +3962,7 @@
       },
       "NestedTypes": {}
     },
-    "PartitionKeyDefinitionVersion": {
+    "Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -3983,7 +3983,7 @@
       },
       "NestedTypes": {}
     },
-    "Permission": {
+    "Microsoft.Azure.Cosmos.Permission;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String get_Id()": {
@@ -4014,7 +4014,7 @@
       },
       "NestedTypes": {}
     },
-    "PermissionMode": {
+    "Microsoft.Azure.Cosmos.PermissionMode;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Byte value__": {
@@ -4035,7 +4035,7 @@
       },
       "NestedTypes": {}
     },
-    "PermissionProperties": {
+    "Microsoft.Azure.Cosmos.PermissionProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.PermissionMode get_PermissionMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -4168,7 +4168,7 @@
       },
       "NestedTypes": {}
     },
-    "PermissionResponse": {
+    "Microsoft.Azure.Cosmos.PermissionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.PermissionProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -4269,7 +4269,7 @@
       },
       "NestedTypes": {}
     },
-    "PortReuseMode": {
+    "Microsoft.Azure.Cosmos.PortReuseMode;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -4290,7 +4290,7 @@
       },
       "NestedTypes": {}
     },
-    "QueryDefinition": {
+    "Microsoft.Azure.Cosmos.QueryDefinition;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.QueryDefinition WithParameter(System.String, System.Object)": {
@@ -4318,7 +4318,7 @@
       },
       "NestedTypes": {}
     },
-    "QueryRequestOptions": {
+    "Microsoft.Azure.Cosmos.QueryRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -4496,7 +4496,7 @@
       },
       "NestedTypes": {}
     },
-    "Regions": {
+    "Microsoft.Azure.Cosmos.Regions;System.Object;IsAbstract:True;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String AustraliaCentral": {
@@ -4807,7 +4807,7 @@
       },
       "NestedTypes": {}
     },
-    "RequestHandler": {
+    "Microsoft.Azure.Cosmos.RequestHandler;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.RequestHandler get_InnerHandler()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -4839,7 +4839,7 @@
       },
       "NestedTypes": {}
     },
-    "RequestMessage": {
+    "Microsoft.Azure.Cosmos.RequestMessage;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Headers get_Headers()": {
@@ -4917,9 +4917,9 @@
       },
       "NestedTypes": {}
     },
-    "RequestOptions": {
+    "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {
-        "ContainerRequestOptions": {
+        "Microsoft.Azure.Cosmos.ContainerRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean get_PopulateQuotaInfo()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -4949,7 +4949,7 @@
           },
           "NestedTypes": {}
         },
-        "ItemRequestOptions": {
+        "Microsoft.Azure.Cosmos.ItemRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.Collections.Generic.IEnumerable`1[System.String] get_PostTriggers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5070,7 +5070,7 @@
           },
           "NestedTypes": {}
         },
-        "QueryRequestOptions": {
+        "Microsoft.Azure.Cosmos.QueryRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -5248,7 +5248,7 @@
           },
           "NestedTypes": {}
         },
-        "StoredProcedureRequestOptions": {
+        "Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean EnableScriptLogging": {
@@ -5312,7 +5312,7 @@
           },
           "NestedTypes": {}
         },
-        "TransactionalBatchItemRequestOptions": {
+        "Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] get_IndexingDirective()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5361,7 +5361,7 @@
           },
           "NestedTypes": {}
         },
-        "TransactionalBatchRequestOptions": {
+        "Microsoft.Azure.Cosmos.TransactionalBatchRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -5454,7 +5454,7 @@
       },
       "NestedTypes": {}
     },
-    "Response`1": {
+    "Microsoft.Azure.Cosmos.Response`1;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -5535,7 +5535,7 @@
       },
       "NestedTypes": {}
     },
-    "ResponseMessage": {
+    "Microsoft.Azure.Cosmos.ResponseMessage;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_IsSuccessStatusCode()": {
@@ -5652,7 +5652,7 @@
       },
       "NestedTypes": {}
     },
-    "Scripts": {
+    "Microsoft.Azure.Cosmos.Scripts.Scripts;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedIterator GetStoredProcedureQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
@@ -5793,7 +5793,7 @@
       },
       "NestedTypes": {}
     },
-    "StoredProcedureExecuteResponse`1": {
+    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1;;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -5897,7 +5897,7 @@
       },
       "NestedTypes": {}
     },
-    "StoredProcedureProperties": {
+    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -5990,7 +5990,7 @@
       },
       "NestedTypes": {}
     },
-    "StoredProcedureRequestOptions": {
+    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean EnableScriptLogging": {
@@ -6054,7 +6054,7 @@
       },
       "NestedTypes": {}
     },
-    "StoredProcedureResponse": {
+    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6153,7 +6153,7 @@
       },
       "NestedTypes": {}
     },
-    "TriggerOperation": {
+    "Microsoft.Azure.Cosmos.Scripts.TriggerOperation;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int16 value__": {
@@ -6189,7 +6189,7 @@
       },
       "NestedTypes": {}
     },
-    "TriggerProperties": {
+    "Microsoft.Azure.Cosmos.Scripts.TriggerProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Scripts.TriggerOperation get_TriggerOperation()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -6314,7 +6314,7 @@
       },
       "NestedTypes": {}
     },
-    "TriggerResponse": {
+    "Microsoft.Azure.Cosmos.Scripts.TriggerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6403,7 +6403,7 @@
       },
       "NestedTypes": {}
     },
-    "TriggerType": {
+    "Microsoft.Azure.Cosmos.Scripts.TriggerType;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Byte value__": {
@@ -6424,7 +6424,7 @@
       },
       "NestedTypes": {}
     },
-    "UserDefinedFunctionProperties": {
+    "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String Body[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"body\")]": {
@@ -6505,7 +6505,7 @@
       },
       "NestedTypes": {}
     },
-    "UserDefinedFunctionResponse": {
+    "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6594,7 +6594,7 @@
       },
       "NestedTypes": {}
     },
-    "BoundingBox": {
+    "Microsoft.Azure.Cosmos.Spatial.BoundingBox;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.BoundingBox)": {
@@ -6648,9 +6648,9 @@
       },
       "NestedTypes": {}
     },
-    "Crs": {
+    "Microsoft.Azure.Cosmos.Spatial.Crs;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {
-        "LinkedCrs": {
+        "Microsoft.Azure.Cosmos.Spatial.LinkedCrs;Microsoft.Azure.Cosmos.Spatial.Crs;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.LinkedCrs)": {
@@ -6699,7 +6699,7 @@
           },
           "NestedTypes": {}
         },
-        "NamedCrs": {
+        "Microsoft.Azure.Cosmos.Spatial.NamedCrs;Microsoft.Azure.Cosmos.Spatial.Crs;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.NamedCrs)": {
@@ -6788,7 +6788,7 @@
       },
       "NestedTypes": {}
     },
-    "CrsType": {
+    "Microsoft.Azure.Cosmos.Spatial.CrsType;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -6814,9 +6814,9 @@
       },
       "NestedTypes": {}
     },
-    "Geometry": {
+    "Microsoft.Azure.Cosmos.Spatial.Geometry;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {
-        "LineString": {
+        "Microsoft.Azure.Cosmos.Spatial.LineString;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.LineString)": {
@@ -6862,7 +6862,7 @@
           },
           "NestedTypes": {}
         },
-        "MultiPolygon": {
+        "Microsoft.Azure.Cosmos.Spatial.MultiPolygon;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)": {
@@ -6908,7 +6908,7 @@
           },
           "NestedTypes": {}
         },
-        "Point": {
+        "Microsoft.Azure.Cosmos.Spatial.Point;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.Point)": {
@@ -6959,7 +6959,7 @@
           },
           "NestedTypes": {}
         },
-        "Polygon": {
+        "Microsoft.Azure.Cosmos.Spatial.Polygon;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.Polygon)": {
@@ -7106,7 +7106,7 @@
       },
       "NestedTypes": {}
     },
-    "GeometryParams": {
+    "Microsoft.Azure.Cosmos.Spatial.GeometryParams;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Spatial.BoundingBox BoundingBox[System.Runtime.Serialization.DataMemberAttribute(Name = \"bbox\")]": {
@@ -7180,7 +7180,7 @@
       },
       "NestedTypes": {}
     },
-    "GeometryShape": {
+    "Microsoft.Azure.Cosmos.Spatial.GeometryShape;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -7226,7 +7226,7 @@
       },
       "NestedTypes": {}
     },
-    "GeometryType": {
+    "Microsoft.Azure.Cosmos.Spatial.GeometryType;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -7272,7 +7272,7 @@
       },
       "NestedTypes": {}
     },
-    "GeometryValidationResult": {
+    "Microsoft.Azure.Cosmos.Spatial.GeometryValidationResult;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_IsValid()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -7313,7 +7313,7 @@
       },
       "NestedTypes": {}
     },
-    "LinearRing": {
+    "Microsoft.Azure.Cosmos.Spatial.LinearRing;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.LinearRing)": {
@@ -7353,7 +7353,7 @@
       },
       "NestedTypes": {}
     },
-    "LineString": {
+    "Microsoft.Azure.Cosmos.Spatial.LineString;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.LineString)": {
@@ -7399,7 +7399,7 @@
       },
       "NestedTypes": {}
     },
-    "LinkedCrs": {
+    "Microsoft.Azure.Cosmos.Spatial.LinkedCrs;Microsoft.Azure.Cosmos.Spatial.Crs;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.LinkedCrs)": {
@@ -7448,7 +7448,7 @@
       },
       "NestedTypes": {}
     },
-    "MultiPolygon": {
+    "Microsoft.Azure.Cosmos.Spatial.MultiPolygon;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon)": {
@@ -7494,7 +7494,7 @@
       },
       "NestedTypes": {}
     },
-    "NamedCrs": {
+    "Microsoft.Azure.Cosmos.Spatial.NamedCrs;Microsoft.Azure.Cosmos.Spatial.Crs;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.NamedCrs)": {
@@ -7529,7 +7529,7 @@
       },
       "NestedTypes": {}
     },
-    "Point": {
+    "Microsoft.Azure.Cosmos.Spatial.Point;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.Point)": {
@@ -7580,7 +7580,7 @@
       },
       "NestedTypes": {}
     },
-    "Polygon": {
+    "Microsoft.Azure.Cosmos.Spatial.Polygon;Microsoft.Azure.Cosmos.Spatial.Geometry;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.Polygon)": {
@@ -7631,7 +7631,7 @@
       },
       "NestedTypes": {}
     },
-    "PolygonCoordinates": {
+    "Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates)": {
@@ -7671,7 +7671,7 @@
       },
       "NestedTypes": {}
     },
-    "Position": {
+    "Microsoft.Azure.Cosmos.Spatial.Position;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Spatial.Position)": {
@@ -7751,7 +7751,7 @@
       },
       "NestedTypes": {}
     },
-    "SpatialPath": {
+    "Microsoft.Azure.Cosmos.SpatialPath;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.BoundingBoxProperties BoundingBox[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"boundingBox\")]": {
@@ -7816,7 +7816,7 @@
       },
       "NestedTypes": {}
     },
-    "SpatialType": {
+    "Microsoft.Azure.Cosmos.SpatialType;System.Enum;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:TrueIsClass:FalseIsValueType:TrueIsNested:FalseIsGenericType:FalseIsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -7847,7 +7847,7 @@
       },
       "NestedTypes": {}
     },
-    "ThroughputProperties": {
+    "Microsoft.Azure.Cosmos.ThroughputProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(Int32)": {
@@ -7930,7 +7930,7 @@
       },
       "NestedTypes": {}
     },
-    "ThroughputResponse": {
+    "Microsoft.Azure.Cosmos.ThroughputResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -8039,7 +8039,7 @@
       },
       "NestedTypes": {}
     },
-    "TransactionalBatch": {
+    "Microsoft.Azure.Cosmos.TransactionalBatch;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.TransactionalBatch CreateItem[T](T, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions)": {
@@ -8095,7 +8095,7 @@
       },
       "NestedTypes": {}
     },
-    "TransactionalBatchItemRequestOptions": {
+    "Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[Microsoft.Azure.Cosmos.IndexingDirective] get_IndexingDirective()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8144,9 +8144,9 @@
       },
       "NestedTypes": {}
     },
-    "TransactionalBatchOperationResult": {
+    "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {
-        "TransactionalBatchOperationResult`1": {
+        "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult`1;Microsoft.Azure.Cosmos.TransactionalBatchOperationResult;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "T get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8234,7 +8234,7 @@
       },
       "NestedTypes": {}
     },
-    "TransactionalBatchOperationResult`1": {
+    "Microsoft.Azure.Cosmos.TransactionalBatchOperationResult`1;Microsoft.Azure.Cosmos.TransactionalBatchOperationResult;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:TrueIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "T get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8259,7 +8259,7 @@
       },
       "NestedTypes": {}
     },
-    "TransactionalBatchRequestOptions": {
+    "Microsoft.Azure.Cosmos.TransactionalBatchRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -8285,7 +8285,7 @@
       },
       "NestedTypes": {}
     },
-    "TransactionalBatchResponse": {
+    "Microsoft.Azure.Cosmos.TransactionalBatchResponse;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean get_IsSuccessStatusCode()": {
@@ -8414,7 +8414,7 @@
       },
       "NestedTypes": {}
     },
-    "UniqueKey": {
+    "Microsoft.Azure.Cosmos.UniqueKey;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Collections.ObjectModel.Collection`1[System.String] get_Paths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8439,7 +8439,7 @@
       },
       "NestedTypes": {}
     },
-    "UniqueKeyPolicy": {
+    "Microsoft.Azure.Cosmos.UniqueKeyPolicy;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.UniqueKey] get_UniqueKeys()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8464,7 +8464,7 @@
       },
       "NestedTypes": {}
     },
-    "User": {
+    "Microsoft.Azure.Cosmos.User;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetPermissionQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
@@ -8520,7 +8520,7 @@
       },
       "NestedTypes": {}
     },
-    "UserProperties": {
+    "Microsoft.Azure.Cosmos.UserProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Nullable`1[System.DateTime] get_LastModified()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -8591,7 +8591,7 @@
       },
       "NestedTypes": {}
     },
-    "UserResponse": {
+    "Microsoft.Azure.Cosmos.UserResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.UserProperties, Microsoft.Azure.Cosmos.Client, Version=3.13.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {

@@ -65,12 +65,25 @@
             );
         }
 
+        private static string GenerateNameWithClassAttributes(Type type)
+        {
+            return $"{type.FullName};{type.BaseType.FullName};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsEnum)}:{(type.IsEnum ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsClass)}:{(type.IsClass ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsValueType)}:{(type.IsValueType ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsNested)}:{(type.IsNested ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsGenericType)}:{(type.IsGenericType ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsSerializable)}:{(type.IsSerializable ? bool.TrueString : bool.FalseString)}";
+        }
+
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
         {
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName, invariantComparer);
             foreach (Type subclassType in subclassTypes)
             {
-                root.Subclasses[subclassType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
+                root.Subclasses[ContractEnforcement.GenerateNameWithClassAttributes(subclassType)] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
             }
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
@@ -101,7 +114,7 @@
 
             foreach (Type nestedType in root.Type.GetNestedTypes().OrderBy(o => o.FullName))
             {
-                root.NestedTypes[nestedType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types);
+                root.NestedTypes[ContractEnforcement.GenerateNameWithClassAttributes(nestedType)] = ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types);
             }
 
             return root;
