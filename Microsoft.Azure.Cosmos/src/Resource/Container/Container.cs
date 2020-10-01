@@ -1149,6 +1149,20 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
+#if PREVIEW
+        /// <summary>
+        /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
+        /// </summary>
+        /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
+        /// <param name="leaseContainer">Instance of a Cosmos Container that holds the leases.</param>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instance of <see cref="ChangeFeedEstimator"/></returns>
+        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer);
+#endif
 
         /// <summary>
         /// Initializes a new instance of <see cref="TransactionalBatch"/>
