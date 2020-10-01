@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using Microsoft.Data.AAP_PH.Cryptography;
 
     /// <summary>
@@ -31,7 +32,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Data.AAP_PH.Cryptography.EncryptionType encryptionType,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
-            this.rawDek = rawDek;
+            this.rawDek = rawDek ?? throw new ArgumentNullException(nameof(rawDek));
+
+            if (dekProperties == null)
+            {
+                throw new ArgumentNullException(nameof(dekProperties));
+            }
+
+            if (encryptionKeyStoreProvider == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            }
 
             KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
                 dekProperties.EncryptionKeyWrapMetadata.Name,

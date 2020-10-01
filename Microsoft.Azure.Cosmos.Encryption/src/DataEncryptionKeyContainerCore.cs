@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Data.AAP_PH.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
     {
@@ -225,6 +226,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             try
             {
+                if (dekProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
+                {
+                    return await this.UnwrapAsync(
+                        dekProperties,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
+
                 return await this.DekProvider.DekCache.GetOrAddRawDekAsync(
                     dekProperties,
                     this.UnwrapAsync,
@@ -282,13 +291,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (dekProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
             {
+                if (this.DekProvider.EncryptionKeyWrapProvider is AapKeyWrapProvider aapKeyWrapProvider)
+                {
+                    throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm, " +
+                        $"{nameof(this.DekProvider)} needs to be initialized with {nameof(EncryptionKeyWrapProvider)}.");
+                }
+
                 dek = DataEncryptionKey.Create(
                     unwrapResult.DataEncryptionKey,
                     dekProperties.EncryptionAlgorithm);
             }
             else if (dekProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized)
             {
-                AapKeyWrapProvider aapKeyWrapProvider = (AapKeyWrapProvider)this.DekProvider.EncryptionKeyWrapProvider;
+                if (!(this.DekProvider.EncryptionKeyWrapProvider is AapKeyWrapProvider aapKeyWrapProvider))
+                {
+                    throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized}' algorithm, " +
+                        $"{nameof(this.DekProvider)} needs to be initialized with {nameof(EncryptionKeyStoreProvider)}.");
+                }
+
                 dek = new AapEncryptionAlgorithm(
                     dekProperties,
                     unwrapResult.DataEncryptionKey,

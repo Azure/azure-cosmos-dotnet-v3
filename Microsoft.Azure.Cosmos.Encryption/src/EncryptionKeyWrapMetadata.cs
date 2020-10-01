@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Creates a new instance of key wrap metadata.
         /// </summary>
-        /// <param name="name">Name of the metadata.</param>
+        /// <param name="name">Name of the master key (KEK).</param>
         /// <param name="value">Value of the metadata.</param>
         public EncryptionKeyWrapMetadata(string name, string value)
             : this(type: "custom", name: name, value: value)

@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys (KEKs) via EncryptionKeyStoreProvider.
     /// </summary>
-    internal class AapKeyWrapProvider : EncryptionKeyWrapProvider
+    internal sealed class AapKeyWrapProvider : EncryptionKeyWrapProvider
     {
         public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
         public AapKeyWrapProvider(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
-            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider;
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
         }
 
         public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(
@@ -25,7 +25,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
         {
-            KeyEncryptionKey masterKey = new KeyEncryptionKey(
+            if (metadata == null)
+            {
+                throw new ArgumentNullException(nameof(metadata));
+            }
+
+            KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
                 metadata.Name,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
@@ -39,7 +44,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyWrapMetadata metadata,
             CancellationToken cancellationToken)
         {
-            KeyEncryptionKey masterKey = new KeyEncryptionKey(
+            if (metadata == null)
+            {
+                throw new ArgumentNullException(nameof(metadata));
+            }
+
+            KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
                 metadata.Name,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);

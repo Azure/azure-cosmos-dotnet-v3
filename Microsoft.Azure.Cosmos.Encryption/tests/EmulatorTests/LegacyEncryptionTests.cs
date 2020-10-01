@@ -100,6 +100,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(dekProperties, readProperties);
         }
 
+        [TestMethod]
+        public async Task EncryptionCreateDekWithAapAlgorithmFails()
+        {
+            string dekId = "aapDek";
+            try
+            {
+                await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized);
+                Assert.Fail();
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.AreEqual("For use of 'AapAEAes256CbcHmacSha256Randomized' algorithm, DekProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
+            }
+        }
+
         /// <summary>
         /// Validates UnWrapKey via KeyVault Wrap Provider.
         /// </summary>
@@ -1423,11 +1438,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readResponse.Resource);
         }
 
-        private static async Task<DataEncryptionKeyProperties> CreateDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId)
+        private static async Task<DataEncryptionKeyProperties> CreateDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId, string algorithm = null)
         {
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                algorithm ?? CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
                 LegacyEncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);

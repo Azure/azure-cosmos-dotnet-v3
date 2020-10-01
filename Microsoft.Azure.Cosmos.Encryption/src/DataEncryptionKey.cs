@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Encrypts the plainText with a data encryption key.
-        /// </summary>
+        /// </summary>  
         /// <param name="plainText">Plain text value to be encrypted.</param>
         /// <returns>Encrypted value.</returns>
         public abstract byte[] EncryptData(byte[] plainText);
@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>New instance of data encryption key.</returns>
         public static byte[] Generate(string encryptionAlgorithm)
         {
-            if ((encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) && (encryptionAlgorithm != CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized))
+            if ((encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
+                (encryptionAlgorithm != CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized))
             {
                 throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
             }

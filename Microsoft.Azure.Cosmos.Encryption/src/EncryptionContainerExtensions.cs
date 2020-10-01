@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption.
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption using AAP algorithm.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
