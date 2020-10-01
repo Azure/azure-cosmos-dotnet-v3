@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(2, response.Headers.RequestCharge, "Should contain the sum of all RU charges for each partition read."); // Each request costs 1 RU
 
-            Assert.AreEqual(2, response.Diagnostics.ToString().Split("PointOperationStatistics").Length - 1, $"Should contain one Diagnostics for each partition read. {response.Diagnostics.ToString()}");
+            Assert.AreEqual(2, response.Count, $"Should contain one result per range");
         }
 
         [TestMethod]
