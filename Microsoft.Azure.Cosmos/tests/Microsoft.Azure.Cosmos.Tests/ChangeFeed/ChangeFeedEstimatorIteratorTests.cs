@@ -264,10 +264,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
-            {
-                return mockIterator.Object;
-            };
+            Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) => mockIterator.Object;
 
             ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
                 Mock.Of<ContainerInternal>(),
@@ -279,15 +276,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             FeedResponse<ChangeFeedProcessorState> response = await remainingWorkEstimator.ReadNextAsync(default(CancellationToken));
 
             Assert.AreEqual(2, response.Headers.RequestCharge, "Should contain the sum of all RU charges for each partition read."); // Each request costs 1 RU
-            string diagnotics = response.Diagnostics.ToString();
-            int index = -1;
-            int count = 0;
-            while ((index = diagnotics.IndexOf("PointOperation", index + 1)) > 0)
-            {
-                count++;
-            }
 
-            Assert.AreEqual(2, count, "Should contain one Diagnostics for each partition read.");
+            Assert.AreEqual(2, response.Count, $"Should contain one result per range");
         }
 
         [TestMethod]
