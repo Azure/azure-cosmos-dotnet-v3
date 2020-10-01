@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ResourceTokenAsync()
         {
-            AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderResourceToken("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=");
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderResourceToken("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=");
 
             { 
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=",
                 defaultDateTime: new DateTime(2020, 9, 21, 9, 9, 9, DateTimeKind.Utc));
 
-            AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
+            using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 simpleEmulatorTokenCredential,
                 "https://localhost:8081",
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));

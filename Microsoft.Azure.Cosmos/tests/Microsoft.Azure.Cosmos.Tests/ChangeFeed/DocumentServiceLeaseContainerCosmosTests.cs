@@ -31,11 +31,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             new DocumentServiceLeaseCore()
             {
                 LeaseId = "1",
+                LeaseToken = "2",
                 Owner = "someone"
             },
             new DocumentServiceLeaseCore()
             {
                 LeaseId = "2",
+                LeaseToken = "2",
                 Owner = "host"
             }
         };
