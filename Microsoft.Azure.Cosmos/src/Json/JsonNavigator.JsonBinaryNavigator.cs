@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // TODO (brchon): We can optimize for the case where the count is serialized so we can avoid using the linear time call to TryGetValueAt().
                 if (!JsonBinaryNavigator.TryGetValueAt(buffer, index, out ReadOnlyMemory<byte> arrayItem))
                 {
-                    throw new IndexOutOfRangeException($"Tried to access index:{index} in an array.");
+                    throw new IndexOutOfRangeException($"Tried to access index: {index} in an array.");
                 }
 
                 return new BinaryNavigatorNode(
@@ -452,36 +452,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 long index,
                 out ReadOnlyMemory<byte> arrayItem)
             {
-                ReadOnlyMemory<byte> buffer = arrayNode;
-                byte typeMarker = buffer.Span[0];
-
-                int firstArrayItemOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
-                int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-
-                // Scope to just the array
-                buffer = buffer.Slice(0, arrayLength);
-
-                // Seek to the first array item
-                buffer = buffer.Slice(firstArrayItemOffset);
-
-                for (long count = 0; count < index; count++)
+                if (index > int.MaxValue)
                 {
-                    // Skip over the array item.
-                    int arrayItemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (arrayItemLength >= buffer.Length)
-                    {
-                        arrayItem = default;
-                        return false;
-                    }
-
-                    buffer = buffer.Slice(arrayItemLength);
+                    arrayItem = default;
+                    return false;
                 }
 
-                // Scope to just that array item
-                int itemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                buffer = buffer.Slice(0, itemLength);
+                IEnumerable<ReadOnlyMemory<byte>> arrayItems = JsonBinaryEncoding.Enumerator.GetArrayItems(arrayNode);
+                arrayItems = arrayItems.Skip((int)index);
+                if (!arrayItems.Any())
+                {
+                    arrayItem = default;
+                    return false;
+                }
 
-                arrayItem = buffer;
+                arrayItem = arrayItems.First();
                 return true;
             }
 

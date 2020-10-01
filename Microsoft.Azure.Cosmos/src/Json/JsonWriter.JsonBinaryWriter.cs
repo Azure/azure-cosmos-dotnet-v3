@@ -565,10 +565,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         // (payloadLength <= uint.MaxValue)
 
-                        // 4 byte length - make space for an extra 2 byte length (and 2 byte count)
+                        // 4 byte length - make space for an extra 3 byte length (and 3 byte count)
+                        this.binaryWriter.Write((byte)0);
                         this.binaryWriter.Write((ushort)0);
                         if (this.serializeCount)
                         {
+                            this.binaryWriter.Write((byte)0);
                             this.binaryWriter.Write((ushort)0);
                         }
 
@@ -837,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     if (shouldAddValue)
                     {
                         this.sharedStrings.Add(new SharedStringValue(offset: (int)this.CurrentLength, maxOffset: maxOffset));
-                        this.sharedStringIndexes.Add(utf8Span.Length, hashAndIndex.hash, hashAndIndex.index);
+                        this.sharedStringIndexes.Add(utf8Span.Length, hashAndIndex.hash, (ulong)(this.sharedStrings.Count - 1));
                     }
 
                     return false;
@@ -845,17 +847,17 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 SharedStringValue sharedString = this.sharedStrings[(int)hashAndIndex.index];
 
-                if (sharedString.Offset <= byte.MaxValue)
+                if (sharedString.MaxOffset <= byte.MaxValue)
                 {
                     this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset);
                     this.binaryWriter.Write((byte)hashAndIndex.index);
                 }
-                else if (sharedString.Offset <= ushort.MaxValue)
+                else if (sharedString.MaxOffset <= ushort.MaxValue)
                 {
                     this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset);
                     this.binaryWriter.Write((ushort)hashAndIndex.index);
                 }
-                else if (sharedString.Offset <= JsonBinaryEncoding.UInt24.MaxValue)
+                else if (sharedString.MaxOffset <= JsonBinaryEncoding.UInt24.MaxValue)
                 {
                     this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset);
                     this.binaryWriter.Write((JsonBinaryEncoding.UInt24)(int)hashAndIndex.index);
@@ -1081,12 +1083,56 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void WriteRawStringValue(RawValueType rawValueType, ReadOnlyMemory<byte> buffer, bool isFieldName, IReadOnlyJsonStringDictionary jsonStringDictionary)
             {
-                if (!JsonBinaryEncoding.TryGetBufferedStringValue(buffer, buffer, jsonStringDictionary, out Utf8Memory value))
+                Utf8Span rawStringValue;
+                switch (rawValueType)
                 {
-                    throw new InvalidOperationException("failed to get buffered string value.");
+                    case RawValueType.StrUsr:
+                        if (!JsonBinaryEncoding.TryGetDictionaryEncodedStringValue(
+                            buffer.Span,
+                            jsonStringDictionary,
+                            out UtfAllString value))
+                        {
+                            throw new InvalidOperationException("Failed to get dictionary encoded string value");
+                        }
+
+                        rawStringValue = value.Utf8String.Span;
+                        break;
+
+                    case RawValueType.StrEncLen:
+                        long encodedStringLength = JsonBinaryEncoding.TypeMarker.GetEncodedStringLength(buffer.Span[0]);
+                        if (encodedStringLength > int.MaxValue)
+                        {
+                            throw new InvalidOperationException("string is too long.");
+                        }
+
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, (int)encodedStringLength).Span);
+                        break;
+
+                    case RawValueType.StrL1:
+                        byte oneByteLength = JsonBinaryEncoding.GetFixedSizedValue<byte>(buffer.Slice(1).Span);
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, oneByteLength).Span);
+                        break;
+
+                    case RawValueType.StrL2:
+                        ushort twoByteLength = JsonBinaryEncoding.GetFixedSizedValue<ushort>(buffer.Slice(1).Span);
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, twoByteLength).Span);
+                        break;
+
+                    case RawValueType.StrL4:
+                        ulong fourByteLength = JsonBinaryEncoding.GetFixedSizedValue<ulong>(buffer.Slice(1).Span);
+                        if (fourByteLength > int.MaxValue)
+                        {
+                            throw new InvalidOperationException("string is too long.");
+                        }
+
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, (int)fourByteLength).Span);
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Unknown {nameof(rawValueType)}: {rawValueType}.");
                 }
 
-                this.WriteFieldNameOrString(isFieldName, value.Span);
+                this.WriteFieldNameOrString(isFieldName, rawStringValue);
             }
 
             private bool IsSameStringDictionary(IReadOnlyJsonStringDictionary jsonStringDictionary)
@@ -1159,7 +1205,6 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.Write(value.Byte1);
                     this.Write(value.Byte2);
                     this.Write(value.Byte3);
-                    this.Position += 3;
                 }
 
                 public void Write(int value)

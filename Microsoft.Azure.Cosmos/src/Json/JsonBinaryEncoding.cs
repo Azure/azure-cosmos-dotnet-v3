@@ -4,8 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using System.Text;
 
     /// <summary>
     /// Static class with utility functions and constants for JSON binary encoding.
@@ -252,6 +254,24 @@ namespace Microsoft.Azure.Cosmos.Json
             where TFixedType : struct
         {
             return MemoryMarshal.Cast<byte, TFixedType>(buffer)[0];
+        }
+
+        public static string HexDump(byte[] bytes, int bytesPerLine = 16)
+        {
+            //https://www.codeproject.com/Articles/36747/Quick-and-Dirty-HexDump-of-a-Byte-Array
+            StringBuilder sb = new StringBuilder();
+            for (int line = 0; line < bytes.Length; line += bytesPerLine)
+            {
+                byte[] lineBytes = bytes.Skip(line).Take(bytesPerLine).ToArray();
+                sb.AppendFormat("{0:x8} ", line);
+                sb.Append(string.Join(" ", lineBytes.Select(b => b.ToString("x2"))
+                       .ToArray()).PadRight(bytesPerLine * 3));
+                sb.Append(" ");
+                sb.Append(new string(lineBytes.Select(b => b < 32 ? '.' : (char)b)
+                       .ToArray()));
+                sb.AppendLine();
+            }
+            return sb.ToString();
         }
 
         [StructLayout(LayoutKind.Sequential, Size = 3)]

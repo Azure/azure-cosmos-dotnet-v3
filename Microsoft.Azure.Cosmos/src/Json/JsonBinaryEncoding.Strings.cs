@@ -655,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     continue;
                 }
 
-                byte value = 0;
+                byte value;
                 if ((c >= '0') && (c <= '9'))
                 {
                     value = (byte)(c - '0');
@@ -884,13 +884,13 @@ namespace Microsoft.Azure.Cosmos.Json
             switch (typeMarker)
             {
                 case TypeMarker.CompressedLowercaseHexString:
-                    Encode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, stringValue, baseChar, destinationBuffer);
+                    Encode4BitCharacterStringValue(StringCompressionLookupTables.LowercaseHex, stringValue, destinationBuffer);
                     break;
                 case TypeMarker.CompressedUppercaseHexString:
-                    Encode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, stringValue, baseChar, destinationBuffer);
+                    Encode4BitCharacterStringValue(StringCompressionLookupTables.UppercaseHex, stringValue, destinationBuffer);
                     break;
                 case TypeMarker.CompressedDateTimeString:
-                    Encode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, stringValue, baseChar, destinationBuffer);
+                    Encode4BitCharacterStringValue(StringCompressionLookupTables.DateTime, stringValue, destinationBuffer);
                     break;
 
                 case TypeMarker.Packed4BitString:
@@ -911,7 +911,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        private static void Encode4BitCharacterStringValue(StringCompressionLookupTables chars, ReadOnlySpan<byte> stringValue, byte baseChar, Span<byte> destinationBuffer)
+        private static void Encode4BitCharacterStringValue(StringCompressionLookupTables chars, ReadOnlySpan<byte> stringValue, Span<byte> destinationBuffer)
         {
             for (int index = 0; index < stringValue.Length; index++)
             {

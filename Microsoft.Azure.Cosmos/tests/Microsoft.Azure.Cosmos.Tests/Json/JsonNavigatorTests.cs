@@ -375,6 +375,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         [TestMethod]
         [Owner("brchon")]
+        [Ignore] // This test takes too long
         public void CountriesTest()
         {
             JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("countries", false);
@@ -483,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             path = string.Format("TestJsons/{0}", path);
             string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
-            json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 1);
+            json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 10);
 #endif
 
             JsonNavigatorTests.VerifyNavigator(json, performExtraChecks);
