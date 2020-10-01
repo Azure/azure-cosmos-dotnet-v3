@@ -718,7 +718,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             Container container = client.GetDatabase("testdb")
@@ -760,7 +760,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(response);
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
             Container container = client.GetDatabase("testdb")

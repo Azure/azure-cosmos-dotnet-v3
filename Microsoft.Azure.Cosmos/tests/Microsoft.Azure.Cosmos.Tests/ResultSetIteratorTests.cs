@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  ""resourceType"": ""trigger""
                 }]}";
 
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             Container container = mockClient.GetContainer("database", "container");
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }]}";
 
             JObject jObject = JObject.Parse(conflictResponsePayload);
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             Container container = mockClient.GetContainer("database", "container");
