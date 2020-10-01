@@ -262,9 +262,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 PartitionKeyRangeIdentity[] pkRangeIdsCopy;
                 lock (pkRangeIds)
-                {​​​​
+                {
                     pkRangeIdsCopy = pkRangeIds.ToArray();
-                }​​​​
+                }
 
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
