@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             item.cost = 1000;
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateReplaceOperation("/cost", item.cost)
+                PatchOperation.Replace("/cost", item.cost)
             };
             itemResponse = await this.containerInternal.PatchItemAsync<ToDoActivity>(
                 item.id,
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             item.cost = 1000;
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateReplaceOperation("/cost", item.cost)
+                PatchOperation.Replace("/cost", item.cost)
             };
             using (ResponseMessage responseMessage = await this.containerInternal.PatchItemStreamAsync(
                 item.id,
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchCore batchCore = (BatchCore)batch;
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateRemoveOperation("/cost")
+                PatchOperation.Remove("/cost")
             };
 
             noResponseItemCount = 0;
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pkId = "TestBulkId";
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateRemoveOperation("/cost")
+                PatchOperation.Remove("/cost")
             };
 
             List<Task<ItemResponse<ToDoActivity>>> bulkOperations = new List<Task<ItemResponse<ToDoActivity>>>();
