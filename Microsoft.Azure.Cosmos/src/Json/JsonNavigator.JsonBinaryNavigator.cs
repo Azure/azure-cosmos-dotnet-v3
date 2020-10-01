@@ -69,10 +69,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
-            public override IJsonNavigatorNode GetRootNode()
-            {
-                return this.rootNode;
-            }
+            public override IJsonNavigatorNode GetRootNode() => this.rootNode;
 
             /// <inheritdoc />
             public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
@@ -522,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     jsonBinaryWriter.WriteRawJsonValue(
-                        binaryRootNode.Buffer,
+                        this.rootBuffer,
                         binaryNavigatorNode.Buffer,
                         isRootNode: object.ReferenceEquals(jsonNavigatorNode, this.rootNode),
                         isFieldName,
