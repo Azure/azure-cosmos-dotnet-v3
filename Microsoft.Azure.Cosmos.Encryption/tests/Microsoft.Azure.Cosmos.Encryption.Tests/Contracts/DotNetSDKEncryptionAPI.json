@@ -1,6 +1,6 @@
 {
   "Subclasses": {
-    "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultCosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultCosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyContainer DataEncryptionKeyContainer": {
@@ -41,7 +41,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultKeyWrapMetadata;Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultKeyWrapMetadata;Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Void .ctor(System.Uri)": {
@@ -52,7 +52,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider;Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider;Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyContainer DataEncryptionKeyContainer": {
@@ -99,7 +99,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptionAlgorithm;System.Object;IsAbstract:True;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptionAlgorithm;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String AEAes256CbcHmacSha256Randomized": {
@@ -110,7 +110,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider DataEncryptionKeyProvider": {
@@ -147,7 +147,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Byte[] DecryptData(Byte[])": {
@@ -193,7 +193,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyContainer;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyContainer;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetDataEncryptionKeyQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
@@ -224,7 +224,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProperties;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProperties;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Boolean Equals(Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProperties)": {
@@ -364,9 +364,9 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {
-        "Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider;Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider;Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyContainer DataEncryptionKeyContainer": {
@@ -423,7 +423,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.DecryptionResult;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.DecryptionResult;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Exception Exception": {
@@ -453,7 +453,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionChangeFeedRequestOptions;Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionChangeFeedRequestOptions;Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] DecryptionResultHandler": {
@@ -483,7 +483,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionContainerExtensions;System.Object;IsAbstract:True;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionContainerExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
@@ -510,7 +510,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionItemRequestOptions;Microsoft.Azure.Cosmos.ItemRequestOptions;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionItemRequestOptions;Microsoft.Azure.Cosmos.ItemRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Encryption.EncryptionOptions EncryptionOptions": {
@@ -559,7 +559,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyUnwrapResult;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyUnwrapResult;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Byte[] DataEncryptionKey": {
@@ -594,9 +594,9 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {
-        "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultKeyWrapMetadata;Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultKeyWrapMetadata;Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Void .ctor(System.Uri)": {
@@ -651,7 +651,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.EncryptionKeyUnwrapResult] UnwrapKeyAsync(Byte[], Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapMetadata, System.Threading.CancellationToken)": {
@@ -667,7 +667,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapResult;System.Object;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapResult;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Byte[] get_WrappedDataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -702,7 +702,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionOptions;System.Object;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Collections.Generic.IEnumerable`1[System.String] get_PathsToEncrypt()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -770,7 +770,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionQueryRequestOptions;Microsoft.Azure.Cosmos.QueryRequestOptions;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionQueryRequestOptions;Microsoft.Azure.Cosmos.QueryRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Action`1[Microsoft.Azure.Cosmos.Encryption.DecryptionResult] DecryptionResultHandler": {
@@ -800,7 +800,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptionTransactionalBatchItemRequestOptions;Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionTransactionalBatchItemRequestOptions;Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.Encryption.EncryptionOptions EncryptionOptions": {
@@ -849,9 +849,9 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.Encryptor;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.Encryptor;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {
-        "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultCosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Encryption.AzureKeyVaultCosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyContainer DataEncryptionKeyContainer": {
@@ -892,7 +892,7 @@
           },
           "NestedTypes": {}
         },
-        "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:TrueIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Encryptor;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Microsoft.Azure.Cosmos.Encryption.DataEncryptionKeyProvider DataEncryptionKeyProvider": {
@@ -944,7 +944,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.KeyNotFoundException;System.Exception;IsAbstract:False;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.KeyNotFoundException;System.Exception;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Void .ctor()": {
@@ -965,7 +965,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.KeyVaultTokenCredentialFactory;System.Object;IsAbstract:True;IsSealed:FalseIsInterface:FalseIsEnum:FalseIsClass:TrueIsValueType:FalseIsNested:FalseIsGenericType:FalseIsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.KeyVaultTokenCredentialFactory;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.Threading.Tasks.ValueTask`1[Azure.Core.TokenCredential] GetTokenCredentialAsync(System.Uri, System.Threading.CancellationToken)": {

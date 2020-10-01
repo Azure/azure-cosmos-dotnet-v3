@@ -68,13 +68,13 @@
         private static string GenerateNameWithClassAttributes(Type type)
         {
             return $"{type.FullName};{type.BaseType.FullName};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
-                $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)}" +
-                $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)}" +
-                $"{nameof(type.IsEnum)}:{(type.IsEnum ? bool.TrueString : bool.FalseString)}" +
-                $"{nameof(type.IsClass)}:{(type.IsClass ? bool.TrueString : bool.FalseString)}" +
-                $"{nameof(type.IsValueType)}:{(type.IsValueType ? bool.TrueString : bool.FalseString)}" +
-                $"{nameof(type.IsNested)}:{(type.IsNested ? bool.TrueString : bool.FalseString)}" +
-                $"{nameof(type.IsGenericType)}:{(type.IsGenericType ? bool.TrueString : bool.FalseString)}" +
+                $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsEnum)}:{(type.IsEnum ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsClass)}:{(type.IsClass ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsValueType)}:{(type.IsValueType ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsNested)}:{(type.IsNested ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsGenericType)}:{(type.IsGenericType ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsSerializable)}:{(type.IsSerializable ? bool.TrueString : bool.FalseString)}";
         }
 
