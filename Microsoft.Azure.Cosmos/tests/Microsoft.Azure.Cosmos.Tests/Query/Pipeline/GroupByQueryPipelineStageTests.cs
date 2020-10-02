@@ -60,7 +60,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 monadicCreatePipelineStage: (CosmosElement continuationToken, CancellationToken cancellationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
                 groupByAliasToAggregateType: groupByAliasToAggregateType,
                 orderedAliases: orderedAliases,
-                hasSelectValue: hasSelectValue);
+                hasSelectValue: hasSelectValue,
+                pageSize: int.MaxValue);
             Assert.IsTrue(tryCreateGroupByStage.Succeeded);
 
             IQueryPipelineStage groupByQueryPipelineStage = tryCreateGroupByStage.Result;
