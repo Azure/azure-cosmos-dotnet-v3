@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
         {
-            return new Headers(nameValueCollection);
+            return new Headers((OptimizedRequestHeaders)nameValueCollection);
         }
 
         internal static void TraceException(Exception exception)

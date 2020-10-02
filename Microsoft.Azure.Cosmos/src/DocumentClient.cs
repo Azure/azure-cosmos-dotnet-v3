@@ -6266,7 +6266,7 @@ namespace Microsoft.Azure.Cosmos
                         RequestUri = serviceEndpoint
                     };
 
-                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
+                    INameValueCollection headersCollection = new OptimizedRequestHeaders();
                     await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                         headersCollection,
                         serviceEndpoint,

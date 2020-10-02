@@ -351,9 +351,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             Stream body,
             string serverVersion)
         {
+            Cosmos.OptimizedRequestHeaders optimizedRequestHeaders = new Cosmos.OptimizedRequestHeaders();
             StoreResponse storeResponse = new StoreResponse()
             {
-                Headers = new StoreResponseNameValueCollection()
+                Headers = optimizedRequestHeaders
             };
 
             TransportSerialization.AddResponseStringHeaderIfPresent(response.lastStateChangeDateTime, HttpConstants.HttpHeaders.LastStateChangeUtc, storeResponse.Headers);

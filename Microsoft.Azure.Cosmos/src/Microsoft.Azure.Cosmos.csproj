@@ -56,6 +56,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Headers\OptimizedRequestHeaders.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>OptimizedRequestHeaders.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="ClientResources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -65,6 +73,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Headers\OptimizedRequestHeaders.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>OptimizedRequestHeaders.tt</DependentUpon>
     </Compile>
     <Compile Update="RMResources.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -123,6 +136,14 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
     </None>
+    <None Update="Headers\OptimizedRequestHeaders.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>OptimizedRequestHeaders.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
   
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">

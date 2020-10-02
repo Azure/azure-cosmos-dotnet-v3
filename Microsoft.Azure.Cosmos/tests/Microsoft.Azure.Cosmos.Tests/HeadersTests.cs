@@ -8,14 +8,159 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Net.Http.Headers;
     using System.Reflection;
+    using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class HeadersTests
     {
         private const string Key = "testKey";
+
+        [TestMethod]
+        public void HeaderGenerateTest()
+        {
+            FieldInfo[] allHeaderConstants = typeof(HttpConstants.HttpHeaders).GetFields(BindingFlags.Public | BindingFlags.Static);
+            Dictionary<string, string> allHeadersFromValueToName = allHeaderConstants.ToDictionary(x => (string)x.GetValue(null), x => "HttpConstants.HttpHeaders." + x.Name);
+            FieldInfo[] allBackendHeaderConstants = typeof(WFConstants.BackendHeaders).GetFields(BindingFlags.Public | BindingFlags.Static);
+            foreach(var backendHeader in allBackendHeaderConstants)
+            {
+                allHeadersFromValueToName[(string)backendHeader.GetValue(null)] = "WFConstants.BackendHeaders." + backendHeader.Name;
+            }
+
+            FieldInfo[] allRequestHeaders = typeof(RntbdConstants.Request).GetFields(BindingFlags.Public | BindingFlags.Instance).OrderBy(x => x.Name.Length).ToArray();
+            StringBuilder requestBuilder = new StringBuilder();
+
+            requestBuilder.Append("<# List<(string name, string value)> headerNames = new List<(string name, string value)>()");
+            requestBuilder.Append(Environment.NewLine + "{" + Environment.NewLine);
+            List<(string name, string value)> headerNames = new List<(string name, string value)>();
+            foreach (KeyValuePair<string, Action<object, DocumentServiceRequest, RntbdConstants.Request>> fieldInfo in TransportSerialization.AddHeaders)
+            {
+                string name = allHeadersFromValueToName[fieldInfo.Key];
+                headerNames.Add((name, fieldInfo.Key));
+            }
+
+            headerNames = headerNames.OrderBy(x => x.name).ToList();
+            foreach ((string name, string value) in headerNames)
+            {
+                requestBuilder.Append($"    (\"{name}\", \"{value}\"),{Environment.NewLine}");
+            }
+
+            requestBuilder.Append(Environment.NewLine + "}" + Environment.NewLine);
+            string headers = requestBuilder.ToString();
+
+            List<string> sortedHeaderPropertyNames = headerNames.Select(x => x.name.Split('.').Last()).OrderBy(x => x).ToList();
+
+            IEnumerable <IGrouping<int, (string, string)>> groupByLength = headerNames.GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+            foreach(IGrouping<int, string> group in groupByLength)
+            {
+                foreach(string name in group)
+                {
+                    
+                    //if(object.ReferenceEquals(name, HttpConstants.HttpHeaders.Continuation))
+                    //{
+                    //    return this.TestGetToNameValueCollection;
+                    //}
+                }
+            }
+
+
+            HashSet<string> mapRntbdFieldToHeaderKey = allHeaderConstants.Select(x => x.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Match custom rntbd field names to the http headers.
+            //mapRntbdFieldToHeaderKey["AuthorizationToken"] = HttpConstants.HttpHeaders.Authorization;
+            //mapRntbdFieldToHeaderKey["Date"] = HttpConstants.HttpHeaders.XDate;
+            //mapRntbdFieldToHeaderKey["ContinuationToken"] = HttpConstants.HttpHeaders.Continuation;
+            //mapRntbdFieldToHeaderKey["Match"] = HttpConstants.HttpHeaders.IfNoneMatch;
+            //mapRntbdFieldToHeaderKey["IsFanout"] = WFConstants.BackendHeaders.IsFanoutRequest;
+            //mapRntbdFieldToHeaderKey["ClientVersion"] = HttpConstants.HttpHeaders.Version;
+            //mapRntbdFieldToHeaderKey["filterBySchemaRid"] = HttpConstants.HttpHeaders.FilterBySchemaResourceId;
+            //mapRntbdFieldToHeaderKey["collectionChildResourceContentLengthLimitInKB"] = WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB;
+            //mapRntbdFieldToHeaderKey["returnPreference"] = HttpConstants.HttpHeaders.Prefer;
+
+            HashSet<string> mapBackend = allBackendHeaderConstants.Select(x => x.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            StringBuilder builder = new StringBuilder();
+            var propertyNames = allRequestHeaders.Select(x => x.Name);
+            foreach (string name in propertyNames)
+            {
+                builder.Append("if (object.ReferenceEquals(key, ");
+                if (mapRntbdFieldToHeaderKey.Contains(name))
+                {
+                    builder.Append($"HttpConstants.HttpHeaders.{name})){{");
+
+                }
+                else
+                {
+                    builder.Append($"WFConstants.BackendHeaders.{name})){{");
+                }
+
+                builder.Append($" this.{name} = value; return; }} {Environment.NewLine}");
+            }
+
+            string properties2 = builder.ToString();
+            Assert.IsNotNull(properties2);
+
+            {
+                StringBuilder keysbuilder = new StringBuilder();
+                foreach (string name in propertyNames)
+                {
+                    keysbuilder.Append($"if (this.{name} != null) {{ yield return ");
+                    if (mapRntbdFieldToHeaderKey.Contains(name))
+                    {
+                        keysbuilder.Append($"HttpConstants.HttpHeaders.{name}; }}");
+
+                    }
+                    else
+                    {
+                        keysbuilder.Append($"WFConstants.BackendHeaders.{name}; }}");
+                    }
+
+                    keysbuilder.Append(Environment.NewLine);
+                }
+
+                string getIfStatements = keysbuilder.ToString();
+                Assert.IsNotNull(getIfStatements);
+            }
+
+            {
+                StringBuilder getbuilder = new StringBuilder();
+                foreach (string name in propertyNames)
+                {
+                    getbuilder.Append("if (object.ReferenceEquals(key, ");
+                    if (mapRntbdFieldToHeaderKey.Contains(name))
+                    {
+                        getbuilder.Append($"HttpConstants.HttpHeaders.{name})){{");
+
+                    }
+                    else
+                    {
+                        getbuilder.Append($"WFConstants.BackendHeaders.{name})){{");
+                    }
+
+                    getbuilder.Append($" return this.{name}; }} {Environment.NewLine}");
+                }
+
+                string getIfStatements = getbuilder.ToString();
+                Assert.IsNotNull(getIfStatements);
+            }
+
+
+            {
+                StringBuilder allKeys = new StringBuilder();
+                foreach (string name in propertyNames)
+                {
+                    allKeys.Append($"if (this.{name} != null) {{ yield return this.{name}; }} {Environment.NewLine} ");
+                }
+
+                string getIfStatements = allKeys.ToString();
+                Assert.IsNotNull(getIfStatements);
+            }
+        }
+
 
         [TestMethod]
         public void TestAddAndGetAndSet()
