@@ -78,6 +78,16 @@
                 $"{nameof(type.IsSerializable)}:{(type.IsSerializable ? bool.TrueString : bool.FalseString)}";
         }
 
+        private static string GenerateNameWithMethodAttributes(MethodInfo type)
+        {
+            return $"{type.ToString()};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsStatic)}:{(type.IsStatic ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsVirtual)}:{(type.IsVirtual ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsGenericMethod)}:{(type.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsConstructor)}:{(type.IsConstructor ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsFinal)}:{(type.IsFinal ? bool.TrueString : bool.FalseString)};";
+        }
+
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
         {
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName, invariantComparer);
@@ -99,9 +109,14 @@
 
                 string methodSignature = null;
 
-                if (memberInfo.Value.MemberType == MemberTypes.Constructor | memberInfo.Value.MemberType == MemberTypes.Method | memberInfo.Value.MemberType == MemberTypes.Event)
+                if(memberInfo.Value.MemberType == MemberTypes.Method)
                 {
-                    methodSignature = memberInfo.Value.ToString();
+                    MethodInfo methodInfo = (MethodInfo)memberInfo.Value;
+                    methodSignature = ContractEnforcement.GenerateNameWithMethodAttributes(methodInfo);
+                }
+                else if (memberInfo.Value.MemberType == MemberTypes.Constructor || memberInfo.Value.MemberType == MemberTypes.Event)
+                {
+                    methodSignature = memberInfo.ToString();
                 }
 
                 root.Members[
