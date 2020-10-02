@@ -240,7 +240,7 @@ namespace CosmosBenchmark
 
         private static void ClearCoreSdkListeners()
         {
-            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Client");
             TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
             traceSource.Switch.Level = SourceLevels.All;
             traceSource.Listeners.Clear();
