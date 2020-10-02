@@ -6,7 +6,7 @@
         "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeedProcessorState] GetCurrentStateIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeedProcessorState] GetCurrentStateIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ChangeFeedProcessorState] GetCurrentStateIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -19,24 +19,24 @@
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount()"
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxItemCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.Int32] MaxItemCount": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "System.Nullable`1[System.Int32] MaxItemCount;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_MaxItemCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MaxItemCount(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor()"
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
         "Void set_MaxItemCount(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32])"
+          "MethodInfo": "Void set_MaxItemCount(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -47,43 +47,43 @@
         "Int64 EstimatedLag": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "Int64 EstimatedLag;CanRead:True;CanWrite:False;Int64 get_EstimatedLag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int64 get_EstimatedLag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Int64 get_EstimatedLag()"
+          "MethodInfo": "Int64 get_EstimatedLag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_InstanceName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.String get_InstanceName()"
+          "MethodInfo": "System.String get_InstanceName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_LeaseToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.String get_LeaseToken()"
+          "MethodInfo": "System.String get_LeaseToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String InstanceName": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "System.String InstanceName;CanRead:True;CanWrite:False;System.String get_InstanceName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String LeaseToken": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "System.String LeaseToken;CanRead:True;CanWrite:False;System.String get_LeaseToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.String, Int64, System.String)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String, Int64, System.String)"
+          "MethodInfo": "[Void .ctor(System.String, Int64, System.String), Void .ctor(System.String, Int64, System.String)]"
         }
       },
       "NestedTypes": {}
@@ -94,22 +94,22 @@
         "System.Nullable`1[System.Int32] get_PageSizeHint()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.Int32] get_PageSizeHint()"
+          "MethodInfo": "System.Nullable`1[System.Int32] get_PageSizeHint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.Int32] PageSizeHint": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "System.Nullable`1[System.Int32] PageSizeHint;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_PageSizeHint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PageSizeHint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_IfMatchEtag()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.String get_IfMatchEtag()"
+          "MethodInfo": "System.String get_IfMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_IfNoneMatchEtag()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.String get_IfNoneMatchEtag()"
+          "MethodInfo": "System.String get_IfNoneMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
           "Type": "Property",
@@ -117,7 +117,7 @@
             "EditorBrowsableAttribute",
             "ObsoleteAttribute"
           ],
-          "MethodInfo": null
+          "MethodInfo": "System.String IfMatchEtag;CanRead:True;CanWrite:True;System.String get_IfMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IfMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
           "Type": "Property",
@@ -125,27 +125,27 @@
             "EditorBrowsableAttribute",
             "ObsoleteAttribute"
           ],
-          "MethodInfo": null
+          "MethodInfo": "System.String IfNoneMatchEtag;CanRead:True;CanWrite:True;System.String get_IfNoneMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IfNoneMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor()"
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
         "Void set_IfMatchEtag(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Void set_IfMatchEtag(System.String)"
+          "MethodInfo": "Void set_IfMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IfNoneMatchEtag(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+          "MethodInfo": "Void set_IfNoneMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_PageSizeHint(System.Nullable`1[System.Int32])": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32])"
+          "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -156,37 +156,37 @@
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning(Microsoft.Azure.Cosmos.FeedRange)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning(Microsoft.Azure.Cosmos.FeedRange)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning(Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom ContinuationToken(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom ContinuationToken(System.String)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom ContinuationToken(System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -197,37 +197,37 @@
         "Microsoft.Azure.Cosmos.ChangeFeedEstimator GetChangeFeedEstimator(System.String, Microsoft.Azure.Cosmos.Container)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedEstimator GetChangeFeedEstimator(System.String, Microsoft.Azure.Cosmos.Container)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedEstimator GetChangeFeedEstimator(System.String, Microsoft.Azure.Cosmos.Container);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetChangeFeedIterator[T](Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetItemQueryIterator[T](Microsoft.Azure.Cosmos.FeedRange, Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -238,17 +238,17 @@
         "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.CosmosResponseFactory ResponseFactory": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosResponseFactory ResponseFactory;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)"
+          "MethodInfo": "[Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions), Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)]"
         }
       },
       "NestedTypes": {}
@@ -261,19 +261,19 @@
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval()"
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] TokenCredentialBackgroundRefreshInterval": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": null
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] TokenCredentialBackgroundRefreshInterval;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])"
+          "MethodInfo": "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -284,17 +284,17 @@
         "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedResponse`1[T] CreateItemFeedResponse[T](Microsoft.Azure.Cosmos.ResponseMessage);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ItemResponse`1[T] CreateItemResponse[T](Microsoft.Azure.Cosmos.ResponseMessage);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[T] CreateStoredProcedureExecuteResponse[T](Microsoft.Azure.Cosmos.ResponseMessage);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -305,17 +305,17 @@
         "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromJsonString(System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String ToJsonString()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.String ToJsonString()"
+          "MethodInfo": "System.String ToJsonString();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -328,7 +328,7 @@
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -341,22 +341,22 @@
             "System.Nullable`1[System.Int32] get_PageSizeHint()": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.Nullable`1[System.Int32] get_PageSizeHint()"
+              "MethodInfo": "System.Nullable`1[System.Int32] get_PageSizeHint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.Nullable`1[System.Int32] PageSizeHint": {
               "Type": "Property",
               "Attributes": [],
-              "MethodInfo": null
+              "MethodInfo": "System.Nullable`1[System.Int32] PageSizeHint;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_PageSizeHint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PageSizeHint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.String get_IfMatchEtag()": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.String get_IfMatchEtag()"
+              "MethodInfo": "System.String get_IfMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.String get_IfNoneMatchEtag()": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.String get_IfNoneMatchEtag()"
+              "MethodInfo": "System.String get_IfNoneMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.String IfMatchEtag[System.ObsoleteAttribute(\"IfMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
               "Type": "Property",
@@ -364,7 +364,7 @@
                 "EditorBrowsableAttribute",
                 "ObsoleteAttribute"
               ],
-              "MethodInfo": null
+              "MethodInfo": "System.String IfMatchEtag;CanRead:True;CanWrite:True;System.String get_IfMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IfMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.String IfNoneMatchEtag[System.ObsoleteAttribute(\"IfNoneMatchEtag is inherited from the base class but not used.\")]-[System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)1)]": {
               "Type": "Property",
@@ -372,27 +372,27 @@
                 "EditorBrowsableAttribute",
                 "ObsoleteAttribute"
               ],
-              "MethodInfo": null
+              "MethodInfo": "System.String IfNoneMatchEtag;CanRead:True;CanWrite:True;System.String get_IfNoneMatchEtag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IfNoneMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
-              "MethodInfo": "Void .ctor()"
+              "MethodInfo": "[Void .ctor(), Void .ctor()]"
             },
             "Void set_IfMatchEtag(System.String)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Void set_IfMatchEtag(System.String)"
+              "MethodInfo": "Void set_IfMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_IfNoneMatchEtag(System.String)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Void set_IfNoneMatchEtag(System.String)"
+              "MethodInfo": "Void set_IfNoneMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_PageSizeHint(System.Nullable`1[System.Int32])": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32])"
+              "MethodInfo": "Void set_PageSizeHint(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}
