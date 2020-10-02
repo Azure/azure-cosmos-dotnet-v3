@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(serializerHelper);
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateRemoveOperation("/removePath")
+                PatchOperation.Remove("/removePath")
             };
 
             Assert.AreEqual(0, toCount);
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (Stream stream = serializerCore.ToStream(patch)) { }
             Assert.AreEqual(0, toCount);
 
-            patch.Add(PatchOperation.CreateAddOperation("/addPath", "addValue"));
+            patch.Add(PatchOperation.Add("/addPath", "addValue"));
             // custom serializer is used since there is Add operation type also
             using (Stream stream = serializerCore.ToStream(patch)) { }
             Assert.AreEqual(1, toCount);
