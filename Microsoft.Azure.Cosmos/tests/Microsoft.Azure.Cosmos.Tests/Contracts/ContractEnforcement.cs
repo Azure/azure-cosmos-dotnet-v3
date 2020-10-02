@@ -78,14 +78,40 @@
                 $"{nameof(type.IsSerializable)}:{(type.IsSerializable ? bool.TrueString : bool.FalseString)}";
         }
 
-        private static string GenerateNameWithMethodAttributes(MethodInfo type)
+        private static string GenerateNameWithMethodAttributes(MethodInfo methodInfo)
         {
-            return $"{type.ToString()};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
-                $"{nameof(type.IsStatic)}:{(type.IsStatic ? bool.TrueString : bool.FalseString)};" +
-                $"{nameof(type.IsVirtual)}:{(type.IsVirtual ? bool.TrueString : bool.FalseString)};" +
-                $"{nameof(type.IsGenericMethod)}:{(type.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
-                $"{nameof(type.IsConstructor)}:{(type.IsConstructor ? bool.TrueString : bool.FalseString)};" +
-                $"{nameof(type.IsFinal)}:{(type.IsFinal ? bool.TrueString : bool.FalseString)};";
+            return $"{methodInfo};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsStatic)}:{(methodInfo.IsStatic ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsVirtual)}:{(methodInfo.IsVirtual ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsGenericMethod)}:{(methodInfo.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsConstructor)}:{(methodInfo.IsConstructor ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsFinal)}:{(methodInfo.IsFinal ? bool.TrueString : bool.FalseString)};";
+        }
+
+        private static string GenerateNameWithPropertyAttributes(PropertyInfo propertyInfo)
+        {
+            string name = $"{propertyInfo};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
+
+            MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
+            if(getMethodInfo != null)
+            {
+                name += ContractEnforcement.GenerateNameWithMethodAttributes(getMethodInfo);
+            }
+
+            MethodInfo setMethodInfo = propertyInfo.GetSetMethod();
+            if (setMethodInfo != null)
+            {
+                name += ContractEnforcement.GenerateNameWithMethodAttributes(setMethodInfo);
+            }
+
+            return name;
+        }
+
+        private static string GenerateNameWithFieldAttributes(FieldInfo fieldInfo)
+        {
+            return $"{fieldInfo};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(fieldInfo.IsStatic)}:{(fieldInfo.IsStatic ? bool.TrueString : bool.FalseString)};";
         }
 
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
@@ -113,6 +139,16 @@
                 {
                     MethodInfo methodInfo = (MethodInfo)memberInfo.Value;
                     methodSignature = ContractEnforcement.GenerateNameWithMethodAttributes(methodInfo);
+                }
+                else if(memberInfo.Value.MemberType == MemberTypes.Property)
+                {
+                    PropertyInfo propertyInfo = (PropertyInfo)memberInfo.Value;
+                    methodSignature = ContractEnforcement.GenerateNameWithPropertyAttributes(propertyInfo);
+                }
+                else if (memberInfo.Value.MemberType == MemberTypes.Field)
+                {
+                    FieldInfo fieldInfo = (FieldInfo)memberInfo.Value;
+                    methodSignature = ContractEnforcement.GenerateNameWithFieldAttributes(fieldInfo);
                 }
                 else if (memberInfo.Value.MemberType == MemberTypes.Constructor || memberInfo.Value.MemberType == MemberTypes.Event)
                 {
