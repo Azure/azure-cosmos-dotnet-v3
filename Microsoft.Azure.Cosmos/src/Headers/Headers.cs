@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ContinuationToken
         {
             get => this.CosmosMessageHeaders.Continuation;
-
             internal set => this.CosmosMessageHeaders.Continuation = value;
         }
 
