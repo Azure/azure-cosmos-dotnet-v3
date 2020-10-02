@@ -48,15 +48,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
     {
         private readonly GroupingTable groupingTable;
-        protected bool returnedLastPage;
+        protected readonly int pageSize;
+        protected bool returnedLastPage; 
 
         protected GroupByQueryPipelineStage(
             IQueryPipelineStage source,
             CancellationToken cancellationToken,
-            GroupingTable groupingTable)
+            GroupingTable groupingTable,
+            int pageSize)
             : base(source, cancellationToken)
         {
             this.groupingTable = groupingTable ?? throw new ArgumentNullException(nameof(groupingTable));
+            this.pageSize = pageSize;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -66,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             MonadicCreatePipelineStage monadicCreatePipelineStage,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
-            bool hasSelectValue) => executionEnvironment switch
+            bool hasSelectValue,
+            int pageSize) => executionEnvironment switch
             {
                 ExecutionEnvironment.Client => ClientGroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
@@ -74,14 +78,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     monadicCreatePipelineStage,
                     groupByAliasToAggregateType,
                     orderedAliases,
-                    hasSelectValue),
+                    hasSelectValue,
+                    pageSize),
                 ExecutionEnvironment.Compute => ComputeGroupByQueryPipelineStage.MonadicCreate(
                     continuationToken,
                     cancellationToken,
                     monadicCreatePipelineStage,
                     groupByAliasToAggregateType,
                     orderedAliases,
-                    hasSelectValue),
+                    hasSelectValue,
+                    pageSize),
                 _ => throw new ArgumentException($"Unknown {nameof(ExecutionEnvironment)}: {executionEnvironment}"),
             };
 

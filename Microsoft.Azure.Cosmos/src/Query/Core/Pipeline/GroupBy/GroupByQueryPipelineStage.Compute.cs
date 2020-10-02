@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -27,8 +28,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             private ComputeGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
                 CancellationToken cancellationToken,
-                GroupingTable groupingTable)
-                : base(source, cancellationToken, groupingTable)
+                GroupingTable groupingTable,
+                int pageSize)
+                : base(source, cancellationToken, groupingTable, pageSize)
             {
             }
 
@@ -38,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
-                bool hasSelectValue)
+                bool hasSelectValue,
+                int pageSize)
             {
                 GroupByContinuationToken groupByContinuationToken;
                 if (requestContinuation != null)
@@ -88,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     new ComputeGroupByQueryPipelineStage(
                         tryCreateSource.Result,
                         cancellationToken,
-                        tryCreateGroupingTable.Result));
+                        tryCreateGroupingTable.Result,
+                        pageSize));
             }
 
             public override async ValueTask<bool> MoveNextAsync()
@@ -138,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 {
                     // Stage 2:
                     // Emit the results from the grouping table page by page
-                    IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(10/*FIX THIS*/);
+                    IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(this.pageSize);
 
                     QueryState state;
                     if (this.groupingTable.IsDone)

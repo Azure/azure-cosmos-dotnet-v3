@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
         private sealed class ClientGroupByQueryPipelineStage : GroupByQueryPipelineStage
         {
             public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
-
             private ClientGroupByQueryPipelineStage(
                 IQueryPipelineStage source,
                 CancellationToken cancellationToken,
-                GroupingTable groupingTable)
-                : base(source, cancellationToken, groupingTable)
+                GroupingTable groupingTable,
+                int pageSize)
+                : base(source, cancellationToken, groupingTable, pageSize)
             {
             }
 
@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 MonadicCreatePipelineStage monadicCreatePipelineStage,
                 IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
                 IReadOnlyList<string> orderedAliases,
-                bool hasSelectValue)
+                bool hasSelectValue,
+                int pageSize)
             {
                 TryCatch<GroupingTable> tryCreateGroupingTable = GroupingTable.TryCreateFromContinuationToken(
                     groupByAliasToAggregateType,
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 IQueryPipelineStage stage = new ClientGroupByQueryPipelineStage(
                     tryCreateSource.Result,
                     cancellationToken,
-                    tryCreateGroupingTable.Result);
+                    tryCreateGroupingTable.Result,
+                    pageSize);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
@@ -74,8 +76,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 double requestCharge = 0.0;
                 long responseLengthInBytes = 0;
 
-                int maxPageSize = 0;
-
                 while (await this.inputStage.MoveNextAsync())
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
@@ -93,14 +93,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                     requestCharge += sourcePage.RequestCharge;
                     responseLengthInBytes += sourcePage.ResponseLengthInBytes;
-                    maxPageSize = Math.Max(sourcePage.Documents.Count, maxPageSize);
-
                     this.AggregateGroupings(sourcePage.Documents);
                 }
 
                 // Stage 2:
                 // Emit the results from the grouping table page by page
-                IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(maxPageSize);
+                IReadOnlyList<CosmosElement> results = this.groupingTable.Drain(this.pageSize);
                 if (this.groupingTable.Count == 0)
                 {
                     this.returnedLastPage = true;

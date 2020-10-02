@@ -124,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     monadicCreateSourceStage,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
-                    queryInfo.HasSelectValue);
+                    queryInfo.HasSelectValue,
+                    pageSize);
             }
 
             if (queryInfo.HasOffset)
