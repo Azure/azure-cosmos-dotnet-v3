@@ -516,12 +516,32 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(estimationDelegate));
             }
 
-            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            ChangeFeedEstimatorRunner changeFeedEstimatorCore = new ChangeFeedEstimatorRunner(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            return new ChangeFeedEstimatorCore(
+                processorName: processorName,
+                monitoredContainer: this,
+                leaseContainer: (ContainerInternal)leaseContainer);
         }
 
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)

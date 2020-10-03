@@ -46,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         return null;
                     }
 
+                    response.EnsureSuccessStatusCode();
+
                     return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
                 }
             }
@@ -93,16 +95,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             return response.IsSuccessStatusCode;
         }
 
-        public static async Task<string> GetMonitoredContainerRidAsync(
+        public static async Task<string> GetMonitoredDatabaseAndContainerRidAsync(
             this Container monitoredContainer,
-            string suggestedMonitoredRid,
             CancellationToken cancellationToken = default)
         {
-            if (!string.IsNullOrEmpty(suggestedMonitoredRid))
-            {
-                return suggestedMonitoredRid;
-            }
-
             string containerRid = await ((ContainerInternal)monitoredContainer).GetRIDAsync(cancellationToken);
             string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
@@ -110,16 +106,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
         public static string GetLeasePrefix(
             this Container monitoredContainer,
-            ChangeFeedLeaseOptions changeFeedLeaseOptions,
-            string monitoredContainerRid)
+            string leasePrefix,
+            string monitoredDatabaseAndContainerRid)
         {
-            string optionsPrefix = changeFeedLeaseOptions.LeasePrefix ?? string.Empty;
+            string optionsPrefix = leasePrefix ?? string.Empty;
             return string.Format(
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
                 ((ContainerInternal)monitoredContainer).ClientContext.Client.Endpoint.Host,
-                monitoredContainerRid);
+                monitoredDatabaseAndContainerRid);
         }
     }
 }
