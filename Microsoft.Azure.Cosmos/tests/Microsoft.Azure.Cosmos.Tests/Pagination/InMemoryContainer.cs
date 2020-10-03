@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public Record Add(int pkrangeid, CosmosObject payload)
             {
-                // using pkrangeid for document collection since resource id doesnt serialize both document and pkrangeid.
+                // using pkrangeid for database since resource id doesnt serialize both document and pkrangeid.
                 ResourceId currentResourceId;
                 if (this.Count == 0)
                 {
@@ -651,11 +651,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         .GetType()
                         .GetProperty("Document", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
                     documentProp.SetValue(currentResourceId, (ulong)1);
-
-                    //PropertyInfo documentCollectionProp = currentResourceId
-                    //    .GetType()
-                    //    .GetProperty("DocumentCollection", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                    //documentCollectionProp.SetValue(currentResourceId, (uint)pkrangeid);
 
                     PropertyInfo databaseProp = currentResourceId
                         .GetType()
@@ -673,11 +668,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         .GetType()
                         .GetProperty("Document", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
                     documentProp.SetValue(nextResourceId, (ulong)(currentResourceId.Document + 1));
-
-                    //PropertyInfo documentCollectionProp = nextResourceId
-                    //    .GetType()
-                    //    .GetProperty("DocumentCollection", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                    //documentCollectionProp.SetValue(nextResourceId, (uint)pkrangeid);
 
                     PropertyInfo databaseProp = nextResourceId
                         .GetType()

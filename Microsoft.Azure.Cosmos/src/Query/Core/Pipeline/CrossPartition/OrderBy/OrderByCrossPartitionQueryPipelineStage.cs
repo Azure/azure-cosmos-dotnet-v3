@@ -365,6 +365,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         return new ValueTask<bool>(true);
                     }
 
+                    // Todo: we can optimize this by having a special "Done" continuation token 
+                    // so we don't grab a full page and filter it through
+                    // but this would break older clients, so wait for a compute only fork.
+
                     break;
                 }
 
