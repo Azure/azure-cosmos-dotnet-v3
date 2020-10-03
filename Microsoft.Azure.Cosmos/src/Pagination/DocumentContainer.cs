@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            ResourceId resourceIdentifer,
+            ResourceIdentifier resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
                 partitionKeyRangeId,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<DocumentContainerPage> ReadFeedAsync(
             int partitionKeyRangeId,
-            ResourceId resourceIdentifier,
+            ResourceIdentifier resourceIdentifier,
             int pageSize,
             CancellationToken cancellationToken) => TryCatch<DocumentContainerPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(

@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public string Filter => this.innerEnumerator.Filter;
 
-        public QueryState StartOfPageState { get; set; }
+        public QueryState StartOfPageState { get; private set; }
 
         public override ValueTask DisposeAsync() => default;
 

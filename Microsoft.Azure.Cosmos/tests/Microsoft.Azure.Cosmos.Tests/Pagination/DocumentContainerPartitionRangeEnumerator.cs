@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                       MaxExclusive  = partitionKeyRangeId.ToString()
                   },
                   cancellationToken,
-                  state ?? new DocumentContainerState(resourceIdentifier: ResourceId.Empty))
+                  state ?? new DocumentContainerState(resourceIdentifier: ResourceIdentifier.Empty))
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.partitionKeyRangeId = partitionKeyRangeId;

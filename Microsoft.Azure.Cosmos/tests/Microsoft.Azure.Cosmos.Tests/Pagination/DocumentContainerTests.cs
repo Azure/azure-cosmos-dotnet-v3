@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 DocumentContainerPage readFeedPage = await documentContainer.ReadFeedAsync(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    resourceIdentifier: ResourceId.Empty,
+                    resourceIdentifier: ResourceIdentifier.Empty,
                     pageSize: 100,
                     cancellationToken: default);
 
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 DocumentContainerPage page = await documentContainer.ReadFeedAsync(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    resourceIdentifier: ResourceId.Empty,
+                    resourceIdentifier: ResourceIdentifier.Empty,
                     pageSize: 100,
                     cancellationToken: default);
 

@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Documents;
+    using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal sealed class InMemoryContainer : IMonadicDocumentContainer
@@ -180,7 +181,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 this.partitionedRecords[partitionKeyHash] = records;
             }
 
-            Record recordAdded = records.Add(payload);
+            int? pkrangeid = null;
+            foreach (KeyValuePair<int, PartitionKeyHashRange> kvp in this.partitionKeyRangeIdToHashRange)
+            {
+                if (kvp.Value.Contains(partitionKeyHash))
+                {
+                    pkrangeid = kvp.Key;
+                }
+            }
+
+            if (!pkrangeid.HasValue)
+            {
+                throw new InvalidOperationException();
+            }
+
+            Record recordAdded = records.Add(pkrangeid.Value, payload);
 
             return Task.FromResult(TryCatch<Record>.FromResult(recordAdded));
         }
@@ -246,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            ResourceId resourceIdentifer,
+            ResourceIdentifier resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
         {
@@ -361,26 +376,59 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
 
             IEnumerable<CosmosElement> queryPageResults = queryResults;
+
+            string continuationResourceId;
+            int continuationSkipCount;
+
             if (continuationToken != null)
             {
-                queryPageResults = queryPageResults.Where(c =>
+                CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
+                continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
+                continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
+
+                queryPageResults = queryPageResults.Where((Func<CosmosElement, bool>)(c =>
                 {
-                    ResourceId continuationResourceId = ResourceId.Parse(continuationToken);
-                    ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
-                    return documentResourceId.Document > continuationResourceId.Document;
-                });
+                    ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
+                    ResourceIdentifier documentResourceId = ResourceIdentifier.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
+                    return documentResourceId.Document >= continuationParsedResourceId.Document;
+                }));
+
+                if (queryPageResults.FirstOrDefault() is CosmosObject firstDocument)
+                {
+                    string currentResourceId = ((CosmosString)firstDocument["_rid"]).Value;
+                    if (currentResourceId == continuationResourceId)
+                    {
+                        queryPageResults = queryPageResults.Skip(continuationSkipCount);
+                    }
+                }
+            }
+            else
+            {
+                continuationResourceId = null;
+                continuationSkipCount = 0;
             }
 
             queryPageResults = queryPageResults.Take(pageSize);
             List<CosmosElement> queryPageResultList = queryPageResults.ToList();
             QueryState queryState;
-            if (queryPageResultList.Count == 0)
+            if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
             {
-                queryState = default;
-            }
-            else if (queryPageResultList.Last() is CosmosObject lastDocument)
-            {
-                queryState = new QueryState(lastDocument["_rid"]);
+                string currentResourceId = ((CosmosString)lastDocument["_rid"]).Value;
+                int currentSkipCount = queryPageResultList
+                    .Where(document => ((CosmosString)((CosmosObject)document)["_rid"]).Value == currentResourceId)
+                    .Count();
+                if (currentResourceId == continuationResourceId)
+                {
+                    currentSkipCount += continuationSkipCount;
+                }
+
+                CosmosObject queryStateValue = CosmosObject.Create(new Dictionary<string, CosmosElement>()
+                {
+                    { "resourceId", CosmosString.Create(currentResourceId) },
+                    { "skipCount", CosmosNumber64.Create(currentSkipCount) },
+                });
+
+                queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
             }
             else
             {
@@ -589,10 +637,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             IEnumerator IEnumerable.GetEnumerator() => this.storage.GetEnumerator();
 
-            public Record Add(CosmosObject payload)
+            public Record Add(int pkrangeid, CosmosObject payload)
             {
-                ResourceId previousResourceId = this.Count == 0 ? ResourceId.Empty : this.storage[this.storage.Count - 1].ResourceIdentifier;
-                Record record = Record.Create(previousResourceId, payload);
+                ResourceIdentifier currentResourceId;
+                if (this.Count == 0)
+                {
+                    currentResourceId = new ResourceIdentifier(database: 1, documentCollection: 1, partitionKeyRange: (ulong)pkrangeid, document: 1);
+                }
+                else
+                {
+                    currentResourceId = this.storage[this.storage.Count - 1].ResourceIdentifier;
+                }
+
+                ResourceIdentifier nextResourceId = new ResourceIdentifier(
+                    database: currentResourceId.Database,
+                    documentCollection: currentResourceId.DocumentCollection,
+                    partitionKeyRange: (ulong)pkrangeid,
+                    document: currentResourceId.Document);
+
+                Record record = Record.Create(nextResourceId, payload);
                 this.storage.Add(record);
                 return record;
             }

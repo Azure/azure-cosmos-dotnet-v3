@@ -5,14 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
-    using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
 
     internal sealed class Record
     {
         public Record(
-            ResourceId resourceIdentifier,
+            ResourceIdentifier resourceIdentifier,
             long timestamp,
             string identifier,
             CosmosObject payload)
@@ -23,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.Payload = payload ?? throw new ArgumentNullException(nameof(payload));
         }
 
-        public ResourceId ResourceIdentifier { get; }
+        public ResourceIdentifier ResourceIdentifier { get; }
 
         public long Timestamp { get; }
 
@@ -31,14 +29,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public CosmosObject Payload { get; }
 
-        public static Record Create(ResourceId previousResourceIdentifier, CosmosObject payload)
+        public static Record Create(ResourceIdentifier previousResourceIdentifier, CosmosObject payload)
         {
-            const string dummyRidString = "AYIMAMmFOw8YAAAAAAAAAA==";
-            ResourceId resourceId = ResourceId.Parse(dummyRidString);
-            PropertyInfo prop = resourceId
-                .GetType()
-                .GetProperty("Document", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-            prop.SetValue(resourceId, previousResourceIdentifier.Document + 1);
+            ResourceIdentifier resourceId = new ResourceIdentifier(
+                previousResourceIdentifier.Offer, previousResourceIdentifier.Database,
+                previousResourceIdentifier.DocumentCollection, previousResourceIdentifier.StoredProcedure,
+                previousResourceIdentifier.Trigger, previousResourceIdentifier.UserDefinedFunction,
+                previousResourceIdentifier.Conflict, previousResourceIdentifier.Document + 1,
+                previousResourceIdentifier.PartitionKeyRange, previousResourceIdentifier.User,
+                previousResourceIdentifier.ClientEncryptionKey, previousResourceIdentifier.UserDefinedType,
+                previousResourceIdentifier.Permission, previousResourceIdentifier.Attachment,
+                previousResourceIdentifier.Schema, previousResourceIdentifier.Snapshot,
+                previousResourceIdentifier.RoleAssignment, previousResourceIdentifier.RoleDefinition);
 
             return new Record(
                 resourceId,

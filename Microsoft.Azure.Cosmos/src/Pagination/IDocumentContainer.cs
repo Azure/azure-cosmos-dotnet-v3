@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
-    using Microsoft.Azure.Documents;
 
     internal interface IDocumentContainer : IMonadicDocumentContainer, IFeedRangeProvider, IQueryDataSource
     {
@@ -23,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         Task<DocumentContainerPage> ReadFeedAsync(
             int partitionKeyRangeId,
-            ResourceId resourceIdentifier,
+            ResourceIdentifier resourceIdentifier,
             int pageSize,
             CancellationToken cancellationToken);
 
