@@ -74,10 +74,15 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
     </Compile>
-    <Compile Update="Headers\OptimizedRequestHeaders.cs">
+	<Compile Update="Headers\OptimizedRequestHeaders.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>OptimizedRequestHeaders.tt</DependentUpon>
+	</Compile>
+    <Compile Update="Headers\OptimizedResponseHeaders.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>OptimizedRequestHeaders.tt</DependentUpon>
+      <DependentUpon>OptimizedResponseHeaders.tt</DependentUpon>
     </Compile>
     <Compile Update="RMResources.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -135,6 +140,10 @@
     <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Headers\OptimizedResponseHeaders.tt">
+      <LastGenOutput>OptimizedResponseHeaders.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
     </None>
     <None Update="Headers\OptimizedRequestHeaders.tt">
       <Generator>TextTemplatingFileGenerator</Generator>

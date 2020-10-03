@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class OptimizedRequestHeaders : INameValueCollection
+    internal class OptimizedResponseHeaders : INameValueCollection
     {
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
 
@@ -153,12 +153,12 @@ namespace Microsoft.Azure.Cosmos
         public string <#= headerName #> { get; set; }
 <# } #>
 
-        public OptimizedRequestHeaders()
+        public OptimizedResponseHeaders()
             : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
         {
         }
 
-        private OptimizedRequestHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
+        private OptimizedResponseHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
         {
             this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
         }
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            OptimizedRequestHeaders cloneHeaders = new OptimizedRequestHeaders(cloneNotCommonHeaders)
+            OptimizedResponseHeaders cloneHeaders = new OptimizedResponseHeaders(cloneNotCommonHeaders)
             {
 <#            foreach (string name in sortedHeaderPropertyNames) { #>
                 <#= name #> = this.<#= name #>,
@@ -243,13 +243,12 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerable<string> Keys()
         {
-<#      foreach ((string fullName, string keyValue) in headerNames) { #>
-                if (this.<#= fullName.Split('.').Last() #> != null)
+<#      foreach (string name in sortedHeaderPropertyNames) { #>
+                if (this.<#= name #> != null)
                 {
-                    yield return <#= fullName #>;
+                    yield return this.<#= name #>;
                 }
 <#      } #>
-            
         }
 
         public NameValueCollection ToNameValueCollection()
@@ -291,10 +290,7 @@ namespace Microsoft.Azure.Cosmos
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
             {
-                if(this.lazyNotCommonHeaders.Value.TryGetValue(key, out string value))
-                {
-                    return value;
-                }
+                return this.lazyNotCommonHeaders.Value[key];
             }
             
             return null;
@@ -327,17 +323,6 @@ namespace Microsoft.Azure.Cosmos
 <#      } #>
                 default:
                     break;
-            }
-
-            // No reason to have a null in the dictionary. Just remove it.
-            if(value == null)
-            {
-                if (this.lazyNotCommonHeaders.IsValueCreated)
-                {
-                    this.lazyNotCommonHeaders.Value.Remove(key);
-                }
-                
-                return;
             }
 
             this.lazyNotCommonHeaders.Value[key] = value;

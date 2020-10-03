@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class OptimizedRequestHeaders : INameValueCollection
+    internal class OptimizedResponseHeaders : INameValueCollection
     {
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
 
@@ -136,12 +136,12 @@ namespace Microsoft.Azure.Cosmos
         public string Version { get; set; }
         public string XDate { get; set; }
 
-        public OptimizedRequestHeaders()
-            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)))
+        public OptimizedResponseHeaders()
+            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
         {
         }
 
-        private OptimizedRequestHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
+        private OptimizedResponseHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
         {
             this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
         }
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            OptimizedRequestHeaders cloneHeaders = new OptimizedRequestHeaders(cloneNotCommonHeaders)
+            OptimizedResponseHeaders cloneHeaders = new OptimizedResponseHeaders(cloneNotCommonHeaders)
             {
                 A_IM = this.A_IM,
                 AddResourcePropertiesToResponse = this.AddResourcePropertiesToResponse,
@@ -454,482 +454,474 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerable<string> Keys()
         {
-                if (this.Authorization != null)
-                {
-                    yield return HttpConstants.HttpHeaders.Authorization;
-                }
-                if (this.HttpDate != null)
-                {
-                    yield return HttpConstants.HttpHeaders.HttpDate;
-                }
-                if (this.XDate != null)
-                {
-                    yield return HttpConstants.HttpHeaders.XDate;
-                }
-                if (this.Version != null)
-                {
-                    yield return HttpConstants.HttpHeaders.Version;
-                }
                 if (this.A_IM != null)
                 {
-                    yield return HttpConstants.HttpHeaders.A_IM;
-                }
-                if (this.CanCharge != null)
-                {
-                    yield return HttpConstants.HttpHeaders.CanCharge;
-                }
-                if (this.CanOfferReplaceComplete != null)
-                {
-                    yield return HttpConstants.HttpHeaders.CanOfferReplaceComplete;
-                }
-                if (this.CanThrottle != null)
-                {
-                    yield return HttpConstants.HttpHeaders.CanThrottle;
-                }
-                if (this.ChangeFeedStartFullFidelityIfNoneMatch != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch;
-                }
-                if (this.ClientRetryAttemptCount != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ClientRetryAttemptCount;
-                }
-                if (this.ConsistencyLevel != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ConsistencyLevel;
-                }
-                if (this.Continuation != null)
-                {
-                    yield return HttpConstants.HttpHeaders.Continuation;
-                }
-                if (this.DisableRUPerMinuteUsage != null)
-                {
-                    yield return HttpConstants.HttpHeaders.DisableRUPerMinuteUsage;
-                }
-                if (this.EmitVerboseTracesInQuery != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EmitVerboseTracesInQuery;
-                }
-                if (this.EnableLogging != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EnableLogging;
-                }
-                if (this.EnableLowPrecisionOrderBy != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy;
-                }
-                if (this.EnableScanInQuery != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EnableScanInQuery;
-                }
-                if (this.EndEpk != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EndEpk;
-                }
-                if (this.EndId != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EndId;
-                }
-                if (this.EnumerationDirection != null)
-                {
-                    yield return HttpConstants.HttpHeaders.EnumerationDirection;
-                }
-                if (this.FilterBySchemaResourceId != null)
-                {
-                    yield return HttpConstants.HttpHeaders.FilterBySchemaResourceId;
-                }
-                if (this.GatewaySignature != null)
-                {
-                    yield return HttpConstants.HttpHeaders.GatewaySignature;
-                }
-                if (this.GetAllPartitionKeyStatistics != null)
-                {
-                    yield return HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics;
-                }
-                if (this.IfMatch != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IfMatch;
-                }
-                if (this.IfModifiedSince != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IfModifiedSince;
-                }
-                if (this.IfNoneMatch != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IfNoneMatch;
-                }
-                if (this.IgnoreSystemLoweringMaxThroughput != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput;
-                }
-                if (this.IncludeTentativeWrites != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IncludeTentativeWrites;
-                }
-                if (this.IndexingDirective != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IndexingDirective;
-                }
-                if (this.IsBatchAtomic != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IsBatchAtomic;
-                }
-                if (this.IsBatchOrdered != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IsBatchOrdered;
-                }
-                if (this.IsClientEncrypted != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IsClientEncrypted;
-                }
-                if (this.IsOfferStorageRefreshRequest != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest;
-                }
-                if (this.IsReadOnlyScript != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IsReadOnlyScript;
-                }
-                if (this.IsRUPerGBEnforcementRequest != null)
-                {
-                    yield return HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest;
-                }
-                if (this.MaxPollingIntervalMilliseconds != null)
-                {
-                    yield return HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds;
-                }
-                if (this.MigrateCollectionDirective != null)
-                {
-                    yield return HttpConstants.HttpHeaders.MigrateCollectionDirective;
-                }
-                if (this.MigrateOfferToAutopilot != null)
-                {
-                    yield return HttpConstants.HttpHeaders.MigrateOfferToAutopilot;
-                }
-                if (this.MigrateOfferToManualThroughput != null)
-                {
-                    yield return HttpConstants.HttpHeaders.MigrateOfferToManualThroughput;
-                }
-                if (this.PageSize != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PageSize;
-                }
-                if (this.PartitionKey != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PartitionKey;
-                }
-                if (this.PopulateCollectionThroughputInfo != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo;
-                }
-                if (this.PopulatePartitionStatistics != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PopulatePartitionStatistics;
-                }
-                if (this.PopulateQueryMetrics != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PopulateQueryMetrics;
-                }
-                if (this.PopulateQuotaInfo != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PopulateQuotaInfo;
-                }
-                if (this.PopulateResourceCount != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PopulateResourceCount;
-                }
-                if (this.PostTriggerExclude != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PostTriggerExclude;
-                }
-                if (this.PostTriggerInclude != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PostTriggerInclude;
-                }
-                if (this.Prefer != null)
-                {
-                    yield return HttpConstants.HttpHeaders.Prefer;
-                }
-                if (this.PreTriggerExclude != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PreTriggerExclude;
-                }
-                if (this.PreTriggerInclude != null)
-                {
-                    yield return HttpConstants.HttpHeaders.PreTriggerInclude;
-                }
-                if (this.ProfileRequest != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ProfileRequest;
-                }
-                if (this.ReadFeedKeyType != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ReadFeedKeyType;
-                }
-                if (this.RemainingTimeInMsOnClientRequest != null)
-                {
-                    yield return HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest;
-                }
-                if (this.ResourceTokenExpiry != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ResourceTokenExpiry;
-                }
-                if (this.ResponseContinuationTokenLimitInKB != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB;
-                }
-                if (this.RestoreMetadataFilter != null)
-                {
-                    yield return HttpConstants.HttpHeaders.RestoreMetadataFilter;
-                }
-                if (this.SessionToken != null)
-                {
-                    yield return HttpConstants.HttpHeaders.SessionToken;
-                }
-                if (this.ShouldBatchContinueOnError != null)
-                {
-                    yield return HttpConstants.HttpHeaders.ShouldBatchContinueOnError;
-                }
-                if (this.StartEpk != null)
-                {
-                    yield return HttpConstants.HttpHeaders.StartEpk;
-                }
-                if (this.StartId != null)
-                {
-                    yield return HttpConstants.HttpHeaders.StartId;
-                }
-                if (this.SupportSpatialLegacyCoordinates != null)
-                {
-                    yield return HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates;
-                }
-                if (this.SystemDocumentType != null)
-                {
-                    yield return HttpConstants.HttpHeaders.SystemDocumentType;
-                }
-                if (this.TargetGlobalCommittedLsn != null)
-                {
-                    yield return HttpConstants.HttpHeaders.TargetGlobalCommittedLsn;
-                }
-                if (this.TargetLsn != null)
-                {
-                    yield return HttpConstants.HttpHeaders.TargetLsn;
-                }
-                if (this.TransportRequestID != null)
-                {
-                    yield return HttpConstants.HttpHeaders.TransportRequestID;
-                }
-                if (this.TruncateMergeLogRequest != null)
-                {
-                    yield return HttpConstants.HttpHeaders.TruncateMergeLogRequest;
-                }
-                if (this.UpdateMaxThroughputEverProvisioned != null)
-                {
-                    yield return HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned;
-                }
-                if (this.UsePolygonsSmallerThanAHemisphere != null)
-                {
-                    yield return HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere;
+                    yield return this.A_IM;
                 }
                 if (this.AddResourcePropertiesToResponse != null)
                 {
-                    yield return WFConstants.BackendHeaders.AddResourcePropertiesToResponse;
+                    yield return this.AddResourcePropertiesToResponse;
                 }
                 if (this.AllowTentativeWrites != null)
                 {
-                    yield return WFConstants.BackendHeaders.AllowTentativeWrites;
+                    yield return this.AllowTentativeWrites;
+                }
+                if (this.Authorization != null)
+                {
+                    yield return this.Authorization;
                 }
                 if (this.BinaryId != null)
                 {
-                    yield return WFConstants.BackendHeaders.BinaryId;
+                    yield return this.BinaryId;
                 }
                 if (this.BinaryPassthroughRequest != null)
                 {
-                    yield return WFConstants.BackendHeaders.BinaryPassthroughRequest;
+                    yield return this.BinaryPassthroughRequest;
                 }
                 if (this.BindReplicaDirective != null)
                 {
-                    yield return WFConstants.BackendHeaders.BindReplicaDirective;
+                    yield return this.BindReplicaDirective;
+                }
+                if (this.CanCharge != null)
+                {
+                    yield return this.CanCharge;
+                }
+                if (this.CanOfferReplaceComplete != null)
+                {
+                    yield return this.CanOfferReplaceComplete;
+                }
+                if (this.CanThrottle != null)
+                {
+                    yield return this.CanThrottle;
+                }
+                if (this.ChangeFeedStartFullFidelityIfNoneMatch != null)
+                {
+                    yield return this.ChangeFeedStartFullFidelityIfNoneMatch;
+                }
+                if (this.ClientRetryAttemptCount != null)
+                {
+                    yield return this.ClientRetryAttemptCount;
                 }
                 if (this.CollectionChildResourceContentLimitInKB != null)
                 {
-                    yield return WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB;
+                    yield return this.CollectionChildResourceContentLimitInKB;
                 }
                 if (this.CollectionChildResourceNameLimitInBytes != null)
                 {
-                    yield return WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes;
+                    yield return this.CollectionChildResourceNameLimitInBytes;
                 }
                 if (this.CollectionPartitionIndex != null)
                 {
-                    yield return WFConstants.BackendHeaders.CollectionPartitionIndex;
+                    yield return this.CollectionPartitionIndex;
                 }
                 if (this.CollectionRid != null)
                 {
-                    yield return WFConstants.BackendHeaders.CollectionRid;
+                    yield return this.CollectionRid;
                 }
                 if (this.CollectionSecurityIdentifier != null)
                 {
-                    yield return WFConstants.BackendHeaders.CollectionSecurityIdentifier;
+                    yield return this.CollectionSecurityIdentifier;
                 }
                 if (this.CollectionServiceIndex != null)
                 {
-                    yield return WFConstants.BackendHeaders.CollectionServiceIndex;
+                    yield return this.CollectionServiceIndex;
+                }
+                if (this.ConsistencyLevel != null)
+                {
+                    yield return this.ConsistencyLevel;
                 }
                 if (this.ContentSerializationFormat != null)
                 {
-                    yield return WFConstants.BackendHeaders.ContentSerializationFormat;
+                    yield return this.ContentSerializationFormat;
+                }
+                if (this.Continuation != null)
+                {
+                    yield return this.Continuation;
+                }
+                if (this.DisableRUPerMinuteUsage != null)
+                {
+                    yield return this.DisableRUPerMinuteUsage;
                 }
                 if (this.EffectivePartitionKey != null)
                 {
-                    yield return WFConstants.BackendHeaders.EffectivePartitionKey;
+                    yield return this.EffectivePartitionKey;
+                }
+                if (this.EmitVerboseTracesInQuery != null)
+                {
+                    yield return this.EmitVerboseTracesInQuery;
                 }
                 if (this.EnableDynamicRidRangeAllocation != null)
                 {
-                    yield return WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation;
+                    yield return this.EnableDynamicRidRangeAllocation;
+                }
+                if (this.EnableLogging != null)
+                {
+                    yield return this.EnableLogging;
+                }
+                if (this.EnableLowPrecisionOrderBy != null)
+                {
+                    yield return this.EnableLowPrecisionOrderBy;
+                }
+                if (this.EnableScanInQuery != null)
+                {
+                    yield return this.EnableScanInQuery;
+                }
+                if (this.EndEpk != null)
+                {
+                    yield return this.EndEpk;
+                }
+                if (this.EndId != null)
+                {
+                    yield return this.EndId;
+                }
+                if (this.EnumerationDirection != null)
+                {
+                    yield return this.EnumerationDirection;
                 }
                 if (this.ExcludeSystemProperties != null)
                 {
-                    yield return WFConstants.BackendHeaders.ExcludeSystemProperties;
+                    yield return this.ExcludeSystemProperties;
                 }
                 if (this.FanoutOperationState != null)
                 {
-                    yield return WFConstants.BackendHeaders.FanoutOperationState;
+                    yield return this.FanoutOperationState;
+                }
+                if (this.FilterBySchemaResourceId != null)
+                {
+                    yield return this.FilterBySchemaResourceId;
                 }
                 if (this.ForceQueryScan != null)
                 {
-                    yield return WFConstants.BackendHeaders.ForceQueryScan;
+                    yield return this.ForceQueryScan;
                 }
                 if (this.ForceSideBySideIndexMigration != null)
                 {
-                    yield return WFConstants.BackendHeaders.ForceSideBySideIndexMigration;
+                    yield return this.ForceSideBySideIndexMigration;
+                }
+                if (this.GatewaySignature != null)
+                {
+                    yield return this.GatewaySignature;
+                }
+                if (this.GetAllPartitionKeyStatistics != null)
+                {
+                    yield return this.GetAllPartitionKeyStatistics;
+                }
+                if (this.HttpDate != null)
+                {
+                    yield return this.HttpDate;
+                }
+                if (this.IfMatch != null)
+                {
+                    yield return this.IfMatch;
+                }
+                if (this.IfModifiedSince != null)
+                {
+                    yield return this.IfModifiedSince;
+                }
+                if (this.IfNoneMatch != null)
+                {
+                    yield return this.IfNoneMatch;
+                }
+                if (this.IgnoreSystemLoweringMaxThroughput != null)
+                {
+                    yield return this.IgnoreSystemLoweringMaxThroughput;
+                }
+                if (this.IncludeTentativeWrites != null)
+                {
+                    yield return this.IncludeTentativeWrites;
+                }
+                if (this.IndexingDirective != null)
+                {
+                    yield return this.IndexingDirective;
+                }
+                if (this.IsBatchAtomic != null)
+                {
+                    yield return this.IsBatchAtomic;
+                }
+                if (this.IsBatchOrdered != null)
+                {
+                    yield return this.IsBatchOrdered;
+                }
+                if (this.IsClientEncrypted != null)
+                {
+                    yield return this.IsClientEncrypted;
                 }
                 if (this.IsFanoutRequest != null)
                 {
-                    yield return WFConstants.BackendHeaders.IsFanoutRequest;
+                    yield return this.IsFanoutRequest;
+                }
+                if (this.IsOfferStorageRefreshRequest != null)
+                {
+                    yield return this.IsOfferStorageRefreshRequest;
+                }
+                if (this.IsReadOnlyScript != null)
+                {
+                    yield return this.IsReadOnlyScript;
                 }
                 if (this.IsRetriedWriteRequest != null)
                 {
-                    yield return WFConstants.BackendHeaders.IsRetriedWriteRequest;
+                    yield return this.IsRetriedWriteRequest;
+                }
+                if (this.IsRUPerGBEnforcementRequest != null)
+                {
+                    yield return this.IsRUPerGBEnforcementRequest;
                 }
                 if (this.IsUserRequest != null)
                 {
-                    yield return WFConstants.BackendHeaders.IsUserRequest;
+                    yield return this.IsUserRequest;
+                }
+                if (this.MaxPollingIntervalMilliseconds != null)
+                {
+                    yield return this.MaxPollingIntervalMilliseconds;
                 }
                 if (this.MergeCheckPointGLSN != null)
                 {
-                    yield return WFConstants.BackendHeaders.MergeCheckPointGLSN;
+                    yield return this.MergeCheckPointGLSN;
                 }
                 if (this.MergeStaticId != null)
                 {
-                    yield return WFConstants.BackendHeaders.MergeStaticId;
+                    yield return this.MergeStaticId;
+                }
+                if (this.MigrateCollectionDirective != null)
+                {
+                    yield return this.MigrateCollectionDirective;
+                }
+                if (this.MigrateOfferToAutopilot != null)
+                {
+                    yield return this.MigrateOfferToAutopilot;
+                }
+                if (this.MigrateOfferToManualThroughput != null)
+                {
+                    yield return this.MigrateOfferToManualThroughput;
+                }
+                if (this.PageSize != null)
+                {
+                    yield return this.PageSize;
                 }
                 if (this.PartitionCount != null)
                 {
-                    yield return WFConstants.BackendHeaders.PartitionCount;
+                    yield return this.PartitionCount;
+                }
+                if (this.PartitionKey != null)
+                {
+                    yield return this.PartitionKey;
                 }
                 if (this.PartitionKeyRangeId != null)
                 {
-                    yield return WFConstants.BackendHeaders.PartitionKeyRangeId;
+                    yield return this.PartitionKeyRangeId;
                 }
                 if (this.PartitionResourceFilter != null)
                 {
-                    yield return WFConstants.BackendHeaders.PartitionResourceFilter;
+                    yield return this.PartitionResourceFilter;
+                }
+                if (this.PopulateCollectionThroughputInfo != null)
+                {
+                    yield return this.PopulateCollectionThroughputInfo;
                 }
                 if (this.PopulateLogStoreInfo != null)
                 {
-                    yield return WFConstants.BackendHeaders.PopulateLogStoreInfo;
+                    yield return this.PopulateLogStoreInfo;
+                }
+                if (this.PopulatePartitionStatistics != null)
+                {
+                    yield return this.PopulatePartitionStatistics;
+                }
+                if (this.PopulateQueryMetrics != null)
+                {
+                    yield return this.PopulateQueryMetrics;
+                }
+                if (this.PopulateQuotaInfo != null)
+                {
+                    yield return this.PopulateQuotaInfo;
+                }
+                if (this.PopulateResourceCount != null)
+                {
+                    yield return this.PopulateResourceCount;
                 }
                 if (this.PopulateUnflushedMergeEntryCount != null)
                 {
-                    yield return WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount;
+                    yield return this.PopulateUnflushedMergeEntryCount;
+                }
+                if (this.PostTriggerExclude != null)
+                {
+                    yield return this.PostTriggerExclude;
+                }
+                if (this.PostTriggerInclude != null)
+                {
+                    yield return this.PostTriggerInclude;
+                }
+                if (this.Prefer != null)
+                {
+                    yield return this.Prefer;
                 }
                 if (this.PreserveFullContent != null)
                 {
-                    yield return WFConstants.BackendHeaders.PreserveFullContent;
+                    yield return this.PreserveFullContent;
+                }
+                if (this.PreTriggerExclude != null)
+                {
+                    yield return this.PreTriggerExclude;
+                }
+                if (this.PreTriggerInclude != null)
+                {
+                    yield return this.PreTriggerInclude;
                 }
                 if (this.PrimaryMasterKey != null)
                 {
-                    yield return WFConstants.BackendHeaders.PrimaryMasterKey;
+                    yield return this.PrimaryMasterKey;
                 }
                 if (this.PrimaryReadonlyKey != null)
                 {
-                    yield return WFConstants.BackendHeaders.PrimaryReadonlyKey;
+                    yield return this.PrimaryReadonlyKey;
+                }
+                if (this.ProfileRequest != null)
+                {
+                    yield return this.ProfileRequest;
+                }
+                if (this.ReadFeedKeyType != null)
+                {
+                    yield return this.ReadFeedKeyType;
+                }
+                if (this.RemainingTimeInMsOnClientRequest != null)
+                {
+                    yield return this.RemainingTimeInMsOnClientRequest;
                 }
                 if (this.RemoteStorageType != null)
                 {
-                    yield return WFConstants.BackendHeaders.RemoteStorageType;
+                    yield return this.RemoteStorageType;
                 }
                 if (this.ResourceSchemaName != null)
                 {
-                    yield return WFConstants.BackendHeaders.ResourceSchemaName;
+                    yield return this.ResourceSchemaName;
+                }
+                if (this.ResourceTokenExpiry != null)
+                {
+                    yield return this.ResourceTokenExpiry;
                 }
                 if (this.ResourceTypes != null)
                 {
-                    yield return WFConstants.BackendHeaders.ResourceTypes;
+                    yield return this.ResourceTypes;
+                }
+                if (this.ResponseContinuationTokenLimitInKB != null)
+                {
+                    yield return this.ResponseContinuationTokenLimitInKB;
+                }
+                if (this.RestoreMetadataFilter != null)
+                {
+                    yield return this.RestoreMetadataFilter;
                 }
                 if (this.RestoreParams != null)
                 {
-                    yield return WFConstants.BackendHeaders.RestoreParams;
+                    yield return this.RestoreParams;
                 }
                 if (this.RetriableWriteRequestId != null)
                 {
-                    yield return WFConstants.BackendHeaders.RetriableWriteRequestId;
+                    yield return this.RetriableWriteRequestId;
                 }
                 if (this.RetriableWriteRequestStartTimestamp != null)
                 {
-                    yield return WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp;
+                    yield return this.RetriableWriteRequestStartTimestamp;
                 }
                 if (this.SchemaHash != null)
                 {
-                    yield return WFConstants.BackendHeaders.SchemaHash;
+                    yield return this.SchemaHash;
                 }
                 if (this.SchemaOwnerRid != null)
                 {
-                    yield return WFConstants.BackendHeaders.SchemaOwnerRid;
+                    yield return this.SchemaOwnerRid;
                 }
                 if (this.SecondaryMasterKey != null)
                 {
-                    yield return WFConstants.BackendHeaders.SecondaryMasterKey;
+                    yield return this.SecondaryMasterKey;
                 }
                 if (this.SecondaryReadonlyKey != null)
                 {
-                    yield return WFConstants.BackendHeaders.SecondaryReadonlyKey;
+                    yield return this.SecondaryReadonlyKey;
+                }
+                if (this.SessionToken != null)
+                {
+                    yield return this.SessionToken;
                 }
                 if (this.ShareThroughput != null)
                 {
-                    yield return WFConstants.BackendHeaders.ShareThroughput;
+                    yield return this.ShareThroughput;
+                }
+                if (this.ShouldBatchContinueOnError != null)
+                {
+                    yield return this.ShouldBatchContinueOnError;
+                }
+                if (this.StartEpk != null)
+                {
+                    yield return this.StartEpk;
+                }
+                if (this.StartId != null)
+                {
+                    yield return this.StartId;
+                }
+                if (this.SupportSpatialLegacyCoordinates != null)
+                {
+                    yield return this.SupportSpatialLegacyCoordinates;
+                }
+                if (this.SystemDocumentType != null)
+                {
+                    yield return this.SystemDocumentType;
+                }
+                if (this.TargetGlobalCommittedLsn != null)
+                {
+                    yield return this.TargetGlobalCommittedLsn;
+                }
+                if (this.TargetLsn != null)
+                {
+                    yield return this.TargetLsn;
                 }
                 if (this.TimeToLiveInSeconds != null)
                 {
-                    yield return WFConstants.BackendHeaders.TimeToLiveInSeconds;
+                    yield return this.TimeToLiveInSeconds;
                 }
                 if (this.TransactionCommit != null)
                 {
-                    yield return WFConstants.BackendHeaders.TransactionCommit;
+                    yield return this.TransactionCommit;
                 }
                 if (this.TransactionId != null)
                 {
-                    yield return WFConstants.BackendHeaders.TransactionId;
+                    yield return this.TransactionId;
+                }
+                if (this.TransportRequestID != null)
+                {
+                    yield return this.TransportRequestID;
+                }
+                if (this.TruncateMergeLogRequest != null)
+                {
+                    yield return this.TruncateMergeLogRequest;
                 }
                 if (this.UniqueIndexNameEncodingMode != null)
                 {
-                    yield return WFConstants.BackendHeaders.UniqueIndexNameEncodingMode;
+                    yield return this.UniqueIndexNameEncodingMode;
                 }
                 if (this.UniqueIndexReIndexingState != null)
                 {
-                    yield return WFConstants.BackendHeaders.UniqueIndexReIndexingState;
+                    yield return this.UniqueIndexReIndexingState;
+                }
+                if (this.UpdateMaxThroughputEverProvisioned != null)
+                {
+                    yield return this.UpdateMaxThroughputEverProvisioned;
+                }
+                if (this.UsePolygonsSmallerThanAHemisphere != null)
+                {
+                    yield return this.UsePolygonsSmallerThanAHemisphere;
                 }
                 if (this.UseSystemBudget != null)
                 {
-                    yield return WFConstants.BackendHeaders.UseSystemBudget;
+                    yield return this.UseSystemBudget;
                 }
-
-            if (this.lazyNotCommonHeaders.IsValueCreated)
-            {
-                foreach(string key in this.lazyNotCommonHeaders.Value.Keys)
+                if (this.Version != null)
                 {
-                    yield return key;
+                    yield return this.Version;
                 }
-            }
+                if (this.XDate != null)
+                {
+                    yield return this.XDate;
+                }
         }
 
         public NameValueCollection ToNameValueCollection()
@@ -2218,10 +2210,7 @@ namespace Microsoft.Azure.Cosmos
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
             {
-                if(this.lazyNotCommonHeaders.Value.TryGetValue(key, out string value))
-                {
-                    return value;
-                }
+                return this.lazyNotCommonHeaders.Value[key];
             }
             
             return null;
@@ -3733,17 +3722,6 @@ namespace Microsoft.Azure.Cosmos
                     break;
                 default:
                     break;
-            }
-
-            // No reason to have a null in the dictionary. Just remove it.
-            if(value == null)
-            {
-                if (this.lazyNotCommonHeaders.IsValueCreated)
-                {
-                    this.lazyNotCommonHeaders.Value.Remove(key);
-                }
-                
-                return;
             }
 
             this.lazyNotCommonHeaders.Value[key] = value;
