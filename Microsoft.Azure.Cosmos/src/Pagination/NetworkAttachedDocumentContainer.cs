@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             CosmosObject insertedDocument = tryInsertDocument.Resource;
             string identifier = ((CosmosString)insertedDocument["id"]).Value;
-            ResourceIdentifier resourceIdentifier = ResourceIdentifier.Parse(((CosmosString)insertedDocument["_rid"]).Value);
+            ResourceId resourceIdentifier = ResourceId.Parse(((CosmosString)insertedDocument["_rid"]).Value);
             long timestamp = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
 
             Record record = new Record(resourceIdentifier, timestamp, identifier, insertedDocument);
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            ResourceIdentifier resourceIdentifer,
+            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
         {

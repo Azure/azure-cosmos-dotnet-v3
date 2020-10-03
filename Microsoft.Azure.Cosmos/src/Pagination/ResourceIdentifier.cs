@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     //       Last 4 bytes for attachment id -> 2^32 attachments per "Document". These bits are used only for document's children. Permission/Sproc/
     //       Conflict RID hierarchy is only 16 bytes.
 
-    internal sealed class ResourceIdentifier : IEquatable<ResourceIdentifier>
+    internal sealed class ResourceIdentifier
     {
         private const int OfferIdLength = 3;
         private const int RbacResourceIdLength = 6;
@@ -463,34 +463,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public override string ToString()
         {
             return ResourceIdentifier.ToBase64String(this.ToByteArray());
-        }
-
-        public bool Equals(ResourceIdentifier other)
-        {
-            if (other == null)
-            {
-                return false;
-            }
-
-            return Enumerable.SequenceEqual(this.ToByteArray(), other.ToByteArray());
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is null)
-            {
-                return false;
-            }
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-            return obj is ResourceIdentifier id && this.Equals(id);
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
 
         public static byte[] FromBase64String(string s)

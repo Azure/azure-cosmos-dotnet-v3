@@ -8,11 +8,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
     internal sealed class DocumentContainerState : State
     {
-        public DocumentContainerState(ResourceIdentifier resourceIdentifier)
+        public DocumentContainerState(ResourceId resourceIdentifier)
         {
             this.ResourceIdentifer = resourceIdentifier;
         }
 
-        public ResourceIdentifier ResourceIdentifer { get; }
+        public ResourceId ResourceIdentifer { get; }
     }
 }

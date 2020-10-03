@@ -112,7 +112,7 @@
                 foreach (CosmosElement element in page.Documents)
                 {
                     CosmosObject document = (CosmosObject)element;
-                    ResourceIdentifier resourceIdentifier = ResourceIdentifier.Parse(((CosmosString)document["_rid"]).Value);
+                    ResourceId resourceIdentifier = ResourceId.Parse(((CosmosString)document["_rid"]).Value);
                     long timestamp = Number64.ToLong(((CosmosNumber)document["_ts"]).Value);
                     string identifer = ((CosmosString)document["id"]).Value;
 

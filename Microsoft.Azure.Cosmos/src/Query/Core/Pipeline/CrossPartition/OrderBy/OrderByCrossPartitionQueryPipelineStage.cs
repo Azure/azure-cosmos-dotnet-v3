@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return true;
         }
 
-        private async ValueTask<bool> MoveNextAsync_Iniialize_FilterAsync(
+        private async ValueTask<bool> MoveNextAsync_Initialize_FilterAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
             OrderByContinuationToken token)
         {
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
             bool movedNext = token is null
                 ? await this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator)
-                : await this.MoveNextAsync_Iniialize_FilterAsync(uninitializedEnumerator, token);
+                : await this.MoveNextAsync_Initialize_FilterAsync(uninitializedEnumerator, token);
             return movedNext;
         }
 
@@ -335,6 +335,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         // If the continuation isn't null
                         // then mark the enumerator as unitialized and it will get requeueed on the next iteration with a fresh page.
                         this.uninitializedEnumeratorsAndTokens.Enqueue((currentEnumerator, (OrderByContinuationToken)null));
+
+                        // Use the token for the next page, since we fully drained the enumerator.
+                        OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                            new ParallelContinuationToken(
+                                token: ((CosmosString)currentEnumerator.State.Value).Value,
+                                range: currentEnumerator.Range.ToRange()),
+                            orderByQueryResult.OrderByItems,
+                            orderByQueryResult.Rid,
+                            skipCount: 0,
+                            filter: currentEnumerator.Filter);
+
+                        CosmosElement cosmosElementOrderByContinuationToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
+                        CosmosArray continuationTokenList = CosmosArray.Create(new List<CosmosElement>() { cosmosElementOrderByContinuationToken });
+
+                        this.state = new QueryState(continuationTokenList);
+
+                        // Return a page of results
+                        // No stats to report, since we already reported it when we moved to this page.
+                        this.Current = TryCatch<QueryPage>.FromResult(
+                            new QueryPage(
+                                documents: results.Select(result => result.Payload).ToList(),
+                                requestCharge: 0,
+                                activityId: default,
+                                responseLengthInBytes: 0,
+                                cosmosQueryExecutionInfo: default,
+                                disallowContinuationTokenMessage: default,
+                                state: this.state));
+                        return new ValueTask<bool>(true);
                     }
 
                     break;

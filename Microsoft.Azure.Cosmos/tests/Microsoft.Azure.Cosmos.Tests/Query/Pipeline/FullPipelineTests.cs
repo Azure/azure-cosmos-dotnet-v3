@@ -92,17 +92,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task OrderByWithJoins()
         {
-            Random random = new Random(42);
             List<CosmosObject> documents = new List<CosmosObject>()
             {
-                CosmosObject.Parse($"{{\"pk\" : {random.Next()}, \"children\" : [\"Alice\", \"Bob\", \"Charlie\"]}}"),
-                CosmosObject.Parse($"{{\"pk\" : {random.Next()}, \"children\" : [\"Dave\", \"Eve\", \"Fancy\"]}}"),
-                CosmosObject.Parse($"{{\"pk\" : {random.Next()}, \"children\" : [\"George\", \"Henry\", \"Igor\"]}}"),
-                CosmosObject.Parse($"{{\"pk\" : {random.Next()}, \"children\" : [\"Jack\", \"Kim\", \"Levin\"]}}"),
+                CosmosObject.Parse($"{{\"pk\" : {1}, \"children\" : [\"Alice\", \"Bob\", \"Charlie\"]}}"),
+                CosmosObject.Parse($"{{\"pk\" : {2}, \"children\" : [\"Dave\", \"Eve\", \"Fancy\"]}}"),
+                CosmosObject.Parse($"{{\"pk\" : {3}, \"children\" : [\"George\", \"Henry\", \"Igor\"]}}"),
+                CosmosObject.Parse($"{{\"pk\" : {4}, \"children\" : [\"Jack\", \"Kim\", \"Levin\"]}}"),
             };
 
             List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
-                query: "SELECT d FROM c JOIN d in c.children ORDER BY c._ts",
+                query: "SELECT d FROM c JOIN d in c.children ORDER BY c.pk",
                 documents: documents,
                 pageSize: 2);
 
@@ -182,12 +181,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(documents);
 
-            //List<CosmosElement> resultsFromDrainWithoutState = await DrainWithoutStateAsync(query, documentContainer, pageSize);
+            List<CosmosElement> resultsFromDrainWithoutState = await DrainWithoutStateAsync(query, documentContainer, pageSize);
             List<CosmosElement> resultsFromDrainWithState = await DrainWithStateAsync(query, documentContainer, pageSize);
 
-            //Assert.IsTrue(resultsFromDrainWithoutState.SequenceEqual(resultsFromDrainWithState));
+            Assert.IsTrue(resultsFromDrainWithoutState.SequenceEqual(resultsFromDrainWithState));
 
-            return resultsFromDrainWithState;
+            return resultsFromDrainWithoutState;
         }
 
         [TestMethod]

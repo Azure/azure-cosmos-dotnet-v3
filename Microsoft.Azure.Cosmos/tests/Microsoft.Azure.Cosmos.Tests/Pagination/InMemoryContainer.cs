@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal sealed class InMemoryContainer : IMonadicDocumentContainer
     {
+        private static readonly ResourceIdentifier SeedIdentifier = ResourceIdentifier.Parse("AYIMAMmFOw8YAAAAAAAAAA==");
         private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
         {
             MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -261,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            ResourceIdentifier resourceIdentifer,
+            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
         {
@@ -386,10 +388,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
                 continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
 
+                ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
                 queryPageResults = queryPageResults.Where((Func<CosmosElement, bool>)(c =>
                 {
-                    ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
-                    ResourceIdentifier documentResourceId = ResourceIdentifier.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
+                    ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
                     return documentResourceId.Document >= continuationParsedResourceId.Document;
                 }));
 
@@ -639,23 +641,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public Record Add(int pkrangeid, CosmosObject payload)
             {
-                ResourceIdentifier currentResourceId;
+                // using pkrangeid for document collection since resource id doesnt serialize both document and pkrangeid.
+                ResourceId currentResourceId;
                 if (this.Count == 0)
                 {
-                    currentResourceId = new ResourceIdentifier(database: 1, documentCollection: 1, partitionKeyRange: (ulong)pkrangeid, document: 1);
+                    currentResourceId = ResourceId.Parse("AYIMAMmFOw8YAAAAAAAAAA==");
+
+                    PropertyInfo documentProp = currentResourceId
+                        .GetType()
+                        .GetProperty("Document", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    documentProp.SetValue(currentResourceId, (ulong)1);
+
+                    //PropertyInfo documentCollectionProp = currentResourceId
+                    //    .GetType()
+                    //    .GetProperty("DocumentCollection", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    //documentCollectionProp.SetValue(currentResourceId, (uint)pkrangeid);
+
+                    PropertyInfo databaseProp = currentResourceId
+                        .GetType()
+                        .GetProperty("Database", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    databaseProp.SetValue(currentResourceId, (uint)pkrangeid);
                 }
                 else
                 {
                     currentResourceId = this.storage[this.storage.Count - 1].ResourceIdentifier;
                 }
 
-                ResourceIdentifier nextResourceId = new ResourceIdentifier(
-                    database: currentResourceId.Database,
-                    documentCollection: currentResourceId.DocumentCollection,
-                    partitionKeyRange: (ulong)pkrangeid,
-                    document: currentResourceId.Document);
+                ResourceId nextResourceId = ResourceId.Parse("AYIMAMmFOw8YAAAAAAAAAA==");
+                {
+                    PropertyInfo documentProp = nextResourceId
+                        .GetType()
+                        .GetProperty("Document", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    documentProp.SetValue(nextResourceId, (ulong)(currentResourceId.Document + 1));
 
-                Record record = Record.Create(nextResourceId, payload);
+                    //PropertyInfo documentCollectionProp = nextResourceId
+                    //    .GetType()
+                    //    .GetProperty("DocumentCollection", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    //documentCollectionProp.SetValue(nextResourceId, (uint)pkrangeid);
+
+                    PropertyInfo databaseProp = nextResourceId
+                        .GetType()
+                        .GetProperty("Database", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+                    databaseProp.SetValue(nextResourceId, (uint)pkrangeid);
+                }
+
+                Record record = new Record(nextResourceId, DateTime.UtcNow.Ticks, Guid.NewGuid().ToString(), payload);
                 this.storage.Add(record);
                 return record;
             }
