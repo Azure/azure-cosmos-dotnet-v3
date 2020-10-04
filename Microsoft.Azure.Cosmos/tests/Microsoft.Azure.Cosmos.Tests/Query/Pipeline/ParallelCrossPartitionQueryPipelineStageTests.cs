@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -206,6 +207,96 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
                 queryState = queryPage.State;
             } while (queryState != null);
+
+            Assert.AreEqual(numItems, documents.Count);
+        }
+
+        [TestMethod]
+        public async Task TestDrainFully_WithStateResume_WithSplitAsync()
+        {
+            int numItems = 1000;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+
+            Random random = new Random();
+            List<CosmosElement> documents = new List<CosmosElement>();
+
+            QueryState queryState = null;
+            do
+            {
+                TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    pageSize: 10,
+                    maxConcurrency: 10,
+                    cancellationToken: default,
+                    continuationToken: queryState?.Value);
+                if (monadicCreate.Failed)
+                {
+                    Assert.Fail();
+                }
+                Assert.IsTrue(monadicCreate.Succeeded);
+                IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+                Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
+                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                Assert.IsTrue(tryGetQueryPage.Succeeded);
+
+                QueryPage queryPage = tryGetQueryPage.Result;
+                documents.AddRange(queryPage.Documents);
+
+                queryState = queryPage.State;
+
+                if (random.Next() % 4 == 0)
+                {
+                    // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
+                    List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    PartitionKeyRange randomRange = ranges[random.Next(ranges.Count)];
+                    documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
+                }
+            } while (queryState != null);
+
+            Assert.AreEqual(numItems, documents.Count);
+        }
+
+        [TestMethod]
+        public async Task TestDrainFully_StartFromBegining_WithSplits_Async()
+        {
+            int numItems = 1000;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+
+            TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                pageSize: 10,
+                maxConcurrency: 10,
+                cancellationToken: default,
+                continuationToken: default);
+            Assert.IsTrue(monadicCreate.Succeeded);
+            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+            Random random = new Random();
+            List<CosmosElement> documents = new List<CosmosElement>();
+            while (await queryPipelineStage.MoveNextAsync())
+            {
+                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                if(tryGetQueryPage.Failed)
+                {
+                    Assert.Fail(tryGetQueryPage.Exception.ToString());
+                }
+
+                QueryPage queryPage = tryGetQueryPage.Result;
+                documents.AddRange(queryPage.Documents);
+
+                if (random.Next() % 4 == 0)
+                {
+                    // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
+                    List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    PartitionKeyRange randomRange = ranges[random.Next(ranges.Count)];
+                    documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
+                }
+            }
 
             Assert.AreEqual(numItems, documents.Count);
         }

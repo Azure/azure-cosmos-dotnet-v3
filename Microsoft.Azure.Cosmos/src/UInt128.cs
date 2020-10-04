@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            byte[] bytes = new byte[UInt128.Length];
+            Span<byte> bytes = stackalloc byte[UInt128.Length];
             for (int index = 0; index < UInt128.Length; index++)
             {
                 if (!byte.TryParse(hexPairs[index], System.Globalization.NumberStyles.HexNumber, null, out byte parsedBytes))
@@ -547,6 +547,8 @@ namespace Microsoft.Azure.Cosmos
 
                 bytes[index] = parsedBytes;
             }
+
+            bytes.Reverse();
 
             uInt128 = UInt128.FromByteArray(bytes);
             return true;
