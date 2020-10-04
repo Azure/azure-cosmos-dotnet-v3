@@ -215,6 +215,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(tryGetQueryPage.Exception);
+                if (!IsRetriableException(cosmosException))
+                {
+                    this.hasMoreResults = false;
+                }
 
                 return QueryResponse.CreateFailure(
                     statusCode: cosmosException.StatusCode,
@@ -231,6 +235,13 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State?.Value;
+
+        private static bool IsRetriableException(CosmosException cosmosException)
+        {
+            return ((int)cosmosException.StatusCode == 429)
+                || (cosmosException.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+                || (cosmosException.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable);
+        }
 
         protected override void Dispose(bool disposing)
         {
