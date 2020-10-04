@@ -410,7 +410,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     maxConcurrency: 10,
                     cancellationToken: default,
                     continuationToken: queryState?.Value);
-                Assert.IsTrue(monadicCreate.Succeeded);
+                if (monadicCreate.Failed)
+                {
+                    Assert.Fail(monadicCreate.Exception.ToString());
+                }
+
                 IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
 
                 QueryPage queryPage;
@@ -436,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
             } while (queryState != null);
 
-            Assert.AreEqual(numItems, documents.Count);
+            Assert.AreEqual(numItems, documents.Count, $"Failed with seed: {seed}. got {documents.Count} documents when {numItems} was expected.");
             Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents), $"Failed with seed: {seed}");
         }
 

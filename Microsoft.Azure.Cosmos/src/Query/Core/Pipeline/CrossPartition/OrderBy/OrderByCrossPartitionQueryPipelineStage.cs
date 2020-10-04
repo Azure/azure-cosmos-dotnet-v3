@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private CancellationToken cancellationToken;
         private QueryState state;
+        private bool returnedFinalPage;
 
         private static class Expressions
         {
@@ -146,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
                                 state: null));
+                        this.returnedFinalPage = true;
                         return true;
                     }
                 }
@@ -223,6 +225,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
                             state: null));
+                    this.returnedFinalPage = true;
                     return true;
                 }
             }
@@ -416,6 +419,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
                     state: this.state));
+
+            if (state == null)
+            {
+                this.returnedFinalPage = true;
+            }
+
             return new ValueTask<bool>(true);
         }
 
@@ -454,6 +463,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             if (this.enumerators.Count == 0)
             {
+                if (!this.returnedFinalPage)
+                {
+                    // return a empty page with null continuation token
+                    this.Current = TryCatch<QueryPage>.FromResult(
+                        new QueryPage(
+                            documents: EmptyPage,
+                            requestCharge: 0,
+                            activityId: Guid.NewGuid().ToString(),
+                            responseLengthInBytes: 0,
+                            cosmosQueryExecutionInfo: default,
+                            disallowContinuationTokenMessage: default,
+                            state: null));
+                    this.returnedFinalPage = true;
+                    return new ValueTask<bool>(true);
+                }
+
                 // Finished draining.
                 return new ValueTask<bool>(false);
             }

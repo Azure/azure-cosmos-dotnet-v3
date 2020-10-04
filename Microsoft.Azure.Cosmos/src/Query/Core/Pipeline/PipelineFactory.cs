@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 throw new ArgumentNullException(nameof(queryInfo));
             }
 
-            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery) : sqlQuerySpec;
+            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
 
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)

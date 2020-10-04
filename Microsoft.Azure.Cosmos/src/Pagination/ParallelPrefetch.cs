@@ -22,11 +22,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
             for (int i = 0; i < maxConcurrency; i++)
             {
-                if (prefetchersEnumerator.MoveNext())
+                if (!prefetchersEnumerator.MoveNext())
                 {
-                    IPrefetcher prefetcher = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(cancellationToken)));
+                    break;
                 }
+
+                IPrefetcher prefetcher = prefetchersEnumerator.Current;
+                tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(cancellationToken)));
             }
 
             while (tasks.Count != 0)

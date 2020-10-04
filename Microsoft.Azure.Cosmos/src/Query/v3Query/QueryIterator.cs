@@ -215,31 +215,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(tryGetQueryPage.Exception);
-                SubStatusCodes subStatusCode;
-                if (Enum.IsDefined(typeof(SubStatusCodes), cosmosException.SubStatusCode))
-                {
-                    subStatusCode = (SubStatusCodes)cosmosException.SubStatusCode;
-                }
-                else
-                {
-                    subStatusCode = Documents.SubStatusCodes.Unknown;
-                }
 
                 return QueryResponse.CreateFailure(
                     statusCode: cosmosException.StatusCode,
                     cosmosException: cosmosException,
                     requestMessage: null,
                     diagnostics: diagnostics,
-                    responseHeaders: new CosmosQueryResponseMessageHeaders(
-                        continauationToken: default,
-                        disallowContinuationTokenMessage: default,
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                        cosmosException.Headers,
                         this.cosmosQueryContext.ResourceTypeEnum,
-                        this.cosmosQueryContext.ContainerResourceId)
-                    {
-                        RequestCharge = cosmosException.RequestCharge,
-                        ActivityId = cosmosException.ActivityId,
-                        SubStatusCode = subStatusCode,
-                    });
+                        this.cosmosQueryContext.ContainerResourceId));
             }
         }
 

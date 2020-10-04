@@ -499,6 +499,8 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             byte[] bytes = UInt128.ToByteArray(this);
+            // Reverse the bytes and make it big endian so that the lex sort is equivalent to the numeric sort.
+            Array.Reverse(bytes, 0, bytes.Length);
             return BitConverter.ToString(bytes);
         }
 

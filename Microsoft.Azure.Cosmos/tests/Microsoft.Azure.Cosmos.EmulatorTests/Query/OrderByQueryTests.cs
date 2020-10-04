@@ -427,8 +427,12 @@
             #endregion
 
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
-                string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).ReadNextAsync();
+                $"SELECT TOP 0 * FROM r",
+                requestOptions: new QueryRequestOptions() 
+                {  
+                    MaxConcurrency = 10, 
+                    MaxItemCount = -1 
+                }).ReadNextAsync();
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 

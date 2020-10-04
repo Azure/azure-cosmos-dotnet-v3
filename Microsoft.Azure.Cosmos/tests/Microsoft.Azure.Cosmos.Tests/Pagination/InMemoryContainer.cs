@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal sealed class InMemoryContainer : IMonadicDocumentContainer
     {
-        private static readonly ResourceIdentifier SeedIdentifier = ResourceIdentifier.Parse("AYIMAMmFOw8YAAAAAAAAAA==");
         private static readonly PartitionKeyRange FullRange = new PartitionKeyRange()
         {
             MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -395,12 +394,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     return documentResourceId.Document >= continuationParsedResourceId.Document;
                 }));
 
-                if (queryPageResults.FirstOrDefault() is CosmosObject firstDocument)
+                for (int i = 0; i < continuationSkipCount; i++)
                 {
-                    string currentResourceId = ((CosmosString)firstDocument["_rid"]).Value;
-                    if (currentResourceId == continuationResourceId)
+                    if (queryPageResults.FirstOrDefault() is CosmosObject firstDocument)
                     {
-                        queryPageResults = queryPageResults.Skip(continuationSkipCount);
+                        string currentResourceId = ((CosmosString)firstDocument["_rid"]).Value;
+                        if (currentResourceId == continuationResourceId)
+                        {
+                            queryPageResults = queryPageResults.Skip(1);
+                        }
                     }
                 }
             }
@@ -655,7 +657,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     PropertyInfo databaseProp = currentResourceId
                         .GetType()
                         .GetProperty("Database", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                    databaseProp.SetValue(currentResourceId, (uint)pkrangeid);
+                    databaseProp.SetValue(currentResourceId, (uint)pkrangeid + 1);
                 }
                 else
                 {
@@ -672,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     PropertyInfo databaseProp = nextResourceId
                         .GetType()
                         .GetProperty("Database", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                    databaseProp.SetValue(nextResourceId, (uint)pkrangeid);
+                    databaseProp.SetValue(nextResourceId, (uint)pkrangeid + 1);
                 }
 
                 Record record = new Record(nextResourceId, DateTime.UtcNow.Ticks, Guid.NewGuid().ToString(), payload);
