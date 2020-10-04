@@ -224,7 +224,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
                         cosmosException.Headers,
                         this.cosmosQueryContext.ResourceTypeEnum,
-                        this.cosmosQueryContext.ContainerResourceId));
+                        this.cosmosQueryContext.ContainerResourceId,
+                        cosmosException.SubStatusCode,
+                        cosmosException.ActivityId));
             }
         }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
     internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
@@ -82,13 +84,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FullRange, cancellationToken);
 
-        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
+        public async Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
             PartitionKeyRange partitionKeyRange,
-            CancellationToken cancellationToken) => this.cosmosQueryContext.QueryClient.TryGetOverlappingRangesAsync(
+            CancellationToken cancellationToken)
+        {
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.cosmosQueryContext.QueryClient.TryGetOverlappingRangesAsync(
                 this.cosmosQueryContext.ContainerResourceId,
                 partitionKeyRange.ToRange(),
-                forceRefresh: true)
-                .ContinueWith(antecedent => TryCatch<List<PartitionKeyRange>>.FromResult(antecedent.Result.ToList()));
+                forceRefresh: true);
+            if (overlappingRanges == null)
+            {
+                return TryCatch<List<PartitionKeyRange>>.FromException(
+                    CosmosExceptionFactory.CreateNotFoundException(
+                        message: $"Container with resource id: {this.cosmosQueryContext.ContainerResourceId} was not found"));
+            }
+
+            return TryCatch<List<PartitionKeyRange>>.FromResult(overlappingRanges.ToList());
+        }
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
