@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -88,18 +89,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
             PartitionKeyRange partitionKeyRange,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.cosmosQueryContext.QueryClient.TryGetOverlappingRangesAsync(
-                this.cosmosQueryContext.ContainerResourceId,
-                partitionKeyRange.ToRange(),
-                forceRefresh: true);
-            if (overlappingRanges == null)
+            try
             {
-                return TryCatch<List<PartitionKeyRange>>.FromException(
-                    CosmosExceptionFactory.CreateNotFoundException(
-                        message: $"Container with resource id: {this.cosmosQueryContext.ContainerResourceId} was not found"));
+                List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
+                this.cosmosQueryContext.ResourceLink,
+                this.cosmosQueryContext.ContainerResourceId,
+                new List<Documents.Routing.Range<string>>() { partitionKeyRange.ToRange() });
+                return TryCatch<List<PartitionKeyRange>>.FromResult(overlappingRanges);
             }
-
-            return TryCatch<List<PartitionKeyRange>>.FromResult(overlappingRanges.ToList());
+            catch (Exception ex)
+            {
+                return TryCatch<List<PartitionKeyRange>>.FromException(ex);
+            }
         }
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
