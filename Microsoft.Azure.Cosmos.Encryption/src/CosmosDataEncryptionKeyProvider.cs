@@ -120,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <inheritdoc/>
         public override async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
-            string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
             DataEncryptionKeyProperties dataEncryptionKeyProperties = await this.dataEncryptionKeyContainerCore.FetchDataEncryptionKeyPropertiesAsync(

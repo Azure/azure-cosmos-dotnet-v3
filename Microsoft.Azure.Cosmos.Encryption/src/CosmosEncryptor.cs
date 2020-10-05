@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
-                encryptionAlgorithm,
                 cancellationToken);
 
             if (dek == null)
@@ -57,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                 dataEncryptionKeyId,
-                encryptionAlgorithm,
                 cancellationToken);
 
             if (dek == null)

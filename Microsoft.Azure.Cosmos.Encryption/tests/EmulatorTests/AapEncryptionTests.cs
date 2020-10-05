@@ -1397,7 +1397,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                     dataEncryptionKeyId,
-                    encryptionAlgorithm,
                     cancellationToken);
 
                 if (dek == null)
@@ -1416,7 +1415,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                     dataEncryptionKeyId,
-                    encryptionAlgorithm,
                     cancellationToken);
 
                 return dek.EncryptData(plainText);

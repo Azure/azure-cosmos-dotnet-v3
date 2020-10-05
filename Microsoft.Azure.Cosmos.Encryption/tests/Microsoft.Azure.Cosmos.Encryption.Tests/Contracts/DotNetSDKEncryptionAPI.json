@@ -84,12 +84,12 @@
           ],
           "MethodInfo": "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__17))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__17))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.Threading.CancellationToken)"
         },
         "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])": {
           "Type": "Constructor",
@@ -408,12 +408,12 @@
               ],
               "MethodInfo": "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)"
             },
-            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__17))]": {
+            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__17))]": {
               "Type": "Method",
               "Attributes": [
                 "AsyncStateMachineAttribute"
               ],
-              "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)"
+              "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.Threading.CancellationToken)"
             },
             "Void .ctor(Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider, System.Nullable`1[System.TimeSpan])": {
               "Type": "Constructor",
@@ -430,10 +430,10 @@
         }
       },
       "Members": {
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.Threading.CancellationToken)"
         }
       },
       "NestedTypes": {}
