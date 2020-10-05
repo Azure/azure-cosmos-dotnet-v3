@@ -53,17 +53,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <typeparam name="T">The type of item to be returned.</typeparam>
         /// <returns>The requested item and the decryption operation related context.</returns>
         public abstract Task<(T, DecryptionContext)> GetItemAsync<T>();
-
-        /// <summary>
-        /// Validate that the DecryptableItem is initialized.
-        /// </summary>
-        /// <param name="decryptableItem">Decryptable item to check.</param>
-        protected void Validate(DecryptableItem decryptableItem)
-        {
-            if (decryptableItem == null)
-            {
-                throw new InvalidOperationException("Decryptable content is not initialized.");
-            }
-        }
     }
 }

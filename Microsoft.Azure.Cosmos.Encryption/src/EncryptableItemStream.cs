@@ -69,7 +69,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <inheritdoc/>
         public override Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
-            this.Validate(this.decryptableItem);
+            if (this.decryptableItem == null)
+            {
+                throw new InvalidOperationException("Decryptable content is not initialized.");
+            }
+
             return this.decryptableItem.GetItemAsync<T>();
         }
 
