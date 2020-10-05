@@ -6,12 +6,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Linq;
+    using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -31,14 +30,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private readonly ContainerCore container;
         private readonly CosmosQueryContext cosmosQueryContext;
+        private readonly CosmosClientContext cosmosClientContext;
         private readonly ExecuteQueryBasedOnFeedRangeVisitor executeQueryBasedOnFeedRangeVisitor;
 
         public NetworkAttachedDocumentContainer(
             ContainerCore container,
-            CosmosQueryContext cosmosQueryContext)
+            CosmosQueryContext cosmosQueryContext,
+            CosmosClientContext cosmosClientContext)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
+            this.cosmosClientContext = cosmosClientContext ?? throw new ArgumentNullException(nameof(cosmosClientContext));
             this.executeQueryBasedOnFeedRangeVisitor = new ExecuteQueryBasedOnFeedRangeVisitor(this);
         }
 
@@ -161,5 +163,98 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     continuationToken,
                     pageSize),
                 cancellationToken);
+
+        public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
+            ChangeFeedState state,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.Document,
+                operationType: OperationType.ReadFeed,
+                requestOptions: default,
+                cosmosContainerCore: this.container,
+                requestEnricher: (request) =>
+                {
+                    state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
+                    feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
+
+                    request.Headers.PageSize = pageSize.ToString();
+                    request.Headers.Add(
+                        HttpConstants.HttpHeaders.A_IM,
+                        HttpConstants.A_IMHeaderValues.IncrementalFeed);
+                },
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
+                cancellationToken: cancellationToken);
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                CosmosException cosmosException = new CosmosException(
+                    responseMessage.ErrorMessage,
+                    statusCode: responseMessage.StatusCode,
+                    (int)responseMessage.Headers.SubStatusCode,
+                    responseMessage.Headers.ActivityId,
+                    responseMessage.Headers.RequestCharge);
+
+                return TryCatch<ChangeFeedPage>.FromException(cosmosException);
+            }
+
+            ChangeFeedPage changeFeedPage = new ChangeFeedPage(
+                responseMessage.Content,
+                responseMessage.Headers.RequestCharge,
+                responseMessage.Headers.ActivityId,
+                ChangeFeedState.Continuation(responseMessage.ContinuationToken));
+            return TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
+        }
+
+        private sealed class ChangeFeedStateRequestMessagePopulator : IChangeFeedStateVisitor<RequestMessage>
+        {
+            public static readonly ChangeFeedStateRequestMessagePopulator Singleton = new ChangeFeedStateRequestMessagePopulator();
+
+            private const string IfNoneMatchAllHeaderValue = "*";
+
+            private static readonly DateTime StartFromBeginningTime = DateTime.MinValue.ToUniversalTime();
+
+            private ChangeFeedStateRequestMessagePopulator()
+            {
+            }
+
+            public void Visit(ChangeFeedStateBeginning changeFeedStateBeginning, RequestMessage message)
+            {
+                // We don't need to set any headers to start from the beginning
+            }
+
+            public void Visit(ChangeFeedStateTime changeFeedStateTime, RequestMessage message)
+            {
+                // Our current public contract for ChangeFeedProcessor uses DateTime.MinValue.ToUniversalTime as beginning.
+                // We need to add a special case here, otherwise it would send it as normal StartTime.
+                // The problem is Multi master accounts do not support StartTime header on ReadFeed, and thus,
+                // it would break multi master Change Feed Processor users using Start From Beginning semantics.
+                // It's also an optimization, since the backend won't have to binary search for the value.
+                if (changeFeedStateTime.StartTime != ChangeFeedStateRequestMessagePopulator.StartFromBeginningTime)
+                {
+                    message.Headers.Add(
+                        HttpConstants.HttpHeaders.IfModifiedSince,
+                        changeFeedStateTime.StartTime.ToString("r", CultureInfo.InvariantCulture));
+                }
+            }
+
+            public void Visit(ChangeFeedStateContinuation changeFeedStateContinuation, RequestMessage message)
+            {
+                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
+                message.Headers.IfNoneMatch = changeFeedStateContinuation.ContinuationToken;
+            }
+
+            public void Visit(ChangeFeedStateNow changeFeedStateNow, RequestMessage message)
+            {
+                message.Headers.IfNoneMatch = ChangeFeedStateRequestMessagePopulator.IfNoneMatchAllHeaderValue;
+            }
+        }
     }
 }

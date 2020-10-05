@@ -139,8 +139,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 cosmosContainerCore: this.container,
                 requestEnricher: (request) =>
                 {
-                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-                    this.changeFeedStartFrom.Accept(visitor);
                 },
                 partitionKey: default,
                 streamPayload: default,

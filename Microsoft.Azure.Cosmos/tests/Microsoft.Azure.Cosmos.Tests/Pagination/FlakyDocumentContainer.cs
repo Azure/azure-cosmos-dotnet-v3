@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -43,6 +46,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         private static readonly Task<TryCatch<QueryPage>> ThrottleForQuery = Task.FromResult(
             TryCatch<QueryPage>.FromException(
+                RequestRateTooLargeException));
+
+        private static readonly Task<TryCatch<ChangeFeedPage>> ThrottleForChangeFeed = Task.FromResult(
+            TryCatch<ChangeFeedPage>.FromException(
                 RequestRateTooLargeException));
 
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
@@ -260,6 +267,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return this.documentContainer.MonadicQueryAsync(
                 sqlQuerySpec,
                 continuationToken,
+                feedRange,
+                pageSize,
+                cancellationToken);
+        }
+
+        public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
+            ChangeFeedState state, 
+            FeedRangeInternal feedRange, 
+            int pageSize, 
+            CancellationToken cancellationToken)
+        {
+            if (this.ShouldReturn429())
+            {
+                return ThrottleForChangeFeed;
+            }
+
+            if (this.ShouldReturnEmptyPage())
+            {
+                return Task.FromResult(
+                    TryCatch<ChangeFeedPage>.FromResult(
+                        new ChangeFeedPage(
+                            content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            state: state)));
+            }
+
+            return this.documentContainer.MonadicChangeFeedAsync(
+                state,
                 feedRange,
                 pageSize,
                 cancellationToken);

@@ -78,6 +78,11 @@ namespace Microsoft.Azure.Cosmos
             visitor.Visit(this);
         }
 
+        public override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input)
+        {
+            visitor.Visit(this, input);
+        }
+
         public override Task<TResult> AcceptAsync<TResult>(
             IFeedRangeAsyncVisitor<TResult> visitor,
             CancellationToken cancellationToken = default)

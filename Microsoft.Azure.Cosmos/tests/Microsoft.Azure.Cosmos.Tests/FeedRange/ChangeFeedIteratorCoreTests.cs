@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns(cosmosClientContext.Object);
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns("/dbs");
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
