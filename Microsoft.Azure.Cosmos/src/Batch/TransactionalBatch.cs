@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos
     /// };
     ///
     /// List<PatchOperation> patchOperations = new List<PatchOperation>();
-    /// patchOperations.Add(PatchOperation.CreateReplaceOperation("/status", "InProgress");
-    /// patchOperations.Add(PatchOperation.CreateAddOperation("/progress", 50);
+    /// patchOperations.Add(PatchOperation.Replace("/status", "InProgress");
+    /// patchOperations.Add(PatchOperation.Add("/progress", 50);
     /// 
     /// using (TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(new Cosmos.PartitionKey(activityType))
     ///     .CreateItem<ToDoActivity>(test1)
