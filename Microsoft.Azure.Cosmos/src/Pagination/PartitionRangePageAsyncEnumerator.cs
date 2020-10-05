@@ -49,6 +49,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.State = this.Current.Result.State;
                 this.HasStarted = true;
             }
+            else
+            {
+                if(this.Current.Exception)
+            }
 
             return true;
         }
