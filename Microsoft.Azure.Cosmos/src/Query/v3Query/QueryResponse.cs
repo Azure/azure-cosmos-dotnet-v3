@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             QueryResponse<TInput> queryResponse;
             using (cosmosQueryResponse)
             {
-                cosmosQueryResponse.EnsureSuccessStatusCode();
+                _ = cosmosQueryResponse.EnsureSuccessStatusCode();
 
                 queryResponse = new QueryResponse<TInput>(
                     httpStatusCode: cosmosQueryResponse.StatusCode,
