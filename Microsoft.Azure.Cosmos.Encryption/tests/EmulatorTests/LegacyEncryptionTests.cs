@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
         {
+            _ = context;
             LegacyEncryptionTests.testKeyWrapProvider = new TestKeyWrapProvider();
             LegacyEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(LegacyEncryptionTests.testKeyWrapProvider);
             LegacyEncryptionTests.encryptor = new TestEncryptor(LegacyEncryptionTests.dekProvider);
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/testkey1/" + KeyVaultTestConstants.ValidateNullWrappedKey);
             EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);           
 
-            EncryptionKeyWrapResult keyWrapResponse = await azureKeyVaultKeyWrapProvider.WrapKeyAsync(
+            await azureKeyVaultKeyWrapProvider.WrapKeyAsync(
                 rawDekForKeyVault,
                 invalidWrapMetadata,
                 cancellationToken);         
@@ -211,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             EncryptionKeyWrapResult wrappedKey = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, azureKeyVaultKeyWrapMetadata, cancellationToken);
             byte[] wrappedDek = wrappedKey.WrappedDataEncryptionKey;            
 
-            EncryptionKeyUnwrapResult keyWrapResponse = await azureKeyVaultKeyWrapProvider.UnwrapKeyAsync(
+            await azureKeyVaultKeyWrapProvider.UnwrapKeyAsync(
                wrappedDek,
                invalidWrapMetadata,
                cancellationToken);            
@@ -229,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CancellationToken cancellationToken = default;
             Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/" + KeyVaultTestConstants.ValidateNullKeyVaultKey + "/47d306aeaae74baab294672354603ca3");
             EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
+            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
         }
 
         /// <summary>
@@ -259,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CancellationToken cancellationToken = default;
             Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/" + KeyVaultTestConstants.ValidateRequestFailedEx + "/47d306aeaae74baab294672354603ca3");
             EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
+            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
         }
 
         /// <summary>
@@ -292,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task WrapNullKeyUsingKeyVault()
         {
             CancellationToken cancellationToken = default;
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(null, azureKeyVaultKeyWrapMetadata, cancellationToken);
+            await LegacyEncryptionTests.WrapDekKeyVaultAsync(null, azureKeyVaultKeyWrapMetadata, cancellationToken);
         }
 
         /// <summary>
@@ -338,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CancellationToken cancellationToken = default;
             Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/testkey1/47d306aeaae74baab294672354603ca3");
             EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "incorrectConstant", value: keyUri.AbsoluteUri);
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
+            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
         }
 
         /// <summary>
@@ -352,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             CancellationToken cancellationToken = default;            
             EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: null);
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
+            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
         }
 
         /// <summary>
@@ -367,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CancellationToken cancellationToken = default;
             Uri keyUri = new Uri("https://testdemo.vault.azure.net/key/testkey1/47d306aeaae74baab294672354603ca3");
             EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
+            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
         }
 
         [TestMethod]
@@ -711,7 +712,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await LegacyEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2, query);
 
             // ORDER BY query
-            query = query + " ORDER BY c._ts";
+            query += " ORDER BY c._ts";
             await LegacyEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2, query);
         }
 
@@ -825,7 +826,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             int failureCount = 0;
             Database databaseForRestrictedUser = clientForRestrictedUser.GetDatabase(LegacyEncryptionTests.database.Id);
             Container containerForRestrictedUser = databaseForRestrictedUser.GetContainer(LegacyEncryptionTests.itemContainer.Id);
+#pragma warning disable IDE0039 // Use local function
             Action<DecryptionResult> errorHandler = (decryptionErrorDetails) =>
+#pragma warning restore IDE0039 // Use local function
             {
                 Assert.AreEqual(decryptionErrorDetails.Exception.Message, $"The CosmosDataEncryptionKeyProvider was not initialized.");
                 failureCount++;
@@ -881,7 +884,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionRestrictedProperties()
         {
-            TestDoc testDoc = TestDoc.Create();
+            TestDoc.Create();
 
             try
             {
@@ -1058,16 +1061,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
                 : null;
 
-            FeedIterator<TestDoc> queryResponseIterator;
-            if (query != null)
-            {
-                queryResponseIterator = container.GetItemQueryIterator<TestDoc>(query, requestOptions: requestOptions);
-            }
-            else
-            {
-                queryResponseIterator = container.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: requestOptions);
-            }
-
+            FeedIterator<TestDoc> queryResponseIterator = query != null
+                ? container.GetItemQueryIterator<TestDoc>(query, requestOptions: requestOptions)
+                : container.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: requestOptions);
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
 
@@ -1263,21 +1259,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 };
             }
 
-            FeedIterator<DataEncryptionKeyProperties> dekIterator;
-
-            if (queryDefinition != null)
-            {
-                dekIterator = dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
+            FeedIterator<DataEncryptionKeyProperties> dekIterator = queryDefinition != null
+                ? dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
                     queryDefinition,
-                    requestOptions: requestOptions);
-            }
-            else
-            {
-                dekIterator = dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
+                    requestOptions: requestOptions)
+                : dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
                     query,
                     requestOptions: requestOptions);
-            }
-
             Assert.IsTrue(dekIterator.HasMoreResults);
 
             List<string> readDekIds = new List<string>();

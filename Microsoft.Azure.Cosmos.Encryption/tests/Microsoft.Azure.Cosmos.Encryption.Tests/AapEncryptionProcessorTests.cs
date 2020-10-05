@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [ClassInitialize]
         public static void ClassInitilize(TestContext testContext)
         {
+            _ = testContext;
             aapEncryptionProcessor = new AapEncryptionProcessor();
             AapEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
             {

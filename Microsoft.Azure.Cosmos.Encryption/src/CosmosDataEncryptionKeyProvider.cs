@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.AAP_PH.Cryptography;
+    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.

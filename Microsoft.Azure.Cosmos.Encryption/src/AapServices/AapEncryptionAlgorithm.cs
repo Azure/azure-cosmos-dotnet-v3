@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using Microsoft.Data.AAP_PH.Cryptography;
+    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// Encryption Algorithm provided by AAP Encryption Package
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public AapEncryptionAlgorithm(
             DataEncryptionKeyProperties dekProperties,
             byte[] rawDek,
-            Data.AAP_PH.Cryptography.EncryptionType encryptionType,
+            Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.rawDek = rawDek ?? throw new ArgumentNullException(nameof(rawDek));
@@ -44,18 +44,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
 
-            KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
+            KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 dekProperties.EncryptionKeyWrapMetadata.Name,
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
-            Data.AAP_PH.Cryptography.DataEncryptionKey encryptionKey = Data.AAP_PH.Cryptography.DataEncryptionKey.GetOrCreate(
+            ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                 dekProperties.Id,
-                masterKey,
+                keyEncryptionKey,
                 dekProperties.WrappedDataEncryptionKey);
 
-            this.aapEncryptionAlgorithm = Data.AAP_PH.Cryptography.EncryptionAlgorithm.GetOrCreate(
-                encryptionKey,
+            this.aapEncryptionAlgorithm = Data.Encryption.Cryptography.EncryptionAlgorithm.GetOrCreate(
+                protectedDataEncryptionKey,
                 encryptionType);
         }
 

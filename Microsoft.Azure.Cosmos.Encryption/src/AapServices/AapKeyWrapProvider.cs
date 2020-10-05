@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.AAP_PH.Cryptography;
+    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using master keys (KEKs) via EncryptionKeyStoreProvider.
+    /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using Key Encryption Keys (KEKs) via EncryptionKeyStoreProvider.
     /// </summary>
     internal sealed class AapKeyWrapProvider : EncryptionKeyWrapProvider
     {

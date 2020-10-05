@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.AAP_PH.Cryptography.Serializers;
+    using Microsoft.Data.Encryption.Cryptography.Serializers;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 

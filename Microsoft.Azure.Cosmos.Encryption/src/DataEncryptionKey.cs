@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// Encrypts the plainText with a data encryption key.
-        /// </summary>  
+        /// </summary>
         /// <param name="plainText">Plain text value to be encrypted.</param>
         /// <returns>Encrypted value.</returns>
         public abstract byte[] EncryptData(byte[] plainText);

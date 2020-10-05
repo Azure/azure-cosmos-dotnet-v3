@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.AAP_PH.Cryptography;
+    using Microsoft.Data.Encryption.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
     {
@@ -79,7 +79,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 updatedMetadata,
                 DateTime.UtcNow);
 
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(dekProperties, new PartitionKey(dekProperties.Id), cancellationToken: cancellationToken);
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(
+                dekProperties,
+                new PartitionKey(dekProperties.Id),
+                cancellationToken: cancellationToken);
+
             this.DekProvider.DekCache.SetDekProperties(id, dekResponse.Resource);
 
             if (encryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
@@ -96,10 +100,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             ItemResponse<DataEncryptionKeyProperties> response = await this.ReadInternalAsync(
                 id,
                 requestOptions,
-                diagnosticsContext: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             this.DekProvider.DekCache.SetDekProperties(id, response.Resource);
@@ -312,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 dek = new AapEncryptionAlgorithm(
                     dekProperties,
                     unwrapResult.DataEncryptionKey,
-                    Data.AAP_PH.Cryptography.EncryptionType.Randomized,
+                    Data.Encryption.Cryptography.EncryptionType.Randomized,
                     aapKeyWrapProvider.EncryptionKeyStoreProvider);
             }
 
@@ -340,11 +345,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
+            using (diagnosticsContext.CreateScope("ReadInternalAsync"))
+            {
+                return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
                 id,
                 new PartitionKey(id),
                 requestOptions,
                 cancellationToken);
+            }
         }
     }
 }

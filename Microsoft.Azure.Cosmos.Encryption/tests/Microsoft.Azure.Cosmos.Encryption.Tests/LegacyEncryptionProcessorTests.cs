@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [ClassInitialize]
         public static void ClassInitilize(TestContext testContext)
         {
+            _ = testContext;
             LegacyEncryptionProcessorTests.legacyEncryptionProcessor = new LegacyEncryptionProcessor();
             LegacyEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
             {
