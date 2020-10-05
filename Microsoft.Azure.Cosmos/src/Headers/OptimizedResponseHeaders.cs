@@ -18,123 +18,63 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
 
-        public string A_IM { get; set; }
-        public string AddResourcePropertiesToResponse { get; set; }
-        public string AllowTentativeWrites { get; set; }
-        public string Authorization { get; set; }
-        public string BinaryId { get; set; }
-        public string BinaryPassthroughRequest { get; set; }
-        public string BindReplicaDirective { get; set; }
-        public string CanCharge { get; set; }
-        public string CanOfferReplaceComplete { get; set; }
-        public string CanThrottle { get; set; }
-        public string ChangeFeedStartFullFidelityIfNoneMatch { get; set; }
-        public string ClientRetryAttemptCount { get; set; }
-        public string CollectionChildResourceContentLimitInKB { get; set; }
-        public string CollectionChildResourceNameLimitInBytes { get; set; }
+        public string ActivityId { get; set; }
+        public string BackendRequestDurationMilliseconds { get; set; }
+        public string CollectionIndexTransformationProgress { get; set; }
+        public string CollectionLazyIndexingProgress { get; set; }
         public string CollectionPartitionIndex { get; set; }
-        public string CollectionRid { get; set; }
         public string CollectionSecurityIdentifier { get; set; }
         public string CollectionServiceIndex { get; set; }
-        public string ConsistencyLevel { get; set; }
-        public string ContentSerializationFormat { get; set; }
-        public string Continuation { get; set; }
-        public string DisableRUPerMinuteUsage { get; set; }
-        public string EffectivePartitionKey { get; set; }
-        public string EmitVerboseTracesInQuery { get; set; }
-        public string EnableDynamicRidRangeAllocation { get; set; }
-        public string EnableLogging { get; set; }
-        public string EnableLowPrecisionOrderBy { get; set; }
-        public string EnableScanInQuery { get; set; }
-        public string EndEpk { get; set; }
-        public string EndId { get; set; }
-        public string EnumerationDirection { get; set; }
-        public string ExcludeSystemProperties { get; set; }
-        public string FanoutOperationState { get; set; }
-        public string FilterBySchemaResourceId { get; set; }
-        public string ForceQueryScan { get; set; }
-        public string ForceSideBySideIndexMigration { get; set; }
-        public string GatewaySignature { get; set; }
-        public string GetAllPartitionKeyStatistics { get; set; }
-        public string HttpDate { get; set; }
-        public string IfMatch { get; set; }
-        public string IfModifiedSince { get; set; }
-        public string IfNoneMatch { get; set; }
-        public string IgnoreSystemLoweringMaxThroughput { get; set; }
-        public string IncludeTentativeWrites { get; set; }
+        public string ContinuationToken { get; set; }
+        public string CurrentReplicaSetSize { get; set; }
+        public string CurrentResourceQuotaUsage { get; set; }
+        public string CurrentWriteQuorum { get; set; }
+        public string DatabaseAccountId { get; set; }
+        public string DisableRntbdChannel { get; set; }
+        public string ETag { get; set; }
+        public string GlobalCommittedLSN { get; set; }
+        public string HasTentativeWrites { get; set; }
         public string IndexingDirective { get; set; }
-        public string IsBatchAtomic { get; set; }
-        public string IsBatchOrdered { get; set; }
-        public string IsClientEncrypted { get; set; }
-        public string IsFanoutRequest { get; set; }
-        public string IsOfferStorageRefreshRequest { get; set; }
-        public string IsReadOnlyScript { get; set; }
-        public string IsRetriedWriteRequest { get; set; }
-        public string IsRUPerGBEnforcementRequest { get; set; }
-        public string IsUserRequest { get; set; }
-        public string MaxPollingIntervalMilliseconds { get; set; }
-        public string MergeCheckPointGLSN { get; set; }
-        public string MergeStaticId { get; set; }
-        public string MigrateCollectionDirective { get; set; }
-        public string MigrateOfferToAutopilot { get; set; }
-        public string MigrateOfferToManualThroughput { get; set; }
-        public string PageSize { get; set; }
-        public string PartitionCount { get; set; }
-        public string PartitionKey { get; set; }
+        public string IndexUtilization { get; set; }
+        public string IsRUPerMinuteUsed { get; set; }
+        public string ItemCount { get; set; }
+        public string ItemLocalLSN { get; set; }
+        public string ItemLSN { get; set; }
+        public string LastStateChangeUtc { get; set; }
+        public string LocalLSN { get; set; }
+        public string LogResults { get; set; }
+        public string LSN { get; set; }
+        public string MaxResourceQuota { get; set; }
+        public string MinimumRUsForOffer { get; set; }
+        public string NumberOfReadRegions { get; set; }
+        public string OfferReplacePending { get; set; }
+        public string OwnerFullName { get; set; }
+        public string OwnerId { get; set; }
         public string PartitionKeyRangeId { get; set; }
-        public string PartitionResourceFilter { get; set; }
-        public string PopulateCollectionThroughputInfo { get; set; }
-        public string PopulateLogStoreInfo { get; set; }
-        public string PopulatePartitionStatistics { get; set; }
-        public string PopulateQueryMetrics { get; set; }
-        public string PopulateQuotaInfo { get; set; }
-        public string PopulateResourceCount { get; set; }
-        public string PopulateUnflushedMergeEntryCount { get; set; }
-        public string PostTriggerExclude { get; set; }
-        public string PostTriggerInclude { get; set; }
-        public string Prefer { get; set; }
-        public string PreserveFullContent { get; set; }
-        public string PreTriggerExclude { get; set; }
-        public string PreTriggerInclude { get; set; }
-        public string PrimaryMasterKey { get; set; }
-        public string PrimaryReadonlyKey { get; set; }
-        public string ProfileRequest { get; set; }
-        public string ReadFeedKeyType { get; set; }
-        public string RemainingTimeInMsOnClientRequest { get; set; }
-        public string RemoteStorageType { get; set; }
-        public string ResourceSchemaName { get; set; }
-        public string ResourceTokenExpiry { get; set; }
-        public string ResourceTypes { get; set; }
-        public string ResponseContinuationTokenLimitInKB { get; set; }
-        public string RestoreMetadataFilter { get; set; }
-        public string RestoreParams { get; set; }
-        public string RetriableWriteRequestId { get; set; }
-        public string RetriableWriteRequestStartTimestamp { get; set; }
-        public string SchemaHash { get; set; }
-        public string SchemaOwnerRid { get; set; }
-        public string SecondaryMasterKey { get; set; }
-        public string SecondaryReadonlyKey { get; set; }
+        public string QueryExecutionInfo { get; set; }
+        public string QueryMetrics { get; set; }
+        public string QuorumAckedLocalLSN { get; set; }
+        public string QuorumAckedLSN { get; set; }
+        public string ReplicaStatusRevoked { get; set; }
+        public string ReplicatorLSNToGLSNDelta { get; set; }
+        public string ReplicatorLSNToLLSNDelta { get; set; }
+        public string RequestCharge { get; set; }
+        public string RequestValidationFailure { get; set; }
+        public string ResourceId { get; set; }
+        public string RestoreState { get; set; }
+        public string RetryAfterInMilliseconds { get; set; }
+        public string SchemaVersion { get; set; }
         public string SessionToken { get; set; }
         public string ShareThroughput { get; set; }
-        public string ShouldBatchContinueOnError { get; set; }
-        public string StartEpk { get; set; }
-        public string StartId { get; set; }
-        public string SupportSpatialLegacyCoordinates { get; set; }
-        public string SystemDocumentType { get; set; }
-        public string TargetGlobalCommittedLsn { get; set; }
-        public string TargetLsn { get; set; }
+        public string SoftMaxAllowedThroughput { get; set; }
+        public string SubStatus { get; set; }
         public string TimeToLiveInSeconds { get; set; }
-        public string TransactionCommit { get; set; }
-        public string TransactionId { get; set; }
         public string TransportRequestID { get; set; }
-        public string TruncateMergeLogRequest { get; set; }
-        public string UniqueIndexNameEncodingMode { get; set; }
-        public string UniqueIndexReIndexingState { get; set; }
-        public string UpdateMaxThroughputEverProvisioned { get; set; }
-        public string UsePolygonsSmallerThanAHemisphere { get; set; }
-        public string UseSystemBudget { get; set; }
-        public string Version { get; set; }
+        public string UnflushedMergLogEntryCount { get; set; }
+        public string VectorClockLocalProgress { get; set; }
         public string XDate { get; set; }
+        public string XPConfigurationSessionsCount { get; set; }
+        public string XPRole { get; set; }
 
         public OptimizedResponseHeaders()
             : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
@@ -177,123 +117,63 @@ namespace Microsoft.Azure.Cosmos
                 this.lazyNotCommonHeaders.Value.Clear();
             }
 
-            this.A_IM = null;
-            this.AddResourcePropertiesToResponse = null;
-            this.AllowTentativeWrites = null;
-            this.Authorization = null;
-            this.BinaryId = null;
-            this.BinaryPassthroughRequest = null;
-            this.BindReplicaDirective = null;
-            this.CanCharge = null;
-            this.CanOfferReplaceComplete = null;
-            this.CanThrottle = null;
-            this.ChangeFeedStartFullFidelityIfNoneMatch = null;
-            this.ClientRetryAttemptCount = null;
-            this.CollectionChildResourceContentLimitInKB = null;
-            this.CollectionChildResourceNameLimitInBytes = null;
+            this.ActivityId = null;
+            this.BackendRequestDurationMilliseconds = null;
+            this.CollectionIndexTransformationProgress = null;
+            this.CollectionLazyIndexingProgress = null;
             this.CollectionPartitionIndex = null;
-            this.CollectionRid = null;
             this.CollectionSecurityIdentifier = null;
             this.CollectionServiceIndex = null;
-            this.ConsistencyLevel = null;
-            this.ContentSerializationFormat = null;
-            this.Continuation = null;
-            this.DisableRUPerMinuteUsage = null;
-            this.EffectivePartitionKey = null;
-            this.EmitVerboseTracesInQuery = null;
-            this.EnableDynamicRidRangeAllocation = null;
-            this.EnableLogging = null;
-            this.EnableLowPrecisionOrderBy = null;
-            this.EnableScanInQuery = null;
-            this.EndEpk = null;
-            this.EndId = null;
-            this.EnumerationDirection = null;
-            this.ExcludeSystemProperties = null;
-            this.FanoutOperationState = null;
-            this.FilterBySchemaResourceId = null;
-            this.ForceQueryScan = null;
-            this.ForceSideBySideIndexMigration = null;
-            this.GatewaySignature = null;
-            this.GetAllPartitionKeyStatistics = null;
-            this.HttpDate = null;
-            this.IfMatch = null;
-            this.IfModifiedSince = null;
-            this.IfNoneMatch = null;
-            this.IgnoreSystemLoweringMaxThroughput = null;
-            this.IncludeTentativeWrites = null;
+            this.ContinuationToken = null;
+            this.CurrentReplicaSetSize = null;
+            this.CurrentResourceQuotaUsage = null;
+            this.CurrentWriteQuorum = null;
+            this.DatabaseAccountId = null;
+            this.DisableRntbdChannel = null;
+            this.ETag = null;
+            this.GlobalCommittedLSN = null;
+            this.HasTentativeWrites = null;
             this.IndexingDirective = null;
-            this.IsBatchAtomic = null;
-            this.IsBatchOrdered = null;
-            this.IsClientEncrypted = null;
-            this.IsFanoutRequest = null;
-            this.IsOfferStorageRefreshRequest = null;
-            this.IsReadOnlyScript = null;
-            this.IsRetriedWriteRequest = null;
-            this.IsRUPerGBEnforcementRequest = null;
-            this.IsUserRequest = null;
-            this.MaxPollingIntervalMilliseconds = null;
-            this.MergeCheckPointGLSN = null;
-            this.MergeStaticId = null;
-            this.MigrateCollectionDirective = null;
-            this.MigrateOfferToAutopilot = null;
-            this.MigrateOfferToManualThroughput = null;
-            this.PageSize = null;
-            this.PartitionCount = null;
-            this.PartitionKey = null;
+            this.IndexUtilization = null;
+            this.IsRUPerMinuteUsed = null;
+            this.ItemCount = null;
+            this.ItemLocalLSN = null;
+            this.ItemLSN = null;
+            this.LastStateChangeUtc = null;
+            this.LocalLSN = null;
+            this.LogResults = null;
+            this.LSN = null;
+            this.MaxResourceQuota = null;
+            this.MinimumRUsForOffer = null;
+            this.NumberOfReadRegions = null;
+            this.OfferReplacePending = null;
+            this.OwnerFullName = null;
+            this.OwnerId = null;
             this.PartitionKeyRangeId = null;
-            this.PartitionResourceFilter = null;
-            this.PopulateCollectionThroughputInfo = null;
-            this.PopulateLogStoreInfo = null;
-            this.PopulatePartitionStatistics = null;
-            this.PopulateQueryMetrics = null;
-            this.PopulateQuotaInfo = null;
-            this.PopulateResourceCount = null;
-            this.PopulateUnflushedMergeEntryCount = null;
-            this.PostTriggerExclude = null;
-            this.PostTriggerInclude = null;
-            this.Prefer = null;
-            this.PreserveFullContent = null;
-            this.PreTriggerExclude = null;
-            this.PreTriggerInclude = null;
-            this.PrimaryMasterKey = null;
-            this.PrimaryReadonlyKey = null;
-            this.ProfileRequest = null;
-            this.ReadFeedKeyType = null;
-            this.RemainingTimeInMsOnClientRequest = null;
-            this.RemoteStorageType = null;
-            this.ResourceSchemaName = null;
-            this.ResourceTokenExpiry = null;
-            this.ResourceTypes = null;
-            this.ResponseContinuationTokenLimitInKB = null;
-            this.RestoreMetadataFilter = null;
-            this.RestoreParams = null;
-            this.RetriableWriteRequestId = null;
-            this.RetriableWriteRequestStartTimestamp = null;
-            this.SchemaHash = null;
-            this.SchemaOwnerRid = null;
-            this.SecondaryMasterKey = null;
-            this.SecondaryReadonlyKey = null;
+            this.QueryExecutionInfo = null;
+            this.QueryMetrics = null;
+            this.QuorumAckedLocalLSN = null;
+            this.QuorumAckedLSN = null;
+            this.ReplicaStatusRevoked = null;
+            this.ReplicatorLSNToGLSNDelta = null;
+            this.ReplicatorLSNToLLSNDelta = null;
+            this.RequestCharge = null;
+            this.RequestValidationFailure = null;
+            this.ResourceId = null;
+            this.RestoreState = null;
+            this.RetryAfterInMilliseconds = null;
+            this.SchemaVersion = null;
             this.SessionToken = null;
             this.ShareThroughput = null;
-            this.ShouldBatchContinueOnError = null;
-            this.StartEpk = null;
-            this.StartId = null;
-            this.SupportSpatialLegacyCoordinates = null;
-            this.SystemDocumentType = null;
-            this.TargetGlobalCommittedLsn = null;
-            this.TargetLsn = null;
+            this.SoftMaxAllowedThroughput = null;
+            this.SubStatus = null;
             this.TimeToLiveInSeconds = null;
-            this.TransactionCommit = null;
-            this.TransactionId = null;
             this.TransportRequestID = null;
-            this.TruncateMergeLogRequest = null;
-            this.UniqueIndexNameEncodingMode = null;
-            this.UniqueIndexReIndexingState = null;
-            this.UpdateMaxThroughputEverProvisioned = null;
-            this.UsePolygonsSmallerThanAHemisphere = null;
-            this.UseSystemBudget = null;
-            this.Version = null;
+            this.UnflushedMergLogEntryCount = null;
+            this.VectorClockLocalProgress = null;
             this.XDate = null;
+            this.XPConfigurationSessionsCount = null;
+            this.XPRole = null;
 
         }
 
@@ -310,123 +190,63 @@ namespace Microsoft.Azure.Cosmos
 
             OptimizedResponseHeaders cloneHeaders = new OptimizedResponseHeaders(cloneNotCommonHeaders)
             {
-                A_IM = this.A_IM,
-                AddResourcePropertiesToResponse = this.AddResourcePropertiesToResponse,
-                AllowTentativeWrites = this.AllowTentativeWrites,
-                Authorization = this.Authorization,
-                BinaryId = this.BinaryId,
-                BinaryPassthroughRequest = this.BinaryPassthroughRequest,
-                BindReplicaDirective = this.BindReplicaDirective,
-                CanCharge = this.CanCharge,
-                CanOfferReplaceComplete = this.CanOfferReplaceComplete,
-                CanThrottle = this.CanThrottle,
-                ChangeFeedStartFullFidelityIfNoneMatch = this.ChangeFeedStartFullFidelityIfNoneMatch,
-                ClientRetryAttemptCount = this.ClientRetryAttemptCount,
-                CollectionChildResourceContentLimitInKB = this.CollectionChildResourceContentLimitInKB,
-                CollectionChildResourceNameLimitInBytes = this.CollectionChildResourceNameLimitInBytes,
+                ActivityId = this.ActivityId,
+                BackendRequestDurationMilliseconds = this.BackendRequestDurationMilliseconds,
+                CollectionIndexTransformationProgress = this.CollectionIndexTransformationProgress,
+                CollectionLazyIndexingProgress = this.CollectionLazyIndexingProgress,
                 CollectionPartitionIndex = this.CollectionPartitionIndex,
-                CollectionRid = this.CollectionRid,
                 CollectionSecurityIdentifier = this.CollectionSecurityIdentifier,
                 CollectionServiceIndex = this.CollectionServiceIndex,
-                ConsistencyLevel = this.ConsistencyLevel,
-                ContentSerializationFormat = this.ContentSerializationFormat,
-                Continuation = this.Continuation,
-                DisableRUPerMinuteUsage = this.DisableRUPerMinuteUsage,
-                EffectivePartitionKey = this.EffectivePartitionKey,
-                EmitVerboseTracesInQuery = this.EmitVerboseTracesInQuery,
-                EnableDynamicRidRangeAllocation = this.EnableDynamicRidRangeAllocation,
-                EnableLogging = this.EnableLogging,
-                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                EnableScanInQuery = this.EnableScanInQuery,
-                EndEpk = this.EndEpk,
-                EndId = this.EndId,
-                EnumerationDirection = this.EnumerationDirection,
-                ExcludeSystemProperties = this.ExcludeSystemProperties,
-                FanoutOperationState = this.FanoutOperationState,
-                FilterBySchemaResourceId = this.FilterBySchemaResourceId,
-                ForceQueryScan = this.ForceQueryScan,
-                ForceSideBySideIndexMigration = this.ForceSideBySideIndexMigration,
-                GatewaySignature = this.GatewaySignature,
-                GetAllPartitionKeyStatistics = this.GetAllPartitionKeyStatistics,
-                HttpDate = this.HttpDate,
-                IfMatch = this.IfMatch,
-                IfModifiedSince = this.IfModifiedSince,
-                IfNoneMatch = this.IfNoneMatch,
-                IgnoreSystemLoweringMaxThroughput = this.IgnoreSystemLoweringMaxThroughput,
-                IncludeTentativeWrites = this.IncludeTentativeWrites,
+                ContinuationToken = this.ContinuationToken,
+                CurrentReplicaSetSize = this.CurrentReplicaSetSize,
+                CurrentResourceQuotaUsage = this.CurrentResourceQuotaUsage,
+                CurrentWriteQuorum = this.CurrentWriteQuorum,
+                DatabaseAccountId = this.DatabaseAccountId,
+                DisableRntbdChannel = this.DisableRntbdChannel,
+                ETag = this.ETag,
+                GlobalCommittedLSN = this.GlobalCommittedLSN,
+                HasTentativeWrites = this.HasTentativeWrites,
                 IndexingDirective = this.IndexingDirective,
-                IsBatchAtomic = this.IsBatchAtomic,
-                IsBatchOrdered = this.IsBatchOrdered,
-                IsClientEncrypted = this.IsClientEncrypted,
-                IsFanoutRequest = this.IsFanoutRequest,
-                IsOfferStorageRefreshRequest = this.IsOfferStorageRefreshRequest,
-                IsReadOnlyScript = this.IsReadOnlyScript,
-                IsRetriedWriteRequest = this.IsRetriedWriteRequest,
-                IsRUPerGBEnforcementRequest = this.IsRUPerGBEnforcementRequest,
-                IsUserRequest = this.IsUserRequest,
-                MaxPollingIntervalMilliseconds = this.MaxPollingIntervalMilliseconds,
-                MergeCheckPointGLSN = this.MergeCheckPointGLSN,
-                MergeStaticId = this.MergeStaticId,
-                MigrateCollectionDirective = this.MigrateCollectionDirective,
-                MigrateOfferToAutopilot = this.MigrateOfferToAutopilot,
-                MigrateOfferToManualThroughput = this.MigrateOfferToManualThroughput,
-                PageSize = this.PageSize,
-                PartitionCount = this.PartitionCount,
-                PartitionKey = this.PartitionKey,
+                IndexUtilization = this.IndexUtilization,
+                IsRUPerMinuteUsed = this.IsRUPerMinuteUsed,
+                ItemCount = this.ItemCount,
+                ItemLocalLSN = this.ItemLocalLSN,
+                ItemLSN = this.ItemLSN,
+                LastStateChangeUtc = this.LastStateChangeUtc,
+                LocalLSN = this.LocalLSN,
+                LogResults = this.LogResults,
+                LSN = this.LSN,
+                MaxResourceQuota = this.MaxResourceQuota,
+                MinimumRUsForOffer = this.MinimumRUsForOffer,
+                NumberOfReadRegions = this.NumberOfReadRegions,
+                OfferReplacePending = this.OfferReplacePending,
+                OwnerFullName = this.OwnerFullName,
+                OwnerId = this.OwnerId,
                 PartitionKeyRangeId = this.PartitionKeyRangeId,
-                PartitionResourceFilter = this.PartitionResourceFilter,
-                PopulateCollectionThroughputInfo = this.PopulateCollectionThroughputInfo,
-                PopulateLogStoreInfo = this.PopulateLogStoreInfo,
-                PopulatePartitionStatistics = this.PopulatePartitionStatistics,
-                PopulateQueryMetrics = this.PopulateQueryMetrics,
-                PopulateQuotaInfo = this.PopulateQuotaInfo,
-                PopulateResourceCount = this.PopulateResourceCount,
-                PopulateUnflushedMergeEntryCount = this.PopulateUnflushedMergeEntryCount,
-                PostTriggerExclude = this.PostTriggerExclude,
-                PostTriggerInclude = this.PostTriggerInclude,
-                Prefer = this.Prefer,
-                PreserveFullContent = this.PreserveFullContent,
-                PreTriggerExclude = this.PreTriggerExclude,
-                PreTriggerInclude = this.PreTriggerInclude,
-                PrimaryMasterKey = this.PrimaryMasterKey,
-                PrimaryReadonlyKey = this.PrimaryReadonlyKey,
-                ProfileRequest = this.ProfileRequest,
-                ReadFeedKeyType = this.ReadFeedKeyType,
-                RemainingTimeInMsOnClientRequest = this.RemainingTimeInMsOnClientRequest,
-                RemoteStorageType = this.RemoteStorageType,
-                ResourceSchemaName = this.ResourceSchemaName,
-                ResourceTokenExpiry = this.ResourceTokenExpiry,
-                ResourceTypes = this.ResourceTypes,
-                ResponseContinuationTokenLimitInKB = this.ResponseContinuationTokenLimitInKB,
-                RestoreMetadataFilter = this.RestoreMetadataFilter,
-                RestoreParams = this.RestoreParams,
-                RetriableWriteRequestId = this.RetriableWriteRequestId,
-                RetriableWriteRequestStartTimestamp = this.RetriableWriteRequestStartTimestamp,
-                SchemaHash = this.SchemaHash,
-                SchemaOwnerRid = this.SchemaOwnerRid,
-                SecondaryMasterKey = this.SecondaryMasterKey,
-                SecondaryReadonlyKey = this.SecondaryReadonlyKey,
+                QueryExecutionInfo = this.QueryExecutionInfo,
+                QueryMetrics = this.QueryMetrics,
+                QuorumAckedLocalLSN = this.QuorumAckedLocalLSN,
+                QuorumAckedLSN = this.QuorumAckedLSN,
+                ReplicaStatusRevoked = this.ReplicaStatusRevoked,
+                ReplicatorLSNToGLSNDelta = this.ReplicatorLSNToGLSNDelta,
+                ReplicatorLSNToLLSNDelta = this.ReplicatorLSNToLLSNDelta,
+                RequestCharge = this.RequestCharge,
+                RequestValidationFailure = this.RequestValidationFailure,
+                ResourceId = this.ResourceId,
+                RestoreState = this.RestoreState,
+                RetryAfterInMilliseconds = this.RetryAfterInMilliseconds,
+                SchemaVersion = this.SchemaVersion,
                 SessionToken = this.SessionToken,
                 ShareThroughput = this.ShareThroughput,
-                ShouldBatchContinueOnError = this.ShouldBatchContinueOnError,
-                StartEpk = this.StartEpk,
-                StartId = this.StartId,
-                SupportSpatialLegacyCoordinates = this.SupportSpatialLegacyCoordinates,
-                SystemDocumentType = this.SystemDocumentType,
-                TargetGlobalCommittedLsn = this.TargetGlobalCommittedLsn,
-                TargetLsn = this.TargetLsn,
+                SoftMaxAllowedThroughput = this.SoftMaxAllowedThroughput,
+                SubStatus = this.SubStatus,
                 TimeToLiveInSeconds = this.TimeToLiveInSeconds,
-                TransactionCommit = this.TransactionCommit,
-                TransactionId = this.TransactionId,
                 TransportRequestID = this.TransportRequestID,
-                TruncateMergeLogRequest = this.TruncateMergeLogRequest,
-                UniqueIndexNameEncodingMode = this.UniqueIndexNameEncodingMode,
-                UniqueIndexReIndexingState = this.UniqueIndexReIndexingState,
-                UpdateMaxThroughputEverProvisioned = this.UpdateMaxThroughputEverProvisioned,
-                UsePolygonsSmallerThanAHemisphere = this.UsePolygonsSmallerThanAHemisphere,
-                UseSystemBudget = this.UseSystemBudget,
-                Version = this.Version,
+                UnflushedMergLogEntryCount = this.UnflushedMergLogEntryCount,
+                VectorClockLocalProgress = this.VectorClockLocalProgress,
                 XDate = this.XDate,
+                XPConfigurationSessionsCount = this.XPConfigurationSessionsCount,
+                XPRole = this.XPRole,
             };
 
             return cloneHeaders;
@@ -454,69 +274,25 @@ namespace Microsoft.Azure.Cosmos
 
         public IEnumerable<string> Keys()
         {
-                if (this.A_IM != null)
+                if (this.ActivityId != null)
                 {
-                    yield return this.A_IM;
+                    yield return this.ActivityId;
                 }
-                if (this.AddResourcePropertiesToResponse != null)
+                if (this.BackendRequestDurationMilliseconds != null)
                 {
-                    yield return this.AddResourcePropertiesToResponse;
+                    yield return this.BackendRequestDurationMilliseconds;
                 }
-                if (this.AllowTentativeWrites != null)
+                if (this.CollectionIndexTransformationProgress != null)
                 {
-                    yield return this.AllowTentativeWrites;
+                    yield return this.CollectionIndexTransformationProgress;
                 }
-                if (this.Authorization != null)
+                if (this.CollectionLazyIndexingProgress != null)
                 {
-                    yield return this.Authorization;
-                }
-                if (this.BinaryId != null)
-                {
-                    yield return this.BinaryId;
-                }
-                if (this.BinaryPassthroughRequest != null)
-                {
-                    yield return this.BinaryPassthroughRequest;
-                }
-                if (this.BindReplicaDirective != null)
-                {
-                    yield return this.BindReplicaDirective;
-                }
-                if (this.CanCharge != null)
-                {
-                    yield return this.CanCharge;
-                }
-                if (this.CanOfferReplaceComplete != null)
-                {
-                    yield return this.CanOfferReplaceComplete;
-                }
-                if (this.CanThrottle != null)
-                {
-                    yield return this.CanThrottle;
-                }
-                if (this.ChangeFeedStartFullFidelityIfNoneMatch != null)
-                {
-                    yield return this.ChangeFeedStartFullFidelityIfNoneMatch;
-                }
-                if (this.ClientRetryAttemptCount != null)
-                {
-                    yield return this.ClientRetryAttemptCount;
-                }
-                if (this.CollectionChildResourceContentLimitInKB != null)
-                {
-                    yield return this.CollectionChildResourceContentLimitInKB;
-                }
-                if (this.CollectionChildResourceNameLimitInBytes != null)
-                {
-                    yield return this.CollectionChildResourceNameLimitInBytes;
+                    yield return this.CollectionLazyIndexingProgress;
                 }
                 if (this.CollectionPartitionIndex != null)
                 {
                     yield return this.CollectionPartitionIndex;
-                }
-                if (this.CollectionRid != null)
-                {
-                    yield return this.CollectionRid;
                 }
                 if (this.CollectionSecurityIdentifier != null)
                 {
@@ -526,317 +302,161 @@ namespace Microsoft.Azure.Cosmos
                 {
                     yield return this.CollectionServiceIndex;
                 }
-                if (this.ConsistencyLevel != null)
+                if (this.ContinuationToken != null)
                 {
-                    yield return this.ConsistencyLevel;
+                    yield return this.ContinuationToken;
                 }
-                if (this.ContentSerializationFormat != null)
+                if (this.CurrentReplicaSetSize != null)
                 {
-                    yield return this.ContentSerializationFormat;
+                    yield return this.CurrentReplicaSetSize;
                 }
-                if (this.Continuation != null)
+                if (this.CurrentResourceQuotaUsage != null)
                 {
-                    yield return this.Continuation;
+                    yield return this.CurrentResourceQuotaUsage;
                 }
-                if (this.DisableRUPerMinuteUsage != null)
+                if (this.CurrentWriteQuorum != null)
                 {
-                    yield return this.DisableRUPerMinuteUsage;
+                    yield return this.CurrentWriteQuorum;
                 }
-                if (this.EffectivePartitionKey != null)
+                if (this.DatabaseAccountId != null)
                 {
-                    yield return this.EffectivePartitionKey;
+                    yield return this.DatabaseAccountId;
                 }
-                if (this.EmitVerboseTracesInQuery != null)
+                if (this.DisableRntbdChannel != null)
                 {
-                    yield return this.EmitVerboseTracesInQuery;
+                    yield return this.DisableRntbdChannel;
                 }
-                if (this.EnableDynamicRidRangeAllocation != null)
+                if (this.ETag != null)
                 {
-                    yield return this.EnableDynamicRidRangeAllocation;
+                    yield return this.ETag;
                 }
-                if (this.EnableLogging != null)
+                if (this.GlobalCommittedLSN != null)
                 {
-                    yield return this.EnableLogging;
+                    yield return this.GlobalCommittedLSN;
                 }
-                if (this.EnableLowPrecisionOrderBy != null)
+                if (this.HasTentativeWrites != null)
                 {
-                    yield return this.EnableLowPrecisionOrderBy;
-                }
-                if (this.EnableScanInQuery != null)
-                {
-                    yield return this.EnableScanInQuery;
-                }
-                if (this.EndEpk != null)
-                {
-                    yield return this.EndEpk;
-                }
-                if (this.EndId != null)
-                {
-                    yield return this.EndId;
-                }
-                if (this.EnumerationDirection != null)
-                {
-                    yield return this.EnumerationDirection;
-                }
-                if (this.ExcludeSystemProperties != null)
-                {
-                    yield return this.ExcludeSystemProperties;
-                }
-                if (this.FanoutOperationState != null)
-                {
-                    yield return this.FanoutOperationState;
-                }
-                if (this.FilterBySchemaResourceId != null)
-                {
-                    yield return this.FilterBySchemaResourceId;
-                }
-                if (this.ForceQueryScan != null)
-                {
-                    yield return this.ForceQueryScan;
-                }
-                if (this.ForceSideBySideIndexMigration != null)
-                {
-                    yield return this.ForceSideBySideIndexMigration;
-                }
-                if (this.GatewaySignature != null)
-                {
-                    yield return this.GatewaySignature;
-                }
-                if (this.GetAllPartitionKeyStatistics != null)
-                {
-                    yield return this.GetAllPartitionKeyStatistics;
-                }
-                if (this.HttpDate != null)
-                {
-                    yield return this.HttpDate;
-                }
-                if (this.IfMatch != null)
-                {
-                    yield return this.IfMatch;
-                }
-                if (this.IfModifiedSince != null)
-                {
-                    yield return this.IfModifiedSince;
-                }
-                if (this.IfNoneMatch != null)
-                {
-                    yield return this.IfNoneMatch;
-                }
-                if (this.IgnoreSystemLoweringMaxThroughput != null)
-                {
-                    yield return this.IgnoreSystemLoweringMaxThroughput;
-                }
-                if (this.IncludeTentativeWrites != null)
-                {
-                    yield return this.IncludeTentativeWrites;
+                    yield return this.HasTentativeWrites;
                 }
                 if (this.IndexingDirective != null)
                 {
                     yield return this.IndexingDirective;
                 }
-                if (this.IsBatchAtomic != null)
+                if (this.IndexUtilization != null)
                 {
-                    yield return this.IsBatchAtomic;
+                    yield return this.IndexUtilization;
                 }
-                if (this.IsBatchOrdered != null)
+                if (this.IsRUPerMinuteUsed != null)
                 {
-                    yield return this.IsBatchOrdered;
+                    yield return this.IsRUPerMinuteUsed;
                 }
-                if (this.IsClientEncrypted != null)
+                if (this.ItemCount != null)
                 {
-                    yield return this.IsClientEncrypted;
+                    yield return this.ItemCount;
                 }
-                if (this.IsFanoutRequest != null)
+                if (this.ItemLocalLSN != null)
                 {
-                    yield return this.IsFanoutRequest;
+                    yield return this.ItemLocalLSN;
                 }
-                if (this.IsOfferStorageRefreshRequest != null)
+                if (this.ItemLSN != null)
                 {
-                    yield return this.IsOfferStorageRefreshRequest;
+                    yield return this.ItemLSN;
                 }
-                if (this.IsReadOnlyScript != null)
+                if (this.LastStateChangeUtc != null)
                 {
-                    yield return this.IsReadOnlyScript;
+                    yield return this.LastStateChangeUtc;
                 }
-                if (this.IsRetriedWriteRequest != null)
+                if (this.LocalLSN != null)
                 {
-                    yield return this.IsRetriedWriteRequest;
+                    yield return this.LocalLSN;
                 }
-                if (this.IsRUPerGBEnforcementRequest != null)
+                if (this.LogResults != null)
                 {
-                    yield return this.IsRUPerGBEnforcementRequest;
+                    yield return this.LogResults;
                 }
-                if (this.IsUserRequest != null)
+                if (this.LSN != null)
                 {
-                    yield return this.IsUserRequest;
+                    yield return this.LSN;
                 }
-                if (this.MaxPollingIntervalMilliseconds != null)
+                if (this.MaxResourceQuota != null)
                 {
-                    yield return this.MaxPollingIntervalMilliseconds;
+                    yield return this.MaxResourceQuota;
                 }
-                if (this.MergeCheckPointGLSN != null)
+                if (this.MinimumRUsForOffer != null)
                 {
-                    yield return this.MergeCheckPointGLSN;
+                    yield return this.MinimumRUsForOffer;
                 }
-                if (this.MergeStaticId != null)
+                if (this.NumberOfReadRegions != null)
                 {
-                    yield return this.MergeStaticId;
+                    yield return this.NumberOfReadRegions;
                 }
-                if (this.MigrateCollectionDirective != null)
+                if (this.OfferReplacePending != null)
                 {
-                    yield return this.MigrateCollectionDirective;
+                    yield return this.OfferReplacePending;
                 }
-                if (this.MigrateOfferToAutopilot != null)
+                if (this.OwnerFullName != null)
                 {
-                    yield return this.MigrateOfferToAutopilot;
+                    yield return this.OwnerFullName;
                 }
-                if (this.MigrateOfferToManualThroughput != null)
+                if (this.OwnerId != null)
                 {
-                    yield return this.MigrateOfferToManualThroughput;
-                }
-                if (this.PageSize != null)
-                {
-                    yield return this.PageSize;
-                }
-                if (this.PartitionCount != null)
-                {
-                    yield return this.PartitionCount;
-                }
-                if (this.PartitionKey != null)
-                {
-                    yield return this.PartitionKey;
+                    yield return this.OwnerId;
                 }
                 if (this.PartitionKeyRangeId != null)
                 {
                     yield return this.PartitionKeyRangeId;
                 }
-                if (this.PartitionResourceFilter != null)
+                if (this.QueryExecutionInfo != null)
                 {
-                    yield return this.PartitionResourceFilter;
+                    yield return this.QueryExecutionInfo;
                 }
-                if (this.PopulateCollectionThroughputInfo != null)
+                if (this.QueryMetrics != null)
                 {
-                    yield return this.PopulateCollectionThroughputInfo;
+                    yield return this.QueryMetrics;
                 }
-                if (this.PopulateLogStoreInfo != null)
+                if (this.QuorumAckedLocalLSN != null)
                 {
-                    yield return this.PopulateLogStoreInfo;
+                    yield return this.QuorumAckedLocalLSN;
                 }
-                if (this.PopulatePartitionStatistics != null)
+                if (this.QuorumAckedLSN != null)
                 {
-                    yield return this.PopulatePartitionStatistics;
+                    yield return this.QuorumAckedLSN;
                 }
-                if (this.PopulateQueryMetrics != null)
+                if (this.ReplicaStatusRevoked != null)
                 {
-                    yield return this.PopulateQueryMetrics;
+                    yield return this.ReplicaStatusRevoked;
                 }
-                if (this.PopulateQuotaInfo != null)
+                if (this.ReplicatorLSNToGLSNDelta != null)
                 {
-                    yield return this.PopulateQuotaInfo;
+                    yield return this.ReplicatorLSNToGLSNDelta;
                 }
-                if (this.PopulateResourceCount != null)
+                if (this.ReplicatorLSNToLLSNDelta != null)
                 {
-                    yield return this.PopulateResourceCount;
+                    yield return this.ReplicatorLSNToLLSNDelta;
                 }
-                if (this.PopulateUnflushedMergeEntryCount != null)
+                if (this.RequestCharge != null)
                 {
-                    yield return this.PopulateUnflushedMergeEntryCount;
+                    yield return this.RequestCharge;
                 }
-                if (this.PostTriggerExclude != null)
+                if (this.RequestValidationFailure != null)
                 {
-                    yield return this.PostTriggerExclude;
+                    yield return this.RequestValidationFailure;
                 }
-                if (this.PostTriggerInclude != null)
+                if (this.ResourceId != null)
                 {
-                    yield return this.PostTriggerInclude;
+                    yield return this.ResourceId;
                 }
-                if (this.Prefer != null)
+                if (this.RestoreState != null)
                 {
-                    yield return this.Prefer;
+                    yield return this.RestoreState;
                 }
-                if (this.PreserveFullContent != null)
+                if (this.RetryAfterInMilliseconds != null)
                 {
-                    yield return this.PreserveFullContent;
+                    yield return this.RetryAfterInMilliseconds;
                 }
-                if (this.PreTriggerExclude != null)
+                if (this.SchemaVersion != null)
                 {
-                    yield return this.PreTriggerExclude;
-                }
-                if (this.PreTriggerInclude != null)
-                {
-                    yield return this.PreTriggerInclude;
-                }
-                if (this.PrimaryMasterKey != null)
-                {
-                    yield return this.PrimaryMasterKey;
-                }
-                if (this.PrimaryReadonlyKey != null)
-                {
-                    yield return this.PrimaryReadonlyKey;
-                }
-                if (this.ProfileRequest != null)
-                {
-                    yield return this.ProfileRequest;
-                }
-                if (this.ReadFeedKeyType != null)
-                {
-                    yield return this.ReadFeedKeyType;
-                }
-                if (this.RemainingTimeInMsOnClientRequest != null)
-                {
-                    yield return this.RemainingTimeInMsOnClientRequest;
-                }
-                if (this.RemoteStorageType != null)
-                {
-                    yield return this.RemoteStorageType;
-                }
-                if (this.ResourceSchemaName != null)
-                {
-                    yield return this.ResourceSchemaName;
-                }
-                if (this.ResourceTokenExpiry != null)
-                {
-                    yield return this.ResourceTokenExpiry;
-                }
-                if (this.ResourceTypes != null)
-                {
-                    yield return this.ResourceTypes;
-                }
-                if (this.ResponseContinuationTokenLimitInKB != null)
-                {
-                    yield return this.ResponseContinuationTokenLimitInKB;
-                }
-                if (this.RestoreMetadataFilter != null)
-                {
-                    yield return this.RestoreMetadataFilter;
-                }
-                if (this.RestoreParams != null)
-                {
-                    yield return this.RestoreParams;
-                }
-                if (this.RetriableWriteRequestId != null)
-                {
-                    yield return this.RetriableWriteRequestId;
-                }
-                if (this.RetriableWriteRequestStartTimestamp != null)
-                {
-                    yield return this.RetriableWriteRequestStartTimestamp;
-                }
-                if (this.SchemaHash != null)
-                {
-                    yield return this.SchemaHash;
-                }
-                if (this.SchemaOwnerRid != null)
-                {
-                    yield return this.SchemaOwnerRid;
-                }
-                if (this.SecondaryMasterKey != null)
-                {
-                    yield return this.SecondaryMasterKey;
-                }
-                if (this.SecondaryReadonlyKey != null)
-                {
-                    yield return this.SecondaryReadonlyKey;
+                    yield return this.SchemaVersion;
                 }
                 if (this.SessionToken != null)
                 {
@@ -846,81 +466,41 @@ namespace Microsoft.Azure.Cosmos
                 {
                     yield return this.ShareThroughput;
                 }
-                if (this.ShouldBatchContinueOnError != null)
+                if (this.SoftMaxAllowedThroughput != null)
                 {
-                    yield return this.ShouldBatchContinueOnError;
+                    yield return this.SoftMaxAllowedThroughput;
                 }
-                if (this.StartEpk != null)
+                if (this.SubStatus != null)
                 {
-                    yield return this.StartEpk;
-                }
-                if (this.StartId != null)
-                {
-                    yield return this.StartId;
-                }
-                if (this.SupportSpatialLegacyCoordinates != null)
-                {
-                    yield return this.SupportSpatialLegacyCoordinates;
-                }
-                if (this.SystemDocumentType != null)
-                {
-                    yield return this.SystemDocumentType;
-                }
-                if (this.TargetGlobalCommittedLsn != null)
-                {
-                    yield return this.TargetGlobalCommittedLsn;
-                }
-                if (this.TargetLsn != null)
-                {
-                    yield return this.TargetLsn;
+                    yield return this.SubStatus;
                 }
                 if (this.TimeToLiveInSeconds != null)
                 {
                     yield return this.TimeToLiveInSeconds;
                 }
-                if (this.TransactionCommit != null)
-                {
-                    yield return this.TransactionCommit;
-                }
-                if (this.TransactionId != null)
-                {
-                    yield return this.TransactionId;
-                }
                 if (this.TransportRequestID != null)
                 {
                     yield return this.TransportRequestID;
                 }
-                if (this.TruncateMergeLogRequest != null)
+                if (this.UnflushedMergLogEntryCount != null)
                 {
-                    yield return this.TruncateMergeLogRequest;
+                    yield return this.UnflushedMergLogEntryCount;
                 }
-                if (this.UniqueIndexNameEncodingMode != null)
+                if (this.VectorClockLocalProgress != null)
                 {
-                    yield return this.UniqueIndexNameEncodingMode;
-                }
-                if (this.UniqueIndexReIndexingState != null)
-                {
-                    yield return this.UniqueIndexReIndexingState;
-                }
-                if (this.UpdateMaxThroughputEverProvisioned != null)
-                {
-                    yield return this.UpdateMaxThroughputEverProvisioned;
-                }
-                if (this.UsePolygonsSmallerThanAHemisphere != null)
-                {
-                    yield return this.UsePolygonsSmallerThanAHemisphere;
-                }
-                if (this.UseSystemBudget != null)
-                {
-                    yield return this.UseSystemBudget;
-                }
-                if (this.Version != null)
-                {
-                    yield return this.Version;
+                    yield return this.VectorClockLocalProgress;
                 }
                 if (this.XDate != null)
                 {
                     yield return this.XDate;
+                }
+                if (this.XPConfigurationSessionsCount != null)
+                {
+                    yield return this.XPConfigurationSessionsCount;
+                }
+                if (this.XPRole != null)
+                {
+                    yield return this.XPRole;
                 }
         }
 
@@ -938,49 +518,27 @@ namespace Microsoft.Azure.Cosmos
         {
             switch (key.Length)
             {
+                case 3:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.LSN, key))
+                    {
+                        return this.LSN;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.LSN, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.LSN;
+                    }
+                
+                    break;
                 case 4:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.HttpDate, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ETag, key))
                     {
-                        return this.HttpDate;
+                        return this.ETag;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.A_IM, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.ETag, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.A_IM;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.HttpDate, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.HttpDate;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.A_IM, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.A_IM;
-                    }
-                
-                    break;
-                case 6:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Prefer, key))
-                    {
-                        return this.Prefer;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Prefer, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.Prefer;
-                    }
-                
-                    break;
-                case 8:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IfMatch, key))
-                    {
-                        return this.IfMatch;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IfMatch, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IfMatch;
+                        return this.ETag;
                     }
                 
                     break;
@@ -996,184 +554,97 @@ namespace Microsoft.Azure.Cosmos
                     }
                 
                     break;
-                case 11:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EndId, key))
-                    {
-                        return this.EndId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EndId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EndId;
-                    }
-                
-                    break;
                 case 12:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Version, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.XPRole, key))
                     {
-                        return this.Version;
+                        return this.XPRole;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EndEpk, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.XPRole, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.EndEpk;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Version, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.Version;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EndEpk, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EndEpk;
+                        return this.XPRole;
                     }
                 
                     break;
                 case 13:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Authorization, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ItemLSN, key))
                     {
-                        return this.Authorization;
+                        return this.ItemLSN;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IfNoneMatch, key))
+                    if (string.Equals(WFConstants.BackendHeaders.ItemLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.IfNoneMatch;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.StartId, key))
-                    {
-                        return this.StartId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Authorization, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.Authorization;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IfNoneMatch, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IfNoneMatch;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.StartId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.StartId;
+                        return this.ItemLSN;
                     }
                 
                     break;
                 case 14:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CanCharge, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SubStatus, key))
                     {
-                        return this.CanCharge;
+                        return this.SubStatus;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.StartEpk, key))
+                    if (string.Equals(WFConstants.BackendHeaders.SubStatus, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.StartEpk;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.BinaryId, key))
-                    {
-                        return this.BinaryId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.CanCharge, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.CanCharge;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.StartEpk, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.StartEpk;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.BinaryId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.BinaryId;
+                        return this.SubStatus;
                     }
                 
                     break;
                 case 15:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TargetLsn, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ItemCount, key))
                     {
-                        return this.TargetLsn;
+                        return this.ItemCount;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.TargetLsn, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.ItemCount, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.TargetLsn;
+                        return this.ItemCount;
                     }
                 
                     break;
                 case 16:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CanThrottle, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ActivityId, key))
                     {
-                        return this.CanThrottle;
+                        return this.ActivityId;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SchemaHash, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.LocalLSN, key))
                     {
-                        return this.SchemaHash;
+                        return this.LocalLSN;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.CanThrottle, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.ActivityId, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.CanThrottle;
+                        return this.ActivityId;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.SchemaHash, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.LocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.SchemaHash;
+                        return this.LocalLSN;
                     }
                 
                     break;
                 case 17:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Continuation, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.OwnerId, key))
                     {
-                        return this.Continuation;
+                        return this.OwnerId;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IfModifiedSince, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.OwnerId, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.IfModifiedSince;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.BindReplicaDirective, key))
-                    {
-                        return this.BindReplicaDirective;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.TransactionId, key))
-                    {
-                        return this.TransactionId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Continuation, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.Continuation;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IfModifiedSince, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IfModifiedSince;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.BindReplicaDirective, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.BindReplicaDirective;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.TransactionId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.TransactionId;
+                        return this.OwnerId;
                     }
                 
                     break;
                 case 18:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ReadFeedKeyType, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.SchemaVersion, key))
                     {
-                        return this.ReadFeedKeyType;
+                        return this.SchemaVersion;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RestoreState, key))
+                    {
+                        return this.RestoreState;
                     }
                 
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.SessionToken, key))
@@ -1181,9 +652,14 @@ namespace Microsoft.Azure.Cosmos
                         return this.SessionToken;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.ReadFeedKeyType, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.SchemaVersion, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.ReadFeedKeyType;
+                        return this.SchemaVersion;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.RestoreState, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.RestoreState;
                     }
                 
                     if (string.Equals(HttpConstants.HttpHeaders.SessionToken, key, StringComparison.OrdinalIgnoreCase))
@@ -1193,43 +669,66 @@ namespace Microsoft.Azure.Cosmos
                 
                     break;
                 case 19:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PageSize, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, key))
                     {
-                        return this.PageSize;
+                        return this.RetryAfterInMilliseconds;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RestoreParams, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MaxResourceQuota, key))
                     {
-                        return this.RestoreParams;
+                        return this.MaxResourceQuota;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.PageSize, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, key))
                     {
-                        return this.PageSize;
+                        return this.CurrentResourceQuotaUsage;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.RestoreParams, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RequestCharge, key))
                     {
-                        return this.RestoreParams;
+                        return this.RequestCharge;
                     }
                 
-                    break;
-                case 20:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ProfileRequest, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ResourceId, key))
                     {
-                        return this.ProfileRequest;
+                        return this.ResourceId;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.ProfileRequest, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.ProfileRequest;
+                        return this.RetryAfterInMilliseconds;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.MaxResourceQuota, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MaxResourceQuota;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.CurrentResourceQuotaUsage;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.RequestCharge, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.RequestCharge;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.ResourceId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ResourceId;
                     }
                 
                     break;
                 case 21:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SchemaOwnerRid, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.OwnerFullName, key))
                     {
-                        return this.SchemaOwnerRid;
+                        return this.OwnerFullName;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QuorumAckedLSN, key))
+                    {
+                        return this.QuorumAckedLSN;
                     }
                 
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.ShareThroughput, key))
@@ -1237,14 +736,19 @@ namespace Microsoft.Azure.Cosmos
                         return this.ShareThroughput;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.TransactionCommit, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ItemLocalLSN, key))
                     {
-                        return this.TransactionCommit;
+                        return this.ItemLocalLSN;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.SchemaOwnerRid, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.OwnerFullName, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.SchemaOwnerRid;
+                        return this.OwnerFullName;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.QuorumAckedLSN, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.QuorumAckedLSN;
                     }
                 
                     if (string.Equals(WFConstants.BackendHeaders.ShareThroughput, key, StringComparison.OrdinalIgnoreCase))
@@ -1252,41 +756,21 @@ namespace Microsoft.Azure.Cosmos
                         return this.ShareThroughput;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.TransactionCommit, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.ItemLocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.TransactionCommit;
+                        return this.ItemLocalLSN;
                     }
                 
                     break;
                 case 22:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ConsistencyLevel, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ContinuationToken, key))
                     {
-                        return this.ConsistencyLevel;
+                        return this.ContinuationToken;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.GatewaySignature, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.ContinuationToken, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.GatewaySignature;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.IsFanoutRequest, key))
-                    {
-                        return this.IsFanoutRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ConsistencyLevel, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ConsistencyLevel;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.GatewaySignature, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.GatewaySignature;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.IsFanoutRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsFanoutRequest;
+                        return this.ContinuationToken;
                     }
                 
                     break;
@@ -1296,51 +780,26 @@ namespace Microsoft.Azure.Cosmos
                         return this.IndexingDirective;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsReadOnlyScript, key))
-                    {
-                        return this.IsReadOnlyScript;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PrimaryMasterKey, key))
-                    {
-                        return this.PrimaryMasterKey;
-                    }
-                
                     if (string.Equals(HttpConstants.HttpHeaders.IndexingDirective, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.IndexingDirective;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.IsReadOnlyScript, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsReadOnlyScript;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PrimaryMasterKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PrimaryMasterKey;
-                    }
-                
                     break;
                 case 24:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsBatchAtomic, key))
-                    {
-                        return this.IsBatchAtomic;
-                    }
-                
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionServiceIndex, key))
                     {
                         return this.CollectionServiceIndex;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RemoteStorageType, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.DatabaseAccountId, key))
                     {
-                        return this.RemoteStorageType;
+                        return this.DatabaseAccountId;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.IsBatchAtomic, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key))
                     {
-                        return this.IsBatchAtomic;
+                        return this.BackendRequestDurationMilliseconds;
                     }
                 
                     if (string.Equals(WFConstants.BackendHeaders.CollectionServiceIndex, key, StringComparison.OrdinalIgnoreCase))
@@ -1348,16 +807,26 @@ namespace Microsoft.Azure.Cosmos
                         return this.CollectionServiceIndex;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.RemoteStorageType, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.DatabaseAccountId, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.RemoteStorageType;
+                        return this.DatabaseAccountId;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.BackendRequestDurationMilliseconds;
                     }
                 
                     break;
                 case 25:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsBatchOrdered, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CurrentWriteQuorum, key))
                     {
-                        return this.IsBatchOrdered;
+                        return this.CurrentWriteQuorum;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.GlobalCommittedLSN, key))
+                    {
+                        return this.GlobalCommittedLSN;
                     }
                 
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.TransportRequestID, key))
@@ -1365,29 +834,14 @@ namespace Microsoft.Azure.Cosmos
                         return this.TransportRequestID;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PrimaryReadonlyKey, key))
+                    if (string.Equals(WFConstants.BackendHeaders.CurrentWriteQuorum, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.PrimaryReadonlyKey;
+                        return this.CurrentWriteQuorum;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ResourceSchemaName, key))
+                    if (string.Equals(WFConstants.BackendHeaders.GlobalCommittedLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.ResourceSchemaName;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ResourceTypes, key))
-                    {
-                        return this.ResourceTypes;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SecondaryMasterKey, key))
-                    {
-                        return this.SecondaryMasterKey;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsBatchOrdered, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsBatchOrdered;
+                        return this.GlobalCommittedLSN;
                     }
                 
                     if (string.Equals(HttpConstants.HttpHeaders.TransportRequestID, key, StringComparison.OrdinalIgnoreCase))
@@ -1395,31 +849,11 @@ namespace Microsoft.Azure.Cosmos
                         return this.TransportRequestID;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.PrimaryReadonlyKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PrimaryReadonlyKey;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ResourceSchemaName, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ResourceSchemaName;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ResourceTypes, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ResourceTypes;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.SecondaryMasterKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.SecondaryMasterKey;
-                    }
-                
                     break;
                 case 26:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnumerationDirection, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.LastStateChangeUtc, key))
                     {
-                        return this.EnumerationDirection;
+                        return this.LastStateChangeUtc;
                     }
                 
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionPartitionIndex, key))
@@ -1427,9 +861,24 @@ namespace Microsoft.Azure.Cosmos
                         return this.CollectionPartitionIndex;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.EnumerationDirection, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OfferReplacePending, key))
                     {
-                        return this.EnumerationDirection;
+                        return this.OfferReplacePending;
+                    }
+                
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.DisableRntbdChannel, key))
+                    {
+                        return this.DisableRntbdChannel;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MinimumRUsForOffer, key))
+                    {
+                        return this.MinimumRUsForOffer;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.LastStateChangeUtc, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.LastStateChangeUtc;
                     }
                 
                     if (string.Equals(WFConstants.BackendHeaders.CollectionPartitionIndex, key, StringComparison.OrdinalIgnoreCase))
@@ -1437,78 +886,38 @@ namespace Microsoft.Azure.Cosmos
                         return this.CollectionPartitionIndex;
                     }
                 
+                    if (string.Equals(WFConstants.BackendHeaders.OfferReplacePending, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.OfferReplacePending;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.DisableRntbdChannel, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.DisableRntbdChannel;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.MinimumRUsForOffer, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MinimumRUsForOffer;
+                    }
+                
                     break;
                 case 27:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.FanoutOperationState, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.NumberOfReadRegions, key))
                     {
-                        return this.FanoutOperationState;
+                        return this.NumberOfReadRegions;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeStaticId, key))
+                    if (string.Equals(WFConstants.BackendHeaders.NumberOfReadRegions, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.MergeStaticId;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SecondaryReadonlyKey, key))
-                    {
-                        return this.SecondaryReadonlyKey;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.FanoutOperationState, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.FanoutOperationState;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.MergeStaticId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.MergeStaticId;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.SecondaryReadonlyKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.SecondaryReadonlyKey;
+                        return this.NumberOfReadRegions;
                     }
                 
                     break;
                 case 28:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKey, key))
-                    {
-                        return this.PartitionKey;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RestoreMetadataFilter, key))
-                    {
-                        return this.RestoreMetadataFilter;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.EffectivePartitionKey, key))
-                    {
-                        return this.EffectivePartitionKey;
-                    }
-                
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.TimeToLiveInSeconds, key))
                     {
                         return this.TimeToLiveInSeconds;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UseSystemBudget, key))
-                    {
-                        return this.UseSystemBudget;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PartitionKey;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.RestoreMetadataFilter, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.RestoreMetadataFilter;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.EffectivePartitionKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EffectivePartitionKey;
                     }
                 
                     if (string.Equals(WFConstants.BackendHeaders.TimeToLiveInSeconds, key, StringComparison.OrdinalIgnoreCase))
@@ -1516,246 +925,121 @@ namespace Microsoft.Azure.Cosmos
                         return this.TimeToLiveInSeconds;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.UseSystemBudget, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.UseSystemBudget;
-                    }
-                
                     break;
-                case 30:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResourceTokenExpiry, key))
+                case 29:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key))
                     {
-                        return this.ResourceTokenExpiry;
+                        return this.CurrentReplicaSetSize;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionRid, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.QueryMetrics, key))
                     {
-                        return this.CollectionRid;
+                        return this.QueryMetrics;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ExcludeSystemProperties, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IndexUtilization, key))
                     {
-                        return this.ExcludeSystemProperties;
+                        return this.IndexUtilization;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionCount, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QuorumAckedLocalLSN, key))
                     {
-                        return this.PartitionCount;
+                        return this.QuorumAckedLocalLSN;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionResourceFilter, key))
+                    if (string.Equals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.PartitionResourceFilter;
+                        return this.CurrentReplicaSetSize;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.ResourceTokenExpiry, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.QueryMetrics, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.ResourceTokenExpiry;
+                        return this.QueryMetrics;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.CollectionRid, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.IndexUtilization, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.CollectionRid;
+                        return this.IndexUtilization;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.ExcludeSystemProperties, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.QuorumAckedLocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.ExcludeSystemProperties;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionCount, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PartitionCount;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionResourceFilter, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PartitionResourceFilter;
+                        return this.QuorumAckedLocalLSN;
                     }
                 
                     break;
                 case 31:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CanOfferReplaceComplete, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RequestValidationFailure, key))
                     {
-                        return this.CanOfferReplaceComplete;
+                        return this.RequestValidationFailure;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ClientRetryAttemptCount, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.RequestValidationFailure, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.ClientRetryAttemptCount;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsClientEncrypted, key))
-                    {
-                        return this.IsClientEncrypted;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.SystemDocumentType, key))
-                    {
-                        return this.SystemDocumentType;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.BinaryPassthroughRequest, key))
-                    {
-                        return this.BinaryPassthroughRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.CanOfferReplaceComplete, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.CanOfferReplaceComplete;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ClientRetryAttemptCount, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ClientRetryAttemptCount;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsClientEncrypted, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsClientEncrypted;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.SystemDocumentType, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.SystemDocumentType;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.BinaryPassthroughRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.BinaryPassthroughRequest;
+                        return this.RequestValidationFailure;
                     }
                 
                     break;
                 case 32:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.QueryExecutionInfo, key))
                     {
-                        return this.MaxPollingIntervalMilliseconds;
+                        return this.QueryExecutionInfo;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MigrateCollectionDirective, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.QueryExecutionInfo, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.MigrateCollectionDirective;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, key))
-                    {
-                        return this.TargetGlobalCommittedLsn;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ForceQueryScan, key))
-                    {
-                        return this.ForceQueryScan;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.MaxPollingIntervalMilliseconds;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MigrateCollectionDirective, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.MigrateCollectionDirective;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.TargetGlobalCommittedLsn;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ForceQueryScan, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ForceQueryScan;
+                        return this.QueryExecutionInfo;
                     }
                 
                     break;
                 case 33:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, key))
                     {
-                        return this.EmitVerboseTracesInQuery;
+                        return this.ReplicatorLSNToGLSNDelta;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableScanInQuery, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, key))
                     {
-                        return this.EnableScanInQuery;
+                        return this.ReplicatorLSNToLLSNDelta;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateQuotaInfo, key))
+                    if (string.Equals(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.PopulateQuotaInfo;
+                        return this.ReplicatorLSNToGLSNDelta;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateLogStoreInfo, key))
+                    if (string.Equals(WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.PopulateLogStoreInfo;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PreserveFullContent, key))
-                    {
-                        return this.PreserveFullContent;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EmitVerboseTracesInQuery;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EnableScanInQuery, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EnableScanInQuery;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateQuotaInfo, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PopulateQuotaInfo;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PopulateLogStoreInfo, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PopulateLogStoreInfo;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PreserveFullContent, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PreserveFullContent;
+                        return this.ReplicatorLSNToLLSNDelta;
                     }
                 
                     break;
                 case 34:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.AllowTentativeWrites, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.LogResults, key))
                     {
-                        return this.AllowTentativeWrites;
+                        return this.LogResults;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.AllowTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.HasTentativeWrites, key))
                     {
-                        return this.AllowTentativeWrites;
+                        return this.HasTentativeWrites;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.LogResults, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.LogResults;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.HasTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.HasTentativeWrites;
                     }
                 
                     break;
                 case 35:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key))
                     {
-                        return this.FilterBySchemaResourceId;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PreTriggerExclude, key))
-                    {
-                        return this.PreTriggerExclude;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PreTriggerInclude, key))
-                    {
-                        return this.PreTriggerInclude;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key))
-                    {
-                        return this.RemainingTimeInMsOnClientRequest;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, key))
-                    {
-                        return this.ShouldBatchContinueOnError;
+                        return this.PartitionKeyRangeId;
                     }
                 
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionSecurityIdentifier, key))
@@ -1763,34 +1047,9 @@ namespace Microsoft.Azure.Cosmos
                         return this.CollectionSecurityIdentifier;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionKeyRangeId, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.PartitionKeyRangeId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.FilterBySchemaResourceId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PreTriggerExclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PreTriggerExclude;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PreTriggerInclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PreTriggerInclude;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.RemainingTimeInMsOnClientRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ShouldBatchContinueOnError;
                     }
                 
                     if (string.Equals(WFConstants.BackendHeaders.CollectionSecurityIdentifier, key, StringComparison.OrdinalIgnoreCase))
@@ -1798,409 +1057,98 @@ namespace Microsoft.Azure.Cosmos
                         return this.CollectionSecurityIdentifier;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PartitionKeyRangeId;
-                    }
-                
-                    break;
-                case 36:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IncludeTentativeWrites, key))
-                    {
-                        return this.IncludeTentativeWrites;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateQueryMetrics, key))
-                    {
-                        return this.PopulateQueryMetrics;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PostTriggerExclude, key))
-                    {
-                        return this.PostTriggerExclude;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PostTriggerInclude, key))
-                    {
-                        return this.PostTriggerInclude;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.IsRetriedWriteRequest, key))
-                    {
-                        return this.IsRetriedWriteRequest;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.IsUserRequest, key))
-                    {
-                        return this.IsUserRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IncludeTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IncludeTentativeWrites;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateQueryMetrics, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PopulateQueryMetrics;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PostTriggerExclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PostTriggerExclude;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PostTriggerInclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PostTriggerInclude;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.IsRetriedWriteRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsRetriedWriteRequest;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.IsUserRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsUserRequest;
-                    }
-                
                     break;
                 case 37:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableLogging, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsRUPerMinuteUsed, key))
                     {
-                        return this.EnableLogging;
+                        return this.IsRUPerMinuteUsed;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateResourceCount, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReplicaStatusRevoked, key))
                     {
-                        return this.PopulateResourceCount;
+                        return this.ReplicaStatusRevoked;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.EnableLogging, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.IsRUPerMinuteUsed, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.EnableLogging;
+                        return this.IsRUPerMinuteUsed;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateResourceCount, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.ReplicaStatusRevoked, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.PopulateResourceCount;
+                        return this.ReplicaStatusRevoked;
                     }
                 
                     break;
                 case 38:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MigrateOfferToAutopilot, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.VectorClockLocalProgress, key))
                     {
-                        return this.MigrateOfferToAutopilot;
+                        return this.VectorClockLocalProgress;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RetriableWriteRequestId, key))
+                    if (string.Equals(WFConstants.BackendHeaders.VectorClockLocalProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.RetriableWriteRequestId;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MigrateOfferToAutopilot, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.MigrateOfferToAutopilot;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.RetriableWriteRequestId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.RetriableWriteRequestId;
-                    }
-                
-                    break;
-                case 39:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TruncateMergeLogRequest, key))
-                    {
-                        return this.TruncateMergeLogRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.TruncateMergeLogRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.TruncateMergeLogRequest;
+                        return this.VectorClockLocalProgress;
                     }
                 
                     break;
                 case 40:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key))
                     {
-                        return this.EnableDynamicRidRangeAllocation;
+                        return this.SoftMaxAllowedThroughput;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UniqueIndexReIndexingState, key))
+                    if (string.Equals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.UniqueIndexReIndexingState;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EnableDynamicRidRangeAllocation;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.UniqueIndexReIndexingState, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.UniqueIndexReIndexingState;
+                        return this.SoftMaxAllowedThroughput;
                     }
                 
                     break;
                 case 42:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeCheckPointGLSN, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.XPConfigurationSessionsCount, key))
                     {
-                        return this.MergeCheckPointGLSN;
+                        return this.XPConfigurationSessionsCount;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.MergeCheckPointGLSN, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.XPConfigurationSessionsCount, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.MergeCheckPointGLSN;
-                    }
-                
-                    break;
-                case 43:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, key))
-                    {
-                        return this.DisableRUPerMinuteUsage;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulatePartitionStatistics, key))
-                    {
-                        return this.PopulatePartitionStatistics;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ForceSideBySideIndexMigration, key))
-                    {
-                        return this.ForceSideBySideIndexMigration;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UniqueIndexNameEncodingMode, key))
-                    {
-                        return this.UniqueIndexNameEncodingMode;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.DisableRUPerMinuteUsage;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulatePartitionStatistics, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PopulatePartitionStatistics;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ForceSideBySideIndexMigration, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ForceSideBySideIndexMigration;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.UniqueIndexNameEncodingMode, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.UniqueIndexNameEncodingMode;
-                    }
-                
-                    break;
-                case 44:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ContentSerializationFormat, key))
-                    {
-                        return this.ContentSerializationFormat;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ContentSerializationFormat, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ContentSerializationFormat;
-                    }
-                
-                    break;
-                case 45:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, key))
-                    {
-                        return this.ChangeFeedStartFullFidelityIfNoneMatch;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ChangeFeedStartFullFidelityIfNoneMatch;
-                    }
-                
-                    break;
-                case 46:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, key))
-                    {
-                        return this.MigrateOfferToManualThroughput;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.MigrateOfferToManualThroughput;
-                    }
-                
-                    break;
-                case 47:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, key))
-                    {
-                        return this.SupportSpatialLegacyCoordinates;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.AddResourcePropertiesToResponse, key))
-                    {
-                        return this.AddResourcePropertiesToResponse;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes, key))
-                    {
-                        return this.CollectionChildResourceNameLimitInBytes;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.SupportSpatialLegacyCoordinates;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.AddResourcePropertiesToResponse, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.AddResourcePropertiesToResponse;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.CollectionChildResourceNameLimitInBytes;
-                    }
-                
-                    break;
-                case 48:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, key))
-                    {
-                        return this.GetAllPartitionKeyStatistics;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, key))
-                    {
-                        return this.PopulateCollectionThroughputInfo;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.GetAllPartitionKeyStatistics;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PopulateCollectionThroughputInfo;
+                        return this.XPConfigurationSessionsCount;
                     }
                 
                     break;
                 case 49:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, key))
                     {
-                        return this.UsePolygonsSmallerThanAHemisphere;
+                        return this.CollectionLazyIndexingProgress;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.UsePolygonsSmallerThanAHemisphere;
-                    }
-                
-                    break;
-                case 50:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, key))
-                    {
-                        return this.ResponseContinuationTokenLimitInKB;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.ResponseContinuationTokenLimitInKB;
+                        return this.CollectionLazyIndexingProgress;
                     }
                 
                     break;
-                case 51:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, key))
+                case 52:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UnflushedMergLogEntryCount, key))
                     {
-                        return this.EnableLowPrecisionOrderBy;
+                        return this.UnflushedMergLogEntryCount;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, key))
+                    if (string.Equals(WFConstants.BackendHeaders.UnflushedMergLogEntryCount, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.RetriableWriteRequestStartTimestamp;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.EnableLowPrecisionOrderBy;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.RetriableWriteRequestStartTimestamp;
-                    }
-                
-                    break;
-                case 53:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, key))
-                    {
-                        return this.IsOfferStorageRefreshRequest;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, key))
-                    {
-                        return this.IsRUPerGBEnforcementRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsOfferStorageRefreshRequest;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IsRUPerGBEnforcementRequest;
+                        return this.UnflushedMergLogEntryCount;
                     }
                 
                     break;
                 case 56:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, key))
                     {
-                        return this.CollectionChildResourceContentLimitInKB;
+                        return this.CollectionIndexTransformationProgress;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        return this.CollectionChildResourceContentLimitInKB;
-                    }
-                
-                    break;
-                case 57:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, key))
-                    {
-                        return this.PopulateUnflushedMergeEntryCount;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PopulateUnflushedMergeEntryCount;
-                    }
-                
-                    break;
-                case 58:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, key))
-                    {
-                        return this.IgnoreSystemLoweringMaxThroughput;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.IgnoreSystemLoweringMaxThroughput;
-                    }
-                
-                    break;
-                case 59:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, key))
-                    {
-                        return this.UpdateMaxThroughputEverProvisioned;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.UpdateMaxThroughputEverProvisioned;
+                        return this.CollectionIndexTransformationProgress;
                     }
                 
                     break;
@@ -2220,56 +1168,30 @@ namespace Microsoft.Azure.Cosmos
         {
             switch (key.Length)
             {
+                case 3:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.LSN, key))
+                    {
+                        this.LSN = value;
+                        return;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.LSN, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.LSN = value;
+                        return;
+                    }
+                
+                    break;
                 case 4:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.HttpDate, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ETag, key))
                     {
-                        this.HttpDate = value;
+                        this.ETag = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.A_IM, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.ETag, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.A_IM = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.HttpDate, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.HttpDate = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.A_IM, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.A_IM = value;
-                        return;
-                    }
-                
-                    break;
-                case 6:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Prefer, key))
-                    {
-                        this.Prefer = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Prefer, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.Prefer = value;
-                        return;
-                    }
-                
-                    break;
-                case 8:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IfMatch, key))
-                    {
-                        this.IfMatch = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IfMatch, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IfMatch = value;
+                        this.ETag = value;
                         return;
                     }
                 
@@ -2288,216 +1210,112 @@ namespace Microsoft.Azure.Cosmos
                     }
                 
                     break;
-                case 11:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EndId, key))
-                    {
-                        this.EndId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EndId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EndId = value;
-                        return;
-                    }
-                
-                    break;
                 case 12:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Version, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.XPRole, key))
                     {
-                        this.Version = value;
+                        this.XPRole = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EndEpk, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.XPRole, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.EndEpk = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Version, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.Version = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EndEpk, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EndEpk = value;
+                        this.XPRole = value;
                         return;
                     }
                 
                     break;
                 case 13:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Authorization, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ItemLSN, key))
                     {
-                        this.Authorization = value;
+                        this.ItemLSN = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IfNoneMatch, key))
+                    if (string.Equals(WFConstants.BackendHeaders.ItemLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.IfNoneMatch = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.StartId, key))
-                    {
-                        this.StartId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Authorization, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.Authorization = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IfNoneMatch, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IfNoneMatch = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.StartId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.StartId = value;
+                        this.ItemLSN = value;
                         return;
                     }
                 
                     break;
                 case 14:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CanCharge, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SubStatus, key))
                     {
-                        this.CanCharge = value;
+                        this.SubStatus = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.StartEpk, key))
+                    if (string.Equals(WFConstants.BackendHeaders.SubStatus, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.StartEpk = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.BinaryId, key))
-                    {
-                        this.BinaryId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.CanCharge, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.CanCharge = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.StartEpk, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.StartEpk = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.BinaryId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.BinaryId = value;
+                        this.SubStatus = value;
                         return;
                     }
                 
                     break;
                 case 15:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TargetLsn, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ItemCount, key))
                     {
-                        this.TargetLsn = value;
+                        this.ItemCount = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.TargetLsn, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.ItemCount, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.TargetLsn = value;
+                        this.ItemCount = value;
                         return;
                     }
                 
                     break;
                 case 16:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CanThrottle, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ActivityId, key))
                     {
-                        this.CanThrottle = value;
+                        this.ActivityId = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SchemaHash, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.LocalLSN, key))
                     {
-                        this.SchemaHash = value;
+                        this.LocalLSN = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.CanThrottle, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.ActivityId, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.CanThrottle = value;
+                        this.ActivityId = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.SchemaHash, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.LocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.SchemaHash = value;
+                        this.LocalLSN = value;
                         return;
                     }
                 
                     break;
                 case 17:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.Continuation, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.OwnerId, key))
                     {
-                        this.Continuation = value;
+                        this.OwnerId = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IfModifiedSince, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.OwnerId, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.IfModifiedSince = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.BindReplicaDirective, key))
-                    {
-                        this.BindReplicaDirective = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.TransactionId, key))
-                    {
-                        this.TransactionId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.Continuation, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.Continuation = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IfModifiedSince, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IfModifiedSince = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.BindReplicaDirective, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.BindReplicaDirective = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.TransactionId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.TransactionId = value;
+                        this.OwnerId = value;
                         return;
                     }
                 
                     break;
                 case 18:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ReadFeedKeyType, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.SchemaVersion, key))
                     {
-                        this.ReadFeedKeyType = value;
+                        this.SchemaVersion = value;
+                        return;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RestoreState, key))
+                    {
+                        this.RestoreState = value;
                         return;
                     }
                 
@@ -2507,9 +1325,15 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.ReadFeedKeyType, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.SchemaVersion, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.ReadFeedKeyType = value;
+                        this.SchemaVersion = value;
+                        return;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.RestoreState, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.RestoreState = value;
                         return;
                     }
                 
@@ -2521,49 +1345,77 @@ namespace Microsoft.Azure.Cosmos
                 
                     break;
                 case 19:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PageSize, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, key))
                     {
-                        this.PageSize = value;
+                        this.RetryAfterInMilliseconds = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RestoreParams, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MaxResourceQuota, key))
                     {
-                        this.RestoreParams = value;
+                        this.MaxResourceQuota = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.PageSize, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, key))
                     {
-                        this.PageSize = value;
+                        this.CurrentResourceQuotaUsage = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.RestoreParams, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RequestCharge, key))
                     {
-                        this.RestoreParams = value;
+                        this.RequestCharge = value;
                         return;
                     }
                 
-                    break;
-                case 20:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ProfileRequest, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ResourceId, key))
                     {
-                        this.ProfileRequest = value;
+                        this.ResourceId = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.ProfileRequest, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.ProfileRequest = value;
+                        this.RetryAfterInMilliseconds = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.MaxResourceQuota, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.MaxResourceQuota = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.CurrentResourceQuotaUsage = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.RequestCharge, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.RequestCharge = value;
+                        return;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.ResourceId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.ResourceId = value;
                         return;
                     }
                 
                     break;
                 case 21:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SchemaOwnerRid, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.OwnerFullName, key))
                     {
-                        this.SchemaOwnerRid = value;
+                        this.OwnerFullName = value;
+                        return;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QuorumAckedLSN, key))
+                    {
+                        this.QuorumAckedLSN = value;
                         return;
                     }
                 
@@ -2573,15 +1425,21 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.TransactionCommit, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ItemLocalLSN, key))
                     {
-                        this.TransactionCommit = value;
+                        this.ItemLocalLSN = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.SchemaOwnerRid, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.OwnerFullName, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.SchemaOwnerRid = value;
+                        this.OwnerFullName = value;
+                        return;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.QuorumAckedLSN, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.QuorumAckedLSN = value;
                         return;
                     }
                 
@@ -2591,47 +1449,23 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.TransactionCommit, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.ItemLocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.TransactionCommit = value;
+                        this.ItemLocalLSN = value;
                         return;
                     }
                 
                     break;
                 case 22:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ConsistencyLevel, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ContinuationToken, key))
                     {
-                        this.ConsistencyLevel = value;
+                        this.ContinuationToken = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.GatewaySignature, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.ContinuationToken, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.GatewaySignature = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.IsFanoutRequest, key))
-                    {
-                        this.IsFanoutRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ConsistencyLevel, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ConsistencyLevel = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.GatewaySignature, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.GatewaySignature = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.IsFanoutRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsFanoutRequest = value;
+                        this.ContinuationToken = value;
                         return;
                     }
                 
@@ -2643,59 +1477,29 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsReadOnlyScript, key))
-                    {
-                        this.IsReadOnlyScript = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PrimaryMasterKey, key))
-                    {
-                        this.PrimaryMasterKey = value;
-                        return;
-                    }
-                
                     if (string.Equals(HttpConstants.HttpHeaders.IndexingDirective, key, StringComparison.OrdinalIgnoreCase))
                     {
                         this.IndexingDirective = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.IsReadOnlyScript, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsReadOnlyScript = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PrimaryMasterKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PrimaryMasterKey = value;
-                        return;
-                    }
-                
                     break;
                 case 24:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsBatchAtomic, key))
-                    {
-                        this.IsBatchAtomic = value;
-                        return;
-                    }
-                
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionServiceIndex, key))
                     {
                         this.CollectionServiceIndex = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RemoteStorageType, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.DatabaseAccountId, key))
                     {
-                        this.RemoteStorageType = value;
+                        this.DatabaseAccountId = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.IsBatchAtomic, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key))
                     {
-                        this.IsBatchAtomic = value;
+                        this.BackendRequestDurationMilliseconds = value;
                         return;
                     }
                 
@@ -2705,17 +1509,29 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.RemoteStorageType, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.DatabaseAccountId, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.RemoteStorageType = value;
+                        this.DatabaseAccountId = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.BackendRequestDurationMilliseconds = value;
                         return;
                     }
                 
                     break;
                 case 25:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsBatchOrdered, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CurrentWriteQuorum, key))
                     {
-                        this.IsBatchOrdered = value;
+                        this.CurrentWriteQuorum = value;
+                        return;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.GlobalCommittedLSN, key))
+                    {
+                        this.GlobalCommittedLSN = value;
                         return;
                     }
                 
@@ -2725,33 +1541,15 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PrimaryReadonlyKey, key))
+                    if (string.Equals(WFConstants.BackendHeaders.CurrentWriteQuorum, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.PrimaryReadonlyKey = value;
+                        this.CurrentWriteQuorum = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ResourceSchemaName, key))
+                    if (string.Equals(WFConstants.BackendHeaders.GlobalCommittedLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.ResourceSchemaName = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ResourceTypes, key))
-                    {
-                        this.ResourceTypes = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SecondaryMasterKey, key))
-                    {
-                        this.SecondaryMasterKey = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsBatchOrdered, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsBatchOrdered = value;
+                        this.GlobalCommittedLSN = value;
                         return;
                     }
                 
@@ -2761,35 +1559,11 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.PrimaryReadonlyKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PrimaryReadonlyKey = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ResourceSchemaName, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ResourceSchemaName = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ResourceTypes, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ResourceTypes = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.SecondaryMasterKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.SecondaryMasterKey = value;
-                        return;
-                    }
-                
                     break;
                 case 26:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnumerationDirection, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.LastStateChangeUtc, key))
                     {
-                        this.EnumerationDirection = value;
+                        this.LastStateChangeUtc = value;
                         return;
                     }
                 
@@ -2799,9 +1573,27 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.EnumerationDirection, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OfferReplacePending, key))
                     {
-                        this.EnumerationDirection = value;
+                        this.OfferReplacePending = value;
+                        return;
+                    }
+                
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.DisableRntbdChannel, key))
+                    {
+                        this.DisableRntbdChannel = value;
+                        return;
+                    }
+                
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MinimumRUsForOffer, key))
+                    {
+                        this.MinimumRUsForOffer = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.LastStateChangeUtc, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.LastStateChangeUtc = value;
                         return;
                     }
                 
@@ -2811,91 +1603,43 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
+                    if (string.Equals(WFConstants.BackendHeaders.OfferReplacePending, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.OfferReplacePending = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.DisableRntbdChannel, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.DisableRntbdChannel = value;
+                        return;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.MinimumRUsForOffer, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.MinimumRUsForOffer = value;
+                        return;
+                    }
+                
                     break;
                 case 27:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.FanoutOperationState, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.NumberOfReadRegions, key))
                     {
-                        this.FanoutOperationState = value;
+                        this.NumberOfReadRegions = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeStaticId, key))
+                    if (string.Equals(WFConstants.BackendHeaders.NumberOfReadRegions, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.MergeStaticId = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SecondaryReadonlyKey, key))
-                    {
-                        this.SecondaryReadonlyKey = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.FanoutOperationState, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.FanoutOperationState = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.MergeStaticId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.MergeStaticId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.SecondaryReadonlyKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.SecondaryReadonlyKey = value;
+                        this.NumberOfReadRegions = value;
                         return;
                     }
                 
                     break;
                 case 28:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKey, key))
-                    {
-                        this.PartitionKey = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RestoreMetadataFilter, key))
-                    {
-                        this.RestoreMetadataFilter = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.EffectivePartitionKey, key))
-                    {
-                        this.EffectivePartitionKey = value;
-                        return;
-                    }
-                
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.TimeToLiveInSeconds, key))
                     {
                         this.TimeToLiveInSeconds = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UseSystemBudget, key))
-                    {
-                        this.UseSystemBudget = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PartitionKey = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.RestoreMetadataFilter, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.RestoreMetadataFilter = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.EffectivePartitionKey, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EffectivePartitionKey = value;
                         return;
                     }
                 
@@ -2905,291 +1649,141 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.UseSystemBudget, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.UseSystemBudget = value;
-                        return;
-                    }
-                
                     break;
-                case 30:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResourceTokenExpiry, key))
+                case 29:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key))
                     {
-                        this.ResourceTokenExpiry = value;
+                        this.CurrentReplicaSetSize = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionRid, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.QueryMetrics, key))
                     {
-                        this.CollectionRid = value;
+                        this.QueryMetrics = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ExcludeSystemProperties, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IndexUtilization, key))
                     {
-                        this.ExcludeSystemProperties = value;
+                        this.IndexUtilization = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionCount, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QuorumAckedLocalLSN, key))
                     {
-                        this.PartitionCount = value;
+                        this.QuorumAckedLocalLSN = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionResourceFilter, key))
+                    if (string.Equals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.PartitionResourceFilter = value;
+                        this.CurrentReplicaSetSize = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.ResourceTokenExpiry, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.QueryMetrics, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.ResourceTokenExpiry = value;
+                        this.QueryMetrics = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.CollectionRid, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.IndexUtilization, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.CollectionRid = value;
+                        this.IndexUtilization = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.ExcludeSystemProperties, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.QuorumAckedLocalLSN, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.ExcludeSystemProperties = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionCount, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PartitionCount = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionResourceFilter, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PartitionResourceFilter = value;
+                        this.QuorumAckedLocalLSN = value;
                         return;
                     }
                 
                     break;
                 case 31:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CanOfferReplaceComplete, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RequestValidationFailure, key))
                     {
-                        this.CanOfferReplaceComplete = value;
+                        this.RequestValidationFailure = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ClientRetryAttemptCount, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.RequestValidationFailure, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.ClientRetryAttemptCount = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsClientEncrypted, key))
-                    {
-                        this.IsClientEncrypted = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.SystemDocumentType, key))
-                    {
-                        this.SystemDocumentType = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.BinaryPassthroughRequest, key))
-                    {
-                        this.BinaryPassthroughRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.CanOfferReplaceComplete, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.CanOfferReplaceComplete = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ClientRetryAttemptCount, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ClientRetryAttemptCount = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsClientEncrypted, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsClientEncrypted = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.SystemDocumentType, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.SystemDocumentType = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.BinaryPassthroughRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.BinaryPassthroughRequest = value;
+                        this.RequestValidationFailure = value;
                         return;
                     }
                 
                     break;
                 case 32:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.QueryExecutionInfo, key))
                     {
-                        this.MaxPollingIntervalMilliseconds = value;
+                        this.QueryExecutionInfo = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MigrateCollectionDirective, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.QueryExecutionInfo, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.MigrateCollectionDirective = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, key))
-                    {
-                        this.TargetGlobalCommittedLsn = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ForceQueryScan, key))
-                    {
-                        this.ForceQueryScan = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.MaxPollingIntervalMilliseconds = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MigrateCollectionDirective, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.MigrateCollectionDirective = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.TargetGlobalCommittedLsn, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.TargetGlobalCommittedLsn = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ForceQueryScan, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ForceQueryScan = value;
+                        this.QueryExecutionInfo = value;
                         return;
                     }
                 
                     break;
                 case 33:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, key))
                     {
-                        this.EmitVerboseTracesInQuery = value;
+                        this.ReplicatorLSNToGLSNDelta = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableScanInQuery, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, key))
                     {
-                        this.EnableScanInQuery = value;
+                        this.ReplicatorLSNToLLSNDelta = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateQuotaInfo, key))
+                    if (string.Equals(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.PopulateQuotaInfo = value;
+                        this.ReplicatorLSNToGLSNDelta = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateLogStoreInfo, key))
+                    if (string.Equals(WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.PopulateLogStoreInfo = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PreserveFullContent, key))
-                    {
-                        this.PreserveFullContent = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EmitVerboseTracesInQuery = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EnableScanInQuery, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EnableScanInQuery = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateQuotaInfo, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PopulateQuotaInfo = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PopulateLogStoreInfo, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PopulateLogStoreInfo = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PreserveFullContent, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PreserveFullContent = value;
+                        this.ReplicatorLSNToLLSNDelta = value;
                         return;
                     }
                 
                     break;
                 case 34:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.AllowTentativeWrites, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.LogResults, key))
                     {
-                        this.AllowTentativeWrites = value;
+                        this.LogResults = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.AllowTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.HasTentativeWrites, key))
                     {
-                        this.AllowTentativeWrites = value;
+                        this.HasTentativeWrites = value;
+                        return;
+                    }
+                
+                    if (string.Equals(HttpConstants.HttpHeaders.LogResults, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.LogResults = value;
+                        return;
+                    }
+                
+                    if (string.Equals(WFConstants.BackendHeaders.HasTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.HasTentativeWrites = value;
                         return;
                     }
                 
                     break;
                 case 35:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key))
                     {
-                        this.FilterBySchemaResourceId = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PreTriggerExclude, key))
-                    {
-                        this.PreTriggerExclude = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PreTriggerInclude, key))
-                    {
-                        this.PreTriggerInclude = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key))
-                    {
-                        this.RemainingTimeInMsOnClientRequest = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, key))
-                    {
-                        this.ShouldBatchContinueOnError = value;
+                        this.PartitionKeyRangeId = value;
                         return;
                     }
                 
@@ -3199,39 +1793,9 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionKeyRangeId, key))
+                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         this.PartitionKeyRangeId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.FilterBySchemaResourceId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PreTriggerExclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PreTriggerExclude = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PreTriggerInclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PreTriggerInclude = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.RemainingTimeInMsOnClientRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ShouldBatchContinueOnError = value;
                         return;
                     }
                 
@@ -3241,481 +1805,113 @@ namespace Microsoft.Azure.Cosmos
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PartitionKeyRangeId = value;
-                        return;
-                    }
-                
-                    break;
-                case 36:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IncludeTentativeWrites, key))
-                    {
-                        this.IncludeTentativeWrites = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateQueryMetrics, key))
-                    {
-                        this.PopulateQueryMetrics = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PostTriggerExclude, key))
-                    {
-                        this.PostTriggerExclude = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PostTriggerInclude, key))
-                    {
-                        this.PostTriggerInclude = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.IsRetriedWriteRequest, key))
-                    {
-                        this.IsRetriedWriteRequest = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.IsUserRequest, key))
-                    {
-                        this.IsUserRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IncludeTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IncludeTentativeWrites = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateQueryMetrics, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PopulateQueryMetrics = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PostTriggerExclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PostTriggerExclude = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PostTriggerInclude, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PostTriggerInclude = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.IsRetriedWriteRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsRetriedWriteRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.IsUserRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsUserRequest = value;
-                        return;
-                    }
-                
                     break;
                 case 37:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableLogging, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsRUPerMinuteUsed, key))
                     {
-                        this.EnableLogging = value;
+                        this.IsRUPerMinuteUsed = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateResourceCount, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReplicaStatusRevoked, key))
                     {
-                        this.PopulateResourceCount = value;
+                        this.ReplicaStatusRevoked = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.EnableLogging, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.IsRUPerMinuteUsed, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.EnableLogging = value;
+                        this.IsRUPerMinuteUsed = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateResourceCount, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.ReplicaStatusRevoked, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.PopulateResourceCount = value;
+                        this.ReplicaStatusRevoked = value;
                         return;
                     }
                 
                     break;
                 case 38:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MigrateOfferToAutopilot, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.VectorClockLocalProgress, key))
                     {
-                        this.MigrateOfferToAutopilot = value;
+                        this.VectorClockLocalProgress = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RetriableWriteRequestId, key))
+                    if (string.Equals(WFConstants.BackendHeaders.VectorClockLocalProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.RetriableWriteRequestId = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MigrateOfferToAutopilot, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.MigrateOfferToAutopilot = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.RetriableWriteRequestId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.RetriableWriteRequestId = value;
-                        return;
-                    }
-                
-                    break;
-                case 39:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.TruncateMergeLogRequest, key))
-                    {
-                        this.TruncateMergeLogRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.TruncateMergeLogRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.TruncateMergeLogRequest = value;
+                        this.VectorClockLocalProgress = value;
                         return;
                     }
                 
                     break;
                 case 40:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key))
                     {
-                        this.EnableDynamicRidRangeAllocation = value;
+                        this.SoftMaxAllowedThroughput = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UniqueIndexReIndexingState, key))
+                    if (string.Equals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.UniqueIndexReIndexingState = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EnableDynamicRidRangeAllocation = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.UniqueIndexReIndexingState, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.UniqueIndexReIndexingState = value;
+                        this.SoftMaxAllowedThroughput = value;
                         return;
                     }
                 
                     break;
                 case 42:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MergeCheckPointGLSN, key))
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.XPConfigurationSessionsCount, key))
                     {
-                        this.MergeCheckPointGLSN = value;
+                        this.XPConfigurationSessionsCount = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.MergeCheckPointGLSN, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(WFConstants.BackendHeaders.XPConfigurationSessionsCount, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.MergeCheckPointGLSN = value;
-                        return;
-                    }
-                
-                    break;
-                case 43:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, key))
-                    {
-                        this.DisableRUPerMinuteUsage = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulatePartitionStatistics, key))
-                    {
-                        this.PopulatePartitionStatistics = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ForceSideBySideIndexMigration, key))
-                    {
-                        this.ForceSideBySideIndexMigration = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UniqueIndexNameEncodingMode, key))
-                    {
-                        this.UniqueIndexNameEncodingMode = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.DisableRUPerMinuteUsage = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulatePartitionStatistics, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PopulatePartitionStatistics = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ForceSideBySideIndexMigration, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ForceSideBySideIndexMigration = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.UniqueIndexNameEncodingMode, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.UniqueIndexNameEncodingMode = value;
-                        return;
-                    }
-                
-                    break;
-                case 44:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ContentSerializationFormat, key))
-                    {
-                        this.ContentSerializationFormat = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.ContentSerializationFormat, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ContentSerializationFormat = value;
-                        return;
-                    }
-                
-                    break;
-                case 45:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, key))
-                    {
-                        this.ChangeFeedStartFullFidelityIfNoneMatch = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ChangeFeedStartFullFidelityIfNoneMatch = value;
-                        return;
-                    }
-                
-                    break;
-                case 46:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, key))
-                    {
-                        this.MigrateOfferToManualThroughput = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.MigrateOfferToManualThroughput = value;
-                        return;
-                    }
-                
-                    break;
-                case 47:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, key))
-                    {
-                        this.SupportSpatialLegacyCoordinates = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.AddResourcePropertiesToResponse, key))
-                    {
-                        this.AddResourcePropertiesToResponse = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes, key))
-                    {
-                        this.CollectionChildResourceNameLimitInBytes = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.SupportSpatialLegacyCoordinates = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.AddResourcePropertiesToResponse, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.AddResourcePropertiesToResponse = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.CollectionChildResourceNameLimitInBytes = value;
-                        return;
-                    }
-                
-                    break;
-                case 48:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, key))
-                    {
-                        this.GetAllPartitionKeyStatistics = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, key))
-                    {
-                        this.PopulateCollectionThroughputInfo = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.GetAllPartitionKeyStatistics = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PopulateCollectionThroughputInfo = value;
+                        this.XPConfigurationSessionsCount = value;
                         return;
                     }
                 
                     break;
                 case 49:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, key))
                     {
-                        this.UsePolygonsSmallerThanAHemisphere = value;
+                        this.CollectionLazyIndexingProgress = value;
                         return;
                     }
                 
-                    if (string.Equals(HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.UsePolygonsSmallerThanAHemisphere = value;
-                        return;
-                    }
-                
-                    break;
-                case 50:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, key))
-                    {
-                        this.ResponseContinuationTokenLimitInKB = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.ResponseContinuationTokenLimitInKB = value;
+                        this.CollectionLazyIndexingProgress = value;
                         return;
                     }
                 
                     break;
-                case 51:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, key))
+                case 52:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.UnflushedMergLogEntryCount, key))
                     {
-                        this.EnableLowPrecisionOrderBy = value;
+                        this.UnflushedMergLogEntryCount = value;
                         return;
                     }
                 
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, key))
+                    if (string.Equals(WFConstants.BackendHeaders.UnflushedMergLogEntryCount, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.RetriableWriteRequestStartTimestamp = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.EnableLowPrecisionOrderBy = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.RetriableWriteRequestStartTimestamp, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.RetriableWriteRequestStartTimestamp = value;
-                        return;
-                    }
-                
-                    break;
-                case 53:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, key))
-                    {
-                        this.IsOfferStorageRefreshRequest = value;
-                        return;
-                    }
-                
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, key))
-                    {
-                        this.IsRUPerGBEnforcementRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsOfferStorageRefreshRequest = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IsRUPerGBEnforcementRequest = value;
+                        this.UnflushedMergLogEntryCount = value;
                         return;
                     }
                 
                     break;
                 case 56:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB, key))
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, key))
                     {
-                        this.CollectionChildResourceContentLimitInKB = value;
+                        this.CollectionIndexTransformationProgress = value;
                         return;
                     }
                 
-                    if (string.Equals(WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB, key, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.CollectionChildResourceContentLimitInKB = value;
-                        return;
-                    }
-                
-                    break;
-                case 57:
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, key))
-                    {
-                        this.PopulateUnflushedMergeEntryCount = value;
-                        return;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.PopulateUnflushedMergeEntryCount = value;
-                        return;
-                    }
-                
-                    break;
-                case 58:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, key))
-                    {
-                        this.IgnoreSystemLoweringMaxThroughput = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.IgnoreSystemLoweringMaxThroughput, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.IgnoreSystemLoweringMaxThroughput = value;
-                        return;
-                    }
-                
-                    break;
-                case 59:
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, key))
-                    {
-                        this.UpdateMaxThroughputEverProvisioned = value;
-                        return;
-                    }
-                
-                    if (string.Equals(HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        this.UpdateMaxThroughputEverProvisioned = value;
+                        this.CollectionIndexTransformationProgress = value;
                         return;
                     }
                 

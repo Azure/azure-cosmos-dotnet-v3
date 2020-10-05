@@ -22,6 +22,81 @@ namespace Microsoft.Azure.Cosmos.Tests
         private const string Key = "testKey";
 
         [TestMethod]
+        public void HeaderResponseGenerateTest()
+        {
+            
+            Dictionary<string, string> httpHeaders = typeof(HttpConstants.HttpHeaders).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .ToDictionary(x => x.Name, x => (string)x.GetValue(null));
+            Dictionary<string, string> backendHeaders = typeof(WFConstants.BackendHeaders).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .ToDictionary(x => x.Name, x => (string)x.GetValue(null));
+
+            string output = "List<(string name, string value)> headerNames = new List<(string name, string value)>() {" + Environment.NewLine;
+            HashSet<string> responseHeaders = typeof(RntbdConstants.Response).GetFields(BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => !string.Equals("payloadPresent", x.Name))
+                .Select(x => char.ToUpper(x.Name.First()) + x.Name.Substring(1))
+                .ToHashSet();
+            responseHeaders.Remove("LastStateChangeDateTime");
+            responseHeaders.Add("LastStateChangeUtc");
+            responseHeaders.Remove("RetryAfterMilliseconds");
+            responseHeaders.Add("RetryAfterInMilliseconds");
+
+            responseHeaders.Remove("StorageMaxResoureQuota");
+            responseHeaders.Add("MaxResourceQuota");
+
+            responseHeaders.Remove("StorageResourceQuotaUsage");
+            responseHeaders.Add("CurrentResourceQuotaUsage");
+
+            responseHeaders.Remove("CollectionUpdateProgress");
+            responseHeaders.Add("CollectionIndexTransformationProgress");
+
+            responseHeaders.Remove("CollectionLazyIndexProgress");
+            responseHeaders.Add("CollectionLazyIndexingProgress");
+
+            responseHeaders.Remove("ServerDateTimeUtc");
+            responseHeaders.Add("XDate");
+
+            responseHeaders.Remove("XpConfigurationSesssionsCount");
+            responseHeaders.Add("XPConfigurationSessionsCount");
+
+            responseHeaders.Remove("UnflushedMergeLogEntryCount");
+            responseHeaders.Add("UnflushedMergLogEntryCount");
+
+            responseHeaders.Remove("ResourceName");
+            responseHeaders.Add("ResourceId");
+
+            responseHeaders.Remove("XpRole");
+            responseHeaders.Add("XPRole");
+
+            // Is not set on transport serialization
+            responseHeaders.Remove("ReadsPerformed");
+            responseHeaders.Remove("WritesPerformed");
+            responseHeaders.Remove("QueriesPerformed");
+            responseHeaders.Remove("IndexTermsGenerated");
+            responseHeaders.Remove("ScriptsExecuted");
+
+            foreach (string name in responseHeaders)
+            {
+                if (httpHeaders.ContainsKey(name))
+                {
+                    output += $"    (\"HttpConstants.HttpHeaders.{name}\", \"{httpHeaders[name]}\"),{Environment.NewLine}";
+                }
+                else if (backendHeaders.ContainsKey(name))
+                {
+                    output += $"    (\"WFConstants.BackendHeaders.{name}\", \"{backendHeaders[name]}\"),{Environment.NewLine}";
+                }
+                else
+                {
+                    throw new Exception(name);
+                }
+                
+            }
+
+            output += "}; #>";
+
+            Assert.IsNotNull(output);
+        }
+
+        [TestMethod]
         public void HeaderGenerateTest()
         {
             FieldInfo[] allHeaderConstants = typeof(HttpConstants.HttpHeaders).GetFields(BindingFlags.Public | BindingFlags.Static);
