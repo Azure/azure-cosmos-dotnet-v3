@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             }
             else
             {
-                // left most and any non null continuations
+                // Left most and any non null continuations
                 List<(PartitionKeyRange, QueryState)> rangesAndStates = crossPartitionState.Value.OrderBy(tuple => tuple.Item1, PartitionKeyRangeComparer.Singleton).ToList();
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
                 for (int i = 0; i < rangesAndStates.Count; i++)
