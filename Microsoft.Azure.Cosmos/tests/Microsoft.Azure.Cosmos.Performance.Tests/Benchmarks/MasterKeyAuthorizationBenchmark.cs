@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             Headers headers = new Headers();
             headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
-            this.testHeaders = headers.CosmosMessageHeaders;
+            this.testHeaders = headers.RequestHeaders;
         }
 
         [Benchmark]

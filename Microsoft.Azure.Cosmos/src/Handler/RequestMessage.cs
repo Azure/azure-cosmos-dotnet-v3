@@ -247,13 +247,13 @@ namespace Microsoft.Azure.Cosmos
                         resourceIdOrFullName: null,
                         resourceType: this.ResourceType,
                         body: this.Content,
-                        headers: this.Headers.CosmosMessageHeaders,
+                        headers: this.Headers.RequestHeaders,
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.RequestHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)

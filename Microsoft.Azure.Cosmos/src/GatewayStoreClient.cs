@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)
         {
-            INameValueCollection headers = new OptimizedRequestHeaders();
+            INameValueCollection headers = new OptimizedResponseHeaders();
 
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Headers)
             {
