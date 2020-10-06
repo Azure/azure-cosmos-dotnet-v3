@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         public QueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            PartitionKeyRange feedRange,
+            FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken,
             QueryState state = default)
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         protected override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.queryDataSource.MonadicQueryAsync(
             sqlQuerySpec: this.sqlQuerySpec,
             continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-            feedRange: new FeedRangeEpk(this.Range.ToRange()),
+            feedRange: this.Range,
             pageSize: this.pageSize,
             cancellationToken);
     }

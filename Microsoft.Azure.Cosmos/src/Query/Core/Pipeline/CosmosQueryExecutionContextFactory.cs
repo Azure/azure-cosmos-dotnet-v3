@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -331,7 +332,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: targetRanges,
+                targetRanges: targetRanges
+                    .Select(range => new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: range.MinInclusive, 
+                            max: range.MaxExclusive, 
+                            isMaxInclusive: true, 
+                            isMinInclusive: false)))
+                    .ToList(),
                 pageSize: inputParameters.MaxItemCount,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 cancellationToken: default,
@@ -377,7 +385,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 executionEnvironment: inputParameters.ExecutionEnvironment,
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: targetRanges,
+                targetRanges: targetRanges
+                    .Select(range => new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: range.MinInclusive,
+                            max: range.MaxExclusive,
+                            isMaxInclusive: true,
+                            isMinInclusive: false)))
+                    .ToList(),
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
                 pageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,

@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         state: state,
                         (range, state) => new DocumentContainerPartitionRangeEnumerator(
                                 inMemoryCollection,
-                                partitionKeyRangeId: int.Parse(range.Id),
+                                partitionKeyRangeId: range,
                                 pageSize: 10,
                                 state: state,
                                 cancellationToken: default));
@@ -115,11 +115,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public override IAsyncEnumerable<TryCatch<DocumentContainerPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
                 DocumentContainerState state = null) => new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
-                    range: new PartitionKeyRange() { Id = "0" },
+                    range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     state: state,
                     (range, state) => new DocumentContainerPartitionRangeEnumerator(
                         documentContainer,
-                        partitionKeyRangeId: int.Parse(range.Id),
+                        feedRange: range,
                         pageSize: 10,
                         state: state,
                         cancellationToken: default));
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer inMemoryCollection,
                 DocumentContainerState state = null) => new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
-                    partitionKeyRangeId: 0,
+                    range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     pageSize: 10,
                     state: state,
                     cancellationToken: default);

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             ExecutionEnvironment executionEnvironment,
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
-            IReadOnlyList<PartitionKeyRange> targetRanges,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
             QueryInfo queryInfo,
             int pageSize,
             int maxConcurrency,

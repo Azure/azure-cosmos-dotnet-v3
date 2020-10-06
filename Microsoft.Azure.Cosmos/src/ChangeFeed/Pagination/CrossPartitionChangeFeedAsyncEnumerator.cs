@@ -47,6 +47,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 this.Current = TryCatch<ChangeFeedPage>.FromException(currentCrossPartitionPage.Exception);
                 return true;
             }
+
+            throw new NotImplementedException();
         }
 
         public static TryCatch<CrossPartitionChangeFeedAsyncEnumerator> MonadicCreate(
@@ -65,71 +67,70 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 throw new ArgumentNullException(nameof(changeFeedRequestOptions));
             }
 
-            // ToDo make this async lazy
-            if (changeFeedRequestOptions)
+            throw new NotImplementedException();
         }
 
-        private sealed class CrossPartitionStateAsyncExtractor : ChangeFeedStartFromAsyncVisitor<IDocumentContainer, TryCatch<CrossPartitionState<ChangeFeedState>>>
-        {
-            public static readonly CrossPartitionStateAsyncExtractor Singleton = new CrossPartitionStateAsyncExtractor();
+        //private sealed class CrossPartitionStateAsyncExtractor : ChangeFeedStartFromAsyncVisitor<IDocumentContainer, TryCatch<CrossPartitionState<ChangeFeedState>>>
+        //{
+        //    public static readonly CrossPartitionStateAsyncExtractor Singleton = new CrossPartitionStateAsyncExtractor();
 
-            private CrossPartitionStateAsyncExtractor()
-            {
-            }
+        //    private CrossPartitionStateAsyncExtractor()
+        //    {
+        //    }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromNow startFromNow,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
-            {
-                List<(PartitionKeyRange, ChangeFeedState)> rangeAndStates = new List<(PartitionKeyRange, ChangeFeedState)>();
-                IReadOnlyList<PartitionKeyRange> ranges;
-                if (startFromNow.FeedRange != null)
-                {
-                    ranges = documentContainer.GetChildRangeAsync(
-                        new PartitionKeyRange()
-                        {
-                            startFromNow.FeedRange.
-                        })
-                }
-            }
+        //    public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
+        //        ChangeFeedStartFromNow startFromNow,
+        //        IDocumentContainer documentContainer,
+        //        CancellationToken cancellationToken)
+        //    {
+        //        List<(PartitionKeyRange, ChangeFeedState)> rangeAndStates = new List<(PartitionKeyRange, ChangeFeedState)>();
+        //        IReadOnlyList<PartitionKeyRange> ranges;
+        //        if (startFromNow.FeedRange != null)
+        //        {
+        //            ranges = documentContainer.GetChildRangeAsync(
+        //                new PartitionKeyRange()
+        //                {
+        //                    startFromNow.FeedRange.
+        //                })
+        //        }
+        //    }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromTime startFromTime,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
-            }
+        //    public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
+        //        ChangeFeedStartFromTime startFromTime,
+        //        IDocumentContainer documentContainer,
+        //        CancellationToken cancellationToken)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromContinuation startFromContinuation,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
-            }
+        //    public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
+        //        ChangeFeedStartFromContinuation startFromContinuation,
+        //        IDocumentContainer documentContainer,
+        //        CancellationToken cancellationToken)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromBeginning startFromBeginning,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
-            }
+        //    public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
+        //        ChangeFeedStartFromBeginning startFromBeginning,
+        //        IDocumentContainer documentContainer,
+        //        CancellationToken cancellationToken)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
-            {
-                throw new NotImplementedException();
-            }
+        //    public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
+        //        ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange,
+        //        IDocumentContainer documentContainer,
+        //        CancellationToken cancellationToken)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
 
-            private sealed class FeedRangeToPartitionKeyRanges : IFeedRangeAsyncVisitor<List<PartitionKeyRange>, IDocumentContainer>
-            {
+        //    private sealed class FeedRangeToPartitionKeyRanges : IFeedRangeAsyncVisitor<List<PartitionKeyRange>, IDocumentContainer>
+        //    {
 
-            }
-        }
+        //    }
+        //}
     }
 }

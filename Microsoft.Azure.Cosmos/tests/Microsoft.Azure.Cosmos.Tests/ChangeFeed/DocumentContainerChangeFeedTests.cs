@@ -24,10 +24,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task EmptyContainerTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 0);
-            List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                 ChangeFeedState.Beginning(),
-                new FeedRangePartitionKeyRange(ranges[0].Id),
+                ranges[0],
                 pageSize: 10,
                 cancellationToken: default);
 
@@ -45,14 +45,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromBeginingTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             // Should get back the all the documents inserted so far
             ChangeFeedState resumeState = default;
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Beginning(),
-                    new FeedRangePartitionKeyRange(ranges[0].Id),
+                    ranges[0],
                     pageSize: int.MaxValue,
                     cancellationToken: default);
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     resumeState,
-                    new FeedRangePartitionKeyRange(ranges[0].Id),
+                    ranges[0],
                     pageSize: 10,
                     cancellationToken: default);
 
@@ -84,14 +84,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromTimeTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             DateTime now = DateTime.UtcNow;
             // No changes let
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Time(now),
-                    new FeedRangePartitionKeyRange(ranges[0].Id),
+                    ranges[0],
                     pageSize: 10,
                     cancellationToken: default);
 
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Time(now),
-                    new FeedRangePartitionKeyRange(ranges[0].Id),
+                    ranges[0],
                     pageSize: int.MaxValue,
                     cancellationToken: default);
 
@@ -136,14 +136,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromNowAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             ChangeFeedState resumeState = default;
             // No changes starting from now
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Now(),
-                    new FeedRangePartitionKeyRange(ranges[0].Id),
+                    ranges[0],
                     pageSize: 10,
                     cancellationToken: default);
 
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     resumeState,
-                    new FeedRangePartitionKeyRange(ranges[0].Id),
+                    ranges[0],
                     pageSize: 10,
                     cancellationToken: default);
 
@@ -188,23 +188,23 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task ReadChangesAcrossSplitsAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
-            List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
-                int.Parse(ranges[0].Id),
+                ranges[0],
                 ResourceId.Empty,
                 pageSize: int.MaxValue,
                 cancellationToken: default)).Records.Count;
 
-            await documentContainer.SplitAsync(int.Parse(ranges[0].Id), cancellationToken: default);
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 
-            List<PartitionKeyRange> children = await documentContainer.GetChildRangeAsync(ranges[0], cancellationToken: default);
+            List<FeedRangeInternal> children = await documentContainer.GetChildRangeAsync(ranges[0], cancellationToken: default);
 
             long sumOfChildCounts = 0;
-            foreach (PartitionKeyRange child in children)
+            foreach (FeedRangeInternal child in children)
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Beginning(),
-                    new FeedRangePartitionKeyRange(child.Id),
+                    child,
                     pageSize: 1000,
                     cancellationToken: default);
 
@@ -241,16 +241,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             }
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
-
-            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
-
-            await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
-
-            await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+            for (int i = 0; i < 3; i++)
+            {
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                foreach(FeedRangeInternal range in ranges)
+                {
+                    await documentContainer.SplitAsync(range, cancellationToken: default);
+                }
+            }
 
             for (int i = 0; i < numItems; i++)
             {

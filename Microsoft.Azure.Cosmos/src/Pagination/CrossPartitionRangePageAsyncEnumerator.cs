@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
-                IReadOnlyList<(PartitionKeyRange, TState)> rangeAndStates;
+                IReadOnlyList<(FeedRangeInternal, TState)> rangeAndStates;
                 if (state != default)
                 {
                     rangeAndStates = state.Value;
@@ -54,10 +54,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 else
                 {
                     // Fan out to all partitions with default state
-                    IEnumerable<PartitionKeyRange> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
+                    IEnumerable<FeedRangeInternal> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
 
-                    List<(PartitionKeyRange, TState)> rangesAndStatesBuilder = new List<(PartitionKeyRange, TState)>();
-                    foreach (PartitionKeyRange range in ranges)
+                    List<(FeedRangeInternal, TState)> rangesAndStatesBuilder = new List<(FeedRangeInternal, TState)>();
+                    foreach (FeedRangeInternal range in ranges)
                     {
                         rangesAndStatesBuilder.Add((range, default));
                     }
@@ -118,10 +118,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 if (IsSplitException(exception))
                 {
                     // Handle split
-                    IEnumerable<PartitionKeyRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                    IEnumerable<FeedRangeInternal> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                         currentPaginator.Range,
                         cancellationToken: this.cancellationToken);
-                    foreach (PartitionKeyRange childRange in childRanges)
+                    foreach (FeedRangeInternal childRange in childRanges)
                     {
                         PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
                             childRange,
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else
             {
-                List<(PartitionKeyRange, TState)> feedRangeAndStates = new List<(PartitionKeyRange, TState)>(enumerators.Count);
+                List<(FeedRangeInternal, TState)> feedRangeAndStates = new List<(FeedRangeInternal, TState)>(enumerators.Count);
                 foreach (PartitionRangePageAsyncEnumerator<TPage, TState> enumerator in enumerators)
                 {
                     feedRangeAndStates.Add((enumerator.Range, enumerator.State));

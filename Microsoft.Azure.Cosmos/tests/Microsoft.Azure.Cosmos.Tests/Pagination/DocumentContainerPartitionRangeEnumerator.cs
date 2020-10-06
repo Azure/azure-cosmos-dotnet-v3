@@ -19,29 +19,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public DocumentContainerPartitionRangeEnumerator(
             IDocumentContainer documentContainer,
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken,
             DocumentContainerState state = null)
             : base(
-                  new PartitionKeyRange()
-                  {
-                      Id = partitionKeyRangeId.ToString(),
-                      MinInclusive = partitionKeyRangeId.ToString(),
-                      MaxExclusive  = partitionKeyRangeId.ToString()
-                  },
+                  feedRange,
                   cancellationToken,
                   state ?? new DocumentContainerState(resourceIdentifier: ResourceId.Empty))
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            this.partitionKeyRangeId = partitionKeyRangeId;
             this.pageSize = pageSize;
         }
 
         public override ValueTask DisposeAsync() => default;
 
         protected override Task<TryCatch<DocumentContainerPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.documentContainer.MonadicReadFeedAsync(
-            partitionKeyRangeId: this.partitionKeyRangeId,
+            range: this.Range,
             resourceIdentifer: this.State.ResourceIdentifer,
             pageSize: this.pageSize,
             cancellationToken: cancellationToken);

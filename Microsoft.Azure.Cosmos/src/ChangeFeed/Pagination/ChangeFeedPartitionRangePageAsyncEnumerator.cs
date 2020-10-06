@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
-            PartitionKeyRange range,
+            FeedRangeInternal range,
             int pageSize,
             ChangeFeedState state,
             CancellationToken cancellationToken)
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.changeFeedDataSource.MonadicChangeFeedAsync(
             this.State,
-            new FeedRangePartitionKeyRange(this.Range.Id),
+            this.Range,
             this.pageSize,
             cancellationToken);
     }

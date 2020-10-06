@@ -99,11 +99,11 @@
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
                     PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState> enumerable = new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
-                        range: new PartitionKeyRange() { Id = partitionKeyRangeId.ToString() },
+                        range: new FeedRangePartitionKeyRange(partitionKeyRangeId: partitionKeyRangeId.ToString()),
                         state: state,
                         (range, state) => new DocumentContainerPartitionRangeEnumerator(
                                 inMemoryCollection,
-                                partitionKeyRangeId: int.Parse(range.Id),
+                                feedRange: range,
                                 pageSize: 10,
                                 cancellationToken: default,
                                 state: state));
@@ -198,12 +198,12 @@
             public override IAsyncEnumerable<TryCatch<DocumentContainerPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
                 DocumentContainerState state = null) => new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
-                    range: new PartitionKeyRange() { Id = "0" },
+                    range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     state: state,
                     (range, state) => new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                         new DocumentContainerPartitionRangeEnumerator(
                             documentContainer,
-                            partitionKeyRangeId: int.Parse(range.Id),
+                            feedRange: range,
                             pageSize: 10,
                             cancellationToken: default,
                             state: state),
@@ -214,7 +214,7 @@
                 DocumentContainerState state = null) => new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                     new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
-                        partitionKeyRangeId: 0,
+                        feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
                         cancellationToken: default,
                         state: state),

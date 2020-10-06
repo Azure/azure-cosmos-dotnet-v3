@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -177,7 +178,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
-            Assert.AreEqual(1, (await documentContainer.GetFeedRangesAsync(cancellationToken: default)).Count);
+            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+
+            Assert.AreEqual(1, ranges.Count);
 
             int numItemsToInsert = 10;
             for (int i = 0; i < numItemsToInsert; i++)
@@ -187,23 +190,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await documentContainer.CreateItemAsync(item, cancellationToken: default);
             }
 
-            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 
-            Assert.AreEqual(2, (await documentContainer.GetFeedRangesAsync(cancellationToken: default)).Count);
-            List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
-                new PartitionKeyRange()
-                {
-                    Id = "0"
-                },
-                cancellationToken: default);
-            Assert.AreEqual(2, ranges.Count);
-            Assert.AreEqual(1, int.Parse(ranges[0].Id));
-            Assert.AreEqual(2, int.Parse(ranges[1].Id));
+            IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            Assert.AreEqual(2, childRanges.Count);
 
-            async Task<int> AssertChildPartitionAsync(int partitionKeyRangeId)
+            async Task<int> AssertChildPartitionAsync(FeedRangeInternal childRange)
             {
                 DocumentContainerPage readFeedPage = await documentContainer.ReadFeedAsync(
-                    partitionKeyRangeId: partitionKeyRangeId,
+                    feedRange: childRange,
                     resourceIdentifier: ResourceId.Empty,
                     pageSize: 100,
                     cancellationToken: default);
@@ -220,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return values.Count;
             }
 
-            int count = await AssertChildPartitionAsync(partitionKeyRangeId: 1) + await AssertChildPartitionAsync(partitionKeyRangeId: 2);
+            int count = await AssertChildPartitionAsync(childRanges[0]) + await AssertChildPartitionAsync(childRanges[1]);
             Assert.AreEqual(numItemsToInsert, count);
         }
 
@@ -247,55 +242,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await documentContainer.CreateItemAsync(item, cancellationToken: default);
             }
 
-            Assert.AreEqual(1, (await documentContainer.GetFeedRangesAsync(cancellationToken: default)).Count);
+            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            Assert.AreEqual(1, ranges.Count);
 
-            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 
+            IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetChildRangeAsync(
+                ranges[0], 
+                cancellationToken: default);
+            Assert.AreEqual(2, childRanges.Count);
+
+            foreach (FeedRangeInternal childRange in childRanges)
             {
-                Assert.AreEqual(2, (await documentContainer.GetFeedRangesAsync(cancellationToken: default)).Count);
-                List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
-                     new PartitionKeyRange()
-                     {
-                         Id = "0"
-                     },
-                     cancellationToken: default);
-                Assert.AreEqual(2, ranges.Count);
-                Assert.AreEqual(1, int.Parse(ranges[0].Id));
-                Assert.AreEqual(2, int.Parse(ranges[1].Id));
+                await documentContainer.SplitAsync(childRange, cancellationToken: default);
             }
 
-            await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
-
+            int count = 0;
+            foreach (FeedRangeInternal childRange in childRanges)
             {
-                Assert.AreEqual(4, (await documentContainer.GetFeedRangesAsync(cancellationToken: default)).Count);
-                List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
-                     new PartitionKeyRange()
-                     {
-                         Id = "1"
-                     },
-                     cancellationToken: default);
-                Assert.AreEqual(2, ranges.Count);
-                Assert.AreEqual(3, int.Parse(ranges[0].Id));
-                Assert.AreEqual(4, int.Parse(ranges[1].Id));
+                IReadOnlyList<FeedRangeInternal> grandChildrenRange = await documentContainer.GetChildRangeAsync(
+                    childRange,
+                    cancellationToken: default);
+                Assert.AreEqual(2, grandChildrenRange.Count);
+                count += await AssertChildPartitionAsync(childRange);
             }
 
-            {
-                List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
-                 new PartitionKeyRange()
-                 {
-                     Id = "2"
-                 },
-                 cancellationToken: default);
-                Assert.AreEqual(2, ranges.Count);
-                Assert.AreEqual(5, int.Parse(ranges[0].Id));
-                Assert.AreEqual(6, int.Parse(ranges[1].Id));
-            }
-
-            async Task<int> AssertChildPartitionAsync(int partitionKeyRangeId)
+            async Task<int> AssertChildPartitionAsync(FeedRangeInternal feedRange)
             {
                 DocumentContainerPage page = await documentContainer.ReadFeedAsync(
-                    partitionKeyRangeId: partitionKeyRangeId,
+                    feedRange: feedRange,
                     resourceIdentifier: ResourceId.Empty,
                     pageSize: 100,
                     cancellationToken: default);
@@ -312,10 +287,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return values.Count;
             }
 
-            int count = await AssertChildPartitionAsync(partitionKeyRangeId: 3)
-                + await AssertChildPartitionAsync(partitionKeyRangeId: 4)
-                + await AssertChildPartitionAsync(partitionKeyRangeId: 5)
-                + await AssertChildPartitionAsync(partitionKeyRangeId: 6);
             Assert.AreEqual(numItemsToInsert, count);
         }
     }

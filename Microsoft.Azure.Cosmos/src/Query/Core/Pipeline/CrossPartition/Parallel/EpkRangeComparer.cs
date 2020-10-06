@@ -6,17 +6,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
 
-    internal sealed class PartitionKeyRangeComparer : IComparer<PartitionKeyRange>
+    internal sealed class EpkRangeComparer : IComparer<FeedRangeEpk>
     {
-        public static readonly PartitionKeyRangeComparer Singleton = new PartitionKeyRangeComparer();
+        public static readonly EpkRangeComparer Singleton = new EpkRangeComparer();
 
-        private PartitionKeyRangeComparer()
+        private EpkRangeComparer()
         {
         }
 
-        public int Compare(PartitionKeyRange x, PartitionKeyRange y)
+        public int Compare(FeedRangeEpk x, FeedRangeEpk y)
         {
             if (x == null)
             {
@@ -28,17 +27,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentNullException(nameof(y));
             }
 
-            if (x.MinInclusive.Length == 0)
+            if (x.Range.Min.Length == 0)
             {
                 return -1;
             }
 
-            if (y.MinInclusive.Length == 0)
+            if (y.Range.Min.Length == 0)
             {
                 return 1;
             }
 
-            return x.MinInclusive.CompareTo(y.MinInclusive);
+            return x.Range.Min.CompareTo(y.Range.Min);
         }
     }
 }

@@ -250,9 +250,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
-                    PartitionKeyRange randomRange = ranges[random.Next(ranges.Count)];
-                    documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
+                    List<FeedRangeInternal> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
+                    await documentContainer.SplitAsync(randomRange, cancellationToken: default);
                 }
             } while (queryState != null);
 
@@ -292,9 +292,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
-                    PartitionKeyRange randomRange = ranges[random.Next(ranges.Count)];
-                    documentContainer.SplitAsync(int.Parse(randomRange.Id), cancellationToken: default).Wait();
+                    List<FeedRangeInternal> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
+                    await documentContainer.SplitAsync(randomRange, cancellationToken: default);
                 }
             }
 

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public OrderByQueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            PartitionKeyRange feedRange,
+            FeedRangeInternal feedRange,
             int pageSize,
             string filter,
             CancellationToken cancellationToken,
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
                 SqlQuerySpec sqlQuerySpec,
-                PartitionKeyRange feedRange,
+                FeedRangeInternal feedRange,
                 int pageSize,
                 string filter,
                 CancellationToken cancellationToken,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
                         continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-                        feedRange: new FeedRangePartitionKeyRange(this.Range.Id),
+                        feedRange: this.Range,
                         pageSize: this.PageSize,
                         cancellationToken)
                     .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
