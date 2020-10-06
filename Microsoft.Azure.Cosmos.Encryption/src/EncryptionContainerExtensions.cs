@@ -30,19 +30,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption using AAP algorithm.
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption using MDE algorithm.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
-        public static Container WithAapEncryptor(
+        public static Container WithMdeEncryptor(
             this Container container,
             Encryptor encryptor)
         {
             return new EncryptionContainer(
                container,
                encryptor,
-               new AapEncryptionProcessor());
+               new MdeEncryptionProcessor());
         }
 
         /// <summary>

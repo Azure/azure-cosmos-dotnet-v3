@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Allows encrypting items in a container using AAP Encryption Algorithm.
+    /// Allows encrypting items in a container using MDE Encryption Algorithm.
     /// </summary>
-    internal sealed class AapEncryptionProcessor : EncryptionProcessor
+    internal sealed class MdeEncryptionProcessor : EncryptionProcessor
     {
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                (TypeMarker typeMarker, byte[] plainText) = AapEncryptionProcessor.Serialize(propertyValue);
+                (TypeMarker typeMarker, byte[] plainText) = MdeEncryptionProcessor.Serialize(propertyValue);
 
                 byte[] cipherText = await encryptor.EncryptAsync(
                     plainText,
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-            await AapEncryptionProcessor.DecryptObjectAsync(
+            await MdeEncryptionProcessor.DecryptObjectAsync(
                 itemJObj,
                 encryptor,
                 encryptionProperties,
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
 
-            await AapEncryptionProcessor.DecryptObjectAsync(
+            await MdeEncryptionProcessor.DecryptObjectAsync(
                 document,
                 encryptor,
                 encryptionProperties,
@@ -185,14 +185,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
                     Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
 
-                    byte[] plainText = await AapEncryptionProcessor.DecryptPropertyAsync(
+                    byte[] plainText = await MdeEncryptionProcessor.DecryptPropertyAsync(
                         encryptionProperties,
                         cipherText,
                         encryptor,
                         diagnosticsContext,
                         cancellationToken);
 
-                    AapEncryptionProcessor.DeserializeAndAddProperty(
+                    MdeEncryptionProcessor.DeserializeAndAddProperty(
                         (TypeMarker)cipherTextWithTypeMarker[0],
                         plainText,
                         plainTextJObj,

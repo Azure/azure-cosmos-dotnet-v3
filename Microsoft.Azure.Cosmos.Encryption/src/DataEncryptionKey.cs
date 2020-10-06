@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static byte[] Generate(string encryptionAlgorithm)
         {
             if ((encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                (encryptionAlgorithm != CosmosEncryptionAlgorithm.AapAEAes256CbcHmacSha256Randomized))
+                (encryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized))
             {
                 throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
             }

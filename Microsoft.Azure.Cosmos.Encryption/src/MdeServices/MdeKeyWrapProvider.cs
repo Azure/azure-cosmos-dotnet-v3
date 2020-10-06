@@ -11,11 +11,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Provides functionality to wrap (encrypt) and unwrap (decrypt) data encryption keys using Key Encryption Keys (KEKs) via EncryptionKeyStoreProvider.
     /// </summary>
-    internal sealed class AapKeyWrapProvider : EncryptionKeyWrapProvider
+    internal sealed class MdeKeyWrapProvider : EncryptionKeyWrapProvider
     {
         public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
-        public AapKeyWrapProvider(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
+        public MdeKeyWrapProvider(EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
         }
@@ -30,12 +30,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(metadata));
             }
 
-            KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
+            KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 metadata.Name,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
-            byte[] result = masterKey.DecryptEncryptionKey(wrappedKey);
+            byte[] result = keyEncryptionKey.DecryptEncryptionKey(wrappedKey);
             return Task.FromResult(new EncryptionKeyUnwrapResult(result, TimeSpan.Zero));
         }
 
@@ -49,12 +49,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(metadata));
             }
 
-            KeyEncryptionKey masterKey = KeyEncryptionKey.GetOrCreate(
+            KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 metadata.Name,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
-            byte[] result = masterKey.EncryptEncryptionKey(key);
+            byte[] result = keyEncryptionKey.EncryptEncryptionKey(key);
             return Task.FromResult(new EncryptionKeyWrapResult(result, metadata));
         }
     }

@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private const string ContainerPartitionKeyPath = "/id";
 
         private readonly DataEncryptionKeyContainerCore dataEncryptionKeyContainerCore;
-        private readonly EncryptionKeyStoreProvider encryptionKeyStoreProvider;
 
         private Container container;
 
@@ -64,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
         /// </summary>
-        /// <param name="encryptionKeyStoreProvider"> AAP EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
 
-            this.EncryptionKeyWrapProvider = new AapKeyWrapProvider(encryptionKeyStoreProvider);
+            this.EncryptionKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
         }
