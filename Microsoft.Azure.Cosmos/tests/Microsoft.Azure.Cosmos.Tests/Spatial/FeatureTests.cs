@@ -67,6 +67,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Spatial
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestSerializationMissingType()
+        {
+            string json =
+                @"{
+                    ""geometry"":null,
+                    ""properties"":null
+                }";
+
+            Feature feature = JsonConvert.DeserializeObject<Feature>(json);
+            Assert.IsNotNull(feature.Id);
+            Assert.AreEqual(JTokenType.Integer, feature.Id.Type);
+            Assert.AreEqual(42, feature.Id.Value<int>());
+
+            string serializedFeature = JsonConvert.SerializeObject(feature);
+            Assert.AreEqual(JToken.Parse(json).ToString(), JToken.Parse(serializedFeature).ToString());
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestSerializationWrongType()
+        {
+            string json =
+                @"{
+                    ""type"":""FeatureCollection"",
+                    ""geometry"":null,
+                    ""properties"":null
+                }";
+
+            Feature feature = JsonConvert.DeserializeObject<Feature>(json);
+            Assert.IsNotNull(feature.Id);
+            Assert.AreEqual(JTokenType.Integer, feature.Id.Type);
+            Assert.AreEqual(42, feature.Id.Value<int>());
+
+            string serializedFeature = JsonConvert.SerializeObject(feature);
+            Assert.AreEqual(JToken.Parse(json).ToString(), JToken.Parse(serializedFeature).ToString());
+        }
+
+        [TestMethod]
         public void TestSerializationNullGeometry()
         {
             string json =
