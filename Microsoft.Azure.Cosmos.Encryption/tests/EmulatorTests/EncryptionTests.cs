@@ -631,7 +631,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptableItem<TestDoc> encryptableItem = new EncryptableItem<TestDoc>(testDoc);
-            encryptableItem.GetItemAsync<TestDoc>();
+            encryptableItem.DecryptableItem.GetItemAsync<TestDoc>();
         }
 
         [TestMethod]
@@ -646,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.IsNotNull(createResponse.Resource);
 
-            await EncryptionTests.ValidateDecryptableItem(createResponse.Resource, testDoc);
+            await EncryptionTests.ValidateDecryptableItem(createResponse.Resource.DecryptableItem, testDoc);
 
             // stream
             TestDoc testDoc1 = TestDoc.Create();
@@ -658,7 +658,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponseStream.StatusCode);
             Assert.IsNotNull(createResponseStream.Resource);
 
-            await EncryptionTests.ValidateDecryptableItem(createResponseStream.Resource, testDoc1);
+            await EncryptionTests.ValidateDecryptableItem(createResponseStream.Resource.DecryptableItem, testDoc1);
         }
 
         [TestMethod]
@@ -843,7 +843,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, upsertResponse.StatusCode);
             Assert.IsNotNull(upsertResponse.Resource);
 
-            await EncryptionTests.ValidateDecryptableItem(upsertResponse.Resource, testDoc);
+            await EncryptionTests.ValidateDecryptableItem(upsertResponse.Resource.DecryptableItem, testDoc);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, testDoc);
 
             // Upsert with stream (item exists)
@@ -858,7 +858,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, upsertResponseStream.StatusCode);
             Assert.IsNotNull(upsertResponseStream.Resource);
 
-            await EncryptionTests.ValidateDecryptableItem(upsertResponseStream.Resource, testDoc);
+            await EncryptionTests.ValidateDecryptableItem(upsertResponseStream.Resource.DecryptableItem, testDoc);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, testDoc);
 
             // replace
@@ -874,7 +874,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, replaceResponseStream.StatusCode);
             Assert.IsNotNull(replaceResponseStream.Resource);
 
-            await EncryptionTests.ValidateDecryptableItem(replaceResponseStream.Resource, testDoc);
+            await EncryptionTests.ValidateDecryptableItem(replaceResponseStream.Resource.DecryptableItem, testDoc);
             await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.encryptionContainer, testDoc);
 
             await EncryptionTests.DeleteItemAsync(EncryptionTests.encryptionContainer, testDoc);

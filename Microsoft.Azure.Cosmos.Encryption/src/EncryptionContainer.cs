@@ -77,13 +77,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 ResponseMessage responseMessage;
 
-                if (item is DecryptableItem decryptableItem)
+                if (item is EncryptableItem encryptableItem)
                 {
-                    dynamic encryptableItem = item;
-
-                    using (Stream streamPayload = item.GetType().GetGenericArguments().Length == 0 ?
-                        encryptableItem.StreamPayload :
-                        this.CosmosSerializer.ToStream(encryptableItem.Item))
+                    using (Stream streamPayload = encryptableItem.ToStream(this.CosmosSerializer))
                     {
                         responseMessage = await this.CreateItemHelperAsync(
                             streamPayload,
@@ -340,13 +336,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 ResponseMessage responseMessage;
 
-                if (item is DecryptableItem decryptableItem)
+                if (item is EncryptableItem encryptableItem)
                 {
-                    dynamic encryptableItem = item;
-
-                    using (Stream streamPayload = item.GetType().GetGenericArguments().Length == 0 ?
-                        encryptableItem.StreamPayload :
-                        this.CosmosSerializer.ToStream(encryptableItem.Item))
+                    using (Stream streamPayload = encryptableItem.ToStream(this.CosmosSerializer))
                     {
                         responseMessage = await this.ReplaceItemHelperAsync(
                             streamPayload,
@@ -499,13 +491,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 ResponseMessage responseMessage;
 
-                if (item is DecryptableItem decryptableItem)
+                if (item is EncryptableItem encryptableItem)
                 {
-                    dynamic encryptableItem = item;
-
-                    using (Stream streamPayload = item.GetType().GetGenericArguments().Length == 0 ?
-                        encryptableItem.StreamPayload :
-                        this.CosmosSerializer.ToStream(encryptableItem.Item))
+                    using (Stream streamPayload = encryptableItem.ToStream(this.CosmosSerializer))
                     {
                         responseMessage = await this.UpsertItemHelperAsync(
                             streamPayload,

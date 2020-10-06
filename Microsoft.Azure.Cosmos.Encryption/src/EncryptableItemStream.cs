@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.IO;
-    using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -28,11 +27,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     ///         return;
     ///     }
     ///
-    ///     (T inputType, DecryptionContext _) = await item.GetItemAsync<T>();
+    ///     (T inputType, DecryptionContext _) = await item.DecryptableItem.GetItemAsync<T>();
     /// ]]>
     /// </code>
     /// </example>
-    public sealed class EncryptableItemStream : DecryptableItem, IDisposable
+    public sealed class EncryptableItemStream : EncryptableItem, IDisposable
     {
         private DecryptableItemCore decryptableItem = null;
 
@@ -40,6 +39,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Gets input stream payload.
         /// </summary>
         public Stream StreamPayload { get; }
+
+        /// <inheritdoc/>
+        public override DecryptableItem DecryptableItem => this.decryptableItem ?? throw new InvalidOperationException("Decryptable content is not initialized.");
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EncryptableItemStream"/> class.
@@ -50,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.StreamPayload = input ?? throw new ArgumentNullException(nameof(input));
         }
 
-        internal void SetDecryptableItem(
+        /// <inheritdoc/>
+        public override void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
@@ -67,20 +70,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <inheritdoc/>
-        public override Task<(T, DecryptionContext)> GetItemAsync<T>()
-        {
-            if (this.decryptableItem == null)
-            {
-                throw new InvalidOperationException("Decryptable content is not initialized.");
-            }
-
-            return this.decryptableItem.GetItemAsync<T>();
-        }
-
-        /// <inheritdoc/>
         public void Dispose()
         {
             this.StreamPayload.Dispose();
+        }
+
+        /// <inheritdoc/>
+        public override Stream ToStream(CosmosSerializer serializer)
+        {
+            return this.StreamPayload;
         }
     }
 }

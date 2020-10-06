@@ -424,69 +424,7 @@
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.Encryption.DecryptableItem;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {
-        "Microsoft.Azure.Cosmos.Encryption.EncryptableItem`1;Microsoft.Azure.Cosmos.Encryption.DecryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-            },
-            "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "T get_Item();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "T Item": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "T Item;CanRead:True;CanWrite:False;T get_Item();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "Void .ctor(T)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(T), Void .ctor(T)]"
-            }
-          },
-          "NestedTypes": {}
-        },
-        "Microsoft.Azure.Cosmos.Encryption.EncryptableItemStream;Microsoft.Azure.Cosmos.Encryption.DecryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "System.IO.Stream get_StreamPayload();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.IO.Stream StreamPayload": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "System.IO.Stream StreamPayload;CanRead:True;CanWrite:False;System.IO.Stream get_StreamPayload();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-            },
-            "Void .ctor(System.IO.Stream)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "[Void .ctor(System.IO.Stream), Void .ctor(System.IO.Stream)]"
-            },
-            "Void Dispose()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "Void Dispose();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
-            }
-          },
-          "NestedTypes": {}
-        }
-      },
+      "Subclasses": {},
       "Members": {
         "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
           "Type": "Method",
@@ -584,13 +522,141 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptableItem`1;Microsoft.Azure.Cosmos.Encryption.DecryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
-      "Subclasses": {},
+    "Microsoft.Azure.Cosmos.Encryption.EncryptableItem;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {
+        "Microsoft.Azure.Cosmos.Encryption.EncryptableItem`1;Microsoft.Azure.Cosmos.Encryption.EncryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "T get_Item();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "T Item": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "T Item;CanRead:True;CanWrite:False;T get_Item();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(T)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(T), Void .ctor(T)]"
+            },
+            "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.Encryption.EncryptableItemStream;Microsoft.Azure.Cosmos.Encryption.EncryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.IO.Stream get_StreamPayload();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.IO.Stream StreamPayload": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.IO.Stream StreamPayload;CanRead:True;CanWrite:False;System.IO.Stream get_StreamPayload();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(System.IO.Stream)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.IO.Stream), Void .ctor(System.IO.Stream)]"
+            },
+            "Void Dispose()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void Dispose();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+            },
+            "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
       "Members": {
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
+        "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.EncryptableItem`1;Microsoft.Azure.Cosmos.Encryption.EncryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "T get_Item()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -608,13 +674,28 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(T), Void .ctor(T)]"
+        },
+        "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Encryption.EncryptableItemStream;Microsoft.Azure.Cosmos.Encryption.DecryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Encryption.EncryptableItemStream;Microsoft.Azure.Cosmos.Encryption.EncryptableItem;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem DecryptableItem;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.DecryptableItem get_DecryptableItem();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.IO.Stream get_StreamPayload()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -627,10 +708,10 @@
           "Attributes": [],
           "MethodInfo": "System.IO.Stream StreamPayload;CanRead:True;CanWrite:False;System.IO.Stream get_StreamPayload();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]()": {
+        "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[T,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] GetItemAsync[T]();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.IO.Stream ToStream(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.IO.Stream)": {
           "Type": "Constructor",
@@ -641,6 +722,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Dispose();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
+        "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void SetDecryptableItem(Newtonsoft.Json.Linq.JToken, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
 
     /// <summary>
-    /// Provides information about decryption operation.
+    /// Provides information about decryption details.
     /// </summary>
     public sealed class DecryptionInfo
     {

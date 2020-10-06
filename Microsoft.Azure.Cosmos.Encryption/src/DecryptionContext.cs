@@ -8,12 +8,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
 
     /// <summary>
-    /// Provides context about decryption operation.
+    /// Provides context about decryption details.
     /// </summary>
     public sealed class DecryptionContext
     {
         /// <summary>
         /// Gets the list of <see cref="DecryptionInfo"/> corresponding to the DataEncryptionKey(s) used.
+        /// There will be one entry corresponding to each DataEncryptionKey used.
         /// </summary>
         public IReadOnlyList<DecryptionInfo> DecryptionInfoList { get; }
 
