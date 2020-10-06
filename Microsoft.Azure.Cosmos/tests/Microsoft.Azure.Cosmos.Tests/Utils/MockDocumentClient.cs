@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
-            : base(new Uri("http://localhost"), null)
+            : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
         {
             this.Init();
         }
@@ -53,12 +53,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, IList<Documents.Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-            : base(serviceEndpoint, permissionFeed, connectionPolicy, desiredConsistencyLevel)
-        {
-            this.Init();
-        }
-
         public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKey, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
@@ -67,12 +61,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKeyOrResourceToken, serializerSettings, connectionPolicy, desiredConsistencyLevel)
-        {
-            this.Init();
-        }
-
-        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-            : base(serviceEndpoint, resourceTokens, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
@@ -146,14 +134,15 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             return new ValueTask<(string token, string payload)>((null, null));
         }
 
-        string ICosmosAuthorizationTokenProvider.GetUserAuthorizationToken(
+        ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType,
+            CosmosDiagnosticsContext diagnosticsContext) /* unused, use token based upon what is passed in constructor */
         {
-            return null;
+            return new ValueTask<string>((string)null);
         }
 
         internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)

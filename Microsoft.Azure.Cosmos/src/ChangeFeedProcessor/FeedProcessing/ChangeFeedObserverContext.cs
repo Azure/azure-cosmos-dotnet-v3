@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     internal abstract class ChangeFeedObserverContext
     {
         /// <summary>
-        /// Gets the Lease Token associated with the current Observer
+        /// Gets the Lease Token associated with the current lease.
         /// </summary>
         public abstract string LeaseToken { get; }
 
