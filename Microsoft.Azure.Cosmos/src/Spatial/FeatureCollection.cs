@@ -25,5 +25,9 @@ namespace Microsoft.Azure.Cosmos.Spatial
         [DataMember(Name = "features")]
         [JsonProperty("features", Required = Required.Always)]
         public IReadOnlyList<Feature> Features { get; }
+
+        [DataMember(Name = "type")]
+        [JsonProperty("type", Required = Required.Always)]
+        public GeoJsonType Type => GeoJsonType.FeatureCollection;
     }
 }
