@@ -13,6 +13,11 @@ namespace Microsoft.Azure.Cosmos
     internal readonly struct UInt128 : IComparable, IComparable<UInt128>, IEquatable<UInt128>
     {
         /// <summary>
+        /// The length of this struct in bytes.
+        /// </summary>
+        public const int Length = 16;
+
+        /// <summary>
         /// Maximum UInt128.
         /// </summary>
         public static readonly UInt128 MaxValue = new UInt128(ulong.MaxValue, ulong.MaxValue);
@@ -21,11 +26,6 @@ namespace Microsoft.Azure.Cosmos
         /// Maximum UInt128.
         /// </summary>
         public static readonly UInt128 MinValue = 0;
-
-        /// <summary>
-        /// The length of this struct in bytes.
-        /// </summary>
-        private const int Length = 16;
 
         /// <summary>
         /// The lowest 64 bits of the UInt128.
@@ -421,12 +421,12 @@ namespace Microsoft.Azure.Cosmos
                 return 1;
             }
 
-            if (value is UInt128)
+            if (!(value is UInt128 uint128))
             {
-                return this.CompareTo((UInt128)value);
+                throw new ArgumentException("Value must be a UInt128.");
             }
 
-            throw new ArgumentException("Value must be a UInt128.");
+            return this.CompareTo(uint128);
         }
 
         /// <summary>
@@ -465,12 +465,12 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            if (obj is UInt128)
+            if (!(obj is UInt128 uint128))
             {
-                return this.Equals((UInt128)obj);
+                return false;
             }
 
-            return false;
+            return this.Equals(uint128);
         }
 
         /// <summary>

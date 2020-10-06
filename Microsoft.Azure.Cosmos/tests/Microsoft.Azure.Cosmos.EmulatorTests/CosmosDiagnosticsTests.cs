@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateReplaceOperation("/description", testItem.description)
+                PatchOperation.Replace("/description", testItem.description)
             };
             ItemResponse<ToDoActivity> patchResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchCore batchCore = (BatchCore)batch;
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateRemoveOperation("/cost")
+                PatchOperation.Remove("/cost")
             };
 
             List<ToDoActivity> createItems = new List<ToDoActivity>();

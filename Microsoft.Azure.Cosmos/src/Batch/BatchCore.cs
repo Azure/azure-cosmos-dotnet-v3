@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<TransactionalBatchResponse> ExecuteAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.ExecuteAsync(
                 requestOptions: null,
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An awaitable <see cref="TransactionalBatchResponse"/> which contains the completion status and results of each operation.</returns>
         public override Task<TransactionalBatchResponse> ExecuteAsync(
             TransactionalBatchRequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.container.ClientContext.OperationHelperAsync(
                 nameof(ExecuteAsync),

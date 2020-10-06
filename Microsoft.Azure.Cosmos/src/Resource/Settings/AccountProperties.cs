@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal AccountProperties()
         {
-            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => QueryStringToDictConverter());
+            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
 
         /// <summary>

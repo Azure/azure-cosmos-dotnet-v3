@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
+
         private readonly string userAgent;
         private bool isDisposed = false;
 
@@ -58,10 +59,13 @@ namespace Microsoft.Azure.Cosmos
             }
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
+            HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
+                clientOptions.GatewayModeMaxConnectionLimit,
+                clientOptions.WebProxy);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
-               cosmosClient.AccountKey,
+               cosmosClient.AuthorizationTokenProvider,
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
@@ -69,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
-               handler: ClientContextCore.CreateHttpClientHandler(clientOptions),
+               handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
@@ -468,23 +472,6 @@ namespace Microsoft.Azure.Cosmos
                 || operationType == OperationType.Delete
                 || operationType == OperationType.Replace
                 || operationType == OperationType.Patch);
-        }
-
-        private static HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
-        {
-            if (clientOptions == null)
-            {
-                throw new ArgumentNullException(nameof(clientOptions));
-            }
-            
-            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-            HttpClientHandler httpClientHandler = new HttpClientHandler
-            {
-                Proxy = clientOptions.WebProxy,
-                MaxConnectionsPerServer = clientOptions.GatewayModeMaxConnectionLimit
-            };
-
-            return httpClientHandler;
         }
 
         private static CosmosClientOptions CreateOrCloneClientOptions(CosmosClientOptions clientOptions)

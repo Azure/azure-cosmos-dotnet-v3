@@ -1161,6 +1161,15 @@
                 // Date and Time
                 "GetCurrentDateTime()",
                 "GetCurrentTimestamp()",
+                "GetCurrentTicks()",
+                "DateTimeAdd(\"mm\", 1, \"2020-07-09T23:20:13.4575530Z\")",
+                "DateTimeDiff(\"yyyy\", \"2028-01-01T01:02:03.1234527Z\", \"2020 - 01 - 03T01: 02:03.1234567Z\")",
+                "DateTimeFromParts(2020, 9, 4)",
+                "DateTimePart(\"mcs\", \"2020-01-02T03:04:05.6789123Z\")",
+                "DateTimeToTicks(\"2020-01-02T03:04:05Z\")",
+                "DateTimeToTimestamp(\"2020-07-09\")",
+                "TicksToDateTime(15943368134575530)",
+                "TimestampToDateTime(1594227912345)",
 
                 // Mathematical
                 "ABS(42)",

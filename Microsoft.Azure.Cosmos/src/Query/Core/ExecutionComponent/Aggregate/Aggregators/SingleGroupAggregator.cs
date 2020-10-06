@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -366,8 +364,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate.Aggrega
 
                 public override CosmosElement GetCosmosElementContinuationToken()
                 {
-                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                    dictionary.Add(nameof(this.initialized), CosmosBoolean.Create(this.initialized));
+                    Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>
+                    {
+                        { nameof(this.initialized), CosmosBoolean.Create(this.initialized) }
+                    };
 
                     if (this.value != null)
                     {

@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Net.Http;
+
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
@@ -22,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     internal class MockCosmosUtil
     {
         public static readonly CosmosSerializerCore Serializer = new CosmosSerializerCore();
+        public static readonly string RandomInvalidCorrectlyFormatedAuthKey = "CV60UDtH10CFKR0GxBl/Wg==";
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
@@ -37,11 +40,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 documentClient = new MockDocumentClient();
             }
             
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             return cosmosClientBuilder.Build(documentClient);
         }
@@ -75,6 +75,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static CosmosClientOptions GetDefaultConfiguration()
         {
             return new CosmosClientOptions();
+        }
+
+        public static CosmosHttpClient CreateCosmosHttpClient(
+            Func<HttpClient> httpClient,
+            DocumentClientEventSource eventSource = null)
+        {
+            if (eventSource == null)
+            {
+                eventSource = DocumentClientEventSource.Instance;
+            }
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                HttpClientFactory = httpClient
+            };
+
+            return CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: default,
+                eventSource: eventSource,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

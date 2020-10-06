@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {
@@ -224,14 +224,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 string authorizationToken = null;
                 try
                 {
-                    authorizationToken =
-                        this.authorizationTokenProvider.GetUserAuthorizationToken(
-                    request.ResourceAddress,
-                    PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Get,
-                    request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey,
-                    payload: out _);
+                    authorizationToken = (await this.authorizationTokenProvider.GetUserAuthorizationAsync(
+                        request.ResourceAddress,
+                        PathsHelper.GetResourcePath(request.ResourceType),
+                        HttpConstants.HttpMethods.Get,
+                        request.Headers,
+                        AuthorizationTokenType.PrimaryMasterKey)).token;
                 }
                 catch (UnauthorizedException)
                 {
@@ -240,11 +238,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (authorizationToken == null)
                 {
                     // User doesn't have rid based resource token. Maybe he has name based.
-                    throw new NotSupportedException("Resoruce tokens are not supported");
+                    throw new NotSupportedException("Resource tokens are not supported");
 
                     ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                     ////authorizationToken =
-                    ////    this.authorizationTokenProvider.GetUserAuthorizationToken(
+                    ////    this.authorizationTokenProvider.GetUserAuthorizationTokenAsync(
                     ////        collection.AltLink,
                     ////        PathsHelper.GetResourcePath(request.ResourceType),
                     ////        HttpConstants.HttpMethods.Get,

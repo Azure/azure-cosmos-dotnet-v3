@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -76,12 +75,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string authorization = ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+            string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 request.Method.ToString(),
                 serviceRequest.Headers,
-                AuthorizationTokenType.PrimaryMasterKey);
+                AuthorizationTokenType.PrimaryMasterKey,
+                request.DiagnosticsContext);
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 

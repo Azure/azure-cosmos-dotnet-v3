@@ -57,7 +57,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             try
             {
                 DocumentServiceLease updatedLease = await this.leaseManager.AcquireAsync(lease).ConfigureAwait(false);
-                if (updatedLease != null) lease = updatedLease;
+                if (updatedLease != null)
+                {
+                    lease = updatedLease;
+                }
+
                 DefaultTrace.TraceInformation("Lease with token {0}: acquired", lease.CurrentLeaseToken);
             }
             catch (Exception)
@@ -92,8 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         private async Task RemoveLeaseAsync(DocumentServiceLease lease)
         {
-            TaskCompletionSource<bool> worker;
-            if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken, out worker))
+            if (!this.currentlyOwnedPartitions.TryRemove(lease.CurrentLeaseToken, out TaskCompletionSource<bool> worker))
             {
                 return;
             }
