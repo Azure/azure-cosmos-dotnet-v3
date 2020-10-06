@@ -364,11 +364,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Take the key and change some middle character
             authKey = authKey.Replace("m", "M");
 
-            CosmosClient cosmosClient = new CosmosClient(
+            using CosmosClient cosmosClient = new CosmosClient(
                 endpoint,
                 authKey);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.GetContainer("test", "test").ReadItemAsync<dynamic>("test", new PartitionKey("test")));
+            Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task EnsureUnauthorized_Writes_ThrowsCosmosClientException()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            
+            // Take the key and change some middle character
+            authKey = authKey.Replace("m", "M");
+
+            using CosmosClient cosmosClient = new CosmosClient(
+                endpoint,
+                authKey);
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.GetContainer("test", "test").CreateItemAsync<dynamic>(new { id = "test" }));
+            Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task EnsureUnauthorized_Query_ThrowsCosmosClientException()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            
+            // Take the key and change some middle character
+            authKey = authKey.Replace("m", "M");
+
+            using CosmosClient cosmosClient = new CosmosClient(
+                endpoint,
+                authKey);
+
+            using FeedIterator<dynamic> iterator = cosmosClient.GetContainer("test", "test").GetItemQueryIterator<dynamic>("SELECT * FROM c");
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => iterator.ReadNextAsync());
             Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
         }
     }
