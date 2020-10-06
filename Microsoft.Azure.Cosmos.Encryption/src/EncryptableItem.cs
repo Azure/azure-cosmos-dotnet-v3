@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="serializer">Cosmos Serializer</param>
         /// <returns>Input payload in stream format</returns>
-        public abstract Stream ToStream(CosmosSerializer serializer);
+        protected internal abstract Stream ToStream(CosmosSerializer serializer);
 
         /// <summary>
         /// Populates the DecryptableItem that can be used getting the decryption result.
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="decryptableContent">The encrypted content which is yet to be decrypted.</param>
         /// <param name="encryptor">Encryptor instance which will be used for decryption.</param>
         /// <param name="cosmosSerializer">Serializer instance which will be used for deserializing the content after decryption.</param>
-        public abstract void SetDecryptableItem(
+        protected internal abstract void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer);

@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <inheritdoc/>
-        public override void SetDecryptableItem(
+        protected internal override void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <inheritdoc/>
-        public override Stream ToStream(CosmosSerializer serializer)
+        protected internal override Stream ToStream(CosmosSerializer serializer)
         {
             return this.StreamPayload;
         }
