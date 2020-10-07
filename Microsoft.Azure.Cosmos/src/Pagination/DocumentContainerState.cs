@@ -4,13 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
+    using Microsoft.Azure.Documents;
+
     internal sealed class DocumentContainerState : State
     {
-        public DocumentContainerState(long resourceIdentifier)
+        public DocumentContainerState(ResourceId resourceIdentifier)
         {
             this.ResourceIdentifer = resourceIdentifier;
         }
 
-        public long ResourceIdentifer { get; }
+        public ResourceId ResourceIdentifer { get; }
     }
 }

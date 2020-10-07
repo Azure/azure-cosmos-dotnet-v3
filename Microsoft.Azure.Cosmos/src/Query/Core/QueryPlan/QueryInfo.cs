@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -100,20 +100,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
-        public bool HasDistinct
-        {
-            get
-            {
-                return this.DistinctType != DistinctQueryType.None;
-            }
-        }
-        public bool HasTop
-        {
-            get
-            {
-                return this.Top != null;
-            }
-        }
+        public bool HasDistinct => this.DistinctType != DistinctQueryType.None;
+        public bool HasTop => this.Top.HasValue;
 
         public bool HasAggregates
         {
@@ -133,36 +121,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
         }
 
-        public bool HasGroupBy
-        {
-            get
-            {
-                return this.GroupByExpressions != null && this.GroupByExpressions.Count > 0;
-            }
-        }
+        public bool HasGroupBy => (this.GroupByExpressions != null) && (this.GroupByExpressions.Count > 0);
 
-        public bool HasOrderBy
-        {
-            get
-            {
-                return this.OrderBy != null && this.OrderBy.Count > 0;
-            }
-        }
+        public bool HasOrderBy => (this.OrderBy != null) && (this.OrderBy.Count > 0);
 
-        public bool HasOffset
-        {
-            get
-            {
-                return this.Offset != null;
-            }
-        }
+        public bool HasOffset => this.Offset.HasValue;
 
-        public bool HasLimit
-        {
-            get
-            {
-                return this.Limit != null;
-            }
-        }
+        public bool HasLimit => this.Limit.HasValue;
     }
 }

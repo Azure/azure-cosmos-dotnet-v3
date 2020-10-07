@@ -25,7 +25,7 @@
             int numItems = 1000;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
-            HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
+            HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
@@ -36,10 +36,10 @@
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
 
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
-            (HashSet<Guid> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+            (HashSet<string> firstDrainResults, TState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
-            HashSet<Guid> secondDrainResults = await this.DrainFullyAsync(enumerable);
+            HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
 
             Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
         }
@@ -56,7 +56,7 @@
 
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             await foreach (TryCatch<TPage> tryGetPage in enumerable)
             {
                 if (tryGetPage.Failed)
@@ -97,7 +97,7 @@
 
             IAsyncEnumerator<TryCatch<TPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             TState state = default;
 
             while (await enumerator.MoveNextAsync())
@@ -144,7 +144,7 @@
                     inject429s: false,
                     injectEmptyPages: true));
             IAsyncEnumerable<TryCatch<TPage>> enumerable = this.CreateEnumerable(inMemoryCollection);
-            HashSet<Guid> identifiers = await this.DrainFullyAsync(enumerable);
+            HashSet<string> identifiers = await this.DrainFullyAsync(enumerable);
             Assert.AreEqual(numItems, identifiers.Count);
         }
 
@@ -193,7 +193,6 @@
             {
                 // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                //await inMemoryCollection.CreateItemAsync(item, cancellationToken: default);
                 while (true)
                 {
                     TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
@@ -207,9 +206,9 @@
             return documentContainer;
         }
 
-        public async Task<HashSet<Guid>> DrainFullyAsync(IAsyncEnumerable<TryCatch<TPage>> enumerable)
+        public async Task<HashSet<string>> DrainFullyAsync(IAsyncEnumerable<TryCatch<TPage>> enumerable)
         {
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             await foreach (TryCatch<TPage> tryGetPage in enumerable)
             {
                 tryGetPage.ThrowIfFailed();
@@ -225,11 +224,11 @@
             return identifiers;
         }
 
-        public async Task<(HashSet<Guid>, TState)> PartialDrainAsync(
+        public async Task<(HashSet<string>, TState)> PartialDrainAsync(
             IAsyncEnumerator<TryCatch<TPage>> enumerator,
             int numIterations)
         {
-            HashSet<Guid> identifiers = new HashSet<Guid>();
+            HashSet<string> identifiers = new HashSet<string>();
             TState state = default;
 
             // Drain a couple of iterations
