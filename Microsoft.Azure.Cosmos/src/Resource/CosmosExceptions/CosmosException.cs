@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly string stackTrace;
 
         internal CosmosException(
-            HttpStatusCode statusCodes,
+            HttpStatusCode statusCode,
             string message,
             int subStatusCode,
             string stackTrace,
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
             Error error,
             Exception innerException)
             : base(CosmosException.GetMessageHelper(
-                statusCodes,
+                statusCode,
                 subStatusCode,
                 message,
                 activityId), innerException)
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
             this.ActivityId = activityId;
-            this.StatusCode = statusCodes;
+            this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.RetryAfter = retryAfter;
             this.RequestCharge = requestCharge;

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -73,9 +74,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 DocumentContainerPartitionRangeEnumerator enumerator = new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
                     partitionKeyRangeId: 0,
-                    pageSize: 10);
+                    pageSize: 10,
+                    cancellationToken: default);
 
-                (HashSet<Guid> parentIdentifiers, DocumentContainerState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<string> parentIdentifiers, DocumentContainerState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
                 await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
@@ -85,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.IsTrue(enumerator.Current.Failed);
 
                 // Resume on the children using the parent continuaiton token
-                HashSet<Guid> childIdentifiers = new HashSet<Guid>();
+                HashSet<string> childIdentifiers = new HashSet<string>();
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
                     PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState> enumerable = new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
@@ -95,8 +97,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                                 inMemoryCollection,
                                 partitionKeyRangeId: int.Parse(range.Id),
                                 pageSize: 10,
-                                state: state));
-                    HashSet<Guid> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
+                                state: state,
+                                cancellationToken: default));
+                    HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
                 }
@@ -118,7 +121,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         documentContainer,
                         partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
-                        state: state));
+                        state: state,
+                        cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<DocumentContainerPage>> CreateEnumerator(
                 IDocumentContainer inMemoryCollection,
@@ -126,7 +130,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     inMemoryCollection,
                     partitionKeyRangeId: 0,
                     pageSize: 10,
-                    state: state);
+                    state: state,
+                    cancellationToken: default);
         }
     }
 }

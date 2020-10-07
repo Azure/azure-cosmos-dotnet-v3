@@ -4,7 +4,7 @@
       <CosmosElement><![CDATA[null]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[7D-41-53-66-AE-D6-24-9E-A3-AE-0D-68-F2-FB-8E-89]]></Hash>
+      <Hash><![CDATA[89-8E-FB-F2-68-0D-AE-A3-9E-24-D6-AE-66-53-41-7D]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -12,7 +12,7 @@
       <CosmosElement><![CDATA[false]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[8F-11-61-1A-58-12-5F-70-B7-17-F0-42-42-AA-88-6E]]></Hash>
+      <Hash><![CDATA[6E-88-AA-42-42-F0-17-B7-70-5F-12-58-1A-61-11-8F]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@
       <CosmosElement><![CDATA[true]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[25-01-5C-A5-E4-C3-19-F0-1F-07-9F-86-AB-51-4D-CD]]></Hash>
+      <Hash><![CDATA[CD-4D-51-AB-86-9F-07-1F-F0-19-C3-E4-A5-5C-01-25]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -28,7 +28,7 @@
       <CosmosElement><![CDATA[""]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[A1-A9-A2-61-A1-95-B3-85-A5-29-70-28-CF-46-84-A7]]></Hash>
+      <Hash><![CDATA[A7-84-46-CF-28-70-29-A5-85-B3-95-A1-61-A2-A9-A1]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -36,7 +36,7 @@
       <CosmosElement><![CDATA["asdfasdfasdfasdfasdfasdf"]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[DB-35-E0-42-A5-0C-58-AD-91-0B-1E-40-68-43-12-8F]]></Hash>
+      <Hash><![CDATA[8F-12-43-68-40-1E-0B-91-AD-58-0C-A5-42-E0-35-DB]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@
       <CosmosElement><![CDATA[[]]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[82-80-53-59-A3-3C-EF-A2-FF-63-4A-FF-29-F7-54-7D]]></Hash>
+      <Hash><![CDATA[7D-54-F7-29-FF-4A-63-FF-A2-EF-3C-A3-59-53-80-82]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -52,7 +52,7 @@
       <CosmosElement><![CDATA[[null,false,true,1234,"asdfasdfasdfasdfasdfasdf"]]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[16-9A-F6-79-27-1F-0B-C0-6E-58-6C-22-CB-E9-69-25]]></Hash>
+      <Hash><![CDATA[25-69-E9-CB-22-6C-58-6E-C0-0B-1F-27-79-F6-9A-16]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -60,7 +60,7 @@
       <CosmosElement><![CDATA[{}]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[D8-65-B9-80-3E-74-38-14-38-A7-01-AA-60-6A-B8-14]]></Hash>
+      <Hash><![CDATA[14-B8-6A-60-AA-01-A7-38-14-38-74-3E-80-B9-65-D8]]></Hash>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@
       <CosmosElement><![CDATA[{"null":null,"false":false,"true":true,"cosmosNumber":1234,"cosmosString":"asdfasdfasdfasdfasdfasdf"}]]></CosmosElement>
     </Input>
     <Output>
-      <Hash><![CDATA[60-DF-4D-C7-66-3E-3F-3E-57-59-F0-BB-05-4F-CC-7B]]></Hash>
+      <Hash><![CDATA[7B-CC-4F-05-BB-F0-59-57-3E-3F-3E-66-C7-4D-DF-60]]></Hash>
     </Output>
   </Result>
 </Results>
