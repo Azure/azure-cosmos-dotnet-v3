@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Text;
@@ -105,11 +106,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
             }
         }
-
+		
         public JObject RetrieveItem(
             Stream input)
+
         {
-            Debug.Assert(input != null);
+            if (input == null)
+            {
+                return (input, null);
+            }
+
             Debug.Assert(input.CanSeek);
 
             JObject itemJObj;

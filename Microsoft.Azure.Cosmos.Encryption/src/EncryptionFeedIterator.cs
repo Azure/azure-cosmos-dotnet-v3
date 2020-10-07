@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -15,18 +15,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
-        private readonly Action<DecryptionResult> decryptionResultHandler;
+        private readonly CosmosSerializer cosmosSerializer;
         private readonly EncryptionProcessor encryptionProcessor;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
             EncryptionProcessor encryptionProcessor,
-            Action<DecryptionResult> decryptionResultHandler = null)
+            CosmosSerializer cosmosSerializer)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
-            this.decryptionResultHandler = decryptionResultHandler;
+            this.cosmosSerializer = cosmosSerializer;
             this.encryptionProcessor = encryptionProcessor;
         }
 
@@ -53,6 +53,51 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
+        public async Task<(ResponseMessage, List<T>)> ReadNextWithoutDecryptionAsync<T>(CancellationToken cancellationToken = default)
+        {
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
+            using (diagnosticsContext.CreateScope("FeedIterator.ReadNextWithoutDecryption"))
+            {
+                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+                List<T> decryptableContent = null;
+
+                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
+                {
+                    decryptableContent = this.ConvertResponseToDecryptableItems<T>(
+                        responseMessage.Content);
+
+                    return (responseMessage, decryptableContent);
+                }
+
+                return (responseMessage, decryptableContent);
+            }
+        }
+
+        private List<T> ConvertResponseToDecryptableItems<T>(
+            Stream content)
+        {
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+
+            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed Response did not have an array of Documents.");
+            }
+
+            List<T> decryptableItems = new List<T>(documents.Count);
+
+            foreach (JToken value in documents)
+            {
+                DecryptableItemCore item = new DecryptableItemCore(
+                    value,
+                    this.encryptor,
+                    this.cosmosSerializer);
+
+                decryptableItems.Add((T)(object)item);
+            }
+
+            return decryptableItems;
+        }
+
         private async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -63,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
             {
-                throw new InvalidOperationException("Feed response Body Contract was violated. Feed response did not have an array of Documents");
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
             }
 
             foreach (JToken value in documents)
@@ -74,35 +119,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                try
-                {
-                    JObject decryptedDocument = await this.encryptionProcessor.DecryptAsync(
-                        document,
-                        this.encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
 
-                    result.Add(decryptedDocument);
-                }
-                catch (Exception exception)
-                {
-                    if (this.decryptionResultHandler == null)
-                    {
-                        throw;
-                    }
+                (JObject decryptedDocument, DecryptionContext _) = await this.encryptionProcessor.DecryptAsync(
+                    document,
+                    this.encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
 
-                    result.Add(document);
-
-                    MemoryStream memoryStream = EncryptionProcessor.BaseSerializer.ToStream(document);
-                    Debug.Assert(memoryStream != null);
-                    bool wasBufferReturned = memoryStream.TryGetBuffer(out ArraySegment<byte> encryptedStream);
-                    Debug.Assert(wasBufferReturned);
-
-                    this.decryptionResultHandler(
-                        DecryptionResult.CreateFailure(
-                            encryptedStream,
-                            exception));
-                }
+                result.Add(decryptedDocument);
             }
 
             JObject decryptedResponse = new JObject();

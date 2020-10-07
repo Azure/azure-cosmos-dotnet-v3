@@ -52,7 +52,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <param name="queryRequestOptions">optional QueryRequestOptions for passing DecryptionResultHandler.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
@@ -66,8 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </example>
         public static FeedIterator<T> ToEncryptionFeedIterator<T>(
             this Container container,
-            IQueryable<T> query,
-            QueryRequestOptions queryRequestOptions = null)
+            IQueryable<T> query)
         {
             if (!(container is EncryptionContainer encryptionContainer))
             {
@@ -75,9 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(
-                    query,
-                    queryRequestOptions),
+                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
                 encryptionContainer.ResponseFactory);
         }
 
@@ -88,7 +84,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="container">the encryption container.</param>
         /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <param name="queryRequestOptions">optional QueryRequestOptions for passing DecryptionResultHandler.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
@@ -102,29 +97,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </example>
         public static FeedIterator ToEncryptionStreamIterator<T>(
             this Container container,
-            IQueryable<T> query,
-            QueryRequestOptions queryRequestOptions = null)
+            IQueryable<T> query)
         {
             if (!(container is EncryptionContainer encryptionContainer))
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
             }
 
-            Action<DecryptionResult> decryptionResultHandler;
-            if (queryRequestOptions is EncryptionQueryRequestOptions encryptionQueryRequestOptions)
-            {
-                decryptionResultHandler = encryptionQueryRequestOptions.DecryptionResultHandler;
-            }
-            else
-            {
-                decryptionResultHandler = null;
-            }
-
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
                 encryptionContainer.Encryptor,
                 encryptionContainer.EncryptionProcessor,
-                decryptionResultHandler);
+                encryptionContainer.CosmosSerializer);
         }
     }
 }
