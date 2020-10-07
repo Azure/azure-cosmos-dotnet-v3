@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         protected internal override void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
-            EncryptionProcessor encryptionProcessor,
+            Container container,
             CosmosSerializer cosmosSerializer)
         {
             if (this.decryptableItem != null)
@@ -75,10 +75,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException();
             }
 
+            EncryptionContainer encryptionContainer = (EncryptionContainer)container;
+
             this.decryptableItem = new DecryptableItemCore(
                 decryptableContent,
                 encryptor,
-                encryptionProcessor,
+                encryptionContainer.EncryptionProcessor,
                 cosmosSerializer);
         }
 

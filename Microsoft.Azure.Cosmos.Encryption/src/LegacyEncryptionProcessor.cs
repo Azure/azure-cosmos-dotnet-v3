@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             this.ValidateInputForEncrypt(
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -106,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             Debug.Assert(input.CanSeek);
             Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
 
             JObject itemJObj = this.RetrieveItem(input);
             JObject encryptionPropertiesJObj = this.RetrieveEncryptionProperties(itemJObj);
@@ -121,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = await LegacyEncryptionProcessor.DecryptContentAsync(
                 encryptionProperties,
                 encryptor,
+                diagnosticsContext,
                 cancellationToken);
 
             List<string> pathsDecrypted = new List<string>();
@@ -145,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
 
@@ -154,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
 
             if (!document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
             {
@@ -165,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = await LegacyEncryptionProcessor.DecryptContentAsync(
                 encryptionProperties,
                 encryptor,
+                diagnosticsContext,
                 cancellationToken);
 
             document.Remove(Constants.EncryptedInfo);
@@ -189,6 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task<JObject> DecryptContentAsync(
             EncryptionProperties encryptionProperties,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (encryptionProperties.EncryptionFormatVersion != 2)

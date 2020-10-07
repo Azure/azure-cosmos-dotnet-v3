@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     testDoc.ToStream(),
                     MdeEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
+                    new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
                 Assert.Fail("Invalid path to encrypt didn't result in exception.");
@@ -82,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                encryptedDoc,
                MdeEncryptionProcessorTests.mockEncryptor.Object,
+               new CosmosDiagnosticsContext(),
                CancellationToken.None);
 
             MdeEncryptionProcessorTests.VerifyDecryptionSucceeded(
@@ -100,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             MdeEncryptionProcessorTests.VerifyDecryptionSucceeded(
@@ -117,11 +120,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
                 MdeEncryptionProcessorTests.encryptionOptions,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             (Stream decryptedStream, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                 encryptedStream,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             JObject decryptedDoc = MdeEncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -140,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream decryptedStream, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                 docStream,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);
@@ -154,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                  testDoc.ToStream(),
                  MdeEncryptionProcessorTests.mockEncryptor.Object,
                  MdeEncryptionProcessorTests.encryptionOptions,
+                 new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);

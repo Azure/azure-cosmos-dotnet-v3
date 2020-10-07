@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 (JObject decryptedItem, DecryptionContext decryptionContext) = await this.EncryptionProcessor.DecryptAsync(
                     document,
                     this.encryptor,
+                    new CosmosDiagnosticsContext(),
                     cancellationToken: default);
 
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(decryptedItem)), decryptionContext);

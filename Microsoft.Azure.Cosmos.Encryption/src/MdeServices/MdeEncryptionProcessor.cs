@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             this.ValidateInputForEncrypt(
@@ -109,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
 
             JObject itemJObj = this.RetrieveItem(input);
             JObject encryptionPropertiesJObj = this.RetrieveEncryptionProperties(itemJObj);
@@ -132,6 +135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj,
                 encryptor,
                 encryptionProperties,
+                diagnosticsContext,
                 cancellationToken);
 
             input.Dispose();
@@ -141,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (document == null)
@@ -161,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 document,
                 encryptor,
                 encryptionProperties,
+                diagnosticsContext,
                 cancellationToken);
 
             return (document, decryptionContext);
@@ -170,6 +176,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject document,
             Encryptor encryptor,
             EncryptionProperties encryptionProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             JObject plainTextJObj = new JObject();
@@ -191,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         encryptionProperties,
                         cipherText,
                         encryptor,
+                        diagnosticsContext,
                         cancellationToken);
 
                     MdeEncryptionProcessor.DeserializeAndAddProperty(
@@ -224,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionProperties encryptionProperties,
             byte[] cipherText,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (encryptionProperties.EncryptionFormatVersion != 3)

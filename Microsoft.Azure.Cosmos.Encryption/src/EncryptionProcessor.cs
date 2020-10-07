@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Abstraction for performing client-side encryption.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public abstract class EncryptionProcessor
+    internal abstract class EncryptionProcessor
     {
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer =
             new CosmosJsonDotNetSerializer(
@@ -32,12 +32,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="input"> Input Stream to be encrypted </param>
         /// <param name="encryptor"> Encryptor </param>
         /// <param name="encryptionOptions"> Encryption Options </param>
+        /// <param name="diagnosticsContext"> Diagnostics Context</param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Decrypted Stream </returns>
         public abstract Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -45,11 +47,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="input"> Input Stream to be decrypted </param>
         /// <param name="encryptor"> Encryptor </param>
+        /// <param name="diagnosticsContext"> Diagnostics Context</param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Decrypted Stream </returns>
         public abstract Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -57,14 +61,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="document"> Input JObject to be decrypted </param>
         /// <param name="encryptor"> Encryptor </param>
+        /// <param name="diagnosticsContext"> Diagnostics Context</param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Decrypted JObject </returns>
         public abstract Task<(JObject, DecryptionContext)> DecryptAsync(
            JObject document,
            Encryptor encryptor,
+           CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
 
-        internal void ValidateInputForEncrypt(
+        public void ValidateInputForEncrypt(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions)
@@ -100,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        internal JObject RetrieveItem(
+        public JObject RetrieveItem(
             Stream input)
         {
             Debug.Assert(input != null);
@@ -116,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return itemJObj;
         }
 
-        internal JObject RetrieveEncryptionProperties(
+        public JObject RetrieveEncryptionProperties(
             JObject item)
         {
             JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);

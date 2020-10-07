@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     testDoc.ToStream(),
                     LegacyEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
+                    new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
                 Assert.Fail("Invalid path to encrypt didn't result in exception.");
@@ -83,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await LegacyEncryptionProcessorTests.legacyEncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
@@ -101,6 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await LegacyEncryptionProcessorTests.legacyEncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
@@ -118,11 +121,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 LegacyEncryptionProcessorTests.encryptionOptions,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             (Stream decryptedStream, DecryptionContext decryptionContext) = await LegacyEncryptionProcessorTests.legacyEncryptionProcessor.DecryptAsync(
                 encryptedStream,
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -141,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             (Stream decryptedStream, DecryptionContext decryptionContext) = await LegacyEncryptionProcessorTests.legacyEncryptionProcessor.DecryptAsync(
                 docStream,
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);
@@ -155,6 +161,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 LegacyEncryptionProcessorTests.encryptionOptions,
+                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
