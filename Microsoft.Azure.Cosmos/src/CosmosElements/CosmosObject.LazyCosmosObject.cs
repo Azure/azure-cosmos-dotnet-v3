@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-            private readonly ConcurrentDictionary<string, CosmosElement> cachedElements;
+            private readonly Lazy<ConcurrentDictionary<string, CosmosElement>> cachedElements;
             private readonly Lazy<int> lazyCount;
 
             public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-                this.cachedElements = new ConcurrentDictionary<string, CosmosElement>();
+                this.cachedElements = new Lazy<ConcurrentDictionary<string, CosmosElement>>(() => new ConcurrentDictionary<string, CosmosElement>());
                 this.lazyCount = new Lazy<int>(() => this.jsonNavigator.GetObjectPropertyCount(this.jsonNavigatorNode));
             }
 
@@ -91,7 +91,7 @@ CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
-                if (this.cachedElements.TryGetValue(
+                if (this.cachedElements.Value.TryGetValue(
                     key,
                     out CosmosElement cosmosElemet))
                 {
@@ -105,7 +105,7 @@ CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
                     out ObjectProperty objectProperty))
                 {
                     value = CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode);
-                    this.cachedElements[key] = value;
+                    this.cachedElements.Value[key] = value;
 
                     return true;
                 }
