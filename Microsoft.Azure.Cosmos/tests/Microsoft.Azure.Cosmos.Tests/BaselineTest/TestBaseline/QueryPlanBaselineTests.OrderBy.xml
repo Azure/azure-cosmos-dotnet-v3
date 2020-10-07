@@ -176,8 +176,12 @@ ORDER BY r.key DESC]]></RewrittenQuery>
           <Offset />
           <Limit />
           <GroupByExpressions />
-          <OrderBy />
-          <OrderByExpressions />
+          <OrderBy>
+            <SortOrder>Ascending</SortOrder>
+          </OrderBy>
+          <OrderByExpressions>
+            <OrderByExpression>r.key</OrderByExpression>
+          </OrderByExpressions>
           <Aggregates />
           <GroupByAliasToAggregateType />
           <GroupByAliases />
@@ -188,7 +192,10 @@ ORDER BY r.key DESC]]></RewrittenQuery>
             <Range>[["key"],["key"]]</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT r._rid, [{"item": r.key}] AS orderByItems, r AS payload
+FROM Root AS r
+WHERE ((r.key = "key") AND ({documentdb-formattableorderbyquery-filter}))
+ORDER BY r.key]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>

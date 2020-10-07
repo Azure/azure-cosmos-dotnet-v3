@@ -7,8 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using VisualStudio.TestTools.UnitTesting;
 

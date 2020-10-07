@@ -9,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -64,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<Record>> MonadicReadItemAsync(
             CosmosElement partitionKey,
-            Guid identifer,
+            string identifer,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadItemAsync(
                 partitionKey,
                 identifer,
@@ -72,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<Record> ReadItemAsync(
             CosmosElement partitionKey,
-            Guid identifier,
+            string identifier,
             CancellationToken cancellationToken) => TryCatch<Record>.UnsafeGetResultAsync(
                 this.MonadicReadItemAsync(
                     partitionKey,
@@ -82,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
             int partitionKeyRangeId,
-            long resourceIdentifer,
+            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
                 partitionKeyRangeId,
@@ -92,12 +94,90 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<DocumentContainerPage> ReadFeedAsync(
             int partitionKeyRangeId,
-            long resourceIdentifier,
+            ResourceId resourceIdentifier,
             int pageSize,
             CancellationToken cancellationToken) => TryCatch<DocumentContainerPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(
                     partitionKeyRangeId,
                     resourceIdentifier,
+                    pageSize,
+                    cancellationToken),
+                cancellationToken);
+
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            Cosmos.PartitionKey partitionKey,
+            int pageSize,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
+                sqlQuerySpec,
+                continuationToken,
+                partitionKey,
+                pageSize,
+                cancellationToken);
+
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            int partitionKeyRangeId,
+            int pageSize,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
+                sqlQuerySpec,
+                continuationToken,
+                partitionKeyRangeId,
+                pageSize,
+                cancellationToken);
+
+        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
+                sqlQuerySpec,
+                continuationToken,
+                feedRange,
+                pageSize,
+                cancellationToken);
+
+        public Task<QueryPage> QueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            Cosmos.PartitionKey partitionKey,
+            int pageSize,
+            CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
+                this.MonadicQueryAsync(
+                    sqlQuerySpec,
+                    continuationToken,
+                    partitionKey,
+                    pageSize,
+                    cancellationToken),
+                cancellationToken);
+
+        public Task<QueryPage> QueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            int partitionKeyRangeId,
+            int pageSize,
+            CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
+                this.MonadicQueryAsync(
+                    sqlQuerySpec,
+                    continuationToken,
+                    partitionKeyRangeId,
+                    pageSize,
+                    cancellationToken),
+                cancellationToken);
+
+        public Task<QueryPage> QueryAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
+                this.MonadicQueryAsync(
+                    sqlQuerySpec,
+                    continuationToken,
+                    feedRange,
                     pageSize,
                     cancellationToken),
                 cancellationToken);
