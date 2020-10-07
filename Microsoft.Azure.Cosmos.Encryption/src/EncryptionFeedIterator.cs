@@ -43,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
-                        diagnosticsContext,
                         cancellationToken);
 
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);
@@ -90,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 DecryptableItemCore item = new DecryptableItemCore(
                     value,
                     this.encryptor,
+                    this.encryptionProcessor,
                     this.cosmosSerializer);
 
                 decryptableItems.Add((T)(object)item);
@@ -100,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
@@ -119,11 +118,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-
                 (JObject decryptedDocument, DecryptionContext _) = await this.encryptionProcessor.DecryptAsync(
                     document,
                     this.encryptor,
-                    diagnosticsContext,
                     cancellationToken);
 
                 result.Add(decryptedDocument);

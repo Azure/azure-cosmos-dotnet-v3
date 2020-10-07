@@ -17,13 +17,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
 
+        internal EncryptionProcessor EncryptionProcessor { get; }
+
         public DecryptableItemCore(
             JToken decryptableContent,
             Encryptor encryptor,
+            EncryptionProcessor encryptionProcessor,
             CosmosSerializer cosmosSerializer)
         {
             this.decryptableContent = decryptableContent ?? throw new ArgumentNullException(nameof(decryptableContent));
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.EncryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
@@ -36,10 +40,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             try
             {
-                (JObject decryptedItem, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                (JObject decryptedItem, DecryptionContext decryptionContext) = await this.EncryptionProcessor.DecryptAsync(
                     document,
                     this.encryptor,
-                    new CosmosDiagnosticsContext(),
                     cancellationToken: default);
 
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(decryptedItem)), decryptionContext);

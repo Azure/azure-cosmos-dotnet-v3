@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         protected internal override void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
+            EncryptionProcessor encryptionProcessor,
             CosmosSerializer cosmosSerializer)
         {
             if (this.decryptableItem != null)
@@ -66,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.decryptableItem = new DecryptableItemCore(
                 decryptableContent,
                 encryptor,
+                encryptionProcessor,
                 cosmosSerializer);
         }
 

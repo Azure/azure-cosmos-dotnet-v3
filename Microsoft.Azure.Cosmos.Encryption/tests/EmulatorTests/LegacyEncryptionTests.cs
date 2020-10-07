@@ -1536,7 +1536,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readDoc);
             if (isDocDecrypted && testDoc.Sensitive != null)
             {
-                EncryptionTests.ValidateDecryptionContext(decryptionContext, dekId, pathsEncrypted);
+                LegacyEncryptionTests.ValidateDecryptionContext(decryptionContext, dekId, pathsEncrypted);
             }
             else
             {
@@ -1552,7 +1552,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
             Assert.AreEqual(1, decryptionContext.DecryptionInfoList.Count);
             DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
-            Assert.AreEqual(dekId ?? EncryptionTests.dekId, decryptionInfo.DataEncryptionKeyId);
+            Assert.AreEqual(dekId ?? LegacyEncryptionTests.dekId, decryptionInfo.DataEncryptionKeyId);
 
             if (pathsEncrypted == null)
             {
@@ -1579,11 +1579,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readResponse.Resource);
 
             // ignore for reads via regular container..
-            if (container == EncryptionTests.encryptionContainer)
+            if (container == LegacyEncryptionTests.encryptionContainer)
             {
                 ItemResponse<DecryptableItem> readResponseDecryptableItem = await container.ReadItemAsync<DecryptableItem>(testDoc.Id, new PartitionKey(testDoc.PK), requestOptions);
                 Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
-                await EncryptionTests.ValidateDecryptableItem(readResponseDecryptableItem.Resource, testDoc, dekId, isDocDecrypted: isDocDecrypted);
+                await LegacyEncryptionTests.ValidateDecryptableItem(readResponseDecryptableItem.Resource, testDoc, dekId, isDocDecrypted: isDocDecrypted);
             }
         }
 

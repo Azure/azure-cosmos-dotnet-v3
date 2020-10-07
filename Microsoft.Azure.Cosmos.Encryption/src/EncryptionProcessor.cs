@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Text;
@@ -18,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// Abstraction for performing client-side encryption.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    internal abstract class EncryptionProcessor
+    public abstract class EncryptionProcessor
     {
-        public static readonly CosmosJsonDotNetSerializer BaseSerializer =
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer =
             new CosmosJsonDotNetSerializer(
                 new JsonSerializerSettings()
                 {
@@ -33,14 +32,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="input"> Input Stream to be encrypted </param>
         /// <param name="encryptor"> Encryptor </param>
         /// <param name="encryptionOptions"> Encryption Options </param>
-        /// <param name="diagnosticsContext"> Diagnostics Context</param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Decrypted Stream </returns>
         public abstract Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -48,13 +45,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="input"> Input Stream to be decrypted </param>
         /// <param name="encryptor"> Encryptor </param>
-        /// <param name="diagnosticsContext"> Diagnostics Context </param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Decrypted Stream </returns>
-        public abstract Task<Stream> DecryptAsync(
+        public abstract Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -62,16 +57,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="document"> Input JObject to be decrypted </param>
         /// <param name="encryptor"> Encryptor </param>
-        /// <param name="diagnosticsContext"> Diagnostics Context </param>
         /// <param name="cancellationToken"> Cancellation Token </param>
         /// <returns> Decrypted JObject </returns>
-        public abstract Task<JObject> DecryptAsync(
+        public abstract Task<(JObject, DecryptionContext)> DecryptAsync(
            JObject document,
            Encryptor encryptor,
-           CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken);
 
-        public void ValidateInputForEncrypt(
+        internal void ValidateInputForEncrypt(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions)
@@ -106,16 +99,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
             }
         }
-		
-        public JObject RetrieveItem(
+
+        internal JObject RetrieveItem(
             Stream input)
-
         {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
+            Debug.Assert(input != null);
             Debug.Assert(input.CanSeek);
 
             JObject itemJObj;
@@ -128,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return itemJObj;
         }
 
-        public JObject RetrieveEncryptionProperties(
+        internal JObject RetrieveEncryptionProperties(
             JObject item)
         {
             JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);

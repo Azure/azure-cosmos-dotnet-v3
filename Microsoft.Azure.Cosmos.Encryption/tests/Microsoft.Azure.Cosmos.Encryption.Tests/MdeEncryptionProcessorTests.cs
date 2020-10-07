@@ -61,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     testDoc.ToStream(),
                     MdeEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
-                    new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
                 Assert.Fail("Invalid path to encrypt didn't result in exception.");
@@ -80,15 +79,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             JObject encryptedDoc = await MdeEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
-            JObject decryptedDoc = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                encryptedDoc,
                MdeEncryptionProcessorTests.mockEncryptor.Object,
-               new CosmosDiagnosticsContext(),
                CancellationToken.None);
 
             MdeEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
-                testDoc);
+                testDoc,
+                decryptionContext);
         }
 
         [TestMethod]
@@ -98,15 +97,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             JObject encryptedDoc = await MdeEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
-            JObject decryptedDoc = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
-                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             MdeEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
-                testDoc);
+                testDoc,
+                decryptionContext);
         }
 
         [TestMethod]
@@ -118,19 +117,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 testDoc.ToStream(),
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
                 MdeEncryptionProcessorTests.encryptionOptions,
-                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            Stream decryptedStream = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                 encryptedStream,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
-                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             JObject decryptedDoc = MdeEncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
             MdeEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
-                testDoc);
+                testDoc,
+                decryptionContext);
         }
 
         [TestMethod]
@@ -139,15 +137,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             TestDoc testDoc = TestDoc.Create();
             Stream docStream = testDoc.ToStream();
 
-            Stream decryptedStream = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
                 docStream,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
-                new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);
             Assert.AreEqual(0, decryptedStream.Position);
             Assert.AreEqual(docStream.Length, decryptedStream.Length);
+            Assert.IsNull(decryptionContext);
         }
 
         private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
@@ -156,7 +154,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                  testDoc.ToStream(),
                  MdeEncryptionProcessorTests.mockEncryptor.Object,
                  MdeEncryptionProcessorTests.encryptionOptions,
-                 new CosmosDiagnosticsContext(),
                  CancellationToken.None);
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
@@ -196,11 +193,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static void VerifyDecryptionSucceeded(
             JObject decryptedDoc,
-            TestDoc expectedDoc)
+            TestDoc expectedDoc,
+            DecryptionContext decryptionContext)
         {
             Assert.AreEqual(expectedDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
             Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo));
+
+            Assert.IsNotNull(decryptionContext);
+            Assert.IsNotNull(decryptionContext.DecryptionInfoList);
+            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
+            Assert.AreEqual(MdeEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
+            if (expectedDoc.SensitiveStr == null)
+            {
+                Assert.AreEqual(TestDoc.PathsToEncrypt.Count - 1, decryptionInfo.PathsDecrypted.Count);
+                Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
+            else
+            {
+                Assert.AreEqual(TestDoc.PathsToEncrypt.Count, decryptionInfo.PathsDecrypted.Count);
+                Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
         }
     }
 }

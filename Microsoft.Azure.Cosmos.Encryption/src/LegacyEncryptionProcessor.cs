@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -25,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             this.ValidateInputForEncrypt(
@@ -94,14 +94,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public override async Task<Stream> DecryptAsync(
+        public override async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
             Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
 
             JObject itemJObj = this.RetrieveItem(input);
             JObject encryptionPropertiesJObj = this.RetrieveEncryptionProperties(itemJObj);
@@ -109,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (encryptionPropertiesJObj == null)
             {
                 input.Position = 0;
-                return input;
+                return (input, null);
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
@@ -117,32 +121,43 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = await LegacyEncryptionProcessor.DecryptContentAsync(
                 encryptionProperties,
                 encryptor,
-                diagnosticsContext,
                 cancellationToken);
 
+            List<string> pathsDecrypted = new List<string>();
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 itemJObj.Add(property.Name, property.Value);
+                pathsDecrypted.Add("/" + property.Name);
             }
+
+            DecryptionInfo decryptionInfo = new DecryptionInfo(
+                pathsDecrypted,
+                encryptionProperties.DataEncryptionKeyId);
+
+            DecryptionContext decryptionContext = new DecryptionContext(
+                new List<DecryptionInfo>() { decryptionInfo });
 
             itemJObj.Remove(Constants.EncryptedInfo);
             input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
-        public override async Task<JObject> DecryptAsync(
+        public override async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(document != null);
+
+            if (document == null)
+            {
+                return (document, null);
+            }
+
             Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
 
             if (!document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo))
             {
-                return document;
+                return (document, null);
             }
 
             EncryptionProperties encryptionProperties = JsonConvert.DeserializeObject<EncryptionProperties>(encryptedInfo.ToString());
@@ -150,23 +165,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = await LegacyEncryptionProcessor.DecryptContentAsync(
                 encryptionProperties,
                 encryptor,
-                diagnosticsContext,
                 cancellationToken);
 
             document.Remove(Constants.EncryptedInfo);
 
+            List<string> pathsDecrypted = new List<string>();
             foreach (JProperty property in plainTextJObj.Properties())
             {
                 document.Add(property.Name, property.Value);
+                pathsDecrypted.Add("/" + property.Name);
             }
 
-            return document;
+            DecryptionInfo decryptionInfo = new DecryptionInfo(
+               pathsDecrypted,
+               encryptionProperties.DataEncryptionKeyId);
+
+            DecryptionContext decryptionContext = new DecryptionContext(
+                new List<DecryptionInfo>() { decryptionInfo });
+
+            return (document, decryptionContext);
         }
 
         private static async Task<JObject> DecryptContentAsync(
             EncryptionProperties encryptionProperties,
             Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (encryptionProperties.EncryptionFormatVersion != 2)

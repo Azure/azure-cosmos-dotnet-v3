@@ -706,7 +706,6 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container WithEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-		
         "Microsoft.Azure.Cosmos.Container WithMdeEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -714,8 +713,7 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Container WithMdeEncryptor(Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.Encryption.Encryptor);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T], Microsoft.Azure.Cosmos.QueryRequestOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-
+        "Microsoft.Azure.Cosmos.FeedIterator ToEncryptionStreamIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
@@ -1023,6 +1021,27 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_PathsToEncrypt(System.Collections.Generic.IEnumerable`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.EncryptionProcessor;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Threading.Tasks.Task`1[System.IO.Stream] EncryptAsync(System.IO.Stream, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.Encryption.EncryptionOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.IO.Stream] EncryptAsync(System.IO.Stream, Microsoft.Azure.Cosmos.Encryption.Encryptor, Microsoft.Azure.Cosmos.Encryption.EncryptionOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[Newtonsoft.Json.Linq.JObject,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] DecryptAsync(Newtonsoft.Json.Linq.JObject, Microsoft.Azure.Cosmos.Encryption.Encryptor, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[Newtonsoft.Json.Linq.JObject,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] DecryptAsync(Newtonsoft.Json.Linq.JObject, Microsoft.Azure.Cosmos.Encryption.Encryptor, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] DecryptAsync(System.IO.Stream, Microsoft.Azure.Cosmos.Encryption.Encryptor, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[System.ValueTuple`2[System.IO.Stream,Microsoft.Azure.Cosmos.Encryption.DecryptionContext]] DecryptAsync(System.IO.Stream, Microsoft.Azure.Cosmos.Encryption.Encryptor, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
