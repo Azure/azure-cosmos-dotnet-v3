@@ -58,18 +58,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             this.parentToChildMapping = new Dictionary<int, (int, int)>();
         }
 
-        public Task<TryCatch<List<FeedRangeInternal>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
                 FeedRangeEpk.FullRange,
                 cancellationToken);
 
-        public async Task<TryCatch<List<FeedRangeInternal>>> MonadicGetChildRangeAsync(
+        public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            FeedRangeInternal CreateRangeFromId(int id)
+            FeedRangeEpk CreateRangeFromId(int id)
             {
                 PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
                 return new FeedRangeEpk(
@@ -87,13 +87,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (feedRange.Equals(FeedRangeEpk.FullRange))
             {
-                List<FeedRangeInternal> ranges = new List<FeedRangeInternal>();
+                List<FeedRangeEpk> ranges = new List<FeedRangeEpk>();
                 foreach (int id in this.partitionKeyRangeIdToHashRange.Keys)
                 {
                     ranges.Add(CreateRangeFromId(id));
                 }
 
-                return TryCatch<List<FeedRangeInternal>>.FromResult(ranges);
+                return TryCatch<List<FeedRangeEpk>>.FromResult(ranges);
             }
 
             if (feedRange is FeedRangeEpk feedRangeEpk)
@@ -102,18 +102,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
                 PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
                 PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
-                List<FeedRangeInternal> overlappedIds = this.partitionKeyRangeIdToHashRange
+                List<FeedRangeEpk> overlappedIds = this.partitionKeyRangeIdToHashRange
                     .Where(kvp => hashRange.Contains(kvp.Value))
                     .Select(kvp => CreateRangeFromId(kvp.Key))
                     .ToList();
                 if (overlappedIds.Count == 0)
                 {
-                    return TryCatch<List<FeedRangeInternal>>.FromException(
+                    return TryCatch<List<FeedRangeEpk>>.FromException(
                         new KeyNotFoundException(
                             $"PartitionKeyRangeId: {hashRange} does not exist."));
                 }
 
-                return TryCatch<List<FeedRangeInternal>>.FromResult(overlappedIds);
+                return TryCatch<List<FeedRangeEpk>>.FromResult(overlappedIds);
             }
 
             if (!(feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange))
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (!int.TryParse(feedRangePartitionKeyRange.PartitionKeyRangeId, out int partitionKeyRangeId))
             {
-                return TryCatch<List<FeedRangeInternal>>.FromException(
+                return TryCatch<List<FeedRangeEpk>>.FromException(
                     new FormatException(
                         $"PartitionKeyRangeId: {feedRangePartitionKeyRange.PartitionKeyRangeId} is not an integer."));
             }
@@ -133,37 +133,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 // This range has no children (base case)
                 if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
                 {
-                    return TryCatch<List<FeedRangeInternal>>.FromException(
+                    return TryCatch<List<FeedRangeEpk>>.FromException(
                         new KeyNotFoundException(
                             $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist."));
                 }
 
-                List<FeedRangeInternal> singleRange = new List<FeedRangeInternal>()
+                List<FeedRangeEpk> singleRange = new List<FeedRangeEpk>()
                 {
                     CreateRangeFromId(partitionKeyRangeId),
                 };
 
-                return TryCatch<List<FeedRangeInternal>>.FromResult(singleRange);
+                return TryCatch<List<FeedRangeEpk>>.FromResult(singleRange);
             }
 
             // Recurse on the left and right child.
             FeedRangeInternal left = new FeedRangePartitionKeyRange(children.left.ToString());
             FeedRangeInternal right = new FeedRangePartitionKeyRange(children.right.ToString());
 
-            TryCatch<List<FeedRangeInternal>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, cancellationToken);
+            TryCatch<List<FeedRangeEpk>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, cancellationToken);
             if (tryGetLeftRanges.Failed)
             {
                 return tryGetLeftRanges;
             }
 
-            TryCatch<List<FeedRangeInternal>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, cancellationToken);
+            TryCatch<List<FeedRangeEpk>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, cancellationToken);
             if (tryGetRightRanges.Failed)
             {
                 return tryGetRightRanges;
             }
 
-            List<FeedRangeInternal> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
-            return TryCatch<List<FeedRangeInternal>>.FromResult(overlappingRanges);
+            List<FeedRangeEpk> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
+            return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
         }
 
         public Task<TryCatch<Record>> MonadicCreateItemAsync(

@@ -71,16 +71,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
+                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                Assert.AreEqual(1, ranges.Count);
+
                 DocumentContainerPartitionRangeEnumerator enumerator = new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
-                    partitionKeyRangeId: 0,
+                    feedRange: ranges[0],
                     pageSize: 10,
                     cancellationToken: default);
 
                 (HashSet<string> parentIdentifiers, DocumentContainerState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(ranges[0], cancellationToken: default);
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
@@ -88,14 +91,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
-                foreach (int partitionKeyRangeId in new int[] { 1, 2 })
+
+                IReadOnlyList<FeedRangeInternal> childRanges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                foreach (FeedRangeInternal childRange in childRanges)
                 {
                     PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState> enumerable = new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
-                        range: new PartitionKeyRange() { Id = partitionKeyRangeId.ToString() },
+                        range: childRange,
                         state: state,
                         (range, state) => new DocumentContainerPartitionRangeEnumerator(
                                 inMemoryCollection,
-                                partitionKeyRangeId: range,
+                                feedRange: childRange,
                                 pageSize: 10,
                                 state: state,
                                 cancellationToken: default));
@@ -128,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer inMemoryCollection,
                 DocumentContainerState state = null) => new DocumentContainerPartitionRangeEnumerator(
                     inMemoryCollection,
-                    range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                    feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     pageSize: 10,
                     state: state,
                     cancellationToken: default);

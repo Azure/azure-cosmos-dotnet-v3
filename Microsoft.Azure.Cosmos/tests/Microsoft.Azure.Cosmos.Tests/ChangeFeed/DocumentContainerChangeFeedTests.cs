@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task EmptyContainerTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 0);
-            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                 ChangeFeedState.Beginning(),
                 ranges[0],
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromBeginingTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             // Should get back the all the documents inserted so far
             ChangeFeedState resumeState = default;
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromTimeTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             DateTime now = DateTime.UtcNow;
             // No changes let
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromNowAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             ChangeFeedState resumeState = default;
             // No changes starting from now
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task ReadChangesAcrossSplitsAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
-            List<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
                 ranges[0],
                 ResourceId.Empty,
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 
-            List<FeedRangeInternal> children = await documentContainer.GetChildRangeAsync(ranges[0], cancellationToken: default);
+            List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], cancellationToken: default);
 
             long sumOfChildCounts = 0;
             foreach (FeedRangeInternal child in children)

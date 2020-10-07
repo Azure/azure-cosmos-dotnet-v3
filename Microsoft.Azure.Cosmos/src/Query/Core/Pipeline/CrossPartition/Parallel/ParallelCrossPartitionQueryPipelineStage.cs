@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
-                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize),
+                MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize, cancellationToken),
                 Comparer.Singleton,
                 maxConcurrency,
                 state: state,
@@ -232,12 +232,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            int pageSize) => (FeedRangeInternal range, QueryState state) => new QueryPartitionRangePageAsyncEnumerator(
+            int pageSize,
+            CancellationToken cancellationToken) => (FeedRangeInternal range, QueryState state) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 range,
                 pageSize,
-                cancellationToken: default,
+                cancellationToken: cancellationToken,
                 state);
 
         public void SetCancellationToken(CancellationToken cancellationToken)

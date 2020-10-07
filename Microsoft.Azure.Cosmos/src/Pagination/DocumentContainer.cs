@@ -27,13 +27,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.monadicDocumentContainer = monadicDocumentContainer ?? throw new ArgumentNullException(nameof(monadicDocumentContainer));
         }
 
-        public Task<TryCatch<List<FeedRangeInternal>>> MonadicGetChildRangeAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetChildRangeAsync(
                 feedRange,
                 cancellationToken);
 
-        public Task<List<FeedRangeInternal>> GetChildRangeAsync(
+        public Task<List<FeedRangeEpk>> GetChildRangeAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => TryCatch<List<FeedRangeInternal>>.UnsafeGetResultAsync(
                 this.MonadicGetChildRangeAsync(
@@ -41,12 +41,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        public Task<TryCatch<List<FeedRangeInternal>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 
-        public Task<List<FeedRangeInternal>> GetFeedRangesAsync(
-            CancellationToken cancellationToken) => TryCatch<List<FeedRangeInternal>>.UnsafeGetResultAsync(
+        public Task<List<FeedRangeEpk>> GetFeedRangesAsync(
+            CancellationToken cancellationToken) => TryCatch<List<FeedRangeEpk>>.UnsafeGetResultAsync(
                 this.MonadicGetFeedRangesAsync(
                     cancellationToken),
                 cancellationToken);

@@ -76,10 +76,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             throw new NotImplementedException();
         }
 
-        public Task<TryCatch<List<FeedRangeInternal>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, cancellationToken);
 
-        public async Task<TryCatch<List<FeedRangeInternal>>> MonadicGetChildRangeAsync(
+        public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken)
         {
@@ -93,12 +93,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     this.cosmosQueryContext.ContainerResourceId,
                     containerProperties.PartitionKey,
                     feedRange);
-                return TryCatch<List<FeedRangeInternal>>.FromResult(
-                    overlappingRanges.Select(range => (FeedRangeInternal)new FeedRangePartitionKeyRange(range.Id)).ToList());
+                return TryCatch<List<FeedRangeEpk>>.FromResult(
+                    overlappingRanges.Select(range => new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: range.MinInclusive, 
+                            max: range.MaxExclusive,
+                            isMinInclusive: true,
+                            isMaxInclusive: false))).ToList());
             }
             catch (Exception ex)
             {
-                return TryCatch<List<FeedRangeInternal>>.FromException(ex);
+                return TryCatch<List<FeedRangeEpk>>.FromException(ex);
             }
         }
 

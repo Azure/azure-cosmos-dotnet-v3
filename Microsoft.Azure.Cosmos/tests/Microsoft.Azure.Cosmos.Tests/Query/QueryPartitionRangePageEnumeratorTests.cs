@@ -76,7 +76,7 @@
                 (HashSet<string> parentIdentifiers, QueryState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
-                await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+                await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
@@ -85,8 +85,8 @@
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
 
-                List<PartitionKeyRange> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
-                foreach (PartitionKeyRange range in ranges)
+                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                foreach (FeedRangeEpk range in ranges)
                 {
                     IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
                         range: range,
@@ -126,7 +126,7 @@
                 IDocumentContainer documentContainer,
                 QueryState state = null)
             {
-                List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
                     range: ranges[0],
@@ -144,7 +144,7 @@
                 IDocumentContainer documentContainer,
                 QueryState state = default)
             {
-                List<PartitionKeyRange> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new QueryPartitionRangePageAsyncEnumerator(
                     queryDataSource: documentContainer,

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
+                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
+                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
+                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
+                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" } },
+                targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
                 pageSize: 10,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -125,10 +125,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() 
-                { 
-                    new PartitionKeyRange() { Id = "0", MinInclusive = "A", MaxExclusive = "B" },
-                    new PartitionKeyRange() { Id = "0", MinInclusive = "B", MaxExclusive = "C" },
+                targetRanges: new List<FeedRangeEpk>() 
+                {
+                    new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
                 },
                 pageSize: 10,
                 maxConcurrency: 10,
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    List<FeedRangeInternal> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
                     FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                     await documentContainer.SplitAsync(randomRange, cancellationToken: default);
                 }
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    List<FeedRangeInternal> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
                     FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                     await documentContainer.SplitAsync(randomRange, cancellationToken: default);
                 }
@@ -323,15 +323,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
-
-            await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
-
-            await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-            await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+            for (int i = 0; i < 3; i++)
+            {
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                foreach (FeedRangeInternal range in ranges)
+                {
+                    await documentContainer.SplitAsync(range, cancellationToken: default);
+                }
+            }
 
             for (int i = 0; i < numItems; i++)
             {

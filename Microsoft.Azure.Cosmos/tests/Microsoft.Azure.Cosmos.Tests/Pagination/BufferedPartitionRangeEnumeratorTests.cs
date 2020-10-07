@@ -88,7 +88,7 @@
                 (HashSet<string> parentIdentifiers, DocumentContainerState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
-                await inMemoryCollection.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"), cancellationToken: default);
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
@@ -123,7 +123,7 @@
                 BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                     new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
-                        partitionKeyRangeId: 0,
+                        feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
                         cancellationToken: default),
                     cancellationToken: default);
@@ -165,7 +165,7 @@
                     BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                     new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
-                        partitionKeyRangeId: 0,
+                        feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
                         cancellationToken: default),
                     cancellationToken: default);

@@ -11,11 +11,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
     internal interface IMonadicFeedRangeProvider
     {
-        Task<TryCatch<List<FeedRangeInternal>>> MonadicGetChildRangeAsync(
+        Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
 
-        Task<TryCatch<List<FeedRangeInternal>>> MonadicGetFeedRangesAsync(
+        Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken);
     }
 }

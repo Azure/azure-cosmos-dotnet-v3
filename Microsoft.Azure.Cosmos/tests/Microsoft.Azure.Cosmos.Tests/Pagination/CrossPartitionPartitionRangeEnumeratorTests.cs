@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     if (random.Next() % 2 == 0)
                     {
-                        List<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
                         FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
                         await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
                     }
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossPartitionState<DocumentContainerState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
-                    PartitionKeyRange range,
+                    FeedRangeInternal range,
                     DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRange: range,

@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
-    using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     /// <summary>
     /// Implementation of <see cref="IMonadicDocumentContainer"/> that composes another <see cref="IMonadicDocumentContainer"/> and randomly adds in exceptions.
@@ -207,13 +206,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRange,
                 cancellationToken);
 
-        public Task<TryCatch<List<FeedRangeInternal>>> MonadicGetChildRangeAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
                 feedRange,
                 cancellationToken);
 
-        public Task<TryCatch<List<FeedRangeInternal>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 

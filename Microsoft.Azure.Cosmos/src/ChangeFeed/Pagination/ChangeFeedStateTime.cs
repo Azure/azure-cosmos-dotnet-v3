@@ -27,5 +27,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         public override TOutput Accept<TInput, TOutput>(
             IChangeFeedStateVisitor<TInput, TOutput> visitor,
             TInput input) => visitor.Visit(this, input);
+
+        public override TResult Accept<TResult>(
+            IChangeFeedStateTransformer<TResult> visitor) => visitor.Transform(this);
     }
 }

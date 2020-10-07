@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<PartitionKeyRange>() { new PartitionKeyRange() },
+                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryInfo: new QueryInfo() { },
                 pageSize: 10,
                 maxConcurrency: 10,
