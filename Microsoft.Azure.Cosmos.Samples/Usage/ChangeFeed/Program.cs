@@ -284,14 +284,13 @@
             ChangeFeedProcessorLibrary.ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorLibrary.ChangeFeedProcessorBuilder();
             var oldChangeFeedProcessor = await builder
                 .WithHostName("consoleHost")
-                .WithProcessorOptions(new ChangeFeedProcessorLibrary.ChangeFeedProcessorOptions {
+                .WithProcessorOptions(new ChangeFeedProcessorLibrary.ChangeFeedProcessorOptions
+                {
                     StartFromBeginning = true,
-                    LeasePrefix = "MyLeasePrefix" })
-                 .WithProcessorOptions(new ChangeFeedProcessorLibrary.ChangeFeedProcessorOptions()
-                 {
-                     MaxItemCount = 10,
-                     FeedPollDelay = TimeSpan.FromSeconds(1)
-                 })
+                    LeasePrefix = "MyLeasePrefix",
+                    MaxItemCount = 10,
+                    FeedPollDelay = TimeSpan.FromSeconds(1)
+                })
                 .WithFeedCollection(monitoredCollectionInfo)
                 .WithLeaseCollection(leaseCollectionInfo)
                 .WithObserver<ChangeFeedObserver>()
