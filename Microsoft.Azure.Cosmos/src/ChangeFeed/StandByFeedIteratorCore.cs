@@ -179,7 +179,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            string resourceUri = this.container.LinkUri;
+            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
+                resourceUri: resourceUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: options,
+                containerInternal: this.container,
+                requestEnricher: (request) =>
+                {
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
+                responseCreator: response => response,
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
+                cancellationToken: cancellationToken);
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()

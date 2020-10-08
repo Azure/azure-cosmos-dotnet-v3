@@ -17,7 +17,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
-        private readonly ChangeFeedStartFrom changeFeedStartFrom;
+        private ChangeFeedStartFrom changeFeedStartFrom;
+        private bool hasMoreResultsInternal;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.changeFeedOptions = options;
         }
 
-        public override bool HasMoreResults => false;
+        public override bool HasMoreResults => this.hasMoreResultsInternal;
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
@@ -43,9 +44,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                cosmosContainerCore: this.container,
+                resourceUri: this.container.LinkUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: this.changeFeedOptions,
+                requestEnricher: (requestMessage) =>
+                {
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
+                cancellationToken: cancellationToken);
+
+            // Change Feed uses etag as continuation token.
+            string etag = responseMessage.Headers.ETag;
+            this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
+            responseMessage.Headers.ContinuationToken = etag;
+
+            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
+
+            return responseMessage;
         }
     }
 }
