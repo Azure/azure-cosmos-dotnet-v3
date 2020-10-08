@@ -55,10 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1740](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1740) Connection limits: Fixes .NET core to honor gateway connection limit
 - [#1744](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1744) Transport: Fixes use of PortReuseMode and other Direct configuration settings
 
+### <a name="3.11.1-preview"/> [3.11.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.1-preview) - 2020-10-01
 
+- [#1892](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1892) Performance: Fixes High CPU caused by EnableTcpConnectionEndpointRediscovery by reducing HashSet lock contention
 
 ### <a name="3.11.0"/> [3.11.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.0) - 2020-07-07
-
+### <a name="3.11.0-preview"/> [3.11.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.0-preview) - 2020-07-07
 #### Added 
 
 - [#1587](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1587) & [1643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1643) & [1667](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1667)  Diagnostics: Adds synchronization context tracing to all request

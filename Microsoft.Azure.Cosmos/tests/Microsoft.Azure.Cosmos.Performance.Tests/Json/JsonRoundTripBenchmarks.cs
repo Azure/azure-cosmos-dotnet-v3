@@ -69,9 +69,9 @@
         [Benchmark]
         [ArgumentsSource(nameof(NavigatorToWriterArguments))]
         public void NavigatorToWriter(
-        CurratedDocsPayload payload,
-        SerializationFormat sourceFormat,
-        SerializationFormat destinationFormat)
+            CurratedDocsPayload payload,
+            SerializationFormat sourceFormat,
+            SerializationFormat destinationFormat)
         {
             IJsonNavigator navigator = sourceFormat switch
             {

@@ -22,20 +22,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 rangeCount,
                 out PartitionKeyHashRanges splitRanges);
 
-            switch (splitOutcome)
+            return splitOutcome switch
             {
-                case SplitOutcome.Success:
-                    return splitRanges;
-
-                case SplitOutcome.NumRangesNeedsToBeGreaterThanZero:
-                    throw new ArgumentOutOfRangeException($"{nameof(rangeCount)} must be a positive integer");
-
-                case SplitOutcome.RangeNotWideEnough:
-                    throw new ArgumentOutOfRangeException($"{nameof(partitionKeyHashRange)} is not wide enough to split into {rangeCount} ranges.");
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(SplitOutcome)}: {splitOutcome}.");
-            }
+                SplitOutcome.Success => splitRanges,
+                SplitOutcome.NumRangesNeedsToBeGreaterThanZero => throw new ArgumentOutOfRangeException($"{nameof(rangeCount)} must be a positive integer"),
+                SplitOutcome.RangeNotWideEnough => throw new ArgumentOutOfRangeException($"{nameof(partitionKeyHashRange)} is not wide enough to split into {rangeCount} ranges."),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(SplitOutcome)}: {splitOutcome}."),
+            };
         }
 
         public static SplitOutcome TrySplitRange(PartitionKeyHashRange partitionKeyHashRange, int rangeCount, out PartitionKeyHashRanges splitRanges)

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -24,20 +25,24 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
         private readonly AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>> lazyEnumerators;
+        private CancellationToken cancellationToken;
 
         public CrossPartitionRangePageAsyncEnumerator(
             IFeedRangeProvider feedRangeProvider,
             CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
+            int? maxConcurrency,
+            CancellationToken cancellationToken,
             CrossPartitionState<TState> state = default)
         {
-            this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
-            this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
-
             if (comparer == null)
             {
                 throw new ArgumentNullException(nameof(comparer));
             }
+
+            this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
+            this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
+            this.cancellationToken = cancellationToken;
 
             this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
@@ -60,13 +65,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     rangeAndStates = rangesAndStatesBuilder;
                 }
 
-                PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>(comparer);
-                foreach ((PartitionKeyRange range, TState rangeState) in rangeAndStates)
+                List<BufferedPartitionRangePageAsyncEnumerator<TPage, TState>> bufferedEnumerators = rangeAndStates
+                    .Select(rangeAndState =>
+                    {
+                        PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(rangeAndState.Item1, rangeAndState.Item2);
+                        BufferedPartitionRangePageAsyncEnumerator<TPage, TState> bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, cancellationToken);
+                        return bufferedEnumerator;
+                    })
+                    .ToList();
+
+                if (maxConcurrency.HasValue)
                 {
-                    PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(range, rangeState);
-                    enumerators.Enqueue(enumerator);
+                    await ParallelPrefetch.PrefetchInParallelAsync(bufferedEnumerators, maxConcurrency.Value, token);
                 }
 
+                PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>(
+                    bufferedEnumerators,
+                    comparer);
                 return enumerators;
             });
         }
@@ -75,7 +90,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: default);
+            this.cancellationToken.ThrowIfCancellationRequested();
+
+            PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: this.cancellationToken);
             if (enumerators.Count == 0)
             {
                 return false;
@@ -103,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     // Handle split
                     IEnumerable<PartitionKeyRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                         currentPaginator.Range,
-                        cancellationToken: default);
+                        cancellationToken: this.cancellationToken);
                     foreach (PartitionKeyRange childRange in childRanges)
                     {
                         PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
@@ -120,18 +137,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     throw new NotImplementedException();
                 }
-            }
 
-            if (currentPaginator.State != null)
-            {
+                // Just enqueue the paginator and the user can decide if they want to retry.
                 enumerators.Enqueue(currentPaginator);
+
+                this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
+                return true;
             }
 
-            TryCatch<TPage> backendPage = currentPaginator.Current;
-            if (backendPage.Failed)
+            if (currentPaginator.State != default)
             {
-                this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromException(backendPage.Exception);
-                return true;
+                // Don't enqueue the paginator otherwise it's an infinite loop.
+                enumerators.Enqueue(currentPaginator);
             }
 
             CrossPartitionState<TState> crossPartitionState;
@@ -151,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromResult(
-                new CrossPartitionPage<TPage, TState>(backendPage.Result, crossPartitionState));
+                new CrossPartitionPage<TPage, TState>(currentPaginator.Current.Result, crossPartitionState));
             return true;
         }
 
@@ -159,6 +176,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             // Do Nothing.
             return default;
+        }
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            this.cancellationToken = cancellationToken;
         }
 
         private static bool IsSplitException(Exception exeception)

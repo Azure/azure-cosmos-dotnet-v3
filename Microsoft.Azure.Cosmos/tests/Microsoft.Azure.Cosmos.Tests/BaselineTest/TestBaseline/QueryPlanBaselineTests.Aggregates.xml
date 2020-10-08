@@ -16,7 +16,9 @@
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
-          <Aggregates />
+          <Aggregates>
+            <AggregateOperator>Average</AggregateOperator>
+          </Aggregates>
           <GroupByAliasToAggregateType />
           <GroupByAliases />
           <HasSelectValue>True</HasSelectValue>
@@ -26,7 +28,8 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
+FROM c]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -48,8 +51,15 @@
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>Average</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>$1</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -57,7 +67,8 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT {"$1": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
+FROM c]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -368,7 +379,9 @@ FROM c]]></RewrittenQuery>
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
-          <Aggregates />
+          <Aggregates>
+            <AggregateOperator>Min</AggregateOperator>
+          </Aggregates>
           <GroupByAliasToAggregateType />
           <GroupByAliases />
           <HasSelectValue>True</HasSelectValue>
@@ -378,7 +391,9 @@ FROM c]]></RewrittenQuery>
             <Range>[[1.0],[1.0]]</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
+FROM c
+WHERE (c.key = 1)]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>

@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 : base(singlePartition: false)
             {
             }
+
             [TestMethod]
             public async Task TestSplitWithResumeContinuationAsync()
             {
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerator<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-                (HashSet<Guid> firstDrainResults, CrossPartitionState<DocumentContainerState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<string> firstDrainResults, CrossPartitionState<DocumentContainerState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 int minPartitionKeyRangeId = (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default))
                     .Select(range => int.Parse(range.Id)).Min();
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 // Resume from state
                 IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
 
-                HashSet<Guid> secondDrainResults = await this.DrainFullyAsync(enumerable);
+                HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
                 Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
             }
 
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
-                HashSet<Guid> identifiers = new HashSet<Guid>();
+                HashSet<string> identifiers = new HashSet<string>();
                 Random random = new Random();
                 await foreach (TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>> tryGetPage in enumerable)
                 {
@@ -140,12 +141,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         inMemoryCollection,
                         partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
+                        cancellationToken: default,
                         state: state);
 
                 return new CrossPartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
-                    comparer: PartitionRangePageEnumeratorComparer.Singleton,
+                    comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                    maxConcurrency: 10,
                     state: state);
             }
 
@@ -159,12 +162,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         inMemoryCollection,
                         partitionKeyRangeId: int.Parse(range.Id),
                         pageSize: 10,
+                        cancellationToken: default,
                         state: state);
 
                 CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
-                    comparer: PartitionRangePageEnumeratorComparer.Singleton,
+                    comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                    maxConcurrency: 10,
+                    cancellationToken: default,
                     state: state);
 
                 return enumerator;
@@ -175,9 +181,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return page.Page.Records;
             }
 
-            private sealed class PartitionRangePageEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>>
+            private sealed class PartitionRangePageAsyncEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>>
             {
-                public static readonly PartitionRangePageEnumeratorComparer Singleton = new PartitionRangePageEnumeratorComparer();
+                public static readonly PartitionRangePageAsyncEnumeratorComparer Singleton = new PartitionRangePageAsyncEnumeratorComparer();
 
                 public int Compare(
                     PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> partitionRangePageEnumerator1,

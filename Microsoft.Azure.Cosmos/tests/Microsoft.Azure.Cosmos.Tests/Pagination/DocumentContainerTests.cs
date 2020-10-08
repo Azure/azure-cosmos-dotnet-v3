@@ -51,6 +51,70 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
+        public async Task TestGetOverlappingRanges()
+        {
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+
+            // Check range with no children (base case)
+            {
+                List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
+                    partitionKeyRange: new PartitionKeyRange()
+                    {
+                        Id = "0"
+                    },
+                    cancellationToken: default);
+                Assert.AreEqual(expected: 1, ranges.Count);
+            }
+
+            await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
+
+            // Check the leaves
+            foreach (int i in new int[] { 1, 2 })
+            {
+                List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
+                    partitionKeyRange: new PartitionKeyRange()
+                    {
+                        Id = i.ToString(),
+                    },
+                    cancellationToken: default);
+                Assert.AreEqual(expected: 1, ranges.Count);
+            }
+
+            // Check a range with children
+            {
+                List<PartitionKeyRange> ranges = await documentContainer.GetChildRangeAsync(
+                    partitionKeyRange: new PartitionKeyRange()
+                    {
+                        Id = "0"
+                    },
+                    cancellationToken: default);
+                Assert.AreEqual(expected: 2, ranges.Count);
+            }
+
+            // Check a range that isn't an integer
+            {
+                TryCatch<List<PartitionKeyRange>> monad = await documentContainer.MonadicGetChildRangeAsync(
+                    partitionKeyRange: new PartitionKeyRange()
+                    {
+                        Id = "asdf"
+                    },
+                    cancellationToken: default);
+                Assert.IsFalse(monad.Succeeded);
+            }
+
+            // Check a range that doesn't exist
+            {
+                TryCatch<List<PartitionKeyRange>> monad = await documentContainer.MonadicGetChildRangeAsync(
+                    partitionKeyRange: new PartitionKeyRange()
+                    {
+                        Id = "42"
+                    },
+                    cancellationToken: default);
+                Assert.IsFalse(monad.Succeeded);
+            }
+        }
+
+        [TestMethod]
         public async Task TestCrudAsync()
         {
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
@@ -60,7 +124,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Record record = await documentContainer.CreateItemAsync(item, cancellationToken: default);
             Assert.IsNotNull(record);
             Assert.AreNotEqual(Guid.Empty, record.Identifier);
-            Assert.AreEqual(1, record.ResourceIdentifier);
 
             // Try to read it back
             Record readRecord = await documentContainer.ReadItemAsync(
@@ -141,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 DocumentContainerPage readFeedPage = await documentContainer.ReadFeedAsync(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    resourceIdentifier: 0,
+                    resourceIdentifier: ResourceId.Empty,
                     pageSize: 100,
                     cancellationToken: default);
 
@@ -200,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(1, int.Parse(ranges[0].Id));
                 Assert.AreEqual(2, int.Parse(ranges[1].Id));
             }
-            
+
             await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
             await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
 
@@ -228,12 +291,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(5, int.Parse(ranges[0].Id));
                 Assert.AreEqual(6, int.Parse(ranges[1].Id));
             }
-            
+
             async Task<int> AssertChildPartitionAsync(int partitionKeyRangeId)
             {
                 DocumentContainerPage page = await documentContainer.ReadFeedAsync(
                     partitionKeyRangeId: partitionKeyRangeId,
-                    resourceIdentifier: 0,
+                    resourceIdentifier: ResourceId.Empty,
                     pageSize: 100,
                     cancellationToken: default);
 
