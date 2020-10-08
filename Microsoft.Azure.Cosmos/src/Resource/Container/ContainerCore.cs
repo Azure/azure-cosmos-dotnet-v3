@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
-    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -281,14 +280,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
-            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
-                this,
-                this.queryClient,
-                this.ClientContext);
-            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
-
             return new ChangeFeedIteratorCore(
-                documentContainer: documentContainer,
+                container: this,
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
@@ -302,20 +295,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
-            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
-                this,
-                this.queryClient,
-                this.ClientContext);
-            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
-
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                documentContainer: documentContainer,
+                container: this,
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
-            return new FeedIteratorCore<T>(
-                changeFeedIteratorCore, 
-                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

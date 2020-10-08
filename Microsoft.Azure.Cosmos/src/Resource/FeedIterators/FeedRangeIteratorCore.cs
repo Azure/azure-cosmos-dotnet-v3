@@ -189,7 +189,8 @@ namespace Microsoft.Azure.Cosmos
                        QueryRequestOptions.FillContinuationToken);
                    this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
 
-                   this.FeedRangeInternal.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
+                   FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
+                   this.FeedRangeInternal.Accept(feedRangeVisitor);
 
                    if (this.querySpec != null)
                    {

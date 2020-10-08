@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -143,28 +142,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.MonadicSplitAsync(
                     feedRange,
                     cancellationToken),
-                cancellationToken);
-
-        public Task<ChangeFeedPage> ChangeFeedAsync(
-            ChangeFeedState state,
-            FeedRangeInternal feedRange,
-            int pageSize,
-            CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
-                this.MonadicChangeFeedAsync(
-                    state,
-                    feedRange,
-                    pageSize,
-                    cancellationToken), 
-                cancellationToken);
-
-        public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            ChangeFeedState state,
-            FeedRangeInternal feedRange,
-            int pageSize,
-            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
-                state,
-                feedRange,
-                pageSize,
                 cancellationToken);
     }
 }

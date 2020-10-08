@@ -166,7 +166,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
             FeedRangeEpk feedRange = new FeedRangeEpk(range);
             RequestMessage requestMessage = new RequestMessage();
-            feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, requestMessage);
+            FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(requestMessage);
+            feedRange.Accept(feedRangeVisitor);
             Assert.AreEqual(2, requestMessage.Properties.Count);
             Assert.AreEqual("AA", requestMessage.Properties[HandlerConstants.StartEpkString]);
             Assert.AreEqual("BB", requestMessage.Properties[HandlerConstants.EndEpkString]);
@@ -178,7 +179,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
             FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
             RequestMessage requestMessage = new RequestMessage();
-            feedRangePartitionKeyRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, requestMessage);
+            FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(requestMessage);
+            feedRangePartitionKeyRange.Accept(feedRangeVisitor);
             Assert.IsNotNull(requestMessage.PartitionKeyRangeId);
             Assert.IsFalse(requestMessage.IsPartitionKeyRangeHandlerRequired);
         }
@@ -189,7 +191,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             PartitionKey partitionKey = new PartitionKey("test");
             FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
             RequestMessage requestMessage = new RequestMessage();
-            feedRangePartitionKey.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, requestMessage);
+            FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(requestMessage);
+            feedRangePartitionKey.Accept(feedRangeVisitor);
             Assert.AreEqual(partitionKey.InternalKey.ToJsonString(), requestMessage.Headers.PartitionKey);
             Assert.IsFalse(requestMessage.IsPartitionKeyRangeHandlerRequired);
         }
