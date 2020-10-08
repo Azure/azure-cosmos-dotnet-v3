@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator;
         private readonly CancellationToken cancellationToken;
+        private TryCatch<ChangeFeedPage>? bufferedException;
 
         private CrossPartitionChangeFeedAsyncEnumerator(
             CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
@@ -33,10 +34,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         public async ValueTask<bool> MoveNextAsync()
         {
             this.cancellationToken.ThrowIfCancellationRequested();
+            if (this.bufferedException.HasValue)
+            {
+                this.Current = this.bufferedException.Value;
+                this.bufferedException = null;
+                return true;
+            }
+
             if (!await this.crossPartitionEnumerator.MoveNextAsync())
             {
-                this.Current = default;
-                return false;
+                throw new InvalidOperationException("ChangeFeed should always have a next page.");
             }
 
             TryCatch<CrossPartitionPage<ChangeFeedPage, ChangeFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
@@ -48,6 +55,44 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
             CrossPartitionPage<ChangeFeedPage, ChangeFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
             ChangeFeedPage backendPage = crossPartitionPage.Page;
+            if (!backendPage.ContentWasModified)
+            {
+                // Keep draining the cross partition enumerator until
+                // We get a non 304 page or we loop back to the same range
+                FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
+                double totalRequestCharge = backendPage.RequestCharge;
+                do
+                {
+                    if (!await this.crossPartitionEnumerator.MoveNextAsync())
+                    {
+                        throw new InvalidOperationException("ChangeFeed should always have a next page.");
+                    }
+
+                    monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+                    if (monadicCrossPartitionPage.Failed)
+                    {
+                        // Buffer the exception, since we need to return the request charge so far.
+                        this.bufferedException = TryCatch<ChangeFeedPage>.FromException(monadicCrossPartitionPage.Exception);
+                    }
+                    else
+                    {
+                        crossPartitionPage = monadicCrossPartitionPage.Result;
+                        backendPage = crossPartitionPage.Page;
+                        totalRequestCharge += backendPage.RequestCharge;
+                    }
+                }
+                while (!(backendPage.ContentWasModified 
+                    || this.crossPartitionEnumerator.CurrentRange.Equals(originalRange)
+                    || this.bufferedException.HasValue));
+
+                backendPage = new ChangeFeedPage(
+                    backendPage.ContentWasModified,
+                    backendPage.Content,
+                    totalRequestCharge,
+                    backendPage.ActivityId,
+                    backendPage.State);
+            }
+
             CrossPartitionState<ChangeFeedState> crossPartitionState = crossPartitionPage.State;
 
             List<CosmosElement> changeFeedContinuationTokens = new List<CosmosElement>();
@@ -64,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             string continuationToken = cosmosElementTokens.ToString();
             ChangeFeedState state = ChangeFeedState.Continuation(continuationToken);
             ChangeFeedPage compositePage = new ChangeFeedPage(
+                backendPage.ContentWasModified,
                 backendPage.Content,
                 backendPage.RequestCharge,
                 backendPage.ActivityId,
@@ -111,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     documentContainer,
                     changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(100),
                     cancellationToken),
-                Comparer.Singleton,
+                comparer: default /* this uses a regular queue instead of prioirty queue */,
                 maxConcurrency: default,
                 cancellationToken,
                 monadicCrossPartitionState.Result);
@@ -336,23 +382,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     new ChangeFeedContinuationToken(
                         monadicFeedRange.Result,
                         monadicChangeFeedState.Result));
-            }
-        }
-
-        private sealed class Comparer : IComparer<PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>>
-        {
-            public static readonly Comparer Singleton = new Comparer();
-
-            private Comparer()
-            {
-            }
-
-            public int Compare(
-                PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> x,
-                PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> y)
-            {
-                // Picking 1 so that the new job always moves to the end (Round Robin scheduler)
-                return 1;
             }
         }
     }

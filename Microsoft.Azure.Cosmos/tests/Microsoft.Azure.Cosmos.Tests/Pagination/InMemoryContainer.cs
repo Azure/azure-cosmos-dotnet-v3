@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.Tests.Json;
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Documents;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
@@ -516,12 +518,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
             }
 
-            if (!(feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange))
+            if (feedRange is FeedRangePartitionKey)
             {
-                throw new ArgumentOutOfRangeException(nameof(pageSize));
+                throw new NotImplementedException();
             }
 
-            int partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+            int partitionKeyRangeId;
+            if (feedRange is FeedRangeEpk feedRangeEpk)
+            {
+                // Check to see if it lines up exactly with one physical partition
+                TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
+                if (monadicGetPkRangeIdFromEpkRange.Failed)
+                {
+                    return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                }
+
+                partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+            }
+            else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+            {
+                partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
 
             if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
                 partitionKeyRangeId,
@@ -548,44 +569,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (filteredChanges.Count == 0)
             {
+                ChangeFeedState notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
                 return Task.FromResult(
-                    TryCatch<ChangeFeedPage>.FromException(
-                        new CosmosException(
-                            message:
-                                $"I see no changes, all I see is racist faces" +
-                                $"Misplaced hate makes disgrace to races" +
-                                $"We under, I wonder what it takes to make this" +
-                                $"One better place, let's erase the wasted" +
-                                $"Take the evil out the people, they'll be actin' right" +
-                                $"'Cause both black and white are smokin' crack tonight" +
-                                $"And the only time we chill is when we kill each other(Kill each other)" +
-                                $"It takes skill to be real, time to heal each other" +
-                                $"And although it seems heaven - sent" +
-                                $"We ain't ready to see a black president, uh (Oh-ooh)" +
-                                $"It ain't a secret, don't conceal the fact" +
-                                $"The penitentiary's packed and it's filled with blacks" +
-                                $"But some things will never change(Never change)" +
-                                $"Try to show another way, but you stayin' in the dope game (Ooh)" +
-                                $"Now tell me, what's a mother to do?" +
-                                $"Bein' real don't appeal to the brother in you(Yeah)" +
-                                $"You gotta operate the easy way" +
-                                $"'I made a G today,' but you made it in a sleazy way" +
-                                $"Sellin' crack to the kids (Oh-oh), 'I gotta get paid' (Oh)" +
-                                $"Well hey, well that's the way it is" +
-                                $"Source: https://genius.com/2pac-changes-lyrics",
-                            statusCode: System.Net.HttpStatusCode.NotModified,
-                            subStatusCode: 0,
-                            headers: new Headers
-                            {
-                                ContinuationToken = DateTime.UtcNow.ToString("R", CultureInfo.InvariantCulture)
-                            },
-                            activityId: Guid.NewGuid().ToString(),
-                            requestCharge: 42,
-                            retryAfter: default,
-                            diagnosticsContext: default,
-                            error: default,
-                            innerException: default,
-                            stackTrace: default)));
+                TryCatch<ChangeFeedPage>.FromResult(
+                    new ChangeFeedPage(
+                        contentWasModified: false,
+                        content: new MemoryStream(Encoding.UTF8.GetBytes(
+                            $"I see no changes, all I see is racist faces" +
+                            $"Misplaced hate makes disgrace to races" +
+                            $"We under, I wonder what it takes to make this" +
+                            $"One better place, let's erase the wasted" +
+                            $"Take the evil out the people, they'll be actin' right" +
+                            $"'Cause both black and white are smokin' crack tonight" +
+                            $"And the only time we chill is when we kill each other(Kill each other)" +
+                            $"It takes skill to be real, time to heal each other" +
+                            $"And although it seems heaven - sent" +
+                            $"We ain't ready to see a black president, uh (Oh-ooh)" +
+                            $"It ain't a secret, don't conceal the fact" +
+                            $"The penitentiary's packed and it's filled with blacks" +
+                            $"But some things will never change(Never change)" +
+                            $"Try to show another way, but you stayin' in the dope game (Ooh)" +
+                            $"Now tell me, what's a mother to do?" +
+                            $"Bein' real don't appeal to the brother in you(Yeah)" +
+                            $"You gotta operate the easy way" +
+                            $"'I made a G today,' but you made it in a sleazy way" +
+                            $"Sellin' crack to the kids (Oh-oh), 'I gotta get paid' (Oh)" +
+                            $"Well hey, well that's the way it is" +
+                            $"Source: https://genius.com/2pac-changes-lyrics")),
+                        requestCharge: 42,
+                        activityId: Guid.NewGuid().ToString(),
+                        notModifiedResponseState)));
             }
 
             ChangeFeedState responseState = new ChangeFeedStateTime(filteredChanges.Last().Time.AddTicks(1).ToUniversalTime());
@@ -616,6 +629,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return Task.FromResult(
                 TryCatch<ChangeFeedPage>.FromResult(
                     new ChangeFeedPage(
+                        contentWasModified: true,
                         responseStream,
                         requestCharge: 42,
                         activityId: Guid.NewGuid().ToString(),

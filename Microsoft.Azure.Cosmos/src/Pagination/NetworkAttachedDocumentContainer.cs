@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 diagnosticsContext: default,
                 cancellationToken: cancellationToken);
 
-            if (!responseMessage.IsSuccessStatusCode)
+            if (!responseMessage.IsSuccessStatusCode && responseMessage.StatusCode != HttpStatusCode.NotModified)
             {
                 CosmosException cosmosException = new CosmosException(
                     responseMessage.ErrorMessage,
@@ -240,6 +240,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             ChangeFeedPage changeFeedPage = new ChangeFeedPage(
+                contentWasModified: responseMessage.StatusCode != HttpStatusCode.NotModified,
                 responseMessage.Content,
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.ActivityId,

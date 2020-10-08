@@ -126,6 +126,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     { TypePropertyName, CosmosString.Create(NowTypeValue) }
                 });
 
+            private static readonly CosmosString TimeTypeValueSingleton = CosmosString.Create(TimeTypeValue);
+
+            private static readonly CosmosString ContinuationTypeValueSingleton = CosmosString.Create(ContinuationTypeValue);
+
             public CosmosElement Transform(ChangeFeedStateBeginning changeFeedStateBeginning)
             {
                 return BegininningSingleton;
@@ -136,7 +140,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 return CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { TypePropertyName, CosmosString.Create(changeFeedStateTime.StartTime.ToString("R", CultureInfo.InvariantCulture)) }
+                        { TypePropertyName, TimeTypeValueSingleton },
+                        { 
+                            ValuePropertyName, 
+                            CosmosString.Create(changeFeedStateTime.StartTime.ToString(
+                                "o", 
+                                CultureInfo.InvariantCulture)) 
+                        }
                     });
             }
 
@@ -145,7 +155,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 return CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { TypePropertyName, CosmosString.Create(changeFeedStateContinuation.ContinuationToken) }
+                        { TypePropertyName, ContinuationTypeValueSingleton },
+                        { ValuePropertyName, CosmosString.Create(changeFeedStateContinuation.ContinuationToken) }
                     });
             }
 
