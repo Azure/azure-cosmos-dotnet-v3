@@ -10,27 +10,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <Offset />
-          <Limit />
-          <GroupByExpressions />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
-          <HasSelectValue>False</HasSelectValue>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
+      <Exception>TryCatch resulted in an exception.</Exception>
     </Output>
   </Result>
   <Result>
@@ -44,27 +24,7 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <Offset />
-          <Limit />
-          <GroupByExpressions />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
-          <HasSelectValue>False</HasSelectValue>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
+      <Exception>TryCatch resulted in an exception.</Exception>
     </Output>
   </Result>
   <Result>
@@ -98,7 +58,9 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.age</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
@@ -111,7 +73,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.age}] AS groupByItems, c.age AS payload
+FROM c
+GROUP BY c.age]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -132,7 +96,9 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>{"age": c.age}</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
@@ -145,7 +111,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": {"age": c.age}}] AS groupByItems, {"age": c.age} AS payload
+FROM c
+GROUP BY {"age": c.age}]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -166,12 +134,27 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.age</GroupByExpression>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>age</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>age</Alias>
+            <Alias>name</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -179,7 +162,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.age}, {"item": c.name}] AS groupByItems, {"age": c.age, "name": c.name} AS payload
+FROM c
+GROUP BY c.age, c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -200,12 +185,47 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.team</GroupByExpression>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>min_age</Alias>
+              <AggregateOperator>Min</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>max_age</Alias>
+              <AggregateOperator>Max</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>count</Alias>
+              <AggregateOperator>Count</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>team</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>avg_age</Alias>
+              <AggregateOperator>Average</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>team</Alias>
+            <Alias>name</Alias>
+            <Alias>count</Alias>
+            <Alias>avg_age</Alias>
+            <Alias>min_age</Alias>
+            <Alias>max_age</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -213,7 +233,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.team}, {"item": c.name}] AS groupByItems, {"team": c.team, "name": c.name, "count": {"item": COUNT(1)}, "avg_age": {"item": {"sum": SUM(c.age), "count": COUNT(c.age)}}, "min_age": {"item": MIN(c.age), "item2": {"min": MIN(c.age), "count": COUNT(c.age)}}, "max_age": {"item": MAX(c.age), "item2": {"max": MAX(c.age), "count": COUNT(c.age)}}} AS payload
+FROM c
+GROUP BY c.team, c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -234,12 +256,32 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>UPPER(c.name)</GroupByExpression>
+            <GroupByExpression>SUBSTRING(c.address.city, 0, 3)</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>city</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>income</Alias>
+              <AggregateOperator>Average</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>name</Alias>
+            <Alias>city</Alias>
+            <Alias>income</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -247,7 +289,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": UPPER(c.name)}, {"item": SUBSTRING(c.address.city, 0, 3)}] AS groupByItems, {"name": UPPER(c.name), "city": SUBSTRING(c.address.city, 0, 3), "income": {"item": {"sum": SUM(c.income), "count": COUNT(c.income)}}} AS payload
+FROM c
+GROUP BY UPPER(c.name), SUBSTRING(c.address.city, 0, 3)]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -334,12 +378,32 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>info</GroupByExpression>
+            <GroupByExpression>g.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>group_name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>count</Alias>
+              <AggregateOperator>Count</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>info</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>info</Alias>
+            <Alias>count</Alias>
+            <Alias>group_name</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -347,7 +411,26 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": info}, {"item": g.name}] AS groupByItems, {"info": info, "count": {"item": Count(1)}, "group_name": g.name} AS payload
+FROM c
+JOIN 
+    (SELECT VALUE s
+    FROM s IN c.scores
+    GROUP BY s)
+ AS s
+JOIN 
+    (SELECT s1 AS score, Avg(s1) AS avg_score, g1.name AS group_name
+    FROM s1 IN c.scores
+    JOIN g1 IN c.groups
+    GROUP BY s1, g1)
+ AS info
+JOIN 
+    (SELECT VALUE g
+    FROM g IN c.groups
+    GROUP BY g)
+ AS g
+WHERE (info.group_name = g.name)
+GROUP BY info, g.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -368,12 +451,26 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>name</Alias>
+            <Alias>$1</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -381,7 +478,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.name}] AS groupByItems, {"name": c.name, "$1": UPPER(c.name)} AS payload
+FROM c
+GROUP BY c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -402,12 +501,26 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>Average</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>name</Alias>
+            <Alias>$1</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -415,7 +528,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.name}] AS groupByItems, {"name": c.name, "$1": {"item": {"sum": SUM(c.age), "count": COUNT(c.age)}}} AS payload
+FROM c
+GROUP BY c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -436,10 +551,14 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
-          <Aggregates />
+          <Aggregates>
+            <AggregateOperator>Average</AggregateOperator>
+          </Aggregates>
           <GroupByAliasToAggregateType />
           <GroupByAliases />
           <HasSelectValue>True</HasSelectValue>
@@ -449,7 +568,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.name}] AS groupByItems, [{"item": {"sum": SUM(c.age), "count": COUNT(c.age)}}] AS payload
+FROM c
+GROUP BY c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -470,12 +591,52 @@
           <Top />
           <Offset />
           <Limit />
-          <GroupByExpressions />
+          <GroupByExpressions>
+            <GroupByExpression>c.team</GroupByExpression>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>max_age</Alias>
+              <AggregateOperator>Max</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>count</Alias>
+              <AggregateOperator>Count</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$1</Alias>
+              <AggregateOperator>Min</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>team</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>$2</Alias>
+              <AggregateOperator>Max</AggregateOperator>
+            </AliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>avg_age</Alias>
+              <AggregateOperator>Average</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>team</Alias>
+            <Alias>count</Alias>
+            <Alias>name</Alias>
+            <Alias>avg_age</Alias>
+            <Alias>$1</Alias>
+            <Alias>max_age</Alias>
+            <Alias>$2</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -483,7 +644,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.team}, {"item": c.name}] AS groupByItems, {"team": c.team, "count": {"item": COUNT(1)}, "name": c.name, "avg_age": {"item": {"sum": SUM(c.age), "count": COUNT(c.age)}}, "$1": {"item": MIN(c.age), "item2": {"min": MIN(c.age), "count": COUNT(c.age)}}, "max_age": {"item": MAX(c.age), "item2": {"max": MAX(c.age), "count": COUNT(c.age)}}, "$2": {"item": MAX(c.age), "item2": {"max": MAX(c.age), "count": COUNT(c.age)}}} AS payload
+FROM c
+GROUP BY c.team, c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>

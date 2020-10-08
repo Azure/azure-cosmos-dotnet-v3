@@ -1,26 +1,26 @@
-﻿|                     Method | namedWriteDelegate | benchmarkSerializationFormat |      Mean |     Error |    StdDev |      Gen 0 |     Gen 1 |     Gen 2 | Allocated |
-|--------------------------- |------------------- |----------------------------- |----------:|----------:|----------:|-----------:|----------:|----------:|----------:|
-| ExecuteWriteMicroBenchmark |              array |                         Text |  74.78 ms |  1.455 ms |  1.892 ms |   714.2857 |  714.2857 |  714.2857 |     16 MB |
-| ExecuteWriteMicroBenchmark |              array |                       Binary | 108.77 ms |  2.173 ms |  2.503 ms | 16000.0000 | 1200.0000 | 1000.0000 |  65.04 MB |
-| ExecuteWriteMicroBenchmark |              array |                   Newtonsoft | 152.39 ms |  2.176 ms |  1.817 ms |  2333.3333 | 1000.0000 |  333.3333 |   11.5 MB |
-| ExecuteWriteMicroBenchmark |             double |                         Text | 636.97 ms | 11.962 ms |  9.339 ms | 27000.0000 | 5000.0000 | 5000.0000 | 158.07 MB |
-| ExecuteWriteMicroBenchmark |             double |                       Binary |  99.67 ms |  1.979 ms |  2.279 ms |  2833.3333 | 2833.3333 | 2833.3333 |  65.25 MB |
-| ExecuteWriteMicroBenchmark |             double |                   Newtonsoft | 619.56 ms |  7.650 ms |  7.155 ms | 25000.0000 | 7000.0000 | 2000.0000 |  145.2 MB |
-| ExecuteWriteMicroBenchmark |              false |                         Text |  79.54 ms |  1.200 ms |  1.063 ms |  1571.4286 | 1571.4286 | 1571.4286 |  32.25 MB |
-| ExecuteWriteMicroBenchmark |              false |                       Binary |  34.48 ms |  0.207 ms |  0.184 ms |   933.3333 |  933.3333 |  933.3333 |      4 MB |
-| ExecuteWriteMicroBenchmark |              false |                   Newtonsoft |  60.31 ms |  1.182 ms |  2.250 ms |  4222.2222 | 1666.6667 |  555.5556 |     23 MB |
-| ExecuteWriteMicroBenchmark |            integer |                         Text |  87.13 ms |  0.768 ms |  0.719 ms |   833.3333 |  833.3333 |  833.3333 |  16.25 MB |
-| ExecuteWriteMicroBenchmark |            integer |                       Binary |  59.54 ms |  0.660 ms |  0.585 ms |  1875.0000 | 1875.0000 | 1875.0000 |      8 MB |
-| ExecuteWriteMicroBenchmark |            integer |                   Newtonsoft | 109.90 ms |  2.308 ms |  2.159 ms |  3000.0000 | 1200.0000 |  400.0000 |  15.33 MB |
-| ExecuteWriteMicroBenchmark |               null |                         Text |  60.59 ms |  1.124 ms |  1.155 ms |  1555.5556 | 1555.5556 | 1555.5556 |  32.19 MB |
-| ExecuteWriteMicroBenchmark |               null |                       Binary |  30.61 ms |  0.449 ms |  0.420 ms |   937.5000 |  937.5000 |  937.5000 |      4 MB |
-| ExecuteWriteMicroBenchmark |               null |                   Newtonsoft |  57.97 ms |  0.932 ms |  0.826 ms |  3666.6667 | 1555.5556 |  555.5556 |  19.17 MB |
-| ExecuteWriteMicroBenchmark |             object |                         Text |  72.12 ms |  1.193 ms |  1.116 ms |   714.2857 |  714.2857 |  714.2857 |     16 MB |
-| ExecuteWriteMicroBenchmark |             object |                       Binary | 113.44 ms |  2.344 ms |  2.605 ms | 16000.0000 | 1200.0000 | 1000.0000 |  65.04 MB |
-| ExecuteWriteMicroBenchmark |             object |                   Newtonsoft | 153.54 ms |  2.336 ms |  2.185 ms |  2250.0000 | 1000.0000 |  250.0000 |   11.5 MB |
-| ExecuteWriteMicroBenchmark |             string |                         Text | 258.02 ms |  4.991 ms |  4.425 ms |  4000.0000 | 4000.0000 | 4000.0000 |   66.5 MB |
-| ExecuteWriteMicroBenchmark |             string |                       Binary | 285.11 ms |  5.656 ms | 14.294 ms |  2000.0000 | 2000.0000 | 2000.0000 |     66 MB |
-| ExecuteWriteMicroBenchmark |             string |                   Newtonsoft | 155.92 ms |  3.020 ms |  4.520 ms | 10250.0000 | 4250.0000 | 1250.0000 |  53.66 MB |
-| ExecuteWriteMicroBenchmark |               true |                         Text |  83.64 ms |  1.655 ms |  1.906 ms |  1000.0000 | 1000.0000 | 1000.0000 |  32.19 MB |
-| ExecuteWriteMicroBenchmark |               true |                       Binary |  38.23 ms |  0.725 ms |  0.967 ms |   928.5714 |  928.5714 |  928.5714 |      4 MB |
-| ExecuteWriteMicroBenchmark |               true |                   Newtonsoft |  64.73 ms |  1.286 ms |  1.845 ms |  3500.0000 | 1500.0000 |  500.0000 |  19.16 MB |
+﻿|                     Method | namedWriteDelegate | benchmarkSerializationFormat |        Mean |    Error |   StdDev |      Gen 0 |     Gen 1 |     Gen 2 | Allocated |
+|--------------------------- |------------------- |----------------------------- |------------:|---------:|---------:|-----------:|----------:|----------:|----------:|
+| ExecuteWriteMicroBenchmark |              array |                         Text |    66.70 ms | 1.498 ms | 2.461 ms |   714.2857 |  714.2857 |  714.2857 |     16 MB |
+| ExecuteWriteMicroBenchmark |              array |                       Binary |    97.05 ms | 1.736 ms | 1.624 ms | 19833.3333 | 1166.6667 | 1000.0000 |  80.29 MB |
+| ExecuteWriteMicroBenchmark |              array |                   Newtonsoft |   131.15 ms | 2.233 ms | 1.980 ms |  2250.0000 | 1000.0000 |  250.0000 |   11.5 MB |
+| ExecuteWriteMicroBenchmark |             double |                         Text |   542.69 ms | 4.840 ms | 4.527 ms | 27000.0000 | 5000.0000 | 5000.0000 | 158.06 MB |
+| ExecuteWriteMicroBenchmark |             double |                       Binary |    85.87 ms | 1.641 ms | 1.755 ms |  2833.3333 | 2833.3333 | 2833.3333 |  65.25 MB |
+| ExecuteWriteMicroBenchmark |             double |                   Newtonsoft |   549.33 ms | 6.260 ms | 5.855 ms | 25000.0000 | 7000.0000 | 2000.0000 |  145.2 MB |
+| ExecuteWriteMicroBenchmark |              false |                         Text |    73.22 ms | 1.461 ms | 1.366 ms |  1571.4286 | 1571.4286 | 1571.4286 |  32.25 MB |
+| ExecuteWriteMicroBenchmark |              false |                       Binary |    29.65 ms | 0.497 ms | 0.415 ms |   968.7500 |  968.7500 |  968.7500 |      4 MB |
+| ExecuteWriteMicroBenchmark |              false |                   Newtonsoft |    55.34 ms | 0.578 ms | 0.541 ms |  4300.0000 | 1800.0000 |  600.0000 |     23 MB |
+| ExecuteWriteMicroBenchmark |            integer |                         Text |    80.75 ms | 1.572 ms | 1.614 ms |  1000.0000 | 1000.0000 | 1000.0000 |  16.25 MB |
+| ExecuteWriteMicroBenchmark |            integer |                       Binary |    55.50 ms | 1.097 ms | 1.573 ms |  1900.0000 | 1900.0000 | 1900.0000 |      8 MB |
+| ExecuteWriteMicroBenchmark |            integer |                   Newtonsoft |    94.72 ms | 1.116 ms | 1.043 ms |  2833.3333 | 1166.6667 |  333.3333 |  15.33 MB |
+| ExecuteWriteMicroBenchmark |               null |                         Text |    57.10 ms | 0.815 ms | 0.762 ms |  1555.5556 | 1555.5556 | 1555.5556 |  32.19 MB |
+| ExecuteWriteMicroBenchmark |               null |                       Binary |    26.41 ms | 0.771 ms | 0.644 ms |   968.7500 |  968.7500 |  968.7500 |      4 MB |
+| ExecuteWriteMicroBenchmark |               null |                   Newtonsoft |    51.40 ms | 0.947 ms | 0.791 ms |  3600.0000 | 1500.0000 |  500.0000 |  19.16 MB |
+| ExecuteWriteMicroBenchmark |             object |                         Text |    63.39 ms | 0.862 ms | 0.806 ms |   625.0000 |  625.0000 |  625.0000 |     16 MB |
+| ExecuteWriteMicroBenchmark |             object |                       Binary |    90.37 ms | 1.168 ms | 1.036 ms | 19833.3333 | 1166.6667 | 1000.0000 |  80.29 MB |
+| ExecuteWriteMicroBenchmark |             object |                   Newtonsoft |   130.10 ms | 1.192 ms | 1.057 ms |  2250.0000 | 1000.0000 |  250.0000 |   11.5 MB |
+| ExecuteWriteMicroBenchmark |             string |                         Text |   221.98 ms | 4.162 ms | 3.475 ms |  2000.0000 | 2000.0000 | 2000.0000 |   66.5 MB |
+| ExecuteWriteMicroBenchmark |             string |                       Binary | 1,023.25 ms | 9.114 ms | 8.525 ms | 35000.0000 | 2000.0000 | 2000.0000 | 145.39 MB |
+| ExecuteWriteMicroBenchmark |             string |                   Newtonsoft |   124.34 ms | 1.528 ms | 1.429 ms | 10250.0000 | 4250.0000 | 1250.0000 |  53.66 MB |
+| ExecuteWriteMicroBenchmark |               true |                         Text |    67.87 ms | 0.394 ms | 0.350 ms |  1375.0000 | 1375.0000 | 1375.0000 |  32.19 MB |
+| ExecuteWriteMicroBenchmark |               true |                       Binary |    28.62 ms | 0.333 ms | 0.278 ms |   968.7500 |  968.7500 |  968.7500 |      4 MB |
+| ExecuteWriteMicroBenchmark |               true |                   Newtonsoft |    49.58 ms | 0.511 ms | 0.478 ms |  3600.0000 | 1500.0000 |  500.0000 |  19.16 MB |

@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Base abstract class for JSON readers.
@@ -56,12 +57,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
             JsonSerializationFormat jsonSerializationFormat = (firstByte == (byte)JsonSerializationFormat.Binary) ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
-            if (jsonSerializationFormat == JsonSerializationFormat.Binary)
-            {
-                // offset for the 0x80 (128) binary serialization type marker.
-                buffer = buffer.Slice(1);
-            }
-
             return JsonReader.Create(jsonSerializationFormat, buffer, jsonStringDictionary);
         }
 
@@ -90,6 +85,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}."),
             };
         }
+
+        internal static IJsonReader CreateBinaryFromOffset(
+            ReadOnlyMemory<byte> buffer,
+            int offset,
+            IReadOnlyJsonStringDictionary jsonStringDictionary = null) => new JsonBinaryReader(buffer, offset, jsonStringDictionary);
 
         /// <inheritdoc />
         public abstract bool Read();

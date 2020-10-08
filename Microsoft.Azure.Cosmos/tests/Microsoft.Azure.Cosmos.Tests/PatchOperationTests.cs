@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             try
             {
-                PatchOperation.CreateAddOperation(null, "1");
+                PatchOperation.Add(null, "1");
                 Assert.Fail();
             }
             catch(ArgumentNullException ex)
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             try
             {
-                PatchOperation.CreateRemoveOperation(null);
+                PatchOperation.Remove(null);
                 Assert.Fail();
             }
             catch (ArgumentNullException ex)
@@ -40,26 +40,26 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ConstructPatchOperationTest()
         {
-            PatchOperation operation = PatchOperation.CreateAddOperation(path, "string");
+            PatchOperation operation = PatchOperation.Add(path, "string");
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, "string");
 
             DateTime current = DateTime.UtcNow;
-            operation = PatchOperation.CreateAddOperation(path, current);
+            operation = PatchOperation.Add(path, current);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, current);
 
             dynamic complexObject = new { a = "complex", b = 12.34, c = true };
-            operation = PatchOperation.CreateAddOperation(path,  complexObject);
+            operation = PatchOperation.Add(path,  complexObject);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Add, complexObject);
 
-            operation = PatchOperation.CreateRemoveOperation(path);
+            operation = PatchOperation.Remove(path);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Remove, "value not required");
 
             int[] arrayObject = { 1, 2, 3 };
-            operation = PatchOperation.CreateReplaceOperation(path, arrayObject);
+            operation = PatchOperation.Replace(path, arrayObject);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Replace, arrayObject);
 
             Guid guid = new Guid();
-            operation = PatchOperation.CreateSetOperation(path, guid);
+            operation = PatchOperation.Set(path, guid);
             PatchOperationTests.ValidateOperations(operation, PatchOperationType.Set, guid);
         }
 

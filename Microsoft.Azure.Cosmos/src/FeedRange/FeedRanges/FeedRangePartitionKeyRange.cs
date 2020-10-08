@@ -85,9 +85,11 @@ namespace Microsoft.Azure.Cosmos
             return visitor.VisitAsync(this, cancellationToken);
         }
 
-        public override string ToString()
-        {
-            return this.PartitionKeyRangeId;
-        }
+        public override Task<TResult> AcceptAsync<TResult, TArg>(
+           IFeedRangeAsyncVisitor<TResult, TArg> visitor,
+           TArg argument,
+           CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
+
+        public override string ToString() => this.PartitionKeyRangeId;
     }
 }

@@ -5,20 +5,28 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Collections.Immutable;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
     internal static partial class JsonBinaryEncoding
     {
         private static class ValueLengths
         {
-            private const int L1 = -1;
-            private const int L2 = -2;
-            private const int L4 = -3;
-            private const int LC1 = -4;
-            private const int LC2 = -5;
-            private const int LC4 = -6;
-            private const int Arr1 = -7;
-            private const int Obj1 = -8;
+            private const int L1 = -1;           // 1-byte length
+            private const int L2 = -2;           // 2-byte length
+            private const int L4 = -3;           // 4-byte length
+            private const int LC1 = -4;          // 1-byte length followed by 1-byte count
+            private const int LC2 = -5;          // 2-byte length followed by 2-byte count
+            private const int LC4 = -6;          // 4-byte length followed by 4-byte count
+            private const int CS4L1 = -7;        // 4-bit Compressed string w/ 1-byte length
+            private const int CS7L1 = -8;        // 7-bit Compressed string w/ 1-byte length
+            private const int CS7L2 = -9;        // 7-bit Compressed string w/ 2-byte length
+            private const int CS4BL1 = -10;      // 4-bit Compressed string w/ 1-byte length followed by 1-byte base char
+            private const int CS5BL1 = -11;      // 5-bit Compressed string w/ 1-byte length followed by 1-byte base char
+            private const int CS6BL1 = -12;      // 6-bit Compressed string w/ 1-byte length followed by 1-byte base char
+            private const int Arr1 = -13;        // 1-item array
+            private const int Obj1 = -14;        // 1-property object
 
             /// <summary>
             /// Lookup table for encoded value length for each TypeMarker value (0 to 255)
@@ -27,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
             /// - Zero Value: The length is unknown (for instance an unassigned type marker)
             /// </summary>
-            private static readonly int[] lengths =
+            public static readonly ImmutableArray<int> Lookup = new int[256]
             {
                 // Encoded literal integer value (32 values)
                 1, 1, 1, 1, 1, 1, 1, 1,
@@ -47,11 +55,38 @@ namespace Microsoft.Azure.Cosmos.Json
                 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
     
-                // Encoded 2-byte user string (32 values)
+                // Encoded 2-byte user string (8 values)
                 2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, 2, 2,
-                2, 2, 2, 2, 2, 2, 2, 2,
+
+                // String Values [0x68, 0x70)
+                0,      // <empty> 0x68
+                0,      // <empty> 0x69
+                0,      // <empty> 0x6A
+                0,      // <empty> 0x6B
+                0,      // <empty> 0x6C
+                0,      // <empty> 0x6D
+                0,      // <empty> 0x6E
+                0,      // <empty> 0x6F
+
+                // String Values [0x70, 0x78)
+                0,      // <empty> 0x70
+                0,      // <empty> 0x71
+                0,      // <empty> 0x72
+                0,      // <empty> 0x73
+                0,      // <empty> 0x74
+                17,     // StrGL (Lowercase GUID string)
+                17,     // StrGU (Uppercase GUID string)
+                17,     // StrGQ (Double-quoted lowercase GUID string)
+
+                // Compressed strings [0x78, 0x80)
+                CS4L1,  // String 1-byte length - Lowercase hexadecimal digits encoded as 4-bit characters
+                CS4L1,  // String 1-byte length - Uppercase hexadecimal digits encoded as 4-bit characters
+                CS4L1,  // String 1-byte length - Date-time character set encoded as 4-bit characters
+                CS4BL1, // String 1-byte Length - 4-bit packed characters relative to a base value
+                CS5BL1, // String 1-byte Length - 5-bit packed characters relative to a base value
+                CS6BL1, // String 1-byte Length - 6-bit packed characters relative to a base value
+                CS7L1,  // String 1-byte Length - 7-bit packed characters
+                CS7L2,  // String 2-byte Length - 7-bit packed characters
 
                 // TypeMarker-encoded string length (64 values)
                 1, 2, 3, 4, 5, 6, 7, 8,
@@ -63,14 +98,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 49, 50, 51, 52, 53, 54, 55, 56,
                 57, 58, 59, 60, 61, 62, 63, 64,
 
-                // Variable Length String Values / Binary Values
+                // Variable Length String Values
                 L1,     // StrL1 (1-byte length)
                 L2,     // StrL2 (2-byte length)
                 L4,     // StrL4 (4-byte length)
-                L1,     // BinL1 (1-byte length)
-                L2,     // BinL2 (2-byte length)
-                L4,     // BinL4 (4-byte length)
-                0,      // <empty> 0xC6
+                2,      // StrR1 (Reference string of 1-byte offset)
+                3,      // StrR2 (Reference string of 2-byte offset)
+                4,      // StrR3 (Reference string of 3-byte offset)
+                5,      // StrR4 (Reference string of 4-byte offset)
                 0,      // <empty> 0xC7
 
                 // Number Values
@@ -87,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 1,      // Null
                 1,      // False
                 1,      // True
-                17,     // Guid
+                17,     // GUID
                 0,      // <empty> 0xD4
                 0,      // <empty> 0xD5
                 0,      // <empty> 0xD6
@@ -98,9 +133,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 5,      // Int32
                 9,      // Int64
                 5,      // UInt32
-                0,      // <empty> 0xDD
-                0,      // <empty> 0xDE
-                0,      // <empty> 0xDF
+                L1,     // BinL1 (1-byte length)
+                L2,     // BinL2 (2-byte length)
+                L4,     // BinL4 (4-byte length)
 
                 // Array Type Markers
                 1,      // Arr0
@@ -129,8 +164,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 0,      // <empty> 0xF3
                 0,      // <empty> 0xF4
                 0,      // <empty> 0xF5
+                0,      // <empty> 0xF6
                 0,      // <empty> 0xF7
-                0,      // <empty> 0xF8
 
                 // Special Values
                 0,      // <special value reserved> 0xF8
@@ -141,11 +176,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 0,      // <special value reserved> 0xFD
                 0,      // <special value reserved> 0xFE
                 0,      // Invalid
-            };
+            }.ToImmutableArray();
 
             public static long GetValueLength(ReadOnlySpan<byte> buffer)
             {
-                long length = ValueLengths.lengths[buffer[0]];
+                long length = ValueLengths.Lookup[buffer[0]];
                 if (length < 0)
                 {
                     // Length was negative meaning we need to look into the buffer to find the length
@@ -160,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         case L4:
                             length = TypeMarkerLength + FourByteLength + MemoryMarshal.Read<uint>(buffer.Slice(1));
                             break;
+
                         case LC1:
                             length = TypeMarkerLength + OneByteLength + OneByteCount + buffer[1];
                             break;
@@ -169,10 +205,12 @@ namespace Microsoft.Azure.Cosmos.Json
                         case LC4:
                             length = TypeMarkerLength + FourByteLength + FourByteCount + MemoryMarshal.Read<uint>(buffer.Slice(1));
                             break;
+
                         case Arr1:
                             long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1));
                             length = arrayOneItemLength == 0 ? 0 : 1 + arrayOneItemLength;
                             break;
+
                         case Obj1:
                             long nameLength = ValueLengths.GetValueLength(buffer.Slice(1));
                             if (nameLength == 0)
@@ -184,8 +222,28 @@ namespace Microsoft.Azure.Cosmos.Json
                                 long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength));
                                 length = TypeMarkerLength + nameLength + valueLength;
                             }
-
                             break;
+
+                        case CS4L1:
+                            length = TypeMarkerLength + OneByteLength + GetCompressedStringLength(buffer[1], numberOfBits: 4);
+                            break;
+                        case CS7L1:
+                            length = TypeMarkerLength + OneByteLength + GetCompressedStringLength(buffer[1], numberOfBits: 7);
+                            break;
+                        case CS7L2:
+                            length = TypeMarkerLength + TwoByteLength + GetCompressedStringLength(GetFixedSizedValue<ushort>(buffer.Slice(start: 1)), numberOfBits: 7);
+                            break;
+
+                        case CS4BL1:
+                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 4);
+                            break;
+                        case CS5BL1:
+                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 5);
+                            break;
+                        case CS6BL1:
+                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 6);
+                            break;
+
                         default:
                             throw new ArgumentException($"Invalid variable length type marker length: {length}");
                     }
@@ -193,6 +251,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return length;
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int GetCompressedStringLength(int length, int numberOfBits) => ((length * numberOfBits) + 7) / 8;
         }
     }
 }
