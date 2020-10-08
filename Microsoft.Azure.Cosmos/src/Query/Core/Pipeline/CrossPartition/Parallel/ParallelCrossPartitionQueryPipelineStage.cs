@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
                 ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize, cancellationToken),
-                comparer: default /* this uses a regular queue instead of prioirty queue */,
+                comparer: Comparer.Singleton,
                 maxConcurrency,
                 state: state,
                 cancellationToken: cancellationToken);

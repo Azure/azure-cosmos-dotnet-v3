@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 
             IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetChildRangeAsync(
-                ranges[0], 
+                ranges[0],
                 cancellationToken: default);
             Assert.AreEqual(2, childRanges.Count);
 
@@ -245,11 +245,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             int count = 0;
             foreach (FeedRangeInternal childRange in childRanges)
             {
-                IReadOnlyList<FeedRangeInternal> grandChildrenRange = await documentContainer.GetChildRangeAsync(
+                IReadOnlyList<FeedRangeInternal> grandChildrenRanges = await documentContainer.GetChildRangeAsync(
                     childRange,
                     cancellationToken: default);
-                Assert.AreEqual(2, grandChildrenRange.Count);
-                count += await AssertChildPartitionAsync(childRange);
+                Assert.AreEqual(2, grandChildrenRanges.Count);
+                foreach (FeedRangeInternal grandChildrenRange in grandChildrenRanges)
+                {
+                    count += await AssertChildPartitionAsync(grandChildrenRange);
+                }
             }
 
             async Task<int> AssertChildPartitionAsync(FeedRangeInternal feedRange)

@@ -69,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
-                queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
-                cosmosQueryContext,
+                client,
                 clientContext);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -236,13 +235,6 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State?.Value;
-
-        private static bool IsRetriableException(CosmosException cosmosException)
-        {
-            return ((int)cosmosException.StatusCode == 429)
-                || (cosmosException.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
-                || (cosmosException.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable);
-        }
 
         protected override void Dispose(bool disposing)
         {

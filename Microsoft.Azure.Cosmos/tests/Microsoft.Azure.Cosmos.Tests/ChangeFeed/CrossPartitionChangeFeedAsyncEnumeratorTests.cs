@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using System.IO;
 
     [TestClass]
-    public sealed class CrossPartitionChangeFeedEnumeratorTests
+    public sealed class CrossPartitionChangeFeedAsyncEnumeratorTests
     {
         [TestMethod]
         public async Task NoChangesAsync()
