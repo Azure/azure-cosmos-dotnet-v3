@@ -27,10 +27,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract void Accept(IFeedRangeVisitor visitor);
 
-        public abstract void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input);
-
-        public abstract TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer);
-
         public abstract Task<TResult> AcceptAsync<TResult>(IFeedRangeAsyncVisitor<TResult> visitor, CancellationToken cancellationToken = default);
 
         public abstract Task<TResult> AcceptAsync<TResult, TArg>(

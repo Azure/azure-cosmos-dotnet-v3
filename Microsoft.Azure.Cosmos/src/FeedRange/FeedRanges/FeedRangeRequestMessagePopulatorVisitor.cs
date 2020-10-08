@@ -4,34 +4,37 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// Visitor to populate RequestMessage headers and properties based on FeedRange.
     /// </summary>
-    internal sealed class FeedRangeRequestMessagePopulatorVisitor : IFeedRangeVisitor<RequestMessage>
+    internal sealed class FeedRangeRequestMessagePopulatorVisitor : IFeedRangeVisitor
     {
-        public static readonly FeedRangeRequestMessagePopulatorVisitor Singleton = new FeedRangeRequestMessagePopulatorVisitor();
+        private readonly RequestMessage request;
 
-        private FeedRangeRequestMessagePopulatorVisitor()
+        public FeedRangeRequestMessagePopulatorVisitor(RequestMessage request)
         {
+            this.request = request ?? throw new ArgumentNullException(nameof(request));
         }
 
-        public void Visit(FeedRangePartitionKey feedRange, RequestMessage requestMessage)
+        public void Visit(FeedRangePartitionKey feedRange)
         {
-            requestMessage.Headers.PartitionKey = feedRange.PartitionKey.ToJsonString();
+            this.request.Headers.PartitionKey = feedRange.PartitionKey.ToJsonString();
         }
 
-        public void Visit(FeedRangePartitionKeyRange feedRange, RequestMessage requestMessage)
+        public void Visit(FeedRangePartitionKeyRange feedRange)
         {
-            requestMessage.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRange.PartitionKeyRangeId);
+            this.request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRange.PartitionKeyRangeId);
         }
 
-        public void Visit(FeedRangeEpk feedRange, RequestMessage requestMessage)
+        public void Visit(FeedRangeEpk feedRange)
         {
             // In case EPK has already been set by compute
-            if (!requestMessage.Properties.ContainsKey(HandlerConstants.StartEpkString))
+            if (!this.request.Properties.ContainsKey(HandlerConstants.StartEpkString))
             {
-                requestMessage.Properties[HandlerConstants.StartEpkString] = feedRange.Range.Min;
-                requestMessage.Properties[HandlerConstants.EndEpkString] = feedRange.Range.Max;
+                this.request.Properties[HandlerConstants.StartEpkString] = feedRange.Range.Min;
+                this.request.Properties[HandlerConstants.EndEpkString] = feedRange.Range.Max;
             }
         }
     }
