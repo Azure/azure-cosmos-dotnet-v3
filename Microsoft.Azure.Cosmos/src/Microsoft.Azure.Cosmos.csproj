@@ -61,6 +61,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Json\JsonBinaryEncoding.SystemStrings.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonBinaryEncoding.SystemStrings.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="ClientResources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -70,6 +78,16 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\JsonBinaryEncoding.SystemStrings.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonBinaryEncoding.SystemStrings.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\SystemStrings.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SystemStrings.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 
@@ -124,6 +142,10 @@
     <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Json\JsonBinaryEncoding.SystemStrings.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>JsonBinaryEncoding.SystemStrings.cs</LastGenOutput>
     </None>
   </ItemGroup>
 

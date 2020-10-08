@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         if (result.ResourceStream != null)
                         {
-                            result.ResourceStream = await EncryptionProcessor.DecryptAsync(
+                            (result.ResourceStream, _) = await EncryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
                                 diagnosticsContext,
