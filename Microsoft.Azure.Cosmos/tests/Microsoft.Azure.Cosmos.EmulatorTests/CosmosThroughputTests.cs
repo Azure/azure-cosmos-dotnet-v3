@@ -34,6 +34,142 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task NegativeContainerThroughputTestAsync()
+        {
+            // Create a database and container to make sure all the caches are warmed up
+            Database db1 = await this.cosmosClient.CreateDatabaseAsync(
+                Guid.NewGuid().ToString(),
+                400);
+            
+            // Container does not have an offer
+            Container container = await db1.CreateContainerAsync(
+                Guid.NewGuid().ToString(),
+                "/pk");
+
+            await container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity());
+
+            try
+            {
+                await container.ReadThroughputAsync(requestOptions: null);
+                Assert.Fail("Should throw exception");
+            }
+            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.IsTrue(ex.Message.Contains(container.Id));
+            }
+
+            try
+            {
+                await container.ReplaceThroughputAsync(400);
+                Assert.Fail("Should throw exception");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.IsTrue(ex.Message.Contains(container.Id));
+            }
+
+            int? throughput = await container.ReadThroughputAsync();
+            Assert.IsNull(throughput);
+
+            {
+                ThroughputResponse offerAfterRecreate = await ((ContainerInternal)container).ReadThroughputIfExistsAsync(
+                    requestOptions: default,
+                    cancellationToken: default);
+                Assert.AreEqual(HttpStatusCode.NotFound, offerAfterRecreate.StatusCode);
+            }
+
+            {
+                ThroughputResponse offerAfterRecreate = await ((ContainerInternal)container).ReplaceThroughputIfExistsAsync(
+                    throughput: ThroughputProperties.CreateManualThroughput(400),
+                    requestOptions: default,
+                    cancellationToken: default);
+                Assert.AreEqual(HttpStatusCode.NotFound, offerAfterRecreate.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task ContainerRecreateOfferTestAsync()
+        {
+            // Create a database and container to make sure all the caches are warmed up
+            Database db1 = await this.cosmosClient.CreateDatabaseAsync(
+                Guid.NewGuid().ToString());
+            Container container = await db1.CreateContainerAsync(
+                Guid.NewGuid().ToString(),
+                "/pk",
+                400);
+            await container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity());
+
+            ThroughputResponse offer = await container.ReadThroughputAsync(requestOptions: null);
+            Assert.AreEqual(400, offer.Resource.Throughput);
+            ThroughputProperties replaceOffer = await container.ReplaceThroughputAsync(2000);
+            Assert.AreEqual(2000, replaceOffer.Throughput);
+
+            { 
+                // Recreate the container with the same name using a different client
+                await this.RecreateContainerUsingDifferentClient(db1.Id, container.Id, 3000);
+
+                ThroughputProperties offerAfterRecreate = await container.ReplaceThroughputAsync(400);
+                Assert.AreEqual(400, offerAfterRecreate.Throughput);
+            }
+
+            {
+                // Recreate the container with the same name using a different client
+                await this.RecreateContainerUsingDifferentClient(db1.Id, container.Id, 3000);
+
+                ThroughputProperties offerAfterRecreate = await container.ReadThroughputAsync(requestOptions: null);
+                Assert.AreEqual(3000, offerAfterRecreate.Throughput);
+            }
+
+            {
+                // Recreate the container with the same name using a different client
+                await this.RecreateContainerUsingDifferentClient(db1.Id, container.Id, 3000);
+
+                int? throughput = await container.ReadThroughputAsync();
+                Assert.AreEqual(3000, throughput.Value);
+            }
+
+            {
+                // Recreate the container with the same name using a different client
+                await this.RecreateContainerUsingDifferentClient(db1.Id, container.Id, 3000);
+
+                ThroughputProperties offerAfterRecreate = await ((ContainerInternal)container).ReadThroughputIfExistsAsync(
+                    requestOptions: default,
+                    cancellationToken: default);
+                Assert.AreEqual(3000, offerAfterRecreate.Throughput);
+            }
+
+            {
+                // Recreate the container with the same name using a different client
+                await this.RecreateContainerUsingDifferentClient(db1.Id, container.Id, 3000);
+
+                ThroughputProperties offerAfterRecreate = await ((ContainerInternal)container).ReplaceThroughputIfExistsAsync(
+                    throughput: ThroughputProperties.CreateManualThroughput(400),
+                    requestOptions: default,
+                    cancellationToken: default);
+
+                Assert.AreEqual(400, offerAfterRecreate.Throughput);
+            }
+
+            await db1.DeleteAsync();
+        }
+
+        private async Task RecreateContainerUsingDifferentClient(
+            string databaseId, 
+            string containerId, 
+            int throughput)
+        {
+            // Recreate the database with the same name using a different client
+            using (CosmosClient tempClient = TestCommon.CreateCosmosClient())
+            {
+                Database db = tempClient.GetDatabase(databaseId);
+                Container temp = db.GetContainer(containerId);
+                await temp.DeleteContainerAsync();
+                Container db1Container = await db.CreateContainerAsync(containerId, "/pk", throughput);
+                await db1Container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity());
+            }
+        }
+
+        [TestMethod]
         public async Task CreateDropAutoscaleDatabaseStreamApi()
         {
             string databaseId = Guid.NewGuid().ToString();
