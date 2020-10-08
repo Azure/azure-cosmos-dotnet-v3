@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### <a name="3.14.0-preview"/> [3.14.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.14.0-preview) - 2020-10-09
+
+#### Added
+- [#1830](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1830) Change Feed Estimator: Adds support for detailed estimation per lease
+
 ### <a name="3.14.0"/> [3.14.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.14.0) - 2020-10-09
 
 #### Added
@@ -11,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1879](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1879) Performance: Adds AuthorizationHelper improvements
 - [#1882](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1882) Performance: Adds SessionContainer optimizations and style fixes
 - [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) Query: Adds adoption of pagination library
-- [#]() Query: Adds RegexMatch system function support
+- [#1920](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1920) Query: Adds RegexMatch system function support
 
 #### Fixed
 - [#1875](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1875) HttpClient: Fixes HttpResponseMessage.RequestMessage is null in WASM
