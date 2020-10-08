@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -15,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using System.Net;
     using System.IO;
 
     [TestClass]
@@ -201,13 +199,13 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 CosmosArray changes = GetChanges(enumerator.Current.Result.Content);
                 globalChanges.AddRange(changes);
 
-                string continuationToken = ((ChangeFeedStateContinuation)enumerator.Current.Result.State).ContinuationToken;
+                CosmosElement continuationToken = ((ChangeFeedStateContinuation)enumerator.Current.Result.State).ContinuationToken;
 
                 enumerator = (await CrossPartitionChangeFeedAsyncEnumerator
                     .MonadicCreateAsync(
                         documentContainer,
                         new ChangeFeedRequestOptions(),
-                        ChangeFeedStartFrom.ContinuationToken(continuationToken),
+                        ChangeFeedStartFrom.ContinuationToken(continuationToken.ToString()),
                         cancellationToken: default)).Result;
             }
 

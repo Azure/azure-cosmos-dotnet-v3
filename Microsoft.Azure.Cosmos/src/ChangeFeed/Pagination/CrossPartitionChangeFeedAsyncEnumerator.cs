@@ -106,8 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             }
 
             CosmosArray cosmosElementTokens = CosmosArray.Create(changeFeedContinuationTokens);
-            string continuationToken = cosmosElementTokens.ToString();
-            ChangeFeedState state = ChangeFeedState.Continuation(continuationToken);
+            ChangeFeedState state = ChangeFeedState.Continuation(cosmosElementTokens);
             ChangeFeedPage compositePage = new ChangeFeedPage(
                 backendPage.ContentWasModified,
                 backendPage.Content,
@@ -289,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 IDocumentContainer documentContainer,
                 CancellationToken cancellationToken)
             {
-                ChangeFeedState state = ChangeFeedState.Continuation(startFromContinuationAndFeedRange.Etag);
+                ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(startFromContinuationAndFeedRange.Etag));
                 List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = new List<(FeedRangeInternal, ChangeFeedState)>()
                 {
                     (startFromContinuationAndFeedRange.FeedRange, state)

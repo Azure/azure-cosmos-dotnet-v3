@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 }
 
                 Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode);
-                resumeState = ChangeFeedState.Continuation(cosmosException.Headers.ContinuationToken);
+                resumeState = ChangeFeedState.Continuation(CosmosString.Create(cosmosException.Headers.ContinuationToken));
             }
 
             // Insert some items

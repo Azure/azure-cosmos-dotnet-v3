@@ -5,15 +5,16 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal sealed class ChangeFeedStateContinuation : ChangeFeedState
     {
-        public ChangeFeedStateContinuation(string continuation)
+        public ChangeFeedStateContinuation(CosmosElement continuation)
         {
             this.ContinuationToken = continuation ?? throw new ArgumentNullException(nameof(continuation));
         }
 
-        public string ContinuationToken { get; }
+        public CosmosElement ContinuationToken { get; }
 
         public override void Accept<TInput>(
             IChangeFeedStateVisitor<TInput> visitor,

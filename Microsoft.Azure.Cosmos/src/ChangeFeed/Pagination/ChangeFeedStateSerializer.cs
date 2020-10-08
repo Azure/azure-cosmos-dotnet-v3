@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System;
     using System.Globalization;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -150,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                 $"start from continuation change feed state missing value: {corpus}"));
                     }
 
-                    state = ChangeFeedState.Continuation(value);
+                    state = ChangeFeedState.Continuation(CosmosString.Create(value));
                     break;
 
                 case NowTypeValueString:

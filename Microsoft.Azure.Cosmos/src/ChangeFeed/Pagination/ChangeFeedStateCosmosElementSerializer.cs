@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                     $"expected change feed state to have a string value property: {cosmosElement}"));
                         }
 
-                        state = ChangeFeedState.Continuation(valuePropertyValue.Value);
+                        state = ChangeFeedState.Continuation(valuePropertyValue);
                     }
                     break;
 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     new Dictionary<string, CosmosElement>()
                     {
                         { TypePropertyName, ContinuationTypeValueSingleton },
-                        { ValuePropertyName, CosmosString.Create(changeFeedStateContinuation.ContinuationToken) }
+                        { ValuePropertyName, changeFeedStateContinuation.ContinuationToken }
                     });
             }
 

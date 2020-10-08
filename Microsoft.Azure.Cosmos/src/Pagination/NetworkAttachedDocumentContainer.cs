@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 responseMessage.Content,
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.ActivityId,
-                ChangeFeedState.Continuation(responseMessage.ContinuationToken));
+                ChangeFeedState.Continuation(CosmosString.Create(responseMessage.ContinuationToken)));
             return TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
         }
 
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             public void Visit(ChangeFeedStateContinuation changeFeedStateContinuation, RequestMessage message)
             {
                 // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                message.Headers.IfNoneMatch = changeFeedStateContinuation.ContinuationToken;
+                message.Headers.IfNoneMatch = (changeFeedStateContinuation.ContinuationToken as CosmosString).Value;
             }
 
             public void Visit(ChangeFeedStateNow changeFeedStateNow, RequestMessage message)

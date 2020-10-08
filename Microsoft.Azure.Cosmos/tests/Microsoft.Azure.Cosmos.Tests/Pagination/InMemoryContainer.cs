@@ -988,7 +988,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public bool Visit(ChangeFeedStateContinuation changeFeedStateContinuation, Change input)
             {
-                DateTime time = DateTime.Parse(changeFeedStateContinuation.ContinuationToken);
+                DateTime time = DateTime.Parse(((CosmosString)changeFeedStateContinuation.ContinuationToken).Value);
                 time = time.ToUniversalTime();
                 ChangeFeedStateTime startTime = new ChangeFeedStateTime(time);
                 return this.Visit(startTime, input);
