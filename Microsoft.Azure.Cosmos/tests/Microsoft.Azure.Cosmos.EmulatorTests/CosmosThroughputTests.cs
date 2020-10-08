@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -40,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database db1 = await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString(),
                 400);
-            
+
             // Container does not have an offer
             Container container = await db1.CreateContainerAsync(
                 Guid.NewGuid().ToString(),
@@ -53,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.ReadThroughputAsync(requestOptions: null);
                 Assert.Fail("Should throw exception");
             }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
                 Assert.IsTrue(ex.Message.Contains(container.Id));
             }
@@ -85,6 +84,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     cancellationToken: default);
                 Assert.AreEqual(HttpStatusCode.NotFound, offerAfterRecreate.StatusCode);
             }
+
+            await db1.DeleteAsync();
         }
 
         [TestMethod]
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ThroughputProperties replaceOffer = await container.ReplaceThroughputAsync(2000);
             Assert.AreEqual(2000, replaceOffer.Throughput);
 
-            { 
+            {
                 // Recreate the container with the same name using a different client
                 await this.RecreateContainerUsingDifferentClient(db1.Id, container.Id, 3000);
 
@@ -154,8 +155,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task RecreateContainerUsingDifferentClient(
-            string databaseId, 
-            string containerId, 
+            string databaseId,
+            string containerId,
             int throughput)
         {
             // Recreate the database with the same name using a different client
@@ -303,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             throughputResponse = await containerCore.ReadThroughputIfExistsAsync(
                 requestOptions: null,
-                default(CancellationToken));
+                default);
             Assert.IsNotNull(throughputResponse);
             Assert.IsTrue(throughputResponse.Resource.Throughput > 400);
             Assert.AreEqual(5000, throughputResponse.Resource.AutoscaleMaxThroughput);
@@ -311,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             throughputResponse = await containerCore.ReplaceThroughputIfExistsAsync(
                 ThroughputProperties.CreateAutoscaleThroughput(6000),
                 requestOptions: null,
-                default(CancellationToken));
+                default);
             Assert.IsNotNull(throughputResponse);
             Assert.IsTrue(throughputResponse.Resource.Throughput > 400);
             Assert.AreEqual(6000, throughputResponse.Resource.AutoscaleMaxThroughput);
@@ -410,6 +411,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(autoscale);
             Assert.IsNotNull(autoscale.Resource.Throughput);
             Assert.AreEqual(5000, autoscale.Resource.AutoscaleMaxThroughput);
+
+            await databaseResponse.Database.DeleteAsync();
         }
 
         [TestMethod]
@@ -433,6 +436,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  containerProperties,
                  ThroughputProperties.CreateAutoscaleThroughput(5000));
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+
+            await database.DeleteAsync();
         }
 
         [TestMethod]
@@ -490,10 +495,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerInternal streamContainer = (ContainerInlineCore)database.GetContainer(streamContainerId);
                 ThroughputResponse autoscaleIfExists = await streamContainer.ReadThroughputIfExistsAsync(
                     requestOptions: null,
-                    default(CancellationToken));
+                    default);
                 Assert.IsNotNull(autoscaleIfExists);
                 Assert.AreEqual(5000, autoscaleIfExists.Resource.AutoscaleMaxThroughput);
             }
+
+            await database.DeleteAsync();
         }
 
         [TestMethod]
@@ -514,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             throughputResponse = await container.ReplaceThroughputAsync(
                 ThroughputProperties.CreateAutoscaleThroughput(6000),
                 requestOptions: null,
-                cancellationToken: default(CancellationToken));
+                cancellationToken: default);
 
             Assert.IsNotNull(throughputResponse);
             Assert.AreEqual(6000, throughputResponse.Resource.AutoscaleMaxThroughput);
