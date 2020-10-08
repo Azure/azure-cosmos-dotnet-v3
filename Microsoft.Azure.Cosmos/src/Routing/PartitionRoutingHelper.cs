@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;

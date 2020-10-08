@@ -7,20 +7,18 @@
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class OrderByQueryTests : QueryTestsBase
@@ -429,8 +427,12 @@
             #endregion
 
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
-                string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).ReadNextAsync();
+                $"SELECT TOP 0 * FROM r",
+                requestOptions: new QueryRequestOptions() 
+                {  
+                    MaxConcurrency = 10, 
+                    MaxItemCount = -1 
+                }).ReadNextAsync();
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 

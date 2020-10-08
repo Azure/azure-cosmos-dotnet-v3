@@ -13,8 +13,8 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
-          <Offset />
-          <Limit />
+          <Offset>1</Offset>
+          <Limit>2</Limit>
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
@@ -28,7 +28,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT *
+FROM c
+OFFSET 0 LIMIT 3]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -56,8 +58,8 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
-          <Offset />
-          <Limit />
+          <Offset>42</Offset>
+          <Limit>1337</Limit>
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
@@ -71,7 +73,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT *
+FROM c
+OFFSET 0 LIMIT 1379]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -89,8 +93,8 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
-          <Offset />
-          <Limit />
+          <Offset>1</Offset>
+          <Limit>2</Limit>
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
@@ -104,7 +108,10 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT *
+FROM c
+WHERE (c.blah = 5)
+OFFSET 0 LIMIT 3]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -155,8 +162,8 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
-          <Offset />
-          <Limit />
+          <Offset>0</Offset>
+          <Limit>0</Limit>
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
@@ -170,7 +177,9 @@
             <Range>[[],"Infinity")</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT *
+FROM c
+OFFSET 0 LIMIT 0]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -221,12 +230,14 @@
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
-          <Offset />
-          <Limit />
+          <Offset>1</Offset>
+          <Limit>2</Limit>
           <GroupByExpressions />
           <OrderBy />
           <OrderByExpressions />
-          <Aggregates />
+          <Aggregates>
+            <AggregateOperator>Count</AggregateOperator>
+          </Aggregates>
           <GroupByAliasToAggregateType />
           <GroupByAliases />
           <HasSelectValue>True</HasSelectValue>
@@ -236,7 +247,9 @@
             <Range>[[5.0],[5.0]]</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": COUNT(1)}]
+FROM c
+WHERE (c.key = 5)]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
@@ -289,14 +302,23 @@ WHERE (c.key = 5)]]></RewrittenQuery>
         <QueryInfo>
           <DistinctType>None</DistinctType>
           <Top />
-          <Offset />
-          <Limit />
-          <GroupByExpressions />
+          <Offset>1</Offset>
+          <Limit>2</Limit>
+          <GroupByExpressions>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
           <OrderBy />
           <OrderByExpressions />
           <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
+          <GroupByAliasToAggregateType>
+            <AliasToAggregateType>
+              <Alias>name</Alias>
+              <AggregateOperator>null</AggregateOperator>
+            </AliasToAggregateType>
+          </GroupByAliasToAggregateType>
+          <GroupByAliases>
+            <Alias>name</Alias>
+          </GroupByAliases>
           <HasSelectValue>False</HasSelectValue>
         </QueryInfo>
         <QueryRanges>
@@ -304,7 +326,10 @@ WHERE (c.key = 5)]]></RewrittenQuery>
             <Range>[[5.0],[5.0]]</Range>
           </Range>
         </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.name}] AS groupByItems, {"name": c.name} AS payload
+FROM c
+WHERE (c.key = 5)
+GROUP BY c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>

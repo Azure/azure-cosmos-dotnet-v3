@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 null,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -43,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 null,
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -58,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -72,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -86,7 +82,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 null,
                 ChangeFeedProcessorCoreTests.GetMockedContainer("leases"),
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -107,19 +102,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-
             ChangeFeedProcessorCore<MyDocument> processor = null;
             try
             {
                 processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
                 processor.ApplyBuildConfiguration(
-                    leaseStoreManager.Object,
-                    null,
-                    "something",
-                    "instanceName",
-                    new ChangeFeedLeaseOptions(),
-                    new ChangeFeedProcessorOptions(),
-                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
 
                 await processor.StartAsync();
                 Mock.Get(leaseStore.Object)
@@ -164,13 +157,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory<MyDocument>> factory, out Mock<ChangeFeedObserver<MyDocument>> observer);
                 processor.ApplyBuildConfiguration(
-                    leaseStoreManager.Object,
-                    null,
-                    "something",
-                    "instanceName",
-                    new ChangeFeedLeaseOptions(),
-                    new ChangeFeedProcessorOptions(),
-                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+                leaseStoreManager.Object,
+                null,
+                "instanceName",
+                new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions(),
+                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
 
                 await processor.StartAsync();
 
@@ -208,7 +200,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             processor.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -242,6 +233,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock<ContainerInternal> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedProcessorCoreTests.GetMockedClientContext());
+            Mock<DatabaseInternal> mockedDatabase = MockCosmosUtil.CreateMockDatabase();
+            mockedContainer.Setup(c => c.Database).Returns(mockedDatabase.Object);
             return mockedContainer.Object;
         }
 

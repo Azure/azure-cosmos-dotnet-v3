@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Query.Core.ComparableTask;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -113,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public Task EnsureValidOverwriteAsync(ConsistencyLevel requestedConsistencyLevel)
         {
             this.innerClient.EnsureValidOverwrite(requestedConsistencyLevel);
-            return CompletedTask.Instance;
+            return Task.CompletedTask;
         }
 
         public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()

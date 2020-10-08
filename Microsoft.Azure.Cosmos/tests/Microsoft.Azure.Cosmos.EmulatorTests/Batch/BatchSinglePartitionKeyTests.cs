@@ -654,7 +654,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.CreateReplaceOperation("/Cost", testDoc.Cost + 1)
+                PatchOperation.Replace("/Cost", testDoc.Cost + 1)
             };
 
             BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)BatchTestBase.JsonContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
@@ -694,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/date", patchDate)
+                PatchOperation.Add("/date", patchDate)
             };
 
             BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)customSerializationContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
@@ -750,7 +750,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDocToPatch = this.GetTestDocCopy(this.TestDocPk1ExistingC);
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.CreateReplaceOperation("/Cost", testDocToPatch.Cost + 1)
+                PatchOperation.Replace("/Cost", testDocToPatch.Cost + 1)
             };
 
             // We run CRUD operations where all are expected to return HTTP 2xx.

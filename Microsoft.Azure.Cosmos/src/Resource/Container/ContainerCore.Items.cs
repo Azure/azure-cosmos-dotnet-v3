@@ -298,6 +298,7 @@ namespace Microsoft.Azure.Cosmos
                 // The user has scoped down to a physical partition or logical partition.
                 // In either case let the query execute as a passthrough.
                 QueryIterator passthroughQueryIterator = QueryIterator.Create(
+                    containerCore: this,
                     client: this.queryClient,
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
@@ -358,6 +359,7 @@ namespace Microsoft.Azure.Cosmos
             if (supported)
             {
                 QueryIterator queryIterator = QueryIterator.Create(
+                    containerCore: this,
                     client: this.queryClient,
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
@@ -514,12 +516,32 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(estimationDelegate));
             }
 
-            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            ChangeFeedEstimatorRunner changeFeedEstimatorCore = new ChangeFeedEstimatorRunner(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            return new ChangeFeedEstimatorCore(
+                processorName: processorName,
+                monitoredContainer: this,
+                leaseContainer: (ContainerInternal)leaseContainer);
         }
 
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
@@ -590,6 +612,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return QueryIterator.Create(
+                containerCore: this,
                 client: this.queryClient,
                 clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,

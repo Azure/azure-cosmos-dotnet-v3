@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/description", "patched")
+                PatchOperation.Add("/description", "patched")
             };
             List<Task<ResponseMessage>> PatchTasks = new List<Task<ResponseMessage>>();
             // Patch the items
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patch = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/description", "patched")
+                PatchOperation.Add("/description", "patched")
             };
             List<Task<ItemResponse<MyDocument>>> patchTasks = new List<Task<ItemResponse<MyDocument>>>();
             // Patch the items
