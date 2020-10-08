@@ -130,7 +130,9 @@ namespace Microsoft.Azure.Cosmos
             if (throughputResponse.StatusCode == HttpStatusCode.NotFound)
             {
                 throw CosmosExceptionFactory.CreateNotFoundException(
-                    $"Throughput is not configured for {this.Id}");
+                    message: $"Throughput is not configured for {this.Id}",
+                    headers: throughputResponse.Headers,
+                    diagnosticsContext: diagnosticsContext);
             }
 
             return throughputResponse;
@@ -193,7 +195,9 @@ namespace Microsoft.Azure.Cosmos
             if (throughputResponse.StatusCode == HttpStatusCode.NotFound)
             {
                 throw CosmosExceptionFactory.CreateNotFoundException(
-                    $"Throughput is not configured for {this.Id}");
+                    message: $"Throughput is not configured for {this.Id}",
+                    headers: throughputResponse.Headers,
+                    diagnosticsContext: diagnosticsContext);
             }
 
             return throughputResponse;
