@@ -426,7 +426,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 cancellationToken: cancellationToken);
 
-            if (!responseMessage.IsSuccessStatusCode)
+            // Container does not exist
+            if (responseMessage.StatusCode == HttpStatusCode.NotFound)
             {
                 return new ThroughputResponse(
                     responseMessage.StatusCode,
@@ -434,6 +435,8 @@ namespace Microsoft.Azure.Cosmos
                     null,
                     diagnosticsContext.Diagnostics);
             }
+
+            responseMessage.EnsureSuccessStatusCode();
 
             ContainerProperties containerProperties = this.ClientContext.SerializerCore.FromStream<ContainerProperties>(responseMessage.Content);
 
