@@ -122,13 +122,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetInt8Value(
             ReadOnlySpan<byte> int8Token,
-            out sbyte int8Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<sbyte>(
+            out sbyte int8Value) => JsonBinaryEncoding.TryGetFixedWidthValue<sbyte>(
                 int8Token,
                 JsonBinaryEncoding.TypeMarker.Int8,
                 out int8Value);
-        }
 
         public static short GetInt16Value(ReadOnlySpan<byte> int16Token)
         {
@@ -142,13 +139,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetInt16Value(
             ReadOnlySpan<byte> int16Token,
-            out short int16Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<short>(
+            out short int16Value) => JsonBinaryEncoding.TryGetFixedWidthValue<short>(
                 int16Token,
                 JsonBinaryEncoding.TypeMarker.Int16,
                 out int16Value);
-        }
 
         public static int GetInt32Value(ReadOnlySpan<byte> int32Token)
         {
@@ -162,13 +156,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetInt32Value(
             ReadOnlySpan<byte> int32Token,
-            out int int32Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<int>(
+            out int int32Value) => JsonBinaryEncoding.TryGetFixedWidthValue<int>(
                 int32Token,
                 JsonBinaryEncoding.TypeMarker.Int32,
                 out int32Value);
-        }
 
         public static long GetInt64Value(ReadOnlySpan<byte> int64Token)
         {
@@ -182,13 +173,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetInt64Value(
             ReadOnlySpan<byte> int64Token,
-            out long int64Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<long>(
+            out long int64Value) => JsonBinaryEncoding.TryGetFixedWidthValue<long>(
                 int64Token,
                 JsonBinaryEncoding.TypeMarker.Int64,
                 out int64Value);
-        }
 
         public static uint GetUInt32Value(ReadOnlySpan<byte> uInt32Token)
         {
@@ -202,13 +190,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetUInt32Value(
             ReadOnlySpan<byte> uInt32Token,
-            out uint uInt32Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<uint>(
+            out uint uInt32Value) => JsonBinaryEncoding.TryGetFixedWidthValue<uint>(
                 uInt32Token,
                 JsonBinaryEncoding.TypeMarker.UInt32,
                 out uInt32Value);
-        }
 
         public static float GetFloat32Value(ReadOnlySpan<byte> float32Token)
         {
@@ -222,13 +207,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetFloat32Value(
             ReadOnlySpan<byte> float32Token,
-            out float float32Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<float>(
+            out float float32Value) => JsonBinaryEncoding.TryGetFixedWidthValue<float>(
                 float32Token,
                 JsonBinaryEncoding.TypeMarker.Float32,
                 out float32Value);
-        }
 
         public static double GetFloat64Value(ReadOnlySpan<byte> float64Token)
         {
@@ -242,12 +224,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetFloat64Value(
             ReadOnlySpan<byte> float64Token,
-            out double float64Value)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<double>(
+            out double float64Value) => JsonBinaryEncoding.TryGetFixedWidthValue<double>(
                 float64Token,
                 JsonBinaryEncoding.TypeMarker.Float64,
                 out float64Value);
-        }
     }
 }

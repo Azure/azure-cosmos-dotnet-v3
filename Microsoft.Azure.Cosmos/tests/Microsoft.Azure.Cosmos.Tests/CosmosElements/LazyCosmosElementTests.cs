@@ -135,13 +135,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 this.cosmosObject = cosmosObject;
             }
 
-            public string Name
-            {
-                get
-                {
-                    return (this.cosmosObject[nameof(Person.Name)] as CosmosString).Value;
-                }
-            }
+            public string Name => (this.cosmosObject[nameof(Person.Name)] as CosmosString).Value;
 
             public int Age
             {
@@ -229,110 +223,189 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void CombinedScriptsDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("CombinedScriptsData.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("CombinedScriptsData.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void DevTestCollTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("devtestcoll.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("devtestcoll.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void LastFMTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("lastfm");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("lastfm");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void LogDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("LogData.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("LogData.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void MillionSong1KDocumentsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("MillionSong1KDocuments.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("MillionSong1KDocuments.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void MsnCollectionTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("MsnCollection.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("MsnCollection.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void NutritionDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("NutritionData");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("NutritionData");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void RunsCollectionTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("runsCollection");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("runsCollection");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void StatesCommitteesTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("states_committees.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("states_committees.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void StatesLegislatorsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("states_legislators");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("states_legislators");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Store01Test()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("store01C.json");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("store01C.json");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TicinoErrorBucketsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("TicinoErrorBuckets");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("TicinoErrorBuckets");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TwitterDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("twitter_data");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("twitter_data");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Ups1Test()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("ups1");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("ups1");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void XpertEventsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("XpertEvents");
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromFile("XpertEvents");
         }
 
-        private static void TestCosmosElementVisitability(string filename)
+        [TestMethod]
+        [Owner("brchon")]
+        public void Null()
         {
-            ReadOnlyMemory<byte> payload = LazyCosmosElementTests.GetPayload(filename);
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("null");
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void False()
+        {
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("false");
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void True()
+        {
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("true");
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Number()
+        {
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("123");
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void String()
+        {
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("\"hello\"");
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Array()
+        {
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("[1, 2, 3]");
+        }
+        
+        [TestMethod]
+        [Owner("brchon")]
+        public void Object()
+        {
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("{\"foo\" : \"bar\"}");
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void AllTypes()
+        {
+            string input = @"{
+                ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
+                ""double"": 0.18963001816981939,
+                ""int"": -1330192615,
+                ""string"": ""XCPCFXPHHF"",
+                ""boolean"": true,
+                ""null"": null,
+                ""datetime"": ""2526-07-11T18:18:16.4520716"",
+                ""spatialPoint"": {
+                    ""type"": ""Point"",
+                    ""coordinates"": [
+                        118.9897,
+                        -46.6781
+                    ]
+                },
+                ""text"": ""tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby""
+            }";
+            LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson(input);
+        }
+
+        private static void TestCosmosElementVisitabilityFromFile(string filename)
+        {
+            string json = SampleJsonFromFile(filename);
+            TestCosmosElementVisitabilityFromJson(json);
+        }
+
+        private static void TestCosmosElementVisitabilityFromJson(string json)
+        {
+            ReadOnlyMemory<byte> payload = LazyCosmosElementTests.ConvertStringToBinary(json);
 
             CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(payload);
 
@@ -342,14 +415,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             LazyCosmosElementTests.VisitCosmosElementIndexer(cosmosElement, jsonWriterIndexer);
             LazyCosmosElementTests.VisitCosmosElementEnumerable(cosmosElement, jsonWriterEnumerable);
 
-            ReadOnlySpan<byte> payloadIndexer = jsonWriterIndexer.GetResult().Span;
-            ReadOnlySpan<byte> payloadEnumerable = jsonWriterEnumerable.GetResult().Span;
+            CosmosElement cosmosElementFromIndexer = CosmosElement.CreateFromBuffer(jsonWriterIndexer.GetResult());
+            CosmosElement cosmosElementFromEnumerable = CosmosElement.CreateFromBuffer(jsonWriterEnumerable.GetResult());
 
-            Assert.IsTrue(payload.Span.SequenceEqual(payloadIndexer));
-            Assert.IsTrue(payload.Span.SequenceEqual(payloadEnumerable));
+            Assert.AreEqual(cosmosElement, cosmosElementFromIndexer);
+            Assert.AreEqual(cosmosElement, cosmosElementFromEnumerable);
         }
 
-        private static ReadOnlyMemory<byte> GetPayload(string filename)
+        private static string SampleJsonFromFile(string filename)
         {
             string path = string.Format("TestJsons/{0}", filename);
             string json = TextFileConcatenation.ReadMultipartFile(path);
@@ -377,7 +450,11 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             documents = documents.OrderBy(x => Guid.NewGuid()).Take(100);
 
             json = JsonConvert.SerializeObject(documents);
+            return json;
+        }
 
+        private static ReadOnlyMemory<byte> ConvertStringToBinary(string json)
+        {
             IJsonReader jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(Encoding.UTF8.GetBytes(json));
             IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
             jsonReader.WriteAll(jsonWriter);
@@ -451,43 +528,51 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         private static void VisitCosmosObjectIndexer(CosmosObject cosmosObject, IJsonWriter jsonWriter)
         {
             jsonWriter.WriteObjectStart();
+
             foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
             {
                 jsonWriter.WriteFieldName(kvp.Key);
                 LazyCosmosElementTests.VisitCosmosElementIndexer(cosmosObject[kvp.Key], jsonWriter);
             }
+
             jsonWriter.WriteObjectEnd();
         }
 
         private static void VisitCosmosObjectEnumerable(CosmosObject cosmosObject, IJsonWriter jsonWriter)
         {
             jsonWriter.WriteObjectStart();
+
             foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
             {
                 jsonWriter.WriteFieldName(kvp.Key);
                 LazyCosmosElementTests.VisitCosmosElementIndexer(kvp.Value, jsonWriter);
             }
+
             jsonWriter.WriteObjectEnd();
         }
 
         private static void VisitCosmosArrayIndexer(CosmosArray cosmosArray, IJsonWriter jsonWriter)
         {
             jsonWriter.WriteArrayStart();
+
             for (int i = 0; i < cosmosArray.Count; i++)
             {
                 CosmosElement arrayItem = cosmosArray[i];
                 LazyCosmosElementTests.VisitCosmosElementIndexer(arrayItem, jsonWriter);
             }
+
             jsonWriter.WriteArrayEnd();
         }
 
         private static void VisitCosmosArrayEnumerable(CosmosArray cosmosArray, IJsonWriter jsonWriter)
         {
             jsonWriter.WriteArrayStart();
+
             foreach (CosmosElement arrayItem in cosmosArray)
             {
                 LazyCosmosElementTests.VisitCosmosElementIndexer(arrayItem, jsonWriter);
             }
+
             jsonWriter.WriteArrayEnd();
         }
 

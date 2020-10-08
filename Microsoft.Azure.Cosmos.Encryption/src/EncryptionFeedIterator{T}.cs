@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -30,10 +31,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            using (ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken))
+            ResponseMessage responseMessage;
+
+            if (typeof(T) == typeof(DecryptableItem))
             {
-                return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
+                IReadOnlyCollection<T> resource;
+                EncryptionFeedIterator encryptionFeedIterator = this.feedIterator as EncryptionFeedIterator;
+                (responseMessage, resource) = await encryptionFeedIterator.ReadNextWithoutDecryptionAsync<T>(cancellationToken);
+
+                return DecryptableFeedResponse<T>.CreateResponse(
+                    responseMessage,
+                    resource);
             }
+            else
+            {
+                responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+            }
+
+            return this.responseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
     }
 }
