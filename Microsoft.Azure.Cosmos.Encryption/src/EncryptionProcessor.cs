@@ -17,16 +17,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Allows encrypting items in a container using MDE Encryption Algorithm.
+    /// Allows encrypting items in a container using Cosmos Legacy Encryption Algorithm and MDE Encryption Algorithm.
     /// </summary>
     internal static class EncryptionProcessor
     {
-        public static readonly CosmosJsonDotNetSerializer BaseSerializer =
-            new CosmosJsonDotNetSerializer(
-                new JsonSerializerSettings()
-                {
-                    DateParseHandling = DateParseHandling.None,
-                });
+        internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
+            new JsonSerializerSettings()
+            {
+                DateParseHandling = DateParseHandling.None,
+            });
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.

@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Encryptor encryptor)
         {
             return new EncryptionContainer(
-               container,
-               encryptor);
+                container,
+                encryptor);
         }
 
         /// <summary>
