@@ -65,12 +65,61 @@
             );
         }
 
+        private static string GenerateNameWithClassAttributes(Type type)
+        {
+            return $"{type.FullName};{type.BaseType.FullName};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsEnum)}:{(type.IsEnum ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsClass)}:{(type.IsClass ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsValueType)}:{(type.IsValueType ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsNested)}:{(type.IsNested ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsGenericType)}:{(type.IsGenericType ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(type.IsSerializable)}:{(type.IsSerializable ? bool.TrueString : bool.FalseString)}";
+        }
+
+        private static string GenerateNameWithMethodAttributes(MethodInfo methodInfo)
+        {
+            return $"{methodInfo};{nameof(methodInfo.IsAbstract)}:{(methodInfo.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsStatic)}:{(methodInfo.IsStatic ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsVirtual)}:{(methodInfo.IsVirtual ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsGenericMethod)}:{(methodInfo.IsGenericMethod ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsConstructor)}:{(methodInfo.IsConstructor ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(methodInfo.IsFinal)}:{(methodInfo.IsFinal ? bool.TrueString : bool.FalseString)};";
+        }
+
+        private static string GenerateNameWithPropertyAttributes(PropertyInfo propertyInfo)
+        {
+            string name = $"{propertyInfo};{nameof(propertyInfo.CanRead)}:{(propertyInfo.CanRead ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
+
+            MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
+            if(getMethodInfo != null)
+            {
+                name += ContractEnforcement.GenerateNameWithMethodAttributes(getMethodInfo);
+            }
+
+            MethodInfo setMethodInfo = propertyInfo.GetSetMethod();
+            if (setMethodInfo != null)
+            {
+                name += ContractEnforcement.GenerateNameWithMethodAttributes(setMethodInfo);
+            }
+
+            return name;
+        }
+
+        private static string GenerateNameWithFieldAttributes(FieldInfo fieldInfo)
+        {
+            return $"{fieldInfo};{nameof(fieldInfo.IsInitOnly)}:{(fieldInfo.IsInitOnly ? bool.TrueString : bool.FalseString)};" +
+                $"{nameof(fieldInfo.IsStatic)}:{(fieldInfo.IsStatic ? bool.TrueString : bool.FalseString)};";
+        }
+
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
         {
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName, invariantComparer);
             foreach (Type subclassType in subclassTypes)
             {
-                root.Subclasses[subclassType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
+                root.Subclasses[ContractEnforcement.GenerateNameWithClassAttributes(subclassType)] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
             }
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
@@ -86,9 +135,24 @@
 
                 string methodSignature = null;
 
-                if (memberInfo.Value.MemberType == MemberTypes.Constructor | memberInfo.Value.MemberType == MemberTypes.Method | memberInfo.Value.MemberType == MemberTypes.Event)
+                if(memberInfo.Value.MemberType == MemberTypes.Method)
                 {
-                    methodSignature = memberInfo.Value.ToString();
+                    MethodInfo methodInfo = (MethodInfo)memberInfo.Value;
+                    methodSignature = ContractEnforcement.GenerateNameWithMethodAttributes(methodInfo);
+                }
+                else if(memberInfo.Value.MemberType == MemberTypes.Property)
+                {
+                    PropertyInfo propertyInfo = (PropertyInfo)memberInfo.Value;
+                    methodSignature = ContractEnforcement.GenerateNameWithPropertyAttributes(propertyInfo);
+                }
+                else if (memberInfo.Value.MemberType == MemberTypes.Field)
+                {
+                    FieldInfo fieldInfo = (FieldInfo)memberInfo.Value;
+                    methodSignature = ContractEnforcement.GenerateNameWithFieldAttributes(fieldInfo);
+                }
+                else if (memberInfo.Value.MemberType == MemberTypes.Constructor || memberInfo.Value.MemberType == MemberTypes.Event)
+                {
+                    methodSignature = memberInfo.ToString();
                 }
 
                 root.Members[
@@ -101,7 +165,7 @@
 
             foreach (Type nestedType in root.Type.GetNestedTypes().OrderBy(o => o.FullName))
             {
-                root.NestedTypes[nestedType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types);
+                root.NestedTypes[ContractEnforcement.GenerateNameWithClassAttributes(nestedType)] = ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types);
             }
 
             return root;

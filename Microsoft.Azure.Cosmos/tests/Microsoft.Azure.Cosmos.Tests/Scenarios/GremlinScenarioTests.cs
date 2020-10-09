@@ -799,29 +799,16 @@ namespace Microsoft.Azure.Cosmos.Scenarios
 
         private CosmosElement CreateVertexPropertyPrimitiveValueElement(object value)
         {
-            switch (value)
+            return value switch
             {
-                case bool boolValue:
-                    return CosmosBoolean.Create(boolValue);
-
-                case double doubleValue:
-                    return CosmosNumber64.Create(doubleValue);
-
-                case float floatValue:
-                    return CosmosNumber64.Create(floatValue);
-
-                case int intValue:
-                    return CosmosNumber64.Create(intValue);
-
-                case long longValue:
-                    return CosmosNumber64.Create(longValue);
-
-                case string stringValue:
-                    return CosmosString.Create(stringValue);
-
-                default:
-                    throw new AssertFailedException($"Invalid Gremlin property value object type: {value.GetType().Name}.");
-            }
+                bool boolValue => CosmosBoolean.Create(boolValue),
+                double doubleValue => CosmosNumber64.Create(doubleValue),
+                float floatValue => CosmosNumber64.Create(floatValue),
+                int intValue => CosmosNumber64.Create(intValue),
+                long longValue => CosmosNumber64.Create(longValue),
+                string stringValue => CosmosString.Create(stringValue),
+                _ => throw new AssertFailedException($"Invalid Gremlin property value object type: {value.GetType().Name}."),
+            };
         }
 
         private static string CreateRandomString(int stringLength)
