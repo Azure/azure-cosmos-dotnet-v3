@@ -37,57 +37,45 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.processorCancellation = CancellationTokenSource.CreateLinkedTokenSource(shutdownToken);
 
             Task processorTask = this.processor.RunAsync(this.processorCancellation.Token);
-            processorTask.ContinueWith(_ => this.renewerCancellation.Cancel()).LogException();
-
             Task renewerTask = this.renewer.RunAsync(this.renewerCancellation.Token);
-            renewerTask.ContinueWith(_ => this.processorCancellation.Cancel()).LogException();
 
-            ChangeFeedObserverCloseReason closeReason = shutdownToken.IsCancellationRequested ?
-                ChangeFeedObserverCloseReason.Shutdown :
-                ChangeFeedObserverCloseReason.Unknown;
-
+            ChangeFeedObserverCloseReason closeReason = ChangeFeedObserverCloseReason.Unknown;
+            Task task;
             try
             {
-                await Task.WhenAll(processorTask, renewerTask).ConfigureAwait(false);
-            }
-            catch (LeaseLostException)
-            {
-                closeReason = ChangeFeedObserverCloseReason.LeaseLost;
-                throw;
-            }
-            catch (FeedSplitException)
-            {
-                closeReason = ChangeFeedObserverCloseReason.LeaseGone;
-                throw;
-            }
-            catch (FeedNotFoundException)
-            {
-                closeReason = ChangeFeedObserverCloseReason.ResourceGone;
-                throw;
-            }
-            catch (FeedReadSessionNotAvailableException)
-            {
-                closeReason = ChangeFeedObserverCloseReason.ReadSessionNotAvailable;
-                throw;
-            }
-            catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
-            {
-                closeReason = ChangeFeedObserverCloseReason.Shutdown;
-            }
-            catch (ObserverException)
-            {
-                closeReason = ChangeFeedObserverCloseReason.ObserverError;
-                throw;
-            }
-            catch (Exception) when (processorTask.IsFaulted)
-            {
-                closeReason = ChangeFeedObserverCloseReason.Unknown;
-                throw;
+                task = await Task.WhenAny(processorTask, renewerTask).ConfigureAwait(false);
+
+                try
+                {
+                    (task == processorTask ? this.renewerCancellation : this.processorCancellation).Cancel();
+                }
+                catch (Exception ex)
+                {
+                    Extensions.TraceException(ex);
+                }
+
+                (task == processorTask ? renewerTask : processorTask).LogException();
+
+                if (shutdownToken.IsCancellationRequested) closeReason = ChangeFeedObserverCloseReason.Shutdown;
+
+                if (task.IsFaulted)
+                {
+                    closeReason = task.Exception.InnerException switch
+                    {
+                        LeaseLostException _ => ChangeFeedObserverCloseReason.LeaseLost,
+                        FeedSplitException _ => ChangeFeedObserverCloseReason.LeaseGone,
+                        FeedNotFoundException _ => ChangeFeedObserverCloseReason.ResourceGone,
+                        FeedReadSessionNotAvailableException _ => ChangeFeedObserverCloseReason.ReadSessionNotAvailable,
+                        ObserverException _ => ChangeFeedObserverCloseReason.ObserverError,
+                        _ => closeReason
+                    };
+                }
             }
             finally
             {
                 await this.observer.CloseAsync(context, closeReason).ConfigureAwait(false);
             }
+            task.GetAwaiter().GetResult(); // re-throw exceptions/cancellations to set the result for this task
         }
 
         public override void Dispose()

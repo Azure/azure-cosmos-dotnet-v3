@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         /// 4. Get the range from the FeedToken
         /// 5. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
-        internal static async Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
+        internal static Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -401,24 +401,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal)
         {
-            List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectivePartitionKeyString != null)
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                return queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.EffectivePartitionKeyString);
             }
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                return queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     effectivePartitionKeyString);
             }
             else if (feedRangeInternal != null)
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                return queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.PartitionKeyDefinition,
@@ -426,13 +425,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
+                return queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
             }
-
-            return targetRanges;
         }
 
         private static bool TryGetEpkProperty(

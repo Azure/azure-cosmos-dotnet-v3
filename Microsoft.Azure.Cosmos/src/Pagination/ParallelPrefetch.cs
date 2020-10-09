@@ -28,18 +28,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
 
                 IPrefetcher prefetcher = prefetchersEnumerator.Current;
-                tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(cancellationToken)));
+                tasks.Add(Task.Run(() => prefetcher.PrefetchAsync(cancellationToken).AsTask()));
             }
 
             while (tasks.Count != 0)
             {
                 Task completedTask = await Task.WhenAny(tasks);
                 tasks.Remove(completedTask);
-                try
-                {
-                    await completedTask;
-                }
-                catch
+                if (completedTask.IsFaulted || completedTask.IsCanceled)
                 {
                     // Observe the remaining tasks
                     try
@@ -50,13 +46,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     {
                     }
 
-                    throw;
+                    completedTask.GetAwaiter().GetResult();
                 }
 
                 if (prefetchersEnumerator.MoveNext())
                 {
                     IPrefetcher bufferable = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(cancellationToken)));
+                    tasks.Add(Task.Run(() => bufferable.PrefetchAsync(cancellationToken).AsTask()));
                 }
             }
         }

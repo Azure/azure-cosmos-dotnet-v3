@@ -31,12 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 this.Current = this.inputStage.Current;
                 return true;
             }
-            catch (OperationCanceledException) when (this.cancellationToken.IsCancellationRequested)
-            {
-                // Per cancellationToken.ThrowIfCancellationRequested(); line above, this function should still throw OperationCanceledException.
-                throw;
-            }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException && this.cancellationToken.IsCancellationRequested))
             {
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(ex);
                 this.Current = TryCatch<QueryPage>.FromException(cosmosException);

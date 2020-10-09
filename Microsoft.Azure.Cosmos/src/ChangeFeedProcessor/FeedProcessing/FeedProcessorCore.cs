@@ -74,8 +74,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
                 }
-                catch (OperationCanceledException canceledException) when (!cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException canceledException)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
                     Extensions.TraceException(canceledException);
                     DefaultTrace.TraceWarning("exception: lease token '{0}'", this.options.LeaseToken);
 

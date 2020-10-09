@@ -122,13 +122,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             try
             {
-                await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
+                using (partitionSupervisor)
+                    await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
             }
             catch (FeedSplitException ex)
             {
                 await this.HandleSplitAsync(lease, ex.LastContinuation).ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
                 DefaultTrace.TraceVerbose("Lease with token {0}: processing canceled", lease.CurrentLeaseToken);
             }
