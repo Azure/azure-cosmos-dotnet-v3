@@ -16,11 +16,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     /// </summary>
     internal sealed class FeedEstimatorRunner
     {
-        private static TimeSpan defaultMonitoringDelay = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan defaultMonitoringDelay = TimeSpan.FromSeconds(5);
         private readonly ChangeFeedEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
         private readonly ChangesEstimationHandler dispatchEstimation;
-        private readonly Func<CancellationToken, Task> estimateAndDispatchAsync;
 
         public FeedEstimatorRunner(
             ChangesEstimationHandler dispatchEstimation,
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
-            this.estimateAndDispatchAsync = this.EstimateAsync;
             this.remainingWorkEstimator = remainingWorkEstimator;
             this.monitoringDelay = estimationPeriod ?? FeedEstimatorRunner.defaultMonitoringDelay;
         }
@@ -39,13 +37,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             {
                 try
                 {
-                    await this.estimateAndDispatchAsync(cancellationToken);
+                    await this.EstimateAsync(cancellationToken);
                 }
-                catch (TaskCanceledException canceledException)
+                catch (TaskCanceledException canceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        throw;
-
                     Extensions.TraceException(new Exception("exception within estimator", canceledException));
 
                     // ignore as it is caused by client
@@ -57,7 +52,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private async Task EstimateAsync(CancellationToken cancellationToken)
         {
-            long estimation = await this.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
+            long estimation;
+            using (FeedIterator<ChangeFeedProcessorState> feedIterator = this.remainingWorkEstimator.GetCurrentStateIterator())
+            {
+                FeedResponse<ChangeFeedProcessorState> estimations = await feedIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                // Gets all results in first page
+                estimation = estimations.Count == 0 ? 1 : estimations.Sum(estimation => estimation.EstimatedLag);
+            }
             try
             {
                 await this.dispatchEstimation(estimation, cancellationToken).ConfigureAwait(false);
@@ -67,19 +68,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 Extensions.TraceException(userException);
                 DefaultTrace.TraceWarning("Exception happened on ChangeFeedEstimatorDispatcher.DispatchEstimation");
             }
-        }
-
-        private async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
-        {
-            using FeedIterator<ChangeFeedProcessorState> feedIterator = this.remainingWorkEstimator.GetCurrentStateIterator();
-            FeedResponse<ChangeFeedProcessorState> estimations = await feedIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
-            if (estimations.Count == 0)
-            {
-                return 1;
-            }
-
-            // Gets all results in first page
-            return estimations.Sum(estimation => estimation.EstimatedLag);
         }
     }
 }
