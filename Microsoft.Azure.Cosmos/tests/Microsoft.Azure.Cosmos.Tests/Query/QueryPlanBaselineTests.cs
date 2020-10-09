@@ -11,10 +11,10 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1346,9 +1346,9 @@
                 input.SqlQuerySpec,
                 input.PartitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
-                isContinuationExpected: true,
+                isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: true);
+                hasLogicalPartitionKey: false);
 
             if (info.Failed)
             {

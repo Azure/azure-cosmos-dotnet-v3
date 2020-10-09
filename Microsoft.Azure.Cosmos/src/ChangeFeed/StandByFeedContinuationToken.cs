@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
     /// <summary>

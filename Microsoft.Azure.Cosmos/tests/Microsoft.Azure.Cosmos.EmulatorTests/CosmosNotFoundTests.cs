@@ -166,7 +166,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage response = await iterator.ReadNextAsync();
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-            Assert.IsFalse(iterator.HasMoreResults);
         }
 
         private void VerifyNotFoundResponse(ResponseMessage response)

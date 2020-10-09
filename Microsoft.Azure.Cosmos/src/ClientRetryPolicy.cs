@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.retryContext = null;
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
-            if (exception is HttpRequestException)
+            if (exception is HttpRequestException httpException)
             {
                 DefaultTrace.TraceWarning("Endpoint not reachable. Refresh cache and retry");
                 return await this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest, false);
