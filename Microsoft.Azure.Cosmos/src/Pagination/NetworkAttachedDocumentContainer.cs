@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         {
                             PartitionKey = feedRangePartitionKey.PartitionKey,
                         },
-                        queryPageDiagnostics: default,
+                        queryPageDiagnostics: (queryPageDiagnostics) => { /* no op */},
                         sqlQuerySpec,
                         continuationToken,
                         partitionKeyRange: default,
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         Documents.OperationType.Query,
                         Guid.NewGuid(),
                         requestOptions: new QueryRequestOptions(),
-                        queryPageDiagnostics: default,
+                        queryPageDiagnostics: (queryPageDiagnostics) => { /* no op */},
                         sqlQuerySpec,
                         continuationToken,
                         partitionKeyRange: new PartitionKeyRangeIdentity(
@@ -190,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         Documents.OperationType.Query,
                         Guid.NewGuid(),
                         requestOptions: new QueryRequestOptions(),
-                        queryPageDiagnostics: default,
+                        queryPageDiagnostics: (queryPageDiagnostics) => { /* no op */},
                         sqlQuerySpec,
                         continuationToken,
                         partitionKeyRange: new PartitionKeyRangeIdentity(
@@ -200,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         pageSize,
                         cancellationToken);
                     break;
+
                 default:
                     throw new InvalidOperationException();
             }
