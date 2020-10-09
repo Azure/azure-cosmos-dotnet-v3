@@ -16,18 +16,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly FeedIterator feedIterator;
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
-        private readonly EncryptionProcessor encryptionProcessor;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
             Encryptor encryptor,
-            EncryptionProcessor encryptionProcessor,
             CosmosSerializer cosmosSerializer)
         {
             this.feedIterator = feedIterator;
             this.encryptor = encryptor;
             this.cosmosSerializer = cosmosSerializer;
-            this.encryptionProcessor = encryptionProcessor;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -90,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 DecryptableItemCore item = new DecryptableItemCore(
                     value,
                     this.encryptor,
-                    this.encryptionProcessor,
                     this.cosmosSerializer);
 
                 decryptableItems.Add((T)(object)item);
@@ -120,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                (JObject decryptedDocument, DecryptionContext _) = await this.encryptionProcessor.DecryptAsync(
+                (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
                     document,
                     this.encryptor,
                     diagnosticsContext,

@@ -21,13 +21,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private static Mock<Encryptor> mockEncryptor;
         private static EncryptionOptions encryptionOptions;
         private const string dekId = "dekId";
-        private static MdeEncryptionProcessor mdeEncryptionProcessor;
 
         [ClassInitialize]
         public static void ClassInitilize(TestContext testContext)
         {
             _ = testContext;
-            mdeEncryptionProcessor = new MdeEncryptionProcessor();
             MdeEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
             {
                 DataEncryptionKeyId = MdeEncryptionProcessorTests.dekId,
@@ -57,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             try
             {
-                await MdeEncryptionProcessorTests.mdeEncryptionProcessor.EncryptAsync(
+                await EncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
                     MdeEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
@@ -80,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             JObject encryptedDoc = await MdeEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
-            (JObject decryptedDoc, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                encryptedDoc,
                MdeEncryptionProcessorTests.mockEncryptor.Object,
                new CosmosDiagnosticsContext(),
@@ -99,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             JObject encryptedDoc = await MdeEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
-            (JObject decryptedDoc, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
@@ -116,20 +114,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             TestDoc testDoc = TestDoc.Create();
 
-            Stream encryptedStream = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.EncryptAsync(
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
                 MdeEncryptionProcessorTests.encryptionOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            (Stream decryptedStream, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedStream,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            JObject decryptedDoc = MdeEncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
+            JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
             MdeEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
@@ -142,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             TestDoc testDoc = TestDoc.Create();
             Stream docStream = testDoc.ToStream();
 
-            (Stream decryptedStream, DecryptionContext decryptionContext) = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.DecryptAsync(
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 docStream,
                 MdeEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
@@ -156,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
         {
-            Stream encryptedStream = await MdeEncryptionProcessorTests.mdeEncryptionProcessor.EncryptAsync(
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                  testDoc.ToStream(),
                  MdeEncryptionProcessorTests.mockEncryptor.Object,
                  MdeEncryptionProcessorTests.encryptionOptions,

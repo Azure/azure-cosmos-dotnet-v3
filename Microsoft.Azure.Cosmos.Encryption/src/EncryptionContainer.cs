@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly Container container;
 
-        internal EncryptionProcessor EncryptionProcessor { get; }
-
         public CosmosSerializer CosmosSerializer { get; }
 
         public Encryptor Encryptor { get; }
@@ -32,12 +30,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
         public EncryptionContainer(
             Container container,
-            Encryptor encryptor,
-            EncryptionProcessor encryptionProcessor)
+            Encryptor encryptor)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
-            this.EncryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.CosmosSerializer = this.Database.Client.ClientOptions.Serializer;
         }
@@ -97,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this,
                         this.CosmosSerializer);
 
                     return new EncryptionItemResponse<T>(
@@ -164,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            streamPayload = await this.EncryptionProcessor.EncryptAsync(
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
@@ -179,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await this.EncryptionProcessor.DecryptAsync(
+                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -239,7 +234,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     DecryptableItemCore decryptableItem = new DecryptableItemCore(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this.EncryptionProcessor,
                         this.CosmosSerializer);
 
                     return new EncryptionItemResponse<T>(
@@ -294,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await this.EncryptionProcessor.DecryptAsync(
+                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -359,7 +353,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this,
                         this.CosmosSerializer);
 
                     return new EncryptionItemResponse<T>(
@@ -441,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
-            streamPayload = await this.EncryptionProcessor.EncryptAsync(
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
@@ -457,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await this.EncryptionProcessor.DecryptAsync(
+                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -514,7 +507,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
-                        this,
                         this.CosmosSerializer);
 
                     return new EncryptionItemResponse<T>(
@@ -586,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
-            streamPayload = await this.EncryptionProcessor.EncryptAsync(
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
@@ -601,7 +593,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (decryptResponse)
             {
-                (responseMessage.Content, _) = await this.EncryptionProcessor.DecryptAsync(
+                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
@@ -617,8 +609,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return new EncryptionTransactionalBatch(
                 this.container.CreateTransactionalBatch(partitionKey),
                 this.Encryptor,
-                this.CosmosSerializer,
-                this.EncryptionProcessor);
+                this.CosmosSerializer);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
@@ -764,7 +755,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 
@@ -779,7 +769,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 
@@ -820,7 +809,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 
@@ -833,7 +821,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     feedRange,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 
@@ -846,7 +833,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     partitionKey,
                     changeFeedRequestOptions),
                 this.Encryptor,
-                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 
@@ -903,7 +889,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     requestOptions),
                 this.Encryptor,
-                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 

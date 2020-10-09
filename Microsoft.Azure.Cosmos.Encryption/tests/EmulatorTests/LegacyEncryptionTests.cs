@@ -959,9 +959,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, new List<string>() { "/id" });
                 Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            catch (ArgumentException ex)
             {
+                Assert.AreEqual("PathsToEncrypt includes a invalid path: '/id'.", ex.Message);
             }
+
 
             try
             {

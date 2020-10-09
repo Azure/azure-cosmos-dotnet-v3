@@ -29,12 +29,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="decryptableContent">The encrypted content which is yet to be decrypted.</param>
         /// <param name="encryptor">Encryptor instance which will be used for decryption.</param>
-        /// <param name="container">Container instance.</param>
+        /// <param name="container">Encryption Container instance.</param>
         /// <param name="cosmosSerializer">Serializer instance which will be used for deserializing the content after decryption.</param>
         protected internal abstract void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,
-            Container container,
             CosmosSerializer cosmosSerializer);
     }
 }
