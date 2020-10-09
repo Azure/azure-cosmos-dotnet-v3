@@ -867,7 +867,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             // For the target filter we can make an optimization to just return "true",
             // since we already have the backend continuation token to resume with.
-            return (left.ToString(), TrueFilter, right.ToString());
+            return (left.ToString(), target.ToString(), right.ToString());
         }
 
         /// <summary>
