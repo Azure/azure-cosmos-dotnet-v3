@@ -292,6 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer,
                 new SqlQuerySpec(query),
                 documentContainer.GetFeedRangesAsync(default(CancellationToken)).Result,
+                partitionKey: null,
                 GetQueryPlan(query),
                 pageSize: pageSize,
                 maxConcurrency: 10,

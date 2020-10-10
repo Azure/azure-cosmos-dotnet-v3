@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Cache;
     using System.Threading;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -20,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Documents;
 
     internal static class PipelineFactory
     {
@@ -29,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
+            PartitionKey? partitionKey,
             QueryInfo queryInfo,
             int pageSize,
             int maxConcurrency,
@@ -69,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
+                    partitionKey: partitionKey,
                     orderByColumns: queryInfo
                         .OrderByExpressions
                         .Zip(queryInfo.OrderBy, (expression, sortOrder) => new OrderByColumn(expression, sortOrder)).ToList(),
@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
                     pageSize: pageSize,
+                    partitionKey: partitionKey,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
                     cancellationToken: cancellationToken);

@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: null);
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -82,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -103,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
@@ -131,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new FeedRangeEpk(new Documents.Routing.Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
                 },
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(
@@ -153,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: default);
@@ -188,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                     pageSize: 10,
+                    partitionKey: null,
                     maxConcurrency: 10,
                     cancellationToken: default,
                     continuationToken: queryState?.Value);
@@ -228,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                     pageSize: 10,
+                    partitionKey: null,
                     maxConcurrency: 10,
                     cancellationToken: default,
                     continuationToken: queryState?.Value);
@@ -270,6 +279,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
                 pageSize: 10,
+                partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: default);

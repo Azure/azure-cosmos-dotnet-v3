@@ -95,6 +95,7 @@
                             queryDataSource: documentContainer,
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRange: range,
+                            partitionKey: null,
                             pageSize: 10,
                             state: state,
                             cancellationToken: default));
@@ -135,6 +136,7 @@
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRange: range,
+                        partitionKey: null,
                         pageSize: 10,
                         state: state,
                         cancellationToken: default));
@@ -151,6 +153,7 @@
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                     feedRange: ranges[0],
                     pageSize: 10,
+                    partitionKey: null,
                     state: state,
                     cancellationToken: default);
             }
