@@ -67,8 +67,8 @@
 
                 client.Dispose();
 
-                Console.WriteLine("End of demo, press any key to exit.");
-                //Console.ReadKey();
+                Console.WriteLine("End of demo, press Enter to exit.");
+                Console.Read();
             }
         }
         // </Main>
@@ -86,8 +86,8 @@
             int taskTriggeredCounter = 0;
 
             DataSource dataSource = new DataSource(itemsToCreate, itemSize);
-            Console.WriteLine("Datasource initialized.");
 
+            Console.WriteLine("Datasource initialized; press Enter to start ingestion");
             Console.Read();
             
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -97,75 +97,79 @@
             Stopwatch stopwatch = Stopwatch.StartNew();
             long startMilliseconds = stopwatch.ElapsedMilliseconds;
 
-            try
+            int itemsToCreatePerWorker = itemsToCreate / numWorkers + 1;
+
+            List<Task> workerTasks = new List<Task>();
+            for (int i = 0; i < numWorkers; i++)
             {
-                int itemsToCreatePerWorker = itemsToCreate / numWorkers + 1;
-
-                List<Task> workerTasks = new List<Task>();
-                for (int i = 0; i < numWorkers; i++)
+                workerTasks.Add(Task.Run(() =>
                 {
-                    workerTasks.Add(Task.Run(() =>
+                    int docCounter = 0;
+                    bool isPrinted = false;
+
+                    while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreatePerWorker)
                     {
-                        int docCounter = 0;
+                        docCounter++;
 
-                        while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreatePerWorker)
-                        {
-                            docCounter++;
-
-                            MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
-                            _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
-                                .ContinueWith((Task<ResponseMessage> task) =>
+                        MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
+                        _ = container.CreateItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
+                            .ContinueWith((Task<ResponseMessage> task) =>
+                            {
+                                if (task.IsCompletedSuccessfully)
                                 {
-                                    if (task.IsCompletedSuccessfully)
-                                    {
-                                        if (stream != null) { stream.Dispose(); }
+                                    if (stream != null) { stream.Dispose(); }
 
-                                        ResponseMessage responseMessage = task.Result;
+                                    using (ResponseMessage responseMessage = task.Result)
+                                    {
                                         countsByStatus.AddOrUpdate(responseMessage.StatusCode, 1, (_, old) => old + 1);
+                                        if((int)responseMessage.StatusCode == 408 || (int)responseMessage.StatusCode >= 500)
+                                        {
+                                            if(!isPrinted)
+                                            {
+                                                Console.WriteLine(responseMessage.ErrorMessage);
+                                                Console.WriteLine(responseMessage.Diagnostics.ToString());
+                                                isPrinted = true;
+                                            }
+                                        }
+
                                         Interlocked.Add(ref totalRequestCharge, (int)(responseMessage.Headers.RequestCharge * 100));
                                         latencies.Add(responseMessage.Diagnostics.GetClientElapsedTime());
-                                        responseMessage.Dispose();
                                     }
+                                }
 
-                                    task.Dispose();
-                                    Interlocked.Increment(ref taskCompleteCounter);
-                                });
+                                Exception ex = task.Exception;
+                                task.Dispose();
+                                Interlocked.Increment(ref taskCompleteCounter);
+                            });
 
-                            Interlocked.Increment(ref taskTriggeredCounter);
-                        }
-                    }));
-                }
-
-                // await Task.WhenAll(workerTasks);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Could not insert {itemsToCreate * numWorkers} items in {maxRuntimeInSeconds} seconds.");
-                Console.WriteLine(ex);
-            }
-            finally
-            {
-                while (itemsToCreate > taskCompleteCounter)
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        Console.WriteLine($"Could not insert {itemsToCreate} items in {maxRuntimeInSeconds} seconds.");
-                        break;
+                        Interlocked.Increment(ref taskTriggeredCounter);
                     }
-
-                    Console.WriteLine($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {itemsToCreate - taskCompleteCounter}");
-                    await Task.Delay(1000);
-                }
-
-                foreach (var countForStatus in countsByStatus)
-                {
-                    Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
-                }
+                }));
             }
+
+            while (taskCompleteCounter < itemsToCreate)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Console.WriteLine($"Could not insert {itemsToCreate} items in {maxRuntimeInSeconds} seconds.");
+                    break;
+                }
+
+                Console.WriteLine($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {itemsToCreate - taskCompleteCounter}");
+                await Task.Delay(1000);
+            }
+
 
             int created = countsByStatus.SingleOrDefault(x => x.Key == HttpStatusCode.Created).Value;
             long elapsed = (stopwatch.ElapsedMilliseconds - startMilliseconds) /1000;
             Console.WriteLine($"Inserted {created} items in {elapsed} seconds at {created/elapsed} items/sec.");
+
+            Console.WriteLine("Counts by StatusCode:");
+            foreach (var countForStatus in countsByStatus)
+            {
+                Console.WriteLine(countForStatus.Key + " " + countForStatus.Value);
+            }
+            Console.WriteLine();
 
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();
@@ -190,8 +194,8 @@
 
             public string other { get; set; }
 
-            public Inner i0 { get { return inner; } }
-            public Inner i1 { get { return inner; } }
+            //public Inner i0 { get { return inner; } }
+            //public Inner i1 { get { return inner; } }
         }
 
         private class Inner
@@ -254,7 +258,7 @@
 
             Program.client = GetClientInstance(endpointUrl, authKey);
             Program.database = client.GetDatabase(databaseName);
-            Container container = Program.database.GetContainer(containerName); ;
+            Container container = Program.database.GetContainer(containerName);
             if (shouldCleanupOnStart)
             {
                 container = await Program.CreateFreshContainerAsync(client, databaseName, containerName, collectionThroughput);
@@ -267,7 +271,7 @@
             catch (Exception ex)
             {
                 Console.WriteLine("Error in reading collection: {0}", ex.Message);
-                throw ex;
+                throw;
             }
 
             Console.WriteLine("Running demo for container {0} with a CosmosClient.", containerName);
@@ -350,7 +354,7 @@
 
             private MemoryStream CreateNextDocItem(out PartitionKey partitionKeyValue)
             {
-                string partitionKey = Guid.NewGuid().ToString();
+                string partitionKey = "pk1"; // Guid.NewGuid().ToString();
                 string id = Guid.NewGuid().ToString();
 
                 MyDocument myDocument = new MyDocument() { 
