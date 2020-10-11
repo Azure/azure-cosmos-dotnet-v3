@@ -1,20 +1,29 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal sealed class SqlLimitSpec : SqlObject
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlLimitSpec : SqlObject
     {
         private const int PremadeLimitIndex = 256;
-        private static readonly SqlLimitSpec[] PremadeLimitSpecs = Enumerable
+        private static readonly ImmutableArray<SqlLimitSpec> PremadeLimitSpecs = Enumerable
             .Range(0, PremadeLimitIndex)
             .Select(limit => new SqlLimitSpec(
                 SqlLiteralScalarExpression.Create(
                     SqlNumberLiteral.Create(limit))))
-            .ToArray();
+            .ToImmutableArray();
 
         private SqlLimitSpec(SqlScalarExpression limitExpression)
         {
@@ -39,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             value = Number64.ToLong(sqlNumberLiteral.Value);
             if (value < PremadeLimitIndex && value >= 0)
             {
-                return SqlLimitSpec.PremadeLimitSpecs[value];
+                return SqlLimitSpec.PremadeLimitSpecs[(int)value];
             }
 
             SqlScalarExpression limitExpression = SqlLiteralScalarExpression.Create(

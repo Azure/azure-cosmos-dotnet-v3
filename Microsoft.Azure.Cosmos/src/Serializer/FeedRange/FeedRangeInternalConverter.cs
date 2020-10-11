@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos
         private const string RangePropertyName = "Range";
         private const string PartitionKeyPropertyName = "PK";
         private const string PartitionKeyRangeIdPropertyName = "PKRangeId";
-        private static RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
+        private static readonly RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
 
         public override bool CanConvert(Type objectType)
         {
-            return objectType == typeof(FeedRangeEPK)
+            return objectType == typeof(FeedRangeEpk)
                 || objectType == typeof(FeedRangePartitionKey)
                 || objectType == typeof(FeedRangePartitionKeyRange);
         }
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Documents.Routing.Range<string> completeRange = (Documents.Routing.Range<string>)rangeJsonConverter.ReadJson(rangeJToken.CreateReader(), typeof(Documents.Routing.Range<string>), null, serializer);
-                    return new FeedRangeEPK(completeRange);
+                    return new FeedRangeEpk(completeRange);
                 }
                 catch (JsonSerializationException)
                 {
@@ -94,10 +94,10 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            if (value is FeedRangeEPK feedRangeEPK)
+            if (value is FeedRangeEpk feedRangeEpk)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
-                rangeJsonConverter.WriteJson(writer, feedRangeEPK.Range, serializer);
+                rangeJsonConverter.WriteJson(writer, feedRangeEpk.Range, serializer);
                 return;
             }
 

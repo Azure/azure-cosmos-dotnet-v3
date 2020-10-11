@@ -7,12 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Runtime.ConstrainedExecution;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -30,11 +27,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void HandlerOrder()
         {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             Type[] types = new Type[]
             {
                 typeof(RequestInvokerHandler),
+                typeof(DiagnosticsHandler),
                 typeof(RetryHandler),
                 typeof(RouterHandler)
             };
@@ -43,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (Type type in types)
             {
                 Assert.IsTrue(type.Equals(handler.GetType()));
-                handler = (RequestHandler)handler.InnerHandler;
+                handler = handler.InnerHandler;
             }
 
             Assert.IsNull(handler);
@@ -53,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestPreProcessingHandler()
         {
             RequestHandler preProcessHandler = new PreProcessingTestHandler();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
 
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
@@ -69,10 +67,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             // User operations
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
-                ItemRequestOptions options = new ItemRequestOptions();
-                options.Properties = new Dictionary<string, object>()
+                ItemRequestOptions options = new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { PreProcessingTestHandler.StatusCodeName, code },
+                }
                 };
 
                 ItemResponse<object> response = await container.ReadItemAsync<object>("id1", new Cosmos.PartitionKey("pk1"), options);
@@ -83,10 +83,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Meta-data operations
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
-                ContainerRequestOptions options = new ContainerRequestOptions();
-                options.Properties = new Dictionary<string, object>()
+                ContainerRequestOptions options = new ContainerRequestOptions
+                {
+                    Properties = new Dictionary<string, object>()
                 {
                     { PreProcessingTestHandler.StatusCodeName, code }
+                }
                 };
 
                 ContainerResponse response = await container.DeleteContainerAsync(options);
@@ -120,8 +122,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = testHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -138,25 +142,27 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Documents.ConsistencyLevel> documentLevels = Enum.GetValues(typeof(Documents.ConsistencyLevel)).Cast<Documents.ConsistencyLevel>().ToList();
             CollectionAssert.AreEqual(cosmosLevels, documentLevels, new EnumComparer(), "Document consistency level is different from cosmos consistency level");
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong);
 
             foreach (Cosmos.ConsistencyLevel level in cosmosLevels)
             {
-                List<RequestOptions> requestOptions = new List<RequestOptions>();
-                requestOptions.Add(new ItemRequestOptions
+                List<RequestOptions> requestOptions = new List<RequestOptions>
                 {
-                    ConsistencyLevel = level
-                });
+                    new ItemRequestOptions
+                    {
+                        ConsistencyLevel = level
+                    },
 
-                requestOptions.Add(new QueryRequestOptions
-                {
-                    ConsistencyLevel = level
-                });
+                    new QueryRequestOptions
+                    {
+                        ConsistencyLevel = level
+                    },
 
-                requestOptions.Add(new StoredProcedureRequestOptions
-                {
-                    ConsistencyLevel = level
-                });
+                    new StoredProcedureRequestOptions
+                    {
+                        ConsistencyLevel = level
+                    }
+                };
 
                 foreach (RequestOptions option in requestOptions)
                 {
@@ -166,11 +172,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return TestHandler.ReturnSuccess();
                     });
 
-                    RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-                    invoker.InnerHandler = testHandler;
+                    RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+                    {
+                        InnerHandler = testHandler
+                    };
 
-                    RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
-                    requestMessage.ResourceType = ResourceType.Document;
+                    RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+                    {
+                        ResourceType = ResourceType.Document
+                    };
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
                     requestMessage.OperationType = OperationType.Read;
                     requestMessage.RequestOptions = option;
@@ -195,10 +205,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = testHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -211,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConsistencyLevelClient()
         {
             Cosmos.ConsistencyLevel clientLevel = Cosmos.ConsistencyLevel.Eventual;
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
                 customizeClientBuilder: builder => builder.WithConsistencyLevel(clientLevel));
 
@@ -221,11 +233,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel);
-            invoker.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel)
+            {
+                InnerHandler = testHandler
+            };
 
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
-            requestMessage.ResourceType = ResourceType.Document;
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.OperationType = OperationType.Read;
 
@@ -236,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConsistencyLevelClientAndRequestOption()
         {
             Cosmos.ConsistencyLevel requestOptionLevel = Cosmos.ConsistencyLevel.BoundedStaleness;
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
                 customizeClientBuilder: builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual));
 
@@ -246,11 +262,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = testHandler
+            };
 
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
-            requestMessage.ResourceType = ResourceType.Document;
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.OperationType = OperationType.Read;
             requestMessage.RequestOptions = new ItemRequestOptions() { ConsistencyLevel = requestOptionLevel };
@@ -278,10 +298,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = testHandler;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = testHandler
+            };
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
@@ -310,8 +332,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 HttpMethod method = HttpMethod.Get;
                 string ep = "https://httpbin.org/put";
-                HttpRequestMessage hrm = new HttpRequestMessage(method, ep);
-                hrm.Content = new StreamContent(ms);
+                HttpRequestMessage hrm = new HttpRequestMessage(method, ep)
+                {
+                    Content = new StreamContent(ms)
+                };
 
                 for (int i = 0; i < 5; i++)
                 {

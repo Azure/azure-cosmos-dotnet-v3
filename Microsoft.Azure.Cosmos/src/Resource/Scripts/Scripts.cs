@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -24,27 +23,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="StoredProcedureProperties"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
-        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an Id was not supplied for the stored procedure or the Body was malformed.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="StoredProcedureProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="StoredProcedureProperties"/> you tried to create was too large.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
@@ -85,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
@@ -95,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for sproc with queryDefinition as input.
         /// <code language="c#">
@@ -103,7 +83,23 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition);
+        /// using (FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition))
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         {
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
+        ///
+        ///             // Process the response.Content Stream
+        ///         }
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -120,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the stream feed iterator for sproc with queryDefinition as input.
         /// <code language="c#">
@@ -128,7 +125,23 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition);
+        /// using (FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition))
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         {
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
+        ///
+        ///             // Process the response.Content Stream
+        ///         }
+        ///     }
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -145,18 +158,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for sproc with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// FeedIterator<StoredProcedureProperties> feedIterator = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(
-        ///     "SELECT * FROM u where u.id like '%testId%'");
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<StoredProcedureProperties> feedIterator = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(
+        ///     "SELECT * FROM u where u.id like '%testId%'"))
         /// {
-        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         foreach (var properties in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(properties.Id);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -175,25 +191,28 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the stream feed iterator for sproc with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
-        /// FeedIterator feedIterator = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.scripts.GetStoredProcedureQueryStreamIterator(queryText)
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
-        ///         }
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///
-        ///         // Process the response.Content Stream
+        ///             // Process the response.Content Stream
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -213,20 +232,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="StoredProcedureProperties"/>.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This reads an existing stored procedure.
         /// <code language="c#">
@@ -239,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="StoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
@@ -250,17 +256,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="StoredProcedureProperties"/>.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to delete did not exist.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This examples replaces an existing stored procedure.
         /// <code language="c#">
@@ -284,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="StoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -293,17 +289,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/> are not set.</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to delete did not exist.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This examples gets a reference to an existing stored procedure and deletes it.
         /// <code language="c#">
@@ -316,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service.
@@ -328,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
@@ -374,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
@@ -385,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
@@ -436,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
@@ -447,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure. The response will contain status code (400) BadRequest if streamPayload represents anything other than a JSON array, object or null.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
@@ -503,7 +489,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream streamPayload,
             PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -512,27 +498,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="triggerProperties"/> is not set.</exception>
-        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an Id was not supplied for the new trigger or that the Body was malformed.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>403</term><description>Forbidden - You have reached your quota of triggers for the collection supplied. Contact support to have this quota increased.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="TriggerProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="TriggerProperties"/> you tried to create was too large.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This creates a trigger then uses the trigger in a create item.
         /// <code language="c#">
@@ -569,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
@@ -579,6 +545,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for Trigger with queryDefinition as input.
         /// <code language="c#">
@@ -586,12 +553,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Scripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM t where t.id like @testId")
         ///     .WithParameter("@testId", "testTriggerId");
-        /// FeedIterator<TriggerProperties> feedIterator = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<TriggerProperties> feedIterator = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition)
         /// {
-        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         foreach (var properties in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(properties.Id);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -610,6 +579,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the stream feed iterator for Trigger with queryDefinition as input.
         /// <code language="c#">
@@ -617,19 +587,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Scripts scripts = this.container.Scripts;\
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM t where t.id like @testId")
         ///  .WithParameter("@testId", "testTriggerId");
-        /// FeedIterator feedIterator = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.scripts.GetTriggerQueryStreamIterator(queryDefinition)
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
-        ///         }
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///
-        ///         // Process the response.Content Stream
+        ///             // Process the response.Content Stream
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -648,18 +620,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for Trigger with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// FeedIterator<TriggerProperties> feedIterator = this.scripts.GetTriggerQueryIterator<TriggerProperties>(
-        ///     "SELECT * FROM t where t.id like '%testId%'");
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<TriggerProperties> feedIterator = this.scripts.GetTriggerQueryIterator<TriggerProperties>(
+        ///     "SELECT * FROM t where t.id like '%testId%'")
         /// {
-        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         foreach (var properties in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(properties.Id);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -678,13 +653,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the stream feed iterator for Trigger with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
-        /// FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryText);
+        /// using (FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryText)
+        /// {
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -702,16 +680,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> containing the read resource record.
         /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This reads an existing trigger
         /// <code language="c#">
@@ -725,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> ReadTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="TriggerProperties"/> in the Azure Cosmos service as an asynchronous operation.
@@ -736,7 +705,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> containing the updated resource record.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="triggerProperties"/> is not set.</exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This examples replaces an existing trigger.
         /// <code language="c#">
@@ -765,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> ReplaceTriggerAsync(
                     TriggerProperties triggerProperties,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -774,7 +743,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> which will contain information about the request issued.</returns>
-        /// /// <example>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
+        /// <example>
         /// This examples gets a reference to an existing trigger and deletes it.
         /// <code language="c#">
         /// <![CDATA[
@@ -786,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<TriggerResponse> DeleteTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
@@ -795,27 +765,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionProperties"/> is not set.</exception>
-        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user defined function are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an Id was not supplied for the new user defined function or that the Body was malformed.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>403</term><description>Forbidden - You have reached your quota of user defined functions for the collection supplied. Contact support to have this quota increased.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="UserDefinedFunctionProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="UserDefinedFunctionProperties"/> you tried to create was too large.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This creates a user defined function then uses the function in an item query.
         /// <code language="c#">
@@ -833,15 +783,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     .WithParameter("@expensive", 9000)
         ///     .WithParameter("@status", "Done");
         ///
-        /// FeedIterator<double> setIterator = this.container.Items.GetItemsQueryIterator<double>(
+        /// using (FeedIterator<double> setIterator = this.container.Items.GetItemsQueryIterator<double>(
         ///     sqlQueryDefinition: sqlQuery,
-        ///     partitionKey: "Done");
-        ///
-        /// while (setIterator.HasMoreResults)
+        ///     partitionKey: "Done")
         /// {
-        ///     foreach (var tax in await setIterator.ReadNextAsync())
+        ///     while (setIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(tax);
+        ///         foreach (var tax in await setIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(tax);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -850,7 +801,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
@@ -860,6 +811,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for UDF with queryDefinition as input.
         /// <code language="c#">
@@ -867,12 +819,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Scripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like @testId")
         ///     .WithParameter("@testId", "testUDFId");
-        /// FeedIterator<UserDefinedFunctionProperties> feedIterator = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<UserDefinedFunctionProperties> feedIterator = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition)
         /// {
-        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         foreach (var properties in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(properties.Id);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -891,6 +845,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the stream feed iterator for UDF with queryDefinition as input.
         /// <code language="c#">
@@ -898,19 +853,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Scripts scripts = this.container.Scripts;
         /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like @testId")
         ///   .WithParameter("@testId", "testUdfId");
-        /// FeedIterator feedIterator = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition)
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
-        ///         }
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///
-        ///         // Process the response.Content Stream
+        ///             // Process the response.Content Stream
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -929,18 +886,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the type feed iterator for UDF with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// FeedIterator<UserDefinedFunctionProperties> feedIterator = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(
-        ///     "SELECT * FROM u where u.id like '%testId%'");
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator<UserDefinedFunctionProperties> feedIterator = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(
+        ///     "SELECT * FROM u where u.id like '%testId%'")
         /// {
-        ///     foreach (var properties in await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         Console.WriteLine(properties.Id);
+        ///         foreach (var properties in await feedIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(properties.Id);
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -959,25 +919,28 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This create the stream feed iterator for UDF with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// FeedIterator feedIterator = this.scripts.GetUserDefinedFunctionQueryStreamIterator(
-        ///     "SELECT * FROM u where u.id like '%testId%'");
-        /// while (feedIterator.HasMoreResults)
+        /// using (FeedIterator feedIterator = this.scripts.GetUserDefinedFunctionQueryStreamIterator(
+        ///     "SELECT * FROM u where u.id like '%testId%'")
         /// {
-        ///     // Stream iterator returns a response with status for errors
-        ///     using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Handle failure scenario. 
-        ///         if(!response.IsSuccessStatusCode)
+        ///         // Stream iterator returns a response with status for errors
+        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Log the response.Diagnostics and handle the error
-        ///         }
+        ///             // Handle failure scenario. 
+        ///             if(!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
         ///
-        ///         // Process the response.Content Stream
+        ///             // Process the response.Content Stream
+        ///         }
         ///     }
         /// }
         /// ]]>
@@ -997,19 +960,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the read resource record.
         /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         ///  This reads an existing user defined function.
         /// <code language="c#">
@@ -1023,7 +974,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a <see cref="UserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1053,7 +1004,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1062,6 +1013,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> which will contain information about the request issued.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">
@@ -1074,6 +1026,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

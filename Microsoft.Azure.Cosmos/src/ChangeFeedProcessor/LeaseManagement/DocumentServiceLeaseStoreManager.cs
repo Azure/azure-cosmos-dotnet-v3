@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     /// <summary>
-    /// The DocumentServiceLease defines a way to perform operations with <see cref="DocumentServiceLease"/>.
+    /// The DocumentServiceLeaseStoreManager defines a way to perform operations with <see cref="DocumentServiceLease"/>.
     /// </summary>
     internal abstract class DocumentServiceLeaseStoreManager
     {

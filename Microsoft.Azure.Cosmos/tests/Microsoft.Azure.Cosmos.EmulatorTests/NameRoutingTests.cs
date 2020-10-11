@@ -164,16 +164,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         //swallow
                     }
-                    
+
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null);
-                    int count = 0;
-                    while (itemIterator.HasMoreResults)
+                    using (FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null))
                     {
-                        FeedResponse<dynamic> items = await itemIterator.ReadNextAsync();
-                        count += items.Count();
+                        int count = 0;
+                        while (itemIterator.HasMoreResults)
+                        {
+                            FeedResponse<dynamic> items = await itemIterator.ReadNextAsync();
+                            count += items.Count();
+                        }
+                        Assert.AreEqual(3, count);
                     }
-                    Assert.AreEqual(3, count);
 
                     // query documents 
                     {
@@ -619,12 +621,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 #endif
         [TestMethod]
-        public void VerifyGatewayNameIdCacheRefreshDirectGateway()
+        public async Task VerifyGatewayNameIdCacheRefreshDirectGateway()
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
             // Ignoring it until this is fixed
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
-            this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client).Wait();
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            await this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client);
         }
 
         enum FabircServiceReuseType
@@ -667,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (database != null)
                 {
-                    await database.DeleteAsync();
+                    using ResponseMessage message = await database.DeleteStreamAsync();
                 }
             }
         }

@@ -4,11 +4,11 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan
@@ -39,7 +39,7 @@
         }
 
         public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
@@ -60,8 +60,8 @@
                 cancellationToken);
         }
 
-        public override Task<QueryResponseCore> ExecuteItemQueryAsync(
-            Uri resourceUri,
+        public override Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
@@ -74,9 +74,6 @@
             int pageSize,
             CancellationToken cancellationToken)
         {
-            Assert.IsFalse(
-                this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0,
-                "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
             return base.ExecuteItemQueryAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,

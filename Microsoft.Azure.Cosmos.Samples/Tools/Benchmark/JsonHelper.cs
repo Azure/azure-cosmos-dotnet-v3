@@ -11,7 +11,10 @@ namespace CosmosBenchmark
     internal static class JsonHelper
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-        private static readonly JsonSerializer serializer = JsonSerializer.Create();
+        private static readonly JsonSerializer serializer = JsonSerializer.Create(new JsonSerializerSettings() {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    Formatting = Formatting.Indented,
+                });
         private const int DefaultCapacity = 1024;
 
         public static string ToString<T>(T input)
@@ -30,7 +33,10 @@ namespace CosmosBenchmark
 
         public static MemoryStream ToStream<T>(T input)
         {
-            MemoryStream memStreamPayload = new MemoryStream(JsonHelper.DefaultCapacity);
+            byte[] blob = System.Buffers.ArrayPool<byte>.Shared.Rent(JsonHelper.DefaultCapacity);
+            MemoryStream memStreamPayload = new MemoryStream(blob, 0, JsonHelper.DefaultCapacity, writable: true, publiclyVisible: true);
+            memStreamPayload.SetLength(0);
+            memStreamPayload.Position = 0;
             using (StreamWriter streamWriter = new StreamWriter(memStreamPayload,
                 encoding: JsonHelper.DefaultEncoding,
                 bufferSize: JsonHelper.DefaultCapacity,
@@ -38,10 +44,7 @@ namespace CosmosBenchmark
             {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
-                    writer.Formatting = Formatting.None;
-                    writer.Formatting = Formatting.Indented;
-                    JsonSerializer jsonSerializer = JsonHelper.serializer;
-                    jsonSerializer.Serialize(writer, input);
+                    JsonHelper.serializer.Serialize(writer, input);
                     writer.Flush();
                     streamWriter.Flush();
                 }

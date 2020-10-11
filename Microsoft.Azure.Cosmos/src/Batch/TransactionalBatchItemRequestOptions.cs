@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for write item operations like Create, Upsert, and Replace.
+        /// the Cosmos DB response for write item operations like Create, Upsert, Patch and Replace.
         /// This removes the resource from the response. This reduces networking and CPU load by not sending
         /// the resource back over the network and serializing it on the client.
         /// </summary>
@@ -47,15 +47,17 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            RequestOptions requestOptions = itemRequestOptions as RequestOptions;
-            TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions();
-            batchItemRequestOptions.IndexingDirective = itemRequestOptions.IndexingDirective;
-            batchItemRequestOptions.IfMatchEtag = itemRequestOptions.IfMatchEtag;
-            batchItemRequestOptions.IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag;
-            batchItemRequestOptions.Properties = itemRequestOptions.Properties;
-            batchItemRequestOptions.EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite;
-            batchItemRequestOptions.EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead;
-            batchItemRequestOptions.IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting;
+            RequestOptions requestOptions = itemRequestOptions;
+            TransactionalBatchItemRequestOptions batchItemRequestOptions = new TransactionalBatchItemRequestOptions
+            {
+                IndexingDirective = itemRequestOptions.IndexingDirective,
+                IfMatchEtag = itemRequestOptions.IfMatchEtag,
+                IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag,
+                Properties = itemRequestOptions.Properties,
+                EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite,
+                EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead,
+                IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting
+            };
             return batchItemRequestOptions;
         }
     }

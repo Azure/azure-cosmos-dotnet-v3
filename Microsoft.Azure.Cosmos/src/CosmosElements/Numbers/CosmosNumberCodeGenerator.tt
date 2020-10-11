@@ -20,6 +20,18 @@ Dictionary<string, string> cosmosNumberTypeToDotNetType = new Dictionary<string,
     { "Float32", "float" },
     { "Float64", "double" },
 };
+
+Dictionary<string, uint> cosmosNumberTypeHashCode = new Dictionary<string, uint>()
+{
+    { "Number64", 1943952435 },
+    { "Int8", 1301790982 },
+    { "Int16", 1176550641 },
+    { "Int32", 1791401667 },
+    { "Int64", 2562566505 },
+    { "UInt32", 3771427877 },
+    { "Float32", 495253708 },
+    { "Float64", 470975939 },
+};
 #>
 <# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
 {
@@ -34,6 +46,8 @@ Dictionary<string, string> cosmosNumberTypeToDotNetType = new Dictionary<string,
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -45,10 +59,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>, IComparable<Cosmos<#= cosmosNumberType #>>
     {
         protected Cosmos<#= cosmosNumberType #>()
-            : base(CosmosNumberType.<#= cosmosNumberType #>)
+            : base()
         {
         }
 
@@ -56,47 +70,27 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public abstract <#= dotNetType #> GetValue();
 
-        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
+        public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
 
-            cosmosNumberVisitor.Visit(this);
-        }
+        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor) => cosmosNumberVisitor.Visit(this);
 
-        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
-        {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
+        public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input) => cosmosNumberVisitor.Visit(this, input);
 
-            return cosmosNumberVisitor.Visit(this, input);
-        }
+        public override bool Equals(CosmosNumber cosmosNumber) => cosmosNumber is Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #> && this.Equals(cosmos<#= cosmosNumberType #>);
 
-        public override void WriteTo(IJsonWriter jsonWriter)
-        {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
+        public bool Equals(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>) => this.GetValue() == cosmos<#= cosmosNumberType #>.GetValue();
 
-            jsonWriter.Write<#= cosmosNumberType #>Value(this.GetValue());
-        }
+        public override int GetHashCode() => (int)MurmurHash3.Hash32(<#= cosmosNumberType == "Number64" ? "Number64.ToDoubleEx(this.GetValue())" : "this.GetValue()" #>, <#= cosmosNumberTypeHashCode[cosmosNumberType] #>);
+
+        public int CompareTo(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>) => this.GetValue().CompareTo(cosmos<#= cosmosNumberType #>.GetValue());
+
+        public override void WriteTo(IJsonWriter jsonWriter) => jsonWriter.Write<#= cosmosNumberType #>Value(this.GetValue());
 
         public static Cosmos<#= cosmosNumberType #> Create(
             IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmos<#= cosmosNumberType #>(jsonNavigator, jsonNavigatorNode);
-        }
+            IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmos<#= cosmosNumberType #>(jsonNavigator, jsonNavigatorNode);
 
-        public static Cosmos<#= cosmosNumberType #> Create(<#= dotNetType #> number)
-        {
-            return new EagerCosmos<#= cosmosNumberType #>(number);
-        }
+        public static Cosmos<#= cosmosNumberType #> Create(<#= dotNetType #> number) => new EagerCosmos<#= cosmosNumberType #>(number);
     }
 }
 <# SaveOutput($"Cosmos{cosmosNumberType}.cs"); #>
@@ -108,6 +102,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
+    using System;
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1601 // Partial elements should be documented
@@ -115,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>, IComparable<Cosmos<#= cosmosNumberType #>>
     {
         private sealed class EagerCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
         {
@@ -142,6 +140,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber
+    abstract partial class Cosmos<#= cosmosNumberType #> : CosmosNumber, IEquatable<Cosmos<#= cosmosNumberType #>>, IComparable<Cosmos<#= cosmosNumberType #>>
     {
         private sealed class LazyCosmos<#= cosmosNumberType #> : Cosmos<#= cosmosNumberType #>
         {
@@ -198,6 +198,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
@@ -225,6 +227,37 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface ICosmosNumberVisitor<TResult>
+    {
+<# foreach (KeyValuePair<string, string> kvp in cosmosNumberTypeToDotNetType) 
+{
+    string cosmosNumberType = kvp.Key;
+    string dotNetType = kvp.Value;
+#>
+        TResult Visit(Cosmos<#= cosmosNumberType #> cosmos<#= cosmosNumberType #>);
+<# } #>
+    }
+}
+<# SaveOutput("ICosmosNumberVisitor{TResult}.cs"); #>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
+{
+#nullable enable
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented

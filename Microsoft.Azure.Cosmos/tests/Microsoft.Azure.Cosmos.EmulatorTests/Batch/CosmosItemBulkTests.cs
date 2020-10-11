@@ -345,6 +345,81 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task PatchItemStream_WithBulk()
+        {
+            List<MyDocument> createdDocuments = new List<MyDocument>();
+            // Create the items
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                MyDocument createdDocument = CreateItem(i.ToString());
+                createdDocuments.Add(createdDocument);
+                tasks.Add(ExecuteCreateStreamAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(tasks);
+
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Add("/description", "patched")
+            };
+            List<Task<ResponseMessage>> PatchTasks = new List<Task<ResponseMessage>>();
+            // Patch the items
+            foreach (MyDocument createdDocument in createdDocuments)
+            {
+                PatchTasks.Add(ExecutePatchStreamAsync((ContainerInternal)this.container, createdDocument, patch));
+            }
+
+            await Task.WhenAll(PatchTasks);
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = PatchTasks[i];
+                ResponseMessage result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task PatchItem_WithBulk()
+        {
+            List<MyDocument> createdDocuments = new List<MyDocument>();
+            // Create the items
+            List<Task<ItemResponse<MyDocument>>> tasks = new List<Task<ItemResponse<MyDocument>>>();
+            for (int i = 0; i < 100; i++)
+            {
+                MyDocument createdDocument = CreateItem(i.ToString());
+                createdDocuments.Add(createdDocument);
+                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(tasks);
+
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Add("/description", "patched")
+            };
+            List<Task<ItemResponse<MyDocument>>> patchTasks = new List<Task<ItemResponse<MyDocument>>>();
+            // Patch the items
+            foreach (MyDocument createdDocument in createdDocuments)
+            {
+                patchTasks.Add(ExecutePatchAsync((ContainerInternal)this.container, createdDocument, patch));
+            }
+
+            await Task.WhenAll(patchTasks);
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ItemResponse<MyDocument>> task = patchTasks[i];
+                ItemResponse<MyDocument> result = await task;
+                Assert.IsTrue(result.Headers.RequestCharge > 0);
+                Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+                Assert.AreEqual("patched", result.Resource.Description);
+            }
+        }
+
+        [TestMethod]
         public async Task CreateItemStreamSlightlyTooLarge_WithBulk()
         {
             // The item is such that it is just over the limit for an item
@@ -409,6 +484,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return container.ReplaceItemAsync<MyDocument>(item, item.id, new PartitionKey(item.Status));
         }
 
+        private static Task<ItemResponse<MyDocument>> ExecutePatchAsync(ContainerInternal container, MyDocument item, List<PatchOperation> patch)
+        {
+            return container.PatchItemAsync<MyDocument>(item.id, new PartitionKey(item.Status), patch);
+        }
+
         private static Task<ItemResponse<MyDocument>> ExecuteDeleteAsync(Container container, MyDocument item)
         {
             return container.DeleteItemAsync<MyDocument>(item.id, new PartitionKey(item.Status));
@@ -432,6 +512,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Task<ResponseMessage> ExecuteReplaceStreamAsync(Container container, MyDocument item)
         {
             return container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(item), item.id, new PartitionKey(item.Status));
+        }
+
+        private static Task<ResponseMessage> ExecutePatchStreamAsync(ContainerInternal container, MyDocument item, List<PatchOperation> patch)
+        {
+            return container.PatchItemStreamAsync(item.id, new PartitionKey(item.Status), patch);
         }
 
         private static Task<ResponseMessage> ExecuteDeleteStreamAsync(Container container, MyDocument item)

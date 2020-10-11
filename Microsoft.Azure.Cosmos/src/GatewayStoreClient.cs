@@ -22,11 +22,12 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
-        private HttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
         private JsonSerializerSettings SerializerSettings;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
-            HttpClient httpClient,
+            CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
             JsonSerializerSettings serializerSettings = null)
         {
@@ -64,16 +65,23 @@ namespace Microsoft.Azure.Cosmos
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default(CancellationToken)))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
             }
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        internal Task<HttpResponseMessage> SendHttpAsync(
+            Func<ValueTask<HttpRequestMessage>> requestMessage,
+            ResourceType resourceType,
+            CancellationToken cancellationToken = default)
         {
-            return this.httpClient.SendHttpAsync(requestMessage, cancellationToken);
+            return this.httpClient.SendHttpAsync(
+                createRequestMessageAsync: requestMessage,
+                resourceType: resourceType,
+                diagnosticsContext: null,
+                cancellationToken: cancellationToken);
         }
 
         internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
@@ -161,10 +169,6 @@ namespace Microsoft.Azure.Cosmos
             HttpResponseMessage responseMessage,
             IClientSideRequestStatistics requestStatistics)
         {
-            // ensure there is no local ActivityId, since in Gateway mode ActivityId
-            // should always come from message headers
-            Trace.CorrelationManager.ActivityId = Guid.Empty;
-
             bool isNameBased = false;
             bool isFeed = false;
             string resourceTypeString;
@@ -269,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        private async Task<HttpRequestMessage> PrepareRequestMessageAsync(
+        private async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
             DocumentServiceRequest request,
             Uri physicalAddress)
         {
@@ -296,6 +300,11 @@ namespace Microsoft.Azure.Cosmos
             else if (request.OperationType == OperationType.Delete)
             {
                 httpMethod = HttpMethod.Delete;
+            }
+            else if (request.OperationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                httpMethod = httpPatchMethod;
             }
             else
             {
@@ -345,101 +354,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        private async Task<HttpResponseMessage> InvokeClientAsync(
+        private Task<HttpResponseMessage> InvokeClientAsync(
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
            CancellationToken cancellationToken)
         {
-            Func<Task<HttpResponseMessage>> funcDelegate = async () =>
+            CosmosDiagnosticsContext diagnosticsContext = null;
+            if (request?.RequestContext?.ClientRequestStatistics is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
             {
-                using (HttpRequestMessage requestMessage = await this.PrepareRequestMessageAsync(request, physicalAddress))
-                {
-                    DateTime sendTimeUtc = DateTime.UtcNow;
-                    Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
-
-                    // DEVNOTE: This is temporary until IClientSideRequestStats is modified to support gateway calls.
-                    CosmosDiagnosticsContext diagnosticsContext = null;
-                    if (request.RequestContext.ClientRequestStatistics is CosmosClientSideRequestStatistics clientSideRequestStatistics)
-                    {
-                        diagnosticsContext = clientSideRequestStatistics.DiagnosticsContext;
-                    }
-                    else
-                    {
-                        // ClientRequestStatistics are not passed in use Empty to avoid null checks.
-                        // Caches do not pass in the ClientRequestStatistics
-                        diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
-                    }
-
-                    Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
-                    this.eventSource.Request(
-                        requestedActivityId,
-                        localGuid,
-                        requestMessage.RequestUri.ToString(),
-                        resourceType.ToResourceTypeString(),
-                        requestMessage.Headers);
-
-                    TimeSpan durationTimeSpan;
-                    try
-                    {
-                        HttpResponseMessage responseMessage;
-                        using (diagnosticsContext.CreateScope("GatewayRequestTime"))
-                        {
-                            responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
-                        }
-
-                        DateTime receivedTimeUtc = DateTime.UtcNow;
-                        durationTimeSpan = receivedTimeUtc - sendTimeUtc;
-
-                        IEnumerable<string> headerValues;
-                        Guid activityId = Guid.Empty;
-                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out headerValues) &&
-                            headerValues.Count() != 0)
-                        {
-                            activityId = new Guid(headerValues.First());
-                        }
-
-                        this.eventSource.Response(
-                            activityId,
-                            localGuid,
-                            (short)responseMessage.StatusCode,
-                            durationTimeSpan.TotalMilliseconds,
-                            responseMessage.Headers);
-
-                        return responseMessage;
-                    }
-                    catch (TaskCanceledException ex)
-                    {
-                        if (!cancellationToken.IsCancellationRequested)
-                        {
-                            // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                            durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
-                            string message = $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId}; Inner Message: {ex.Message};";
-                            throw new RequestTimeoutException(message, ex, requestMessage.RequestUri);
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        if (!cancellationToken.IsCancellationRequested)
-                        {
-                            // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                            durationTimeSpan = DateTime.UtcNow - sendTimeUtc;
-                            string message = $"GatewayStoreClient Request Timeout. Start Time:{sendTimeUtc}; Total Duration:{durationTimeSpan}; Http Client Timeout:{this.httpClient.Timeout}; Activity id: {requestedActivityId}; Inner Message: {ex.Message};";
-                            throw new RequestTimeoutException(message, ex, requestMessage.RequestUri);
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                }
-            };
-
-            return await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(funcDelegate, new WebExceptionRetryPolicy(), cancellationToken);
+                diagnosticsContext = cosmosClientSideRequestStatistics.DiagnosticsContext;
+            }
+            
+            return this.httpClient.SendHttpAsync(
+                () => this.PrepareRequestMessageAsync(request, physicalAddress),
+                resourceType,
+                diagnosticsContext,
+                cancellationToken);
         }
     }
 }

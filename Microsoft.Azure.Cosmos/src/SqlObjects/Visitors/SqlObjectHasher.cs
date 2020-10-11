@@ -1,7 +1,8 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
     using System.Globalization;
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
         {
             int hashCode = SqlArrayCreateScalarExpressionHashCode;
-            for (int i = 0; i < sqlArrayCreateScalarExpression.Items.Count; i++)
+            for (int i = 0; i < sqlArrayCreateScalarExpression.Items.Length; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlArrayCreateScalarExpression.Items[i].Accept(this));
             }
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
 
             hashCode = CombineHashes(hashCode, sqlFunctionCallScalarExpression.Name.Accept(this));
-            for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Count; i++)
+            for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Length; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlFunctionCallScalarExpression.Arguments[i].Accept(this));
             }
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlGroupByClause sqlGroupByClause)
         {
             int hashCode = SqlGroupByClauseHashCode;
-            for (int i = 0; i < sqlGroupByClause.Expressions.Count; i++)
+            for (int i = 0; i < sqlGroupByClause.Expressions.Length; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlGroupByClause.Expressions[i].Accept(this));
             }
@@ -272,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 hashCode = CombineHashes(hashCode, SqlInScalarExpressionNotHashCode);
             }
 
-            for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+            for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlInScalarExpression.Haystack[i].Accept(this));
             }
@@ -380,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlOrderbyClause sqlOrderByClause)
         {
             int hashCode = SqlOrderbyClauseHashCode;
-            for (int i = 0; i < sqlOrderByClause.OrderbyItems.Count; i++)
+            for (int i = 0; i < sqlOrderByClause.OrderbyItems.Length; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlOrderByClause.OrderbyItems[i].Accept(this));
             }
@@ -440,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 hashCode = CombineHashes(hashCode, sqlPropertyRefScalarExpression.Member.Accept(this));
             }
 
-            hashCode = CombineHashes(hashCode, sqlPropertyRefScalarExpression.Identifer.Accept(this));
+            hashCode = CombineHashes(hashCode, sqlPropertyRefScalarExpression.Identifier.Accept(this));
             return hashCode;
         }
 

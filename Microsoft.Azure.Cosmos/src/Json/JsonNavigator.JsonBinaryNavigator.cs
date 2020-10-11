@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonBinaryNavigator : JsonNavigator
         {
-            private readonly ReadOnlyMemory<byte> buffer;
+            private readonly ReadOnlyMemory<byte> rootBuffer;
             private readonly IReadOnlyJsonStringDictionary jsonStringDictionary;
-            private readonly BinaryNavigatorNode rootNode;
+            private readonly IJsonNavigatorNode rootNode;
 
             /// <summary>
             /// Initializes a new instance of the JsonBinaryNavigator class
@@ -47,6 +47,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException("buffer must be binary encoded.");
                 }
 
+                this.rootBuffer = buffer;
+
                 // offset for the 0x80 (128) binary serialization type marker.
                 buffer = buffer.Slice(1);
 
@@ -59,34 +61,19 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 buffer = buffer.Slice(0, jsonValueLength);
 
-                this.buffer = buffer;
                 this.jsonStringDictionary = jsonStringDictionary;
-                this.rootNode = new BinaryNavigatorNode(this.buffer, NodeTypes.GetNodeType(this.buffer.Span[0]));
+                this.rootNode = new BinaryNavigatorNode(buffer, JsonBinaryEncoding.NodeTypes.Lookup[buffer.Span[0]]);
             }
 
             /// <inheritdoc />
-            public override JsonSerializationFormat SerializationFormat
-            {
-                get
-                {
-                    return JsonSerializationFormat.Binary;
-                }
-            }
+            public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
-            public override IJsonNavigatorNode GetRootNode()
-            {
-                return this.rootNode;
-            }
+            public override IJsonNavigatorNode GetRootNode() => this.rootNode;
 
             /// <inheritdoc />
             public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
             {
-                if (node == null)
-                {
-                    throw new ArgumentNullException(nameof(node));
-                }
-
                 if (!(node is BinaryNavigatorNode binaryNavigatorNode))
                 {
                     throw new ArgumentException($"{nameof(node)} must be a {nameof(BinaryNavigatorNode)}");
@@ -114,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     stringNode);
 
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
-                    Utf8Memory.UnsafeCreateNoValidation(buffer),
+                    this.rootBuffer,
+                    buffer,
                     this.jsonStringDictionary,
                     out value);
             }
@@ -126,7 +114,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     JsonNodeType.String,
                     stringNode);
                 return JsonBinaryEncoding.GetStringValue(
-                    Utf8Memory.UnsafeCreateNoValidation(buffer),
+                    this.rootBuffer,
+                    buffer,
                     this.jsonStringDictionary);
             }
 
@@ -293,12 +282,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 // TODO (brchon): We can optimize for the case where the count is serialized so we can avoid using the linear time call to TryGetValueAt().
                 if (!JsonBinaryNavigator.TryGetValueAt(buffer, index, out ReadOnlyMemory<byte> arrayItem))
                 {
-                    throw new IndexOutOfRangeException($"Tried to access index:{index} in an array.");
+                    throw new IndexOutOfRangeException($"Tried to access index: {index} in an array.");
                 }
 
                 return new BinaryNavigatorNode(
                     arrayItem,
-                    NodeTypes.GetNodeType(arrayItem.Span[0]));
+                    JsonBinaryEncoding.NodeTypes.Lookup[arrayItem.Span[0]]);
             }
 
             /// <inheritdoc />
@@ -311,38 +300,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 return this.GetArrayItemsInternal(buffer).Select((node) => (IJsonNavigatorNode)node);
             }
 
-            private IEnumerable<BinaryNavigatorNode> GetArrayItemsInternal(ReadOnlyMemory<byte> buffer)
-            {
-                byte typeMarker = buffer.Span[0];
-
-                int firstArrayItemOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
-                int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-
-                // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
-
-                // Seek to the first array item
-                buffer = buffer.Slice(firstArrayItemOffset);
-
-                while (buffer.Length != 0)
-                {
-                    int arrayItemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (arrayItemLength > buffer.Length)
-                    {
-                        // Array Item got cut off.
-                        throw new JsonInvalidTokenException();
-                    }
-
-                    // Create a buffer for that array item
-                    BinaryNavigatorNode arrayItem = new BinaryNavigatorNode(
-                        buffer.Slice(0, arrayItemLength),
-                        NodeTypes.GetNodeType(buffer.Span[0]));
-                    yield return arrayItem;
-
-                    // Slice off the array item
-                    buffer = buffer.Slice(arrayItemLength);
-                }
-            }
+            private IEnumerable<BinaryNavigatorNode> GetArrayItemsInternal(ReadOnlyMemory<byte> buffer) => JsonBinaryEncoding.Enumerator
+                .GetArrayItems(buffer)
+                .Select(arrayItem => new BinaryNavigatorNode(arrayItem, JsonBinaryEncoding.NodeTypes.Lookup[arrayItem.Span[0]]));
 
             /// <inheritdoc />
             public override int GetObjectPropertyCount(IJsonNavigatorNode objectNode)
@@ -449,83 +409,26 @@ namespace Microsoft.Azure.Cosmos.Json
                         objectPropertyInternal.ValueNode));
             }
 
-            private IEnumerable<ObjectPropertyInternal> GetObjectPropertiesInternal(ReadOnlyMemory<byte> buffer)
+            private IEnumerable<ObjectPropertyInternal> GetObjectPropertiesInternal(ReadOnlyMemory<byte> buffer) => JsonBinaryEncoding.Enumerator
+                .GetObjectProperties(buffer)
+                .Select(property => new ObjectPropertyInternal(
+                    new BinaryNavigatorNode(property.Name, JsonNodeType.FieldName),
+                    new BinaryNavigatorNode(property.Value, JsonBinaryEncoding.NodeTypes.Lookup[property.Value.Span[0]])));
+
+            public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
             {
-                byte typeMarker = buffer.Span[0];
-                int firstValueOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
-
-                buffer = buffer.Slice(firstValueOffset);
-                while (buffer.Length != 0)
+                if (!(jsonNavigatorNode is BinaryNavigatorNode binaryNavigatorNode))
                 {
-                    int nameNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (nameNodeLength > buffer.Length)
-                    {
-                        throw new JsonInvalidTokenException();
-                    }
-                    ReadOnlyMemory<byte> nameNode = buffer.Slice(0, nameNodeLength);
-                    buffer = buffer.Slice(nameNodeLength);
-
-                    int valueNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (valueNodeLength > buffer.Length)
-                    {
-                        throw new JsonInvalidTokenException();
-                    }
-                    ReadOnlyMemory<byte> valueNode = buffer.Slice(0, valueNodeLength);
-                    buffer = buffer.Slice(valueNodeLength);
-
-                    yield return new ObjectPropertyInternal(
-                        new BinaryNavigatorNode(nameNode, JsonNodeType.FieldName),
-                        new BinaryNavigatorNode(valueNode, NodeTypes.GetNodeType(valueNode.Span[0])));
-                }
-            }
-
-            /// <inheritdoc />
-            public override bool TryGetBufferedRawJson(
-                IJsonNavigatorNode jsonNode,
-                out ReadOnlyMemory<byte> bufferedRawJson)
-            {
-                if (!(jsonNode is BinaryNavigatorNode binaryNavigatorNode))
-                {
-                    throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
-                }
-
-                return this.TryGetBufferedRawJsonInternal(binaryNavigatorNode, out bufferedRawJson);
-            }
-
-            private bool TryGetBufferedRawJsonInternal(
-                BinaryNavigatorNode binaryNavigatorNode,
-                out ReadOnlyMemory<byte> bufferedRawJson)
-            {
-                if ((this.jsonStringDictionary != null) && JsonBinaryNavigator.IsStringOrNested(binaryNavigatorNode))
-                {
-                    // Force a rewrite for dictionary encoding.
-                    bufferedRawJson = default;
-                    return false;
+                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must be a {nameof(BinaryNavigatorNode)}");
                 }
 
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
-
-                if (buffer.Length == 0)
+                if (!MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
                 {
-                    throw new ArgumentException($"Node must not be empty.");
+                    throw new InvalidOperationException("Failed to get segment");
                 }
 
-                bufferedRawJson = buffer;
-                return true;
-            }
-
-            private static bool IsStringOrNested(BinaryNavigatorNode binaryNavigatorNode)
-            {
-                switch (binaryNavigatorNode.JsonNodeType)
-                {
-                    case JsonNodeType.String:
-                    case JsonNodeType.FieldName:
-                    case JsonNodeType.Array:
-                    case JsonNodeType.Object:
-                        return true;
-                    default:
-                        return false;
-                }
+                return JsonReader.CreateBinaryFromOffset(this.rootBuffer, segment.Offset, this.jsonStringDictionary);
             }
 
             private static int GetValueCount(ReadOnlySpan<byte> node)
@@ -546,36 +449,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 long index,
                 out ReadOnlyMemory<byte> arrayItem)
             {
-                ReadOnlyMemory<byte> buffer = arrayNode;
-                byte typeMarker = buffer.Span[0];
-
-                int firstArrayItemOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
-                int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-
-                // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
-
-                // Seek to the first array item
-                buffer = buffer.Slice(firstArrayItemOffset);
-
-                for (long count = 0; count < index; count++)
+                if (index > int.MaxValue)
                 {
-                    // Skip over the array item.
-                    int arrayItemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (arrayItemLength >= buffer.Length)
-                    {
-                        arrayItem = default;
-                        return false;
-                    }
-
-                    buffer = buffer.Slice(arrayItemLength);
+                    arrayItem = default;
+                    return false;
                 }
 
-                // Scope to just that array item
-                int itemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                buffer = buffer.Slice(0, itemLength);
+                IEnumerable<ReadOnlyMemory<byte>> arrayItems = JsonBinaryEncoding.Enumerator.GetArrayItems(arrayNode);
+                arrayItems = arrayItems.Skip((int)index);
+                if (!arrayItems.Any())
+                {
+                    arrayItem = default;
+                    return false;
+                }
 
-                arrayItem = buffer;
+                arrayItem = arrayItems.First();
                 return true;
             }
 
@@ -600,7 +488,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"Node must not be empty.");
                 }
 
-                JsonNodeType actual = NodeTypes.GetNodeType(buffer.Span[0]);
+                JsonNodeType actual = JsonBinaryEncoding.NodeTypes.Lookup[buffer.Span[0]];
                 if (actual != expected)
                 {
                     throw new ArgumentException($"Node needs to be of type {expected}.");
@@ -609,28 +497,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 return buffer;
             }
 
-            public override void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+            public override void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
             {
                 if (!(jsonNavigatorNode is BinaryNavigatorNode binaryNavigatorNode))
                 {
                     throw new ArgumentOutOfRangeException($"Expected {nameof(jsonNavigatorNode)} to be a {nameof(BinaryNavigatorNode)}.");
                 }
 
-                this.WriteToInternal(binaryNavigatorNode, jsonWriter, sameEncoding: this.SerializationFormat == jsonWriter.SerializationFormat);
+                bool sameEncoding = this.SerializationFormat == jsonWriter.SerializationFormat;
+                if (sameEncoding)
+                {
+                    bool isFieldName = binaryNavigatorNode.JsonNodeType == JsonNodeType.FieldName;
+                    if (!(jsonWriter is IJsonBinaryWriterExtensions jsonBinaryWriter))
+                    {
+                        throw new InvalidOperationException($"Expected writer to implement: {nameof(IJsonBinaryWriterExtensions)}.");
+                    }
+
+                    if (!(this.rootNode is BinaryNavigatorNode binaryRootNode))
+                    {
+                        throw new InvalidOperationException($"Expected {nameof(this.rootNode)} to be a {nameof(BinaryNavigatorNode)}.");
+                    }
+
+                    jsonBinaryWriter.WriteRawJsonValue(
+                        this.rootBuffer,
+                        binaryNavigatorNode.Buffer,
+                        isRootNode: object.ReferenceEquals(jsonNavigatorNode, this.rootNode),
+                        isFieldName,
+                        this.jsonStringDictionary);
+                }
+                else
+                {
+                    this.WriteToInternal(binaryNavigatorNode, jsonWriter);
+                }
             }
 
-            private void WriteToInternal(BinaryNavigatorNode binaryNavigatorNode, IJsonWriter jsonWriter, bool sameEncoding)
+            private void WriteToInternal(BinaryNavigatorNode binaryNavigatorNode, IJsonWriter jsonWriter)
             {
                 ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
                 JsonNodeType nodeType = binaryNavigatorNode.JsonNodeType;
-
-                if (sameEncoding && this.TryGetBufferedRawJsonInternal(binaryNavigatorNode, out ReadOnlyMemory<byte> bufferedRawJson))
-                {
-                    // Token type doesn't make any difference other than whether it's a value or field name
-                    JsonTokenType tokenType = nodeType == JsonNodeType.FieldName ? JsonTokenType.FieldName : JsonTokenType.String;
-                    jsonWriter.WriteRawJsonToken(tokenType, bufferedRawJson.Span);
-                    return;
-                }
 
                 switch (nodeType)
                 {
@@ -657,9 +561,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonNodeType.FieldName:
                         bool fieldName = binaryNavigatorNode.JsonNodeType == JsonNodeType.FieldName;
 
-                        Utf8Memory utf8Buffer = Utf8Memory.UnsafeCreateNoValidation(buffer);
                         if (JsonBinaryEncoding.TryGetBufferedStringValue(
-                            utf8Buffer,
+                            this.rootBuffer,
+                            buffer,
                             this.jsonStringDictionary,
                             out Utf8Memory bufferedStringValue))
                         {
@@ -675,7 +579,8 @@ namespace Microsoft.Azure.Cosmos.Json
                         else
                         {
                             string value = JsonBinaryEncoding.GetStringValue(
-                                utf8Buffer,
+                                this.rootBuffer,
+                                buffer,
                                 this.jsonStringDictionary);
                             if (fieldName)
                             {
@@ -694,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                             foreach (BinaryNavigatorNode arrayItem in this.GetArrayItemsInternal(buffer))
                             {
-                                this.WriteToInternal(arrayItem, jsonWriter, sameEncoding);
+                                this.WriteToInternal(arrayItem, jsonWriter);
                             }
 
                             jsonWriter.WriteArrayEnd();
@@ -707,8 +612,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                             foreach (ObjectPropertyInternal objectProperty in this.GetObjectPropertiesInternal(buffer))
                             {
-                                this.WriteToInternal(objectProperty.NameNode, jsonWriter, sameEncoding);
-                                this.WriteToInternal(objectProperty.ValueNode, jsonWriter, sameEncoding);
+                                this.WriteToInternal(objectProperty.NameNode, jsonWriter);
+                                this.WriteToInternal(objectProperty.ValueNode, jsonWriter);
                             }
 
                             jsonWriter.WriteObjectEnd();
@@ -810,148 +715,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public BinaryNavigatorNode NameNode { get; }
                 public BinaryNavigatorNode ValueNode { get; }
-            }
-
-            private static class NodeTypes
-            {
-                private const JsonNodeType Array = JsonNodeType.Array;
-                private const JsonNodeType Binary = JsonNodeType.Binary;
-                private const JsonNodeType False = JsonNodeType.False;
-                private const JsonNodeType Float32 = JsonNodeType.Float32;
-                private const JsonNodeType Float64 = JsonNodeType.Float64;
-                private const JsonNodeType Guid = JsonNodeType.Guid;
-                private const JsonNodeType Int16 = JsonNodeType.Int16;
-                private const JsonNodeType Int32 = JsonNodeType.Int32;
-                private const JsonNodeType Int64 = JsonNodeType.Int64;
-                private const JsonNodeType Int8 = JsonNodeType.Int8;
-                private const JsonNodeType Null = JsonNodeType.Null;
-                private const JsonNodeType Number = JsonNodeType.Number64;
-                private const JsonNodeType Object = JsonNodeType.Object;
-                private const JsonNodeType String = JsonNodeType.String;
-                private const JsonNodeType True = JsonNodeType.True;
-                private const JsonNodeType UInt32 = JsonNodeType.UInt32;
-                private const JsonNodeType Unknown = JsonNodeType.Unknown;
-
-                private static readonly JsonNodeType[] Types = new JsonNodeType[]
-                {
-                    // Encoded literal integer value (32 values)
-                    Number, Number, Number, Number, Number, Number, Number, Number,
-                    Number, Number, Number, Number, Number, Number, Number, Number,
-                    Number, Number, Number, Number, Number, Number, Number, Number,
-                    Number, Number, Number, Number, Number, Number, Number, Number,
-
-                    // Encoded 1-byte system string (32 values)
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-
-                    // Encoded 1-byte user string (32 values)
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-
-                    // Encoded 2-byte user string (32 values)
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-
-                    // TypeMarker-encoded string length (64 values)
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-                    String, String, String, String, String, String, String, String,
-
-                    // Variable Length String Values / Binary Values
-                    String,     // StrL1 (1-byte length)
-                    String,     // StrL2 (2-byte length)
-                    String,     // StrL4 (4-byte length)
-                    Binary,     // BinL1 (1-byte length)
-                    Binary,     // BinL2 (2-byte length)
-                    Binary,     // BinL4 (4-byte length)
-                    Unknown,    // <empty> 0xC6
-                    Unknown,    // <empty> 0xC7
-
-                    // Number Values
-                    Number,     // NumUI8
-                    Number,     // NumI16,
-                    Number,     // NumI32,
-                    Number,     // NumI64,
-                    Number,     // NumDbl,
-                    Float32,    // Float32
-                    Float64,    // Float64
-                    Unknown,    // <empty> 0xCF
-
-                    // Other Value Types
-                    Null,       // Null
-                    False,      // False
-                    True,       // True
-                    Guid,       // Guid
-                    Unknown,    // <empty> 0xD4
-                    Unknown,    // <empty> 0xD5
-                    Unknown,    // <empty> 0xD6
-                    Unknown,    // <empty> 0xD7
-
-                    Int8,       // Int8
-                    Int16,      // Int16
-                    Int32,      // Int32
-                    Int64,      // Int64
-                    UInt32,     // UInt32
-                    Unknown,    // <empty> 0xDD
-                    Unknown,    // <empty> 0xDE
-                    Unknown,    // <empty> 0xDF
-
-                    // Array Type Markers
-                    Array,      // Arr0
-                    Array,      // Arr1 <unknown>
-                    Array,      // ArrL1 (1-byte length)
-                    Array,      // ArrL2 (2-byte length)
-                    Array,      // ArrL4 (4-byte length)
-                    Array,      // ArrLC1 (1-byte length and count)
-                    Array,      // ArrLC2 (2-byte length and count)
-                    Array,      // ArrLC4 (4-byte length and count)
-
-                    // Object Type Markers
-                    Object,     // Obj0
-                    Object,     // Obj1 <unknown>
-                    Object,     // ObjL1 (1-byte length)
-                    Object,     // ObjL2 (2-byte length)
-                    Object,     // ObjL4 (4-byte length)
-                    Object,     // ObjLC1 (1-byte length and count)
-                    Object,     // ObjLC2 (2-byte length and count)
-                    Object,     // ObjLC4 (4-byte length and count)
-
-                    // Empty Range
-                    Unknown,    // <empty> 0xF0
-                    Unknown,    // <empty> 0xF1
-                    Unknown,    // <empty> 0xF2
-                    Unknown,    // <empty> 0xF3
-                    Unknown,    // <empty> 0xF4
-                    Unknown,    // <empty> 0xF5
-                    Unknown,    // <empty> 0xF7
-                    Unknown,    // <empty> 0xF8
-
-                    // Special Values
-                    Unknown,    // <special value reserved> 0xF8
-                    Unknown,    // <special value reserved> 0xF9
-                    Unknown,    // <special value reserved> 0xFA
-                    Unknown,    // <special value reserved> 0xFB
-                    Unknown,    // <special value reserved> 0xFC
-                    Unknown,    // <special value reserved> 0xFD
-                    Unknown,    // <special value reserved> 0xFE
-                    Unknown,    // Invalid
-                };
-
-                public static JsonNodeType GetNodeType(byte typeMarker)
-                {
-                    return NodeTypes.Types[typeMarker];
-                }
             }
         }
     }

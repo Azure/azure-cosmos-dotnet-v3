@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -28,22 +29,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        public async Task WhenNoLeasesExistReturn1()
+        public async Task WhenNoLeasesExist()
         {
-            long? receivedEstimation = 0;
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+            long receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container
                 .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
+                    manualResetEvent.Set();
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            Assert.IsTrue(manualResetEvent.WaitOne(BaseChangeFeedClientHelper.ChangeFeedCleanupTime), "Not received estimation in the expected time");
             await estimator.StopAsync();
-            Assert.IsTrue(receivedEstimation.HasValue);
             Assert.AreEqual(1, receivedEstimation);
+        }
+
+        [TestMethod]
+        public async Task WhenNoLeasesExist_Pull()
+        {
+            ChangeFeedEstimator estimator = ((ContainerInternal)this.Container)
+                .GetChangeFeedEstimator(
+                    processorName: "test",
+                    this.LeaseContainer);
+
+            long receivedEstimation = 0;
+            using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ChangeFeedProcessorState> response = await feedIterator.ReadNextAsync();
+                receivedEstimation += response.Sum(r => r.EstimatedLag);
+            }
+
+            Assert.AreEqual(0, receivedEstimation);
         }
 
         /// <summary>
@@ -54,10 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenLeasesHaveContinuationTokenNullReturn0()
         {
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                {
-                    return Task.CompletedTask;
-                })
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
@@ -65,19 +83,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
 
-            long? receivedEstimation = null;
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+            long receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container
                 .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
+                    manualResetEvent.Set();
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            Assert.IsTrue(manualResetEvent.WaitOne(BaseChangeFeedClientHelper.ChangeFeedCleanupTime), "Not received estimation in the expected time");
             await estimator.StopAsync();
-            Assert.IsTrue(receivedEstimation.HasValue);
+            Assert.AreEqual(0, receivedEstimation);
+        }
+
+        [TestMethod]
+        public async Task WhenLeasesHaveContinuationTokenNullReturn0_Pull()
+        {
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
+                .WithInstanceName("random")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+
+            long receivedEstimation = 0;
+            ChangeFeedEstimator estimator = ((ContainerInternal)this.Container)
+                .GetChangeFeedEstimator(
+                    processorName: "test",
+                    this.LeaseContainer);
+
+            using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ChangeFeedProcessorState> response = await feedIterator.ReadNextAsync();
+                receivedEstimation += response.Sum(r => r.EstimatedLag);
+            }
+
             Assert.AreEqual(0, receivedEstimation);
         }
 
@@ -89,16 +136,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task CountPendingDocuments()
         {
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                {
-                    return Task.CompletedTask;
-                })
+                .GetChangeFeedProcessorBuilder(
+                    processorName: "test",
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
-                .WithLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer)
+                .Build();
 
             await processor.StartAsync();
+
             // Letting processor initialize
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
             // Inserting documents
             foreach (int id in Enumerable.Range(0, 10))
             {
@@ -109,16 +158,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
 
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
-                {
-                    receivedEstimation = estimation;
-                    return Task.CompletedTask;
-                }, TimeSpan.FromSeconds(1))
-                .WithLeaseContainer(this.LeaseContainer).Build();
+                .GetChangeFeedEstimatorBuilder(
+                    processorName: "test",
+                    estimationDelegate: (long estimation, CancellationToken token) =>
+                    {
+                        receivedEstimation = estimation;
+                        manualResetEvent.Set();
+                        return Task.CompletedTask;
+                    }, TimeSpan.FromSeconds(1))
+                .WithLeaseContainer(this.LeaseContainer)
+                .Build();
 
-            
             // Inserting more documents
             foreach (int id in Enumerable.Range(11, 10))
             {
@@ -126,9 +179,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
 
             await estimator.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            Assert.IsTrue(manualResetEvent.WaitOne(BaseChangeFeedClientHelper.ChangeFeedCleanupTime), "Not received estimation in the expected time");
             await estimator.StopAsync();
-            Assert.IsTrue(receivedEstimation.HasValue);
+            Assert.AreEqual(10, receivedEstimation);
+        }
+
+        [TestMethod]
+        public async Task CountPendingDocuments_Pull()
+        {
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder(
+                    processorName: "test",
+                    onChangesDelegate: (IReadOnlyCollection<dynamic> docs, CancellationToken token) => Task.CompletedTask)
+                .WithInstanceName("random")
+                .WithLeaseContainer(this.LeaseContainer)
+                .Build();
+
+            await processor.StartAsync();
+
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            // Inserting documents
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            // Waiting on all notifications to finish
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+            long receivedEstimation = 0;
+            ChangeFeedEstimator estimator = ((ContainerInternal)this.Container)
+                .GetChangeFeedEstimator(
+                    processorName: "test",
+                    this.LeaseContainer);
+
+            // Inserting more documents
+            foreach (int id in Enumerable.Range(11, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            using FeedIterator<ChangeFeedProcessorState> feedIterator = estimator.GetCurrentStateIterator();
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ChangeFeedProcessorState> response = await feedIterator.ReadNextAsync();
+                receivedEstimation += response.Sum(r => r.EstimatedLag);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+                Assert.IsNotNull(response.Diagnostics);
+                Assert.IsTrue(response.Diagnostics.ToString().Length > 0);
+            }
+
             Assert.AreEqual(10, receivedEstimation);
         }
     }

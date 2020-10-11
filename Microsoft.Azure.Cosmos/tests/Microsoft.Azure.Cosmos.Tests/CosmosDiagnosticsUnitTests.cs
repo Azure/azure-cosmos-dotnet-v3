@@ -5,23 +5,109 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosDiagnosticsUnitTests
     {
         [TestMethod]
+        public void ValidateActivityScope()
+        {
+            Guid previousActivityId = Trace.CorrelationManager.ActivityId;
+            Guid testActivityId = Guid.NewGuid();
+            Trace.CorrelationManager.ActivityId = testActivityId;
+            using (ActivityScope scope = new ActivityScope(Guid.NewGuid()))
+            {
+                Assert.AreNotEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "Activity ID should not be the default");
+                Assert.AreNotEqual(testActivityId, Trace.CorrelationManager.ActivityId, "A new Activity ID should have set by the new ActivityScope");
+                Assert.IsNull(ActivityScope.CreateIfDefaultActivityId());
+            }
+
+            Assert.AreEqual(testActivityId, Trace.CorrelationManager.ActivityId, "Activity ID should be set back to previous version");
+            Trace.CorrelationManager.ActivityId = Guid.Empty;
+            Assert.IsNotNull(ActivityScope.CreateIfDefaultActivityId());
+
+            Trace.CorrelationManager.ActivityId = previousActivityId;
+        }
+
+        [TestMethod]
+        public async Task ValidateActivityId()
+        {
+           using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            CosmosClientContext clientContext = ClientContextCore.Create(
+              cosmosClient,
+              new MockDocumentClient(),
+              new CosmosClientOptions());
+
+            Guid result = await clientContext.OperationHelperAsync<Guid>(
+                nameof(ValidateActivityId),
+                new RequestOptions(),
+                (diagnostics) =>
+                {
+                    return this.ValidateActivityIdHelper();
+                });
+
+            Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
+        }
+
+        [TestMethod]
+        public async Task ValidateActivityIdWithSynchronizationContext()
+        {
+            Mock<SynchronizationContext> mockSynchronizationContext = new Mock<SynchronizationContext>()
+            {
+                CallBase = true
+            };
+
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            CosmosClientContext clientContext = ClientContextCore.Create(
+                cosmosClient,
+                new MockDocumentClient(),
+                new CosmosClientOptions());
+
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(mockSynchronizationContext.Object);
+
+                Guid result = await clientContext.OperationHelperAsync<Guid>(
+                    nameof(ValidateActivityIdWithSynchronizationContext),
+                    new RequestOptions(),
+                    (diagnostics) =>
+                    {
+                        return this.ValidateActivityIdHelper();
+                    });
+
+                Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+            }
+        }
+
+        private Task<Guid> ValidateActivityIdHelper()
+        {
+            Guid activityId = Trace.CorrelationManager.ActivityId;
+            Assert.AreNotEqual(Guid.Empty, activityId);
+            return Task.FromResult(activityId);
+        }
+
+        [TestMethod]
         public void ValidateDiagnosticsContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsContext),
+                "cosmos-netstandard-sdk");
             cosmosDiagnostics.GetOverallScope().Dispose();
             string diagnostics = cosmosDiagnostics.ToString();
 
@@ -30,7 +116,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             JToken summary = jObject["Summary"];
             Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"), "Diagnostics should have user agent string");
 
-            cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsContext),
+                "MyCustomUserAgentString");
             using (cosmosDiagnostics.GetOverallScope())
             {
                 // Test all the different operations on diagnostics context
@@ -46,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         42,
                         null,
                         HttpMethod.Get,
-                        new Uri("http://MockUri.com"),
+                        "http://MockUri.com",
                         null,
                         null));
                 }
@@ -61,13 +149,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                         42,
                         null,
                         HttpMethod.Get,
-                        new Uri("http://MockUri.com"),
+                        "http://MockUri.com",
                         null,
                         null));
                 }
             }
-
-            cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
 
             string result = cosmosDiagnostics.ToString();
 
@@ -87,7 +173,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateDiagnosticsAppendContext()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateDiagnosticsAppendContext),
+                "MyCustomUserAgentString");
             CosmosDiagnosticsContext cosmosDiagnostics2;
 
             using (cosmosDiagnostics.GetOverallScope())
@@ -98,9 +186,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
 
-                cosmosDiagnostics.SetSdkUserAgent("MyCustomUserAgentString");
-
-                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore();
+                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                    nameof(ValidateDiagnosticsAppendContext),
+                    "MyCustomUserAgentString");
                 cosmosDiagnostics2.GetOverallScope().Dispose();
 
                 using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
@@ -121,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ValidateClientSideRequestStatisticsToString()
         {
             // Verify that API using the interface get the older v2 string
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext diagnosticsContext = MockCosmosUtil.CreateDiagnosticsContext();
             diagnosticsContext.GetOverallScope().Dispose();
 
             CosmosClientSideRequestStatistics clientSideRequestStatistics = new CosmosClientSideRequestStatistics(diagnosticsContext);
@@ -174,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestUpdatesWhileVisiting()
         {
-            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore();
+            CosmosDiagnosticsContext cosmosDiagnostics = MockCosmosUtil.CreateDiagnosticsContext();
             cosmosDiagnostics.CreateScope("FirstScope");
 
             bool isFirst = true;
@@ -185,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cosmosDiagnostics.CreateScope("SecondScope");
                     isFirst = false;
                 }
-               
+
                 diagnostic.ToString();
             }
         }

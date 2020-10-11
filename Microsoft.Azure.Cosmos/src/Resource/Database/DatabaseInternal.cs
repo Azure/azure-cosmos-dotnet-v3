@@ -4,32 +4,30 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
 
     internal abstract class DatabaseInternal : Database
     {
-        internal abstract Uri LinkUri { get; }
+        internal abstract string LinkUri { get; }
 
         internal abstract CosmosClientContext ClientContext { get; }
 
         internal abstract Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         internal abstract Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             int throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         internal abstract Task<ThroughputResponse> ReplaceThroughputPropertiesIfExistsAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
-        internal abstract Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken));
+        internal abstract Task<string> GetRIDAsync(CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetUserQueryStreamIterator(
             QueryDefinition queryDefinition,

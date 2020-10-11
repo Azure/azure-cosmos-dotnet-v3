@@ -1,0 +1,679 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>IN Many Number</Description>
+      <Query>SELECT * FROM c WHERE c.key IN (1, 2, 3)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[3.0],[3.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[1.0],[1.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IN Many String</Description>
+      <Query>SELECT * FROM c WHERE c.key IN ("a", "b", "c")</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[["c"],["c"]]</Range>
+            <Range>[["a"],["a"]]</Range>
+            <Range>[["b"],["b"]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IN 1</Description>
+      <Query>SELECT * FROM c WHERE c.key IN (1)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[1.0],[1.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IN Many Arrays</Description>
+      <Query>SELECT * FROM c WHERE c.key IN ([], [1], [3,2])</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[{}],[{}]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IN Many Objects</Description>
+      <Query>SELECT * FROM c WHERE c.key IN ({}, {"x":1,"y":2})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[{}],[{}]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IN Many Mixed Types</Description>
+      <Query>SELECT * FROM c WHERE c.key IN (1, "a", true, false, null, 2.0, {"x":8}, [7])</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[["a"],["a"]]</Range>
+            <Range>[[{}],[{}]]</Range>
+            <Range>[[null],[null]]</Range>
+            <Range>[[false],[false]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[1.0],[1.0]]</Range>
+            <Range>[[true],[true]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ORs</Description>
+      <Query>SELECT * FROM c WHERE c.key = 1 OR c.key = 2</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[1.0],[1.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ANDs</Description>
+      <Query>SELECT * FROM c WHERE c.key = 1 AND c.key = 2</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ABS</Description>
+      <Query>SELECT * FROM c WHERE ABS(c.key) = 1</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[1.0],[1.0]]</Range>
+            <Range>[[-1.0],[-1.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Non Indexed System Function Filter</Description>
+      <Query>SELECT * FROM c WHERE LENGTH(c.key) = 1</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_ARRAY</Description>
+      <Query>SELECT * FROM c WHERE IS_ARRAY(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_BOOL</Description>
+      <Query>SELECT * FROM c WHERE IS_BOOL(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[false],[false]]</Range>
+            <Range>[[true],[true]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_NULL</Description>
+      <Query>SELECT * FROM c WHERE IS_NULL(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[null],[null]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_NUMBER</Description>
+      <Query>SELECT * FROM c WHERE IS_NUMBER(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_OBJECT</Description>
+      <Query>SELECT * FROM c WHERE IS_OBJECT(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_STRING</Description>
+      <Query>SELECT * FROM c WHERE IS_STRING(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_DEFINED</Description>
+      <Query>SELECT * FROM c WHERE IS_DEFINED(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_PRIMITIVE</Description>
+      <Query>SELECT * FROM c WHERE IS_PRIMITIVE(c.key)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_TRY_ARRAY_CONTAINS</Description>
+      <Query>SELECT * FROM c WHERE _TRY_ARRAY_CONTAINS([1, 2, 3], c.a)</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[3.0],[3.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[1.0],[1.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ARRAY_CONTAINS</Description>
+      <Query>SELECT * FROM c WHERE ARRAY_CONTAINS([1, 2, 3], c.a)</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[3.0],[3.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[1.0],[1.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>

@@ -26,11 +26,12 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            return Task.FromResult(new List<Documents.Routing.Range<string>>
-                {
+            return Task.FromResult(
+new List<Documents.Routing.Range<string>>
+{
                     Documents.Routing.Range<string>.GetPointRange(
                         this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
-                });
+});
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -44,10 +45,22 @@ namespace Microsoft.Azure.Cosmos
             return new List<string>() { range.Id };
         }
 
-        public override void Accept(FeedRangeVisitor visitor)
+        public override void Accept(IFeedRangeVisitor visitor)
         {
             visitor.Visit(this);
         }
+
+        public override Task<TResult> AcceptAsync<TResult>(
+            IFeedRangeAsyncVisitor<TResult> visitor,
+            CancellationToken cancellationToken = default)
+        {
+            return visitor.VisitAsync(this, cancellationToken);
+        }
+
+        public override Task<TResult> AcceptAsync<TResult, TArg>(
+           IFeedRangeAsyncVisitor<TResult, TArg> visitor,
+           TArg argument,
+           CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
 
         public override string ToString() => this.PartitionKey.InternalKey.ToJsonString();
     }

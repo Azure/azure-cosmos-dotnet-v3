@@ -20,9 +20,9 @@ namespace Microsoft.Azure.Cosmos
         /// The path to be indexed.
         /// </value>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for how to specify paths.
         /// Some valid examples: /"prop"/?, /"prop"/**, /"prop"/"subprop"/?, /"prop"/[]/?
         /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
         [JsonProperty(PropertyName = Constants.Properties.Path)]
         public string Path { get; set; }
 

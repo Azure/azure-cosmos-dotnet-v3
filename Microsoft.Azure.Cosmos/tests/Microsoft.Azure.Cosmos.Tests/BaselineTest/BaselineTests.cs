@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
     /// </summary>
     /// <typeparam name="TInput">The type of the input for each test (which derives from BaselineTestInput).</typeparam>
     /// <typeparam name="TOutput">The type of the output for each test (which derives from BaselineTestOutput).</typeparam>
+    [TestCategory("UpdateContract")]
     public abstract class BaselineTests<TInput, TOutput> where TInput : BaselineTestInput where TOutput : BaselineTestOutput
     {
         /// <summary>
@@ -123,8 +124,8 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
                 }
             }
 
-            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
-            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 30, 0)).Take(100).ToArray());
+            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 30, 0)).Take(100).ToArray());
 
             bool matched = baselineText.Equals(outputText);
             if (!matched)

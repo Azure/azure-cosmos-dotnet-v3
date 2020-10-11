@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "To be fixed, tracked in issue #1575")]
     internal sealed class EncryptionTransactionalBatch : TransactionalBatch
     {
         private readonly Encryptor encryptor;
@@ -40,12 +41,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
-            using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-            {
-                return this.CreateItemStream(
-                    itemStream,
-                    requestOptions);
-            }
+            Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
+            return this.CreateItemStream(
+                itemStream,
+                requestOptions);
         }
 
         public override TransactionalBatch CreateItemStream(
@@ -112,13 +111,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
-            using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-            {
-                return this.ReplaceItemStream(
-                    id,
-                    itemStream,
-                    requestOptions);
-            }
+            Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
+            return this.ReplaceItemStream(
+                id,
+                itemStream,
+                requestOptions);
         }
 
         public override TransactionalBatch ReplaceItemStream(
@@ -163,12 +160,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
-            using (Stream itemStream = this.cosmosSerializer.ToStream<T>(item))
-            {
-                return this.UpsertItemStream(
-                    itemStream,
-                    requestOptions);
-            }
+            Stream itemStream = this.cosmosSerializer.ToStream<T>(item);
+            return this.UpsertItemStream(
+                itemStream,
+                requestOptions);
         }
 
         public override TransactionalBatch UpsertItemStream(
@@ -213,13 +208,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         if (result.ResourceStream != null)
                         {
-                            result.ResourceStream = await EncryptionProcessor.DecryptAsync(
+                            (result.ResourceStream, _) = await EncryptionProcessor.DecryptAsync(
                                 result.ResourceStream,
                                 this.encryptor,
                                 diagnosticsContext,
                                 cancellationToken);
                         }
-                    }                    
+                    }
                 }
 
                 return response;

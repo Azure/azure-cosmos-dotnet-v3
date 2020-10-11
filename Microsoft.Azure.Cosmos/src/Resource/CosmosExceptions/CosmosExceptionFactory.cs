@@ -20,7 +20,15 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             {
                 foreach (string key in dce.Headers)
                 {
-                    headers.Add(key, dce.Headers[key]);
+                    string value = dce.Headers[key];
+                    if (value == null)
+                    {
+                        throw new ArgumentNullException(
+                            message: $"{nameof(key)}: {key};",
+                            innerException: dce);
+                    }
+
+                    headers.Add(key, value);
                 }
             }
 
@@ -330,6 +338,32 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.BadRequest,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                error,
+                innerException);
+        }
+
+        internal static CosmosException CreateUnauthorizedException(
+            string message,
+            int subStatusCode,
+            Exception innerException,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.Unauthorized,
                 subStatusCode,
                 message,
                 stackTrace,

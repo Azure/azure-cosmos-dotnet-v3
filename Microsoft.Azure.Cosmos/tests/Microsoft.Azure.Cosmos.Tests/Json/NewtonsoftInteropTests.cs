@@ -237,13 +237,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             NewtonsoftToCosmosDBReader newtonsoftToCosmosDBReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftToCosmosDBWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
-            newtonsoftToCosmosDBWriter.WriteAll(newtonsoftToCosmosDBReader);
+            newtonsoftToCosmosDBReader.WriteAll(newtonsoftToCosmosDBWriter);
             return Encoding.UTF8.GetString(newtonsoftToCosmosDBWriter.GetResult().ToArray());
         }
 
         private static void VerifyReader<T>(ReadOnlyMemory<byte> payload, T expectedDeserializedValue)
         {
-            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(payload))
+            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(Cosmos.Json.JsonReader.Create(payload)))
             {
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                 T actualDeserializedValue = serializer.Deserialize<T>(reader);

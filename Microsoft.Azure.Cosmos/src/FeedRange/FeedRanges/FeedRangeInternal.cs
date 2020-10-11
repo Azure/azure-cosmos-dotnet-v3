@@ -25,11 +25,21 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken);
 
-        public abstract void Accept(FeedRangeVisitor visitor);
+        public abstract void Accept(IFeedRangeVisitor visitor);
+
+        public abstract Task<TResult> AcceptAsync<TResult>(IFeedRangeAsyncVisitor<TResult> visitor, CancellationToken cancellationToken = default);
+
+        public abstract Task<TResult> AcceptAsync<TResult, TArg>(
+            IFeedRangeAsyncVisitor<TResult, TArg> visitor,
+            TArg argument,
+            CancellationToken cancellationToken);
 
         public abstract override string ToString();
 
-        public override string ToJsonString() => JsonConvert.SerializeObject(this);
+        public override string ToJsonString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
 
         public static bool TryParse(
             string jsonString,

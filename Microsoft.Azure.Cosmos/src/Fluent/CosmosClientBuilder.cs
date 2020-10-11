@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string accountEndpoint,
             string authKeyOrResourceToken)
         {
-            if (accountEndpoint == null)
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
             }
 
-            if (authKeyOrResourceToken == null)
+            if (string.IsNullOrEmpty(authKeyOrResourceToken))
             {
                 throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
-        
+
         /// <summary>
         /// Set the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>

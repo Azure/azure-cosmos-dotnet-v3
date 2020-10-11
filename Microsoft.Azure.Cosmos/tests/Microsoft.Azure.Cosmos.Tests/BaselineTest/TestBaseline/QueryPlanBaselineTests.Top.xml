@@ -1,0 +1,346 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Just TOP</Description>
+      <Query>SELECT TOP 5 * FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Parameterized TOP</Description>
+      <Query>SELECT TOP @TOPCOUNT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <QueryParameters><![CDATA[[
+  {
+    "name": "@TOPCOUNT",
+    "value": 42
+  }
+]]]></QueryParameters>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>42</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP and non partition filter</Description>
+      <Query>SELECT TOP 5 * FROM c WHERE c.blah = 5</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP and partition filter</Description>
+      <Query>SELECT TOP 5 * FROM c WHERE c.key = 5</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP and partition filter</Description>
+      <Query>SELECT TOP 5 * FROM c WHERE c.key = 5</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP 0</Description>
+      <Query>SELECT TOP 0 * FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>0</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP 0 with partition key filter</Description>
+      <Query>SELECT TOP 0 * FROM c WHERE c.key = 5</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>0</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[5.0],[5.0]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP with Aggregate</Description>
+      <Query>SELECT TOP 5 VALUE AVG(c.name) FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates>
+            <AggregateOperator>Average</AggregateOperator>
+          </Aggregates>
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.name), "count": COUNT(c.name)}}]
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP with DISTINCT</Description>
+      <Query>SELECT DISTINCT TOP 5 VALUE c.name FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>Unordered</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT DISTINCT VALUE c.name
+FROM c]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP with GROUP BY</Description>
+      <Query>SELECT TOP 5 VALUE c.name FROM c GROUP BY c.name</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>5</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions>
+            <GroupByExpression>c.name</GroupByExpression>
+          </GroupByExpressions>
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[SELECT [{"item": c.name}] AS groupByItems, c.name AS payload
+FROM c
+GROUP BY c.name]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>

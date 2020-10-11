@@ -28,8 +28,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return this.dataEncryptionKeyContainerCore.GetDataEncryptionKeyQueryIterator<T>(
-                queryText, 
-                continuationToken, 
+                queryText,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.dataEncryptionKeyContainerCore.GetDataEncryptionKeyQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
                 requestOptions);
         }
 
@@ -40,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => 
+            return TaskHelper.RunInlineIfNeededAsync(() =>
                 this.dataEncryptionKeyContainerCore.CreateDataEncryptionKeyAsync(id, encryptionAlgorithm, encryptionKeyWrapMetadata, requestOptions, cancellationToken));
         }
 

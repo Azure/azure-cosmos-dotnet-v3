@@ -1,20 +1,23 @@
 ﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal sealed class SqlGroupByClause : SqlObject
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlGroupByClause : SqlObject
     {
-        private SqlGroupByClause(IReadOnlyList<SqlScalarExpression> expressions)
+        private SqlGroupByClause(ImmutableArray<SqlScalarExpression> expressions)
         {
-            if (expressions == null)
-            {
-                throw new ArgumentNullException($"{nameof(expressions)}");
-            }
-
             foreach (SqlScalarExpression expression in expressions)
             {
                 if (expression == null)
@@ -26,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Expressions = expressions;
         }
 
-        public IReadOnlyList<SqlScalarExpression> Expressions { get; }
+        public ImmutableArray<SqlScalarExpression> Expressions { get; }
 
-        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions);
+        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions.ToImmutableArray());
 
-        public static SqlGroupByClause Create(IReadOnlyList<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
+        public static SqlGroupByClause Create(ImmutableArray<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

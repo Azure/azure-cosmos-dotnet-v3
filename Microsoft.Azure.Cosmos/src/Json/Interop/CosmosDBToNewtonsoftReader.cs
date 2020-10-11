@@ -4,8 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.IO;
-    using System.Linq;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -42,13 +40,10 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <summary>
         /// Initializes a new instance of the NewtonsoftReader class.
         /// </summary>
-        /// <param name="buffer">The buffer to read from.</param>
-        /// <param name="jsonStringDictionary">The json string dictionary to use.</param>
-        public CosmosDBToNewtonsoftReader(
-            ReadOnlyMemory<byte> buffer,
-            JsonStringDictionary jsonStringDictionary = null)
+        /// <param name="jsonReader">The reader to interop with.</param>
+        public CosmosDBToNewtonsoftReader(IJsonReader jsonReader)
         {
-            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(buffer, jsonStringDictionary);
+            this.jsonReader = jsonReader ?? throw new ArgumentNullException(nameof(jsonReader));
         }
 
         /// <summary>
@@ -128,6 +123,51 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
                     value = this.jsonReader.GetStringValue();
                     break;
 
+                case JsonTokenType.Int8:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt8Value();
+                    break;
+
+                case JsonTokenType.Int16:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt16Value();
+                    break;
+
+                case JsonTokenType.Int32:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt32Value();
+                    break;
+
+                case JsonTokenType.Int64:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetInt64Value();
+                    break;
+
+                case JsonTokenType.UInt32:
+                    newtonsoftToken = JsonToken.Integer;
+                    value = this.jsonReader.GetUInt32Value();
+                    break;
+
+                case JsonTokenType.Float32:
+                    newtonsoftToken = JsonToken.Float;
+                    value = this.jsonReader.GetFloat32Value();
+                    break;
+
+                case JsonTokenType.Float64:
+                    newtonsoftToken = JsonToken.Float;
+                    value = this.jsonReader.GetFloat64Value();
+                    break;
+
+                case JsonTokenType.Guid:
+                    newtonsoftToken = JsonToken.String;
+                    value = this.jsonReader.GetGuidValue().ToString();
+                    break;
+
+                case JsonTokenType.Binary:
+                    newtonsoftToken = JsonToken.Bytes;
+                    value = this.jsonReader.GetBinaryValue().ToArray();
+                    break;
+
                 default:
                     throw new ArgumentException($"Unexpected jsonTokenType: {jsonTokenType}");
             }
@@ -137,20 +177,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="Byte"/>[].
+        /// Reads the next JSON token from the source as a <see cref="byte"/>[].
         /// </summary>
-        /// <returns>A <see cref="Byte"/>[] or <c>null</c> if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="byte"/>[] or <c>null</c> if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
         public override byte[] ReadAsBytes()
         {
-            this.Read();
-            if (!this.jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-            {
-                throw new Exception("Failed to get the bytes.");
-            }
-
-            byte[] value = bufferedRawJsonToken.ToArray();
-            this.SetToken(JsonToken.Bytes, value);
-            return value;
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -192,9 +224,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="Decimal"/>.
+        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="decimal"/>.
         /// </summary>
-        /// <returns>A <see cref="Nullable{T}"/> of <see cref="Decimal"/>. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="Nullable{T}"/> of <see cref="decimal"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override decimal? ReadAsDecimal()
         {
             decimal? value = (decimal?)this.ReadNumberValue();
@@ -207,9 +239,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="Int32"/>.
+        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="int"/>.
         /// </summary>
-        /// <returns>A <see cref="Nullable{T}"/> of <see cref="Int32"/>. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="Nullable{T}"/> of <see cref="int"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override int? ReadAsInt32()
         {
             int? value = (int?)this.ReadNumberValue();
@@ -222,9 +254,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="String"/>.
+        /// Reads the next JSON token from the source as a <see cref="string"/>.
         /// </summary>
-        /// <returns>A <see cref="String"/>. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="string"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override string ReadAsString()
         {
             this.Read();

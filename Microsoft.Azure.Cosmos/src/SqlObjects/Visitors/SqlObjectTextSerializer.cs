@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 {
     using System;
     using System.Buffers;
@@ -9,10 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.ServiceModel.Channels;
     using System.Text;
-    using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
@@ -59,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.WriteStartContext("[");
 
-                for (int i = 0; i < sqlArrayCreateScalarExpression.Items.Count; i++)
+                for (int i = 0; i < sqlArrayCreateScalarExpression.Items.Length; i++)
                 {
                     if (i > 0)
                     {
@@ -178,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.WriteStartContext("(");
 
-                for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Count; i++)
+                for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Length; i++)
                 {
                     if (i > 0)
                     {
@@ -196,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             this.writer.Write("GROUP BY ");
             sqlGroupByClause.Expressions[0].Accept(this);
-            for (int i = 1; i < sqlGroupByClause.Expressions.Count; i++)
+            for (int i = 1; i < sqlGroupByClause.Expressions.Length; i++)
             {
                 this.writer.Write(", ");
                 sqlGroupByClause.Expressions[i].Accept(this);
@@ -255,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.WriteStartContext("(");
 
-                for (int i = 0; i < sqlInScalarExpression.Haystack.Count; i++)
+                for (int i = 0; i < sqlInScalarExpression.Haystack.Length; i++)
                 {
                     if (i > 0)
                     {
@@ -378,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.writer.Write("ORDER BY ");
             sqlOrderByClause.OrderbyItems[0].Accept(this);
 
-            for (int i = 1; i < sqlOrderByClause.OrderbyItems.Count; i++)
+            for (int i = 1; i < sqlOrderByClause.OrderbyItems.Length; i++)
             {
                 this.writer.Write(", ");
                 sqlOrderByClause.OrderbyItems[i].Accept(this);
@@ -428,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 this.writer.Write(".");
             }
 
-            sqlPropertyRefScalarExpression.Identifer.Accept(this);
+            sqlPropertyRefScalarExpression.Identifier.Accept(this);
         }
 
         public override void Visit(SqlQuery sqlQuery)
@@ -645,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        unsafe private static void WriteNumber64(StringBuilder stringBuilder, Number64 value)
+        private static unsafe void WriteNumber64(StringBuilder stringBuilder, Number64 value)
         {
             const int MaxNumberLength = 32;
             Span<byte> buffer = stackalloc byte[MaxNumberLength];
@@ -674,7 +671,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        unsafe private static void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
+        private static unsafe void WriteEscapedString(StringBuilder stringBuilder, ReadOnlySpan<char> unescapedString)
         {
             while (!unescapedString.IsEmpty)
             {
@@ -746,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                             break;
 
                         default:
-                            char wideCharToEscape = (char)character;
+                            char wideCharToEscape = character;
                             // We got a control character (U+0000 through U+001F).
                             stringBuilder.Append('\\');
                             stringBuilder.Append('u');

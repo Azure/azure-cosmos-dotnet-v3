@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
     internal abstract class CosmosQueryClient
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Action<IQueryable> OnExecuteScalarQueryCallback { get; }
 
         public abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
-            Uri containerLink,
+            string containerLink,
             PartitionKey? partitionKey,
             CancellationToken cancellationToken);
 
@@ -43,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken);
 
-        public abstract Task<QueryResponseCore> ExecuteItemQueryAsync(
-            Uri resourceUri,
+        public abstract Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             Guid clientQueryCorrelationId,
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             CancellationToken cancellationToken);
 
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

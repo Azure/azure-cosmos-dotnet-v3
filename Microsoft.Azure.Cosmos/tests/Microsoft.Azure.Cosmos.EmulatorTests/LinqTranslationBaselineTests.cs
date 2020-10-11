@@ -38,13 +38,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 EnableEndpointDiscovery = true,
             };
 
-            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                    cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
-                    {
-                        ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
-                        // We want to simulate the property not exist so ignoring the null value
-                        NullValueHandling = NullValueHandling.Ignore
-                    })).WithConnectionModeGateway();
+            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+            {
+                cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
+                {
+                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                    // We want to simulate the property not exist so ignoring the null value
+                    NullValueHandling = NullValueHandling.Ignore
+                })).WithConnectionModeGateway();
             });
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid().ToString("N")}";
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id : Guid.NewGuid().ToString(),partitionKeyPath : "/Pk"));
+            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
         }
 
         [TestCleanup]
@@ -148,59 +149,61 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestLiteralSerialization()
         {
             List<DataObject> testData = new List<DataObject>();
-            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Byte
-            inputs.Add(new LinqTestInput("Byte 1", b => getQuery(b).Select(doc => new { value = 1 })));
-            inputs.Add(new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = Byte.MinValue})));
-            inputs.Add(new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = Byte.MaxValue})));
-            // SByte
-            inputs.Add(new LinqTestInput("SByte 2", b => getQuery(b).Select(doc => new { value = 2})));
-            inputs.Add(new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = SByte.MinValue})));
-            inputs.Add(new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = SByte.MaxValue})));
-            // UInt16
-            inputs.Add(new LinqTestInput("UInt16 3", b => getQuery(b).Select(doc => new { value = 3})));
-            inputs.Add(new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = UInt16.MinValue})));
-            inputs.Add(new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = UInt16.MaxValue})));
-            // UInt32
-            inputs.Add(new LinqTestInput("UInt32 4", b => getQuery(b).Select(doc => new { value = 4})));
-            inputs.Add(new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = UInt32.MinValue})));
-            inputs.Add(new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = UInt32.MaxValue})));
-            // UInt64
-            inputs.Add(new LinqTestInput("UInt64 5", b => getQuery(b).Select(doc => new { value = 5})));
-            inputs.Add(new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = UInt64.MinValue})));
-            inputs.Add(new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = UInt64.MaxValue})));
-            // Int16
-            inputs.Add(new LinqTestInput("Int16 6", b => getQuery(b).Select(doc => new { value = 6})));
-            inputs.Add(new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = Int16.MinValue})));
-            inputs.Add(new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = Int16.MaxValue})));
-            // Int32
-            inputs.Add(new LinqTestInput("Int32 7", b => getQuery(b).Select(doc => new { value = 7})));
-            inputs.Add(new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = Int32.MinValue})));
-            inputs.Add(new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = Int32.MaxValue})));
-            // Int64
-            inputs.Add(new LinqTestInput("Int64 8", b => getQuery(b).Select(doc => new { value = 8})));
-            inputs.Add(new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = Int64.MinValue})));
-            inputs.Add(new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = Int64.MaxValue})));
-            // Decimal
-            inputs.Add(new LinqTestInput("Decimal 9", b => getQuery(b).Select(doc => new { value = 9})));
-            inputs.Add(new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = Decimal.MinValue})));
-            inputs.Add(new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = Decimal.MaxValue})));
-            // Double
-            inputs.Add(new LinqTestInput("Double 10", b => getQuery(b).Select(doc => new { value = 10})));
-            inputs.Add(new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = Double.MinValue})));
-            inputs.Add(new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = Double.MaxValue})));
-            // Single
-            inputs.Add(new LinqTestInput("Single 11", b => getQuery(b).Select(doc => new { value = 11})));
-            inputs.Add(new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = Single.MinValue})));
-            inputs.Add(new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = Single.MaxValue})));
-            // Bool
-            inputs.Add(new LinqTestInput("Bool true", b => getQuery(b).Select(doc => new { value = true})));
-            inputs.Add(new LinqTestInput("Bool false", b => getQuery(b).Select(doc => new { value = false})));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Byte
+                new LinqTestInput("Byte 1", b => getQuery(b).Select(doc => new { value = 1 })),
+                new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = Byte.MinValue })),
+                new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = Byte.MaxValue })),
+                // SByte
+                new LinqTestInput("SByte 2", b => getQuery(b).Select(doc => new { value = 2 })),
+                new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = SByte.MinValue })),
+                new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = SByte.MaxValue })),
+                // UInt16
+                new LinqTestInput("UInt16 3", b => getQuery(b).Select(doc => new { value = 3 })),
+                new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = UInt16.MinValue })),
+                new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = UInt16.MaxValue })),
+                // UInt32
+                new LinqTestInput("UInt32 4", b => getQuery(b).Select(doc => new { value = 4 })),
+                new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = UInt32.MinValue })),
+                new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = UInt32.MaxValue })),
+                // UInt64
+                new LinqTestInput("UInt64 5", b => getQuery(b).Select(doc => new { value = 5 })),
+                new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = UInt64.MinValue })),
+                new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = UInt64.MaxValue })),
+                // Int16
+                new LinqTestInput("Int16 6", b => getQuery(b).Select(doc => new { value = 6 })),
+                new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = Int16.MinValue })),
+                new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = Int16.MaxValue })),
+                // Int32
+                new LinqTestInput("Int32 7", b => getQuery(b).Select(doc => new { value = 7 })),
+                new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = Int32.MinValue })),
+                new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = Int32.MaxValue })),
+                // Int64
+                new LinqTestInput("Int64 8", b => getQuery(b).Select(doc => new { value = 8 })),
+                new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = Int64.MinValue })),
+                new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = Int64.MaxValue })),
+                // Decimal
+                new LinqTestInput("Decimal 9", b => getQuery(b).Select(doc => new { value = 9 })),
+                new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = Decimal.MinValue })),
+                new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = Decimal.MaxValue })),
+                // Double
+                new LinqTestInput("Double 10", b => getQuery(b).Select(doc => new { value = 10 })),
+                new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = Double.MinValue })),
+                new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = Double.MaxValue })),
+                // Single
+                new LinqTestInput("Single 11", b => getQuery(b).Select(doc => new { value = 11 })),
+                new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = Single.MinValue })),
+                new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = Single.MaxValue })),
+                // Bool
+                new LinqTestInput("Bool true", b => getQuery(b).Select(doc => new { value = true })),
+                new LinqTestInput("Bool false", b => getQuery(b).Select(doc => new { value = false }))
+            };
             // String
             string nullStr = null;
-            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty})));
+            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty })));
             inputs.Add(new LinqTestInput("String str1", b => getQuery(b).Select(doc => new { value = "str1" })));
             inputs.Add(new LinqTestInput("String special", b => getQuery(b).Select(doc => new { value = "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890" })));
             inputs.Add(new LinqTestInput("String unicode", b => getQuery(b).Select(doc => new { value = "unicode 㐀㐁㨀㨁䶴䶵" })));
@@ -215,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
@@ -249,9 +252,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })));
-            inputs.Add(new LinqTestInput("Filter w/ DataObject initializer", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })),
+                new LinqTestInput("Filter w/ DataObject initializer", b => getQuery(b).Where(doc => doc == new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField }))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -283,13 +288,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Filter w/ enum field comparison", b => getQuery(b).Where(doc => doc.EnumField1 == TestEnum.One)));
-            inputs.Add(new LinqTestInput("Filter w/ enum field comparison #2", b => getQuery(b).Where(doc => TestEnum.One == doc.EnumField1)));
-            inputs.Add(new LinqTestInput("Filter w/ enum field comparison #3", b => getQuery(b).Where(doc => doc.EnumField2 == TestEnum.Two)));
-            inputs.Add(new LinqTestInput("Filter w/ nullable enum field comparison", b => getQuery(b).Where(doc => doc.NullableEnum1 == TestEnum.One)));
-            inputs.Add(new LinqTestInput("Filter w/ nullable enum field comparison #2", b => getQuery(b).Where(doc => doc.NullableEnum2 == TestEnum.Two)));
-            inputs.Add(new LinqTestInput("Filter w/ enum field comparison #4", b => getQuery(b).Where(doc => doc.EnumNumber == TestEnum2.Zero)));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Filter w/ enum field comparison", b => getQuery(b).Where(doc => doc.EnumField1 == TestEnum.One)),
+                new LinqTestInput("Filter w/ enum field comparison #2", b => getQuery(b).Where(doc => TestEnum.One == doc.EnumField1)),
+                new LinqTestInput("Filter w/ enum field comparison #3", b => getQuery(b).Where(doc => doc.EnumField2 == TestEnum.Two)),
+                new LinqTestInput("Filter w/ nullable enum field comparison", b => getQuery(b).Where(doc => doc.NullableEnum1 == TestEnum.One)),
+                new LinqTestInput("Filter w/ nullable enum field comparison #2", b => getQuery(b).Where(doc => doc.NullableEnum2 == TestEnum.Two)),
+                new LinqTestInput("Filter w/ enum field comparison #4", b => getQuery(b).Where(doc => doc.EnumNumber == TestEnum2.Zero))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -310,16 +317,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("IsoDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("IsoDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.IsoTime > new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("IsoDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.IsoTime < new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("UnixDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.UnixTime == new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("UnixDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.UnixTime > new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("UnixDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.UnixTime < new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("Default (ISO) = filter", b => getQuery(b).Where(doc => doc.DefaultTime == new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("Default (ISO) > filter", b => getQuery(b).Where(doc => doc.DefaultTime > new DateTime(2016, 9, 13, 0, 0, 0))));
-            inputs.Add(new LinqTestInput("Default (ISO) < filter", b => getQuery(b).Where(doc => doc.DefaultTime < new DateTime(2016, 9, 13, 0, 0, 0))));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("IsoDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("IsoDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.IsoTime > new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("IsoDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.IsoTime < new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("UnixDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.UnixTime == new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("UnixDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.UnixTime > new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("UnixDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.UnixTime < new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("Default (ISO) = filter", b => getQuery(b).Where(doc => doc.DefaultTime == new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("Default (ISO) > filter", b => getQuery(b).Where(doc => doc.DefaultTime > new DateTime(2016, 9, 13, 0, 0, 0))),
+                new LinqTestInput("Default (ISO) < filter", b => getQuery(b).Where(doc => doc.DefaultTime < new DateTime(2016, 9, 13, 0, 0, 0)))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -347,13 +356,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Filter", b => getQuery(b).Where(doc => doc.NullableField == 5)));
-            inputs.Add(new LinqTestInput("Filter w/ .Value", b => getQuery(b).Where(doc => doc.NullableField.HasValue && doc.NullableField.Value == 5)));
-            inputs.Add(new LinqTestInput("Filter w/ .HasValue", b => getQuery(b).Where(doc => doc.NullableField.HasValue)));
-            inputs.Add(new LinqTestInput("Filter w/ .HasValue comparison true", b => getQuery(b).Where(doc => doc.NullableField.HasValue == true)));
-            inputs.Add(new LinqTestInput("Filter w/ .HasValue comparison false", b => getQuery(b).Where(doc => doc.NullableField.HasValue == false)));
-            inputs.Add(new LinqTestInput("Filter w/ .HasValue not", b => getQuery(b).Where(doc => !doc.NullableField.HasValue)));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Filter", b => getQuery(b).Where(doc => doc.NullableField == 5)),
+                new LinqTestInput("Filter w/ .Value", b => getQuery(b).Where(doc => doc.NullableField.HasValue && doc.NullableField.Value == 5)),
+                new LinqTestInput("Filter w/ .HasValue", b => getQuery(b).Where(doc => doc.NullableField.HasValue)),
+                new LinqTestInput("Filter w/ .HasValue comparison true", b => getQuery(b).Where(doc => doc.NullableField.HasValue == true)),
+                new LinqTestInput("Filter w/ .HasValue comparison false", b => getQuery(b).Where(doc => doc.NullableField.HasValue == false)),
+                new LinqTestInput("Filter w/ .HasValue not", b => getQuery(b).Where(doc => !doc.NullableField.HasValue))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -373,32 +384,34 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Select", b => getQuery(b).Select(doc => (int)doc.NumericField)));
-            inputs.Add(new LinqTestInput("Abs int", b => getQuery(b)
-                .Where(doc => doc.NumericField >= int.MinValue && doc.NumericField <= int.MaxValue)
-                .Select(doc => Math.Abs((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Abs long", b => getQuery(b)
-                .Where(doc => doc.NumericField >= long.MinValue && doc.NumericField <= long.MaxValue)
-                .Select(doc => Math.Abs((long)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Abs sbyte", b => getQuery(b)
-                .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
-                .Select(doc => Math.Abs((sbyte)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Abs short", b => getQuery(b)
-                .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
-                .Select(doc => Math.Abs((short)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign int", b => getQuery(b).Select(doc => Math.Sign((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign long", b => getQuery(b).Select(doc => Math.Sign((long)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign sbyte", b => getQuery(b)
-                .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
-                .Select(doc => Math.Sign((sbyte)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign short", b => getQuery(b)
-                .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
-                .Select(doc => Math.Sign((short)doc.NumericField))));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Select", b => getQuery(b).Select(doc => (int)doc.NumericField)),
+                new LinqTestInput("Abs int", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= int.MinValue && doc.NumericField <= int.MaxValue)
+                    .Select(doc => Math.Abs((int)doc.NumericField))),
+                new LinqTestInput("Abs long", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= long.MinValue && doc.NumericField <= long.MaxValue)
+                    .Select(doc => Math.Abs((long)doc.NumericField))),
+                new LinqTestInput("Abs sbyte", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
+                    .Select(doc => Math.Abs((sbyte)doc.NumericField))),
+                new LinqTestInput("Abs short", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
+                    .Select(doc => Math.Abs((short)doc.NumericField))),
+                new LinqTestInput("Sign int", b => getQuery(b).Select(doc => Math.Sign((int)doc.NumericField))),
+                new LinqTestInput("Sign long", b => getQuery(b).Select(doc => Math.Sign((long)doc.NumericField))),
+                new LinqTestInput("Sign sbyte", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
+                    .Select(doc => Math.Sign((sbyte)doc.NumericField))),
+                new LinqTestInput("Sign short", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
+                    .Select(doc => Math.Sign((short)doc.NumericField))),
 
-            inputs.Add(new LinqTestInput("Round decimal", b => getQuery(b).Select(doc => Math.Round((decimal)doc.NumericField))));
+                new LinqTestInput("Round decimal", b => getQuery(b).Select(doc => Math.Round((decimal)doc.NumericField))),
 
-            inputs.Add(new LinqTestInput("Tan", b => getQuery(b).Select(doc => Math.Tan(doc.NumericField))));
+                new LinqTestInput("Tan", b => getQuery(b).Select(doc => Math.Tan(doc.NumericField)))
+            };
 
             this.ExecuteTestSuite(inputs);
         }
@@ -424,91 +437,93 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // some scenarios below requires input to be within data type range in order to be correct
             // therefore, we filter the right inputs for them accordingly.
             // e.g. float has a precision up to 7 digits so the inputs needs to be within that range before being casted to float.
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Abs
-            inputs.Add(new LinqTestInput("Abs decimal", b => getQuery(b).Select(doc => Math.Abs(doc.DecimalField))));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Abs
+                new LinqTestInput("Abs decimal", b => getQuery(b).Select(doc => Math.Abs(doc.DecimalField))),
 
-            inputs.Add(new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs((double)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Abs float", b => getQuery(b)
-                .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
-                .Select(doc => Math.Abs((float)doc.NumericField))));
-            //inputs.Add(new LinqTestInput("Select", b => getQuery(b)
-            //    .Select(doc => (int)doc.NumericField)));
-            inputs.Add(new LinqTestInput("Abs int", b => getQuery(b)
-                .Where(doc => doc.IntField >= int.MinValue && doc.IntField <= int.MaxValue)
-                .Select(doc => Math.Abs((int)doc.IntField))));
-            inputs.Add(new LinqTestInput("Abs long", b => getQuery(b)
-                .Where(doc => doc.NumericField >= long.MinValue && doc.NumericField <= long.MaxValue)
-                .Select(doc => Math.Abs((long)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Abs sbyte", b => getQuery(b)
-                .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
-                .Select(doc => Math.Abs((sbyte)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Abs short", b => getQuery(b)
-                .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
-                .Select(doc => Math.Abs((short)doc.NumericField))));
-            // Acos
-            inputs.Add(new LinqTestInput("Acos", b => getQuery(b)
-                .Where(doc => doc.NumericField >= -1 && doc.NumericField <= 1)
-                .Select(doc => Math.Acos(doc.NumericField))));
-            // Asin
-            inputs.Add(new LinqTestInput("Asin", b => getQuery(b)
-                .Where(doc => doc.NumericField >= -1 && doc.NumericField <= 1)
-                .Select(doc => Math.Asin(doc.NumericField))));
-            // Atan
-            inputs.Add(new LinqTestInput("Atan", b => getQuery(b).Select(doc => Math.Atan2(doc.NumericField, 1))));
-            // Ceiling
-            inputs.Add(new LinqTestInput("Ceiling decimal", b => getQuery(b).Select(doc => Math.Ceiling((decimal)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Ceiling double", b => getQuery(b).Select(doc => Math.Ceiling((double)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Ceiling float", b => getQuery(b)
-                .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
-                .Select(doc => Math.Ceiling((float)doc.NumericField))));
-            // Cos
-            inputs.Add(new LinqTestInput("Cos", b => getQuery(b).Select(doc => Math.Cos(doc.NumericField))));
-            // Exp
-            inputs.Add(new LinqTestInput("Exp", b => getQuery(b)
-                .Where(doc => doc.NumericField >= -3 && doc.NumericField <= 3)
-                .Select(doc => Math.Exp(doc.NumericField))));
-            // Floor
-            inputs.Add(new LinqTestInput("Floor decimal", b => getQuery(b).Select(doc => Math.Floor((decimal)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Floor double", b => getQuery(b).Select(doc => Math.Floor((double)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Floor float", b => getQuery(b)
-                .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
-                .Select(doc => Math.Floor((float)doc.NumericField))));
-            // Log
-            inputs.Add(new LinqTestInput("Log", b => getQuery(b)
-                .Where(doc => doc.NumericField != 0)
-                .Select(doc => Math.Log(doc.NumericField))));
-            inputs.Add(new LinqTestInput("Log 1", b => getQuery(b)
-                .Where(doc => doc.NumericField != 0)
-                .Select(doc => Math.Log(doc.NumericField, 2))));
-            inputs.Add(new LinqTestInput("Log10", b => getQuery(b)
-                .Where(doc => doc.NumericField != 0)
-                .Select(doc => Math.Log10(doc.NumericField))));
-            // Pow
-            inputs.Add(new LinqTestInput("Pow", b => getQuery(b).Select(doc => Math.Pow(doc.NumericField, 1))));
-            // Round
-            inputs.Add(new LinqTestInput("Round double", b => getQuery(b).Select(doc => Math.Round((double)doc.NumericField))));
-            // Sign
-            inputs.Add(new LinqTestInput("Sign decimal", b => getQuery(b).Select(doc => Math.Sign((decimal)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign double", b => getQuery(b).Select(doc => Math.Sign((double)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign float", b => getQuery(b)
-                .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
-                .Select(doc => Math.Sign((float)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign int", b => getQuery(b).Select(doc => Math.Sign((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign long", b => getQuery(b).Select(doc => Math.Sign((long)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign sbyte", b => getQuery(b)
-                .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
-                .Select(doc => Math.Sign((sbyte)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Sign short", b => getQuery(b)
-                .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
-                .Select(doc => Math.Sign((short)doc.NumericField))));
-            // Sin
-            inputs.Add(new LinqTestInput("Sin", b => getQuery(b).Select(doc => Math.Sin(doc.NumericField))));
-            // Sqrt
-            inputs.Add(new LinqTestInput("Sqrt", b => getQuery(b).Select(doc => Math.Sqrt(doc.NumericField))));
-            // Truncate
-            inputs.Add(new LinqTestInput("Truncate decimal", b => getQuery(b).Select(doc => Math.Truncate((decimal)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate((double)doc.NumericField))));
+                new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs((double)doc.NumericField))),
+                new LinqTestInput("Abs float", b => getQuery(b)
+                    .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
+                    .Select(doc => Math.Abs((float)doc.NumericField))),
+                //inputs.Add(new LinqTestInput("Select", b => getQuery(b)
+                //    .Select(doc => (int)doc.NumericField)));
+                new LinqTestInput("Abs int", b => getQuery(b)
+                    .Where(doc => doc.IntField >= int.MinValue && doc.IntField <= int.MaxValue)
+                    .Select(doc => Math.Abs((int)doc.IntField))),
+                new LinqTestInput("Abs long", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= long.MinValue && doc.NumericField <= long.MaxValue)
+                    .Select(doc => Math.Abs((long)doc.NumericField))),
+                new LinqTestInput("Abs sbyte", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
+                    .Select(doc => Math.Abs((sbyte)doc.NumericField))),
+                new LinqTestInput("Abs short", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
+                    .Select(doc => Math.Abs((short)doc.NumericField))),
+                // Acos
+                new LinqTestInput("Acos", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= -1 && doc.NumericField <= 1)
+                    .Select(doc => Math.Acos(doc.NumericField))),
+                // Asin
+                new LinqTestInput("Asin", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= -1 && doc.NumericField <= 1)
+                    .Select(doc => Math.Asin(doc.NumericField))),
+                // Atan
+                new LinqTestInput("Atan", b => getQuery(b).Select(doc => Math.Atan2(doc.NumericField, 1))),
+                // Ceiling
+                new LinqTestInput("Ceiling decimal", b => getQuery(b).Select(doc => Math.Ceiling((decimal)doc.NumericField))),
+                new LinqTestInput("Ceiling double", b => getQuery(b).Select(doc => Math.Ceiling((double)doc.NumericField))),
+                new LinqTestInput("Ceiling float", b => getQuery(b)
+                    .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
+                    .Select(doc => Math.Ceiling((float)doc.NumericField))),
+                // Cos
+                new LinqTestInput("Cos", b => getQuery(b).Select(doc => Math.Cos(doc.NumericField))),
+                // Exp
+                new LinqTestInput("Exp", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= -3 && doc.NumericField <= 3)
+                    .Select(doc => Math.Exp(doc.NumericField))),
+                // Floor
+                new LinqTestInput("Floor decimal", b => getQuery(b).Select(doc => Math.Floor((decimal)doc.NumericField))),
+                new LinqTestInput("Floor double", b => getQuery(b).Select(doc => Math.Floor((double)doc.NumericField))),
+                new LinqTestInput("Floor float", b => getQuery(b)
+                    .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
+                    .Select(doc => Math.Floor((float)doc.NumericField))),
+                // Log
+                new LinqTestInput("Log", b => getQuery(b)
+                    .Where(doc => doc.NumericField != 0)
+                    .Select(doc => Math.Log(doc.NumericField))),
+                new LinqTestInput("Log 1", b => getQuery(b)
+                    .Where(doc => doc.NumericField != 0)
+                    .Select(doc => Math.Log(doc.NumericField, 2))),
+                new LinqTestInput("Log10", b => getQuery(b)
+                    .Where(doc => doc.NumericField != 0)
+                    .Select(doc => Math.Log10(doc.NumericField))),
+                // Pow
+                new LinqTestInput("Pow", b => getQuery(b).Select(doc => Math.Pow(doc.NumericField, 1))),
+                // Round
+                new LinqTestInput("Round double", b => getQuery(b).Select(doc => Math.Round((double)doc.NumericField))),
+                // Sign
+                new LinqTestInput("Sign decimal", b => getQuery(b).Select(doc => Math.Sign((decimal)doc.NumericField))),
+                new LinqTestInput("Sign double", b => getQuery(b).Select(doc => Math.Sign((double)doc.NumericField))),
+                new LinqTestInput("Sign float", b => getQuery(b)
+                    .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
+                    .Select(doc => Math.Sign((float)doc.NumericField))),
+                new LinqTestInput("Sign int", b => getQuery(b).Select(doc => Math.Sign((int)doc.NumericField))),
+                new LinqTestInput("Sign long", b => getQuery(b).Select(doc => Math.Sign((long)doc.NumericField))),
+                new LinqTestInput("Sign sbyte", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= sbyte.MinValue && doc.NumericField <= sbyte.MaxValue)
+                    .Select(doc => Math.Sign((sbyte)doc.NumericField))),
+                new LinqTestInput("Sign short", b => getQuery(b)
+                    .Where(doc => doc.NumericField >= short.MinValue && doc.NumericField <= short.MaxValue)
+                    .Select(doc => Math.Sign((short)doc.NumericField))),
+                // Sin
+                new LinqTestInput("Sin", b => getQuery(b).Select(doc => Math.Sin(doc.NumericField))),
+                // Sqrt
+                new LinqTestInput("Sqrt", b => getQuery(b).Select(doc => Math.Sqrt(doc.NumericField))),
+                // Truncate
+                new LinqTestInput("Truncate decimal", b => getQuery(b).Select(doc => Math.Truncate((decimal)doc.NumericField))),
+                new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate((double)doc.NumericField)))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -517,7 +532,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxStrLength = 100;
             const int MinStrLength = 5;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 StringBuilder sb = new StringBuilder(LinqTestsCommon.RandomString(random, random.Next(MaxStrLength - MinStrLength) + MinStrLength));
                 if (random.NextDouble() < 0.5)
                 {
@@ -527,11 +543,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     sb[p] = 't';
                     sb[p] = 'r';
                 }
-                return new DataObject() {
+                return new DataObject()
+                {
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
-            };
+                };
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
             return getQuery;
@@ -555,58 +572,69 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<string> constantList = new List<string>() { "one", "two", "three" };
             string[] constantArray = new string[] { "one", "two", "three" };
 
-            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();            
+            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Concat
-            inputs.Add(new LinqTestInput("Concat 2", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str"))));
-            inputs.Add(new LinqTestInput("Concat 3", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2"))));
-            inputs.Add(new LinqTestInput("Concat 4", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3"))));
-            inputs.Add(new LinqTestInput("Concat 5", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3", "str4"))));
-            inputs.Add(new LinqTestInput("Concat array", b => getQuery(b).Select(doc => string.Concat(new string[] { doc.StringField, "str1", "str2", "str3", "str4" }))));
-            // Contains
-            inputs.Add(new LinqTestInput("Contains w/ string", b => getQuery(b).Select(doc => doc.StringField.Contains("str"))));
-            inputs.Add(new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))));
-            inputs.Add(new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))));
-            // Contains with constants should be IN
-            inputs.Add(new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))));
-            inputs.Add(new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))));
-            inputs.Add(new LinqTestInput("Contains in constant list in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantList.Contains(str))));
-            inputs.Add(new LinqTestInput("Contains in constant array in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantArray.Contains(str))));
-            // NOT IN
-            inputs.Add(new LinqTestInput("Not in constant list", b => getQuery(b).Select(doc => !constantList.Contains(doc.StringField))));
-            inputs.Add(new LinqTestInput("Not in constant array", b => getQuery(b).Select(doc => !constantArray.Contains(doc.StringField))));
-            inputs.Add(new LinqTestInput("Filter not in constant list", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantList.Contains(str))));
-            inputs.Add(new LinqTestInput("Filter not in constant array", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantArray.Contains(str))));
-            // Empty list
-            inputs.Add(new LinqTestInput("Empty list contains", b => getQuery(b).Select(doc => emptyList.Contains(doc.StringField))));
-            inputs.Add(new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains(doc.StringField))));
-            // EndsWith
-            inputs.Add(new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))));
-            inputs.Add(new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))));
-            // IndexOf
-            inputs.Add(new LinqTestInput("IndexOf char", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c'))));
-            inputs.Add(new LinqTestInput("IndexOf string", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str"))));
-            inputs.Add(new LinqTestInput("IndexOf char w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c', 0))));
-            inputs.Add(new LinqTestInput("IndexOf string w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str", 0))));
-            // Count
-            inputs.Add(new LinqTestInput("Count", b => getQuery(b).Select(doc => doc.StringField.Count())));
-            // ToLower
-            inputs.Add(new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())));
-            // TrimStart
-            inputs.Add(new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())));
-            // Replace
-            inputs.Add(new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))));
-            inputs.Add(new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))));
-            // TrimEnd
-            inputs.Add(new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())));
-            //StartsWith
-            inputs.Add(new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))));
-            inputs.Add(new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))));
-            // Substring
-            inputs.Add(new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))));
-            // ToUpper
-            inputs.Add(new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper())));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Concat
+                new LinqTestInput("Concat 2", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str"))),
+                new LinqTestInput("Concat 3", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2"))),
+                new LinqTestInput("Concat 4", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3"))),
+                new LinqTestInput("Concat 5", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3", "str4"))),
+                new LinqTestInput("Concat array", b => getQuery(b).Select(doc => string.Concat(new string[] { doc.StringField, "str1", "str2", "str3", "str4" }))),
+                // Contains
+                new LinqTestInput("Contains w/ string", b => getQuery(b).Select(doc => doc.StringField.Contains("str"))),
+                new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))),
+                new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))),
+                // Contains (case-insensitive)
+                new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.OrdinalIgnoreCase))),
+                new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))),
+                // Contains with constants should be IN
+                new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))),
+                new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))),
+                new LinqTestInput("Contains in constant list in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantList.Contains(str))),
+                new LinqTestInput("Contains in constant array in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantArray.Contains(str))),
+                // NOT IN
+                new LinqTestInput("Not in constant list", b => getQuery(b).Select(doc => !constantList.Contains(doc.StringField))),
+                new LinqTestInput("Not in constant array", b => getQuery(b).Select(doc => !constantArray.Contains(doc.StringField))),
+                new LinqTestInput("Filter not in constant list", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantList.Contains(str))),
+                new LinqTestInput("Filter not in constant array", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantArray.Contains(str))),
+                // Empty list
+                new LinqTestInput("Empty list contains", b => getQuery(b).Select(doc => emptyList.Contains(doc.StringField))),
+                new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains(doc.StringField))),
+                // EndsWith
+                new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))),
+                new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))),
+                // EndsWith (case-insensitive)
+                new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.OrdinalIgnoreCase))),
+                new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
+                // IndexOf
+                new LinqTestInput("IndexOf char", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c'))),
+                new LinqTestInput("IndexOf string", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str"))),
+                new LinqTestInput("IndexOf char w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c', 0))),
+                new LinqTestInput("IndexOf string w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str", 0))),
+                // Count
+                new LinqTestInput("Count", b => getQuery(b).Select(doc => doc.StringField.Count())),
+                // ToLower
+                new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
+                // TrimStart
+                new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
+                // Replace
+                new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))),
+                new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))),
+                // TrimEnd
+                new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())),
+                //StartsWith
+                new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))),
+                new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))),
+                //StartsWith (case-insensitive)
+                new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.OrdinalIgnoreCase))),
+                new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
+                // Substring
+                new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
+                // ToUpper
+                new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -616,7 +644,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxAbsValue = 10;
             const int MaxArraySize = 50;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.ArrayField = new int[random.Next(MaxArraySize)];
                 for (int i = 0; i < obj.ArrayField.Length; ++i)
@@ -639,32 +668,34 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<int> constantList = new List<int>() { 1, 2, 3 };
             int[] constantArray = new int[] { 1, 2, 3 };
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Concat
-            inputs.Add(new LinqTestInput("Concat another array", b => getQuery(b).Select(doc => doc.ArrayField.Concat(new int[] { 1, 2, 3 }))));
-            inputs.Add(new LinqTestInput("Concat constant list", b => getQuery(b).Select(doc => doc.ArrayField.Concat(constantList))));
-            inputs.Add(new LinqTestInput("Concat w/ ArrayField itself", b => getQuery(b).Select(doc => doc.ArrayField.Concat(doc.ArrayField))));
-            inputs.Add(new LinqTestInput("Concat enumerable w/ constant list", b => getQuery(b).Select(doc => doc.EnumerableField.Concat(constantList))));
-            // Contains
-            inputs.Add(new LinqTestInput("ArrayField contains", b => getQuery(b).Select(doc => doc.ArrayField.Contains(1))));
-            inputs.Add(new LinqTestInput("EnumerableField contains", b => getQuery(b).Select(doc => doc.EnumerableField.Contains(1))));
-            inputs.Add(new LinqTestInput("EnumerableField not contains", b => getQuery(b).Select(doc => !doc.EnumerableField.Contains(1))));
-            // Contains with constants should be IN
-            inputs.Add(new LinqTestInput("Constant list contains numeric field", b => getQuery(b).Select(doc => constantList.Contains((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Constant array contains numeric field", b => getQuery(b).Select(doc => constantArray.Contains((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Constant list contains numeric field in filter", b => getQuery(b).Select(doc => doc.NumericField).Where(number => constantList.Contains((int)number))));
-            inputs.Add(new LinqTestInput("Constant array contains numeric field in filter", b => getQuery(b).Select(doc => doc.NumericField).Where(number => constantArray.Contains((int)number))));
-            // NOT IN
-            inputs.Add(new LinqTestInput("Constant list not contains", b => getQuery(b).Select(doc => !constantList.Contains((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Constant array not contains", b => getQuery(b).Select(doc => !constantArray.Contains((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Filter constant list not contains", b => getQuery(b).Select(doc => doc.NumericField).Where(number => !constantList.Contains((int)number))));
-            inputs.Add(new LinqTestInput("Filter constant array not contains", b => getQuery(b).Select(doc => doc.NumericField).Where(number => !constantArray.Contains((int)number))));
-            // Empty list
-            inputs.Add(new LinqTestInput("Empty list contains", b => getQuery(b).Select(doc => emptyList.Contains((int)doc.NumericField))));
-            inputs.Add(new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains((int)doc.NumericField))));
-            // Count
-            inputs.Add(new LinqTestInput("Count ArrayField", b => getQuery(b).Select(doc => doc.ArrayField.Count())));
-            inputs.Add(new LinqTestInput("Count EnumerableField", b => getQuery(b).Select(doc => doc.EnumerableField.Count())));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Concat
+                new LinqTestInput("Concat another array", b => getQuery(b).Select(doc => doc.ArrayField.Concat(new int[] { 1, 2, 3 }))),
+                new LinqTestInput("Concat constant list", b => getQuery(b).Select(doc => doc.ArrayField.Concat(constantList))),
+                new LinqTestInput("Concat w/ ArrayField itself", b => getQuery(b).Select(doc => doc.ArrayField.Concat(doc.ArrayField))),
+                new LinqTestInput("Concat enumerable w/ constant list", b => getQuery(b).Select(doc => doc.EnumerableField.Concat(constantList))),
+                // Contains
+                new LinqTestInput("ArrayField contains", b => getQuery(b).Select(doc => doc.ArrayField.Contains(1))),
+                new LinqTestInput("EnumerableField contains", b => getQuery(b).Select(doc => doc.EnumerableField.Contains(1))),
+                new LinqTestInput("EnumerableField not contains", b => getQuery(b).Select(doc => !doc.EnumerableField.Contains(1))),
+                // Contains with constants should be IN
+                new LinqTestInput("Constant list contains numeric field", b => getQuery(b).Select(doc => constantList.Contains((int)doc.NumericField))),
+                new LinqTestInput("Constant array contains numeric field", b => getQuery(b).Select(doc => constantArray.Contains((int)doc.NumericField))),
+                new LinqTestInput("Constant list contains numeric field in filter", b => getQuery(b).Select(doc => doc.NumericField).Where(number => constantList.Contains((int)number))),
+                new LinqTestInput("Constant array contains numeric field in filter", b => getQuery(b).Select(doc => doc.NumericField).Where(number => constantArray.Contains((int)number))),
+                // NOT IN
+                new LinqTestInput("Constant list not contains", b => getQuery(b).Select(doc => !constantList.Contains((int)doc.NumericField))),
+                new LinqTestInput("Constant array not contains", b => getQuery(b).Select(doc => !constantArray.Contains((int)doc.NumericField))),
+                new LinqTestInput("Filter constant list not contains", b => getQuery(b).Select(doc => doc.NumericField).Where(number => !constantList.Contains((int)number))),
+                new LinqTestInput("Filter constant array not contains", b => getQuery(b).Select(doc => doc.NumericField).Where(number => !constantArray.Contains((int)number))),
+                // Empty list
+                new LinqTestInput("Empty list contains", b => getQuery(b).Select(doc => emptyList.Contains((int)doc.NumericField))),
+                new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains((int)doc.NumericField))),
+                // Count
+                new LinqTestInput("Count ArrayField", b => getQuery(b).Select(doc => doc.ArrayField.Count())),
+                new LinqTestInput("Count EnumerableField", b => getQuery(b).Select(doc => doc.EnumerableField.Count()))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -674,12 +705,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The spatial functions are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Distance
-            inputs.Add(new LinqTestInput("Point distance", b => getQuery(b).Select(doc => doc.Point.Distance(new Point(20.1, 20)))));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Distance
+                new LinqTestInput("Point distance", b => getQuery(b).Select(doc => doc.Point.Distance(new Point(20.1, 20))))
+            };
             // Within
             Polygon polygon = new Polygon(
                 new[]
@@ -702,7 +735,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxStringLength = 20;
             const int MaxArrayLength = 10;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.EnumerableField = new List<int>();
@@ -716,13 +750,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Equals
-            inputs.Add(new LinqTestInput("Equals", b => getQuery(b).Select(doc => doc.StringField.Equals("str"))));
-            // ToString
-            inputs.Add(new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())));
-            // get_item
-            inputs.Add(new LinqTestInput("get_item", b => getQuery(b).Select(doc => doc.EnumerableField[0])));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Equals
+                new LinqTestInput("Equals", b => getQuery(b).Select(doc => doc.StringField.Equals("str"))),
+                // Equals (case-insensitive)
+                new LinqTestInput("Equals (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Equals("STR", StringComparison.OrdinalIgnoreCase))),
+                // ToString
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
+                // get_item
+                new LinqTestInput("get_item", b => getQuery(b).Select(doc => doc.EnumerableField[0]))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -733,7 +771,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             const int MaxArrayLength = 10;
             const int MaxAbsValue = 10;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
@@ -748,10 +787,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Filter w/ ternary conditional ?", b => getQuery(b).Where(doc => doc.NumericField < 3 ? true : false).Select(doc => doc.StringField)));
-            inputs.Add(new LinqTestInput("Filter w/ ternary conditional ? and contains", b => getQuery(b).Where(doc => doc.NumericField == (doc.ArrayField.Contains(1) ? 1 : 5)).Select(doc => doc.StringField)));
-            inputs.Add(new LinqTestInput("Filter w/ ternary conditional ? and contains #2", b => getQuery(b).Where(doc => doc.NumericField == (doc.StringField == "str" ? 1 : doc.ArrayField.Contains(1) ? 3 : 4)).Select(doc => doc.StringField)));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Filter w/ ternary conditional ?", b => getQuery(b).Where(doc => doc.NumericField < 3 ? true : false).Select(doc => doc.StringField)),
+                new LinqTestInput("Filter w/ ternary conditional ? and contains", b => getQuery(b).Where(doc => doc.NumericField == (doc.ArrayField.Contains(1) ? 1 : 5)).Select(doc => doc.StringField)),
+                new LinqTestInput("Filter w/ ternary conditional ? and contains #2", b => getQuery(b).Where(doc => doc.NumericField == (doc.StringField == "str" ? 1 : doc.ArrayField.Contains(1) ? 3 : 4)).Select(doc => doc.StringField))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -760,7 +801,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             const int Records = 100;
             const int MaxStringLength = 20;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.StringField2 = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
@@ -771,10 +813,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Coalesce", b => getQuery(b).Select(doc => doc.StringField ?? "str")));
-            inputs.Add(new LinqTestInput("Filter with coalesce comparison", b => getQuery(b).Where(doc => doc.StringField == (doc.StringField2 ?? "str")).Select(doc => doc.NumericField)));
-            inputs.Add(new LinqTestInput("Filter with coalesce comparison #2", b => getQuery(b).Select(doc => doc.StringField).Where(str => (str ?? "str") == "str2")));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Coalesce", b => getQuery(b).Select(doc => doc.StringField ?? "str")),
+                new LinqTestInput("Filter with coalesce comparison", b => getQuery(b).Where(doc => doc.StringField == (doc.StringField2 ?? "str")).Select(doc => doc.NumericField)),
+                new LinqTestInput("Filter with coalesce comparison #2", b => getQuery(b).Select(doc => doc.StringField).Where(str => (str ?? "str") == "str2"))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -782,8 +826,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCategory("Ignore")]
         public void TestStringCompareTo()
         {
-            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
-            
+            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+
             const int Records = 100;
             const int MaxStringLength = 20;
             Func<Random, DataObject> createDataObj = (random) =>
@@ -797,33 +841,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // projected compare
-            inputs.Add(new LinqTestInput("Projected CompareTo ==", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) == 0)));
-            inputs.Add(new LinqTestInput("Projected CompareTo >", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) > 0)));
-            inputs.Add(new LinqTestInput("Projected CompareTo >=", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) >= 0)));
-            inputs.Add(new LinqTestInput("Projected CompareTo <", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) < 0)));
-            inputs.Add(new LinqTestInput("Projected CompareTo <=", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) <= 0)));
-            // static strings
-            inputs.Add(new LinqTestInput("CompareTo static string ==", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == 0)));
-            inputs.Add(new LinqTestInput("CompareTo static string >", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") > 0)));
-            inputs.Add(new LinqTestInput("CompareTo static string >=", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") >= 0)));
-            inputs.Add(new LinqTestInput("CompareTo static string <", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") < 0)));
-            inputs.Add(new LinqTestInput("CompareTo static string <=", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") <= 0)));
-            // reverse operands
-            inputs.Add(new LinqTestInput("Projected CompareTo == reverse operands", b => getQuery(b).Select(doc => 0 == doc.StringField.CompareTo(doc.StringField2))));
-            inputs.Add(new LinqTestInput("Projected CompareTo < reverse operands", b => getQuery(b).Select(doc => 0 < doc.StringField.CompareTo(doc.StringField2))));
-            inputs.Add(new LinqTestInput("Projected CompareTo <= reverse operands", b => getQuery(b).Select(doc => 0 <= doc.StringField.CompareTo(doc.StringField2))));
-            inputs.Add(new LinqTestInput("Projected CompareTo > reverse operands", b => getQuery(b).Select(doc => 0 > doc.StringField.CompareTo(doc.StringField2))));
-            inputs.Add(new LinqTestInput("Projected CompareTo >= reverse operands", b => getQuery(b).Select(doc => 0 >= doc.StringField.CompareTo(doc.StringField2))));
-            // errors Invalid compare value
-            inputs.Add(new LinqTestInput("CompareTo > 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") > 1)));
-            inputs.Add(new LinqTestInput("CompareTo == 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == 1)));
-            inputs.Add(new LinqTestInput("CompareTo == -1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == -1)));
-            // errors Invalid operator
-            inputs.Add(new LinqTestInput("CompareTo | 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") | 0)));
-            inputs.Add(new LinqTestInput("CompareTo & 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") & 0)));
-            inputs.Add(new LinqTestInput("CompareTo ^ 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") ^ 0)));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // projected compare
+                new LinqTestInput("Projected CompareTo ==", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) == 0)),
+                new LinqTestInput("Projected CompareTo >", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) > 0)),
+                new LinqTestInput("Projected CompareTo >=", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) >= 0)),
+                new LinqTestInput("Projected CompareTo <", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) < 0)),
+                new LinqTestInput("Projected CompareTo <=", b => getQuery(b).Select(doc => doc.StringField.CompareTo(doc.StringField2) <= 0)),
+                // static strings
+                new LinqTestInput("CompareTo static string ==", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == 0)),
+                new LinqTestInput("CompareTo static string >", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") > 0)),
+                new LinqTestInput("CompareTo static string >=", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") >= 0)),
+                new LinqTestInput("CompareTo static string <", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") < 0)),
+                new LinqTestInput("CompareTo static string <=", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") <= 0)),
+                // reverse operands
+                new LinqTestInput("Projected CompareTo == reverse operands", b => getQuery(b).Select(doc => 0 == doc.StringField.CompareTo(doc.StringField2))),
+                new LinqTestInput("Projected CompareTo < reverse operands", b => getQuery(b).Select(doc => 0 < doc.StringField.CompareTo(doc.StringField2))),
+                new LinqTestInput("Projected CompareTo <= reverse operands", b => getQuery(b).Select(doc => 0 <= doc.StringField.CompareTo(doc.StringField2))),
+                new LinqTestInput("Projected CompareTo > reverse operands", b => getQuery(b).Select(doc => 0 > doc.StringField.CompareTo(doc.StringField2))),
+                new LinqTestInput("Projected CompareTo >= reverse operands", b => getQuery(b).Select(doc => 0 >= doc.StringField.CompareTo(doc.StringField2))),
+                // errors Invalid compare value
+                new LinqTestInput("CompareTo > 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") > 1)),
+                new LinqTestInput("CompareTo == 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == 1)),
+                new LinqTestInput("CompareTo == -1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == -1)),
+                // errors Invalid operator
+                new LinqTestInput("CompareTo | 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") | 0)),
+                new LinqTestInput("CompareTo & 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") & 0)),
+                new LinqTestInput("CompareTo ^ 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") ^ 0))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -834,30 +880,32 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The UDFs invokation are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("No param", b => getQuery(b).Select(f => UserDefinedFunctionProvider.Invoke("NoParameterUDF"))));
-            inputs.Add(new LinqTestInput("Single param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDF", doc.NumericField))));
-            inputs.Add(new LinqTestInput("Single param w/ array", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", doc.ArrayField))));
-            inputs.Add(new LinqTestInput("Multi param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDF", doc.NumericField, doc.StringField, doc.Point))));
-            inputs.Add(new LinqTestInput("Multi param w/ array", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDWithArrayF", doc.ArrayField, doc.NumericField, doc.Point))));
-            inputs.Add(new LinqTestInput("ArrayCount", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", doc.ArrayField) > 2)));
-            inputs.Add(new LinqTestInput("ArrayCount && SomeBooleanUDF", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", doc.ArrayField) > 2 && (bool)UserDefinedFunctionProvider.Invoke("SomeBooleanUDF"))));
-            inputs.Add(new LinqTestInput("expression", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("SingleParameterUDF", doc.NumericField) + 2 == 4)));
-            // UDF with constant parameters
-            inputs.Add(new LinqTestInput("Single constant param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDF", 1))));
-            inputs.Add(new LinqTestInput("Single constant int array param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", new int[] { 1, 2, 3 }))));
-            inputs.Add(new LinqTestInput("Single constant string array param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", new string[] { "1", "2" }))));
-            inputs.Add(new LinqTestInput("Multi constant params", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDF", 1, "str", true))));
-            inputs.Add(new LinqTestInput("Multi constant array params", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDWithArrayF", new int[] { 1, 2, 3 }, 1, "str"))));
-            inputs.Add(new LinqTestInput("ArrayCount with constant param", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", new int[] { 1, 2, 3 }) > 2)));
-            // regression (different type parameters including objects)
-            inputs.Add(new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)UserDefinedFunctionProvider.Invoke("MultiParamterUDF2", doc.Point, "str", 1))));
-            // errors
-            inputs.Add(new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(null))));
-            inputs.Add(new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(""))));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("No param", b => getQuery(b).Select(f => UserDefinedFunctionProvider.Invoke("NoParameterUDF"))),
+                new LinqTestInput("Single param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDF", doc.NumericField))),
+                new LinqTestInput("Single param w/ array", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", doc.ArrayField))),
+                new LinqTestInput("Multi param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDF", doc.NumericField, doc.StringField, doc.Point))),
+                new LinqTestInput("Multi param w/ array", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDWithArrayF", doc.ArrayField, doc.NumericField, doc.Point))),
+                new LinqTestInput("ArrayCount", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", doc.ArrayField) > 2)),
+                new LinqTestInput("ArrayCount && SomeBooleanUDF", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", doc.ArrayField) > 2 && (bool)UserDefinedFunctionProvider.Invoke("SomeBooleanUDF"))),
+                new LinqTestInput("expression", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("SingleParameterUDF", doc.NumericField) + 2 == 4)),
+                // UDF with constant parameters
+                new LinqTestInput("Single constant param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDF", 1))),
+                new LinqTestInput("Single constant int array param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", new int[] { 1, 2, 3 }))),
+                new LinqTestInput("Single constant string array param", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("SingleParameterUDFWithArray", new string[] { "1", "2" }))),
+                new LinqTestInput("Multi constant params", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDF", 1, "str", true))),
+                new LinqTestInput("Multi constant array params", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("MultiParamterUDWithArrayF", new int[] { 1, 2, 3 }, 1, "str"))),
+                new LinqTestInput("ArrayCount with constant param", b => getQuery(b).Where(doc => (int)UserDefinedFunctionProvider.Invoke("ArrayCount", new int[] { 1, 2, 3 }) > 2)),
+                // regression (different type parameters including objects)
+                new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)UserDefinedFunctionProvider.Invoke("MultiParamterUDF2", doc.Point, "str", 1))),
+                // errors
+                new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(null))),
+                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("")))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -868,14 +916,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             const int MaxAbsValue = 5;
             const int MaxCoordinateValue = 200;
-            Func<Random, DataObject> createDataObj = (random) => {
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
                 DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
-                List<double> coordinates = new List<double>();
-                coordinates.Add(random.NextDouble() < 0.5 ? 10 : random.Next(MaxCoordinateValue));
-                coordinates.Add(random.NextDouble() < 0.5 ? 5 : random.Next(MaxCoordinateValue));
-                coordinates.Add(random.NextDouble() < 0.5 ? 20 : random.Next(MaxCoordinateValue));
+                List<double> coordinates = new List<double>
+                {
+                    random.NextDouble() < 0.5 ? 10 : random.Next(MaxCoordinateValue),
+                    random.NextDouble() < 0.5 ? 5 : random.Next(MaxCoordinateValue),
+                    random.NextDouble() < 0.5 ? 20 : random.Next(MaxCoordinateValue)
+                };
                 obj.Point = new Point(new Position(coordinates));
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
@@ -883,27 +934,29 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Where -> Select",
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Where -> Select",
                 b => getQuery(b).Where(doc => doc.StringField == "str")
-                .Select(doc => doc.NumericField)));
-            inputs.Add(new LinqTestInput("Select -> Where",
+                .Select(doc => doc.NumericField)),
+                new LinqTestInput("Select -> Where",
                 b => getQuery(b).Select(doc => doc.NumericField)
-                .Where(number => number == 0)));
-            inputs.Add(new LinqTestInput("Select -> Multiple Where",
+                .Where(number => number == 0)),
+                new LinqTestInput("Select -> Multiple Where",
                 b => getQuery(b).Select(doc => doc.Point)
                 .Where(point => point.Position.Latitude == 100)
                 .Where(point => point.Position.Longitude == 50)
                 .Where(point => point.Position.Altitude == 20)
                 .Where(point => point.Position.Coordinates[0] == 100)
-                .Where(point => point.Position.Coordinates[1] == 50)));
-            inputs.Add(new LinqTestInput("Multiple Where -> Select",
+                .Where(point => point.Position.Coordinates[1] == 50)),
+                new LinqTestInput("Multiple Where -> Select",
                 b => getQuery(b).Where(doc => doc.Point.Position.Latitude == 100)
                 .Where(doc => doc.Point.Position.Longitude == 50)
                 .Where(doc => doc.Point.Position.Altitude == 20)
                 .Where(doc => doc.Point.Position.Coordinates[0] == 100)
                 .Where(doc => doc.Point.Position.Coordinates[1] == 50)
-                .Select(doc => doc.Point)));
+                .Select(doc => doc.Point))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -914,31 +967,33 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             int seed = generatedData.Item1;
             List<DataObject> data = generatedData.Item2;
 
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Take
-            inputs.Add(new LinqTestInput("Take 0", b => getQuery(b).Take(0)));
-            inputs.Add(new LinqTestInput("Select -> Take", b => getQuery(b).Select(doc => doc.NumericField).Take(1)));
-            inputs.Add(new LinqTestInput("Filter -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).Take(2)));
-            inputs.Add(new LinqTestInput("Select -> Filter -> Take", b => getQuery(b).Select(doc => doc.NumericField).Where(number => number > 100).Take(7)));
-            inputs.Add(new LinqTestInput("Filter -> Select -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField).Take(8)));
-            inputs.Add(new LinqTestInput("Fitler -> OrderBy -> Select -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).OrderBy(doc => doc.NumericField).Select(doc => doc.NumericField).Take(9)));
-            inputs.Add(new LinqTestInput("Take -> Filter", b => getQuery(b).Take(3).Where(doc => doc.NumericField > 100)));
-            inputs.Add(new LinqTestInput("Take -> Filter -> Select", b => getQuery(b).Take(4).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField)));
-            inputs.Add(new LinqTestInput("Take -> Select -> Filter", b => getQuery(b).Take(5).Select(doc => doc.NumericField).Where(number => number > 100)));
-            inputs.Add(new LinqTestInput("Select -> Take -> Filter", b => getQuery(b).Select(doc => doc.NumericField).Take(6).Where(number => number > 100)));
-            inputs.Add(new LinqTestInput("Take -> Filter -> OrderBy -> Select", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).OrderByDescending(doc => doc.NumericField).Select(doc => doc.NumericField)));
-            // multiple takes
-            inputs.Add(new LinqTestInput("Take 10 -> Take 5", b => getQuery(b).Take(10).Take(5)));
-            inputs.Add(new LinqTestInput("Take 5 -> Take 10", b => getQuery(b).Take(5).Take(10)));
-            inputs.Add(new LinqTestInput("Take 10 -> Select -> Take 1", b => getQuery(b).Take(10).Select(doc => doc.NumericField).Take(1)));
-            inputs.Add(new LinqTestInput("Take 10 -> Filter -> Take 2", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).Take(2)));
-            // negative value
-            inputs.Add(new LinqTestInput("Take -1 -> Take 5", b => getQuery(b).Take(-1).Take(5)));
-            inputs.Add(new LinqTestInput("Take -2 -> Select", b => getQuery(b).Take(-2).Select(doc => doc.NumericField)));
-            inputs.Add(new LinqTestInput("Filter -> Take -3", b => getQuery(b).Where(doc => doc.NumericField > 100).Take(-3)));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Take
+                new LinqTestInput("Take 0", b => getQuery(b).Take(0)),
+                new LinqTestInput("Select -> Take", b => getQuery(b).Select(doc => doc.NumericField).Take(1)),
+                new LinqTestInput("Filter -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).Take(2)),
+                new LinqTestInput("Select -> Filter -> Take", b => getQuery(b).Select(doc => doc.NumericField).Where(number => number > 100).Take(7)),
+                new LinqTestInput("Filter -> Select -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField).Take(8)),
+                new LinqTestInput("Fitler -> OrderBy -> Select -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).OrderBy(doc => doc.NumericField).Select(doc => doc.NumericField).Take(9)),
+                new LinqTestInput("Take -> Filter", b => getQuery(b).Take(3).Where(doc => doc.NumericField > 100)),
+                new LinqTestInput("Take -> Filter -> Select", b => getQuery(b).Take(4).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField)),
+                new LinqTestInput("Take -> Select -> Filter", b => getQuery(b).Take(5).Select(doc => doc.NumericField).Where(number => number > 100)),
+                new LinqTestInput("Select -> Take -> Filter", b => getQuery(b).Select(doc => doc.NumericField).Take(6).Where(number => number > 100)),
+                new LinqTestInput("Take -> Filter -> OrderBy -> Select", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).OrderByDescending(doc => doc.NumericField).Select(doc => doc.NumericField)),
+                // multiple takes
+                new LinqTestInput("Take 10 -> Take 5", b => getQuery(b).Take(10).Take(5)),
+                new LinqTestInput("Take 5 -> Take 10", b => getQuery(b).Take(5).Take(10)),
+                new LinqTestInput("Take 10 -> Select -> Take 1", b => getQuery(b).Take(10).Select(doc => doc.NumericField).Take(1)),
+                new LinqTestInput("Take 10 -> Filter -> Take 2", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).Take(2)),
+                // negative value
+                new LinqTestInput("Take -1 -> Take 5", b => getQuery(b).Take(-1).Take(5)),
+                new LinqTestInput("Take -2 -> Select", b => getQuery(b).Take(-2).Select(doc => doc.NumericField)),
+                new LinqTestInput("Filter -> Take -3", b => getQuery(b).Where(doc => doc.NumericField > 100).Take(-3))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -996,49 +1051,51 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestSelectManyWithFilters();
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            // Filter outer query
-            inputs.Add(new LinqTestInput("SelectMany(Where -> Select)",
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Filter outer query
+                new LinqTestInput("SelectMany(Where -> Select)",
                 b => getQuery(b).SelectMany(doc => doc.EnumerableField
                     .Where(number => doc.NumericField > 0)
-                    .Select(number => number))));
-            inputs.Add(new LinqTestInput("Where -> SelectMany(Select)",
+                    .Select(number => number))),
+                new LinqTestInput("Where -> SelectMany(Select)",
                 b => getQuery(b).Where(doc => doc.NumericField > 0)
                 .SelectMany(doc => doc.EnumerableField
-                    .Select(number => number))));
-            // Filter inner query
-            inputs.Add(new LinqTestInput("SelectMany(Where -> Select)",
+                    .Select(number => number))),
+                // Filter inner query
+                new LinqTestInput("SelectMany(Where -> Select)",
                 b => getQuery(b).SelectMany(doc => doc.EnumerableField
                     .Where(number => number > 0)
-                    .Select(number => number))));
-            inputs.Add(new LinqTestInput("SelectMany(Select -> Where)",
+                    .Select(number => number))),
+                new LinqTestInput("SelectMany(Select -> Where)",
                 b => getQuery(b).SelectMany(doc => doc.EnumerableField
                     .Select(number => number)
-                    .Where(number => number > 0))));
-            // Filter both
-            inputs.Add(new LinqTestInput("SelectMany(Where1 -> Where2 -> Select)",
+                    .Where(number => number > 0))),
+                // Filter both
+                new LinqTestInput("SelectMany(Where1 -> Where2 -> Select)",
                 b => getQuery(b).SelectMany(doc => doc.EnumerableField
                     .Where(number => doc.NumericField > 0)
                     .Where(number => number > 10)
-                    .Select(number => number))));
-            inputs.Add(new LinqTestInput("SelectMany(Where2 -> Where1 -> Select)",
+                    .Select(number => number))),
+                new LinqTestInput("SelectMany(Where2 -> Where1 -> Select)",
                 b => getQuery(b).SelectMany(doc => doc.EnumerableField
                     .Where(number => number > 10)
                     .Where(number => doc.NumericField > 0)
-                    .Select(number => number))));
-            inputs.Add(new LinqTestInput("Where -> SelectMany(Where -> Select)",
+                    .Select(number => number))),
+                new LinqTestInput("Where -> SelectMany(Where -> Select)",
                 b => getQuery(b).Where(doc => doc.NumericField > 0)
                 .SelectMany(doc => doc.EnumerableField
                     .Where(number => number > 10)
-                    .Select(number => number))));
-            // OrderBy + Take
-            inputs.Add(new LinqTestInput("Where -> OrderBy -> Take -> SelectMany(Where -> Select)",
+                    .Select(number => number))),
+                // OrderBy + Take
+                new LinqTestInput("Where -> OrderBy -> Take -> SelectMany(Where -> Select)",
                 b => getQuery(b).Where(doc => doc.NumericField > 0)
                 .OrderBy(doc => doc.StringField)
                 .Take(10)
                 .SelectMany(doc => doc.EnumerableField
                     .Where(number => number > 10)
-                    .Select(number => number))));
+                    .Select(number => number)))
+            };
             this.ExecuteTestSuite(inputs);
         }
 

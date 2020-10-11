@@ -1,14 +1,23 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Sql
+namespace Microsoft.Azure.Cosmos.SqlObjects
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
 
-    internal sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class SqlObjectCreateScalarExpression : SqlScalarExpression
     {
-        private SqlObjectCreateScalarExpression(IEnumerable<SqlObjectProperty> properties)
+        private SqlObjectCreateScalarExpression(ImmutableArray<SqlObjectProperty> properties)
         {
             if (properties == null)
             {
@@ -23,14 +32,14 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
             }
 
-            this.Properties = new List<SqlObjectProperty>(properties);
+            this.Properties = properties;
         }
 
-        public IEnumerable<SqlObjectProperty> Properties { get; }
+        public ImmutableArray<SqlObjectProperty> Properties { get; }
 
-        public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties);
+        public static SqlObjectCreateScalarExpression Create(params SqlObjectProperty[] properties) => new SqlObjectCreateScalarExpression(properties.ToImmutableArray());
 
-        public static SqlObjectCreateScalarExpression Create(IEnumerable<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties);
+        public static SqlObjectCreateScalarExpression Create(ImmutableArray<SqlObjectProperty> properties) => new SqlObjectCreateScalarExpression(properties);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

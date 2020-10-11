@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
-            Uri resourceLink,
+            string resourceLink,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        internal override Task<QueryResponseCore> ExecuteQueryAsync(
+        internal override Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -77,22 +78,22 @@ namespace Microsoft.Azure.Cosmos.Query
             }    
 
             return this.QueryClient.ExecuteItemQueryAsync(
-                           resourceUri: this.ResourceLink,
-                           resourceType: this.ResourceTypeEnum,
-                           operationType: this.OperationTypeEnum,
-                           clientQueryCorrelationId: this.CorrelatedActivityId,
-                           requestOptions: requestOptions,
-                           sqlQuerySpec: querySpecForInit,
-                           continuationToken: continuationToken,
-                           partitionKeyRange: partitionKeyRange,
-                           isContinuationExpected: isContinuationExpected,
-                           pageSize: pageSize,
-                           queryPageDiagnostics: this.AddQueryPageDiagnostic,
-                           cancellationToken: cancellationToken);
+                resourceUri: this.ResourceLink,
+                resourceType: this.ResourceTypeEnum,
+                operationType: this.OperationTypeEnum,
+                clientQueryCorrelationId: this.CorrelatedActivityId,
+                requestOptions: requestOptions,
+                sqlQuerySpec: querySpecForInit,
+                continuationToken: continuationToken,
+                partitionKeyRange: partitionKeyRange,
+                isContinuationExpected: isContinuationExpected,
+                pageSize: pageSize,
+                queryPageDiagnostics: this.AddQueryPageDiagnostic,
+                cancellationToken: cancellationToken);
         }
 
         internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

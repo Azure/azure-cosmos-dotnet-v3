@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
     internal readonly struct PartitionKeyHashRange : IComparable<PartitionKeyHashRange>, IEquatable<PartitionKeyHashRange>
     {
@@ -28,6 +29,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         public PartitionKeyHash? StartInclusive { get; }
 
         public PartitionKeyHash? EndExclusive { get; }
+
+        public bool Contains(PartitionKeyHash partitionKeyHash)
+        {
+            bool rangeStartsBefore = !this.StartInclusive.HasValue || (this.StartInclusive.Value <= partitionKeyHash);
+            bool rangeEndsAfter = !this.EndExclusive.HasValue || (partitionKeyHash <= this.EndExclusive.Value);
+            return rangeStartsBefore && rangeEndsAfter;
+        }
+
+        public bool Contains(PartitionKeyHashRange partitionKeyHashRange)
+        {
+            bool rangeStartsBefore = !this.StartInclusive.HasValue || (partitionKeyHashRange.StartInclusive.HasValue && (this.StartInclusive.Value <= partitionKeyHashRange.StartInclusive.Value));
+            bool rangeEndsAfter = !this.EndExclusive.HasValue || (partitionKeyHashRange.EndExclusive.HasValue && (partitionKeyHashRange.EndExclusive.Value <= this.EndExclusive.Value));
+            return rangeStartsBefore && rangeEndsAfter;
+        }
 
         public int CompareTo(PartitionKeyHashRange other)
         {

@@ -5,12 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -19,10 +19,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RequestInvokerHandler : RequestHandler
     {
-        private static (bool, ResponseMessage) clientIsValid = (false, null);
         private readonly CosmosClient client;
+        private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
-        private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private static (bool, ResponseMessage) clientIsValid = (false, null);
 
         public RequestInvokerHandler(
             CosmosClient client,
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<T> SendAsync<T>(
-            Uri resourceUri,
+            string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             ResponseMessage responseMessage = await this.SendAsync(
-                resourceUri: resourceUri,
+                resourceUriString: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public virtual async Task<ResponseMessage> SendAsync(
-            Uri resourceUri,
+            string resourceUriString,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
@@ -105,79 +106,93 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (resourceUri == null)
+            if (resourceUriString == null)
             {
-                throw new ArgumentNullException(nameof(resourceUri));
+                throw new ArgumentNullException(nameof(resourceUriString));
             }
 
             // DEVNOTE: Non-Item operations need to be refactored to always pass
             // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
-            IDisposable overallScope = null;
+            bool disposeDiagnosticContext = false;
             if (diagnosticsContext == null)
             {
                 diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                overallScope = diagnosticsContext.GetOverallScope();
+                disposeDiagnosticContext = true;
             }
+
+            // This is needed for query where a single
+            // user request might span multiple backend requests.
+            // This will still have a single request id for retry scenarios
+            ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
+            Debug.Assert(activityScope == null || (activityScope != null &&
+                         (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan)),
+                "There should be an activity id already set");
 
             try
             {
-                using (overallScope)
+                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+                RequestMessage request = new RequestMessage(
+                        method,
+                        resourceUriString,
+                        diagnosticsContext)
                 {
-                    HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
-                    RequestMessage request = new RequestMessage(
-                            method,
-                            resourceUri,
-                            diagnosticsContext)
-                    {
-                        OperationType = operationType,
-                        ResourceType = resourceType,
-                        RequestOptions = requestOptions,
-                        Content = streamPayload,
-                    };
+                    OperationType = operationType,
+                    ResourceType = resourceType,
+                    RequestOptions = requestOptions,
+                    Content = streamPayload,
+                };
 
-                    if (partitionKey.HasValue)
+                if (partitionKey.HasValue)
+                {
+                    if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                     {
-                        if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                        throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                    }
+                    else if (partitionKey.Value.IsNone)
+                    {
+                        using (diagnosticsContext.CreateScope("GetNonePkValue"))
                         {
-                            throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                        }
-                        else if (partitionKey.Value.IsNone)
-                        {
-                            using (diagnosticsContext.CreateScope("GetNonePkValue"))
+                            try
                             {
-                                try
-                                {
-                                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                                }
-                                catch (DocumentClientException dce)
-                                {
-                                    return dce.ToCosmosResponseMessage(request);
-                                }
-                                catch (CosmosException ce)
-                                {
-                                    return ce.ToCosmosResponseMessage(request);
-                                }
+                                PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
+                                request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                            }
+                            catch (DocumentClientException dce)
+                            {
+                                return dce.ToCosmosResponseMessage(request);
+                            }
+                            catch (CosmosException ce)
+                            {
+                                return ce.ToCosmosResponseMessage(request);
                             }
                         }
-                        else
-                        {
-                            request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
-                        }
                     }
-
-                    if (operationType == OperationType.Upsert)
+                    else
                     {
-                        request.Headers.IsUpsert = bool.TrueString;
+                        request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
                     }
-
-                    requestEnricher?.Invoke(request);
-                    return await this.SendAsync(request, cancellationToken);
                 }
+
+                if (operationType == OperationType.Upsert)
+                {
+                    request.Headers.IsUpsert = bool.TrueString;
+                }
+                else if (operationType == OperationType.Patch)
+                {
+                    request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+                }
+
+                requestEnricher?.Invoke(request);
+                return await this.SendAsync(request, cancellationToken);
             }
-            catch (OperationCanceledException oe)
+            finally
             {
-                throw new CosmosOperationCanceledException(oe, diagnosticsContext);
+                if (disposeDiagnosticContext)
+                {
+                    diagnosticsContext.GetOverallScope().Dispose();
+                }
+
+                activityScope?.Dispose();
             }
         }
 
@@ -207,6 +222,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else if (operationType == OperationType.Delete)
             {
                 return HttpMethod.Delete;
+            }
+            else if (operationType == OperationType.Patch)
+            {
+                // There isn't support for PATCH method in .NetStandard 2.0
+                return httpPatchMethod;
             }
             else
             {

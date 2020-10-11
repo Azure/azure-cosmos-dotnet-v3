@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Scripts;
@@ -11,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
 
     [TestClass]
@@ -23,7 +23,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                SendingRequestEventArgs = this.SendingRequestEventHandlerUdfVerifier,
+            };
+
+            this.cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
@@ -129,18 +136,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
              "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
                  .WithParameter("@expensive", 9000)
                  .WithParameter("@status", "Done");
-            
-             FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
-                 queryDefinition: sqlQuery);
-
             HashSet<string> iterIds = new HashSet<string>();
-            while (feedIterator.HasMoreResults)
+            using (FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
+                 queryDefinition: sqlQuery))
             {
-                foreach (var response in await feedIterator.ReadNextAsync())
+                while (feedIterator.HasMoreResults)
                 {
-                    Assert.IsTrue(response.cost > 9000);
-                    Assert.AreEqual(response.cost * .05, response.total);
-                    iterIds.Add(response.id.Value);
+                    foreach (dynamic response in await feedIterator.ReadNextAsync())
+                    {
+                        Assert.IsTrue(response.cost > 9000);
+                        Assert.AreEqual(response.cost * .05, response.total);
+                        iterIds.Add(response.id.Value);
+                    }
                 }
             }
 
@@ -175,6 +182,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Delete existing user defined functions.
                 await scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
+            }
+        }
+        private void SendingRequestEventHandlerUdfVerifier(object sender, Microsoft.Azure.Documents.SendingRequestEventArgs e)
+        {
+            if (e.IsHttpRequest())
+            {
+                if (e.HttpRequest.RequestUri.OriginalString.Contains(Microsoft.Azure.Documents.Paths.UserDefinedFunctionsPathSegment))
+                {
+                    Assert.IsFalse(e.HttpRequest.Headers.Contains(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SessionToken));
+                }
             }
         }
 

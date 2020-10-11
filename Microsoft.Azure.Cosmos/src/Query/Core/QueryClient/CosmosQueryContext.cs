@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using OperationType = Documents.OperationType;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public virtual Type ResourceType { get; }
         public virtual bool IsContinuationExpected { get; }
         public virtual bool AllowNonValueAggregateQuery { get; }
-        public virtual Uri ResourceLink { get; }
+        public virtual string ResourceLink { get; }
         public virtual string ContainerResourceId { get; set; }
         public virtual Guid CorrelatedActivityId { get; }
 
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
-            Uri resourceLink,
+            string resourceLink,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal abstract IDisposable CreateDiagnosticScope(string name);
 
-        internal abstract Task<QueryResponseCore> ExecuteQueryAsync(
+        internal abstract Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             CancellationToken cancellationToken);
 
         internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,

@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -14,43 +16,40 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    sealed class CosmosNull : CosmosElement
+    sealed class CosmosNull : CosmosElement, IEquatable<CosmosNull>, IComparable<CosmosNull>
     {
+        private const uint Hash = 448207988;
+
         private static readonly CosmosNull Singleton = new CosmosNull();
 
         private CosmosNull()
-            : base(CosmosElementType.Null)
+            : base()
         {
         }
 
         public override void Accept(ICosmosElementVisitor cosmosElementVisitor)
         {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
             cosmosElementVisitor.Visit(this);
         }
 
         public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor)
         {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
             return cosmosElementVisitor.Visit(this);
         }
 
         public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input)
         {
-            if (cosmosElementVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosElementVisitor));
-            }
-
             return cosmosElementVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosElement cosmosElement)
+        {
+            return cosmosElement is CosmosNull cosmosNull && this.Equals(cosmosNull);
+        }
+
+        public bool Equals(CosmosNull cosmosNull)
+        {
+            return true;
         }
 
         public static CosmosNull Create()
@@ -58,13 +57,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return CosmosNull.Singleton;
         }
 
+        public override int GetHashCode()
+        {
+            return (int)Hash;
+        }
+
         public override void WriteTo(IJsonWriter jsonWriter)
         {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
-
             jsonWriter.WriteNullValue();
         }
 
@@ -78,14 +77,23 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return CosmosElement.Parse<CosmosNull>(json);
         }
 
-        public static bool TryCreateFromBuffer(ReadOnlyMemory<byte> buffer, out CosmosNull cosmosNull)
+        public static bool TryCreateFromBuffer(
+            ReadOnlyMemory<byte> buffer,
+            out CosmosNull cosmosNull)
         {
             return CosmosElement.TryCreateFromBuffer<CosmosNull>(buffer, out cosmosNull);
         }
 
-        public static bool TryParse(string json, out CosmosNull cosmosNull)
+        public static bool TryParse(
+            string json,
+            out CosmosNull cosmosNull)
         {
             return CosmosElement.TryParse<CosmosNull>(json, out cosmosNull);
+        }
+
+        public int CompareTo(CosmosNull other)
+        {
+            return 0;
         }
 
         public static new class Monadic

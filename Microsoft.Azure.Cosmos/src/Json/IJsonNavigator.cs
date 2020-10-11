@@ -5,8 +5,6 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// JsonNavigator interface for classes that can navigate jsons.
@@ -177,18 +175,17 @@ namespace Microsoft.Azure.Cosmos.Json
         IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <summary>
-        /// Tries to get the buffered raw json
+        /// Creates an <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.
         /// </summary>
-        /// <param name="jsonNode">The json node of interest</param>
-        /// <param name="bufferedRawJson">The raw json.</param>
-        /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
-        bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+        /// <param name="jsonNavigatorNode">The node to create a reader from..</param>
+        /// <returns>The <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.</returns>
+        public IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
 
         /// <summary>
         /// Writes a <see cref="IJsonNavigatorNode"/> to a <see cref="IJsonWriter"/>.
         /// </summary>
         /// <param name="jsonNavigatorNode">The <see cref="IJsonNavigatorNode"/> to write.</param>
         /// <param name="jsonWriter">The <see cref="IJsonWriter"/> to write to.</param>
-        void WriteTo(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
+        void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
     }
 }

@@ -5,8 +5,8 @@
       <PartitionKeyValue>UNDEFINED</PartitionKeyValue>
     </Input>
     <Output>
-      <PartitionKeyHashV1>B7-28-4E-51-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
-      <PartitionKeyHashV2>B5-5C-FF-6E-E5-AB-10-46-83-35-F8-78-AA-2D-62-51</PartitionKeyHashV2>
+      <PartitionKeyHashV1>00-00-00-00-00-00-00-00-00-00-00-00-51-4E-28-B7</PartitionKeyHashV1>
+      <PartitionKeyHashV2>51-62-2D-AA-78-F8-35-83-46-10-AB-E5-6E-FF-5C-B5</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -15,8 +15,8 @@
       <PartitionKeyValue>null</PartitionKeyValue>
     </Input>
     <Output>
-      <PartitionKeyHashV1>AB-D1-5A-E4-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
-      <PartitionKeyHashV2>16-FE-74-83-90-5C-CE-7A-85-67-0E-43-E4-67-88-77</PartitionKeyHashV2>
+      <PartitionKeyHashV1>00-00-00-00-00-00-00-00-00-00-00-00-E4-5A-D1-AB</PartitionKeyHashV1>
+      <PartitionKeyHashV2>77-88-67-E4-43-0E-67-85-7A-CE-5C-90-83-74-FE-16</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -25,8 +25,8 @@
       <PartitionKeyValue>true</PartitionKeyValue>
     </Input>
     <Output>
-      <PartitionKeyHashV1>76-80-2A-5E-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
-      <PartitionKeyHashV2>59-3E-6A-30-DD-C6-6A-72-E4-A8-B5-C5-27-11-71-4E</PartitionKeyHashV2>
+      <PartitionKeyHashV1>00-00-00-00-00-00-00-00-00-00-00-00-5E-2A-80-76</PartitionKeyHashV1>
+      <PartitionKeyHashV2>4E-71-11-27-C5-B5-A8-E4-72-6A-C6-DD-30-6A-3E-59</PartitionKeyHashV2>
     </Output>
   </Result>
   <Result>
@@ -35,8 +35,8 @@
       <PartitionKeyValue>false</PartitionKeyValue>
     </Input>
     <Output>
-      <PartitionKeyHashV1>9F-D0-27-6C-00-00-00-00-00-00-00-00-00-00-00-00</PartitionKeyHashV1>
-      <PartitionKeyHashV2>F2-1E-36-37-9E-0E-5E-63-39-34-0A-E9-91-BE-E1-EF</PartitionKeyHashV2>
+      <PartitionKeyHashV1>00-00-00-00-00-00-00-00-00-00-00-00-6C-27-D0-9F</PartitionKeyHashV1>
+      <PartitionKeyHashV2>EF-E1-BE-91-E9-0A-34-39-63-5E-0E-9E-37-36-1E-F2</PartitionKeyHashV2>
     </Output>
   </Result>
 </Results>

@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Net.Http;
+
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
@@ -10,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     internal class MockCosmosUtil
     {
         public static readonly CosmosSerializerCore Serializer = new CosmosSerializerCore();
+        public static readonly string RandomInvalidCorrectlyFormatedAuthKey = "CV60UDtH10CFKR0GxBl/Wg==";
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
@@ -37,20 +38,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                 documentClient = new MockDocumentClient();
             }
             
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             return cosmosClientBuilder.Build(documentClient);
+        }
+
+        public static CosmosDiagnosticsContext CreateDiagnosticsContext()
+        {
+            return new CosmosDiagnosticsContextCore(
+                nameof(CreateDiagnosticsContext),
+                "DiagnosticValidatorUserAgentString");
         }
 
         public static Mock<ContainerInternal> CreateMockContainer(
             string dbName = "myDb",
             string containerName = "myContainer")
         {
-            Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
+            string link = $"/dbs/{dbName}/colls/{containerName}";
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             return mockContainer;
@@ -58,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static Mock<DatabaseInternal> CreateMockDatabase(string dbName = "myDb")
         {
-            Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
+            string link = $"/dbs/{dbName}";
             Mock<DatabaseInternal> mockDB = new Mock<DatabaseInternal>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
             mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
@@ -68,6 +73,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static CosmosClientOptions GetDefaultConfiguration()
         {
             return new CosmosClientOptions();
+        }
+
+        public static CosmosHttpClient CreateCosmosHttpClient(
+            Func<HttpClient> httpClient,
+            DocumentClientEventSource eventSource = null)
+        {
+            if (eventSource == null)
+            {
+                eventSource = DocumentClientEventSource.Instance;
+            }
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                HttpClientFactory = httpClient
+            };
+
+            return CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: default,
+                eventSource: eventSource,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

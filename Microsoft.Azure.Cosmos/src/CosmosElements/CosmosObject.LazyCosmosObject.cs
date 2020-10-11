@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -16,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private class LazyCosmosObject : CosmosObject
         {
@@ -27,16 +29,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Object)
                 {
@@ -76,20 +68,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
             }
 
-            public override bool ContainsKey(string key) => this.jsonNavigator.TryGetObjectProperty(
-                this.jsonNavigatorNode,
-                key,
-                out ObjectProperty objectProperty);
+            public override bool ContainsKey(string key)
+            {
+                return this.jsonNavigator.TryGetObjectProperty(
+this.jsonNavigatorNode,
+key,
+out _);
+            }
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this
-                .jsonNavigator
-                .GetObjectProperties(this.jsonNavigatorNode)
-                .Select(
-                    (objectProperty) =>
-                    new KeyValuePair<string, CosmosElement>(
-                        this.jsonNavigator.GetStringValue(objectProperty.NameNode),
-                        CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
-                .GetEnumerator();
+            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
+            {
+                return this
+.jsonNavigator
+.GetObjectProperties(this.jsonNavigatorNode)
+.Select(
+(objectProperty) =>
+new KeyValuePair<string, CosmosElement>(
+this.jsonNavigator.GetStringValue(objectProperty.NameNode),
+CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
+.GetEnumerator();
+            }
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
@@ -112,18 +110,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     return true;
                 }
 
-                value = default;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                value = default; // Dictionary.TryGetValue does not use nullable references.
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
                 return false;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
+                this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
+            }
 
-                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+            public override IJsonReader CreateReader()
+            {
+                return this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
             }
         }
     }

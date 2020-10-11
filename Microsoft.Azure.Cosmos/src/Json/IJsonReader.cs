@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Interface for all JsonReaders that know how to read jsons.
@@ -55,12 +54,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="value">The buffered UTF-8 string value if found.</param>
         /// <returns>true if the buffered UTF-8 string value was retrieved; false otherwise.</returns>
         bool TryGetBufferedStringValue(out Utf8Memory value);
-
-        /// <summary>
-        /// Tries to get the current JSON token from the JsonReader as a raw series of bytes that is buffered.
-        /// </summary>
-        /// <returns>true if the current JSON token was retrieved; false otherwise.</returns>
-        bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken);
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a 1 byte signed integer.
@@ -115,5 +108,17 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <returns>The next JSON token from the JsonReader as a binary list.</returns>
         ReadOnlyMemory<byte> GetBinaryValue();
+
+        /// <summary>
+        /// Writes the current token on the reader to the writer.
+        /// </summary>
+        /// <param name="writer">The writer to write to.</param>
+        void WriteCurrentToken(IJsonWriter writer);
+
+        /// <summary>
+        /// Writes all the tokens in the reader to the writer.
+        /// </summary>
+        /// <param name="writer"></param>
+        void WriteAll(IJsonWriter writer);
     }
 }

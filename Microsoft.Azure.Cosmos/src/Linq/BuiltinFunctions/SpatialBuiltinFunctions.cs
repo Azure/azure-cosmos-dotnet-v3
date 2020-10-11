@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SqlObjects;
 
     internal static class SpatialBuiltinFunctions
     {
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SpatialBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
 
             SpatialBuiltinFunctionDefinitions.Add("Distance",
-                new SqlBuiltinFunctionVisitor("ST_Distance",
+                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StDistance,
                     true,
                     new List<Type[]>()
                     {
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("Within",
-                new SqlBuiltinFunctionVisitor("ST_Within",
+                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StWithin,
                     true,
                     new List<Type[]>()
                     {
@@ -36,17 +36,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValidDetailed",
-                new SqlBuiltinFunctionVisitor("ST_IsValidDetailed",
+                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIsvaliddetailed,
                     true,
                     new List<Type[]>()));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValid",
-                new SqlBuiltinFunctionVisitor("ST_IsValid",
+                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIsvalid,
                     true,
                     new List<Type[]>()));
 
             SpatialBuiltinFunctionDefinitions.Add("Intersects",
-                new SqlBuiltinFunctionVisitor("ST_Intersects",
+                new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.StIntersects,
                     true,
                     new List<Type[]>()
                     {

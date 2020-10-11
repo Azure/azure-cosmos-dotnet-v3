@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
-        private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
+        private static readonly TransactionalBatchRequestOptions RequestOptionDisableDiagnostic = new TransactionalBatchRequestOptions()
         {
             DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
@@ -202,12 +204,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<(string, string)> activityIdAndErrorMessage = new List<(string, string)>(maxCount);
                 Guid transportExceptionActivityId = Guid.NewGuid();
                 string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
-
+                Guid activityIdScope = Guid.Empty;
                 Action<Uri, Documents.ResourceOperation, Documents.DocumentServiceRequest> interceptor =
                     (uri, operation, request) =>
                 {
+                    Assert.AreNotEqual(Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
+                    
                     if (request.ResourceType == Documents.ResourceType.Document)
                     {
+                        if (activityIdScope == Guid.Empty)
+                        {
+                            activityIdScope = Trace.CorrelationManager.ActivityId;
+                        }
+                        else
+                        {
+                            Assert.AreEqual(Trace.CorrelationManager.ActivityId, activityIdScope, "Activity scope should match on retries");
+                        }
+
                         if (count >= maxCount)
                         {
                             TransportClientHelper.ThrowTransportExceptionOnItemOperation(
@@ -283,7 +296,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (disableDiagnostics)
             {
                 requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
-            };
+            }
+            else
+            {
+                // Add 10 seconds to ensure CPU history is recorded
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
 
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -314,6 +332,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 replaceResponse.Diagnostics,
+                disableDiagnostics);
+
+            testItem.description = "PatchedDescription";
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/description", testItem.description)
+            };
+            ItemResponse<ToDoActivity> patchResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new PartitionKey(testItem.status),
+                patchOperations: patch,
+                requestOptions: requestOptions);
+
+            Assert.AreEqual(patchResponse.Resource.description, "PatchedDescription");
+
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                patchResponse.Diagnostics,
                 disableDiagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
@@ -352,6 +388,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 replaceStreamResponse.Diagnostics,
                 disableDiagnostics);
 
+            ResponseMessage patchStreamResponse = await containerInternal.PatchItemStreamAsync(
+               id: testItem.id,
+               partitionKey: new PartitionKey(testItem.status),
+               patchOperations: patch,
+               requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                patchStreamResponse.Diagnostics,
+                disableDiagnostics);
+
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status),
@@ -379,6 +424,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pkValue = "DiagnosticTestPk";
             TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
+            BatchCore batchCore = (BatchCore)batch;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Remove("/cost")
+            };
 
             List<ToDoActivity> createItems = new List<ToDoActivity>();
             for (int i = 0; i < 50; i++)
@@ -391,10 +441,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < 20; i++)
             {
                 batch.ReadItem(createItems[i].id);
+                batchCore.PatchItem(createItems[i].id, patch);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
-            TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
+            TransactionalBatchRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
 
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
@@ -421,7 +472,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerInternal)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(continuationToken: null, changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(),
+                changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
@@ -613,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
             // If all the pages are buffered then several of the normal summary validation will fail.
-            if (diagnosticsContext.TotalRequestCount > 0)
+            if (diagnosticsContext.GetTotalRequestCount() > 0)
             {
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }

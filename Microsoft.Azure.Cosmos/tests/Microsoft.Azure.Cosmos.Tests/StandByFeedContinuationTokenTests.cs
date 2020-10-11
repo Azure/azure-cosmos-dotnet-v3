@@ -8,8 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -224,24 +225,21 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions(){ };
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+            ChangeFeedStartFrom.ContinuationToken("something").Accept(visitor);
 
-            ChangeFeedRequestOptions.FillContinuationToken(request, "something");
-            requestOptions.PopulateRequestOptions(request);
-
-            Assert.AreEqual("something", request.Headers.IfNoneMatch);
+            Assert.AreEqual(expected: "something", actual: request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
         [TestMethod]
-        public void ChangeFeedRequestOptions_DefaultValues()
+        public void ChangeFeedRequestOptions_StartFromNow()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+            ChangeFeedStartFrom.Now().Accept(visitor);
 
-            requestOptions.PopulateRequestOptions(request);
-
-            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.AreEqual(expected: "*", request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
@@ -249,9 +247,8 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_StartFromBeginning()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue.ToUniversalTime() };
-
-            requestOptions.PopulateRequestOptions(request);
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+            ChangeFeedStartFrom.Beginning().Accept(visitor);
 
             Assert.IsNull(request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
@@ -261,29 +258,16 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
-
-            ChangeFeedRequestOptions.FillMaxItemCount(request, 10);
-            requestOptions.PopulateRequestOptions(request);
-
-            Assert.AreEqual("10", request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
-            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_ContinuationBeatsStartTime()
-        {
-            RequestMessage request = new RequestMessage();
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
-                StartTime = new DateTime(1985, 1, 1)
+                PageSizeHint = 10,
             };
-
-            ChangeFeedRequestOptions.FillContinuationToken(request, "something");
             requestOptions.PopulateRequestOptions(request);
+            ChangeFeedStartFrom.Beginning().Accept(visitor);
 
-            Assert.AreEqual("something", request.Headers.IfNoneMatch);
+            Assert.AreEqual(expected: "10", actual: request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
+            Assert.IsNull(request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
@@ -291,26 +275,36 @@ namespace Microsoft.Azure.Cosmos
         public void ChangeFeedRequestOptions_AddsStartTime()
         {
             RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                StartTime = new DateTime(1985, 1, 1, 0, 0,0, DateTimeKind.Utc)
-            };
+            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+            ChangeFeedStartFrom.Time(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Accept(visitor);
 
-            requestOptions.PopulateRequestOptions(request);
-
-            Assert.AreEqual("Tue, 01 Jan 1985 00:00:00 GMT", request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+            Assert.AreEqual(
+                expected: "Tue, 01 Jan 1985 00:00:00 GMT",
+                actual: request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
             Assert.IsNull(request.Headers.IfNoneMatch);
         }
 
         [TestMethod]
-        public void ChangeFeedRequestOptions_AddsPartitionKeyRangeId()
+        public void ChangeFeedRequestOptions_AddsFeedRange()
         {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
+            FeedRange feedRange = new FeedRangePartitionKeyRange("randomPK");
+            ChangeFeedStartFrom[] froms = new ChangeFeedStartFrom[]
+            {
+                ChangeFeedStartFrom.Beginning(feedRange),
+                ChangeFeedStartFrom.Now(feedRange),
+                ChangeFeedStartFrom.Time(DateTime.MinValue.ToUniversalTime(), feedRange)
+            };
 
-            ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");
+            foreach (ChangeFeedStartFrom from in froms)
+            {
+                RequestMessage request = new RequestMessage();
+                ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
+                from.Accept(visitor);
 
-            Assert.AreEqual("randomPK", request.PartitionKeyRangeId.PartitionKeyRangeId);
+                Assert.AreEqual(
+                    expected: "randomPK",
+                    actual: request.PartitionKeyRangeId.PartitionKeyRangeId);
+            }
         }
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
@@ -322,15 +316,15 @@ namespace Microsoft.Azure.Cosmos
                     return Task.FromResult(keyRanges);
                 }
 
-                IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>(keyRanges.Where(range=> range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
+                IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>(keyRanges.Where(range => range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
 
                 return Task.FromResult(filteredRanges);
             };
         }
 
         private static CompositeContinuationToken BuildTokenForRange(
-            string min, 
-            string max, 
+            string min,
+            string max,
             string token)
         {
             return new CompositeContinuationToken()
