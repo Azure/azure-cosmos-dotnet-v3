@@ -1,0 +1,47 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * GROUP BY 1]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT *GROUP BY 1 ]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Case Insensitive]]></Description>
+      <Query><![CDATA[SELECT * GrOuP By 1]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT *GROUP BY 1 ]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[multi group by]]></Description>
+      <Query><![CDATA[SELECT * GROUP BY 1, 2, 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT *GROUP BY 1, 2, 3 ]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing group by expression]]></Description>
+      <Query><![CDATA[SELECT * GROUP BY ]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[missing space]]></Description>
+      <Query><![CDATA[SELECT * GROUPBY 1]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>

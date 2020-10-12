@@ -37,7 +37,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UserManagement", "UserManag
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BulkExecutorMigration", "BulkExecutorMigration\BulkExecutorMigration.csproj", "{DC8D7000-8291-4E75-B12F-DD2D38586467}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Encryption", "Encryption\Encryption.csproj", "{12D9E6FC-C5D1-44F4-AF41-CEBEA9A89B1E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{AA4A3668-0CB1-4760-AC80-FE49C9477C77}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpClientFactory", "HttpClientFactory\HttpClientFactory.csproj", "{D4CFD5B2-67A8-4383-947F-FAADD998043E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Geospatial", "Geospatial\Geospatial.csproj", "{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -113,10 +119,22 @@ Global
 		{DC8D7000-8291-4E75-B12F-DD2D38586467}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC8D7000-8291-4E75-B12F-DD2D38586467}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC8D7000-8291-4E75-B12F-DD2D38586467}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12D9E6FC-C5D1-44F4-AF41-CEBEA9A89B1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12D9E6FC-C5D1-44F4-AF41-CEBEA9A89B1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12D9E6FC-C5D1-44F4-AF41-CEBEA9A89B1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12D9E6FC-C5D1-44F4-AF41-CEBEA9A89B1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA4A3668-0CB1-4760-AC80-FE49C9477C77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA4A3668-0CB1-4760-AC80-FE49C9477C77}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA4A3668-0CB1-4760-AC80-FE49C9477C77}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA4A3668-0CB1-4760-AC80-FE49C9477C77}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4CFD5B2-67A8-4383-947F-FAADD998043E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

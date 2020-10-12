@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -69,20 +68,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
             }
 
-            public override bool ContainsKey(string key) => this.jsonNavigator.TryGetObjectProperty(
-                this.jsonNavigatorNode,
-                key,
-                out _);
+            public override bool ContainsKey(string key)
+            {
+                return this.jsonNavigator.TryGetObjectProperty(
+this.jsonNavigatorNode,
+key,
+out _);
+            }
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this
-                .jsonNavigator
-                .GetObjectProperties(this.jsonNavigatorNode)
-                .Select(
-                    (objectProperty) =>
-                    new KeyValuePair<string, CosmosElement>(
-                        this.jsonNavigator.GetStringValue(objectProperty.NameNode),
-                        CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
-                .GetEnumerator();
+            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
+            {
+                return this
+.jsonNavigator
+.GetObjectProperties(this.jsonNavigatorNode)
+.Select(
+(objectProperty) =>
+new KeyValuePair<string, CosmosElement>(
+this.jsonNavigator.GetStringValue(objectProperty.NameNode),
+CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
+.GetEnumerator();
+            }
 
             public override bool TryGetValue(string key, out CosmosElement value)
             {
@@ -111,9 +116,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return false;
             }
 
-            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
+            public override void WriteTo(IJsonWriter jsonWriter)
+            {
+                this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
+            }
 
-            public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
+            public override IJsonReader CreateReader()
+            {
+                return this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
+            }
         }
     }
 #if INTERNAL

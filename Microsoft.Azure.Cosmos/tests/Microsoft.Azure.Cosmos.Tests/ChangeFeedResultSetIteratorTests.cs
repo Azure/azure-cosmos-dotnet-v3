@@ -11,8 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -27,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ContinuationTokenIsNotUpdatedOnFails()
         {
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
@@ -96,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Setting 3 ranges, first one returns a 304, second returns Ok
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
@@ -158,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Setting mock to have 3 ranges, this test will get a 304 on all 3 ranges, do 3 backend requests, and return a 304
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
@@ -224,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Default mock is 1 range
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
@@ -282,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Setting mock to have 3 ranges, to generate 3 tokens
             MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(documentClient);

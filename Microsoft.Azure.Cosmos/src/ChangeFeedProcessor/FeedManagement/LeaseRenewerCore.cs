@@ -53,8 +53,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             try
             {
-                var renewedLease = await this.leaseManager.RenewAsync(this.lease).ConfigureAwait(false);
-                if (renewedLease != null) this.lease = renewedLease;
+                DocumentServiceLease renewedLease = await this.leaseManager.RenewAsync(this.lease).ConfigureAwait(false);
+                if (renewedLease != null)
+                {
+                    this.lease = renewedLease;
+                }
 
                 DefaultTrace.TraceInformation("Lease with token {0}: renewed lease with result {1}", this.lease.CurrentLeaseToken, renewedLease != null);
             }

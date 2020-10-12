@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
@@ -26,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class PartitionRoutingHelper
     {
         public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
-            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             bool enableCrossPartitionQuery,
             bool parallelizeCrossPartitionQuery,
@@ -55,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
                 querySpec: querySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
-                requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
+                requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: false,
                 hasLogicalPartitionKey: hasLogicalPartitionKey);
@@ -462,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfoueryInfo,
             string clientApiVersion)
         {
-            if (VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_07_11))
+            if (VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_07_11))
             {
                 return partitionedQueryExecutionInfoueryInfo.Version <= Constants.PartitionedQueryExecutionInfo.CurrentVersion;
             }
@@ -472,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static bool IsAggregateSupportedApiVersion(string clientApiVersion)
         {
-            return VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14);
+            return VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14);
         }
 
         private static T Min<T>(IReadOnlyList<T> values, IComparer<T> comparer)

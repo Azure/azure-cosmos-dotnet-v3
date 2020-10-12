@@ -9,6 +9,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,7 +41,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Microsoft.Azure.Cosmos.EmulatorTests\Utils\LocalEmulatorTokenCredential.cs" Link="Utils\LocalEmulatorTokenCredential.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Core" Version="1.3.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="Moq" Version="4.8.3" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.2.0" />
@@ -69,6 +76,30 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\GroupByClauseSqlParserBaselineTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\SelectClauseSqlParserBaselineTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.JoinCollection.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.ArrayIteratorCollection.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.AliasedCollection.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\WhereClauseSqlParserBaselineTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\OffsetLimitClauseSqlParserBaselineTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.MultiOrderBy.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Numbers.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -79,6 +110,60 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BaselineTest\TestBaseline\PipelineContinuationTokenTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.SingleOrderBy.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.OrderOfOperation.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Parenthesized.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Unary.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Subquery.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.PropertyRef.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.ObjectCreate.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.MemberIndexer.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Literal.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.In.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.FunctionCall.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Exists.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Conditional.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Coalesce.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Binary.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Between.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Array.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.ArrayCreate.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.SystemFunctions.xml">

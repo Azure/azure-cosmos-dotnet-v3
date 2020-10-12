@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
@@ -55,11 +54,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // The Public emulator has only 1 MasterKey, no read-only keys
             this.primaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
-                         ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
+                         ConfigurationManager.AppSettings["MasterKey"],
+                         (HttpMessageHandler)null,
+                         connectionPolicy: null);
 
             this.secondaryReadonlyClient = new DocumentClient(
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
-                         ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
+                         ConfigurationManager.AppSettings["MasterKey"],
+                         (HttpMessageHandler)null,
+                         connectionPolicy: null);
 
             this.CleanUp();
         }
@@ -610,7 +613,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.client.Create<Document>(collection.GetIdOrFullName(), documentDefinition, requestHeaders);
 
                 IEnumerable<Document> queriedDocuments = this.client.CreateDocumentQuery<Document>(collection.GetLink(), @"select * from root r where r.StringField = ""222""", new FeedOptions { EnableCrossPartitionQuery = true });
-                Assert.AreEqual(0, queriedDocuments.Count());
+                Assert.AreEqual(1, queriedDocuments.Count());
             }
             catch (DocumentClientException e)
             {
@@ -660,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(docReplaced.NumericField, 3333);
 
                 // query for changed string value
-                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
+                Assert.AreEqual(1, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
                 requestHeaders.Remove("x-ms-indexing-directive");
                 requestHeaders.Add("x-ms-indexing-directive", "include");
@@ -1971,70 +1974,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.BackendMetrics.IndexLookupTime);
         }
 
-        [Ignore] // Need to use v3 pipeline
-        [TestMethod]
-        public void TestMaxDegreeOfParallelism()
-        {
-            List<Tuple<int?, int>> inputOutputMaxDops = new List<Tuple<int?, int>>()
-            {
-                new Tuple<int?, int>(null, 0),
-                new Tuple<int?, int>(-1, int.MaxValue),
-                new Tuple<int?, int>(-2, int.MaxValue),
-                new Tuple<int?, int>(0, 0),
-                new Tuple<int?, int>(1, 1),
-                new Tuple<int?, int>(int.MinValue, int.MaxValue),
-                new Tuple<int?, int>(int.MaxValue, int.MaxValue),
-            };
-
-            this.TestFeedOptionInput(
-                nameof(FeedOptions.MaxDegreeOfParallelism),
-                "MaxDegreeOfParallelism",
-                inputOutputMaxDops);
-        }
-
-        [Ignore] // Need to use v3 pipeline
-        [TestMethod]
-        public void TestMaxBufferedItemCount()
-        {
-            List<Tuple<int?, int>> inputOutputMaxBufferedItemCounts = new List<Tuple<int?, int>>()
-            {
-                new Tuple<int?, int>(null, (int)ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize),
-                new Tuple<int?, int>(-1, int.MaxValue),
-                new Tuple<int?, int>(-2, int.MaxValue),
-                new Tuple<int?, int>(0,(int)ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize),
-                new Tuple<int?, int>(1, 1),
-                new Tuple<int?, int>(int.MinValue, int.MaxValue),
-                new Tuple<int?, int>(int.MaxValue, int.MaxValue),
-            };
-
-            this.TestFeedOptionInput(
-                nameof(FeedOptions.MaxBufferedItemCount),
-                "ActualMaxBufferedItemCount",
-                inputOutputMaxBufferedItemCounts);
-        }
-
-        [Ignore] // Need to use v3 pipeline
-        [TestMethod]
-        public void TestMaxItemCount()
-        {
-            List<Tuple<int?, int>> inputOutputMaxItemCounts = new List<Tuple<int?, int>>()
-            {
-                new Tuple<int?, int>(null, ParallelQueryConfig.GetConfig().ClientInternalPageSize),
-                new Tuple<int?, int>(-1, int.MaxValue),
-                new Tuple<int?, int>(-2, int.MaxValue),
-                // 0 is not a valid MaxItemCount
-                // new Tuple<int?, int>(0,(int)ParallelQueryConfig.GetConfig().ClientInternalPageSize),
-                new Tuple<int?, int>(1, 1),
-                new Tuple<int?, int>(int.MinValue, int.MaxValue),
-                new Tuple<int?, int>(int.MaxValue, int.MaxValue),
-            };
-
-            this.TestFeedOptionInput(
-                nameof(FeedOptions.MaxItemCount),
-                "ActualMaxPageSize",
-                inputOutputMaxItemCounts);
-        }
-
         private void TestFeedOptionInput(
             string feedOptionPropertyName,
             string componentPropertyName,
@@ -2189,9 +2128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (AggregateException e)
             {
-                DocumentClientException exception = e.InnerException as DocumentClientException;
-
-                if (exception == null)
+                if (!(e.InnerException is DocumentClientException exception))
                 {
                     throw e;
                 }
@@ -2215,9 +2152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (AggregateException e)
             {
-                DocumentClientException exception = e.InnerException as DocumentClientException;
-
-                if (exception == null)
+                if (!(e.InnerException is DocumentClientException exception))
                 {
                     throw e;
                 }

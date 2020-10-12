@@ -44,8 +44,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ValidateActivityId()
         {
+           using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
-              MockCosmosUtil.CreateMockCosmosClient(),
+              cosmosClient,
               new MockDocumentClient(),
               new CosmosClientOptions());
 
@@ -68,8 +69,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CallBase = true
             };
 
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
-                MockCosmosUtil.CreateMockCosmosClient(),
+                cosmosClient,
                 new MockDocumentClient(),
                 new CosmosClientOptions());
 

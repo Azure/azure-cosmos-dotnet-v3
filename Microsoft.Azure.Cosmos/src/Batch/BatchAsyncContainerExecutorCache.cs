@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         // Keeping same performance tuned value of Bulk V2.
         internal const int DefaultMaxBulkRequestBodySizeInBytes = 220201;
-        private ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
+        private readonly ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
 
         public BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerInternal container,

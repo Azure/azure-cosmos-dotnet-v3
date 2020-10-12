@@ -21,6 +21,32 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     public sealed class SanityQueryTests : QueryTestsBase
     {
         [TestMethod]
+        public async Task Sanity()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                    container,
+                    "SELECT * FROM c");
+
+                Assert.AreEqual(
+                    documents.Count(),
+                    queryResults.Count);
+            }
+        }
+
+        [TestMethod]
         public async Task TestBasicCrossPartitionQueryAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -34,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
                 {
@@ -79,14 +105,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 List<WeakReference> weakReferences = await CreateWeakReferenceToFeedIterator(container);
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
 
-                foreach(WeakReference weakReference in weakReferences)
+                foreach (WeakReference weakReference in weakReferences)
                 {
                     Assert.IsFalse(weakReference.IsAlive);
                 }
@@ -196,16 +222,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     {
                         foreach (bool useOrderBy in new bool[] { false, true })
                         {
-                            string query;
-                            if (useOrderBy)
-                            {
-                                query = "SELECT c._ts, c.id FROM c ORDER BY c._ts";
-                            }
-                            else
-                            {
-                                query = "SELECT c.id FROM c";
-                            }
-
+                            string query = useOrderBy ? "SELECT c._ts, c.id FROM c ORDER BY c._ts" : "SELECT c.id FROM c";
                             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
                             {
                                 MaxBufferedItemCount = 7000,
@@ -258,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
@@ -300,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
@@ -342,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 inputDocuments,
                 ImplementationAsync);
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 ContainerInternal containerCore = (ContainerInlineCore)container;
 
@@ -402,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 NoDocuments,
                 ImplementationAsync);
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 QueryRequestOptions feedOptions = new QueryRequestOptions
                 {

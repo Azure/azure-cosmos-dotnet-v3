@@ -26,9 +26,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             LoadBalancingStrategy partitionLoadBalancingStrategy,
             TimeSpan leaseAcquireInterval)
         {
-            if (partitionController == null) throw new ArgumentNullException(nameof(partitionController));
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (partitionLoadBalancingStrategy == null) throw new ArgumentNullException(nameof(partitionLoadBalancingStrategy));
+            if (partitionController == null)
+            {
+                throw new ArgumentNullException(nameof(partitionController));
+            }
+
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            if (partitionLoadBalancingStrategy == null)
+            {
+                throw new ArgumentNullException(nameof(partitionLoadBalancingStrategy));
+            }
 
             this.partitionController = partitionController;
             this.leaseContainer = leaseContainer;

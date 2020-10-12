@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Base abstract class for JSON readers.
@@ -56,12 +57,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
             JsonSerializationFormat jsonSerializationFormat = (firstByte == (byte)JsonSerializationFormat.Binary) ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
-            if (jsonSerializationFormat == JsonSerializationFormat.Binary)
-            {
-                // offset for the 0x80 (128) binary serialization type marker.
-                buffer = buffer.Slice(1);
-            }
-
             return JsonReader.Create(jsonSerializationFormat, buffer, jsonStringDictionary);
         }
 
@@ -83,18 +78,18 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
-            switch (jsonSerializationFormat)
+            return jsonSerializationFormat switch
             {
-                case JsonSerializationFormat.Binary:
-                    return new JsonBinaryReader(buffer, jsonStringDictionary);
-
-                case JsonSerializationFormat.Text:
-                    return new JsonTextReader(buffer);
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}.");
-            }
+                JsonSerializationFormat.Binary => new JsonBinaryReader(buffer, jsonStringDictionary),
+                JsonSerializationFormat.Text => new JsonTextReader(buffer),
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}."),
+            };
         }
+
+        internal static IJsonReader CreateBinaryFromOffset(
+            ReadOnlyMemory<byte> buffer,
+            int offset,
+            IReadOnlyJsonStringDictionary jsonStringDictionary = null) => new JsonBinaryReader(buffer, offset, jsonStringDictionary);
 
         /// <inheritdoc />
         public abstract bool Read();
@@ -107,9 +102,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
         /// <inheritdoc />
         public abstract bool TryGetBufferedStringValue(out Utf8Memory value);
-
-        /// <inheritdoc />
-        public abstract bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken);
 
         /// <inheritdoc />
         public abstract sbyte GetInt8Value();
@@ -137,5 +129,162 @@ namespace Microsoft.Azure.Cosmos.Json
 
         /// <inheritdoc />
         public abstract ReadOnlyMemory<byte> GetBinaryValue();
+
+        /// <inheritdoc />
+        public virtual void WriteCurrentToken(IJsonWriter writer)
+        {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
+            JsonTokenType tokenType = this.CurrentTokenType;
+            switch (tokenType)
+            {
+                case JsonTokenType.NotStarted:
+                    break;
+
+                case JsonTokenType.BeginArray:
+                    writer.WriteArrayStart();
+                    break;
+
+                case JsonTokenType.EndArray:
+                    writer.WriteArrayEnd();
+                    break;
+
+                case JsonTokenType.BeginObject:
+                    writer.WriteObjectStart();
+                    break;
+
+                case JsonTokenType.EndObject:
+                    writer.WriteObjectEnd();
+                    break;
+
+                case JsonTokenType.FieldName:
+                case JsonTokenType.String:
+                    {
+                        bool isFieldName = tokenType == JsonTokenType.FieldName;
+
+                        if (this.TryGetBufferedStringValue(out Utf8Memory bufferedStringValue))
+                        {
+                            if (isFieldName)
+                            {
+                                writer.WriteFieldName(bufferedStringValue.Span);
+                            }
+                            else
+                            {
+                                writer.WriteStringValue(bufferedStringValue.Span);
+                            }
+                        }
+                        else
+                        {
+                            string value = this.GetStringValue();
+                            if (isFieldName)
+                            {
+                                writer.WriteFieldName(value);
+                            }
+                            else
+                            {
+                                writer.WriteStringValue(value);
+                            }
+                        }
+                    }
+                    break;
+
+                case JsonTokenType.Number:
+                    {
+                        Number64 value = this.GetNumberValue();
+                        writer.WriteNumber64Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.True:
+                    writer.WriteBoolValue(true);
+                    break;
+
+                case JsonTokenType.False:
+                    writer.WriteBoolValue(false);
+                    break;
+
+                case JsonTokenType.Null:
+                    writer.WriteNullValue();
+                    break;
+
+                case JsonTokenType.Int8:
+                    {
+                        sbyte value = this.GetInt8Value();
+                        writer.WriteInt8Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.Int16:
+                    {
+                        short value = this.GetInt16Value();
+                        writer.WriteInt16Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.Int32:
+                    {
+                        int value = this.GetInt32Value();
+                        writer.WriteInt32Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.Int64:
+                    {
+                        long value = this.GetInt64Value();
+                        writer.WriteInt64Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.UInt32:
+                    {
+                        uint value = this.GetUInt32Value();
+                        writer.WriteUInt32Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.Float32:
+                    {
+                        float value = this.GetFloat32Value();
+                        writer.WriteFloat32Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.Float64:
+                    {
+                        double value = this.GetFloat64Value();
+                        writer.WriteFloat64Value(value);
+                    }
+                    break;
+
+                case JsonTokenType.Guid:
+                    {
+                        Guid value = this.GetGuidValue();
+                        writer.WriteGuidValue(value);
+                    }
+                    break;
+
+                case JsonTokenType.Binary:
+                    {
+                        ReadOnlyMemory<byte> value = this.GetBinaryValue();
+                        writer.WriteBinaryValue(value.Span);
+                    }
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unknown enum type: {tokenType}.");
+            }
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteAll(IJsonWriter writer)
+        {
+            while (this.Read())
+            {
+                this.WriteCurrentToken(writer);
+            }
+        }
     }
 }

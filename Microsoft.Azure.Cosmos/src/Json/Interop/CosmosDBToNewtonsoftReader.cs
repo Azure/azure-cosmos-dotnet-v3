@@ -4,8 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.IO;
-    using System.Linq;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -179,20 +177,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="Byte"/>[].
+        /// Reads the next JSON token from the source as a <see cref="byte"/>[].
         /// </summary>
-        /// <returns>A <see cref="Byte"/>[] or <c>null</c> if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="byte"/>[] or <c>null</c> if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
         public override byte[] ReadAsBytes()
         {
-            this.Read();
-            if (!this.jsonReader.TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken))
-            {
-                throw new Exception("Failed to get the bytes.");
-            }
-
-            byte[] value = bufferedRawJsonToken.ToArray();
-            this.SetToken(JsonToken.Bytes, value);
-            return value;
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -234,9 +224,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="Decimal"/>.
+        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="decimal"/>.
         /// </summary>
-        /// <returns>A <see cref="Nullable{T}"/> of <see cref="Decimal"/>. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="Nullable{T}"/> of <see cref="decimal"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override decimal? ReadAsDecimal()
         {
             decimal? value = (decimal?)this.ReadNumberValue();
@@ -249,9 +239,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="Int32"/>.
+        /// Reads the next JSON token from the source as a <see cref="Nullable{T}"/> of <see cref="int"/>.
         /// </summary>
-        /// <returns>A <see cref="Nullable{T}"/> of <see cref="Int32"/>. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="Nullable{T}"/> of <see cref="int"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override int? ReadAsInt32()
         {
             int? value = (int?)this.ReadNumberValue();
@@ -264,9 +254,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <summary>
-        /// Reads the next JSON token from the source as a <see cref="String"/>.
+        /// Reads the next JSON token from the source as a <see cref="string"/>.
         /// </summary>
-        /// <returns>A <see cref="String"/>. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="string"/>. This method will return <c>null</c> at the end of an array.</returns>
         public override string ReadAsString()
         {
             this.Read();

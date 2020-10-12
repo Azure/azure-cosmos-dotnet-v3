@@ -1140,7 +1140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 IJsonReader reader = JsonReader.Create(content);
                 IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                textWriter.WriteAll(reader);
+                reader.WriteAll(textWriter);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
                 Assert.IsNotNull(json);
                 ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
@@ -1334,8 +1334,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
 
             List<PatchOperation> patchOperations = new List<PatchOperation>();
-            patchOperations.Add(PatchOperation.CreateAddOperation("/nonExistentParent/Child", "bar"));
-            patchOperations.Add(PatchOperation.CreateRemoveOperation("/cost"));
+            patchOperations.Add(PatchOperation.Add("/nonExistentParent/Child", "bar"));
+            patchOperations.Add(PatchOperation.Remove("/cost"));
 
             // item does not exist - 404 Resource Not Found error
             try
@@ -1366,7 +1366,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
-                Assert.IsTrue(ex.Message.Contains("One of the specified inputs is invalid"));
+                Assert.IsTrue(ex.Message.Contains("Add Operation only support adding a leaf node of an existing node(array or object), no path found beyond: 'nonExistentParent'"), ex.Message);
             }
 
             // precondition failure - 412 response
@@ -1401,14 +1401,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int originalTaskNum = testItem.taskNum;
             int newTaskNum = originalTaskNum + 1;
+            //Int16 one = 1;
 
             Assert.IsNull(testItem.children[1].status);
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
-            {
-                PatchOperation.CreateAddOperation("/children/1/status", "patched"),
-                PatchOperation.CreateRemoveOperation("/description"),
-                PatchOperation.CreateReplaceOperation("/taskNum", newTaskNum)
+            {   
+                PatchOperation.Add("/children/1/status", "patched"),
+                PatchOperation.Remove("/description"),
+                PatchOperation.Replace("/taskNum", newTaskNum),
+                //PatchOperation.Increment("/taskNum", one)
             };
 
             // without content response
@@ -1438,7 +1440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(newTaskNum, response.Resource.taskNum);
 
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.CreateAddOperation("/children/0/cost", 1));
+            patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
 
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
@@ -1459,9 +1461,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/children/1/status", "patched"),
-                PatchOperation.CreateRemoveOperation("/description"),
-                PatchOperation.CreateReplaceOperation("/taskNum", testItem.taskNum+1)
+                PatchOperation.Add("/children/1/status", "patched"),
+                PatchOperation.Remove("/description"),
+                PatchOperation.Replace("/taskNum", testItem.taskNum+1)
             };
 
             // Patch a non-existing item. It should fail, and not throw an exception.
@@ -1526,9 +1528,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/children/1/status", "patched"),
-                PatchOperation.CreateRemoveOperation("/description"),
-                PatchOperation.CreateReplaceOperation("/taskNum", newTaskNum)
+                PatchOperation.Add("/children/1/status", "patched"),
+                PatchOperation.Remove("/description"),
+                PatchOperation.Replace("/taskNum", newTaskNum)
             };
 
             ItemResponse<ToDoActivity> response = await containerInternal.PatchItemAsync<ToDoActivity>(
@@ -1569,7 +1571,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.CreateAddOperation("/date", patchDate)
+                PatchOperation.Add("/date", patchDate)
             };
 
             ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(

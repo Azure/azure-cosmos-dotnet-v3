@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         private const string RangePropertyName = "Range";
         private const string PartitionKeyPropertyName = "PK";
         private const string PartitionKeyRangeIdPropertyName = "PKRangeId";
-        private static RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
+        private static readonly RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
 
         public override bool CanConvert(Type objectType)
         {
@@ -94,10 +94,10 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            if (value is FeedRangeEpk feedRangeEPK)
+            if (value is FeedRangeEpk feedRangeEpk)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
-                rangeJsonConverter.WriteJson(writer, feedRangeEPK.Range, serializer);
+                rangeJsonConverter.WriteJson(writer, feedRangeEpk.Range, serializer);
                 return;
             }
 

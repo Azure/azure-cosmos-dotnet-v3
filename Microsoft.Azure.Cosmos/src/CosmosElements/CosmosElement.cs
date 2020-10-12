@@ -41,11 +41,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
 
-        public override bool Equals(object obj) => obj is CosmosElement cosmosElement && this.Equals(cosmosElement);
+        public override bool Equals(object obj)
+        {
+            return obj is CosmosElement cosmosElement && this.Equals(cosmosElement);
+        }
 
         public abstract bool Equals(CosmosElement cosmosElement);
 
-        public override abstract int GetHashCode();
+        public abstract override int GetHashCode();
 
         public int CompareTo(CosmosElement other)
         {
@@ -121,7 +124,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return TryCatch<TCosmosElement>.FromResult(typedCosmosElement);
             }
 
-            public static TryCatch<CosmosElement> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosElement>(buffer);
+            public static TryCatch<CosmosElement> CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+            {
+                return CosmosElement.Monadic.CreateFromBuffer<CosmosElement>(buffer);
+            }
 
             public static TryCatch<TCosmosElement> Parse<TCosmosElement>(string serializedCosmosElement)
                 where TCosmosElement : CosmosElement
@@ -142,7 +148,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return CosmosElement.Monadic.CreateFromBuffer<TCosmosElement>(buffer);
             }
 
-            public static TryCatch<CosmosElement> Parse(string serializedCosmosElement) => CosmosElement.Monadic.Parse<CosmosElement>(serializedCosmosElement);
+            public static TryCatch<CosmosElement> Parse(string serializedCosmosElement)
+            {
+                return CosmosElement.Monadic.Parse<CosmosElement>(serializedCosmosElement);
+            }
         }
 
         public static TCosmosElement CreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer)
@@ -154,7 +163,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return tryCreateFromBuffer.Result;
         }
 
-        public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.CreateFromBuffer<CosmosElement>(buffer);
+        public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
+        {
+            return CosmosElement.CreateFromBuffer<CosmosElement>(buffer);
+        }
 
         public static bool TryCreateFromBuffer<TCosmosElement>(ReadOnlyMemory<byte> buffer, out TCosmosElement cosmosElement)
             where TCosmosElement : CosmosElement
@@ -248,7 +260,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return a.Equals(b);
         }
 
-        public static bool operator !=(CosmosElement a, CosmosElement b) => !(a == b);
+        public static bool operator !=(CosmosElement a, CosmosElement b)
+        {
+            return !(a == b);
+        }
 
         private sealed class CosmosElementToTypeOrder : ICosmosElementVisitor<int>
         {
@@ -258,14 +273,45 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
             }
 
-            public int Visit(CosmosNull cosmosNull) => 0;
-            public int Visit(CosmosBoolean cosmosBoolean) => 1;
-            public int Visit(CosmosNumber cosmosNumber) => 2;
-            public int Visit(CosmosString cosmosString) => 3;
-            public int Visit(CosmosArray cosmosArray) => 4;
-            public int Visit(CosmosObject cosmosObject) => 5;
-            public int Visit(CosmosGuid cosmosGuid) => 6;
-            public int Visit(CosmosBinary cosmosBinary) => 7;
+            public int Visit(CosmosNull cosmosNull)
+            {
+                return 0;
+            }
+
+            public int Visit(CosmosBoolean cosmosBoolean)
+            {
+                return 1;
+            }
+
+            public int Visit(CosmosNumber cosmosNumber)
+            {
+                return 2;
+            }
+
+            public int Visit(CosmosString cosmosString)
+            {
+                return 3;
+            }
+
+            public int Visit(CosmosArray cosmosArray)
+            {
+                return 4;
+            }
+
+            public int Visit(CosmosObject cosmosObject)
+            {
+                return 5;
+            }
+
+            public int Visit(CosmosGuid cosmosGuid)
+            {
+                return 6;
+            }
+
+            public int Visit(CosmosBinary cosmosBinary)
+            {
+                return 7;
+            }
         }
 
         private sealed class CosmosElementWithinTypeComparer : ICosmosElementVisitor<CosmosElement, int>
@@ -276,14 +322,45 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
             }
 
-            public int Visit(CosmosArray cosmosArray, CosmosElement input) => cosmosArray.CompareTo((CosmosArray)input);
-            public int Visit(CosmosBinary cosmosBinary, CosmosElement input) => cosmosBinary.CompareTo((CosmosBinary)input);
-            public int Visit(CosmosBoolean cosmosBoolean, CosmosElement input) => cosmosBoolean.CompareTo((CosmosBoolean)input);
-            public int Visit(CosmosGuid cosmosGuid, CosmosElement input) => cosmosGuid.CompareTo((CosmosGuid)input);
-            public int Visit(CosmosNull cosmosNull, CosmosElement input) => cosmosNull.CompareTo((CosmosNull)input);
-            public int Visit(CosmosNumber cosmosNumber, CosmosElement input) => cosmosNumber.CompareTo((CosmosNumber)input);
-            public int Visit(CosmosObject cosmosObject, CosmosElement input) => cosmosObject.CompareTo((CosmosObject)input);
-            public int Visit(CosmosString cosmosString, CosmosElement input) => cosmosString.CompareTo((CosmosString)input);
+            public int Visit(CosmosArray cosmosArray, CosmosElement input)
+            {
+                return cosmosArray.CompareTo((CosmosArray)input);
+            }
+
+            public int Visit(CosmosBinary cosmosBinary, CosmosElement input)
+            {
+                return cosmosBinary.CompareTo((CosmosBinary)input);
+            }
+
+            public int Visit(CosmosBoolean cosmosBoolean, CosmosElement input)
+            {
+                return cosmosBoolean.CompareTo((CosmosBoolean)input);
+            }
+
+            public int Visit(CosmosGuid cosmosGuid, CosmosElement input)
+            {
+                return cosmosGuid.CompareTo((CosmosGuid)input);
+            }
+
+            public int Visit(CosmosNull cosmosNull, CosmosElement input)
+            {
+                return cosmosNull.CompareTo((CosmosNull)input);
+            }
+
+            public int Visit(CosmosNumber cosmosNumber, CosmosElement input)
+            {
+                return cosmosNumber.CompareTo((CosmosNumber)input);
+            }
+
+            public int Visit(CosmosObject cosmosObject, CosmosElement input)
+            {
+                return cosmosObject.CompareTo((CosmosObject)input);
+            }
+
+            public int Visit(CosmosString cosmosString, CosmosElement input)
+            {
+                return cosmosString.CompareTo((CosmosString)input);
+            }
         }
     }
 #if INTERNAL

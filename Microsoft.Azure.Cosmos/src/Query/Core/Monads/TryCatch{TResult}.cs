@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     using System;
     using System.Diagnostics;
     using System.Runtime.ExceptionServices;
+    using System.Threading;
     using System.Threading.Tasks;
 
 #if INTERNAL
@@ -58,6 +59,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
                     throw new InvalidOperationException(
                         $"Tried to get the exception of a {nameof(TryCatch<TResult>)} that ended in a result.");
                 }
+            }
+        }
+
+        public Exception InnerMostException
+        {
+            get
+            {
+                Exception exception = this.Exception;
+                while (exception.InnerException != null)
+                {
+                    exception = exception.InnerException;
+                }
+
+                return exception;
             }
         }
 
@@ -214,6 +229,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
             result = tryCatch.Result;
             return true;
+        }
+
+        public static T UnsafeGetResult<T>(TryCatch<T> tryCatch)
+        {
+            tryCatch.ThrowIfFailed();
+            return tryCatch.Result;
+        }
+
+        public static Task<T> UnsafeGetResultAsync<T>(Task<TryCatch<T>> tryCatch, CancellationToken cancellationToken)
+        {
+            return tryCatch
+                .ContinueWith(antecedent =>
+                {
+                    antecedent.Result.ThrowIfFailed();
+                    return antecedent.Result.Result;
+                }, cancellationToken);
         }
     }
 }
