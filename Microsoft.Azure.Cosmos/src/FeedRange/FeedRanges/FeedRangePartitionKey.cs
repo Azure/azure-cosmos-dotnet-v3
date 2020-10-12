@@ -26,12 +26,19 @@ namespace Microsoft.Azure.Cosmos
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            return Task.FromResult(
-new List<Documents.Routing.Range<string>>
-{
+            try
+            {
+                return Task.FromResult(
+                new List<Documents.Routing.Range<string>>
+                {
                     Documents.Routing.Range<string>.GetPointRange(
                         this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
-});
+                });
+            }
+            catch
+            {
+                throw;
+            }
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
