@@ -154,8 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     break;
 
                 default:
-                    Debug.Assert(false, "We shouldn't be here.");
-                    break;
+                    throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported.");
             }
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
@@ -227,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     break;
 
                 default:
-                    Debug.Assert(false, "We shouldn't be here.");
+                    Debug.Fail(string.Format("Unexpected Encryption Algorithm {0}", encryptionProperties.EncryptionAlgorithm));
                     break;
             }
 
@@ -292,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     break;
 
                 default:
-                    Debug.Assert(true, "We shouldn't be here.");
+                    Debug.Fail(string.Format("Unexpected Encryption Algorithm {0}", encryptionProperties.EncryptionAlgorithm));
                     break;
             }
 
