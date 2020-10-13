@@ -283,6 +283,7 @@
                 CreateInput(description: "Empty Object", scalarExpression: "{}"),
                 CreateInput(description: "Single Property", scalarExpression: "{ 'prop' : 42 }"),
                 CreateInput(description: "Multiple Property", scalarExpression: "{ 'prop1' : 42, 'prop2' : 1337 }"),
+                CreateInput(description: "Double Quotes", scalarExpression: "{ \"prop\" : \"Some String\" }"),
 
                 // Negative
                 CreateInput(description: "Missing Close Brace", scalarExpression: "{"),
