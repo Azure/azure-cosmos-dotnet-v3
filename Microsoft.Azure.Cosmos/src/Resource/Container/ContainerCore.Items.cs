@@ -568,9 +568,9 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
-            ChangeFeedRequestOptions requestOptions = null)
+            StandByFeedIteratorRequestOptions requestOptions = null)
         {
-            ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions ?? new ChangeFeedRequestOptions();
+            StandByFeedIteratorRequestOptions cosmosQueryRequestOptions = requestOptions ?? new StandByFeedIteratorRequestOptions();
 
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,

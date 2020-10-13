@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal container,
             string continuationToken,
             int? maxItemCount,
-            ChangeFeedRequestOptions options)
+            StandByFeedIteratorRequestOptions options)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly ChangeFeedRequestOptions changeFeedOptions;
+        protected readonly StandByFeedIteratorRequestOptions changeFeedOptions;
 
         public override bool HasMoreResults => true;
 
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
-            ChangeFeedRequestOptions options,
+            StandByFeedIteratorRequestOptions options,
             CancellationToken cancellationToken)
         {
             string resourceUri = this.container.LinkUri;

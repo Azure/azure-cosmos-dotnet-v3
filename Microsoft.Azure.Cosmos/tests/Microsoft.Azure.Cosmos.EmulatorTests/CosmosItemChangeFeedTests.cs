@@ -11,9 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -67,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
             {
@@ -199,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
             {
@@ -238,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (true)
             {
-                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
+                StandByFeedIteratorRequestOptions requestOptions = new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue };
 
                 FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (ResponseMessage responseMessage =
@@ -282,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<CompositeContinuationToken> previousToken = null;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
             while (true)
             {
                 using (ResponseMessage responseMessage =
@@ -309,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StandByFeedIterator_VerifyRefreshIsCalledOnSplit()
         {
-            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new ChangeFeedRequestOptions());
+            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new StandByFeedIteratorRequestOptions());
             using (ResponseMessage responseMessage =
                     await iterator.ReadNextAsync(this.cancellationToken))
             {
@@ -342,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 int count = 0;
                 FeedIterator iteratorForToken =
-                    itemsCore.GetStandByFeedIterator(continuationToken: token, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+                    itemsCore.GetStandByFeedIterator(continuationToken: token, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
                 while (true)
                 {
                     using (ResponseMessage responseMessage =
@@ -425,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerInternal container,
                 string continuationToken,
                 int? maxItemCount,
-                ChangeFeedRequestOptions options) : base(
+                StandByFeedIteratorRequestOptions options) : base(
                     clientContext: container.ClientContext,
                     container: container,
                     continuationToken: continuationToken,
@@ -463,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string continuationToken,
                 string partitionKeyRangeId,
                 int? maxItemCount,
-                ChangeFeedRequestOptions options,
+                StandByFeedIteratorRequestOptions options,
                 CancellationToken cancellationToken)
             {
                 if (this.Iteration++ == 0)
