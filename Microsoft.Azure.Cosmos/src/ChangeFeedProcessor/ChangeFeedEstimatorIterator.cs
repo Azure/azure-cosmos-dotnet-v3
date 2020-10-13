@@ -168,39 +168,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             IEnumerable<DocumentServiceLease> leasesForCurrentPage = this.lazyLeaseDocuments.Result.Result.Skip(this.currentPage * this.pageSize).Take(this.pageSize);
-            IEnumerable<Task<List<(ChangeFeedProcessorState, double)>>> tasks = Partitioner.Create(leasesForCurrentPage)
-                .GetPartitions(this.pageSize)
-                .Select(partition => Task.Run(async () =>
+            IEnumerable<Task<(ChangeFeedProcessorState, ResponseMessage)>> tasks = leasesForCurrentPage
+                .Select(lease => Task.Run(async () =>
                 {
-                    List<(ChangeFeedProcessorState, double)> partialResults = new List<(ChangeFeedProcessorState, double)>();
-                    using (partition)
-                    {
-                        while (!cancellationToken.IsCancellationRequested && partition.MoveNext())
-                        {
-                            DocumentServiceLease item = partition.Current;
-                            if (item?.CurrentLeaseToken == null) continue;
-                            (long estimation, ResponseMessage responseMessage) = await this.GetRemainingWorkAsync(item, cancellationToken).ConfigureAwait(false);
+                    (long estimation, ResponseMessage responseMessage) = await this.GetRemainingWorkAsync(lease, cancellationToken);
 
-                            // Attach each diagnostics
-                            diagnosticsContext.AddDiagnosticsInternal(responseMessage.DiagnosticsContext);
-                            partialResults.Add((new ChangeFeedProcessorState(item.CurrentLeaseToken, estimation, item.Owner), responseMessage.Headers.RequestCharge));
-                        }
-                    }
-
-                    return partialResults;
+                    return (new ChangeFeedProcessorState(lease.CurrentLeaseToken, estimation, lease.Owner), responseMessage);
                 })).ToArray();
 
-            IEnumerable<List<(ChangeFeedProcessorState, double)>> partitionResults = await Task.WhenAll(tasks);
+            IEnumerable<(ChangeFeedProcessorState, ResponseMessage)> results = await Task.WhenAll(tasks);
 
-            IEnumerable<(ChangeFeedProcessorState, double)> unifiedResults = partitionResults.SelectMany(r => r);
+            List<ChangeFeedProcessorState> estimations = new List<ChangeFeedProcessorState>();
+            double totalRUCost = 0;
+            foreach ((ChangeFeedProcessorState, ResponseMessage) result in results)
+            {
+                using (result.Item2)
+                {
+                    totalRUCost += result.Item2.Headers.RequestCharge;
+                    diagnosticsContext.AddDiagnosticsInternal(result.Item2.DiagnosticsContext);
+                }
 
-            ReadOnlyCollection<ChangeFeedProcessorState> estimations = unifiedResults.Select(r => r.Item1).ToList().AsReadOnly();
-
-            double totalRUCost = unifiedResults.Sum(r => r.Item2);
+                estimations.Add(result.Item1);
+            }
 
             this.hasMoreResults = ++this.currentPage != this.maxPage;
 
-            return new ChangeFeedEstimatorFeedResponse(diagnosticsContext.Diagnostics, estimations, totalRUCost);
+            return new ChangeFeedEstimatorFeedResponse(diagnosticsContext.Diagnostics, estimations.AsReadOnly(), totalRUCost);
         }
 
         /// <summary>
