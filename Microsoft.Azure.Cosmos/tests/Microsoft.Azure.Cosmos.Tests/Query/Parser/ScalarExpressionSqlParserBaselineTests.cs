@@ -216,7 +216,8 @@
             {
                 // Positive
                 CreateInput(description: "Basic", scalarExpression: "42 IN(42)"),
-                CreateInput(description: "multiple arguments", scalarExpression: "42 IN ('asdf', 'as')"),
+                CreateInput(description: "multiple arguments", scalarExpression: "42 IN (1, 2, 3)"),
+                CreateInput(description: "multiple string arguments", scalarExpression: "42 IN (\"WA\", \"CA\")"),
                 CreateInput(description: "NOT IN", scalarExpression: "42 NOT IN (42)"),
 
                 // Negative
