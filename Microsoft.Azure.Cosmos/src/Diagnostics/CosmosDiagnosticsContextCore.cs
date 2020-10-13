@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Security.Policy;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         private int totalRequestCount = 0;
         private int failedRequestCount = 0;
+        private int retriableRequestCount = 0;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -92,6 +94,11 @@ namespace Microsoft.Azure.Cosmos
         public override int GetFailedRequestCount()
         {
             return this.failedRequestCount;
+        }
+
+        public override int GetRetriableRequestCount()
+        {
+            return this.retriableRequestCount;
         }
 
         internal override IDisposable CreateScope(string name)
@@ -206,6 +213,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.failedRequestCount++;
             }
+
+            if (statusCode == (int)StatusCodes.TooManyRequests || statusCode == (int)StatusCodes.RetryWith)
+            {
+                this.retriableRequestCount++;
+            }
         }
 
         private void AddSummaryInfo(CosmosDiagnosticsContext newContext)
@@ -217,6 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.totalRequestCount += newContext.GetTotalRequestCount();
             this.failedRequestCount += newContext.GetFailedRequestCount();
+            this.retriableRequestCount += newContext.GetRetriableRequestCount();
         }
     }
 }

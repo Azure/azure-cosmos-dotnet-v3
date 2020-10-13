@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract int GetFailedRequestCount();
 
+        public abstract int GetRetriableRequestCount();
+
         internal abstract IDisposable GetOverallScope();
 
         internal abstract IDisposable CreateScope(string name);

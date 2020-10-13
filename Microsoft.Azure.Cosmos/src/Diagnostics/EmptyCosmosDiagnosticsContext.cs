@@ -112,6 +112,11 @@ namespace Microsoft.Azure.Cosmos
             return -1;
         }
 
+        public override int GetRetriableRequestCount()
+        {
+            return -1;
+        }
+
         internal override bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
             return false;

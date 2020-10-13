@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Diagnostics;
-    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -14,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -276,6 +276,87 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 diagnostic.ToString();
             }
+        }
+
+        [TestMethod]
+        public void ValidateRetriableRequestsCount()
+        {
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+                nameof(ValidateRetriableRequestsCount),
+                "cosmos-netstandard-sdk");
+            cosmosDiagnostics.GetOverallScope().Dispose();
+            using (cosmosDiagnostics.GetOverallScope())
+            {
+                // Test all the different operations on diagnostics context
+                using (cosmosDiagnostics.CreateScope("ValidateScope"))
+                {
+                    Assert.AreEqual(0, cosmosDiagnostics.GetRetriableRequestCount());
+                    Assert.AreEqual(0, cosmosDiagnostics.GetFailedRequestCount());
+                    Assert.AreEqual(0, cosmosDiagnostics.GetTotalRequestCount());
+
+                    cosmosDiagnostics.AddDiagnosticsInternal(new PointOperationStatistics(
+                        new Guid("692ab2f2-41ba-486b-aad7-8c7c6c52379f").ToString(),
+                        (HttpStatusCode)429,
+                        Documents.SubStatusCodes.Unknown,
+                        DateTime.UtcNow,
+                        42,
+                        null,
+                        HttpMethod.Get,
+                        "http://MockUri.com",
+                        null,
+                        null));
+
+                    Assert.AreEqual(1, cosmosDiagnostics.GetRetriableRequestCount());
+                    Assert.AreEqual(1, cosmosDiagnostics.GetFailedRequestCount());
+                    Assert.AreEqual(1, cosmosDiagnostics.GetTotalRequestCount());
+
+                    cosmosDiagnostics.AddDiagnosticsInternal(
+                        new StoreResponseStatistics(
+                            DateTime.UtcNow,
+                            DateTime.UtcNow,
+                            StoreResult.CreateStoreResult(
+                                new StoreResponse { Status = 449 }, null, false, false),
+                            ResourceType.Document,
+                            OperationType.Delete,
+                            new Uri("http://MockUri.com")));
+
+                    Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
+                    Assert.AreEqual(2, cosmosDiagnostics.GetFailedRequestCount());
+                    Assert.AreEqual(2, cosmosDiagnostics.GetTotalRequestCount());
+
+                    cosmosDiagnostics.AddDiagnosticsInternal(
+                        new StoreResponseStatistics(
+                            DateTime.UtcNow,
+                            DateTime.UtcNow,
+                            StoreResult.CreateStoreResult(
+                                new StoreResponse { Status = 503 }, null, false, false),
+                            ResourceType.Document,
+                            OperationType.Delete,
+                            new Uri("http://MockUri.com")));
+
+                    Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
+                    Assert.AreEqual(3, cosmosDiagnostics.GetFailedRequestCount());
+                    Assert.AreEqual(3, cosmosDiagnostics.GetTotalRequestCount());
+                }
+
+                Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
+                Assert.AreEqual(3, cosmosDiagnostics.GetFailedRequestCount());
+                Assert.AreEqual(3, cosmosDiagnostics.GetTotalRequestCount());
+            }
+
+            Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
+            Assert.AreEqual(3, cosmosDiagnostics.GetFailedRequestCount());
+            Assert.AreEqual(3, cosmosDiagnostics.GetTotalRequestCount());
+
+            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                nameof(ValidateRetriableRequestsCount),
+                "cosmos-netstandard-sdk");
+
+            cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
+
+            Assert.AreEqual(2, cosmosDiagnostics2.GetRetriableRequestCount());
+            Assert.AreEqual(3, cosmosDiagnostics2.GetFailedRequestCount());
+            Assert.AreEqual(3, cosmosDiagnostics2.GetTotalRequestCount());
         }
     }
 }
