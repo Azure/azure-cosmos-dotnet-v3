@@ -63,13 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
@@ -125,13 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -190,13 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should contain the second continuation");
@@ -250,13 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseInternal databaseCore = new DatabaseInlineCore(mockContext.Object, "mydb");
 
             StandByFeedIteratorCore iterator = new StandByFeedIteratorCore(
-                mockContext.Object,
-                new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"),
-                ChangeFeedStartFrom.Beginning(),
-                new ChangeFeedRequestOptions()
-                {
-                    PageSizeHint = 10,
-                });
+                mockContext.Object, new ContainerInlineCore(mockContext.Object, databaseCore, "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
             Assert.AreEqual(HttpStatusCode.NotModified, firstRequest.StatusCode);
@@ -311,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private class MultiRangeMockDocumentClient : MockDocumentClient
         {
-            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
+            private readonly List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
                 new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "AA", Id = "0" },
                 new Documents.PartitionKeyRange() { MinInclusive = "AA", MaxExclusive = "BB", Id = "1" },
                 new Documents.PartitionKeyRange() { MinInclusive = "BB", MaxExclusive = "FF", Id = "2" }

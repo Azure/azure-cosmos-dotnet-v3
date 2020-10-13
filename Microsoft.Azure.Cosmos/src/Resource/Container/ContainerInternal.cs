@@ -55,8 +55,9 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default);
 
-        internal abstract FeedIterator GetStandByFeedIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
+        public abstract FeedIterator GetStandByFeedIterator(
+            string continuationToken = default,
+            int? maxItemCount = default,
             ChangeFeedRequestOptions requestOptions = default);
 
         public abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
