@@ -337,10 +337,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         new Documents.Routing.Range<string>(
                             min: range.MinInclusive, 
                             max: range.MaxExclusive, 
-                            isMaxInclusive: true, 
-                            isMinInclusive: false)))
+                            isMinInclusive: true, 
+                            isMaxInclusive: false)))
                     .ToList(),
                 pageSize: inputParameters.MaxItemCount,
+                partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 cancellationToken: default,
                 continuationToken: inputParameters.InitialUserContinuationToken);
@@ -390,9 +391,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         new Documents.Routing.Range<string>(
                             min: range.MinInclusive,
                             max: range.MaxExclusive,
-                            isMaxInclusive: true,
-                            isMinInclusive: false)))
+                            isMinInclusive: true,
+                            isMaxInclusive: false)))
                     .ToList(),
+                partitionKey: inputParameters.PartitionKey,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
                 pageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,

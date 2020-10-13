@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
 
     internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IPrefetcher
     {
@@ -21,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
             FeedRangeInternal feedRange,
+            PartitionKey? partitionKey,
             int pageSize,
             string filter,
             CancellationToken cancellationToken,
@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 queryDataSource,
                 sqlQuerySpec,
                 feedRange,
+                partitionKey,
                 pageSize,
                 filter,
                 cancellationToken,
@@ -68,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 IQueryDataSource queryDataSource,
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeInternal feedRange,
+                PartitionKey? partitionKey,
                 int pageSize,
                 string filter,
                 CancellationToken cancellationToken,
@@ -76,11 +78,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
+                this.PartitionKey = partitionKey;
                 this.PageSize = pageSize;
                 this.Filter = filter;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
+
+            public PartitionKey? PartitionKey { get; }
 
             public int PageSize { get; }
 
@@ -90,11 +95,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
             {
+                // Unfortunately we need to keep both the epk range and partition key for queries
+                // Since the continuation token format uses epk range even though we only need the partition key to route the request.
+                FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.Range;
+
                 return this.queryDataSource
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
                         continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-                        feedRange: this.Range,
+                        feedRange: feedRange,
                         pageSize: this.PageSize,
                         cancellationToken)
                     .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>

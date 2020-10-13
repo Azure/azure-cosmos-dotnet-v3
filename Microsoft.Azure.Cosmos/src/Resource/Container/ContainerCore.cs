@@ -284,7 +284,8 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                this.ClientContext);
+                this.ClientContext,
+                new CosmosDiagnosticsContextCore());
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             return new ChangeFeedIteratorCore(
@@ -305,7 +306,8 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                this.ClientContext);
+                this.ClientContext,
+                new CosmosDiagnosticsContextCore());
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(

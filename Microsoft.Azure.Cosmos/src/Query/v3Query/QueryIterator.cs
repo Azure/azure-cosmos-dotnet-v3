@@ -81,7 +81,9 @@ namespace Microsoft.Azure.Cosmos.Query
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
-                clientContext);
+                clientContext,
+                queryPipelineCreationDiagnostics,
+                queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             CosmosElement requestContinuationToken;

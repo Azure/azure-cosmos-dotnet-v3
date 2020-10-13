@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
@@ -96,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
@@ -128,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
                 targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
@@ -178,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
                     new FeedRangeEpk(new Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
                 },
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
@@ -208,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
@@ -250,6 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
@@ -297,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c._ts"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    partitionKey: null,
                     orderByColumns: new List<OrderByColumn>()
                     {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
@@ -344,6 +353,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
                 targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
@@ -402,6 +412,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c._ts"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    partitionKey: null,
                     orderByColumns: new List<OrderByColumn>()
                     {
                         new OrderByColumn("c._ts", SortOrder.Ascending)
