@@ -16,13 +16,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
-        private readonly QueryRequestOptions queryRequestOptions;
         private readonly object diagnosticLock = new object();
         private CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosQueryContextCore(
             CosmosQueryClient client,
-            QueryRequestOptions queryRequestOptions,
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
@@ -43,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery,
                 containerResourceId)
         {
-            this.queryRequestOptions = queryRequestOptions;
             this.diagnosticsContext = diagnosticsContext;
         }
 
@@ -58,31 +55,26 @@ namespace Microsoft.Azure.Cosmos.Query
             lock (this.diagnosticLock)
             {
                 CosmosDiagnosticsContext current = this.diagnosticsContext;
-                this.diagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+                this.diagnosticsContext = CosmosDiagnosticsContext.Create(new RequestOptions());
                 return current;
             }
         }
 
         internal override Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
+            QueryRequestOptions queryRequestOptions,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
             CancellationToken cancellationToken)
         {
-            QueryRequestOptions requestOptions = null;
-            if (this.queryRequestOptions != null)
-            {
-                requestOptions = this.queryRequestOptions.Clone();
-            }    
-
             return this.QueryClient.ExecuteItemQueryAsync(
                 resourceUri: this.ResourceLink,
                 resourceType: this.ResourceTypeEnum,
                 operationType: this.OperationTypeEnum,
                 clientQueryCorrelationId: this.CorrelatedActivityId,
-                requestOptions: requestOptions,
+                requestOptions: queryRequestOptions,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
                 partitionKeyRange: partitionKeyRange,
