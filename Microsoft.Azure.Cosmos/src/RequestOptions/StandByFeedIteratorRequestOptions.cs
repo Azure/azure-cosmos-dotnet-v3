@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class StandByFeedIteratorRequestOptions : RequestOptions
+    internal class StandByFeedIteratorRequestOptions : RequestOptions
     {
         internal const string IfNoneMatchAllHeaderValue = "*";
         internal static readonly DateTime DateTimeStartFromBeginning = DateTime.MinValue.ToUniversalTime();
