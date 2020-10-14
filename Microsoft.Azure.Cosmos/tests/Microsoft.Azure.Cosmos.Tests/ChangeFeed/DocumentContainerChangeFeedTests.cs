@@ -31,14 +31,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 pageSize: 10,
                 cancellationToken: default);
 
-            Assert.IsTrue(monadicChangeFeedPage.Failed);
-            if (!(monadicChangeFeedPage.InnerMostException is CosmosException cosmosException))
-            {
-                Assert.Fail("Wrong exception type.");
-                throw new Exception();
-            }
-
-            Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode);
+            Assert.IsTrue(monadicChangeFeedPage.Succeeded);
+            Assert.IsTrue(monadicChangeFeedPage.Result is ChangeFeedNotModifiedPage);
         }
 
         [TestMethod]
@@ -69,14 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     pageSize: 10,
                     cancellationToken: default);
 
-                Assert.IsTrue(monadicChangeFeedPage.Failed);
-                if (!(monadicChangeFeedPage.InnerMostException is CosmosException cosmosException))
-                {
-                    Assert.Fail("Wrong exception type.");
-                    throw new Exception();
-                }
-
-                Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode);
+                Assert.IsTrue(monadicChangeFeedPage.Succeeded);
+                Assert.IsTrue(monadicChangeFeedPage.Result is ChangeFeedNotModifiedPage);
             }
         }
 
@@ -95,14 +83,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     pageSize: 10,
                     cancellationToken: default);
 
-                Assert.IsTrue(monadicChangeFeedPage.Failed);
-                if (!(monadicChangeFeedPage.InnerMostException is CosmosException cosmosException))
-                {
-                    Assert.Fail("Wrong exception type.");
-                    throw new Exception();
-                }
-
-                Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode);
+                Assert.IsTrue(monadicChangeFeedPage.Succeeded);
+                Assert.IsTrue(monadicChangeFeedPage.Result is ChangeFeedNotModifiedPage);
             }
 
             // Insert some items
@@ -147,15 +129,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     pageSize: 10,
                     cancellationToken: default);
 
-                Assert.IsTrue(monadicChangeFeedPage.Failed);
-                if (!(monadicChangeFeedPage.InnerMostException is CosmosException cosmosException))
+                Assert.IsTrue(monadicChangeFeedPage.Succeeded);
+                if (!(monadicChangeFeedPage.Result is ChangeFeedNotModifiedPage changeFeedNotModifiedPage))
                 {
-                    Assert.Fail("Wrong exception type.");
+                    Assert.Fail();
                     throw new Exception();
                 }
 
-                Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode);
-                resumeState = ChangeFeedState.Continuation(CosmosString.Create(cosmosException.Headers.ContinuationToken));
+                resumeState = changeFeedNotModifiedPage.State;
             }
 
             // Insert some items
@@ -210,8 +191,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
 
+                if (!(monadicChangeFeedPage.Result is ChangeFeedSuccessPage changeFeedSuccessPage))
+                {
+                    Assert.Fail();
+                    throw new Exception();
+                }
+
                 MemoryStream memoryStream = new MemoryStream();
-                monadicChangeFeedPage.Result.Content.CopyTo(memoryStream);
+                changeFeedSuccessPage.Content.CopyTo(memoryStream);
                 CosmosObject response = CosmosObject.CreateFromBuffer(memoryStream.ToArray());
                 long childCount = Number64.ToLong(((CosmosNumber)response["_count"]).Value);
                 sumOfChildCounts += childCount;
@@ -244,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             for (int i = 0; i < 3; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
-                foreach(FeedRangeInternal range in ranges)
+                foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }

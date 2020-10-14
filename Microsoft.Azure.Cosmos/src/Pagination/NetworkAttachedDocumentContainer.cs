@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
-                            min: range.MinInclusive, 
+                            min: range.MinInclusive,
                             max: range.MaxExclusive,
                             isMinInclusive: true,
                             isMaxInclusive: false))).ToList());
@@ -250,9 +250,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            ChangeFeedState state, 
-            FeedRangeInternal feedRange, 
-            int pageSize, 
+            ChangeFeedState state,
+            FeedRangeInternal feedRange,
+            int pageSize,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -278,7 +278,27 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 diagnosticsContext: default,
                 cancellationToken: cancellationToken);
 
-            if (!responseMessage.IsSuccessStatusCode && responseMessage.StatusCode != HttpStatusCode.NotModified)
+            TryCatch<ChangeFeedPage> monadicChangeFeedPage;
+            if (responseMessage.StatusCode == HttpStatusCode.OK)
+            {
+                ChangeFeedPage changeFeedPage = new ChangeFeedSuccessPage(
+                    responseMessage.Content,
+                    responseMessage.Headers.RequestCharge,
+                    responseMessage.Headers.ActivityId,
+                    ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag)));
+
+                monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
+            }
+            else if (responseMessage.StatusCode == HttpStatusCode.NotModified)
+            {
+                ChangeFeedPage changeFeedPage = new ChangeFeedNotModifiedPage(
+                    responseMessage.Headers.RequestCharge,
+                    responseMessage.Headers.ActivityId,
+                    ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag)));
+
+                monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
+            }
+            else
             {
                 CosmosException cosmosException = new CosmosException(
                     responseMessage.ErrorMessage,
@@ -288,16 +308,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     responseMessage.Headers.RequestCharge);
                 cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
 
-                return TryCatch<ChangeFeedPage>.FromException(cosmosException);
+                monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromException(cosmosException);
             }
 
-            ChangeFeedPage changeFeedPage = new ChangeFeedPage(
-                contentWasModified: responseMessage.StatusCode != HttpStatusCode.NotModified,
-                responseMessage.Content,
-                responseMessage.Headers.RequestCharge,
-                responseMessage.Headers.ActivityId,
-                ChangeFeedState.Continuation(CosmosString.Create(responseMessage.ContinuationToken)));
-            return TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
+            return monadicChangeFeedPage;
         }
 
         private void AddQueryPageDiagnostic(QueryPageDiagnostics queryPageDiagnostics)

@@ -55,10 +55,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
             CrossPartitionPage<ChangeFeedPage, ChangeFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
             ChangeFeedPage backendPage = crossPartitionPage.Page;
-            if (!backendPage.ContentWasModified)
+            if (backendPage is ChangeFeedNotModifiedPage)
             {
                 // Keep draining the cross partition enumerator until
-                // We get a non 304 page or we loop back to the same range
+                // We get a non 304 page or we loop back to the same range or run into an exception
                 FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
                 double totalRequestCharge = backendPage.RequestCharge;
                 do
@@ -81,16 +81,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                         totalRequestCharge += backendPage.RequestCharge;
                     }
                 }
-                while (!(backendPage.ContentWasModified 
+                while (!(backendPage is ChangeFeedSuccessPage
                     || this.crossPartitionEnumerator.CurrentRange.Equals(originalRange)
                     || this.bufferedException.HasValue));
 
-                backendPage = new ChangeFeedPage(
-                    backendPage.ContentWasModified,
-                    backendPage.Content,
-                    totalRequestCharge,
-                    backendPage.ActivityId,
-                    backendPage.State);
+                // Create a page with the aggregated request charge
+                if (backendPage is ChangeFeedSuccessPage changeFeedSuccessPage)
+                {
+                    backendPage = new ChangeFeedSuccessPage(
+                        changeFeedSuccessPage.Content,
+                        totalRequestCharge,
+                        changeFeedSuccessPage.ActivityId,
+                        changeFeedSuccessPage.State);
+                }
+                else
+                {
+                    backendPage = new ChangeFeedNotModifiedPage(
+                        totalRequestCharge,
+                        backendPage.ActivityId,
+                        backendPage.State);
+                }
             }
 
             CrossPartitionState<ChangeFeedState> crossPartitionState = crossPartitionPage.State;
@@ -107,33 +117,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
             CosmosArray cosmosElementTokens = CosmosArray.Create(changeFeedContinuationTokens);
             ChangeFeedState state = ChangeFeedState.Continuation(cosmosElementTokens);
-            ChangeFeedPage compositePage = new ChangeFeedPage(
-                backendPage.ContentWasModified,
-                backendPage.Content,
-                backendPage.RequestCharge,
-                backendPage.ActivityId,
-                state);
+            ChangeFeedPage compositePage;
+            if (backendPage is ChangeFeedSuccessPage successPage)
+            {
+                compositePage = new ChangeFeedSuccessPage(
+                    successPage.Content,
+                    successPage.RequestCharge,
+                    successPage.ActivityId,
+                    state);
+            }
+            else
+            {
+                compositePage = new ChangeFeedNotModifiedPage(
+                    backendPage.RequestCharge,
+                    backendPage.ActivityId,
+                    state);
+            }
 
             this.Current = TryCatch<ChangeFeedPage>.FromResult(compositePage);
             return true;
         }
 
-        public static async Task<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> MonadicCreateAsync(
+        public static TryCatch<CrossPartitionChangeFeedAsyncEnumerator> MonadicCreate(
             IDocumentContainer documentContainer,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            changeFeedRequestOptions ??= new ChangeFeedRequestOptions();
 
             if (documentContainer == null)
             {
                 throw new ArgumentNullException(nameof(documentContainer));
-            }
-
-            if (changeFeedRequestOptions == null)
-            {
-                throw new ArgumentNullException(nameof(changeFeedRequestOptions));
             }
 
             if (changeFeedStartFrom == null)
@@ -141,10 +156,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
-            TryCatch<CrossPartitionState<ChangeFeedState>> monadicCrossPartitionState = await changeFeedStartFrom.AcceptAsync(
-                CrossPartitionStateAsyncExtractor.Singleton,
-                documentContainer,
-                cancellationToken);
+            TryCatch<CrossPartitionState<ChangeFeedState>> monadicCrossPartitionState = changeFeedStartFrom.Accept(CrossPartitionStateExtractor.Singleton);
             if (monadicCrossPartitionState.Failed)
             {
                 return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(monadicCrossPartitionState.Exception);
@@ -178,71 +190,56 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 state,
                 cancellationToken);
 
-        private sealed class CrossPartitionStateAsyncExtractor : ChangeFeedStartFromAsyncVisitor<IDocumentContainer, TryCatch<CrossPartitionState<ChangeFeedState>>>
+        private sealed class CrossPartitionStateExtractor : ChangeFeedStartFromVisitor<TryCatch<CrossPartitionState<ChangeFeedState>>>
         {
-            public static readonly CrossPartitionStateAsyncExtractor Singleton = new CrossPartitionStateAsyncExtractor();
+            public static readonly CrossPartitionStateExtractor Singleton = new CrossPartitionStateExtractor();
 
-            private CrossPartitionStateAsyncExtractor()
+            private CrossPartitionStateExtractor()
             {
             }
 
-            public override async Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromNow startFromNow,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
+            public override TryCatch<CrossPartitionState<ChangeFeedState>> Visit(ChangeFeedStartFromNow startFromNow)
             {
                 ChangeFeedState state = ChangeFeedState.Now();
-                List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = (await documentContainer
-                    .GetChildRangeAsync(
-                        startFromNow.FeedRange,
-                        cancellationToken))
-                    .Select(range => ((FeedRangeInternal)range, state))
-                    .ToList();
+                List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = new List<(FeedRangeInternal, ChangeFeedState)>()
+                {
+                    (startFromNow.FeedRange, state)
+                };
 
                 CrossPartitionState<ChangeFeedState> crossPartitionState = new CrossPartitionState<ChangeFeedState>(rangesAndStates);
                 return TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState);
             }
 
-            public override async Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromTime startFromTime,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
+            public override TryCatch<CrossPartitionState<ChangeFeedState>> Visit(ChangeFeedStartFromTime startFromTime)
             {
                 ChangeFeedState state = ChangeFeedState.Time(startFromTime.StartTime);
-                List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = (await documentContainer
-                    .GetChildRangeAsync(
-                        startFromTime.FeedRange,
-                        cancellationToken))
-                    .Select(range => ((FeedRangeInternal)range, state))
-                    .ToList();
+                List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = new List<(FeedRangeInternal, ChangeFeedState)>()
+                {
+                    (startFromTime.FeedRange, state)
+                };
 
                 CrossPartitionState<ChangeFeedState> crossPartitionState = new CrossPartitionState<ChangeFeedState>(rangesAndStates);
                 return TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState);
             }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromContinuation startFromContinuation,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
+            public override TryCatch<CrossPartitionState<ChangeFeedState>> Visit(ChangeFeedStartFromContinuation startFromContinuation)
             {
                 string continuationToken = startFromContinuation.Continuation;
                 TryCatch<CosmosArray> monadicCosmosArray = CosmosArray.Monadic.Parse(continuationToken);
                 if (monadicCosmosArray.Failed)
                 {
-                    return Task.FromResult(
-                        TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
-                            new MalformedChangeFeedContinuationTokenException(
-                                message: $"Array expected for change feed continuation token: {continuationToken}.",
-                                innerException: monadicCosmosArray.Exception)));
+                    return TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
+                        new MalformedChangeFeedContinuationTokenException(
+                            message: $"Array expected for change feed continuation token: {continuationToken}.",
+                            innerException: monadicCosmosArray.Exception));
                 }
 
                 CosmosArray cosmosArray = monadicCosmosArray.Result;
                 if (cosmosArray.Count == 0)
                 {
-                    return Task.FromResult(
-                        TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
-                            new MalformedChangeFeedContinuationTokenException(
-                                message: $"non empty array expected for change feed continuation token: {continuationToken}.")));
+                    return TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
+                        new MalformedChangeFeedContinuationTokenException(
+                            message: $"non empty array expected for change feed continuation token: {continuationToken}."));
                 }
 
                 List<(FeedRangeInternal, ChangeFeedState)> rangeAndStates = new List<(FeedRangeInternal, ChangeFeedState)>();
@@ -251,11 +248,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     TryCatch<ChangeFeedContinuationToken> monadicChangeFeedContinuationToken = ChangeFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem);
                     if (monadicChangeFeedContinuationToken.Failed)
                     {
-                        return Task.FromResult(
-                            TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
-                                new MalformedChangeFeedContinuationTokenException(
-                                    message: $"Failed to parse change feed continuation token: {continuationToken}.",
-                                    innerException: monadicChangeFeedContinuationToken.Exception)));
+                        return TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
+                            new MalformedChangeFeedContinuationTokenException(
+                                message: $"Failed to parse change feed continuation token: {continuationToken}.",
+                                innerException: monadicChangeFeedContinuationToken.Exception));
                     }
 
                     ChangeFeedContinuationToken changeFeedContinuationToken = monadicChangeFeedContinuationToken.Result;
@@ -263,30 +259,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 }
 
                 CrossPartitionState<ChangeFeedState> crossPartitionState = new CrossPartitionState<ChangeFeedState>(rangeAndStates);
-                return Task.FromResult(TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState));
+                return TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState);
             }
 
-            public override async Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromBeginning startFromBeginning,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
+            public override TryCatch<CrossPartitionState<ChangeFeedState>> Visit(ChangeFeedStartFromBeginning startFromBeginning)
             {
                 ChangeFeedState state = ChangeFeedState.Beginning();
-                List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = (await documentContainer
-                    .GetChildRangeAsync(
-                        startFromBeginning.FeedRange,
-                        cancellationToken))
-                    .Select(range => ((FeedRangeInternal)range, state))
-                    .ToList();
+                List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = new List<(FeedRangeInternal, ChangeFeedState)>()
+                {
+                    (startFromBeginning.FeedRange, state)
+                };
 
                 CrossPartitionState<ChangeFeedState> crossPartitionState = new CrossPartitionState<ChangeFeedState>(rangesAndStates);
                 return TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState);
             }
 
-            public override Task<TryCatch<CrossPartitionState<ChangeFeedState>>> VisitAsync(
-                ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange,
-                IDocumentContainer documentContainer,
-                CancellationToken cancellationToken)
+            public override TryCatch<CrossPartitionState<ChangeFeedState>> Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange)
             {
                 ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(startFromContinuationAndFeedRange.Etag));
                 List<(FeedRangeInternal, ChangeFeedState)> rangesAndStates = new List<(FeedRangeInternal, ChangeFeedState)>()
@@ -295,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 };
 
                 CrossPartitionState<ChangeFeedState> crossPartitionState = new CrossPartitionState<ChangeFeedState>(rangesAndStates);
-                return Task.FromResult(TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState));
+                return TryCatch<CrossPartitionState<ChangeFeedState>>.FromResult(crossPartitionState);
             }
         }
 

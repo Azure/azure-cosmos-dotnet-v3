@@ -186,8 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 return Task.FromResult(
                     TryCatch<ChangeFeedPage>.FromResult(
-                        new ChangeFeedPage(
-                            contentWasModified: true,
+                        new ChangeFeedSuccessPage(
                             content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),

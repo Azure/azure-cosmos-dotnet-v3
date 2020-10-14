@@ -12,11 +12,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
 
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
-        private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> asyncLazyEnumerator;
+        private readonly TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
@@ -29,22 +28,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(documentContainer));
             }
 
-            if (changeFeedRequestOptions == null)
-            {
-                throw new ArgumentNullException(nameof(changeFeedRequestOptions));
-            }
-
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
-            this.asyncLazyEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
-                valueFactory: async (CancellationToken cancellationToken) => await CrossPartitionChangeFeedAsyncEnumerator.MonadicCreateAsync(
-                    documentContainer,
-                    changeFeedRequestOptions,
-                    changeFeedStartFrom,
-                    cancellationToken));
+            this.monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
+                documentContainer,
+                changeFeedRequestOptions,
+                changeFeedStartFrom,
+                cancellationToken: default);
             this.hasMoreResults = true;
         }
 
@@ -54,10 +47,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.asyncLazyEnumerator.GetValueAsync(cancellationToken);
-            if (monadicEnumerator.Failed)
+            if (this.monadicEnumerator.Failed)
             {
-                Exception createException = monadicEnumerator.Exception;
+                Exception createException = this.monadicEnumerator.Exception;
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(createException);
                 return new ResponseMessage(
                     cosmosException.StatusCode,
@@ -67,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     diagnostics: new CosmosDiagnosticsContextCore());
             }
 
-            CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
 
             if (!await enumerator.MoveNextAsync())
             {
@@ -91,11 +83,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             ChangeFeedPage changeFeedPage = enumerator.Current.Result;
-            ResponseMessage responseMessage = new ResponseMessage(
-                statusCode: changeFeedPage.ContentWasModified ? System.Net.HttpStatusCode.OK : System.Net.HttpStatusCode.NotModified)
+            ResponseMessage responseMessage;
+            if (changeFeedPage is ChangeFeedSuccessPage changeFeedSuccessPage)
             {
-                Content = changeFeedPage.Content
-            };
+                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.OK)
+                {
+                    Content = changeFeedSuccessPage.Content
+                };
+            }
+            else
+            {
+                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.NotModified);
+            }
+
             responseMessage.Headers.ContinuationToken = ((ChangeFeedStateContinuation)changeFeedPage.State).ContinuationToken.ToString();
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;

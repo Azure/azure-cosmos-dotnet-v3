@@ -572,30 +572,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 ChangeFeedState notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
                 return Task.FromResult(
                 TryCatch<ChangeFeedPage>.FromResult(
-                    new ChangeFeedPage(
-                        contentWasModified: false,
-                        content: new MemoryStream(Encoding.UTF8.GetBytes(
-                            $"I see no changes, all I see is racist faces" +
-                            $"Misplaced hate makes disgrace to races" +
-                            $"We under, I wonder what it takes to make this" +
-                            $"One better place, let's erase the wasted" +
-                            $"Take the evil out the people, they'll be actin' right" +
-                            $"'Cause both black and white are smokin' crack tonight" +
-                            $"And the only time we chill is when we kill each other(Kill each other)" +
-                            $"It takes skill to be real, time to heal each other" +
-                            $"And although it seems heaven - sent" +
-                            $"We ain't ready to see a black president, uh (Oh-ooh)" +
-                            $"It ain't a secret, don't conceal the fact" +
-                            $"The penitentiary's packed and it's filled with blacks" +
-                            $"But some things will never change(Never change)" +
-                            $"Try to show another way, but you stayin' in the dope game (Ooh)" +
-                            $"Now tell me, what's a mother to do?" +
-                            $"Bein' real don't appeal to the brother in you(Yeah)" +
-                            $"You gotta operate the easy way" +
-                            $"'I made a G today,' but you made it in a sleazy way" +
-                            $"Sellin' crack to the kids (Oh-oh), 'I gotta get paid' (Oh)" +
-                            $"Well hey, well that's the way it is" +
-                            $"Source: https://genius.com/2pac-changes-lyrics")),
+                    new ChangeFeedNotModifiedPage(
                         requestCharge: 42,
                         activityId: Guid.NewGuid().ToString(),
                         notModifiedResponseState)));
@@ -628,8 +605,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             return Task.FromResult(
                 TryCatch<ChangeFeedPage>.FromResult(
-                    new ChangeFeedPage(
-                        contentWasModified: true,
+                    new ChangeFeedSuccessPage(
                         responseStream,
                         requestCharge: 42,
                         activityId: Guid.NewGuid().ToString(),
@@ -784,13 +760,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         private TryCatch<int> MonadicGetPkRangeIdFromEpk(FeedRangeEpk feedRangeEpk)
         {
-            PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
-            PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
-            List<int> matchIds = this.partitionKeyRangeIdToHashRange
-                .Where(kvp => kvp.Value.Equals(hashRange))
-                .Select(kvp => kvp.Key)
-                .ToList();
+            List<int> matchIds;
+            if (feedRangeEpk.Equals(FeedRangeEpk.FullRange))
+            {
+                matchIds = this.PartitionKeyRangeIds.ToList();
+            }
+            else
+            {
+                PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
+                PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+                PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
+                matchIds = this.partitionKeyRangeIdToHashRange
+                    .Where(kvp => kvp.Value.Equals(hashRange))
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+            }
+
             if (matchIds.Count != 1)
             {
                 // Simulate a split exception, since we don't have a partition key range id to route to.

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task NoChangesAsync()
         {
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems: 0);
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await CrossPartitionChangeFeedAsyncEnumerator.MonadicCreateAsync(
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
             Assert.IsTrue(await enumerator.MoveNextAsync());
             Assert.IsTrue(enumerator.Current.Succeeded);
-            Assert.IsFalse(enumerator.Current.Result.ContentWasModified);
+            Assert.IsTrue(enumerator.Current.Result is ChangeFeedNotModifiedPage);
             Assert.IsNotNull(enumerator.Current.Result.State);
         }
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task SomeChangesAsync()
         {
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems: 1);
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await CrossPartitionChangeFeedAsyncEnumerator.MonadicCreateAsync(
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
@@ -53,12 +53,12 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             // First page should be true and skip the 304 not modified
             Assert.IsTrue(await enumerator.MoveNextAsync());
             Assert.IsTrue(enumerator.Current.Succeeded);
-            Assert.IsTrue(enumerator.Current.Result.ContentWasModified);
+            Assert.IsTrue(enumerator.Current.Result is ChangeFeedSuccessPage);
 
             // Second page should surface up the 304
             Assert.IsTrue(await enumerator.MoveNextAsync());
             Assert.IsTrue(enumerator.Current.Succeeded);
-            Assert.IsFalse(enumerator.Current.Result.ContentWasModified);
+            Assert.IsTrue(enumerator.Current.Result is ChangeFeedNotModifiedPage);
         }
 
         [TestMethod]
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             int numItems = 100;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await CrossPartitionChangeFeedAsyncEnumerator.MonadicCreateAsync(
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             int numItems = 100;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await CrossPartitionChangeFeedAsyncEnumerator.MonadicCreateAsync(
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Time(DateTime.UtcNow),
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             int numItems = 100;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await CrossPartitionChangeFeedAsyncEnumerator.MonadicCreateAsync(
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Now(),
@@ -166,12 +166,12 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             while (await enumerator.MoveNextAsync())
             {
                 Assert.IsTrue(enumerator.Current.Succeeded);
-                if (!enumerator.Current.Result.ContentWasModified)
+                if (!(enumerator.Current.Result is ChangeFeedSuccessPage changeFeedSuccessPage))
                 {
                     break;
                 }
 
-                globalCount += GetResponseCount(enumerator.Current.Result.Content);
+                globalCount += GetResponseCount(changeFeedSuccessPage.Content);
             }
 
             return globalCount;
@@ -191,22 +191,21 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
                 Assert.IsTrue(enumerator.Current.Succeeded);
 
-                if (!enumerator.Current.Result.ContentWasModified)
+                if (!(enumerator.Current.Result is ChangeFeedSuccessPage changeFeedSuccessPage))
                 {
                     break;
                 }
 
-                CosmosArray changes = GetChanges(enumerator.Current.Result.Content);
+                CosmosArray changes = GetChanges(changeFeedSuccessPage.Content);
                 globalChanges.AddRange(changes);
 
                 CosmosElement continuationToken = ((ChangeFeedStateContinuation)enumerator.Current.Result.State).ContinuationToken;
 
-                enumerator = (await CrossPartitionChangeFeedAsyncEnumerator
-                    .MonadicCreateAsync(
-                        documentContainer,
-                        new ChangeFeedRequestOptions(),
-                        ChangeFeedStartFrom.ContinuationToken(continuationToken.ToString()),
-                        cancellationToken: default)).Result;
+                enumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
+                    documentContainer,
+                    new ChangeFeedRequestOptions(),
+                    ChangeFeedStartFrom.ContinuationToken(continuationToken.ToString()),
+                    cancellationToken: default).Result;
             }
 
             return globalChanges.Count;

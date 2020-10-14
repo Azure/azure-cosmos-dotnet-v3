@@ -5,28 +5,19 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
     using System;
-    using System.IO;
     using Microsoft.Azure.Cosmos.Pagination;
 
-    internal sealed class ChangeFeedPage : Page<ChangeFeedState>
+    internal abstract class ChangeFeedPage : Page<ChangeFeedState>
     {
-        public ChangeFeedPage(
-            bool contentWasModified,
-            Stream content,
+        protected ChangeFeedPage(
             double requestCharge,
             string activityId,
             ChangeFeedState state)
             : base(state)
         {
-            this.ContentWasModified = contentWasModified;
-            this.Content = content ?? throw new ArgumentNullException(nameof(content));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
-            this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(content));
+            this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
         }
-
-        public bool ContentWasModified { get; }
-
-        public Stream Content { get; }
 
         public double RequestCharge { get; }
 
