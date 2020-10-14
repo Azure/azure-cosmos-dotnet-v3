@@ -290,9 +290,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Test all the different operations on diagnostics context
                 using (cosmosDiagnostics.CreateScope("ValidateScope"))
                 {
-                    Assert.AreEqual(0, cosmosDiagnostics.GetRetriableRequestCount());
-                    Assert.AreEqual(0, cosmosDiagnostics.GetFailedRequestCount());
-                    Assert.AreEqual(0, cosmosDiagnostics.GetTotalRequestCount());
+                    Assert.AreEqual(0, cosmosDiagnostics.GetRetriableResponseCount());
+                    Assert.AreEqual(0, cosmosDiagnostics.GetFailedResponseCount());
+                    Assert.AreEqual(0, cosmosDiagnostics.GetTotalResponseCount());
 
                     cosmosDiagnostics.AddDiagnosticsInternal(new PointOperationStatistics(
                         new Guid("692ab2f2-41ba-486b-aad7-8c7c6c52379f").ToString(),
@@ -306,9 +306,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null,
                         null));
 
-                    Assert.AreEqual(1, cosmosDiagnostics.GetRetriableRequestCount());
-                    Assert.AreEqual(1, cosmosDiagnostics.GetFailedRequestCount());
-                    Assert.AreEqual(1, cosmosDiagnostics.GetTotalRequestCount());
+                    Assert.AreEqual(1, cosmosDiagnostics.GetRetriableResponseCount());
+                    Assert.AreEqual(1, cosmosDiagnostics.GetFailedResponseCount());
+                    Assert.AreEqual(1, cosmosDiagnostics.GetTotalResponseCount());
 
                     cosmosDiagnostics.AddDiagnosticsInternal(
                         new StoreResponseStatistics(
@@ -320,9 +320,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                             OperationType.Delete,
                             new Uri("http://MockUri.com")));
 
-                    Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
-                    Assert.AreEqual(2, cosmosDiagnostics.GetFailedRequestCount());
-                    Assert.AreEqual(2, cosmosDiagnostics.GetTotalRequestCount());
+                    Assert.AreEqual(2, cosmosDiagnostics.GetRetriableResponseCount());
+                    Assert.AreEqual(2, cosmosDiagnostics.GetFailedResponseCount());
+                    Assert.AreEqual(2, cosmosDiagnostics.GetTotalResponseCount());
 
                     cosmosDiagnostics.AddDiagnosticsInternal(
                         new StoreResponseStatistics(
@@ -334,19 +334,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                             OperationType.Delete,
                             new Uri("http://MockUri.com")));
 
-                    Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
-                    Assert.AreEqual(3, cosmosDiagnostics.GetFailedRequestCount());
-                    Assert.AreEqual(3, cosmosDiagnostics.GetTotalRequestCount());
+                    Assert.AreEqual(2, cosmosDiagnostics.GetRetriableResponseCount());
+                    Assert.AreEqual(3, cosmosDiagnostics.GetFailedResponseCount());
+                    Assert.AreEqual(3, cosmosDiagnostics.GetTotalResponseCount());
                 }
 
-                Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
-                Assert.AreEqual(3, cosmosDiagnostics.GetFailedRequestCount());
-                Assert.AreEqual(3, cosmosDiagnostics.GetTotalRequestCount());
+                Assert.AreEqual(2, cosmosDiagnostics.GetRetriableResponseCount());
+                Assert.AreEqual(3, cosmosDiagnostics.GetFailedResponseCount());
+                Assert.AreEqual(3, cosmosDiagnostics.GetTotalResponseCount());
             }
 
-            Assert.AreEqual(2, cosmosDiagnostics.GetRetriableRequestCount());
-            Assert.AreEqual(3, cosmosDiagnostics.GetFailedRequestCount());
-            Assert.AreEqual(3, cosmosDiagnostics.GetTotalRequestCount());
+            Assert.AreEqual(2, cosmosDiagnostics.GetRetriableResponseCount());
+            Assert.AreEqual(3, cosmosDiagnostics.GetFailedResponseCount());
+            Assert.AreEqual(3, cosmosDiagnostics.GetTotalResponseCount());
 
             CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
                 nameof(ValidateRetriableRequestsCount),
@@ -354,9 +354,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
 
-            Assert.AreEqual(2, cosmosDiagnostics2.GetRetriableRequestCount());
-            Assert.AreEqual(3, cosmosDiagnostics2.GetFailedRequestCount());
-            Assert.AreEqual(3, cosmosDiagnostics2.GetTotalRequestCount());
+            Assert.AreEqual(2, cosmosDiagnostics2.GetRetriableResponseCount());
+            Assert.AreEqual(3, cosmosDiagnostics2.GetFailedResponseCount());
+            Assert.AreEqual(3, cosmosDiagnostics2.GetTotalResponseCount());
         }
     }
 }
