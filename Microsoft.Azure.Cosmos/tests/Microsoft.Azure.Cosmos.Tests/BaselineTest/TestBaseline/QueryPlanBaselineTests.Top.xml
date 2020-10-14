@@ -117,7 +117,7 @@
       <PartitionedQueryExecutionInfoInternal>
         <QueryInfo>
           <DistinctType>None</DistinctType>
-          <Top />
+          <Top>5</Top>
           <Offset />
           <Limit />
           <GroupByExpressions />
@@ -150,7 +150,7 @@
       <PartitionedQueryExecutionInfoInternal>
         <QueryInfo>
           <DistinctType>None</DistinctType>
-          <Top />
+          <Top>5</Top>
           <Offset />
           <Limit />
           <GroupByExpressions />
@@ -216,7 +216,7 @@
       <PartitionedQueryExecutionInfoInternal>
         <QueryInfo>
           <DistinctType>None</DistinctType>
-          <Top />
+          <Top>0</Top>
           <Offset />
           <Limit />
           <GroupByExpressions />

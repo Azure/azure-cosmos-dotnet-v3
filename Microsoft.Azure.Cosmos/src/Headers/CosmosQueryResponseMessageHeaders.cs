@@ -79,7 +79,9 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
             Headers sourceHeaders,
             ResourceType resourceType,
-            string containerRid)
+            string containerRid,
+            int? substatusCode = null,
+            string activityId = null)
         {
             if (sourceHeaders == null)
             {
@@ -98,11 +100,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 RequestCharge = sourceHeaders.RequestCharge,
                 ContentLength = sourceHeaders.ContentLength,
-                ActivityId = sourceHeaders.ActivityId,
+                ActivityId = sourceHeaders.ActivityId ?? activityId,
                 ETag = sourceHeaders.ETag,
                 Location = sourceHeaders.Location,
                 RetryAfterLiteral = sourceHeaders.RetryAfterLiteral,
-                SubStatusCodeLiteral = sourceHeaders.SubStatusCodeLiteral,
+                SubStatusCodeLiteral = sourceHeaders.SubStatusCodeLiteral ?? (substatusCode.HasValue ? substatusCode.Value.ToString() : null),
                 ContentType = sourceHeaders.ContentType,
                 QueryMetricsText = sourceHeaders.QueryMetricsText
             };

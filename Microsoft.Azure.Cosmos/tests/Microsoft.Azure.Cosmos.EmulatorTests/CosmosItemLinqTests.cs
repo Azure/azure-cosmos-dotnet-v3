@@ -577,8 +577,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             //Test orderby, skip, take, distinct, these will not get parameterized.
-            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] = @param1) ORDER BY" +
-                " root[\"taskNum\"] ASC OFFSET @param2 LIMIT @param3";
+            queryText = "SELECT VALUE root " +
+                "FROM root " +
+                "WHERE (root[\"CamelCase\"] = @param1) " +
+                "ORDER BY root[\"taskNum\"] ASC " +
+                "OFFSET @param2 LIMIT @param3";
             queriable = linqQueryable
                 .Where(item => item.CamelCase == camelCase)
                 .OrderBy(item => item.taskNum)

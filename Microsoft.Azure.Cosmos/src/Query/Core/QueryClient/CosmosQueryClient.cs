@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
 
     internal abstract class CosmosQueryClient
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken);
 
-        public abstract Task<QueryResponseCore> ExecuteItemQueryAsync(
+        public abstract Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
             string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,

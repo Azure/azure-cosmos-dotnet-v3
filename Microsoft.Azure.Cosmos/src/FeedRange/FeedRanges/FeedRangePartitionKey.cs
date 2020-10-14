@@ -27,11 +27,11 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
             return Task.FromResult(
-new List<Documents.Routing.Range<string>>
-{
+                new List<Documents.Routing.Range<string>>
+                {
                     Documents.Routing.Range<string>.GetPointRange(
                         this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
-});
+                });
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -57,9 +57,11 @@ new List<Documents.Routing.Range<string>>
             return visitor.VisitAsync(this, cancellationToken);
         }
 
-        public override string ToString()
-        {
-            return this.PartitionKey.InternalKey.ToJsonString();
-        }
+        public override Task<TResult> AcceptAsync<TResult, TArg>(
+           IFeedRangeAsyncVisitor<TResult, TArg> visitor,
+           TArg argument,
+           CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
+
+        public override string ToString() => this.PartitionKey.InternalKey.ToJsonString();
     }
 }

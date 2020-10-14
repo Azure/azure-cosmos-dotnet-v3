@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -16,33 +15,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     {
         private readonly IDocumentContainer documentContainer;
         private readonly int pageSize;
-        private readonly int partitionKeyRangeId;
 
         public DocumentContainerPartitionRangeEnumerator(
             IDocumentContainer documentContainer,
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             int pageSize,
+            CancellationToken cancellationToken,
             DocumentContainerState state = null)
             : base(
-                  new PartitionKeyRange()
-                  {
-                      Id = partitionKeyRangeId.ToString(),
-                      MinInclusive = partitionKeyRangeId.ToString(),
-                      MaxExclusive  = partitionKeyRangeId.ToString()
-                  },
-                  state ?? new DocumentContainerState(resourceIdentifier: 0))
+                  feedRange,
+                  cancellationToken,
+                  state ?? new DocumentContainerState(resourceIdentifier: ResourceId.Empty))
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            this.partitionKeyRangeId = partitionKeyRangeId;
             this.pageSize = pageSize;
         }
 
         public override ValueTask DisposeAsync() => default;
 
         protected override Task<TryCatch<DocumentContainerPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.documentContainer.MonadicReadFeedAsync(
-            partitionKeyRangeId: this.partitionKeyRangeId,
+            feedRange: this.Range,
             resourceIdentifer: this.State.ResourceIdentifer,
             pageSize: this.pageSize,
-            cancellationToken: default);
+            cancellationToken: cancellationToken);
     }
 }
