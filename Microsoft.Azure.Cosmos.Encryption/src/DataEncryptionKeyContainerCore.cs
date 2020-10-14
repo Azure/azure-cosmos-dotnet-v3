@@ -62,22 +62,49 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            byte[] rawDek = DataEncryptionKey.Generate(encryptionAlgorithm);
+            byte[] wrappedDek = null;
+            EncryptionKeyWrapMetadata updatedMetadata = null;
+            InMemoryRawDek inMemoryRawDek = null;
+            if (encryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                byte[] rawDek = DataEncryptionKey.Generate(encryptionAlgorithm);
 
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await this.WrapAsync(
-                id,
-                rawDek,
-                encryptionAlgorithm,
-                encryptionKeyWrapMetadata,
-                diagnosticsContext,
-                cancellationToken);
+                (wrappedDek, updatedMetadata, inMemoryRawDek) = await this.WrapAsync(
+                    id,
+                    rawDek,
+                    encryptionAlgorithm,
+                    encryptionKeyWrapMetadata,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+            else if (encryptionAlgorithm == CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized)
+            {
+                if (!(this.DekProvider.EncryptionKeyWrapProvider is MdeKeyWrapProvider mdeKeyWrapProvider))
+                {
+                    throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized}' algorithm, " +
+                        $"{nameof(this.DekProvider)} needs to be initialized with {nameof(EncryptionKeyStoreProvider)}.");
+                }
+
+                KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                  encryptionKeyWrapMetadata.Name,
+                  encryptionKeyWrapMetadata.Value,
+                  mdeKeyWrapProvider.EncryptionKeyStoreProvider);
+
+                ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                    encryptionKeyWrapMetadata.Name,
+                    keyEncryptionKey);
+
+                wrappedDek = protectedDataEncryptionKey.EncryptedValue;
+
+                updatedMetadata = encryptionKeyWrapMetadata;
+            }
 
             DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(
-                id,
-                encryptionAlgorithm,
-                wrappedDek,
-                updatedMetadata,
-                DateTime.UtcNow);
+                    id,
+                    encryptionAlgorithm,
+                    wrappedDek,
+                    updatedMetadata,
+                    DateTime.UtcNow);
 
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(
                 dekProperties,
@@ -348,10 +375,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("ReadInternalAsync"))
             {
                 return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
-                id,
-                new PartitionKey(id),
-                requestOptions,
-                cancellationToken);
+                    id,
+                    new PartitionKey(id),
+                    requestOptions,
+                    cancellationToken);
             }
         }
     }

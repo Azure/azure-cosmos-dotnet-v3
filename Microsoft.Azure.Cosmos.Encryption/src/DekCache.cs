@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public DekCache(TimeSpan? dekPropertiesTimeToLive = null)
         {
-            this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.HasValue == true ? dekPropertiesTimeToLive.Value : TimeSpan.FromMinutes(30);
+            this.dekPropertiesTimeToLive = dekPropertiesTimeToLive.HasValue == true ? dekPropertiesTimeToLive.Value : TimeSpan.FromMinutes(Constants.DekPropertiesTTL);
         }
 
         public async Task<DataEncryptionKeyProperties> GetOrAddDekPropertiesAsync(
