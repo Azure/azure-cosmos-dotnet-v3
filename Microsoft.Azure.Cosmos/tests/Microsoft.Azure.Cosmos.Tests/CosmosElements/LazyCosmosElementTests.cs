@@ -213,6 +213,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 object.ReferenceEquals(personName.Value, personName.Value),
                 "Did not return the string from the cache.");
 
+            int count = lazilyDeserializedPeople.Count;
+
+            int i = 0;
+            foreach (CosmosElement arrayItem in lazilyDeserializedPeople)
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(arrayItem, lazilyDeserializedPeople[i++]));
+            }
+
+            for (i = 0; i < count; i++)
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(lazilyDeserializedPeople[i], lazilyDeserializedPeople[i]));
+            }
+
             // Numbers is a value type so we don't need to test for the cache.
             // Booleans are multitons so we don't need to test for the cache.
             // Nulls are singletons so we don't need to test for the cache.
@@ -365,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         {
             LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("[1, 2, 3]");
         }
-        
+
         [TestMethod]
         [Owner("brchon")]
         public void Object()

@@ -3,9 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-#nullable enable
-
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
@@ -23,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-            private readonly Lazy<Lazy<CosmosElement>[]> lazyCosmosElementArray;
+            private readonly Dictionary<int, CosmosElement> cachedCosmosElements;
+            private readonly Lazy<int> lazyCount;
 
             public LazyCosmosArray(
                 IJsonNavigator jsonNavigator,
@@ -37,31 +37,81 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-
-                this.lazyCosmosElementArray = new Lazy<Lazy<CosmosElement>[]>(() =>
-                {
-                    Lazy<CosmosElement>[] lazyArray = new Lazy<CosmosElement>[this.jsonNavigator.GetArrayItemCount(this.jsonNavigatorNode)];
-                    int index = 0;
-                    // Using foreach instead of indexer, since the navigator doesn't support random seeks efficiently.
-                    foreach (IJsonNavigatorNode arrayItem in this.jsonNavigator.GetArrayItems(this.jsonNavigatorNode))
-                    {
-                        lazyArray[index] = new Lazy<CosmosElement>(() => CosmosElement.Dispatch(this.jsonNavigator, arrayItem));
-                        index++;
-                    }
-
-                    return lazyArray;
-                });
+                this.cachedCosmosElements = new Dictionary<int, CosmosElement>(capacity: 0);
+                this.lazyCount = new Lazy<int>(() => this.jsonNavigator.GetArrayItemCount(this.jsonNavigatorNode));
             }
 
-            public override int Count => this.lazyCosmosElementArray.Value.Length;
+            public override int Count => this.lazyCount.Value;
 
-            public override CosmosElement this[int index] => this.lazyCosmosElementArray.Value[index].Value;
+            public override CosmosElement this[int index]
+            {
+                get
+                {
+                    if (!this.cachedCosmosElements.TryGetValue(index, out CosmosElement cachedValue))
+                    {
+                        IJsonNavigatorNode jsonNavigatorNode = this.jsonNavigator.GetArrayItemAt(this.jsonNavigatorNode, index);
+                        cachedValue = CosmosElement.Dispatch(this.jsonNavigator, jsonNavigatorNode);
+                        this.cachedCosmosElements[index] = cachedValue;
+                    }
 
-            public override IEnumerator<CosmosElement> GetEnumerator() => this.lazyCosmosElementArray.Value.Select(lazyItem => lazyItem.Value).GetEnumerator();
+                    return cachedValue;
+                }
+            }
+
+            public override IEnumerator<CosmosElement> GetEnumerator() => new LazyCosmosArrayEnumerator(this);
 
             public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
 
             public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
+
+            private struct LazyCosmosArrayEnumerator : IEnumerator<CosmosElement>
+            {
+                private readonly LazyCosmosArray lazyCosmosArray;
+                private IEnumerator<IJsonNavigatorNode> nodes;
+                private int index;
+
+                public LazyCosmosArrayEnumerator(LazyCosmosArray lazyCosmosArray)
+                {
+                    this.lazyCosmosArray = lazyCosmosArray;
+                    this.Current = default;
+                    this.nodes = default;
+                    this.index = default;
+                    this.Reset();
+                }
+
+                public CosmosElement Current { get; private set; }
+
+                object IEnumerator.Current => this.Current;
+
+                public void Dispose()
+                {
+                }
+
+                public bool MoveNext()
+                {
+                    if (!this.nodes.MoveNext())
+                    {
+                        this.Current = default;
+                        return false;
+                    }
+
+                    this.index++;
+                    if (!this.lazyCosmosArray.cachedCosmosElements.TryGetValue(this.index, out CosmosElement cachedValue))
+                    {
+                        cachedValue = CosmosElement.Dispatch(this.lazyCosmosArray.jsonNavigator, this.nodes.Current);
+                        this.lazyCosmosArray.cachedCosmosElements[this.index] = cachedValue;
+                    }
+
+                    this.Current = cachedValue;
+                    return true;
+                }
+
+                public void Reset()
+                {
+                    this.nodes = this.lazyCosmosArray.jsonNavigator.GetArrayItems(this.lazyCosmosArray.jsonNavigatorNode).GetEnumerator();
+                    this.index = -1;
+                }
+            }
         }
     }
 #if INTERNAL
