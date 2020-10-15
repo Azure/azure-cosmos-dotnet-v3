@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
     internal sealed class ReadFeedState : State
     {
-        public ReadFeedState(string continuationToken)
+        public ReadFeedState(CosmosElement continuationToken)
         {
             this.ContinuationToken = continuationToken ?? throw new ArgumentNullException(nameof(continuationToken));
         }
 
-        public string ContinuationToken { get; }
+        public CosmosElement ContinuationToken { get; }
     }
 }

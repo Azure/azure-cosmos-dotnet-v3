@@ -13,11 +13,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
     internal sealed class ReadFeedPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
     {
-        private readonly IDocumentContainer documentContainer;
+        private readonly IReadFeedDataSource readFeedDataSource;
         private readonly int pageSize;
 
         public ReadFeedPartitionRangeEnumerator(
-            IDocumentContainer documentContainer,
+            IReadFeedDataSource readFeedDataSource,
             FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken,
@@ -27,13 +27,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                   cancellationToken,
                   state)
         {
-            this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+            this.readFeedDataSource = readFeedDataSource ?? throw new ArgumentNullException(nameof(readFeedDataSource));
             this.pageSize = pageSize;
         }
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.documentContainer.MonadicReadFeedAsync(
+        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.readFeedDataSource.MonadicReadFeedAsync(
             feedRange: this.Range,
             readFeedState: this.State,
             pageSize: this.pageSize,
