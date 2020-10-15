@@ -178,15 +178,14 @@
 
             if (!this.singlePartition)
             {
-                await documentContainer.SplitAsync(partitionKeyRangeId: 0, cancellationToken: default);
-
-                await documentContainer.SplitAsync(partitionKeyRangeId: 1, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 2, cancellationToken: default);
-
-                await documentContainer.SplitAsync(partitionKeyRangeId: 3, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 4, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 5, cancellationToken: default);
-                await documentContainer.SplitAsync(partitionKeyRangeId: 6, cancellationToken: default);
+                for (int i = 0; i < 3; i++)
+                {
+                    IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                    foreach (FeedRangeInternal range in ranges)
+                    {
+                        await documentContainer.SplitAsync(range, cancellationToken: default);
+                    }
+                }
             }
 
             for (int i = 0; i < numItems; i++)
