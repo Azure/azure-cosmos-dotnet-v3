@@ -88,10 +88,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.UserAgent);
 
             this.jsonWriter.WritePropertyName("TotalRequestCount");
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetTotalRequestCount());
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetTotalResponseCount());
 
             this.jsonWriter.WritePropertyName("FailedRequestCount");
-            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetFailedRequestCount());
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetFailedResponseCount());
 
             this.jsonWriter.WriteEndObject();
 
