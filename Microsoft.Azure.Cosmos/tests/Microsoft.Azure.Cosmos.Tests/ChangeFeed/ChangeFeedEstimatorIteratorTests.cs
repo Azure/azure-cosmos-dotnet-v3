@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     public class ChangeFeedEstimatorIteratorTests
     {
         [TestMethod]
+        [Ignore]
         public async Task ShouldRequestForAllPartitionKeyRanges()
         {
             List<string> expectedPKRanges = new List<string>() { "0", "1" };
