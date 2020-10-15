@@ -19,5 +19,12 @@ namespace Microsoft.Azure.Cosmos
     abstract class FeedIteratorInternal : FeedIterator
     {
         public abstract CosmosElement GetCosmosElementContinuationToken();
+
+        public static bool IsRetriableException(CosmosException cosmosException)
+        {
+            return ((int)cosmosException.StatusCode == 429)
+                || (cosmosException.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+                || (cosmosException.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable);
+        }
     }
 }
