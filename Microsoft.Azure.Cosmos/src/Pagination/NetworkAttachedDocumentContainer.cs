@@ -257,6 +257,34 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (feedRange is FeedRangeEpk feedRangeEpk)
+            {
+                // convert into physical range or throw a split exception
+                ContainerProperties containerProperties = await this.cosmosClientContext.GetCachedContainerPropertiesAsync(
+                            this.container.LinkUri,
+                            cancellationToken);
+                List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                    this.container.LinkUri,
+                    await this.container.GetRIDAsync(cancellationToken),
+                    containerProperties.PartitionKey,
+                    feedRange);
+
+                if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
+                {
+                    // Simulate a split exception, since we don't have a partition key range id to route to.
+                    CosmosException goneException = new CosmosException(
+                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: default);
+
+                    return TryCatch<ChangeFeedPage>.FromException(goneException);
+                }
+
+                feedRange = new FeedRangePartitionKeyRange(overlappingRanges[0].Id);
+            }
+
             ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,

@@ -49,8 +49,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             // Parse out the single partition continuation token
-            string compositeContinuationToken = responseMessage.ContinuationToken;
-            CosmosArray cosmosArray = CosmosArray.Parse(compositeContinuationToken);
+            string versionedContinuationToken = responseMessage.ContinuationToken;
+            CosmosObject parsedVersionedContinuationToken = CosmosObject.Parse(versionedContinuationToken);
+            CosmosArray cosmosArray = (CosmosArray)parsedVersionedContinuationToken["Continuation"];
             CosmosObject changeFeedContinuationToken = (CosmosObject)cosmosArray[0];
             string etag = ((CosmosString)((CosmosObject)changeFeedContinuationToken["State"])["value"]).Value;
 

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [SDK.EmulatorTests.TestClass]
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
@@ -526,7 +527,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         public async Task ChangeFeedIteratorCore_BreathFirst()
         {
             int expected = 500;
-            List<CompositeContinuationToken> previousToken = null;
+            CosmosObject previousToken = null;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
@@ -539,18 +540,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    Assert.IsTrue(FeedRangeCompositeContinuation.TryParse(responseMessage.ContinuationToken, out FeedRangeContinuation continuation));
-                    FeedRangeCompositeContinuation compositeContinuation = continuation as FeedRangeCompositeContinuation;
-                    List<CompositeContinuationToken> deserializedToken = compositeContinuation.CompositeContinuationTokens.ToList();
+                    CosmosObject cosmosObject = CosmosObject.Parse(responseMessage.ContinuationToken);
+                    if (!cosmosObject.TryGetValue("Continuation", out CosmosArray cosmosArray))
+                    {
+                        Assert.Fail();
+                        throw new Exception();
+                    }
+
+                    CosmosObject currentToken = (CosmosObject)cosmosArray[0];
+
                     if (previousToken != null)
                     {
                         // Verify that the token, even though it yielded results, it moved to a new range
-                        Assert.AreNotEqual(previousToken[0].Range.Min, deserializedToken[0].Range.Min);
-                        Assert.AreNotEqual(previousToken[0].Range.Max, deserializedToken[0].Range.Max);
+                        Assert.AreNotEqual(previousToken, currentToken);
                         break;
                     }
 
-                    previousToken = deserializedToken;
+                    previousToken = currentToken;
 
                     if (responseMessage.StatusCode == HttpStatusCode.NotModified)
                     {
