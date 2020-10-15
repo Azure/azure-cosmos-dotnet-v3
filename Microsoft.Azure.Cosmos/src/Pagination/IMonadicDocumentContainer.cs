@@ -32,5 +32,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         Task<TryCatch> MonadicSplitAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
+
+        Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken);
     }
 }

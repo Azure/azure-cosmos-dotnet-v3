@@ -319,6 +319,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
         }
 
+        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                string resourceIdentifier = await this.container.GetRIDAsync(cancellationToken);
+                return TryCatch<string>.FromResult(resourceIdentifier);
+            }
+            catch (Exception ex)
+            {
+                return TryCatch<string>.FromException(ex);
+            }
+        }
+
         private sealed class ChangeFeedStateRequestMessagePopulator : IChangeFeedStateVisitor<RequestMessage>
         {
             public static readonly ChangeFeedStateRequestMessagePopulator Singleton = new ChangeFeedStateRequestMessagePopulator();

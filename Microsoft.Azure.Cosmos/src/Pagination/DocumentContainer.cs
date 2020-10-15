@@ -166,5 +166,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 feedRange,
                 pageSize,
                 cancellationToken);
+
+        public Task<string> GetResourceIdentifierAsync(
+            CancellationToken cancellationToken) => TryCatch<string>.UnsafeGetResultAsync(
+                this.MonadicGetResourceIdentifierAsync(cancellationToken),
+                cancellationToken);
+
+        public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
     }
 }

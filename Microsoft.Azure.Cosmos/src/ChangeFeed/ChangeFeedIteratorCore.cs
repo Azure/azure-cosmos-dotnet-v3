@@ -15,7 +15,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
-        private readonly TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator;
+        private readonly IDocumentContainer documentContainer;
+        private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
@@ -23,22 +24,65 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom)
         {
-            if (documentContainer == null)
-            {
-                throw new ArgumentNullException(nameof(documentContainer));
-            }
-
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
-            this.monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
-                documentContainer,
-                changeFeedRequestOptions,
-                changeFeedStartFrom,
-                cancellationToken: default);
+            this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+            this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
+                valueFactory: async (cancellationToken) =>
+                {
+                    if (changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
+                    {
+                        TryCatch<CosmosElement> monadicParsedToken = CosmosElement.Monadic.Parse(startFromContinuation.Continuation);
+                        if (monadicParsedToken.Failed)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"Failed to parse continuation token: {startFromContinuation.Continuation}.",
+                                    innerException: monadicParsedToken.Exception));
+                        }
+
+                        TryCatch<VersionedAndRidCheckedCompositeToken> monadicVersionedToken = VersionedAndRidCheckedCompositeToken
+                            .MonadicCreateFromCosmosElement(monadicParsedToken.Result);
+                        if (monadicVersionedToken.Failed)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"Failed to parse continuation token: {startFromContinuation.Continuation}.",
+                                    innerException: monadicVersionedToken.Exception));
+                        }
+
+                        VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = monadicVersionedToken.Result;
+                        if (versionedAndRidCheckedCompositeToken.VersionNumber != VersionedAndRidCheckedCompositeToken.Version.V2)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"Wrong version number: {versionedAndRidCheckedCompositeToken.VersionNumber}."));
+                        }
+
+                        string collectionRid = await documentContainer.GetResourceIdentifierAsync(cancellationToken);
+                        if (versionedAndRidCheckedCompositeToken.Rid != collectionRid)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"rids mismatched. Expected: {collectionRid} but got {versionedAndRidCheckedCompositeToken.Rid}."));
+                        }
+
+                        changeFeedStartFrom = ChangeFeedStartFrom.ContinuationToken(versionedAndRidCheckedCompositeToken.ContinuationToken.ToString());
+                    }
+
+                    TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
+                        documentContainer,
+                        changeFeedRequestOptions,
+                        changeFeedStartFrom,
+                        cancellationToken: default);
+
+                    return monadicEnumerator;
+                });
             this.hasMoreResults = true;
+
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -47,9 +91,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (this.monadicEnumerator.Failed)
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.lazyMonadicEnumerator.GetValueAsync(cancellationToken);
+
+            if (monadicEnumerator.Failed)
             {
-                Exception createException = this.monadicEnumerator.Exception;
+                Exception createException = monadicEnumerator.Exception;
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(createException);
                 return new ResponseMessage(
                     cosmosException.StatusCode,
@@ -59,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     diagnostics: new CosmosDiagnosticsContextCore());
             }
 
-            CrossPartitionChangeFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
 
             if (!await enumerator.MoveNextAsync())
             {
@@ -96,7 +142,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.NotModified);
             }
 
-            responseMessage.Headers.ContinuationToken = ((ChangeFeedStateContinuation)changeFeedPage.State).ContinuationToken.ToString();
+            CosmosElement innerContinuationToken = ((ChangeFeedStateContinuation)changeFeedPage.State).ContinuationToken;
+            VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = new VersionedAndRidCheckedCompositeToken(
+                VersionedAndRidCheckedCompositeToken.Version.V2,
+                innerContinuationToken,
+                await this.documentContainer.GetResourceIdentifierAsync(cancellationToken));
+
+            responseMessage.Headers.ContinuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(versionedAndRidCheckedCompositeToken).ToString();
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
 

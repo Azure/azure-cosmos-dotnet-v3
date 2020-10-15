@@ -31,5 +31,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         Task SplitAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
+
+        Task<string> GetResourceIdentifierAsync(CancellationToken cancellationToken);
     }
 }
