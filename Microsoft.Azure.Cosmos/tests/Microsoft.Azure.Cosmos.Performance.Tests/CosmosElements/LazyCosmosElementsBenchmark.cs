@@ -101,17 +101,61 @@
                     break;
 
                 case CosmosArray cosmosArray:
+                    // Navigate using enumerator 
                     foreach (CosmosElement arrayItem in cosmosArray)
                     {
                         Access(arrayItem);
                     }
+
+                    // Navigate using indexer
+                    for (int i = 0; i < cosmosArray.Count; i++)
+                    {
+                        Access(cosmosArray[i]);
+                    }
+
+                    // Count should also be cached
+                    for (int i = 0; i < 10; i++)
+                    {
+                        _ = cosmosArray.Count;
+                    }
+
                     break;
 
                 case CosmosObject cosmosObject:
+                    // Navigate using enumerator
                     foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                     {
                         Access(kvp.Value);
                     }
+
+                    // Navigate using indexer
+                    foreach (string key in cosmosObject.Keys)
+                    {
+                        Access(cosmosObject[key]);
+
+                        // Contains key should be cached
+                        _ = cosmosObject.ContainsKey(key);
+                    }
+
+                    // Navigates using values
+                    foreach(CosmosElement value in cosmosObject.Values)
+                    {
+                        Access(value);
+                    }
+
+                    
+                    for (int i = 0; i < 10; i++)
+                    {
+                        // Keys should be cached
+                        _ = cosmosObject.Keys;
+
+                        // Values should be cached
+                        _ = cosmosObject.Values;
+
+                        // Count should also be cached
+                        _ = cosmosObject.Count;
+                    }
+
                     break;
 
                 default:
