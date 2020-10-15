@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             if (exception is ChangeFeedException changeFeedException)
             {
-                return changeFeedException.Accept()
+                return changeFeedException.Accept(ChangeFeedExceptionConverter.Singleton);
             }
 
             if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
@@ -117,6 +117,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         private sealed class ChangeFeedExceptionConverter : ChangeFeedExceptionVisitor<CosmosException>
         {
+            public static readonly ChangeFeedExceptionConverter Singleton = new ChangeFeedExceptionConverter();
+
+            private ChangeFeedExceptionConverter()
+            {
+            }
+
             internal override CosmosException Visit(
                 MalformedChangeFeedContinuationTokenException malformedChangeFeedContinuationTokenException) => CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedChangeFeedContinuationTokenException.Message,
