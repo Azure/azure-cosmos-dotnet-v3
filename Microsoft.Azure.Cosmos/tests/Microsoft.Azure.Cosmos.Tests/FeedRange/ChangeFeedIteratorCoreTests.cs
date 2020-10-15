@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             int count = 0;
             int numIterations = 500;
-            while (numIterations --> 0)
+            while (numIterations-- > 0)
             {
                 ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
                 if (!(responseMessage.IsSuccessStatusCode || responseMessage.StatusCode == HttpStatusCode.NotModified))

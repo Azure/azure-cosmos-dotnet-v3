@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 documentContainer,
                 CrossPartitionChangeFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
-                    changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(100),
+                    changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(int.MaxValue),
                     cancellationToken),
                 comparer: default /* this uses a regular queue instead of prioirty queue */,
                 maxConcurrency: default,

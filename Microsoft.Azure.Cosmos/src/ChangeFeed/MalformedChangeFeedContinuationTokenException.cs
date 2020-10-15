@@ -22,5 +22,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             : base(message, innerException)
         {
         }
+
+        public override TResult Accept<TResult>(ChangeFeedExceptionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
     }
 }

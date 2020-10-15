@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 }

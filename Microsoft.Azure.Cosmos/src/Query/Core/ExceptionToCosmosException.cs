@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -28,6 +29,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             if (exception is QueryException queryException)
             {
                 return queryException.Accept(QueryExceptionConverter.Singleton);
+            }
+
+            if (exception is ChangeFeedException changeFeedException)
+            {
+                return changeFeedException.Accept()
             }
 
             if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
@@ -107,6 +113,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     message: expectedQueryPartitionProviderException.Message,
                     stackTrace: expectedQueryPartitionProviderException.StackTrace,
                     innerException: expectedQueryPartitionProviderException);
+        }
+
+        private sealed class ChangeFeedExceptionConverter : ChangeFeedExceptionVisitor<CosmosException>
+        {
+            internal override CosmosException Visit(
+                MalformedChangeFeedContinuationTokenException malformedChangeFeedContinuationTokenException) => CosmosExceptionFactory.CreateBadRequestException(
+                    message: malformedChangeFeedContinuationTokenException.Message,
+                    stackTrace: malformedChangeFeedContinuationTokenException.StackTrace,
+                    innerException: malformedChangeFeedContinuationTokenException);
         }
     }
 }

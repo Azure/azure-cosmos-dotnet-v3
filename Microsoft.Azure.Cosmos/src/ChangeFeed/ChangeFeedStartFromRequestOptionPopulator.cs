@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 this.requestMessage.Headers.Add(
                     HttpConstants.HttpHeaders.IfModifiedSince,
-                    startFromTime.StartTime.ToString("r", CultureInfo.InvariantCulture));
+                    startFromTime.StartTime.ToString("o", CultureInfo.InvariantCulture));
             }
 
             startFromTime.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
