@@ -216,6 +216,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 
+        public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+    CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
+
         private bool ShouldReturn429() => (this.failureConfigs != null)
             && this.failureConfigs.Inject429s
             && ((this.random.Next() % 2) == 0);

@@ -882,6 +882,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return CosmosObject.Create(keyValuePairs);
         }
 
+        public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(TryCatch<string>.FromResult("AYIMAMmFOw8YAAAAAAAAAA=="));
+        }
+
         private sealed class Records : IReadOnlyList<Record>
         {
             private readonly List<Record> storage;

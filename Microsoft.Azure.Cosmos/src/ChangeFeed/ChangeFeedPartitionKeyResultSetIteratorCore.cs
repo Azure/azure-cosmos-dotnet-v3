@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -15,7 +14,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </summary>
     internal sealed class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIteratorInternal
     {
-        private readonly FeedIterator feedIterator;
+        private readonly CosmosClientContext clientContext;
+        private readonly ContainerInternal container;
+        private readonly ChangeFeedRequestOptions changeFeedOptions;
+        private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
 
         public ChangeFeedPartitionKeyResultSetIteratorCore(
@@ -24,14 +26,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions options)
         {
-            this.feedIterator = container.GetChangeFeedStreamIterator(changeFeedStartFrom, options);
+            this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.changeFeedStartFrom = changeFeedStartFrom;
+            this.changeFeedOptions = options;
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            throw new NotSupportedException();
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -41,23 +46,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <returns>A change feed response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-            if ((responseMessage.StatusCode != System.Net.HttpStatusCode.OK) && (responseMessage.StatusCode != System.Net.HttpStatusCode.NotModified))
-            {
-                this.hasMoreResultsInternal = false;
-                return responseMessage;
-            }
-
-            // Parse out the single partition continuation token
-            string versionedContinuationToken = responseMessage.ContinuationToken;
-            CosmosObject parsedVersionedContinuationToken = CosmosObject.Parse(versionedContinuationToken);
-            CosmosArray cosmosArray = (CosmosArray)parsedVersionedContinuationToken["Continuation"];
-            CosmosObject changeFeedContinuationToken = (CosmosObject)cosmosArray[0];
-            string etag = ((CosmosString)((CosmosObject)changeFeedContinuationToken["State"])["value"]).Value;
+            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                cosmosContainerCore: this.container,
+                resourceUri: this.container.LinkUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: this.changeFeedOptions,
+                requestEnricher: (requestMessage) =>
+                {
+                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
+                    this.changeFeedStartFrom.Accept(visitor);
+                },
+                partitionKey: default,
+                streamPayload: default,
+                diagnosticsContext: default,
+                cancellationToken: cancellationToken);
 
             // Change Feed uses etag as continuation token.
+            string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
+            FeedRangeInternal feedRange = this.changeFeedStartFrom switch
+            {
+                ChangeFeedStartFromNow now => now.FeedRange,
+                ChangeFeedStartFromTime time => time.FeedRange,
+                ChangeFeedStartFromContinuation continuation => throw new NotSupportedException(),
+                ChangeFeedStartFromBeginning beginning => beginning.FeedRange,
+                ChangeFeedStartFromContinuationAndFeedRange continuationAndFeedRange => continuationAndFeedRange.FeedRange,
+                _ => throw new InvalidOperationException(),
+            };
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;
         }
