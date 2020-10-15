@@ -120,34 +120,53 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.container.LinkUri,
-               resourceType: this.resourceType,
-               operationType: operation,
+               resourceType: ResourceType.Document,
+               operationType: OperationType.ReadFeed,
                requestOptions: this.queryRequestOptions,
-               cosmosContainerCore: this.containerCore,
-               partitionKey: this.queryRequestOptions?.PartitionKey,
-               streamPayload: stream,
+               cosmosContainerCore: this.container,
                requestEnricher: request =>
                {
-                   // FeedRangeContinuationRequestMessagePopulatorVisitor needs to run before FeedRangeRequestMessagePopulatorVisitor,
-                   // since they both set EPK range headers and in the case of split we need to run on the child range and not the parent range.
-                   FeedRangeContinuationRequestMessagePopulatorVisitor feedRangeContinuationVisitor = new FeedRangeContinuationRequestMessagePopulatorVisitor(
-                       request,
-                       QueryRequestOptions.FillContinuationToken);
-                   this.FeedRangeContinuation.Accept(feedRangeContinuationVisitor);
-
-                   FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
-                   this.FeedRangeInternal.Accept(feedRangeVisitor);
-
-                   if (this.querySpec != null)
+                   if (readFeedState != null)
                    {
-                       request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                       request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                       request.Headers.ContinuationToken = readFeedState.ContinuationToken;
                    }
+
+                   FeedRangeRequestMessagePopulatorVisitor visitor = new FeedRangeRequestMessagePopulatorVisitor(request);
+                   feedRange.Accept(visitor);
+                   request.Headers.PageSize = pageSize.ToString();
                },
-               diagnosticsContext: diagnostics,
+               partitionKey: default,
+               streamPayload: default,
+               diagnosticsContext: default,
                cancellationToken: cancellationToken);
+
+            TryCatch<ReadFeedPage> monadicReadFeedPage;
+            if (responseMessage.StatusCode == HttpStatusCode.OK)
+            {
+                ReadFeedPage readFeedPage = new ReadFeedPage(
+                    responseMessage.Content,
+                    responseMessage.Headers.RequestCharge,
+                    responseMessage.Headers.ActivityId,
+                    new ReadFeedState(responseMessage.Headers.ETag));
+
+                monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
+            }
+            else
+            {
+                CosmosException cosmosException = new CosmosException(
+                    responseMessage.ErrorMessage,
+                    statusCode: responseMessage.StatusCode,
+                    (int)responseMessage.Headers.SubStatusCode,
+                    responseMessage.Headers.ActivityId,
+                    responseMessage.Headers.RequestCharge);
+                cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
+
+                monadicReadFeedPage = TryCatch<ReadFeedPage>.FromException(cosmosException);
+            }
+
+            return monadicReadFeedPage;
         }
 
         public async Task<TryCatch<QueryPage>> MonadicQueryAsync(

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -38,13 +39,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             TryCatch<Record>.FromException(
                 RequestRateTooLargeException));
 
-        private static readonly Task<TryCatch<DocumentContainerPage>> ThrottleForFeedOperation = Task.FromResult(
-            TryCatch<DocumentContainerPage>.FromException(
+        private static readonly Task<TryCatch<ReadFeedPage>> ThrottleForFeedOperation = Task.FromResult(
+            TryCatch<ReadFeedPage>.FromException(
                 RequestRateTooLargeException));
 
         private static readonly Task<TryCatch<QueryPage>> ThrottleForQuery = Task.FromResult(
             TryCatch<QueryPage>.FromException(
                 RequestRateTooLargeException));
+
+        private static readonly ReadFeedState ReadFeedNotStartedState = new ReadFeedState(ContinuationForStartedButNoDocumentsReturned);
 
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
 
@@ -89,12 +92,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 cancellationToken);
         }
 
-        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
+        public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
         {
+            if ((readFeedState != null) && readFeedState.Equals(ReadFeedNotStartedState))
+            {
+                readFeedState = null;
+            }
+
             if (this.ShouldReturn429())
             {
                 return ThrottleForFeedOperation;
@@ -102,16 +110,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (this.ShouldReturnEmptyPage())
             {
+                // We can't return a null continuation, since that signals the query has ended.
+                ReadFeedState nonNullState = readFeedState ?? ReadFeedNotStartedState;
                 return Task.FromResult(
-                    TryCatch<DocumentContainerPage>.FromResult(
-                        new DocumentContainerPage(
-                            new List<Record>(),
-                            new DocumentContainerState(resourceIdentifer))));
+                    TryCatch<ReadFeedPage>.FromResult(
+                        new ReadFeedPage(
+                            new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            nonNullState)));
             }
 
             return this.documentContainer.MonadicReadFeedAsync(
+                readFeedState,
                 feedRange,
-                resourceIdentifer,
                 pageSize,
                 cancellationToken);
         }

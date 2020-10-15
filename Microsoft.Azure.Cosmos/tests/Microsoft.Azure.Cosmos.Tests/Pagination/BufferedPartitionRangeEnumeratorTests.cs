@@ -5,9 +5,8 @@
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using System.Runtime.CompilerServices;
     using System;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
 
     [TestClass]
     public sealed class BufferedPartitionPartitionRangeEnumeratorTests
@@ -69,7 +68,7 @@
         }
 
         [TestClass]
-        private sealed class Implementation : PartitionRangeEnumeratorTests<DocumentContainerPage, DocumentContainerState>
+        private sealed class Implementation : PartitionRangeEnumeratorTests<ReadFeedPage, ReadFeedState>
         {
             private static readonly int iterations = 1;
 
@@ -83,9 +82,9 @@
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerator<TryCatch<DocumentContainerPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
+                IAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-                (HashSet<string> parentIdentifiers, DocumentContainerState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
                 await inMemoryCollection.SplitAsync(new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"), cancellationToken: default);
@@ -98,10 +97,10 @@
                 HashSet<string> childIdentifiers = new HashSet<string>();
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
-                    PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState> enumerable = new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
+                    PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState> enumerable = new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                         range: new FeedRangePartitionKeyRange(partitionKeyRangeId: partitionKeyRangeId.ToString()),
                         state: state,
-                        (range, state) => new DocumentContainerPartitionRangeEnumerator(
+                        (range, state) => new ReadFeedPartitionRangeEnumerator(
                                 inMemoryCollection,
                                 feedRange: range,
                                 pageSize: 10,
@@ -120,8 +119,8 @@
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
-                    new DocumentContainerPartitionRangeEnumerator(
+                BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                    new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
@@ -139,7 +138,7 @@
                 Random random = new Random();
                 while (await enumerator.MoveNextAsync())
                 {
-                    count += enumerator.Current.Result.Records.Count;
+                    count += enumerator.Current.Result.GetRecords().Count;
                     if (random.Next() % 2 == 0)
                     {
                         for (int i = 0; i < 10; i++)
@@ -162,8 +161,8 @@
                 Random random = new Random();
                 for (int iteration = 0; iteration < iterations; iteration++)
                 {
-                    BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
-                    new DocumentContainerPartitionRangeEnumerator(
+                    BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                    new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
@@ -178,7 +177,7 @@
                     int count = 0;
                     while (await enumerator.MoveNextAsync())
                     {
-                        count += enumerator.Current.Result.Records.Count;
+                        count += enumerator.Current.Result.GetRecords().Count;
                         
                         if ((random.Next() % 2) == 0)
                         {
@@ -190,18 +189,18 @@
                 }
             }
 
-            public override IReadOnlyList<Record> GetRecordsFromPage(DocumentContainerPage page)
+            public override IReadOnlyList<Record> GetRecordsFromPage(ReadFeedPage page)
             {
-                return page.Records;
+                return page.GetRecords();
             }
 
-            public override IAsyncEnumerable<TryCatch<DocumentContainerPage>> CreateEnumerable(
+            public override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
-                DocumentContainerState state = null) => new PartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
+                ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     state: state,
-                    (range, state) => new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
-                        new DocumentContainerPartitionRangeEnumerator(
+                    (range, state) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                        new ReadFeedPartitionRangeEnumerator(
                             documentContainer,
                             feedRange: range,
                             pageSize: 10,
@@ -209,10 +208,10 @@
                             state: state),
                         cancellationToken: default));
 
-            public override IAsyncEnumerator<TryCatch<DocumentContainerPage>> CreateEnumerator(
+            public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
                 IDocumentContainer inMemoryCollection,
-                DocumentContainerState state = null) => new BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
-                    new DocumentContainerPartitionRangeEnumerator(
+                ReadFeedState state = null) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                    new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
@@ -220,7 +219,7 @@
                         state: state),
                     cancellationToken: default);
 
-            private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator)
+            private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)
             {
                 while (true)
                 {

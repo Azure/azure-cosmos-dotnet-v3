@@ -7,11 +7,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -23,11 +21,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.SqlObjects;
-    using Microsoft.Azure.Cosmos.Tests.Json;
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Documents;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
@@ -260,9 +257,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return CreateNotFoundException(partitionKey, identifier);
         }
 
-        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
+        public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
         {
@@ -280,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
                 if (monadicGetPkRangeIdFromEpkRange.Failed)
                 {
-                    return Task.FromResult(TryCatch<DocumentContainerPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    return Task.FromResult(TryCatch<ReadFeedPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
                 }
 
                 partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
@@ -299,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 out PartitionKeyHashRange range))
             {
                 return Task.FromResult(
-                    TryCatch<DocumentContainerPage>.FromException(
+                    TryCatch<ReadFeedPage>.FromException(
                         new CosmosException(
                         message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
                         statusCode: System.Net.HttpStatusCode.Gone,
@@ -313,25 +310,39 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new InvalidOperationException("failed to find the range.");
             }
 
+            ulong documentIndex = readFeedState == null ? 0 : ulong.Parse(readFeedState.ContinuationToken);
             List<Record> page = records
-                .Where(record => record.ResourceIdentifier.Document > resourceIdentifer.Document)
+                .Where(record => record.ResourceIdentifier.Document > documentIndex)
                 .Take(pageSize)
                 .ToList();
 
-            if (page.Count == 0)
+            List<CosmosObject> documents = new List<CosmosObject>();
+            foreach (Record record in page)
             {
-                return Task.FromResult(
-                    TryCatch<DocumentContainerPage>.FromResult(
-                        new DocumentContainerPage(
-                            records: page,
-                            state: default)));
+                CosmosObject document = ConvertRecordToCosmosElement(record);
+                documents.Add(CosmosObject.Create(document));
             }
 
-            return Task.FromResult(
-                TryCatch<DocumentContainerPage>.FromResult(
-                    new DocumentContainerPage(
-                        records: page,
-                        state: new DocumentContainerState(page.Last().ResourceIdentifier))));
+            ReadFeedState continuationState = documents.Count == 0 ? null : new ReadFeedState(page.Last().ResourceIdentifier.Document.ToString());
+            CosmosArray cosmosDocuments = CosmosArray.Create(documents);
+            CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
+            CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
+
+            Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
+            {
+                { "Documents", cosmosDocuments },
+                { "_count", cosmosCount },
+                { "_rid", cosmosRid },
+            };
+            CosmosObject cosmosResponse = CosmosObject.Create(responseDictionary);
+            IJsonWriter jsonWriter = Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
+            cosmosResponse.WriteTo(jsonWriter);
+            byte[] result = jsonWriter.GetResult().ToArray();
+            MemoryStream responseStream = new MemoryStream(result);
+
+            ReadFeedPage readFeedPage = new ReadFeedPage(responseStream, requestCharge: 42, activityId: Guid.NewGuid().ToString(), continuationState);
+
+            return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
         }
 
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(

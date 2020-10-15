@@ -93,11 +93,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 pageSize,
                 cancellationToken);
 
-        public Task<DocumentContainerPage> ReadFeedAsync(
+        public Task<ReadFeedPage> ReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
             int pageSize,
-            CancellationToken cancellationToken) => TryCatch<DocumentContainerPage>.UnsafeGetResultAsync(
+            CancellationToken cancellationToken) => TryCatch<ReadFeedPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(
                     readFeedState,
                     feedRange,

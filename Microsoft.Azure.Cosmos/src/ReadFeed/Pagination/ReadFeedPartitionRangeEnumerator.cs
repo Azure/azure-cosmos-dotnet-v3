@@ -9,23 +9,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
 
-    internal sealed class DocumentContainerPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>
+    internal sealed class ReadFeedPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
     {
         private readonly IDocumentContainer documentContainer;
         private readonly int pageSize;
 
-        public DocumentContainerPartitionRangeEnumerator(
+        public ReadFeedPartitionRangeEnumerator(
             IDocumentContainer documentContainer,
             FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken,
-            DocumentContainerState state = null)
+            ReadFeedState state = null)
             : base(
                   feedRange,
                   cancellationToken,
-                  state ?? new DocumentContainerState(resourceIdentifier: ResourceId.Empty))
+                  state)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.pageSize = pageSize;
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<DocumentContainerPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.documentContainer.MonadicReadFeedAsync(
+        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.documentContainer.MonadicReadFeedAsync(
             feedRange: this.Range,
-            resourceIdentifer: this.State.ResourceIdentifer,
+            readFeedState: this.State,
             pageSize: this.pageSize,
             cancellationToken: cancellationToken);
     }
