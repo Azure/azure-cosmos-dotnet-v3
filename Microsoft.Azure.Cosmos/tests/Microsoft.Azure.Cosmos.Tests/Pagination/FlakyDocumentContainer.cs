@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -15,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
-    using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     /// <summary>
     /// Implementation of <see cref="IMonadicDocumentContainer"/> that composes another <see cref="IMonadicDocumentContainer"/> and randomly adds in exceptions.
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             ResourceId resourceIdentifer,
             int pageSize,
             CancellationToken cancellationToken)
@@ -109,108 +110,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             return this.documentContainer.MonadicReadFeedAsync(
-                partitionKeyRangeId,
+                feedRange,
                 resourceIdentifer,
-                pageSize,
-                cancellationToken);
-        }
-
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
-            SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            Cosmos.PartitionKey partitionKey,
-            int pageSize,
-            CancellationToken cancellationToken)
-        {
-            if (continuationToken == ContinuationForStartedButNoDocumentsReturned)
-            {
-                continuationToken = null;
-            }
-
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForQuery;
-            }
-
-            if (this.ShouldReturnEmptyPage())
-            {
-                string nonNullContinuationToken;
-                if (continuationToken == null)
-                {
-                    // We can't return a null continuation, since that signals the query has ended.
-                    nonNullContinuationToken = ContinuationForStartedButNoDocumentsReturned;
-                }
-                else
-                {
-                    nonNullContinuationToken = continuationToken;
-                }
-
-                return Task.FromResult(
-                    TryCatch<QueryPage>.FromResult(
-                        new QueryPage(
-                            documents: new List<CosmosElement>(),
-                            requestCharge: 42,
-                            activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[]".Length,
-                            cosmosQueryExecutionInfo: default,
-                            disallowContinuationTokenMessage: default,
-                            state: new QueryState(CosmosString.Create(nonNullContinuationToken)))));
-            }
-
-            return this.documentContainer.MonadicQueryAsync(
-                sqlQuerySpec,
-                continuationToken,
-                partitionKey,
-                pageSize,
-                cancellationToken);
-        }
-
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
-            SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            int partitionKeyRangeId,
-            int pageSize,
-            CancellationToken cancellationToken)
-        {
-            if (continuationToken == ContinuationForStartedButNoDocumentsReturned)
-            {
-                continuationToken = null;
-            }
-
-            if (this.ShouldReturn429())
-            {
-                return ThrottleForQuery;
-            }
-
-            if (this.ShouldReturnEmptyPage())
-            {
-                string nonNullContinuationToken;
-                if (continuationToken == null)
-                {
-                    // We can't return a null continuation, since that signals the query has ended.
-                    nonNullContinuationToken = ContinuationForStartedButNoDocumentsReturned;
-                }
-                else
-                {
-                    nonNullContinuationToken = continuationToken;
-                }
-
-                return Task.FromResult(
-                    TryCatch<QueryPage>.FromResult(
-                        new QueryPage(
-                            documents: new List<CosmosElement>(),
-                            requestCharge: 42,
-                            activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: "[]".Length,
-                            cosmosQueryExecutionInfo: default,
-                            disallowContinuationTokenMessage: default,
-                            state: new QueryState(CosmosString.Create(nonNullContinuationToken)))));
-            }
-
-            return this.documentContainer.MonadicQueryAsync(
-                sqlQuerySpec,
-                continuationToken,
-                partitionKeyRangeId,
                 pageSize,
                 cancellationToken);
         }
@@ -266,18 +167,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch> MonadicSplitAsync(
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => this.documentContainer.MonadicSplitAsync(
-                partitionKeyRangeId,
+                feedRange,
                 cancellationToken);
 
-        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetChildRangeAsync(
-            PartitionKeyRange partitionKeyRange,
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
+            FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
-                partitionKeyRange,
+                feedRange,
                 cancellationToken);
 
-        public Task<TryCatch<List<PartitionKeyRange>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 

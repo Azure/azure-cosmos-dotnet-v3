@@ -73,19 +73,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             }
             else
             {
-                // Left most and any non null continuations
-                List<(PartitionKeyRange, QueryState)> rangesAndStates = crossPartitionState.Value.OrderBy(tuple => tuple.Item1, PartitionKeyRangeComparer.Singleton).ToList();
+                // left most and any non null continuations
+                List<(FeedRangeInternal, QueryState)> rangesAndStates = crossPartitionState
+                    .Value
+                    .OrderBy(tuple => (FeedRangeEpk)tuple.Item1, EpkRangeComparer.Singleton)
+                    .ToList();
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
                 for (int i = 0; i < rangesAndStates.Count; i++)
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
 
-                    (PartitionKeyRange range, QueryState state) = rangesAndStates[i];
+                    (FeedRangeInternal range, QueryState state) = rangesAndStates[i];
                     if ((i == 0) || (state != null))
                     {
                         ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                             token: state != null ? ((CosmosString)state.Value).Value : null,
-                            range: range.ToRange());
+                            range: ((FeedRangeEpk)range).Range);
 
                         activeParallelContinuationTokens.Add(parallelContinuationToken);
                     }
@@ -114,7 +117,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
-            IReadOnlyList<PartitionKeyRange> targetRanges,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            Cosmos.PartitionKey? partitionKey,
             int pageSize,
             int maxConcurrency,
             CosmosElement continuationToken,
@@ -145,8 +149,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
-                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize),
-                Comparer.Singleton,
+                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize, partitionKey, cancellationToken),
+                comparer: Comparer.Singleton,
                 maxConcurrency,
                 state: state,
                 cancellationToken: cancellationToken);
@@ -157,12 +161,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
         private static TryCatch<CrossPartitionState<QueryState>> MonadicExtractState(
             CosmosElement continuationToken,
-            IReadOnlyList<PartitionKeyRange> ranges)
+            IReadOnlyList<FeedRangeEpk> ranges)
         {
             if (continuationToken == null)
             {
                 // Full fan out to the ranges with null continuations
-                CrossPartitionState<QueryState> fullFanOutState = new CrossPartitionState<QueryState>(ranges.Select(range => (range, (QueryState)null)).ToArray());
+                CrossPartitionState<QueryState> fullFanOutState = new CrossPartitionState<QueryState>(ranges.Select(range => ((FeedRangeInternal)range, (QueryState)null)).ToArray());
                 return TryCatch<CrossPartitionState<QueryState>>.FromResult(fullFanOutState);
             }
 
@@ -203,20 +207,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             }
 
             PartitionMapping<ParallelContinuationToken> partitionMapping = partitionMappingMonad.Result;
-            List<(PartitionKeyRange, QueryState)> rangesAndStates = new List<(PartitionKeyRange, QueryState)>();
+            List<(FeedRangeInternal, QueryState)> rangesAndStates = new List<(FeedRangeInternal, QueryState)>();
 
-            List<IReadOnlyDictionary<PartitionKeyRange, ParallelContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<PartitionKeyRange, ParallelContinuationToken>>()
+            List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>>()
             {
                 // Skip all the partitions left of the target range, since they have already been drained fully.
                 partitionMapping.TargetPartition,
                 partitionMapping.PartitionsRightOfTarget,
             };
 
-            foreach (IReadOnlyDictionary<PartitionKeyRange, ParallelContinuationToken> rangeToInitalize in rangesToInitialize)
+            foreach (IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken> rangeToInitalize in rangesToInitialize)
             {
-                foreach (KeyValuePair<PartitionKeyRange, ParallelContinuationToken> kvp in rangeToInitalize)
+                foreach (KeyValuePair<FeedRangeEpk, ParallelContinuationToken> kvp in rangeToInitalize)
                 {
-                    (PartitionKeyRange, QueryState) rangeAndState = (kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token)) : null);
+                    (FeedRangeInternal, QueryState) rangeAndState = (kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token)) : null);
                     rangesAndStates.Add(rangeAndState);
                 }
             }
@@ -229,18 +233,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            int pageSize) => (PartitionKeyRange range, QueryState state) => new QueryPartitionRangePageAsyncEnumerator(
+            int pageSize,
+            Cosmos.PartitionKey? partitionKey,
+            CancellationToken cancellationToken) => (FeedRangeInternal range, QueryState state) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 range,
+                partitionKey,
                 pageSize,
-                cancellationToken: default,
+                cancellationToken: cancellationToken,
                 state);
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
             this.cancellationToken = cancellationToken;
-
         }
 
         private sealed class Comparer : IComparer<PartitionRangePageAsyncEnumerator<QueryPage, QueryState>>
@@ -258,8 +264,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
                 // Either both don't have results or both do.
                 return string.CompareOrdinal(
-                    partitionRangePageEnumerator1.Range.MinInclusive,
-                    partitionRangePageEnumerator2.Range.MinInclusive);
+                    ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,
+                    ((FeedRangeEpk)partitionRangePageEnumerator2.Range).Range.Min);
             }
         }
     }

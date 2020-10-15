@@ -1217,7 +1217,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 using (FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
                     queryText: "SELECT r.id FROM root r WHERE r._ts > 0",
-                    requestOptions: new QueryRequestOptions() { ResponseContinuationTokenLimitInKb = 0, MaxItemCount = 10, MaxConcurrency = 1 }))
+                    requestOptions: new QueryRequestOptions() 
+                    { 
+                        ResponseContinuationTokenLimitInKb = 0, 
+                        MaxItemCount = 10, 
+                        MaxConcurrency = 1 
+                    }))
                 {
                     await resultSet.ReadNextAsync();
                 }
