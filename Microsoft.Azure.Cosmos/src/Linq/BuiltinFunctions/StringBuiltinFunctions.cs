@@ -159,18 +159,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private sealed class SqlStringWithComparisonVisitor : BuiltinFunctionVisitor
         {
-            private static readonly HashSet<StringComparison> IgnoreCaseComparisons = new HashSet<StringComparison>(new[]
-            {
-                StringComparison.CurrentCultureIgnoreCase,
-                StringComparison.InvariantCultureIgnoreCase,
-                StringComparison.OrdinalIgnoreCase
-            });
-
-            private static readonly HashSet<StringComparison> SensitiveCaseComparisons = new HashSet<StringComparison>(new[]
+            private static readonly IImmutableSet<StringComparison> SensitiveCaseComparisons = ImmutableHashSet.Create<StringComparison>(new[]
             {
                 StringComparison.CurrentCulture,
                 StringComparison.InvariantCulture,
                 StringComparison.Ordinal
+            });
+
+            private static readonly IImmutableSet<StringComparison> IgnoreCaseComparisons = ImmutableHashSet.Create<StringComparison>(new[]
+            {
+                StringComparison.CurrentCultureIgnoreCase,
+                StringComparison.InvariantCultureIgnoreCase,
+                StringComparison.OrdinalIgnoreCase
             });
 
             public string SqlName { get; }
