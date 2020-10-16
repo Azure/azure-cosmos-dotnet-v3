@@ -666,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
             // If all the pages are buffered then several of the normal summary validation will fail.
-            if (diagnosticsContext.GetTotalRequestCount() > 0)
+            if (diagnosticsContext.GetTotalResponseCount() > 0)
             {
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
