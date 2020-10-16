@@ -1,9 +1,13 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+
+
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.ObjectModel;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -18,6 +22,9 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="UniqueKeyPolicy"/>
     public class UniqueKey
     {
+        [JsonProperty(PropertyName = Constants.Properties.Filter, NullValueHandling = NullValueHandling.Ignore)]
+        private SqlQuerySpec querySpec;
+
         /// <summary>
         /// Gets the paths, a set of which must be unique for each document in the Azure Cosmos DB service.
         /// </summary>
@@ -31,5 +38,14 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; internal set; } = new Collection<string>();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [JsonIgnore]
+        public QueryDefinition Filter {
+            get => this.querySpec == null ? null : new QueryDefinition(this.querySpec);
+            set => this.querySpec = value.ToSqlQuerySpec();
+        }
     }
 }

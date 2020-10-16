@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.CodeDom.Compiler;
+
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -115,6 +117,21 @@ namespace Microsoft.Azure.Cosmos
                     streamWriter.Flush();
                 }
             }
+
+            StringBuilder stringBuilder = new StringBuilder();
+            using (TextWriter streamWriter = new StringWriter(stringBuilder))
+            {
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    JsonSerializer jsonSerializer = this.GetSerializer();
+                    jsonSerializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            string res = stringBuilder.ToString();
 
             streamPayload.Position = 0;
             return streamPayload;

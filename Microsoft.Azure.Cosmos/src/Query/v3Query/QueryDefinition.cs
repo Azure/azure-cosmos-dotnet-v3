@@ -14,7 +14,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        private Dictionary<string, SqlParameter> SqlParameters { get; }
+        /// <summary>
+        /// 
+        /// </summary>
+#if INTERNAL
+        public
+#else
+        private
+#endif
+        Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
         /// Create a <see cref="QueryDefinition"/>

@@ -15,7 +15,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// Unlike in relation SQL databases, they don't have types associated with them.
     /// </remarks>
     [DataContract]
-    internal sealed class SqlParameter : IEquatable<SqlParameter>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+        sealed class SqlParameter : IEquatable<SqlParameter>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlParameter"/> class for the Azure Cosmos DB service.
