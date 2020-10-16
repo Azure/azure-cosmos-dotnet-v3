@@ -32,24 +32,24 @@
             //public static readonly Payload Null = Payload.Create(name: "null", "null");
             //public static readonly Payload True = Payload.Create(name: "true", "true");
             //public static readonly Payload False = Payload.Create(name: "false", "false");
-            public static readonly Payload Array = Payload.Create(name: "array", "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
-            //public static readonly Payload Object = Payload.Create(name: "object", @"{
-            //    ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
-            //    ""double"": 0.18963001816981939,
-            //    ""int"": -1330192615,
-            //    ""string"": ""XCPCFXPHHF"",
-            //    ""boolean"": true,
-            //    ""null"": null,
-            //    ""datetime"": ""2526-07-11T18:18:16.4520716"",
-            //    ""spatialPoint"": {
-            //        ""type"": ""Point"",
-            //        ""coordinates"": [
-            //            118.9897,
-            //            -46.6781
-            //        ]
-            //    },
-            //    ""text"": ""tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby""
-            //}");
+            //public static readonly Payload Array = Payload.Create(name: "array", "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
+            public static readonly Payload Object = Payload.Create(name: "object", @"{
+                ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
+                ""double"": 0.18963001816981939,
+                ""int"": -1330192615,
+                ""string"": ""XCPCFXPHHF"",
+                ""boolean"": true,
+                ""null"": null,
+                ""datetime"": ""2526-07-11T18:18:16.4520716"",
+                ""spatialPoint"": {
+                    ""type"": ""Point"",
+                    ""coordinates"": [
+                        118.9897,
+                        -46.6781
+                    ]
+                },
+                ""text"": ""tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby""
+            }");
         }
 
         [Benchmark]
@@ -138,12 +138,11 @@
                     }
 
                     // Navigates using values
-                    foreach(CosmosElement value in cosmosObject.Values)
+                    foreach (CosmosElement value in cosmosObject.Values)
                     {
                         Access(value);
                     }
 
-                    
                     for (int i = 0; i < 10; i++)
                     {
                         // Keys should be cached

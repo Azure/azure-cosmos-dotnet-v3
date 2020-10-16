@@ -204,9 +204,26 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 "Array did not return the item from the cache.");
 
             CosmosObject lazilyDeserializedPerson = lazilyDeserializedPeople[0] as CosmosObject;
-            Assert.IsTrue(
-                object.ReferenceEquals(lazilyDeserializedPerson[nameof(Person.Age)], lazilyDeserializedPerson[nameof(Person.Age)]),
-                "Object did not return the property from the cache.");
+            foreach (string key in lazilyDeserializedPerson.Keys)
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(lazilyDeserializedPerson[key], lazilyDeserializedPerson[key]),
+                    "Object property was not served from the cache");
+            }
+
+            foreach ((string key1, string key2) in lazilyDeserializedPerson.Keys.Zip(lazilyDeserializedPerson.Keys, (first, second) => (first, second)))
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(key1, key2),
+                    "Object keys are not served from the cache.");
+            }
+
+            foreach ((CosmosElement value1, CosmosElement value2) in lazilyDeserializedPerson.Values.Zip(lazilyDeserializedPerson.Values, (first, second) => (first, second)))
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(value1, value2),
+                    "Object values are not served from the cache.");
+            }
 
             CosmosString personName = lazilyDeserializedPerson[nameof(Person.Name)] as CosmosString;
             Assert.IsTrue(
