@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (InvalidOperationException ex)
             {
-                Assert.AreEqual("For use of 'MdeAEAes256CbcHmacSha256Randomized' algorithm, DekProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
+                Assert.AreEqual("For use of 'MdeAEAes256CbcHmacSha256Randomized' algorithm, DekProvider needs to be initialized with MdeKeyWrapProvider.", ex.Message);
             }
         }
 
@@ -1783,6 +1783,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                     dataEncryptionKeyId,
+                    encryptionAlgorithm,
                     cancellationToken);
 
                 if (dek == null)
@@ -1801,6 +1802,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
                     dataEncryptionKeyId,
+                    encryptionAlgorithm,
                     cancellationToken);
 
                 return dek.EncryptData(plainText);

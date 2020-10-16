@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             DataEncryptionKeyProperties dekProperties,
             byte[] rawDek,
             Data.Encryption.Cryptography.EncryptionType encryptionType,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider)
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? cacheTimeToLive)
         {
             this.rawDek = rawDek ?? throw new ArgumentNullException(nameof(rawDek));
 
@@ -44,15 +45,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
 
+            string keyName = dekProperties.EncryptionKeyWrapMetadata.Name;
+
+            /* A legacy DEK may not have a Name value in meta-data*/
+            if (string.IsNullOrWhiteSpace(keyName))
+            {
+                keyName = dekProperties.EncryptionKeyWrapMetadata.Value;
+            }
+
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                dekProperties.EncryptionKeyWrapMetadata.Name,
+                keyName,
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
-            ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
-                dekProperties.Id,
-                keyEncryptionKey,
-                dekProperties.WrappedDataEncryptionKey);
+            ProtectedDataEncryptionKey protectedDataEncryptionKey = null;
+            if (cacheTimeToLive.HasValue)
+            {
+                // no caching
+                if (cacheTimeToLive.Value == TimeSpan.FromMilliseconds(0))
+                {
+                    protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                        dekProperties.Id,
+                        keyEncryptionKey,
+                        dekProperties.WrappedDataEncryptionKey);
+                }
+                else
+                {
+                    protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                       dekProperties.Id,
+                       keyEncryptionKey,
+                       dekProperties.WrappedDataEncryptionKey);
+
+                    protectedDataEncryptionKey.TimeToLive = cacheTimeToLive.Value;
+                }
+            }
 
             this.mdeEncryptionAlgorithm = Data.Encryption.Cryptography.EncryptionAlgorithm.GetOrCreate(
                 protectedDataEncryptionKey,

@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Data encryption key bytes.</returns>
         public abstract Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken);
     }
 }

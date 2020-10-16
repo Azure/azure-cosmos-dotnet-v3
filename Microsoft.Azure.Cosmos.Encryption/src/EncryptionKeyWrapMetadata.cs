@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
             this.Algorithm = algorithm;
-            this.Name = name;
+            this.Name = name ?? this.Value;
         }
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]

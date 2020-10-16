@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal DekCache DekCache { get; }
 
+        internal TimeSpan? CacheTimeToLive { get; }
+
         internal Container Container
         {
             get
@@ -37,9 +39,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Gets a provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
+        /// Gets a provider of type EncryptionKeyWrapProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
         /// </summary>
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
+
+        /// <summary>
+        /// Gets a provider of type EncryptionKeyStoreProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
+        /// </summary>
+        public EncryptionKeyWrapProvider EncryptionKeyStoreWrapProvider { get; }
 
         /// <summary>
         /// Gets Container for data encryption keys.
@@ -64,19 +71,41 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
         /// </summary>
         /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider's ProtectedDataEncryptionKey before having to refresh.Default or 0 results in no Caching.</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? cacheTimeToLive = null,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
-            if (encryptionKeyStoreProvider == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            }
-
-            this.EncryptionKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
+            this.EncryptionKeyStoreWrapProvider = new MdeKeyWrapProvider(
+                encryptionKeyStoreProvider
+                ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.CacheTimeToLive = cacheTimeToLive.HasValue == true ? cacheTimeToLive.Value : TimeSpan.FromMilliseconds(Constants.PdekDefaultTTL);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
+        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider ProtectedDataEncryptionKey before having to refresh.Default or 0 results in no Caching.</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? cacheTimeToLive = null,
+            TimeSpan? dekPropertiesTimeToLive = null)
+        {
+            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+            this.EncryptionKeyStoreWrapProvider = new MdeKeyWrapProvider(
+                encryptionKeyStoreProvider
+                ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)));
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.CacheTimeToLive = cacheTimeToLive.HasValue == true ? cacheTimeToLive.Value : TimeSpan.FromMilliseconds(Constants.PdekDefaultTTL);
         }
 
         /// <summary>
@@ -119,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <inheritdoc/>
         public override async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
+            string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
             DataEncryptionKeyProperties dataEncryptionKeyProperties = await this.dataEncryptionKeyContainerCore.FetchDataEncryptionKeyPropertiesAsync(
@@ -128,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 dataEncryptionKeyProperties,
+                encryptionAlgorithm,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 

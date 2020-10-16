@@ -14,5 +14,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string EncryptionFormatVersion = "_ef";
         public const string EncryptedPaths = "_ep";
         public const int DekPropertiesTTL = 120;
+        public const int PdekDefaultTTL = 0;
     }
 }

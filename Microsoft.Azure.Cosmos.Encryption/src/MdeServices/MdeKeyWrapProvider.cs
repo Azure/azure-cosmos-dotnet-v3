@@ -30,8 +30,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(metadata));
             }
 
+            string keyName = metadata.Name;
+
+            /* A legacy DEK may not have a Name value in meta-data*/
+            if (string.IsNullOrWhiteSpace(keyName))
+            {
+                keyName = metadata.Value;
+            }
+
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                metadata.Name,
+                keyName,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
@@ -49,8 +57,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(metadata));
             }
 
+            string keyName = metadata.Name;
+
+            /* A legacy DEK may not have a Name value in meta-data*/
+            if (string.IsNullOrWhiteSpace(keyName))
+            {
+                keyName = metadata.Value;
+            }
+
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                metadata.Name,
+                keyName,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
