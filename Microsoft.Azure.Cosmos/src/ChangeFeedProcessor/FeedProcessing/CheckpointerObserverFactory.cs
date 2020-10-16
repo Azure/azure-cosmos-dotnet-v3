@@ -23,9 +23,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         public CheckpointerObserverFactory(ChangeFeedObserverFactory observerFactory, CheckpointFrequency checkpointFrequency)
         {
             if (observerFactory == null)
+            {
                 throw new ArgumentNullException(nameof(observerFactory));
+            }
+
             if (checkpointFrequency == null)
+            {
                 throw new ArgumentNullException(nameof(checkpointFrequency));
+            }
 
             this.observerFactory = observerFactory;
             this.checkpointFrequency = checkpointFrequency;
@@ -38,7 +43,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         public override ChangeFeedObserver CreateObserver()
         {
             ChangeFeedObserver observer = new ObserverExceptionWrappingChangeFeedObserverDecorator(this.observerFactory.CreateObserver());
-            if (this.checkpointFrequency.ExplicitCheckpoint) return observer;
+            if (this.checkpointFrequency.ExplicitCheckpoint)
+            {
+                return observer;
+            }
 
             return new AutoCheckpointer(this.checkpointFrequency, observer);
         }

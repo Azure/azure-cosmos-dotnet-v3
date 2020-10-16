@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Internal feed iterator API for casting and mocking purposes.
@@ -20,5 +19,12 @@ namespace Microsoft.Azure.Cosmos
     abstract class FeedIteratorInternal : FeedIterator
     {
         public abstract CosmosElement GetCosmosElementContinuationToken();
+
+        public static bool IsRetriableException(CosmosException cosmosException)
+        {
+            return ((int)cosmosException.StatusCode == 429)
+                || (cosmosException.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+                || (cosmosException.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable);
+        }
     }
 }

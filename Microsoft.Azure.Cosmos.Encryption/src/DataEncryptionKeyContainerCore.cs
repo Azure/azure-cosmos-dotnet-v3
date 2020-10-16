@@ -28,6 +28,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.DekProvider.Container.GetItemQueryIterator<T>(queryText, continuationToken, requestOptions);
         }
 
+        public override FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return this.DekProvider.Container.GetItemQueryIterator<T>(queryDefinition, continuationToken, requestOptions);
+        }
+
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
                 string id,
                 string encryptionAlgorithm,

@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.leaseRenewer = Mock.Of<LeaseRenewer>();
             this.partitionProcessor = Mock.Of<FeedProcessor>();
-            this.observer = Mock.Of<ChangeFeedObserver>();
+            this.observer = Mock.Of<ChangeFeedObserver<dynamic>>();
 
-            this.sut = new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer);
+            sut = new PartitionSupervisorCore<dynamic>(lease, observer, partitionProcessor, leaseRenewer);
         }
 
         [TestMethod]
@@ -134,9 +134,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task RunObserver_ShouldPassPartitionToObserver_WhenExecuted()
         {
-            Mock.Get(this.observer)
-                .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Callback(() => this.shutdownToken.Cancel());
+            Mock.Get(observer)
+                .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<dynamic>>(), It.IsAny<CancellationToken>()))
+                .Callback(() => shutdownToken.Cancel());
 
             await this.sut.RunAsync(this.shutdownToken.Token).ConfigureAwait(false);
             Mock.Get(this.observer)

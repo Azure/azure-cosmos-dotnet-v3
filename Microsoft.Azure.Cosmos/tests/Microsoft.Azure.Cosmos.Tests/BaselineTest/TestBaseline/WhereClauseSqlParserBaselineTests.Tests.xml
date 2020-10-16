@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * WHERE true]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * WHERE true]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Case Insensitive]]></Description>
+      <Query><![CDATA[SELECT * WhErE true]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * WHERE true]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[wrong keyword]]></Description>
+      <Query><![CDATA[SELECT * WHEE true]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Invalid extra stuff]]></Description>
+      <Query><![CDATA[SELECT * WHERE true, true]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>

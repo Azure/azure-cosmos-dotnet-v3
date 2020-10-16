@@ -193,11 +193,5 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             bufferedUtf8StringValue = default;
             return false;
         }
-
-        public override bool TryGetBufferedRawJsonToken(out ReadOnlyMemory<byte> bufferedRawJsonToken)
-        {
-            bufferedRawJsonToken = default;
-            return false;
-        }
     }
 }

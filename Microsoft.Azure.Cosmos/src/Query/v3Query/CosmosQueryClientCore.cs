@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -33,7 +34,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerInternal cosmosContainerCore;
         private readonly DocumentClient documentClient;
         private readonly SemaphoreSlim semaphore;
-        private QueryPartitionProvider queryPartitionProvider;
 
         public CosmosQueryClientCore(
             CosmosClientContext clientContext,
@@ -88,26 +88,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
-            if (this.queryPartitionProvider == null)
-            {
-                try
-                {
-                    await this.semaphore.WaitAsync(cancellationToken);
-
-                    if (this.queryPartitionProvider == null)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        IDictionary<string, object> queryConfiguration = await this.documentClient.GetQueryEngineConfigurationAsync();
-                        this.queryPartitionProvider = new QueryPartitionProvider(queryConfiguration);
-                    }
-                }
-                finally
-                {
-                    this.semaphore.Release();
-                }
-            }
-
-            return this.queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
+            return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -116,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        public override async Task<QueryResponseCore> ExecuteItemQueryAsync(
+        public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -281,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
         }
 
-        private static QueryResponseCore GetCosmosElementResponse(
+        private static TryCatch<QueryPage> GetCosmosElementResponse(
             Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
@@ -301,12 +282,22 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return QueryResponseCore.CreateFailure(
-                        statusCode: cosmosResponseMessage.StatusCode,
-                        subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
-                        cosmosException: cosmosResponseMessage.CosmosException,
-                        requestCharge: cosmosResponseMessage.Headers.RequestCharge,
-                        activityId: cosmosResponseMessage.Headers.ActivityId);
+                    CosmosException exception;
+                    if (cosmosResponseMessage.CosmosException != null)
+                    {
+                        exception = cosmosResponseMessage.CosmosException;
+                    }
+                    else
+                    {
+                        exception = new CosmosException(
+                            cosmosResponseMessage.ErrorMessage,
+                            cosmosResponseMessage.StatusCode,
+                            (int)cosmosResponseMessage.Headers.SubStatusCode,
+                            cosmosResponseMessage.Headers.ActivityId,
+                            cosmosResponseMessage.Headers.RequestCharge);
+                    }
+
+                    return TryCatch<QueryPage>.FromException(exception);
                 }
 
                 if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
@@ -316,7 +307,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long responseLengthBytes = memoryStream.Length;
-                CosmosArray cosmosArray = CosmosQueryClientCore.ParseElementsFromRestStream(
+                CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
                     memoryStream,
                     resourceType,
                     requestOptions.CosmosSerializationFormatOptions);
@@ -331,14 +322,26 @@ namespace Microsoft.Azure.Cosmos
                     cosmosQueryExecutionInfo = default;
                 }
 
-                return QueryResponseCore.CreateSuccess(
-                    result: cosmosArray,
-                    requestCharge: cosmosResponseMessage.Headers.RequestCharge,
-                    activityId: cosmosResponseMessage.Headers.ActivityId,
-                    responseLengthBytes: responseLengthBytes,
+                QueryState queryState;
+                if (cosmosResponseMessage.Headers.ContinuationToken != null)
+                {
+                    queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
+                }
+                else
+                {
+                    queryState = default;
+                }
+
+                QueryPage response = new QueryPage(
+                    documents,
+                    cosmosResponseMessage.Headers.RequestCharge,
+                    cosmosResponseMessage.Headers.ActivityId,
+                    responseLengthBytes,
+                    cosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: null,
-                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken,
-                    cosmosQueryExecutionInfo: cosmosQueryExecutionInfo);
+                    queryState);
+
+                return TryCatch<QueryPage>.FromResult(response);
             }
         }
 

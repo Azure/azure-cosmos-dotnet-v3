@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             // This is needed because in order to Mock a TransportClient we previously need an instance of CosmosClient
-            CosmosClient internalClient = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient internalClient = MockCosmosUtil.CreateMockCosmosClient();
             internalClient.DocumentClient.GatewayStoreModel = MockGatewayStoreModel(sendFunc);
             internalClient.DocumentClient.StoreModel = MockServerStoreModel(internalClient.DocumentClient.Session, sendDirectFunc);
 
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(internalClient);
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => {
                     builder
                         .AddCustomHandlers(retryHandler, transportHandler);
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
-                new HttpClient(messageHandler));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
         }
 
         private static Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

@@ -64,15 +64,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// <seealso cref="ChangeFeedOptions.StartTime"/>
         public DateTime? StartTime
         {
-            get
-            {
-                return this.startTime;
-            }
+            get => this.startTime;
 
             set
             {
                 if (value.HasValue && value.Value.Kind == DateTimeKind.Unspecified)
+                {
                     throw new ArgumentException("StartTime cannot have DateTimeKind.Unspecified", nameof(value));
+                }
+
                 this.startTime = value;
             }
         }

@@ -36,12 +36,24 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         public static SqlSelectClause Create(
             SqlSelectSpec selectSpec,
             SqlTopSpec topSpec = null,
-            bool hasDistinct = false) => new SqlSelectClause(selectSpec, topSpec, hasDistinct);
+            bool hasDistinct = false)
+        {
+            return new SqlSelectClause(selectSpec, topSpec, hasDistinct);
+        }
 
-        public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor) => visitor.Visit(this);
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
 
-        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input) => visitor.Visit(this, input);
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
     }
 }

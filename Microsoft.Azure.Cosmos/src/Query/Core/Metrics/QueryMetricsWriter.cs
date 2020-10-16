@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteRuntimesExecutionTimes(queryMetrics.BackendMetrics.RuntimeExecutionTimes);
 
             this.WriteDocumentWriteTime(queryMetrics.BackendMetrics.DocumentWriteTime);
-
+#if false
             // ClientSideMetrics
             this.WriteClientSideMetrics(queryMetrics.ClientSideMetrics);
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteBeforeIndexUtilizationInfo();
 
             this.WriteIndexUtilizationInfo(queryMetrics.IndexUtilizationInfo);
-
+#endif
             this.WriteAfterQueryMetrics();
         }
 

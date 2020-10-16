@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
     /// Abstraction which allows defining of custom message handlers.

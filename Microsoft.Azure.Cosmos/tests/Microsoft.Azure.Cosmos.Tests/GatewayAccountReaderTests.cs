@@ -6,12 +6,14 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net.Http;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
     using System.Threading;
     using System.Net;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Cosmos.Tests;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.
@@ -26,12 +28,10 @@ namespace Microsoft.Azure.Cosmos
             HttpClient staticHttpClient = new HttpClient(messageHandler);
 
             GatewayAccountReader accountReader = new GatewayAccountReader(
-                new Uri("https://localhost"),
-                Mock.Of<IComputeHash>(),
-                false,
-                null,
-                new ConnectionPolicy(),
-                staticHttpClient);
+                serviceEndpoint: new Uri("https://localhost"),
+                cosmosAuthorization: Mock.Of<AuthorizationTokenProvider>(),
+                connectionPolicy: new ConnectionPolicy(),
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => staticHttpClient));
 
             DocumentClientException exception = await Assert.ThrowsExceptionAsync<DocumentClientException>(() => accountReader.InitializeReaderAsync());
             Assert.AreEqual(HttpStatusCode.Conflict, exception.StatusCode);
@@ -41,10 +41,27 @@ namespace Microsoft.Azure.Cosmos
         public async Task DocumentClient_BuildHttpClientFactory_WithHandler()
         {
             HttpMessageHandler messageHandler = new CustomMessageHandler();
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
-            HttpClient httpClient = DocumentClient.BuildHttpClient(connectionPolicy, ApiType.None, messageHandler);
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy()
+            {
+                HttpClientFactory = () => new HttpClient(messageHandler)
+            };
+
+            CosmosHttpClient httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: ApiType.None,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
+
             Assert.IsNotNull(httpClient);
-            HttpResponseMessage response = await httpClient.GetAsync("https://localhost");
+            HttpResponseMessage response = await httpClient.GetAsync(
+                uri: new Uri("https://localhost"),
+                additionalHeaders: new DictionaryNameValueCollection(),
+                resourceType: ResourceType.Document,
+                diagnosticsContext: null,
+                cancellationToken: default);
+
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
         }
 
@@ -61,8 +78,14 @@ namespace Microsoft.Azure.Cosmos
                 HttpClientFactory = mockFactory.Object
             };
 
-            HttpClient httpClient = DocumentClient.BuildHttpClient(connectionPolicy, ApiType.None, messageHandler: null);
-            Assert.IsNotNull(httpClient);
+            CosmosHttpClient httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                apiType: ApiType.None,
+                eventSource: DocumentClientEventSource.Instance,
+                connectionPolicy: connectionPolicy,
+                httpMessageHandler: null,
+                sendingRequestEventArgs: null,
+                receivedResponseEventArgs: null);
+
             Assert.IsNotNull(httpClient);
 
             Mock.Get(mockFactory.Object)

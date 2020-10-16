@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly Action<DocumentServiceLeaseStoreManager,
                 ContainerInternal,
                 string,
-                string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
                 ContainerInternal> applyBuilderConfiguration;
@@ -31,7 +30,6 @@ namespace Microsoft.Azure.Cosmos
         private ContainerInternal leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
-        private string monitoredContainerRid;
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
@@ -41,13 +39,14 @@ namespace Microsoft.Azure.Cosmos
             Action<DocumentServiceLeaseStoreManager,
                 ContainerInternal,
                 string,
-                string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
                 ContainerInternal> applyBuilderConfiguration)
         {
-            this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
-            this.changeFeedLeaseOptions.LeasePrefix = processorName;
+            this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions
+            {
+                LeasePrefix = processorName
+            };
             this.monitoredContainer = container;
             this.changeFeedProcessor = changeFeedProcessor;
             this.applyBuilderConfiguration = applyBuilderConfiguration;
@@ -92,7 +91,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval)
         {
-            if (pollInterval == null) throw new ArgumentNullException(nameof(pollInterval));
+            if (pollInterval == null)
+            {
+                throw new ArgumentNullException(nameof(pollInterval));
+            }
 
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.FeedPollDelay = pollInterval;
@@ -130,7 +132,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
         {
-            if (startTime == null) throw new ArgumentNullException(nameof(startTime));
+            if (startTime == null)
+            {
+                throw new ArgumentNullException(nameof(startTime));
+            }
 
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartTime = startTime;
@@ -144,7 +149,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/>.</returns>
         public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount)
         {
-            if (maxItemCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxItemCount));
+            if (maxItemCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxItemCount));
+            }
 
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
@@ -158,9 +166,20 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithLeaseContainer(Container leaseContainer)
         {
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            if (this.leaseContainer != null)
+            {
+                throw new InvalidOperationException("The builder already defined a lease container.");
+            }
+
+            if (this.LeaseStoreManager != null)
+            {
+                throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+            }
 
             this.leaseContainer = (ContainerInternal)leaseContainer;
             return this;
@@ -175,8 +194,15 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         internal virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
-            if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+            if (this.leaseContainer != null)
+            {
+                throw new InvalidOperationException("The builder already defined a lease container.");
+            }
+
+            if (this.LeaseStoreManager != null)
+            {
+                throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+            }
 
             if (string.IsNullOrEmpty(this.InstanceName))
             {
@@ -199,14 +225,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartContinuation = startContinuation;
-            return this;
-        }
-
-        internal virtual ChangeFeedProcessorBuilder WithMonitoredContainerRid(string monitoredContainerRid)
-        {
-            if (monitoredContainerRid != null) throw new ArgumentNullException(nameof(monitoredContainerRid));
-
-            this.monitoredContainerRid = monitoredContainerRid;
             return this;
         }
 
@@ -237,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.InitializeDefaultOptions();
-            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
+            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;

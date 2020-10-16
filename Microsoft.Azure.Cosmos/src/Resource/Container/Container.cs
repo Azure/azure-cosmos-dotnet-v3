@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -87,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -113,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -137,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> ReplaceContainerStreamAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -156,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -175,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
         public abstract Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
@@ -202,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
         public abstract Task<int?> ReadThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
@@ -240,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
@@ -266,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
@@ -301,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
@@ -344,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Creates a item as an asynchronous operation in the Azure Cosmos service.
@@ -377,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a item from the Azure Cosmos service as an asynchronous operation.
@@ -422,7 +421,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Reads a item from the Azure Cosmos service as an asynchronous operation.
@@ -458,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Upserts an item stream as an asynchronous operation in the Azure Cosmos service.
@@ -504,7 +503,7 @@ namespace Microsoft.Azure.Cosmos
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
@@ -537,7 +536,7 @@ namespace Microsoft.Azure.Cosmos
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
@@ -589,7 +588,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
@@ -630,7 +629,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
 #if INTERNAL
         /// <summary>
@@ -692,7 +691,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
@@ -724,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 #endif
 
         /// <summary>
@@ -760,7 +759,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
@@ -787,7 +786,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
@@ -797,9 +796,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
@@ -1173,6 +1169,20 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
+#if PREVIEW
+        /// <summary>
+        /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
+        /// </summary>
+        /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
+        /// <param name="leaseContainer">Instance of a Cosmos Container that holds the leases.</param>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instance of <see cref="ChangeFeedEstimator"/></returns>
+        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer);
+#endif
 
         /// <summary>
         /// Initializes a new instance of <see cref="TransactionalBatch"/>
@@ -1190,7 +1200,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A list of <see cref="FeedRange"/>.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
@@ -1286,7 +1296,7 @@ namespace Microsoft.Azure.Cosmos
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
