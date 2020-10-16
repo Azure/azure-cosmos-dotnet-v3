@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CancellationToken cancellationToken);
 
         Task<DocumentContainerPage> ReadFeedAsync(
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             ResourceId resourceIdentifier,
             int pageSize,
             CancellationToken cancellationToken);
 
         Task SplitAsync(
-            int partitionKeyRangeId,
+            FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
     }
 }

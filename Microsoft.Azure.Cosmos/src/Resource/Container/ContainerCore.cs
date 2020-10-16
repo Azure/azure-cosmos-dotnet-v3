@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
@@ -121,51 +122,62 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
+            ThroughputResponse throughputResponse = await this.ReadThroughputIfExistsAsync(
+                diagnosticsContext,
+                requestOptions,
+                cancellationToken);
+
+            if (throughputResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw CosmosExceptionFactory.CreateNotFoundException(
+                    message: $"Throughput is not configured for {this.Id}",
+                    headers: throughputResponse.Headers,
+                    diagnosticsContext: diagnosticsContext);
+            }
+
+            return throughputResponse;
         }
 
-        public async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+        public Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+            return this.OfferRetryHelperForStaleRidCacheAsync(
+                (rid) => cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken),
+                diagnosticsContext,
+                cancellationToken);
         }
 
-        public async Task<ThroughputResponse> ReplaceThroughputAsync(
+        public Task<ThroughputResponse> ReplaceThroughputAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             int throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceThroughputAsync(
-                targetRID: rid,
-                throughput: throughput,
+            return this.ReplaceThroughputAsync(
+                diagnosticsContext: diagnosticsContext,
+                throughputProperties: ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+        public Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ThroughputProperties throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceThroughputPropertiesIfExistsAsync(
-                targetRID: rid,
-                throughputProperties: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            return this.OfferRetryHelperForStaleRidCacheAsync(
+                (rid) => cosmosOffers.ReplaceThroughputPropertiesIfExistsAsync(
+                    targetRID: rid,
+                    throughputProperties: throughput,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken),
+                diagnosticsContext,
+                cancellationToken);
         }
 
         public async Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -174,13 +186,21 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReplaceThroughputPropertiesAsync(
-                rid,
+            ThroughputResponse throughputResponse = await this.ReplaceThroughputIfExistsAsync(
+                diagnosticsContext,
                 throughputProperties,
                 requestOptions,
                 cancellationToken);
+
+            if (throughputResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw CosmosExceptionFactory.CreateNotFoundException(
+                    message: $"Throughput is not configured for {this.Id}",
+                    headers: throughputResponse.Headers,
+                    diagnosticsContext: diagnosticsContext);
+            }
+
+            return throughputResponse;
         }
 
         public Task<ResponseMessage> DeleteContainerStreamAsync(
@@ -390,6 +410,48 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken);
                 })
                 .Unwrap();
+        }
+
+        private async Task<ThroughputResponse> OfferRetryHelperForStaleRidCacheAsync(
+            Func<string, Task<ThroughputResponse>> executeOfferOperation,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            ThroughputResponse throughputResponse = await executeOfferOperation(rid);
+            if (throughputResponse.StatusCode != HttpStatusCode.NotFound)
+            {
+                return throughputResponse;
+            }
+
+            // Check if RID cache is stale
+            ResponseMessage responseMessage = await this.ReadContainerStreamAsync(
+                diagnosticsContext: diagnosticsContext,
+                requestOptions: null,
+                cancellationToken: cancellationToken);
+
+            // Container does not exist
+            if (responseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                return new ThroughputResponse(
+                    responseMessage.StatusCode,
+                    responseMessage.Headers,
+                    null,
+                    diagnosticsContext.Diagnostics);
+            }
+
+            responseMessage.EnsureSuccessStatusCode();
+
+            ContainerProperties containerProperties = this.ClientContext.SerializerCore.FromStream<ContainerProperties>(responseMessage.Content);
+
+            // The RIDs match so return the original response.
+            if (string.Equals(rid, containerProperties.ResourceId))
+            {
+                return throughputResponse;
+            }
+
+            // Get the offer with the new rid value
+            return await executeOfferOperation(containerProperties.ResourceId);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
