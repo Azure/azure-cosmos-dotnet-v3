@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.leaseRenewer = Mock.Of<LeaseRenewer>();
             this.partitionProcessor = Mock.Of<FeedProcessor>();
-            this.observer = Mock.Of<ChangeFeedObserver<dynamic>>();
+            this.observer = Mock.Of<ChangeFeedObserver>();
 
-            sut = new PartitionSupervisorCore<dynamic>(lease, observer, partitionProcessor, leaseRenewer);
+            this.sut = new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer);
         }
 
         [TestMethod]
@@ -134,9 +134,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task RunObserver_ShouldPassPartitionToObserver_WhenExecuted()
         {
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<dynamic>>(), It.IsAny<CancellationToken>()))
-                .Callback(() => shutdownToken.Cancel());
+                .Callback(() => this.shutdownToken.Cancel());
 
             await this.sut.RunAsync(this.shutdownToken.Token).ConfigureAwait(false);
             Mock.Get(this.observer)
@@ -147,32 +147,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task RunObserver_ResourceGoneCloseReason_IfProcessorFailedWithPartitionNotFoundException()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new FeedNotFoundException("processorException", "12345"));
 
-            Exception exception = await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            Exception exception = await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => this.sut.RunAsync(this.shutdownToken.Token)).ConfigureAwait(false);
             Assert.AreEqual("processorException", exception.Message);
 
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.ResourceGone));
         }
 
         [TestMethod]
         public async Task RunObserver_ReadSessionNotAvailableCloseReason_IfProcessorFailedWithReadSessionNotAvailableException()
         {
-            Mock.Get(partitionProcessor)
+            Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new FeedReadSessionNotAvailableException("processorException", "12345"));
 
-            Exception exception = await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => sut.RunAsync(shutdownToken.Token)).ConfigureAwait(false);
+            Exception exception = await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => this.sut.RunAsync(this.shutdownToken.Token)).ConfigureAwait(false);
             Assert.AreEqual("processorException", exception.Message);
 
-            Mock.Get(observer)
+            Mock.Get(this.observer)
                 .Verify(feedObserver => feedObserver
-                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == lease.CurrentLeaseToken),
+                    .CloseAsync(It.Is<ChangeFeedObserverContext>(context => context.LeaseToken == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.ReadSessionNotAvailable));
         }
 

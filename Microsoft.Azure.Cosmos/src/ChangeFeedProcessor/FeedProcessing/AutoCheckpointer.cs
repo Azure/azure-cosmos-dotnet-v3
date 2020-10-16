@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 return true;
             }
 
-            if (this.processedDocCount >= this.checkpointFrequency.ProcessedDocumentCount)
+            if (this.processedBatchCount >= this.checkpointFrequency.ProcessedDocumentCount)
             {
                 return true;
             }
