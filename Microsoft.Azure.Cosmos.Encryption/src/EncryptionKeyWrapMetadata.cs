@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
             this.Algorithm = algorithm;
+
+            // This is for backward compatibility, supports Legacy Algorithm based DEKs to be used with MDE algorithm.Using Value/Path as Name.
             this.Name = name ?? this.Value;
         }
 

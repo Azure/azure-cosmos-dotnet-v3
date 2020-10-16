@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
-            ProtectedDataEncryptionKey protectedDataEncryptionKey = null;
+            ProtectedDataEncryptionKey protectedDataEncryptionKey;
             if (cacheTimeToLive.HasValue)
             {
                 // no caching
@@ -78,6 +78,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     protectedDataEncryptionKey.TimeToLive = cacheTimeToLive.Value;
                 }
+            }
+            else
+            {
+                protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                       dekProperties.Id,
+                       keyEncryptionKey,
+                       dekProperties.WrappedDataEncryptionKey);
             }
 
             this.mdeEncryptionAlgorithm = Data.Encryption.Cryptography.EncryptionAlgorithm.GetOrCreate(

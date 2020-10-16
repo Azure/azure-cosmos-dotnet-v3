@@ -92,9 +92,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                  encryptionKeyWrapMetadata.Name,
-                  encryptionKeyWrapMetadata.Value,
-                  mdeKeyWrapProvider.EncryptionKeyStoreProvider);
+                    encryptionKeyWrapMetadata.Name,
+                    encryptionKeyWrapMetadata.Value,
+                    mdeKeyWrapProvider.EncryptionKeyStoreProvider);
 
                 ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
                     encryptionKeyWrapMetadata.Name,
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     unwrapResult.DataEncryptionKey,
                     Data.Encryption.Cryptography.EncryptionType.Randomized,
                     mdeKeyWrapProvider.EncryptionKeyStoreProvider,
-                    this.DekProvider.CacheTimeToLive);
+                    this.DekProvider.PdekCacheTimeToLive);
             }
             else
             {

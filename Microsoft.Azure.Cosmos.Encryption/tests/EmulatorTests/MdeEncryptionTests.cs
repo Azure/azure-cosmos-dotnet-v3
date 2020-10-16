@@ -43,10 +43,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
 
         private static TestKeyWrapProvider legacytestKeyWrapProvider;
-        private static CosmosDataEncryptionKeyProvider dualdekProvider;
+        private static CosmosDataEncryptionKeyProvider dualDekProvider;
         private const string metadataUpdateSuffix = "updated";
         private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
-        private static DataEncryptionKeyProperties legacydekProperties;
+        private static DataEncryptionKeyProperties legacyDekProperties;
         private static TestEncryptor encryptorWithDualWrapProvider;
 
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             _ = context;
             MdeEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            MdeEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(MdeEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
+            MdeEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(MdeEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
             MdeEncryptionTests.encryptor = new TestEncryptor(MdeEncryptionTests.dekProvider);
 
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
@@ -70,10 +70,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             /*For Legacy Compatibility*/
             MdeEncryptionTests.legacytestKeyWrapProvider = new TestKeyWrapProvider();
-            MdeEncryptionTests.dualdekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, MdeEncryptionTests.testKeyStoreProvider,cacheTimeToLive: TimeSpan.FromSeconds(0));
-            await MdeEncryptionTests.dualdekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
-            MdeEncryptionTests.legacydekProperties = await MdeEncryptionTests.CreateLegacyDekAsync(MdeEncryptionTests.dualdekProvider, MdeEncryptionTests.legacydekId);
-            MdeEncryptionTests.encryptorWithDualWrapProvider = new TestEncryptor(MdeEncryptionTests.dualdekProvider);
+            MdeEncryptionTests.dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, MdeEncryptionTests.testKeyStoreProvider,cacheTimeToLive: TimeSpan.FromSeconds(0));
+            await MdeEncryptionTests.dualDekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
+            MdeEncryptionTests.legacyDekProperties = await MdeEncryptionTests.CreateLegacyDekAsync(MdeEncryptionTests.dualDekProvider, MdeEncryptionTests.legacydekId);
+            MdeEncryptionTests.encryptorWithDualWrapProvider = new TestEncryptor(MdeEncryptionTests.dualDekProvider);
         }
 
         [ClassCleanup]
@@ -105,19 +105,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
         }
+
         [TestMethod]
         public async Task EncryptionCreateDekWithDualDekProvider()
         {
-            string dekId = "dekWithDualDekProvider";
-            DataEncryptionKeyProperties dekProperties = await MdeEncryptionTests.CreateDekAsync(MdeEncryptionTests.dualdekProvider, dekId);
+            string dekId = "dekWithDualDekProviderNewAlgo";
+            DataEncryptionKeyProperties dekProperties = await MdeEncryptionTests.CreateDekAsync(MdeEncryptionTests.dualDekProvider, dekId);
             Assert.AreEqual(
                 new EncryptionKeyWrapMetadata(name: "metadata1", value: MdeEncryptionTests.metadata1.Value),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),new TestEncryptionKeyStoreProvider());
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),new TestEncryptionKeyStoreProvider(),TimeSpan.FromMinutes(30));
             await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
+            dekId = "dekWithDualDekProviderLegacyAlgo";
+            dekProperties = await MdeEncryptionTests.CreateLegacyDekAsync(MdeEncryptionTests.dualDekProvider, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(MdeEncryptionTests.metadata1.Value + MdeEncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
         }
 
