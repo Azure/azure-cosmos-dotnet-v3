@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (clientCollectionCache == null)
             {
-                throw new ArgumentNullException("clientCollectionCache");
+                throw new ArgumentNullException(nameof(clientCollectionCache));
             }
 
             this.clientCollectionCache = clientCollectionCache;

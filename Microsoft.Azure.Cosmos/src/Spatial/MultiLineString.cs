@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (lineStrings == null)
             {
-                throw new ArgumentNullException("lineStrings");
+                throw new ArgumentNullException(nameof(lineStrings));
             }
 
             this.LineStrings = new ReadOnlyCollection<LineStringCoordinates>(lineStrings);

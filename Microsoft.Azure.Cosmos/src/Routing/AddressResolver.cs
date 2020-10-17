@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (initiallyResolved == null)
             {
-                throw new ArgumentException("parent");
+                throw new ArgumentNullException(nameof(initiallyResolved));
             }
 
             if (newlyResolved == null)
@@ -633,22 +633,22 @@ namespace Microsoft.Azure.Cosmos
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
 
             if (partitionKeyString == null)
             {
-                throw new ArgumentNullException("partitionKeyString");
+                throw new ArgumentNullException(nameof(partitionKeyString));
             }
 
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             if (routingMap == null)
             {
-                throw new ArgumentNullException("routingMap");
+                throw new ArgumentNullException(nameof(routingMap));
             }
 
             PartitionKeyInternal partitionKey;
@@ -735,12 +735,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (addresses == null)
                 {
-                    throw new ArgumentNullException("addresses");
+                    throw new ArgumentNullException(nameof(addresses));
                 }
 
                 if (serviceIdentity == null)
                 {
-                    throw new ArgumentNullException("serviceIdentity");
+                    throw new ArgumentNullException(nameof(serviceIdentity));
                 }
 
                 this.Addresses = addresses;
@@ -754,12 +754,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (targetPartitionKeyRange == null)
                 {
-                    throw new ArgumentNullException("targetPartitionKeyRange");
+                    throw new ArgumentNullException(nameof(targetPartitionKeyRange));
                 }
 
                 if (addresses == null)
                 {
-                    throw new ArgumentNullException("addresses");
+                    throw new ArgumentNullException(nameof(addresses));
                 }
 
                 this.TargetPartitionKeyRange = targetPartitionKeyRange;

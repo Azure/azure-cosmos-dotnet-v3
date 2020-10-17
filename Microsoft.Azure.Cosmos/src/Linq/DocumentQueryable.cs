@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (querySpec == null)
             {
-                throw new ArgumentNullException("querySpec");
+                throw new ArgumentNullException(nameof(querySpec));
             }
 
             if (string.IsNullOrEmpty(querySpec.QueryText))
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (querySpec == null)
             {
-                throw new ArgumentNullException("querySpec");
+                throw new ArgumentNullException(nameof(querySpec));
             }
 
             if (string.IsNullOrEmpty(querySpec.QueryText))

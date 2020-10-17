@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (points == null)
             {
-                throw new ArgumentNullException("points");
+                throw new ArgumentNullException(nameof(points));
             }
 
             this.Points = new ReadOnlyCollection<Position>(points);

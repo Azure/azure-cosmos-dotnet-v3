@@ -923,7 +923,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (collectionLink == null)
             {
-                throw new ArgumentNullException("collectionLink");
+                throw new ArgumentNullException(nameof(collectionLink));
             }
 
             return new ChangeFeedQuery<Document>(this, ResourceType.Document, collectionLink, feedOptions);

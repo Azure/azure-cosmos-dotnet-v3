@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             if (queryengineConfiguration == null)
             {
-                throw new ArgumentNullException("queryengineConfiguration");
+                throw new ArgumentNullException(nameof(queryengineConfiguration));
             }
 
             if (queryengineConfiguration.Count == 0)
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             if (queryengineConfiguration == null)
             {
-                throw new ArgumentNullException("queryengineConfiguration");
+                throw new ArgumentNullException(nameof(queryengineConfiguration));
             }
 
             if (queryengineConfiguration.Count == 0)

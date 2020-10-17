@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (href == null)
             {
-                throw new ArgumentNullException("href");
+                throw new ArgumentNullException(nameof(href));
             }
 
             this.Href = href;

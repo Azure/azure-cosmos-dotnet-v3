@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (coordinates.Count < 2)
             {
-                throw new ArgumentException("coordinates");
+                throw new ArgumentException(nameof(coordinates));
             }
 
             this.Coordinates = new ReadOnlyCollection<double>(coordinates);

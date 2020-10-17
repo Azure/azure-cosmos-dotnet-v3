@@ -23,12 +23,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (clientCollectionCache == null)
             {
-                throw new ArgumentNullException("clientCollectionCache");
+                throw new ArgumentNullException(nameof(clientCollectionCache));
             }
 
             if (nextPolicy == null)
             {
-                throw new ArgumentNullException("nextPolicy");
+                throw new ArgumentNullException(nameof(nextPolicy));
             }
 
             this.clientCollectionCache = clientCollectionCache;

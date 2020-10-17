@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (rings == null)
             {
-                throw new ArgumentNullException("rings");
+                throw new ArgumentNullException(nameof(rings));
             }
 
             this.Rings = new ReadOnlyCollection<LinearRing>(rings);

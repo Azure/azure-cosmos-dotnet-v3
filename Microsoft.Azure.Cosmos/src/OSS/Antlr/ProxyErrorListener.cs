@@ -26,7 +26,7 @@ namespace Antlr4.Runtime
         {
             if (delegates == null)
             {
-                throw new ArgumentNullException("delegates");
+                throw new ArgumentNullException(nameof(delegates));
             }
             this.delegates = delegates;
         }

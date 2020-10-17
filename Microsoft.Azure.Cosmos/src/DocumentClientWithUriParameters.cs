@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
 
             return this.CreateDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellationToken);
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.CreateDocumentCollectionAsync(databaseUri.OriginalString, documentCollection, options);
         }
@@ -71,12 +71,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
 
             if (documentCollection == null)
             {
-                throw new ArgumentNullException("documentCollection");
+                throw new ArgumentNullException(nameof(documentCollection));
             }
 
             Uri documentCollectionUri = new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}",
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.CreateStoredProcedureAsync(documentCollectionUri.OriginalString, storedProcedure, options);
         }
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.CreateTriggerAsync(documentCollectionUri.OriginalString, trigger, options);
         }
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.CreateUserDefinedFunctionAsync(documentCollectionUri.OriginalString, function, options);
         }
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.CreateUserDefinedTypeAsync(databaseUri.OriginalString, userDefinedType, options);
         }
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
 
             return this.UpsertDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellationToken);
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.UpsertStoredProcedureAsync(documentCollectionUri.OriginalString, storedProcedure, options);
         }
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.UpsertTriggerAsync(documentCollectionUri.OriginalString, trigger, options);
         }
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.UpsertUserDefinedFunctionAsync(documentCollectionUri.OriginalString, function, options);
         }
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.UpsertUserDefinedTypeAsync(databaseUri.OriginalString, userDefinedType, options);
         }
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.DeleteDatabaseAsync(databaseUri.OriginalString, options);
         }
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentUri == null)
             {
-                throw new ArgumentNullException("documentUri");
+                throw new ArgumentNullException(nameof(documentUri));
             }
             return this.DeleteDocumentAsync(documentUri.OriginalString, options, cancellationToken);
         }
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.DeleteDocumentCollectionAsync(documentCollectionUri.OriginalString, options);
         }
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProcedureUri == null)
             {
-                throw new ArgumentNullException("storedProcedureUri");
+                throw new ArgumentNullException(nameof(storedProcedureUri));
             }
             return this.DeleteStoredProcedureAsync(storedProcedureUri.OriginalString, options);
         }
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggerUri == null)
             {
-                throw new ArgumentNullException("triggerUri");
+                throw new ArgumentNullException(nameof(triggerUri));
             }
             return this.DeleteTriggerAsync(triggerUri.OriginalString, options);
         }
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (functionUri == null)
             {
-                throw new ArgumentNullException("functionUri");
+                throw new ArgumentNullException(nameof(functionUri));
             }
             return this.DeleteUserDefinedFunctionAsync(functionUri.OriginalString, options);
         }
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (conflictUri == null)
             {
-                throw new ArgumentNullException("conflictUri");
+                throw new ArgumentNullException(nameof(conflictUri));
             }
             return this.DeleteConflictAsync(conflictUri.OriginalString, options);
         }
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentUri == null)
             {
-                throw new ArgumentNullException("documentUri");
+                throw new ArgumentNullException(nameof(documentUri));
             }
             return this.ReplaceDocumentAsync(documentUri.OriginalString, document, options, cancellationToken);
         }
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProcedureUri == null)
             {
-                throw new ArgumentNullException("storedProcedureUri");
+                throw new ArgumentNullException(nameof(storedProcedureUri));
             }
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggerUri == null)
             {
-                throw new ArgumentNullException("triggerUri");
+                throw new ArgumentNullException(nameof(triggerUri));
             }
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedFunctionUri == null)
             {
-                throw new ArgumentNullException("userDefinedFunctionUri");
+                throw new ArgumentNullException(nameof(userDefinedFunctionUri));
             }
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedTypeUri == null)
             {
-                throw new ArgumentNullException("userDefinedTypeUri");
+                throw new ArgumentNullException(nameof(userDefinedTypeUri));
             }
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.ReadDatabaseAsync(databaseUri.OriginalString, options);
         }
@@ -584,7 +584,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentUri == null)
             {
-                throw new ArgumentNullException("documentUri");
+                throw new ArgumentNullException(nameof(documentUri));
             }
             return this.ReadDocumentAsync(documentUri.OriginalString, options, cancellationToken);
         }
@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentUri == null)
             {
-                throw new ArgumentNullException("documentUri");
+                throw new ArgumentNullException(nameof(documentUri));
             }
             return this.ReadDocumentAsync<T>(documentUri.OriginalString, options, cancellationToken);
         }
@@ -688,7 +688,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
             return this.ReadDocumentCollectionAsync(documentCollectionUri.OriginalString, options);
         }
@@ -740,7 +740,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProcedureUri == null)
             {
-                throw new ArgumentNullException("storedProcedureUri");
+                throw new ArgumentNullException(nameof(storedProcedureUri));
             }
             return this.ReadStoredProcedureAsync(storedProcedureUri.OriginalString, options);
         }
@@ -792,7 +792,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggerUri == null)
             {
-                throw new ArgumentNullException("triggerUri");
+                throw new ArgumentNullException(nameof(triggerUri));
             }
             return this.ReadTriggerAsync(triggerUri.OriginalString, options);
         }
@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (functionUri == null)
             {
-                throw new ArgumentNullException("functionUri");
+                throw new ArgumentNullException(nameof(functionUri));
             }
             return this.ReadUserDefinedFunctionAsync(functionUri.OriginalString, options);
         }
@@ -896,7 +896,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (conflictUri == null)
             {
-                throw new ArgumentNullException("conflictUri");
+                throw new ArgumentNullException(nameof(conflictUri));
             }
             return this.ReadConflictAsync(conflictUri.OriginalString, options);
         }
@@ -948,7 +948,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (schemaUri == null)
             {
-                throw new ArgumentNullException("schemaUri");
+                throw new ArgumentNullException(nameof(schemaUri));
             }
             return this.ReadSchemaAsync(schemaUri.OriginalString, options);
         }
@@ -999,7 +999,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedTypeUri == null)
             {
-                throw new ArgumentNullException("userDefinedTypeUri");
+                throw new ArgumentNullException(nameof(userDefinedTypeUri));
             }
             return this.ReadUserDefinedTypeAsync(userDefinedTypeUri.OriginalString, options);
         }
@@ -1049,7 +1049,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (snapshotUri == null)
             {
-                throw new ArgumentNullException("snapshotUri");
+                throw new ArgumentNullException(nameof(snapshotUri));
             }
 
             return this.ReadSnapshotAsync(snapshotUri.OriginalString, options);
@@ -1068,7 +1068,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionsUri == null)
             {
-                throw new ArgumentNullException("documentCollectionsUri");
+                throw new ArgumentNullException(nameof(documentCollectionsUri));
             }
             return this.ReadDocumentCollectionFeedAsync(documentCollectionsUri.OriginalString, options);
         }
@@ -1083,7 +1083,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProceduresUri == null)
             {
-                throw new ArgumentNullException("storedProceduresUri");
+                throw new ArgumentNullException(nameof(storedProceduresUri));
             }
             return this.ReadStoredProcedureFeedAsync(storedProceduresUri.OriginalString, options);
         }
@@ -1098,7 +1098,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggersUri == null)
             {
-                throw new ArgumentNullException("triggersUri");
+                throw new ArgumentNullException(nameof(triggersUri));
             }
             return this.ReadTriggerFeedAsync(triggersUri.OriginalString, options);
         }
@@ -1113,7 +1113,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedFunctionsUri == null)
             {
-                throw new ArgumentNullException("userDefinedFunctionsUri");
+                throw new ArgumentNullException(nameof(userDefinedFunctionsUri));
             }
             return this.ReadUserDefinedFunctionFeedAsync(userDefinedFunctionsUri.OriginalString, options);
         }
@@ -1129,7 +1129,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentsUri == null)
             {
-                throw new ArgumentNullException("documentsUri");
+                throw new ArgumentNullException(nameof(documentsUri));
             }
             return this.ReadDocumentFeedAsync(documentsUri.OriginalString, options, cancellationToken);
         }
@@ -1144,7 +1144,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (conflictsUri == null)
             {
-                throw new ArgumentNullException("conflictsUri");
+                throw new ArgumentNullException(nameof(conflictsUri));
             }
             return this.ReadConflictFeedAsync(conflictsUri.OriginalString, options);
         }
@@ -1184,7 +1184,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (partitionKeyRangesOrCollectionUri == null)
             {
-                throw new ArgumentNullException("partitionKeyRangesOrCollectionUri");
+                throw new ArgumentNullException(nameof(partitionKeyRangesOrCollectionUri));
             }
 
             return this.ReadPartitionKeyRangeFeedAsync(partitionKeyRangesOrCollectionUri.OriginalString, options);
@@ -1200,7 +1200,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedTypesUri == null)
             {
-                throw new ArgumentNullException("userDefinedTypesUri");
+                throw new ArgumentNullException(nameof(userDefinedTypesUri));
             }
             return this.ReadUserDefinedTypeFeedAsync(userDefinedTypesUri.OriginalString, options);
         }
@@ -1220,7 +1220,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProcedureUri == null)
             {
-                throw new ArgumentNullException("storedProcedureUri");
+                throw new ArgumentNullException(nameof(storedProcedureUri));
             }
             return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureUri.OriginalString, procedureParams);
         }
@@ -1237,7 +1237,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProcedureUri == null)
             {
-                throw new ArgumentNullException("storedProcedureUri");
+                throw new ArgumentNullException(nameof(storedProcedureUri));
             }
             return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureUri.OriginalString, options, procedureParams);
         }
@@ -1255,7 +1255,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProcedureUri == null)
             {
-                throw new ArgumentNullException("storedProcedureUri");
+                throw new ArgumentNullException(nameof(storedProcedureUri));
             }
             return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureUri.OriginalString, options, cancellationToken, procedureParams);
         }
@@ -1270,7 +1270,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (schemasUri == null)
             {
-                throw new ArgumentNullException("schemasUri");
+                throw new ArgumentNullException(nameof(schemasUri));
             }
             return this.ReadSchemaFeedAsync(schemasUri.OriginalString, options);
         }
@@ -1288,7 +1288,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.CreateDocumentCollectionQuery(databaseUri.OriginalString, feedOptions);
         }
@@ -1304,7 +1304,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.CreateDocumentCollectionQuery(databaseUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1320,7 +1320,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (databaseUri == null)
             {
-                throw new ArgumentNullException("databaseUri");
+                throw new ArgumentNullException(nameof(databaseUri));
             }
             return this.CreateDocumentCollectionQuery(databaseUri.OriginalString, querySpec, feedOptions);
         }
@@ -1352,7 +1352,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProceduresUri == null)
             {
-                throw new ArgumentNullException("storedProceduresUri");
+                throw new ArgumentNullException(nameof(storedProceduresUri));
             }
             return this.CreateStoredProcedureQuery(storedProceduresUri.OriginalString, feedOptions);
         }
@@ -1368,7 +1368,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProceduresUri == null)
             {
-                throw new ArgumentNullException("storedProceduresUri");
+                throw new ArgumentNullException(nameof(storedProceduresUri));
             }
             return this.CreateStoredProcedureQuery(storedProceduresUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1384,7 +1384,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storedProceduresUri == null)
             {
-                throw new ArgumentNullException("storedProceduresUri");
+                throw new ArgumentNullException(nameof(storedProceduresUri));
             }
             return this.CreateStoredProcedureQuery(storedProceduresUri.OriginalString, querySpec, feedOptions);
         }
@@ -1399,7 +1399,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggersUri == null)
             {
-                throw new ArgumentNullException("triggersUri");
+                throw new ArgumentNullException(nameof(triggersUri));
             }
             return this.CreateTriggerQuery(triggersUri.OriginalString, feedOptions);
         }
@@ -1415,7 +1415,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggersUri == null)
             {
-                throw new ArgumentNullException("triggersUri");
+                throw new ArgumentNullException(nameof(triggersUri));
             }
             return this.CreateTriggerQuery(triggersUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1431,7 +1431,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (triggersUri == null)
             {
-                throw new ArgumentNullException("triggersUri");
+                throw new ArgumentNullException(nameof(triggersUri));
             }
             return this.CreateTriggerQuery(triggersUri.OriginalString, querySpec, feedOptions);
         }
@@ -1446,7 +1446,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedFunctionsUri == null)
             {
-                throw new ArgumentNullException("userDefinedFunctionsUri");
+                throw new ArgumentNullException(nameof(userDefinedFunctionsUri));
             }
             return this.CreateUserDefinedFunctionQuery(userDefinedFunctionsUri.OriginalString, feedOptions);
         }
@@ -1462,7 +1462,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedFunctionsUri == null)
             {
-                throw new ArgumentNullException("userDefinedFunctionsUri");
+                throw new ArgumentNullException(nameof(userDefinedFunctionsUri));
             }
             return this.CreateUserDefinedFunctionQuery(userDefinedFunctionsUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1478,7 +1478,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedFunctionsUri == null)
             {
-                throw new ArgumentNullException("userDefinedFunctionsUri");
+                throw new ArgumentNullException(nameof(userDefinedFunctionsUri));
             }
             return this.CreateUserDefinedFunctionQuery(userDefinedFunctionsUri.OriginalString, querySpec, feedOptions);
         }
@@ -1493,7 +1493,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (conflictsUri == null)
             {
-                throw new ArgumentNullException("conflictsUri");
+                throw new ArgumentNullException(nameof(conflictsUri));
             }
             return this.CreateConflictQuery(conflictsUri.OriginalString, feedOptions);
         }
@@ -1509,7 +1509,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (conflictsUri == null)
             {
-                throw new ArgumentNullException("conflictsUri");
+                throw new ArgumentNullException(nameof(conflictsUri));
             }
             return this.CreateConflictQuery(conflictsUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1525,7 +1525,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (conflictsUri == null)
             {
-                throw new ArgumentNullException("conflictsUri");
+                throw new ArgumentNullException(nameof(conflictsUri));
             }
             return this.CreateConflictQuery(conflictsUri.OriginalString, querySpec, feedOptions);
         }
@@ -1541,7 +1541,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionUri == null)
             {
-                throw new ArgumentNullException("documentCollectionUri");
+                throw new ArgumentNullException(nameof(documentCollectionUri));
             }
 
             return this.CreateDocumentQuery<T>(documentCollectionUri.OriginalString, feedOptions);
@@ -1565,7 +1565,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
 
             return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri.OriginalString, feedOptions, partitionKey);
@@ -1583,7 +1583,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
 
             return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri, new SqlQuerySpec(sqlExpression), feedOptions);
@@ -1610,7 +1610,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri, new SqlQuerySpec(sqlExpression), feedOptions, partitionKey);
         }
@@ -1627,7 +1627,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
 
             return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri.OriginalString, querySpec, feedOptions);
@@ -1654,7 +1654,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
 
             return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri.OriginalString, querySpec, feedOptions, partitionKey);
@@ -1670,7 +1670,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery(documentCollectionOrDatabaseUri.OriginalString, feedOptions);
         }
@@ -1694,7 +1694,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery(documentCollectionOrDatabaseUri.OriginalString, feedOptions, partitionKey);
         }
@@ -1710,7 +1710,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery(documentCollectionOrDatabaseUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1735,7 +1735,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery(documentCollectionOrDatabaseUri, new SqlQuerySpec(sqlExpression), feedOptions, partitionKey);
         }
@@ -1751,7 +1751,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery(documentCollectionOrDatabaseUri.OriginalString, querySpec, feedOptions);
         }
@@ -1776,7 +1776,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (documentCollectionOrDatabaseUri == null)
             {
-                throw new ArgumentNullException("documentCollectionOrDatabaseUri");
+                throw new ArgumentNullException(nameof(documentCollectionOrDatabaseUri));
             }
             return this.CreateDocumentQuery(documentCollectionOrDatabaseUri.OriginalString, querySpec, feedOptions, partitionKey);
         }
@@ -1791,7 +1791,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (collectionLink == null)
             {
-                throw new ArgumentNullException("collectionLink");
+                throw new ArgumentNullException(nameof(collectionLink));
             }
 
             return this.CreateDocumentChangeFeedQuery(collectionLink.OriginalString, feedOptions);
@@ -1807,7 +1807,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedTypesUri == null)
             {
-                throw new ArgumentNullException("userDefinedTypesUri");
+                throw new ArgumentNullException(nameof(userDefinedTypesUri));
             }
             return this.CreateUserDefinedTypeQuery(userDefinedTypesUri.OriginalString, feedOptions);
         }
@@ -1823,7 +1823,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedTypesUri == null)
             {
-                throw new ArgumentNullException("userDefinedTypesUri");
+                throw new ArgumentNullException(nameof(userDefinedTypesUri));
             }
             return this.CreateUserDefinedTypeQuery(userDefinedTypesUri, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -1839,7 +1839,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (userDefinedTypesUri == null)
             {
-                throw new ArgumentNullException("userDefinedTypesUri");
+                throw new ArgumentNullException(nameof(userDefinedTypesUri));
             }
             return this.CreateUserDefinedTypeQuery(userDefinedTypesUri.OriginalString, querySpec, feedOptions);
         }

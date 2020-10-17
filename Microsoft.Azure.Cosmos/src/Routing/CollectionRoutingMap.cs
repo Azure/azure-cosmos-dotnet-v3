@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (providedPartitionKeyRanges == null)
             {
-                throw new ArgumentNullException("providedPartitionKeyRanges");
+                throw new ArgumentNullException(nameof(providedPartitionKeyRanges));
             }
 
             SortedList<string, PartitionKeyRange> partitionRanges = new SortedList<string, PartitionKeyRange>();
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (string.CompareOrdinal(effectivePartitionKeyValue, PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey) >= 0)
             {
-                throw new ArgumentException("effectivePartitionKeyValue");
+                throw new ArgumentException(nameof(effectivePartitionKeyValue));
             }
 
             if (string.CompareOrdinal(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, effectivePartitionKeyValue) == 0)

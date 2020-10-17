@@ -215,7 +215,7 @@ namespace Antlr4.Runtime.Sharpen
         public void And(BitSet set)
         {
             if (set == null)
-                throw new ArgumentNullException("set");
+                throw new ArgumentNullException(nameof(set));
 
             int length = Math.Min(_data.Length, set._data.Length);
             for (int i = 0; i < length; i++)
@@ -228,7 +228,7 @@ namespace Antlr4.Runtime.Sharpen
         public void Or(BitSet set)
         {
             if (set == null)
-                throw new ArgumentNullException("set");
+                throw new ArgumentNullException(nameof(set));
 
             if (set._data.Length > _data.Length)
                 Array.Resize(ref _data, set._data.Length);

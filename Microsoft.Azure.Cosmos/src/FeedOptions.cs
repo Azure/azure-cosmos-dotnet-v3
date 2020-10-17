@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (options == null)
             {
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
             }
 
             this.MaxItemCount = options.MaxItemCount;

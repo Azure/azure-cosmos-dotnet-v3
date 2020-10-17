@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
         {
             this.QueryText = queryText;
-            this.parameters = parameters ?? throw new ArgumentNullException("parameters");
+            this.parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
             set
             {
-                this.parameters = value ?? throw new ArgumentNullException("value");
+                this.parameters = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 

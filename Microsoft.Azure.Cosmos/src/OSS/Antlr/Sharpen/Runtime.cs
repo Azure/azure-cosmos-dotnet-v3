@@ -14,7 +14,7 @@ namespace Antlr4.Runtime.Sharpen
         public static string Substring(string str, int beginOffset, int endOffset)
         {
             if (str == null)
-                throw new ArgumentNullException("str");
+                throw new ArgumentNullException(nameof(str));
 
             return str.Substring(beginOffset, endOffset - beginOffset);
         }

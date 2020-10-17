@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             if (parameters == null)
             {
-                throw new ArgumentNullException("parameters");
+                throw new ArgumentNullException(nameof(parameters));
             }
 
             this.parameters = new List<SqlParameter>(parameters);

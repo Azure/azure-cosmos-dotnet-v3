@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (geometryParams == null)
             {
-                throw new ArgumentNullException("geometryParams");
+                throw new ArgumentNullException(nameof(geometryParams));
             }
 
             this.Type = type;

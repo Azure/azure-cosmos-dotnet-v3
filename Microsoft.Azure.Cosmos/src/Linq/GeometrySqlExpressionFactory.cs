@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (!typeof(Geometry).IsAssignableFrom(geometryExpression.Type))
             {
-                throw new ArgumentException("geometryExpression");
+                throw new ArgumentException(nameof(geometryExpression));
             }
 
             if (geometryExpression.NodeType == ExpressionType.Constant)

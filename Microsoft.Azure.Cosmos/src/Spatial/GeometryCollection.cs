@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (geometries == null)
             {
-                throw new ArgumentNullException("geometries");
+                throw new ArgumentNullException(nameof(geometries));
             }
 
             this.Geometries = new ReadOnlyCollection<Geometry>(geometries);

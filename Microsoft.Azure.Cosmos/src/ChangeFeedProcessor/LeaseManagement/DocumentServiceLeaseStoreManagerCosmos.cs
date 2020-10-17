@@ -46,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (options.ContainerNamePrefix == null) throw new ArgumentNullException(nameof(options.ContainerNamePrefix));
             if (string.IsNullOrEmpty(options.HostName)) throw new ArgumentNullException(nameof(options.HostName));
             if (container == null) throw new ArgumentNullException(nameof(container));
-            if (requestOptionsFactory == null) throw new ArgumentException(nameof(requestOptionsFactory));
-            if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
+            if (requestOptionsFactory == null) throw new ArgumentNullException(nameof(requestOptionsFactory));
+            if (leaseUpdater == null) throw new ArgumentNullException(nameof(leaseUpdater));
 
             this.leaseStore = new DocumentServiceLeaseStoreCosmos(
                 container,

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (storeModel == null)
             {
-                throw new ArgumentNullException("storeModel");
+                throw new ArgumentNullException(nameof(storeModel));
             }
 
             this.storeModel = storeModel;

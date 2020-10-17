@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (coordinates == null)
             {
-                throw new ArgumentNullException("coordinates");
+                throw new ArgumentNullException(nameof(coordinates));
             }
 
             this.Positions = new ReadOnlyCollection<Position>(coordinates);

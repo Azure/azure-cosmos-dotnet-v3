@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (innerClient == null)
             {
-                throw new ArgumentNullException("innerClient");
+                throw new ArgumentNullException(nameof(innerClient));
             }
 
             this.innerClient = innerClient;

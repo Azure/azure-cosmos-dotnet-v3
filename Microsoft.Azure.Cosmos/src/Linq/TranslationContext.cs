@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (method == null)
             {
-                throw new ArgumentNullException("method");
+                throw new ArgumentNullException(nameof(method));
             }
 
             this.methodStack.Add(method);
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             this.collectionStack.Add(collection);
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             this.isOuter = false;

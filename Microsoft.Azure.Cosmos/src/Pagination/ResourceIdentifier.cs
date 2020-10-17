@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public static bool Verify(string id, out byte[] buffer)
         {
             if (string.IsNullOrEmpty(id))
-                throw new ArgumentNullException("id");
+                throw new ArgumentNullException(nameof(id));
 
             buffer = null;
 

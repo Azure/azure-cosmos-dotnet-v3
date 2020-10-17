@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (replacement == null)
             {
-                throw new ArgumentNullException("replacement");
+                throw new ArgumentNullException(nameof(replacement));
             }
 
             switch (into)

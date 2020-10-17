@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (string.IsNullOrEmpty(unsecureStr))
             {
-                throw new ArgumentNullException("unsecureStr");
+                throw new ArgumentNullException(nameof(unsecureStr));
             }
 
             SecureString secureStr = new SecureString();

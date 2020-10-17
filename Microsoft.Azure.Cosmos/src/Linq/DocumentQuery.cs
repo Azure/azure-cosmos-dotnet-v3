@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (client == null)
             {
-                throw new ArgumentNullException("client");
+                throw new ArgumentNullException(nameof(client));
             }
 
             this.client = client;

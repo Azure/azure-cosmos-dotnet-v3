@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection additionalHeaders = null,
             CancellationToken cancellationToken = default)
         {
-            if (uri == null) throw new ArgumentNullException("uri");
+            if (uri == null) throw new ArgumentNullException(nameof(uri));
 
             // GetAsync doesn't let clients to pass in additional headers. So, we are
             // internally using SendAsync and add the additional headers to requestMessage. 

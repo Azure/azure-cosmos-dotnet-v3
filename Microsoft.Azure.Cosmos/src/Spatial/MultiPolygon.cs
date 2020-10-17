@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (polygons == null)
             {
-                throw new ArgumentNullException("polygons");
+                throw new ArgumentNullException(nameof(polygons));
             }
 
             this.Polygons = new ReadOnlyCollection<PolygonCoordinates>(polygons);

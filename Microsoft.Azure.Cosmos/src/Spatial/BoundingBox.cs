@@ -29,12 +29,12 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (max == null)
             {
-                throw new ArgumentException("Max");
+                throw new ArgumentNullException(nameof(max));
             }
 
             if (min == null)
             {
-                throw new ArgumentException("Min");
+                throw new ArgumentNullException(nameof(min));
             }
 
             if (max.Coordinates.Count != min.Coordinates.Count)

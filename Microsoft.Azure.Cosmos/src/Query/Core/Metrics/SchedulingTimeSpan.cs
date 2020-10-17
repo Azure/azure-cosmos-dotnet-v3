@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             if (schedulingTimeSpans == null)
             {
-                throw new ArgumentNullException("schedulingTimeSpans");
+                throw new ArgumentNullException(nameof(schedulingTimeSpans));
             }
 
             if (schedulingTimeSpans.Count() == 0)

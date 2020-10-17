@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (position == null)
             {
-                throw new ArgumentNullException("position");
+                throw new ArgumentNullException(nameof(position));
             }
 
             this.Position = position;
