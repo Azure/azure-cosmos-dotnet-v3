@@ -185,9 +185,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (expression is ConstantExpression inputExpression
                     && inputExpression.Value is StringComparison comparisonValue)
                 {
-                    return SensitiveCaseComparisons.Contains(comparisonValue) ? SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(false))
-                        : IgnoreCaseComparisons.Contains(comparisonValue) ? SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true))
-                        : null;
+                    if (SensitiveCaseComparisons.Contains(comparisonValue))
+                    {
+                        return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(false));
+                    }
+                    else if (IgnoreCaseComparisons.Contains(comparisonValue))
+                    {
+                        return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true));
+                    }
                 }
 
                 return null;
