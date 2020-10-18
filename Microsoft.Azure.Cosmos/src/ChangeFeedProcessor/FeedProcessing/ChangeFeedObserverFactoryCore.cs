@@ -45,10 +45,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private async Task ChangesStreamHandlerAsync(Stream changes, CancellationToken cancellationToken)
         {
-            IEnumerable<T> asEnumerable;
+            IReadOnlyCollection<T> asFeedResponse;
             try
             {
-                asEnumerable = this.serializerCore.FromFeedStream<T>(changes);
+                asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
+                                    this.serializerCore,
+                                    changes); 
             }
             catch (Exception serializationException)
             {
@@ -56,8 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 throw new ObserverException(serializationException);
             }
 
-            List<T> asReadOnlyList = asEnumerable as List<T> ?? new List<T>(asEnumerable);
-            await this.onChanges(asReadOnlyList.AsReadOnly(), cancellationToken);
+            await this.onChanges(asFeedResponse, cancellationToken);
         }
     }
 }
