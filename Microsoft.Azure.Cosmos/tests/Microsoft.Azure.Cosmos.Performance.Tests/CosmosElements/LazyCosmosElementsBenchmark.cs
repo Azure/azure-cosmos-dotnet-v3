@@ -25,14 +25,9 @@
 
         private static class Payloads
         {
-            //public static readonly Payload MediumString = Payload.Create(name: "medium string", "\"The quick brown fox jumped over the lazy dog.\"");
-            //public static readonly Payload LongString = Payload.Create(name: "long string", "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\"");
-            //public static readonly Payload Integer = Payload.Create(name: "integer", "1234");
-            //public static readonly Payload Double = Payload.Create(name: "double", "1234.5678");
-            //public static readonly Payload Null = Payload.Create(name: "null", "null");
-            //public static readonly Payload True = Payload.Create(name: "true", "true");
-            //public static readonly Payload False = Payload.Create(name: "false", "false");
-            //public static readonly Payload Array = Payload.Create(name: "array", "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
+            public static readonly Payload String = Payload.Create(name: "string", "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\"");
+            public static readonly Payload Double = Payload.Create(name: "double", "1234.5678");
+            public static readonly Payload Array = Payload.Create(name: "array", "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
             public static readonly Payload Object = Payload.Create(name: "object", @"{
                 ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
                 ""double"": 0.18963001816981939,
@@ -167,9 +162,12 @@
             foreach (FieldInfo fieldInfo in typeof(Payloads).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 Payload payload = (Payload)fieldInfo.GetValue(null);
-                foreach (AccessPattern accessPattern in Enum.GetValues(typeof(AccessPattern)))
+                foreach (SerializationFormat serializationFormat in Enum.GetValues(typeof(SerializationFormat)))
                 {
-                    yield return new object[] { payload, SerializationFormat.Binary, accessPattern };
+                    foreach (AccessPattern accessPattern in Enum.GetValues(typeof(AccessPattern)))
+                    {
+                        yield return new object[] { payload, serializationFormat, accessPattern };
+                    }
                 }
             }
         }
