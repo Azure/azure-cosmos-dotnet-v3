@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
-        private readonly AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>> lazyEnumerators;
+        private readonly AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>> lazyEnumerators;
         private CancellationToken cancellationToken;
 
         public CrossPartitionRangePageAsyncEnumerator(
@@ -35,18 +36,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CancellationToken cancellationToken,
             CrossPartitionState<TState> state = default)
         {
-            if (comparer == null)
-            {
-                throw new ArgumentNullException(nameof(comparer));
-            }
-
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
             this.cancellationToken = cancellationToken;
 
-            this.lazyEnumerators = new AsyncLazy<PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
+            this.lazyEnumerators = new AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
-                IReadOnlyList<(PartitionKeyRange, TState)> rangeAndStates;
+                IReadOnlyList<(FeedRangeInternal, TState)> rangeAndStates;
                 if (state != default)
                 {
                     rangeAndStates = state.Value;
@@ -54,10 +50,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 else
                 {
                     // Fan out to all partitions with default state
-                    IEnumerable<PartitionKeyRange> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
+                    IEnumerable<FeedRangeInternal> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
 
-                    List<(PartitionKeyRange, TState)> rangesAndStatesBuilder = new List<(PartitionKeyRange, TState)>();
-                    foreach (PartitionKeyRange range in ranges)
+                    List<(FeedRangeInternal, TState)> rangesAndStatesBuilder = new List<(FeedRangeInternal, TState)>();
+                    foreach (FeedRangeInternal range in ranges)
                     {
                         rangesAndStatesBuilder.Add((range, default));
                     }
@@ -79,22 +75,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     await ParallelPrefetch.PrefetchInParallelAsync(bufferedEnumerators, maxConcurrency.Value, token);
                 }
 
-                PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = new PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>(
-                    bufferedEnumerators,
-                    comparer);
-                return enumerators;
+                IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> queue;
+                if (comparer == null)
+                {
+                    queue = new QueueWrapper<PartitionRangePageAsyncEnumerator<TPage, TState>>(
+                        new Queue<PartitionRangePageAsyncEnumerator<TPage, TState>>(bufferedEnumerators));
+                }
+                else
+                {
+                    queue = new PriorityQueueWrapper<PartitionRangePageAsyncEnumerator<TPage, TState>>(
+                        new PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>(
+                            bufferedEnumerators,
+                            comparer));
+                }
+
+                return queue;
             });
         }
 
         public TryCatch<CrossPartitionPage<TPage, TState>> Current { get; private set; }
 
+        public FeedRangeInternal CurrentRange { get; private set; }
+
         public async ValueTask<bool> MoveNextAsync()
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            PriorityQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: this.cancellationToken);
+            IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: this.cancellationToken);
             if (enumerators.Count == 0)
             {
+                this.Current = default;
+                this.CurrentRange = default;
                 return false;
             }
 
@@ -118,10 +129,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 if (IsSplitException(exception))
                 {
                     // Handle split
-                    IEnumerable<PartitionKeyRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                    IEnumerable<FeedRangeInternal> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                         currentPaginator.Range,
                         cancellationToken: this.cancellationToken);
-                    foreach (PartitionKeyRange childRange in childRanges)
+                    foreach (FeedRangeInternal childRange in childRanges)
                     {
                         PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
                             childRange,
@@ -142,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 enumerators.Enqueue(currentPaginator);
 
                 this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
+                this.CurrentRange = currentPaginator.Range;
                 return true;
             }
 
@@ -158,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else
             {
-                List<(PartitionKeyRange, TState)> feedRangeAndStates = new List<(PartitionKeyRange, TState)>(enumerators.Count);
+                List<(FeedRangeInternal, TState)> feedRangeAndStates = new List<(FeedRangeInternal, TState)>(enumerators.Count);
                 foreach (PartitionRangePageAsyncEnumerator<TPage, TState> enumerator in enumerators)
                 {
                     feedRangeAndStates.Add((enumerator.Range, enumerator.State));
@@ -169,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             this.Current = TryCatch<CrossPartitionPage<TPage, TState>>.FromResult(
                 new CrossPartitionPage<TPage, TState>(currentPaginator.Current.Result, crossPartitionState));
+            this.CurrentRange = currentPaginator.Range;
             return true;
         }
 
@@ -194,6 +207,61 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             // TODO: code this out
             return false;
+        }
+
+        private interface IQueue<T> : IEnumerable<T>
+        {
+            T Peek();
+
+            void Enqueue(T item);
+
+            T Dequeue();
+
+            public int Count { get; }
+        }
+
+        private sealed class PriorityQueueWrapper<T> : IQueue<T>
+        {
+            private readonly PriorityQueue<T> implementation;
+
+            public PriorityQueueWrapper(PriorityQueue<T> implementation)
+            {
+                this.implementation = implementation ?? throw new ArgumentNullException(nameof(implementation));
+            }
+
+            public int Count => this.implementation.Count;
+
+            public T Dequeue() => this.implementation.Dequeue();
+
+            public void Enqueue(T item) => this.implementation.Enqueue(item);
+
+            public T Peek() => this.implementation.Peek();
+
+            public IEnumerator<T> GetEnumerator() => this.implementation.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => this.implementation.GetEnumerator();
+        }
+
+        private sealed class QueueWrapper<T> : IQueue<T>
+        {
+            private readonly Queue<T> implementation;
+
+            public QueueWrapper(Queue<T> implementation)
+            {
+                this.implementation = implementation ?? throw new ArgumentNullException(nameof(implementation));
+            }
+
+            public int Count => this.implementation.Count;
+
+            public T Dequeue() => this.implementation.Dequeue();
+
+            public void Enqueue(T item) => this.implementation.Enqueue(item);
+
+            public T Peek() => this.implementation.Peek();
+
+            public IEnumerator<T> GetEnumerator() => this.implementation.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => this.implementation.GetEnumerator();
         }
     }
 }
