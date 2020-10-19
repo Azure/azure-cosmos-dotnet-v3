@@ -11,10 +11,19 @@
   <Result>
     <Input>
       <Description><![CDATA[multiple arguments]]></Description>
-      <Query><![CDATA[SELECT VALUE 42 IN ('asdf', 'as')]]></Query>
+      <Query><![CDATA[SELECT VALUE 42 IN (1, 2, 3)]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT VALUE (42 IN ("asdf', 'as"))]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 IN (1, 2, 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[multiple string arguments]]></Description>
+      <Query><![CDATA[SELECT VALUE 42 IN ("WA", "CA")]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (42 IN ("WA", "CA"))]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
@@ -41,7 +50,7 @@
       <Query><![CDATA[SELECT VALUE 42 IN (-123]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[can not recover.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -77,7 +86,7 @@
       <Query><![CDATA[SELECT VALUE 42 IN ]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[can not recover.]]></Exception>
     </Output>
   </Result>
   <Result>
