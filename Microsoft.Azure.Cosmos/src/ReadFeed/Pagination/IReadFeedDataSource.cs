@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal interface IReadFeedDataSource
+    internal interface IReadFeedDataSource : IMonadicReadFeedDataSource
     {
         Task<ReadFeedPage> ReadFeedAsync(
             ReadFeedState readFeedState,

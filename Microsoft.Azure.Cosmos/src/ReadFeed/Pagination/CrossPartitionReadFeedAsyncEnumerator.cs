@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             return true;
         }
 
-        public ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
+        public ValueTask DisposeAsync() => this.crossPartitionEnumerator.DisposeAsync();
 
         public static TryCatch<CrossPartitionReadFeedAsyncEnumerator> MonadicCreate(
              IDocumentContainer documentContainer,
@@ -150,9 +150,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 readFeedDataSource,
                 range,
                 pageSize,
-                state,
-                cancellationToken);
-
+                cancellationToken,
+                state);
 
         internal readonly struct ReadFeedContinuationToken
         {
@@ -174,16 +173,16 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             public static CosmosElement ToCosmosElement(ReadFeedContinuationToken readFeedContinuationToken)
             {
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
-            {
                 {
-                    PropertyNames.FeedRange,
-                    FeedRangeCosmosElementSerializer.ToCosmosElement(readFeedContinuationToken.Range)
-                },
-                {
-                    PropertyNames.State,
-                    ChangeFeedStateCosmosElementSerializer.ToCosmosElement(readFeedContinuationToken.State)
-                }
-            });
+                    {
+                        PropertyNames.FeedRange,
+                        FeedRangeCosmosElementSerializer.ToCosmosElement(readFeedContinuationToken.Range)
+                    },
+                    {
+                        PropertyNames.State,
+                        ChangeFeedStateCosmosElementSerializer.ToCosmosElement(readFeedContinuationToken.State)
+                    }
+                });
             }
 
             public static TryCatch<ReadFeedContinuationToken> MonadicConvertFromCosmosElement(CosmosElement cosmosElement)
@@ -230,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 }
                 else if (stateCosmosElement is CosmosString cosmosString)
                 {
-                    monadicReadFeedState = TryCatch<ReadFeedState>.FromResult(new ReadFeedState(cosmosString.Value));
+                    monadicReadFeedState = TryCatch<ReadFeedState>.FromResult(new ReadFeedState(cosmosString));
                 }
                 else
                 {

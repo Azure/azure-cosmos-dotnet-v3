@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     responseMessage.Content,
                     responseMessage.Headers.RequestCharge,
                     responseMessage.Headers.ActivityId,
-                    new ReadFeedState(responseMessage.Headers.ETag));
+                    new ReadFeedState(CosmosString.Create(responseMessage.Headers.ETag)));
 
                 monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
             }

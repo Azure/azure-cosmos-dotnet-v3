@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -604,7 +605,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                return FeedRangeIteratorCore.Create(
+                NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                    this,
+                    client,
+                    clientContext,
+                    CosmosDiagnosticsContext.Create(queryRequestOptions),
+                    queryRequestOptions);
+
+                return new FeedRangeIteratorCore(
                     containerCore: this,
                     continuation: continuationToken,
                     feedRangeInternal: feedRange,
