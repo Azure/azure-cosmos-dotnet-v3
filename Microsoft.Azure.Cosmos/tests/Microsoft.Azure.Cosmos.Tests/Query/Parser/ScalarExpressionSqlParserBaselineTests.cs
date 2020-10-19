@@ -216,7 +216,8 @@
             {
                 // Positive
                 CreateInput(description: "Basic", scalarExpression: "42 IN(42)"),
-                CreateInput(description: "multiple arguments", scalarExpression: "42 IN ('asdf', 'as')"),
+                CreateInput(description: "multiple arguments", scalarExpression: "42 IN (1, 2, 3)"),
+                CreateInput(description: "multiple string arguments", scalarExpression: "42 IN (\"WA\", \"CA\")"),
                 CreateInput(description: "NOT IN", scalarExpression: "42 NOT IN (42)"),
 
                 // Negative
@@ -282,6 +283,7 @@
                 CreateInput(description: "Empty Object", scalarExpression: "{}"),
                 CreateInput(description: "Single Property", scalarExpression: "{ 'prop' : 42 }"),
                 CreateInput(description: "Multiple Property", scalarExpression: "{ 'prop1' : 42, 'prop2' : 1337 }"),
+                CreateInput(description: "Double Quotes", scalarExpression: "{ \"prop\" : \"Some String\" }"),
 
                 // Negative
                 CreateInput(description: "Missing Close Brace", scalarExpression: "{"),
