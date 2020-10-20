@@ -66,8 +66,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
-
-            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
+            FeedRangeInternal feedRange = this.changeFeedStartFrom switch
+            {
+                ChangeFeedStartFromNow now => now.FeedRange,
+                ChangeFeedStartFromTime time => time.FeedRange,
+                ChangeFeedStartFromContinuation continuation => throw new NotSupportedException(),
+                ChangeFeedStartFromBeginning beginning => beginning.FeedRange,
+                ChangeFeedStartFromContinuationAndFeedRange continuationAndFeedRange => continuationAndFeedRange.FeedRange,
+                _ => throw new InvalidOperationException(),
+            };
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;

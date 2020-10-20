@@ -233,7 +233,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client.Object,
-                queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
