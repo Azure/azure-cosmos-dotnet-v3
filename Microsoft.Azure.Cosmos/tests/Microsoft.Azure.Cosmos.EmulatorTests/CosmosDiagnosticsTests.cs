@@ -456,6 +456,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
+        [Ignore] // turn this back on when we have tracing diagnostics.
         public async Task ChangeFeedDiagnostics(bool disableDiagnostics)
         {
             string pkValue = "ChangeFeedDiagnostics";
@@ -481,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     CosmosDiagnosticsTests.VerifyChangeFeedDiagnostics(
                        diagnostics: response.Diagnostics,
-                        disableDiagnostics: disableDiagnostics);
+                       disableDiagnostics: disableDiagnostics);
                 }
             }
         }
