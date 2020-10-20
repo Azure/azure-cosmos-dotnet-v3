@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption
+﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Threading;
