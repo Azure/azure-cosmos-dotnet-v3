@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
+namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using global::Azure.Core;
     using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Encryption;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Encryption.Custom.KeyVaultAccessClientTests;
+    using static Microsoft.Azure.Cosmos.Encryption.KeyVaultAccessClientTests;
 
     [TestClass]
     public class EncryptionTests

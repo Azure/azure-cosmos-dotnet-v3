@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Linq;
@@ -10,7 +10,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
+
+
     [TestClass]
     public class CosmosEncryptorTests
     {

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using TestDoc = TestCommon.TestDoc;
 
     [TestClass]
