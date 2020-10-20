@@ -448,10 +448,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
-            INameValueCollection addressQuery = new DictionaryNameValueCollection();
-            addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
+            INameValueCollection addressQuery = new StoreRequestHeaders
+            {
+                { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
+            };
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestHeaders();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);

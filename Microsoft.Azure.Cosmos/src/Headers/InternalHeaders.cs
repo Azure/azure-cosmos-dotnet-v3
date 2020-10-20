@@ -15,6 +15,18 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class InternalHeaders : IEnumerable, INameValueCollection
     {
+        public virtual string Authorization
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.Authorization);
+            set => this.SetProperty(HttpConstants.HttpHeaders.Authorization, value);
+        }
+
+        public virtual string XDate
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.XDate);
+            set => this.SetProperty(HttpConstants.HttpHeaders.XDate, value);
+        }
+
         public virtual string RequestCharge
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.RequestCharge);

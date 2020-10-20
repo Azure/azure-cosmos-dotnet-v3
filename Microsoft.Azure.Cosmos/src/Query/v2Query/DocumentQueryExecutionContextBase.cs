@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<INameValueCollection> CreateCommonHeadersAsync(FeedOptions feedOptions)
         {
-            INameValueCollection requestHeaders = new DictionaryNameValueCollection();
+            INameValueCollection requestHeaders = new StoreRequestHeaders();
 
             Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)await this.Client.GetDefaultConsistencyLevelAsync();
             Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)await this.Client.GetDesiredConsistencyLevelAsync();

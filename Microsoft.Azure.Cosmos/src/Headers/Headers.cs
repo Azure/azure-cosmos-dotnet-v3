@@ -143,8 +143,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual string Authorization
         {
-            get => this.InternalHeaders.RetryAfterLiteral;
-            set => this.InternalHeaders.RetryAfterLiteral = value;
+            get => this.InternalHeaders.Authorization;
+            set => this.InternalHeaders.Authorization = value;
         }
 
         internal virtual string RetryAfterLiteral

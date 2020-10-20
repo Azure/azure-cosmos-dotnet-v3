@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         public string A_IM { get; set; }
         public string AddResourcePropertiesToResponse { get; set; }
         public string AllowTentativeWrites { get; set; }
-        public string Authorization { get; set; }
+        public override string Authorization { get; set; }
         public string BinaryId { get; set; }
         public string BinaryPassthroughRequest { get; set; }
         public string BindReplicaDirective { get; set; }
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         public string UsePolygonsSmallerThanAHemisphere { get; set; }
         public string UseSystemBudget { get; set; }
         public string Version { get; set; }
-        public string XDate { get; set; }
+        public override string XDate { get; set; }
 
         public StoreRequestHeaders()
             : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
@@ -1954,7 +1954,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                this.Remove(key);
+                return;
             }
 
             this.UpdateHelper(

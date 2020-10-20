@@ -10,9 +10,9 @@
 <#@ output extension=".cs" #>
 <# List<(string name, string value, bool isOverride)> headerNames = new List<(string name, string value, bool isOverride)>()
 {
-    ("HttpConstants.HttpHeaders.Authorization", "authorization", false),
+    ("HttpConstants.HttpHeaders.Authorization", "authorization", true),
     ("HttpConstants.HttpHeaders.HttpDate", "date", false),
-    ("HttpConstants.HttpHeaders.XDate", "x-ms-date", false),
+    ("HttpConstants.HttpHeaders.XDate", "x-ms-date", true),
     ("HttpConstants.HttpHeaders.Version", "x-ms-version", false),
     ("HttpConstants.HttpHeaders.A_IM", "A-IM", false),
     ("HttpConstants.HttpHeaders.CanCharge", "x-ms-cancharge", false),
@@ -338,7 +338,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                this.Remove(key);
+                return;
             }
 
             this.UpdateHelper(
