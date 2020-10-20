@@ -45,13 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
 
-            string keyName = dekProperties.EncryptionKeyWrapMetadata.Name;
-
-            /* A legacy DEK may not have a Name value in meta-data*/
-            if (string.IsNullOrWhiteSpace(keyName))
-            {
-                keyName = dekProperties.EncryptionKeyWrapMetadata.Value;
-            }
+            string keyName = dekProperties.EncryptionKeyWrapMetadata.GetName(dekProperties.EncryptionKeyWrapMetadata);
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 keyName,

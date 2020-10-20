@@ -56,9 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
             this.Algorithm = algorithm;
-
-            // This is for backward compatibility, supports Legacy Algorithm based DEKs to be used with MDE algorithm.Using Value/Path as Name.
-            this.Name = name ?? this.Value;
+            this.Name = name;
         }
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
@@ -115,6 +113,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                    this.Algorithm == other.Algorithm &&
                    this.Value == other.Value &&
                    this.Name == other.Name;
+        }
+
+        internal string GetName(EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+        {
+            /* A legacy DEK may not have a Name value in meta-data*/
+            if (string.IsNullOrWhiteSpace(encryptionKeyWrapMetadata.Name))
+            {
+                return encryptionKeyWrapMetadata.Value;
+            }
+            else
+            {
+                return encryptionKeyWrapMetadata.Name;
+            }
         }
     }
 }

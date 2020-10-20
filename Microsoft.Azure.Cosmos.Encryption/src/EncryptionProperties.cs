@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
             byte[] encryptedData,
-            IEnumerable<string> encryptedPaths = null)
+            IEnumerable<string> encryptedPaths)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;

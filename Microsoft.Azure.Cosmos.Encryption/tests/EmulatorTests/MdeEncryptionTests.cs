@@ -441,6 +441,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             expectedDoc.Sensitive_ArrayFormat = null;
             expectedDoc.Sensitive_DecimalFormat = 0;
             expectedDoc.Sensitive_IntFormat = 0;
+            expectedDoc.Sensitive_FloatFormat = 0;
+            expectedDoc.Sensitive_BoolFormat = false;
             expectedDoc.Sensitive_StringFormat = null;
             expectedDoc.Sensitive_DateFormat = new DateTime();
 
@@ -524,6 +526,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             expectedDoc.Sensitive_ArrayFormat = null;
             expectedDoc.Sensitive_DecimalFormat = 0;
             expectedDoc.Sensitive_IntFormat = 0;
+            expectedDoc.Sensitive_FloatFormat = 0;
+            expectedDoc.Sensitive_BoolFormat = false;
             expectedDoc.Sensitive_StringFormat = null;
             expectedDoc.Sensitive_DateFormat = new DateTime();
 
@@ -1645,6 +1649,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             Assert.AreEqual(expectedDoc.Sensitive_DateFormat, verifyDoc.Sensitive_DateFormat);
             Assert.AreEqual(expectedDoc.Sensitive_DecimalFormat, verifyDoc.Sensitive_DecimalFormat);
+            Assert.AreEqual(expectedDoc.Sensitive_IntFormat, verifyDoc.Sensitive_IntFormat);
+            Assert.AreEqual(expectedDoc.Sensitive_FloatFormat, verifyDoc.Sensitive_FloatFormat);
+            Assert.AreEqual(expectedDoc.Sensitive_BoolFormat, verifyDoc.Sensitive_BoolFormat);
             Assert.AreEqual(expectedDoc.NonSensitive, verifyDoc.NonSensitive);
         }
 
@@ -1657,6 +1664,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     "/Sensitive_DecimalFormat",
                     "/Sensitive_IntFormat",
                     "/Sensitive_DateFormat",
+                    "/Sensitive_BoolFormat",
+                    "/Sensitive_FloatFormat",
                     "/Sensitive_NestedObjectFormatL1"
                 };
 
@@ -1673,7 +1682,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public decimal Sensitive_DecimalFormat { get; set; }
 
+            public bool Sensitive_BoolFormat { get; set; }
+
             public int Sensitive_IntFormat { get; set; }
+
+            public float Sensitive_FloatFormat { get; set; }
 
             public Sensitive_ArrayData[] Sensitive_ArrayFormat { get; set; }
 
@@ -1710,6 +1723,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 this.Sensitive_DecimalFormat = other.Sensitive_DecimalFormat;
                 this.Sensitive_IntFormat = other.Sensitive_IntFormat;
                 this.Sensitive_ArrayFormat = other.Sensitive_ArrayFormat;
+                this.Sensitive_BoolFormat = other.Sensitive_BoolFormat;
+                this.Sensitive_FloatFormat = other.Sensitive_FloatFormat;
                 this.Sensitive_NestedObjectFormatL1 = other.Sensitive_NestedObjectFormatL1;
             }
 
@@ -1724,6 +1739,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Sensitive_DecimalFormat == doc.Sensitive_DecimalFormat
                        && this.Sensitive_IntFormat == doc.Sensitive_IntFormat
                        && this.Sensitive_ArrayFormat == doc.Sensitive_ArrayFormat
+                       && this.Sensitive_BoolFormat == doc.Sensitive_BoolFormat
+                       && this.Sensitive_FloatFormat == doc.Sensitive_FloatFormat
                        && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1;
             }
 
@@ -1747,6 +1764,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Decimal>.Default.GetHashCode(this.Sensitive_DecimalFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.Sensitive_IntFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Array>.Default.GetHashCode(this.Sensitive_ArrayFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<bool>.Default.GetHashCode(this.Sensitive_BoolFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<float>.Default.GetHashCode(this.Sensitive_FloatFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Object>.Default.GetHashCode(this.Sensitive_NestedObjectFormatL1);
                 return hashCode;
             }
@@ -1762,6 +1781,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
                     Sensitive_IntFormat = 1965,
+                    Sensitive_BoolFormat = true,
+                    Sensitive_FloatFormat = 8923.124f,
                     Sensitive_ArrayFormat = new Sensitive_ArrayData[]
                     {
                         new Sensitive_ArrayData

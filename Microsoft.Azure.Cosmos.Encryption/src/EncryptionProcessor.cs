@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-            DecryptionContext decryptionContext = null;
+            DecryptionContext decryptionContext;
 
             switch (encryptionProperties.EncryptionAlgorithm)
             {
@@ -214,8 +214,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     break;
 
                 default:
-                    Debug.Fail(string.Format("Unexpected Encryption Algorithm {0}", encryptionProperties.EncryptionAlgorithm));
-                    break;
+                    throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported.");
             }
 
             input.Dispose();
@@ -265,8 +264,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     break;
 
                 default:
-                    Debug.Fail(string.Format("Unexpected Encryption Algorithm {0}", encryptionProperties.EncryptionAlgorithm));
-                    break;
+                    throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported.");
             }
 
             return (document, decryptionContext);
@@ -282,35 +280,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject plainTextJObj = new JObject();
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
-                if (document.TryGetValue(path.Substring(1), out JToken propertyValue))
-                {
-                    byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
-
-                    if (cipherTextWithTypeMarker == null)
-                    {
-                        continue;
-                    }
-
-                    byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
-                    Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
-
-                    byte[] plainText = await EncryptionProcessor.DecryptPropertyAsync(
-                        encryptionProperties,
-                        cipherText,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    EncryptionProcessor.DeserializeAndAddProperty(
-                        (TypeMarker)cipherTextWithTypeMarker[0],
-                        plainText,
-                        plainTextJObj,
-                        path.Substring(1));
-                }
-                else
+                if (!document.TryGetValue(path.Substring(1), out JToken propertyValue))
                 {
                     throw new ArgumentException($"{nameof(encryptionProperties.EncryptedPaths)} includes a path: '{path}' which was not found.");
                 }
+
+                byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
+
+                if (cipherTextWithTypeMarker == null)
+                {
+                    continue;
+                }
+
+                byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
+                Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
+
+                byte[] plainText = await EncryptionProcessor.DecryptPropertyAsync(
+                    encryptionProperties,
+                    cipherText,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                EncryptionProcessor.DeserializeAndAddProperty(
+                    (TypeMarker)cipherTextWithTypeMarker[0],
+                    plainText,
+                    plainTextJObj,
+                    path.Substring(1));
             }
 
             List<string> pathsDecrypted = new List<string>();

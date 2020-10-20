@@ -43,10 +43,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>New instance of data encryption key.</returns>
         public static byte[] Generate(string encryptionAlgorithm)
         {
-            if ((encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                (encryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized))
+            if (!CosmosEncryptionAlgorithm.VerifyIfSupportedAlgorithm(encryptionAlgorithm))
             {
-                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
+                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}.Supported Algorithms include '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}','{CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized}' algorithms", nameof(encryptionAlgorithm));
             }
 
             byte[] rawKey = new byte[32];
@@ -70,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(rawKey));
             }
 
-            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
                 throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
             }

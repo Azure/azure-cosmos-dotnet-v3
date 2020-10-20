@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal DekCache DekCache { get; }
 
+        /* MDE's Protected Data Encryption key Cache TTL*/
         internal TimeSpan? PdekCacheTimeToLive { get; }
 
         internal Container Container
