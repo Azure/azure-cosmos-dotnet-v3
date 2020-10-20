@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Documents;
 
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
@@ -19,18 +20,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             ContainerInternal container)
         {
-            if (clientContext == null)
-            {
-                throw new ArgumentNullException(nameof(clientContext));
-            }
-
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            this.container = container;
-            this.ClientContext = clientContext;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.ClientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
         }
 
         protected CosmosClientContext ClientContext { get; }
@@ -103,12 +94,13 @@ namespace Microsoft.Azure.Cosmos
              string continuationToken = null,
              QueryRequestOptions requestOptions = null)
         {
-            return FeedRangeIteratorCore.Create(
-                containerCore: this.container,
-                feedRangeInternal: null,
-                continuation: continuationToken,
-                options: requestOptions,
-                resourceType: ResourceType.Conflict);
+            return this.container.GetReadFeedIterator(
+                queryDefinition,
+                requestOptions,
+                this.container.LinkUri,
+                ResourceType.Conflict,
+                continuationToken,
+                requestOptions.MaxItemCount ?? int.MaxValue);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(

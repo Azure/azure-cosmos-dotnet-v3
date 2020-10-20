@@ -102,12 +102,17 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public override int GetTotalRequestCount()
+        public override int GetTotalResponseCount()
         {
             return -1;
         }
 
-        public override int GetFailedRequestCount()
+        public override int GetFailedResponseCount()
+        {
+            return -1;
+        }
+
+        public override int GetRetriableResponseCount()
         {
             return -1;
         }

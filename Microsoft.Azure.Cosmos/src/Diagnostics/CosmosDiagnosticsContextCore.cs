@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Security.Policy;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
@@ -28,8 +29,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private List<CosmosDiagnosticsInternal> ContextList { get; }
 
-        private int totalRequestCount = 0;
-        private int failedRequestCount = 0;
+        private int totalResponseCount = 0;
+        private int failedResponseCount = 0;
+        private int retriableResponseCount = 0;
 
         static CosmosDiagnosticsContextCore()
         {
@@ -84,14 +86,19 @@ namespace Microsoft.Azure.Cosmos
             return this.overallScope.IsComplete();
         }
 
-        public override int GetTotalRequestCount()
+        public override int GetTotalResponseCount()
         {
-            return this.totalRequestCount;
+            return this.totalResponseCount;
         }
 
-        public override int GetFailedRequestCount()
+        public override int GetFailedResponseCount()
         {
-            return this.failedRequestCount;
+            return this.failedResponseCount;
+        }
+
+        public override int GetRetriableResponseCount()
+        {
+            return this.retriableResponseCount;
         }
 
         internal override IDisposable CreateScope(string name)
@@ -126,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(pointOperationStatistics));
             }
 
-            this.AddRequestCount((int)pointOperationStatistics.StatusCode);
+            this.AddResponseCount((int)pointOperationStatistics.StatusCode);
 
             this.ContextList.Add(pointOperationStatistics);
         }
@@ -135,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (storeResponseStatistics.StoreResult != null)
             {
-                this.AddRequestCount((int)storeResponseStatistics.StoreResult.StatusCode);
+                this.AddResponseCount((int)storeResponseStatistics.StoreResult.StatusCode);
             }
 
             this.ContextList.Add(storeResponseStatistics);
@@ -199,12 +206,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void AddRequestCount(int statusCode)
+        private void AddResponseCount(int statusCode)
         {
-            this.totalRequestCount++;
+            this.totalResponseCount++;
             if (statusCode < 200 || statusCode > 299)
             {
-                this.failedRequestCount++;
+                this.failedResponseCount++;
+            }
+
+            if (statusCode == (int)StatusCodes.TooManyRequests || statusCode == (int)StatusCodes.RetryWith)
+            {
+                this.retriableResponseCount++;
             }
         }
 
@@ -215,8 +227,9 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            this.totalRequestCount += newContext.GetTotalRequestCount();
-            this.failedRequestCount += newContext.GetFailedRequestCount();
+            this.totalResponseCount += newContext.GetTotalResponseCount();
+            this.failedResponseCount += newContext.GetFailedResponseCount();
+            this.retriableResponseCount += newContext.GetRetriableResponseCount();
         }
     }
 }

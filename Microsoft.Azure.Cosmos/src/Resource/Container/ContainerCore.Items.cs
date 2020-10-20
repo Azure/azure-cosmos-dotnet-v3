@@ -321,16 +321,14 @@ namespace Microsoft.Azure.Cosmos
             if (requestOptions.Properties != null
                 && requestOptions.Properties.TryGetValue("x-ms-query-partitionkey-definition", out object partitionKeyDefinitionObject))
             {
-                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
-                {
-                    partitionKeyDefinition = definition;
-                }
-                else
+                if (!(partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition))
                 {
                     throw new ArgumentException(
                         "partitionkeydefinition has invalid type",
                         nameof(partitionKeyDefinitionObject));
                 }
+
+                partitionKeyDefinition = definition;
             }
             else
             {
@@ -405,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
@@ -430,7 +428,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             return new CosmosLinqQuery<T>(
                 this,
@@ -448,7 +446,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             if (!(this.GetItemQueryStreamIterator(
                 feedRange,
@@ -566,16 +564,18 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        internal override FeedIterator GetStandByFeedIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions requestOptions = null)
+        public override FeedIterator GetStandByFeedIterator(
+            string continuationToken = null,
+            int? maxItemCount = null,
+            StandByFeedIteratorRequestOptions requestOptions = null)
         {
-            ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions ?? new ChangeFeedRequestOptions();
+            StandByFeedIteratorRequestOptions cosmosQueryRequestOptions = requestOptions ?? new StandByFeedIteratorRequestOptions();
 
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
                 container: this,
-                changeFeedStartFrom: changeFeedStartFrom,
                 options: cosmosQueryRequestOptions);
         }
 
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos
             FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
@@ -607,16 +607,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     this,
-                    client,
-                    clientContext,
-                    CosmosDiagnosticsContext.Create(queryRequestOptions),
-                    queryRequestOptions);
+                    this.queryClient,
+                    CosmosDiagnosticsContext.Create(requestOptions),
+                    requestOptions);
+
+                DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
                 return new FeedRangeIteratorCore(
-                    containerCore: this,
-                    continuation: continuationToken,
-                    feedRangeInternal: feedRange,
-                    options: requestOptions);
+                    documentContainer: documentContainer,
+                    queryDefinition: null,
+                    queryRequestOptions: requestOptions,
+                    resourceLink: this.LinkUri,
+                    resourceType: ResourceType.Document,
+                    continuationToken: continuationToken,
+                    pageSize: requestOptions.MaxItemCount ?? int.MaxValue,
+                    cancellationToken: default);
             }
 
             return QueryIterator.Create(
@@ -632,6 +637,33 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery: true,
                 forcePassthrough: false,
                 partitionedQueryExecutionInfo: null);
+        }
+
+        public override FeedIteratorInternal GetReadFeedIterator(
+            QueryDefinition queryDefinition, 
+            QueryRequestOptions queryRequestOptions, 
+            string resourceLink, 
+            ResourceType resourceType, 
+            string continuationToken, 
+            int pageSize)
+        {
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                    this,
+                    this.queryClient,
+                    CosmosDiagnosticsContext.Create(queryRequestOptions),
+                    queryRequestOptions);
+
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new FeedRangeIteratorCore(
+                documentContainer: documentContainer,
+                queryDefinition: null,
+                queryRequestOptions: queryRequestOptions,
+                resourceLink: this.LinkUri,
+                resourceType: ResourceType.Document,
+                continuationToken: continuationToken,
+                pageSize: queryRequestOptions.MaxItemCount ?? int.MaxValue,
+                cancellationToken: default);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

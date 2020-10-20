@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -48,6 +49,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 RequestRateTooLargeException));
 
         private static readonly ReadFeedState ReadFeedNotStartedState = new ReadFeedState(ContinuationForStartedButNoDocumentsReturned);
+
+        private static readonly Task<TryCatch<ChangeFeedPage>> ThrottleForChangeFeed = Task.FromResult(
+            TryCatch<ChangeFeedPage>.FromException(
+                RequestRateTooLargeException));
 
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
 
@@ -95,6 +100,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
             int pageSize,
             CancellationToken cancellationToken)
         {
@@ -124,6 +133,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return this.documentContainer.MonadicReadFeedAsync(
                 readFeedState,
                 feedRange,
+                queryDefinition,
+                queryRequestOptions,
+                resourceLink,
+                resourceType,
                 pageSize,
                 cancellationToken);
         }
@@ -178,6 +191,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 cancellationToken);
         }
 
+        public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
+            ChangeFeedState state, 
+            FeedRangeInternal feedRange, 
+            int pageSize, 
+            CancellationToken cancellationToken)
+        {
+            if (this.ShouldReturn429())
+            {
+                return ThrottleForChangeFeed;
+            }
+
+            if (this.ShouldReturnEmptyPage())
+            {
+                return Task.FromResult(
+                    TryCatch<ChangeFeedPage>.FromResult(
+                        new ChangeFeedSuccessPage(
+                            content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            state: state)));
+            }
+
+            return this.documentContainer.MonadicChangeFeedAsync(
+                state,
+                feedRange,
+                pageSize,
+                cancellationToken);
+        }
+
         public Task<TryCatch> MonadicSplitAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => this.documentContainer.MonadicSplitAsync(
@@ -193,6 +235,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
+
+        public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+    CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
 
         private bool ShouldReturn429() => (this.failureConfigs != null)
             && this.failureConfigs.Inject429s

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -86,21 +87,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
             int pageSize,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
                 readFeedState,
                 feedRange,
+                queryDefinition,
+                queryRequestOptions,
+                resourceLink,
+                resourceType,
                 pageSize,
                 cancellationToken);
 
         public Task<ReadFeedPage> ReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
             int pageSize,
             CancellationToken cancellationToken) => TryCatch<ReadFeedPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(
                     readFeedState,
                     feedRange,
+                    queryDefinition,
+                    queryRequestOptions,
+                    resourceLink,
+                    resourceType,
                     pageSize,
                     cancellationToken),
                 cancellationToken);
@@ -144,5 +161,35 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     feedRange,
                     cancellationToken),
                 cancellationToken);
+
+        public Task<ChangeFeedPage> ChangeFeedAsync(
+            ChangeFeedState state,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
+                this.MonadicChangeFeedAsync(
+                    state,
+                    feedRange,
+                    pageSize,
+                    cancellationToken), 
+                cancellationToken);
+
+        public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
+            ChangeFeedState state,
+            FeedRangeInternal feedRange,
+            int pageSize,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
+                state,
+                feedRange,
+                pageSize,
+                cancellationToken);
+
+        public Task<string> GetResourceIdentifierAsync(
+            CancellationToken cancellationToken) => TryCatch<string>.UnsafeGetResultAsync(
+                this.MonadicGetResourceIdentifierAsync(cancellationToken),
+                cancellationToken);
+
+        public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
     }
 }

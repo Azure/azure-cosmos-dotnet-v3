@@ -22,9 +22,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosDiagnostics Diagnostics { get; }
 
-        public abstract int GetTotalRequestCount();
+        public abstract int GetTotalResponseCount();
 
-        public abstract int GetFailedRequestCount();
+        public abstract int GetFailedResponseCount();
+
+        public abstract int GetRetriableResponseCount();
 
         internal abstract IDisposable GetOverallScope();
 

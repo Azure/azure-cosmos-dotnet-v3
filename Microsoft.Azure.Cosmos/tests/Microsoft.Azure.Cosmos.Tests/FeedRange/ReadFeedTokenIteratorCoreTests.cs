@@ -27,9 +27,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public void ReadFeedIteratorCore_HasMoreResultsDefault()
         {
-            FeedRangeIteratorCore iterator = new FeedRangeIteratorCore(
+            FeedIterator iterator = CreateReadFeedIterator(
                 Mock.Of<IDocumentContainer>(),
-                default,
                 default,
                 default);
             Assert.IsTrue(iterator.HasMoreResults);
@@ -40,11 +39,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             int numItems = 100;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-            FeedRangeIteratorCore iterator = new FeedRangeIteratorCore(
+            FeedIterator iterator = CreateReadFeedIterator(
                 documentContainer,
                 continuationToken: null,
-                pageSize: 10,
-                cancellationToken: default);
+                pageSize: 10);
 
             int count = 0;
             while (iterator.HasMoreResults)
@@ -67,11 +65,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             string continuationToken = null;
             do
             {
-                FeedRangeIteratorCore iterator = new FeedRangeIteratorCore(
+                FeedIterator iterator = CreateReadFeedIterator(
                     documentContainer,
                     continuationToken: continuationToken,
-                    pageSize: 10,
-                    cancellationToken: default);
+                    pageSize: 10);
                 ResponseMessage message = await iterator.ReadNextAsync();
                 CosmosArray documents = GetDocuments(message.Content);
                 count += documents.Count;
@@ -87,17 +84,16 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             int numItems = 100;
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
                 numItems,
-                failureConfigs: new FlakyDocumentContainer.FailureConfigs(inject429s: true, injectEmptyPages: true);
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(inject429s: true, injectEmptyPages: true));
 
             int count = 0;
             string continuationToken = null;
             do
             {
-                FeedRangeIteratorCore iterator = new FeedRangeIteratorCore(
+                FeedIterator iterator = CreateReadFeedIterator(
                     documentContainer,
                     continuationToken: continuationToken,
-                    pageSize: 10,
-                    cancellationToken: default);
+                    pageSize: 10);
                 ResponseMessage message = await iterator.ReadNextAsync();
                 if (message.IsSuccessStatusCode)
                 {
@@ -188,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Returns("/dbs/db/colls/colls");
             FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
             Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>()));
+                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
             FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
             Mock.Get(feedToken)
                 .Setup(f => f.FeedRange)
@@ -267,6 +263,22 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
                 return value;
             }
+        }
+
+        private static FeedIteratorInternal CreateReadFeedIterator(
+            IDocumentContainer documentContainer,
+            string continuationToken,
+            int pageSize)
+        {
+            return new FeedRangeIteratorCore(
+                documentContainer,
+                queryDefinition: null,
+                queryRequestOptions: null,
+                resourceLink: null,
+                resourceType: ResourceType.Document,
+                continuationToken: continuationToken,
+                pageSize: pageSize,
+                cancellationToken: default);
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
