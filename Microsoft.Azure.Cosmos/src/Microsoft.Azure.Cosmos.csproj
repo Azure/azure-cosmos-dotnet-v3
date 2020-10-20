@@ -89,8 +89,19 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SystemStrings.tt</DependentUpon>
     </Compile>
+	  <Compile Update="Headers\StoreRequestHeaders.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>StoreRequestHeaders.tt</DependentUpon>
+	</Compile>
   </ItemGroup>
 
+	<ItemGroup>
+		<None Update="Headers\StoreRequestHeaders.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>StoreRequestHeaders.cs</LastGenOutput>
+		</None>
+	</ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="ClientResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

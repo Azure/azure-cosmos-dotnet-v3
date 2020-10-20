@@ -1,0 +1,416 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<# List<(string name, string value, bool isOverride)> headerNames = new List<(string name, string value, bool isOverride)>()
+{
+    ("HttpConstants.HttpHeaders.Authorization", "authorization", false),
+    ("HttpConstants.HttpHeaders.HttpDate", "date", false),
+    ("HttpConstants.HttpHeaders.XDate", "x-ms-date", false),
+    ("HttpConstants.HttpHeaders.Version", "x-ms-version", false),
+    ("HttpConstants.HttpHeaders.A_IM", "A-IM", false),
+    ("HttpConstants.HttpHeaders.CanCharge", "x-ms-cancharge", false),
+    ("HttpConstants.HttpHeaders.CanOfferReplaceComplete", "x-ms-can-offer-replace-complete", false),
+    ("HttpConstants.HttpHeaders.CanThrottle", "x-ms-canthrottle", false),
+    ("HttpConstants.HttpHeaders.ClientRetryAttemptCount", "x-ms-client-retry-attempt-count", false),
+    ("HttpConstants.HttpHeaders.ConsistencyLevel", "x-ms-consistency-level", false),
+    ("HttpConstants.HttpHeaders.Continuation", "x-ms-continuation", true),
+    ("HttpConstants.HttpHeaders.DisableRUPerMinuteUsage", "x-ms-documentdb-disable-ru-per-minute-usage", false),
+    ("HttpConstants.HttpHeaders.EmitVerboseTracesInQuery", "x-ms-documentdb-query-emit-traces", false),
+    ("HttpConstants.HttpHeaders.EnableLogging", "x-ms-documentdb-script-enable-logging", false),
+    ("HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy", "x-ms-documentdb-query-enable-low-precision-order-by", false),
+    ("HttpConstants.HttpHeaders.EnableScanInQuery", "x-ms-documentdb-query-enable-scan", false),
+    ("HttpConstants.HttpHeaders.EndEpk", "x-ms-end-epk", false),
+    ("HttpConstants.HttpHeaders.EndId", "x-ms-end-id", false),
+    ("HttpConstants.HttpHeaders.EnumerationDirection", "x-ms-enumeration-direction", false),
+    ("HttpConstants.HttpHeaders.FilterBySchemaResourceId", "x-ms-documentdb-filterby-schema-rid", false),
+    ("HttpConstants.HttpHeaders.GatewaySignature", "x-ms-gateway-signature", false),
+    ("HttpConstants.HttpHeaders.GetAllPartitionKeyStatistics", "x-ms-cosmos-internal-get-all-partition-key-stats", false),
+    ("HttpConstants.HttpHeaders.IfMatch", "If-Match", false),
+    ("HttpConstants.HttpHeaders.IfModifiedSince", "If-Modified-Since", false),
+    ("HttpConstants.HttpHeaders.IfNoneMatch", "If-None-Match", true),
+    ("HttpConstants.HttpHeaders.IncludeTentativeWrites", "x-ms-cosmos-include-tentative-writes", false),
+    ("HttpConstants.HttpHeaders.IndexingDirective", "x-ms-indexing-directive", false),
+    ("HttpConstants.HttpHeaders.IsBatchAtomic", "x-ms-cosmos-batch-atomic", false),
+    ("HttpConstants.HttpHeaders.IsBatchOrdered", "x-ms-cosmos-batch-ordered", false),
+    ("HttpConstants.HttpHeaders.IsClientEncrypted", "x-ms-cosmos-is-client-encrypted", false),
+    ("HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest", "x-ms-cosmos-internal-is-offer-storage-refresh-request", false),
+    ("HttpConstants.HttpHeaders.IsReadOnlyScript", "x-ms-is-readonly-script", false),
+    ("HttpConstants.HttpHeaders.IsRUPerGBEnforcementRequest", "x-ms-cosmos-internal-is-ru-per-gb-enforcement-request", false),
+    ("HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds", "x-ms-cosmos-max-polling-interval", false),
+    ("HttpConstants.HttpHeaders.MigrateCollectionDirective", "x-ms-migratecollection-directive", false),
+    ("HttpConstants.HttpHeaders.MigrateOfferToAutopilot", "x-ms-cosmos-migrate-offer-to-autopilot", false),
+    ("HttpConstants.HttpHeaders.MigrateOfferToManualThroughput", "x-ms-cosmos-migrate-offer-to-manual-throughput", false),
+    ("HttpConstants.HttpHeaders.PageSize", "x-ms-max-item-count", true),
+    ("HttpConstants.HttpHeaders.PartitionKey", "x-ms-documentdb-partitionkey", true),
+    ("HttpConstants.HttpHeaders.PopulateCollectionThroughputInfo", "x-ms-documentdb-populatecollectionthroughputinfo", false),
+    ("HttpConstants.HttpHeaders.PopulatePartitionStatistics", "x-ms-documentdb-populatepartitionstatistics", false),
+    ("HttpConstants.HttpHeaders.PopulateQueryMetrics", "x-ms-documentdb-populatequerymetrics", false),
+    ("HttpConstants.HttpHeaders.PopulateQuotaInfo", "x-ms-documentdb-populatequotainfo", false),
+    ("HttpConstants.HttpHeaders.PopulateResourceCount", "x-ms-documentdb-populateresourcecount", false),
+    ("HttpConstants.HttpHeaders.PostTriggerExclude", "x-ms-documentdb-post-trigger-exclude", false),
+    ("HttpConstants.HttpHeaders.PostTriggerInclude", "x-ms-documentdb-post-trigger-include", false),
+    ("HttpConstants.HttpHeaders.Prefer", "Prefer", false),
+    ("HttpConstants.HttpHeaders.PreTriggerExclude", "x-ms-documentdb-pre-trigger-exclude", false),
+    ("HttpConstants.HttpHeaders.PreTriggerInclude", "x-ms-documentdb-pre-trigger-include", false),
+    ("HttpConstants.HttpHeaders.ProfileRequest", "x-ms-profile-request", false),
+    ("HttpConstants.HttpHeaders.ReadFeedKeyType", "x-ms-read-key-type", false),
+    ("HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest", "x-ms-remaining-time-in-ms-on-client", false),
+    ("HttpConstants.HttpHeaders.ResourceTokenExpiry", "x-ms-documentdb-expiry-seconds", false),
+    ("HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB", "x-ms-documentdb-responsecontinuationtokenlimitinkb", false),
+    ("HttpConstants.HttpHeaders.RestoreMetadataFilter", "x-ms-restore-metadata-filter", false),
+    ("HttpConstants.HttpHeaders.SessionToken", "x-ms-session-token", true),
+    ("HttpConstants.HttpHeaders.ShouldBatchContinueOnError", "x-ms-cosmos-batch-continue-on-error", false),
+    ("HttpConstants.HttpHeaders.StartEpk", "x-ms-start-epk", false),
+    ("HttpConstants.HttpHeaders.StartId", "x-ms-start-id", false),
+    ("HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates", "x-ms-documentdb-supportspatiallegacycoordinates", false),
+    ("HttpConstants.HttpHeaders.SystemDocumentType", "x-ms-cosmos-systemdocument-type", false),
+    ("HttpConstants.HttpHeaders.TargetGlobalCommittedLsn", "x-ms-target-global-committed-lsn", false),
+    ("HttpConstants.HttpHeaders.TargetLsn", "x-ms-target-lsn", false),
+    ("HttpConstants.HttpHeaders.TransportRequestID", "x-ms-transport-request-id", false),
+    ("HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned", "x-ms-cosmos-internal-update-max-throughput-ever-provisioned", false),
+    ("HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere", "x-ms-documentdb-usepolygonssmallerthanahemisphere", false),
+    ("WFConstants.BackendHeaders.AddResourcePropertiesToResponse", "x-ms-cosmos-add-resource-properties-to-response", false),
+    ("WFConstants.BackendHeaders.AllowTentativeWrites", "x-ms-cosmos-allow-tentative-writes", false),
+    ("WFConstants.BackendHeaders.BinaryId", "x-ms-binary-id", false),
+    ("WFConstants.BackendHeaders.BinaryPassthroughRequest", "x-ms-binary-passthrough-request", false),
+    ("WFConstants.BackendHeaders.BindReplicaDirective", "x-ms-bind-replica", false),
+    ("WFConstants.BackendHeaders.CollectionChildResourceContentLimitInKB", "x-ms-cosmos-collection-child-contentlength-resourcelimit", false),
+    ("WFConstants.BackendHeaders.CollectionChildResourceNameLimitInBytes", "x-ms-cosmos-collection-child-resourcename-limit", false),
+    ("WFConstants.BackendHeaders.CollectionPartitionIndex", "collection-partition-index", false),
+    ("WFConstants.BackendHeaders.CollectionRid", "x-ms-documentdb-collection-rid", false),
+    ("WFConstants.BackendHeaders.CollectionSecurityIdentifier", "x-ms-collection-security-identifier", false),
+    ("WFConstants.BackendHeaders.CollectionServiceIndex", "collection-service-index", false),
+    ("WFConstants.BackendHeaders.ContentSerializationFormat", "x-ms-documentdb-content-serialization-format", false),
+    ("WFConstants.BackendHeaders.EffectivePartitionKey", "x-ms-effective-partition-key", false),
+    ("WFConstants.BackendHeaders.EnableDynamicRidRangeAllocation", "x-ms-enable-dynamic-rid-range-allocation", false),
+    ("WFConstants.BackendHeaders.ExcludeSystemProperties", "x-ms-exclude-system-properties", false),
+    ("WFConstants.BackendHeaders.FanoutOperationState", "x-ms-fanout-operation-state", false),
+    ("WFConstants.BackendHeaders.ForceQueryScan", "x-ms-documentdb-force-query-scan", false),
+    ("WFConstants.BackendHeaders.ForceSideBySideIndexMigration", "x-ms-cosmos-force-sidebyside-indexmigration", false),
+    ("WFConstants.BackendHeaders.IsFanoutRequest", "x-ms-is-fanout-request", false),
+    ("WFConstants.BackendHeaders.IsUserRequest", "x-ms-cosmos-internal-is-user-request", false),
+    ("WFConstants.BackendHeaders.MergeCheckPointGLSN", "x-ms-cosmos-internal-merge-checkpoint-glsn", false),
+    ("WFConstants.BackendHeaders.MergeStaticId", "x-ms-cosmos-merge-static-id", false),
+    ("WFConstants.BackendHeaders.PartitionCount", "x-ms-documentdb-partitioncount", false),
+    ("WFConstants.BackendHeaders.PartitionKeyRangeId", "x-ms-documentdb-partitionkeyrangeid", true),
+    ("WFConstants.BackendHeaders.PartitionResourceFilter", "x-ms-partition-resource-filter", false),
+    ("WFConstants.BackendHeaders.PopulateLogStoreInfo", "x-ms-cosmos-populate-logstoreinfo", false),
+    ("WFConstants.BackendHeaders.PopulateUnflushedMergeEntryCount", "x-ms-cosmos-internal-populate-unflushed-merge-entry-count", false),
+    ("WFConstants.BackendHeaders.PreserveFullContent", "x-ms-cosmos-preserve-full-content", false),
+    ("WFConstants.BackendHeaders.PrimaryMasterKey", "x-ms-primary-master-key", false),
+    ("WFConstants.BackendHeaders.PrimaryReadonlyKey", "x-ms-primary-readonly-key", false),
+    ("WFConstants.BackendHeaders.RemoteStorageType", "x-ms-remote-storage-type", false),
+    ("WFConstants.BackendHeaders.ResourceSchemaName", "x-ms-resource-schema-name", false),
+    ("WFConstants.BackendHeaders.ResourceTypes", "x-ms-cosmos-resourcetypes", false),
+    ("WFConstants.BackendHeaders.RestoreParams", "x-ms-restore-params", false),
+    ("WFConstants.BackendHeaders.SchemaHash", "x-ms-schema-hash", false),
+    ("WFConstants.BackendHeaders.SchemaOwnerRid", "x-ms-schema-owner-rid", false),
+    ("WFConstants.BackendHeaders.SecondaryMasterKey", "x-ms-secondary-master-key", false),
+    ("WFConstants.BackendHeaders.SecondaryReadonlyKey", "x-ms-secondary-readonly-key", false),
+    ("WFConstants.BackendHeaders.ShareThroughput", "x-ms-share-throughput", false),
+    ("WFConstants.BackendHeaders.TimeToLiveInSeconds", "x-ms-time-to-live-in-seconds", false),
+    ("WFConstants.BackendHeaders.TransactionCommit", "x-ms-cosmos-tx-commit", false),
+    ("WFConstants.BackendHeaders.TransactionId", "x-ms-cosmos-tx-id", false),
+    ("WFConstants.BackendHeaders.UniqueIndexNameEncodingMode", "x-ms-cosmos-unique-index-name-encoding-mode", false),
+    ("WFConstants.BackendHeaders.UseSystemBudget", "x-ms-cosmos-use-systembudget", false),
+}; #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// This is auto-generated code.
+
+namespace Microsoft.Azure.Cosmos
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.Globalization;
+    using System.Linq;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+
+    internal class StoreRequestHeaders : InternalHeaders, INameValueCollection
+    {
+        private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
+<#  List<(string headerName, bool isOverride)> sortedHeaderPropertyNamesWithIsOverride = headerNames.Select(x => (x.name.Split('.').Last(), x.isOverride)).OrderBy(x => x.Item1).ToList(); #>
+<#  List<string> sortedHeaderPropertyNames = headerNames.Select(x => x.name.Split('.').Last()).OrderBy(x => x).ToList();
+    foreach((string headerName, bool isOverride) in sortedHeaderPropertyNamesWithIsOverride) { #>
+        public<# if(isOverride) { #> override<# } #> string <#= headerName #> { get; set; }
+<# } #>
+
+        public StoreRequestHeaders()
+            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
+        {
+        }
+
+        private StoreRequestHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
+        {
+            this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
+        }
+
+        public override bool TryGetValue(string headerName, out string value)
+        {
+            value = this.Get(headerName);
+            return value != null;
+        }
+
+        public override void Add(INameValueCollection collection)
+        {
+            foreach (string key in collection.Keys())
+            {
+                this.Set(key, collection[key]);
+            }
+        }
+
+        public override string[] AllKeys()
+        {
+            return this.Keys().ToArray();
+        }
+
+        public override void Clear()
+        {
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                this.lazyNotCommonHeaders.Value.Clear();
+            }
+
+<#      foreach (string name in sortedHeaderPropertyNames) { #>
+            this.<#= name #> = null;
+<#      } #>
+
+        }
+
+        public override INameValueCollection Clone()
+        {
+            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>());
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                foreach (KeyValuePair<string, string> notCommonHeader in this.lazyNotCommonHeaders.Value)
+                {
+                    cloneNotCommonHeaders.Value[notCommonHeader.Key] = notCommonHeader.Value;
+                }
+            }
+
+            StoreRequestHeaders cloneHeaders = new StoreRequestHeaders(cloneNotCommonHeaders)
+            {
+<#            foreach (string name in sortedHeaderPropertyNames) { #>
+                <#= name #> = this.<#= name #>,
+<#      } #>
+            };
+
+            return cloneHeaders;
+        }
+
+        public override int Count()
+        {
+            return this.Keys().Count();
+        }
+
+        public override IEnumerator<string> GetEnumerator()
+        {
+            return this.Keys().GetEnumerator();
+        }
+
+        public override string[] GetValues(string key)
+        {
+            string value = this.Get(key);
+            if (value != null)
+            {
+                return new string[] { value };
+            }
+            
+            return null;
+        }
+
+        public override IEnumerable<string> Keys()
+        {
+<#      foreach ((string fullName, string keyValue, bool isOverride) in headerNames) { #>
+            if (this.<#= fullName.Split('.').Last() #> != null)
+            {
+                yield return <#= fullName #>;
+            }
+<#      } #>
+
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                foreach (string key in this.lazyNotCommonHeaders.Value.Keys)
+                {
+                    yield return key;
+                }
+            }
+        }
+
+        public override NameValueCollection ToNameValueCollection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string Get(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            switch (key.Length)
+            {
+<#      IEnumerable<IGrouping<int, (string name, string value)>> getGroupByLength = headerNames.Select(x => (x.name, x.value)).GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+        foreach(IGrouping<int, (string name, string value)> group in getGroupByLength) { #>
+                case <#= group.Key #>:
+<#      
+        if(group.Count() > 1)
+        {
+            foreach((string name, string value) in group) { #>
+                    if (object.ReferenceEquals(<#= name #>, key))
+                    {
+                        return this.<#= name.Split('.').Last() #>;
+                    }
+<#          } #>
+<#      } #>
+<#      foreach((string name, string value) in group) { #>
+                    if (string.Equals(<#= name #>, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.<#= name.Split('.').Last() #>;
+                    }
+                
+<#      } #>
+                    break;
+<#     } #>
+                default:
+                    break;
+            }
+
+            if (this.lazyNotCommonHeaders.IsValueCreated
+                && this.lazyNotCommonHeaders.Value.TryGetValue(key, out string value))
+            {
+                return value;
+            }
+            
+            return null;
+        }
+
+        public override void Add(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            this.UpdateHelper(
+                key: key, 
+                value: value, 
+                throwIfAlreadyExists: true);
+        }
+
+        public override void Remove(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            this.UpdateHelper(
+                key: key, 
+                value: null, 
+                throwIfAlreadyExists: false);
+        }
+
+        public override void Set(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            this.UpdateHelper(
+                key: key, 
+                value: value, 
+                throwIfAlreadyExists: false);
+        }
+
+        public void UpdateHelper(
+            string key, 
+            string value,
+            bool throwIfAlreadyExists)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            switch (key.Length)
+            {
+<#      IEnumerable<IGrouping<int, (string name, string value)>> groupByLength = headerNames.Select(x => (x.name, x.value)).GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+        foreach(IGrouping<int, (string name, string value)> group in groupByLength) { #>
+                case <#= group.Key #>:
+<#      
+        if(group.Count() > 1)
+        {
+            foreach((string name, string value) in group) { #>
+                    if (object.ReferenceEquals(<#= name #>, key))
+                    {
+                        if (throwIfAlreadyExists && this.<#= name.Split('.').Last() #> != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.<#= name.Split('.').Last() #> = value;
+                        return;
+                    }
+<#          } #>
+<#      } #>
+<#      foreach((string name, string value) in group) { #>
+                    if (string.Equals(<#= name #>, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.<#= name.Split('.').Last() #> != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.<#= name.Split('.').Last() #> = value;
+                        return;
+                    }
+<#      } #>
+                    break;
+<#      } #>
+                default:
+                    break;
+            }
+
+            if (throwIfAlreadyExists)
+            {
+                this.lazyNotCommonHeaders.Value.Add(key, value);
+            }
+            else
+            {
+                if (value == null)
+                {
+                    this.lazyNotCommonHeaders.Value.Remove(key);
+                }
+                else
+                {
+                    this.lazyNotCommonHeaders.Value[key] = value;
+                }
+            }
+        }
+    }
+}

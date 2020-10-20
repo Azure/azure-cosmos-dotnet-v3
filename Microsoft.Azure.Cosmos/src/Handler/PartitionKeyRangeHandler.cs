@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 else
                 {
                     if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
-                        response.Headers.CosmosMessageHeaders,
+                        response.Headers.InternalHeaders,
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
