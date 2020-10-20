@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Moq;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
 
-
     [TestClass]
     public class CosmosEncryptorTests
     {
