@@ -11,13 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Emul
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Performance.Tests", "Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\Microsoft.Azure.Cosmos.Performance.Tests.csproj", "{0392A590-68EF-4283-94D8-33F350BEC9BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{4D0FBC91-268E-44DD-AC10-6851A69C52FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "Microsoft.Azure.Cosmos.Encryption\Custom\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{4D0FBC91-268E-44DD-AC10-6851A69C52FB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Encryption", "Encryption", "{B382B965-7D1B-4DE8-8007-197741C49F88}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.EmulatorTests", "Microsoft.Azure.Cosmos.Encryption\tests\EmulatorTests\Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj", "{D6A405BF-15E1-46D3-8C13-210BA043ADC5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption.EmulatorTests", "Microsoft.Azure.Cosmos.Encryption\Custom\tests\EmulatorTests\Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj", "{D6A405BF-15E1-46D3-8C13-210BA043ADC5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encryption.Tests", "Microsoft.Azure.Cosmos.Encryption\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj", "{0535FD1C-D1A0-435A-8F8C-8CF588DF262F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encryption.Tests", "Microsoft.Azure.Cosmos.Encryption\Custom\tests\Microsoft.Azure.Cosmos.Encryption.Tests\Microsoft.Azure.Cosmos.Encryption.Tests.csproj", "{0535FD1C-D1A0-435A-8F8C-8CF588DF262F}"
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{804C595B-D0DA-48F1-A40D-97BB014736CB}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig

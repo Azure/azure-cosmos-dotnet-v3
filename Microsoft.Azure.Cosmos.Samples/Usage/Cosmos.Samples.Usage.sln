@@ -39,7 +39,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BulkExecutorMigration", "Bu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Encryption", "Encryption\Encryption.csproj", "{12D9E6FC-C5D1-44F4-AF41-CEBEA9A89B1E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{AA4A3668-0CB1-4760-AC80-FE49C9477C77}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encryption", "..\..\Microsoft.Azure.Cosmos.Encryption\Custom\src\Microsoft.Azure.Cosmos.Encryption.csproj", "{AA4A3668-0CB1-4760-AC80-FE49C9477C77}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpClientFactory", "HttpClientFactory\HttpClientFactory.csproj", "{D4CFD5B2-67A8-4383-947F-FAADD998043E}"
 EndProject
