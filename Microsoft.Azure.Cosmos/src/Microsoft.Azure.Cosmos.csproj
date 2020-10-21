@@ -42,7 +42,7 @@
     <NoWarn>NU5125</NoWarn>
     <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
-
+	
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
     <None Include="Icon.png" Pack="true" PackagePath="\"/>
