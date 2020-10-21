@@ -55,16 +55,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return await base.SendAsync(request, cancellationToken);
                 }
 
-                this.ValidateLazyHeadersAreNotCreated(request.Headers.InternalHeaders);
+                this.ValidateLazyHeadersAreNotCreated(request.Headers.CosmosMessageHeaders);
 
                 ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
 
-                this.ValidateLazyHeadersAreNotCreated(request.Headers.InternalHeaders);
+                this.ValidateLazyHeadersAreNotCreated(request.Headers.CosmosMessageHeaders);
 
                 return responseMessage;
             }
 
-            private void ValidateLazyHeadersAreNotCreated(InternalHeaders internalHeaders)
+            private void ValidateLazyHeadersAreNotCreated(CosmosMessageHeadersInternal internalHeaders)
             {
                 StoreRequestHeaders storeRequestHeaders = (StoreRequestHeaders)internalHeaders;
                 FieldInfo lazyHeaders = typeof(StoreRequestHeaders).GetField("lazyNotCommonHeaders", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);

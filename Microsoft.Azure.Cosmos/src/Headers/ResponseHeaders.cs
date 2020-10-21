@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Header implementation used for Responses
     /// </summary>
-    internal sealed class ResponseHeaders : InternalHeaders
+    internal sealed class ResponseHeaders : CosmosMessageHeadersInternal
     {
         private readonly StoreResponseNameValueCollection storeResponseNameValueCollection;
 

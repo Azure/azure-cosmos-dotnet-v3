@@ -5,9 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -47,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public HeaderBenchmark()
         {
-            
+
         }
 
         [Benchmark]
@@ -104,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public void DictionaryKeys()
         {
-            foreach(string key in DictionaryHeaders.Keys)
+            foreach (string key in DictionaryHeaders.Keys)
             {
                 DictionaryHeaders.Get(key);
             }

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class StoreRequestHeaders : InternalHeaders, INameValueCollection
+    internal class StoreRequestHeaders : CosmosMessageHeadersInternal, INameValueCollection
     {
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
         public override string Authorization { get; set; }
