@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Cosmos
         public string IsBatchOrdered { get; set; }
         public override string IsUpsert { get; set; }
         public override string PartitionKey { get; set; }
-        public override string PartitionKeyRangeId { get; set; }
         public string Prefer { get; set; }
         public string RemainingTimeInMsOnClientRequest { get; set; }
         public string ResourceTokenExpiry { get; set; }
@@ -94,7 +93,6 @@ namespace Microsoft.Azure.Cosmos
             this.IsBatchOrdered = null;
             this.IsUpsert = null;
             this.PartitionKey = null;
-            this.PartitionKeyRangeId = null;
             this.Prefer = null;
             this.RemainingTimeInMsOnClientRequest = null;
             this.ResourceTokenExpiry = null;
@@ -137,7 +135,6 @@ namespace Microsoft.Azure.Cosmos
                 IsBatchOrdered = this.IsBatchOrdered,
                 IsUpsert = this.IsUpsert,
                 PartitionKey = this.PartitionKey,
-                PartitionKeyRangeId = this.PartitionKeyRangeId,
                 Prefer = this.Prefer,
                 RemainingTimeInMsOnClientRequest = this.RemainingTimeInMsOnClientRequest,
                 ResourceTokenExpiry = this.ResourceTokenExpiry,
@@ -267,10 +264,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.ExcludeSystemProperties != null)
             {
                 yield return WFConstants.BackendHeaders.ExcludeSystemProperties;
-            }
-            if (this.PartitionKeyRangeId != null)
-            {
-                yield return WFConstants.BackendHeaders.PartitionKeyRangeId;
             }
             if (this.ResourceTypes != null)
             {
@@ -521,10 +514,6 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return this.ShouldBatchContinueOnError;
                     }
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionKeyRangeId, key))
-                    {
-                        return this.PartitionKeyRangeId;
-                    }
                     if (string.Equals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.RemainingTimeInMsOnClientRequest;
@@ -533,11 +522,6 @@ namespace Microsoft.Azure.Cosmos
                     if (string.Equals(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ShouldBatchContinueOnError;
-                    }
-                
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PartitionKeyRangeId;
                     }
                 
                     break;
@@ -1029,16 +1013,6 @@ namespace Microsoft.Azure.Cosmos
                         this.ShouldBatchContinueOnError = value;
                         return;
                     }
-                    if (object.ReferenceEquals(WFConstants.BackendHeaders.PartitionKeyRangeId, key))
-                    {
-                        if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.PartitionKeyRangeId = value;
-                        return;
-                    }
                     if (string.Equals(HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.RemainingTimeInMsOnClientRequest != null)
@@ -1057,16 +1031,6 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         this.ShouldBatchContinueOnError = value;
-                        return;
-                    }
-                    if (string.Equals(WFConstants.BackendHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.PartitionKeyRangeId = value;
                         return;
                     }
                     break;

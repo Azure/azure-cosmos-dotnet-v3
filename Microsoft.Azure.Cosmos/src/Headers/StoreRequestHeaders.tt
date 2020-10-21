@@ -32,7 +32,6 @@
     ("WFConstants.BackendHeaders.CollectionRid", "x-ms-documentdb-collection-rid", false),
     ("WFConstants.BackendHeaders.EffectivePartitionKey", "x-ms-effective-partition-key", false),
     ("WFConstants.BackendHeaders.ExcludeSystemProperties", "x-ms-exclude-system-properties", false),
-    ("WFConstants.BackendHeaders.PartitionKeyRangeId", "x-ms-documentdb-partitionkeyrangeid", true),
     ("WFConstants.BackendHeaders.ResourceTypes", "x-ms-cosmos-resourcetypes", false),
     ("WFConstants.BackendHeaders.TimeToLiveInSeconds", "x-ms-time-to-live-in-seconds", false),
     ("WFConstants.BackendHeaders.TransactionCommit", "x-ms-cosmos-tx-commit", false),
