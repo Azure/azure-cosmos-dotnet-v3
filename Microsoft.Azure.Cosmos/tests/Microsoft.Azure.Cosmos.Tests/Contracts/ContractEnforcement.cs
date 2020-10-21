@@ -67,11 +67,12 @@
 
         private static string GenerateNameWithClassAttributes(Type type)
         {
-            // FullName is sometimes contain unwanted assembly artifacts like version
+            // FullName contains unwanted assembly artifacts like version when it has a generic type
             Type baseType = type.BaseType;
             string baseTypeString = string.Empty;
             if(baseType != null)
             {
+                // Remove assembly info to avoid breaking the contract just from version change
                 baseTypeString = baseType.FullName;
                 string assemblyInfo = baseType.Assembly?.ToString();
                 if (!string.IsNullOrEmpty(assemblyInfo) &&
