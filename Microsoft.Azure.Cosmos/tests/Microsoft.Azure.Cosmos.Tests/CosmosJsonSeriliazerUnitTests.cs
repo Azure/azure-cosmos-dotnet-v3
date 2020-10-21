@@ -205,9 +205,15 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.VerifyAll();
 
             ResponseMessage changeFeedResponseMessage = this.CreateChangeFeedNotModifiedResponse();
-            FeedResponse<ToDoActivity> changeFeedResponse = cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(changeFeedResponseMessage);
-            Assert.AreEqual(HttpStatusCode.NotModified, changeFeedResponse.StatusCode);
-            Assert.IsFalse(changeFeedResponse.Resource.Any());
+            try
+            {
+                cosmosResponseFactory.CreateItemFeedResponse<ToDoActivity>(changeFeedResponseMessage);
+                Assert.Fail();
+            }
+            catch (CosmosException cosmosException)
+            {
+                Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode);
+            }
 
             ResponseMessage queryResponse = this.CreateReadFeedResponse();
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity[]>(It.IsAny<Stream>())).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity[] { new ToDoActivity() });
