@@ -131,12 +131,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             }
         }
 
-        /// <summary>
-        /// Migration test from V2 Continuation model for Change Feed
-        /// </summary>
         [TestMethod]
         [Timeout(30000)]
-        public async Task ChangeFeed_FeedRange_FromV2SDK()
+        public async Task ChangeFeed_FeedRange_FromV0Token()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/status"),
@@ -163,12 +160,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     changeFeedStartFrom: ChangeFeedStartFrom.Beginning(feedRange),
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
-                if (firstResponse.IsSuccessStatusCode)
-                {
-                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
-                    count += response.Count;
-                }
-
                 FeedRangeEpk FeedRangeEpk = feedRange as FeedRangeEpk;
 
                 // Construct the continuation's range, using PKRangeId + ETag
@@ -178,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     {
                         min = FeedRangeEpk.Range.Min,
                         max = FeedRangeEpk.Range.Max,
-                        token = firstResponse.Headers.ETag
+                        token = (string)null
                     }
                 };
 
@@ -186,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 dynamic oldContinuation = new
                 {
                     V = 0,
-                    PKRangeId = pkRangeIds.First(),
+                    Rid = await container.GetRIDAsync(this.cancellationToken),
                     Continuation = ct
                 };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));
@@ -197,7 +188,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             {
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
-                    PageSizeHint = 100
+                    PageSizeHint = 100,
+                    EmitOldContinuationToken = true,
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),

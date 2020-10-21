@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
     internal static class PartitionMapper
     {
         public static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMapping<PartitionedToken>(
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
+            IReadOnlyList<FeedRangeEpk> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken
         {
@@ -49,19 +49,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 .First();
 
             // Segment the ranges based off that:
-            ReadOnlyMemory<PartitionKeyRange> sortedRanges = partitionKeyRanges
-                .OrderBy((partitionKeyRange) => partitionKeyRange.MinInclusive)
+            ReadOnlyMemory<FeedRangeEpk> sortedRanges = partitionKeyRanges
+                .OrderBy((partitionKeyRange) => partitionKeyRange.Range.Min)
                 .ToArray();
 
-            PartitionKeyRange firstContinuationRange = new PartitionKeyRange
-            {
-                MinInclusive = firstContinuationToken.Range.Min,
-                MaxExclusive = firstContinuationToken.Range.Max
-            };
+            FeedRangeEpk firstContinuationRange = new FeedRangeEpk(
+                new Documents.Routing.Range<string>(
+                    min: firstContinuationToken.Range.Min,
+                    max: firstContinuationToken.Range.Max,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
 
             int matchedIndex = sortedRanges.Span.BinarySearch(
                 firstContinuationRange,
-                Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
+                Comparer<FeedRangeEpk>.Create((range1, range2) => string.CompareOrdinal(range1.Range.Min, range2.Range.Min)));
             if (matchedIndex < 0)
             {
                 return TryCatch<PartitionMapping<PartitionedToken>>.FromException(
@@ -69,18 +70,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                         $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
 
-            ReadOnlyMemory<PartitionKeyRange> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex);
-            ReadOnlyMemory<PartitionKeyRange> targetPartition = sortedRanges.Slice(start: matchedIndex, length: 1);
-            ReadOnlyMemory<PartitionKeyRange> partitionsRightOfTarget = matchedIndex == sortedRanges.Length - 1 ? ReadOnlyMemory<PartitionKeyRange>.Empty : sortedRanges.Slice(start: matchedIndex + 1);
+            ReadOnlyMemory<FeedRangeEpk> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<FeedRangeEpk>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex);
+            ReadOnlyMemory<FeedRangeEpk> targetPartition = sortedRanges.Slice(start: matchedIndex, length: 1);
+            ReadOnlyMemory<FeedRangeEpk> partitionsRightOfTarget = matchedIndex == sortedRanges.Length - 1 ? ReadOnlyMemory<FeedRangeEpk>.Empty : sortedRanges.Slice(start: matchedIndex + 1);
 
             // Create the continuation token mapping for each region.
-            IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> mappingForPartitionsLeftOfTarget = MatchRangesToContinuationTokens(
+            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForPartitionsLeftOfTarget = MatchRangesToContinuationTokens(
                 partitionsLeftOfTarget,
                 partitionedContinuationTokens);
-            IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> mappingForTargetPartition = MatchRangesToContinuationTokens(
+            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForTargetPartition = MatchRangesToContinuationTokens(
                 targetPartition,
                 partitionedContinuationTokens);
-            IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> mappingForPartitionsRightOfTarget = MatchRangesToContinuationTokens(
+            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForPartitionsRightOfTarget = MatchRangesToContinuationTokens(
                 partitionsRightOfTarget,
                 partitionedContinuationTokens);
 
@@ -100,8 +101,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
         /// <param name="partitionKeyRanges">The partition key ranges to match.</param>
         /// <param name="partitionedContinuationTokens">The continuation tokens to match with.</param>
         /// <returns>A dictionary of ranges matched with their continuation tokens.</returns>
-        public static IReadOnlyDictionary<PartitionKeyRange, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
-            ReadOnlyMemory<PartitionKeyRange> partitionKeyRanges,
+        public static IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
+            ReadOnlyMemory<FeedRangeEpk> partitionKeyRanges,
             IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
             where PartitionedToken : IPartitionedToken
         {
@@ -110,29 +111,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 throw new ArgumentNullException(nameof(partitionedContinuationTokens));
             }
 
-            Dictionary<PartitionKeyRange, PartitionedToken> partitionKeyRangeToToken = new Dictionary<PartitionKeyRange, PartitionedToken>();
-            ReadOnlySpan<PartitionKeyRange> partitionKeyRangeSpan = partitionKeyRanges.Span;
+            Dictionary<FeedRangeEpk, PartitionedToken> partitionKeyRangeToToken = new Dictionary<FeedRangeEpk, PartitionedToken>();
+            ReadOnlySpan<FeedRangeEpk> partitionKeyRangeSpan = partitionKeyRanges.Span;
             for (int i = 0; i < partitionKeyRangeSpan.Length; i++)
             {
-                PartitionKeyRange partitionKeyRange = partitionKeyRangeSpan[i];
+                FeedRangeEpk feedRange = partitionKeyRangeSpan[i];
                 foreach (PartitionedToken partitionedToken in partitionedContinuationTokens)
                 {
                     bool rightOfStart = (partitionedToken.Range.Min == string.Empty)
-                        || ((partitionKeyRange.MinInclusive != string.Empty) && (partitionKeyRange.MinInclusive.CompareTo(partitionedToken.Range.Min) >= 0));
+                        || ((feedRange.Range.Min != string.Empty) && (feedRange.Range.Min.CompareTo(partitionedToken.Range.Min) >= 0));
                     bool leftOfEnd = (partitionedToken.Range.Max == string.Empty)
-                        || ((partitionKeyRange.MaxExclusive != string.Empty) && (partitionKeyRange.MaxExclusive.CompareTo(partitionedToken.Range.Max) <= 0));
+                        || ((feedRange.Range.Max != string.Empty) && (feedRange.Range.Max.CompareTo(partitionedToken.Range.Max) <= 0));
                     // See if continuation token includes the range
                     if (rightOfStart && leftOfEnd)
                     {
-                        partitionKeyRangeToToken[partitionKeyRange] = partitionedToken;
+                        partitionKeyRangeToToken[feedRange] = partitionedToken;
                         break;
                     }
                 }
 
-                if (!partitionKeyRangeToToken.ContainsKey(partitionKeyRange))
+                if (!partitionKeyRangeToToken.ContainsKey(feedRange))
                 {
                     // Could not find a matching token so just set it to null
-                    partitionKeyRangeToToken[partitionKeyRange] = default;
+                    partitionKeyRangeToToken[feedRange] = default;
                 }
             }
 
@@ -142,18 +143,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
         public readonly struct PartitionMapping<T>
         {
             public PartitionMapping(
-                IReadOnlyDictionary<PartitionKeyRange, T> partitionsLeftOfTarget,
-                IReadOnlyDictionary<PartitionKeyRange, T> targetPartition,
-                IReadOnlyDictionary<PartitionKeyRange, T> partitionsRightOfTarget)
+                IReadOnlyDictionary<FeedRangeEpk, T> partitionsLeftOfTarget,
+                IReadOnlyDictionary<FeedRangeEpk, T> targetPartition,
+                IReadOnlyDictionary<FeedRangeEpk, T> partitionsRightOfTarget)
             {
                 this.PartitionsLeftOfTarget = partitionsLeftOfTarget ?? throw new ArgumentNullException(nameof(partitionsLeftOfTarget));
                 this.TargetPartition = targetPartition ?? throw new ArgumentNullException(nameof(targetPartition));
                 this.PartitionsRightOfTarget = partitionsRightOfTarget ?? throw new ArgumentNullException(nameof(partitionsRightOfTarget));
             }
 
-            public IReadOnlyDictionary<PartitionKeyRange, T> PartitionsLeftOfTarget { get; }
-            public IReadOnlyDictionary<PartitionKeyRange, T> TargetPartition { get; }
-            public IReadOnlyDictionary<PartitionKeyRange, T> PartitionsRightOfTarget { get; }
+            public IReadOnlyDictionary<FeedRangeEpk, T> PartitionsLeftOfTarget { get; }
+            public IReadOnlyDictionary<FeedRangeEpk, T> TargetPartition { get; }
+            public IReadOnlyDictionary<FeedRangeEpk, T> PartitionsRightOfTarget { get; }
         }
     }
 }

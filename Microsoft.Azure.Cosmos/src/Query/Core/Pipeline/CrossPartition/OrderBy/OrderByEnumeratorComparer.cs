@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             if (enumerator1.Current.Failed && enumerator2.Current.Failed)
             {
-                return string.CompareOrdinal(enumerator1.Range.MinInclusive, enumerator2.Range.MinInclusive);
+                return string.CompareOrdinal(((FeedRangeEpk)enumerator1.Range).Range.Min, ((FeedRangeEpk)enumerator2.Range).Range.Min);
             }
 
             OrderByQueryResult result1 = new OrderByQueryResult(enumerator1.Current.Result.Enumerator.Current);
@@ -86,8 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             // If there is a tie, then break the tie by picking the one from the left most partition.
-            return string.CompareOrdinal(enumerator1.Range.MinInclusive, enumerator2.Range.MinInclusive);
-
+            return string.CompareOrdinal(((FeedRangeEpk)enumerator1.Range).Range.Min, ((FeedRangeEpk)enumerator2.Range).Range.Min);
         }
 
         /// <summary>
