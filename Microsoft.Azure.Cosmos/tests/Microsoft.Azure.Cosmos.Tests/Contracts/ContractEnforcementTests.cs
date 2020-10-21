@@ -24,7 +24,7 @@
 #else
         [TestMethod]
         public void ContractChanges()
-        {
+        {   
             ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: DllName,
                 baselinePath: OfficialBaselinePath,
