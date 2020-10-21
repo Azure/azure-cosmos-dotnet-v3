@@ -3074,7 +3074,7 @@
           "Attributes": [],
           "MethodInfo": "Double RequestCharge;CanRead:True;CanWrite:True;Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()[System.Runtime.CompilerServices.IteratorStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Headers+<GetEnumerator>d__63))]": {
+        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()[System.Runtime.CompilerServices.IteratorStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Headers+<GetEnumerator>d__65))]": {
           "Type": "Method",
           "Attributes": [
             "IteratorStateMachineAttribute"
