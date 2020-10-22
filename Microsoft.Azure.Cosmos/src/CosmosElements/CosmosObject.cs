@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
@@ -200,110 +198,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return CosmosElement.Monadic.Parse<CosmosObject>(json);
             }
         }
-
-        //public readonly struct Enumerator : IEnumerator<KeyValuePair<string, CosmosElement>>
-        //{
-        //    private readonly Dictionary<string, CosmosElement>.Enumerator innerEnumerator;
-
-        //    internal Enumerator(Dictionary<string, CosmosElement>.Enumerator innerEnumerator)
-        //    {
-        //        this.innerEnumerator = innerEnumerator;
-        //    }
-
-        //    public KeyValuePair<string, CosmosElement> Current => this.innerEnumerator.Current;
-
-        //    object IEnumerator.Current => this.innerEnumerator.Current;
-
-        //    public void Dispose() => this.innerEnumerator.Dispose();
-
-        //    public bool MoveNext() => this.innerEnumerator.MoveNext();
-
-        //    public void Reset()
-        //    {
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
-        //public struct KeyCollection : IEnumerable<string>
-        //{
-        //    private readonly Dictionary<string, CosmosElement>.KeyCollection innerCollection;
-
-        //    internal KeyCollection(Dictionary<string, CosmosElement>.KeyCollection innerCollection)
-        //    {
-        //        this.innerCollection = innerCollection;
-        //    }
-
-        //    public Enumerator GetEnumerator() => new Enumerator(this.innerCollection.GetEnumerator());
-
-        //    IEnumerator<string> IEnumerable<string>.GetEnumerator() => this.GetEnumerator();
-
-        //    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
-
-        //    public struct Enumerator : IEnumerator<string>
-        //    {
-        //        private readonly Dictionary<string, CosmosElement>.KeyCollection.Enumerator innerEnumerator;
-
-        //        internal Enumerator(Dictionary<string, CosmosElement>.KeyCollection.Enumerator innerEnumerator)
-        //        {
-        //            this.innerEnumerator = innerEnumerator;
-        //        }
-
-        //        public string Current => this.innerEnumerator.Current;
-
-        //        object IEnumerator.Current => this.innerEnumerator.Current;
-
-        //        public void Dispose() => this.innerEnumerator.Dispose();
-
-        //        public bool MoveNext()
-        //        {
-        //            return this.innerEnumerator.MoveNext();
-        //        }
-
-        //        public void Reset()
-        //        {
-        //            throw new NotImplementedException();
-        //        }
-        //    }
-        //}
-
-        //public struct ValueCollection : IEnumerable<CosmosElement>
-        //{
-        //    private readonly Dictionary<string, CosmosElement>.ValueCollection innerCollection;
-
-        //    internal ValueCollection(Dictionary<string, CosmosElement>.ValueCollection innerCollection)
-        //    {
-        //        this.innerCollection = innerCollection;
-        //    }
-
-        //    public Enumerator GetEnumerator() => new Enumerator(this.innerCollection.GetEnumerator());
-
-        //    IEnumerator<CosmosElement> IEnumerable<CosmosElement>.GetEnumerator() => this.GetEnumerator();
-
-        //    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
-
-        //    public struct Enumerator : IEnumerator<CosmosElement>
-        //    {
-        //        private readonly Dictionary<string, CosmosElement>.ValueCollection.Enumerator innerEnumerator;
-
-        //        internal Enumerator(Dictionary<string, CosmosElement>.ValueCollection.Enumerator innerEnumerator)
-        //        {
-        //            this.innerEnumerator = innerEnumerator;
-        //        }
-
-        //        public CosmosElement Current => this.innerEnumerator.Current;
-
-        //        object IEnumerator.Current => this.innerEnumerator.Current;
-
-        //        public void Dispose() => this.innerEnumerator.Dispose();
-
-        //        public bool MoveNext() => this.innerEnumerator.MoveNext();
-
-        //        public void Reset()
-        //        {
-        //            throw new NotImplementedException();
-        //        }
-        //    }
-        //}
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented
