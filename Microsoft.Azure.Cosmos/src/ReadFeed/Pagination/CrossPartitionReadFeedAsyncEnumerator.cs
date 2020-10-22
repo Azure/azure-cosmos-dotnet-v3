@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
 
@@ -50,7 +52,26 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             ReadFeedPage backendPage = crossPartitionPage.Page;
             CrossPartitionState<ReadFeedState> crossPartitionState = crossPartitionPage.State;
 
+            // left most and any non null continuations
+            List<(FeedRangeInternal, ReadFeedState)> rangesAndStates = crossPartitionState
+                .Value
+                .OrderBy(tuple => (FeedRangeEpk)tuple.Item1, EpkRangeComparer.Singleton)
+                .ToList();
             List<CosmosElement> changeFeedContinuationTokens = new List<CosmosElement>();
+            for (int i = 0; i < rangesAndStates.Count; i++)
+            {
+                this.cancellationToken.ThrowIfCancellationRequested();
+
+                (FeedRangeInternal range, ReadFeedState state) = rangesAndStates[i];
+                if ((i == 0) || (state != null))
+                {
+                    ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                        token: state != null ? ((CosmosString)state.Value).Value : null,
+                        range: ((FeedRangeEpk)range).Range);
+
+                    activeParallelContinuationTokens.Add(parallelContinuationToken);
+                }
+            }
             foreach ((FeedRangeInternal range, ReadFeedState state) rangeAndState in crossPartitionState.Value)
             {
                 ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(

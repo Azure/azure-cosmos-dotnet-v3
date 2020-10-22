@@ -7,15 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
-    using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
