@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -194,17 +196,35 @@ namespace Microsoft.Azure.Cosmos
                     ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                         container,
                         readResponse);
-                    if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                    if (containerProperties.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                     {
-                        throw new ArgumentException(
-                            string.Format(
-                                ClientResources.PartitionKeyPathConflict,
-                                containerProperties.PartitionKeyPath,
-                                containerProperties.Id,
-                                retrivedContainerResponse.Resource.PartitionKeyPath),
-                            nameof(containerProperties.PartitionKey));
+                        if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    ClientResources.PartitionKeyPathConflict,
+                                    containerProperties.PartitionKeyPath,
+                                    containerProperties.Id,
+                                    retrivedContainerResponse.Resource.PartitionKeyPath),
+                                nameof(containerProperties.PartitionKey));
+                        }
                     }
+                    else
+                    {
+                        IReadOnlyList<string> retrived = retrivedContainerResponse.Resource.PartitionKeyPaths;
+                        IReadOnlyList<string> received = containerProperties.PartitionKeyPaths;
 
+                        if (retrived.Count != received.Count && !Enumerable.SequenceEqual(retrived, received))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    ClientResources.PartitionKeyPathConflict,
+                                    containerProperties.PartitionKeyPath,
+                                    containerProperties.Id,
+                                    retrivedContainerResponse.Resource.PartitionKeyPath),
+                                nameof(containerProperties.PartitionKey));
+                        }
+                    }
                     return retrivedContainerResponse;
                 }
             }

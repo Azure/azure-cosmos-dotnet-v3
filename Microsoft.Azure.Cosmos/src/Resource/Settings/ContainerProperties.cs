@@ -117,6 +117,8 @@ namespace Microsoft.Azure.Cosmos
                 Version = Documents.PartitionKeyDefinitionVersion.V2
             };
 
+            this.PartitionKeyPaths = partitionKeyPaths;
+
             this.ValidateRequiredProperties();
         }
 
@@ -338,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(this.PartitionKeyPath));
+                    throw new ArgumentNullException(nameof(this.PartitionKeyPaths));
                 }
 
                 this.PartitionKey = new PartitionKeyDefinition
@@ -592,7 +594,8 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }
 
-                if (this.PartitionKeyPath == null)
+                if ((this.PartitionKey.Kind != Documents.PartitionKind.MultiHash && this.PartitionKeyPath == null) ||
+                    (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null))
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
