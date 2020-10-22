@@ -28,6 +28,15 @@
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Double Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { "prop" : "Some String" }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some String"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Missing Close Brace]]></Description>
       <Query><![CDATA[SELECT VALUE {]]></Query>
     </Input>

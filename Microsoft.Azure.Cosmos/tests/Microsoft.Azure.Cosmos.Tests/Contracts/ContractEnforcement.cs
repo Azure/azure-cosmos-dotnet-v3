@@ -67,7 +67,22 @@
 
         private static string GenerateNameWithClassAttributes(Type type)
         {
-            return $"{type.FullName};{type.BaseType.FullName};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+            // FullName contains unwanted assembly artifacts like version when it has a generic type
+            Type baseType = type.BaseType;
+            string baseTypeString = string.Empty;
+            if(baseType != null)
+            {
+                // Remove assembly info to avoid breaking the contract just from version change
+                baseTypeString = baseType.FullName;
+                string assemblyInfo = baseType.Assembly?.ToString();
+                if (!string.IsNullOrEmpty(assemblyInfo) &&
+                    !string.IsNullOrWhiteSpace(baseTypeString))
+                {
+                    baseTypeString = baseTypeString.Replace(assemblyInfo, string.Empty);
+                }
+            }
+
+            return $"{type.FullName};{baseTypeString};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsEnum)}:{(type.IsEnum ? bool.TrueString : bool.FalseString)};" +
