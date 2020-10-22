@@ -91,7 +91,7 @@ logical_scalar_expression
 	;
 
 in_scalar_expression
-	: binary_scalar_expression K_NOT? K_IN scalar_expression_list
+	: binary_scalar_expression K_NOT? K_IN '(' scalar_expression_list ')'
 	;
 
 binary_scalar_expression
@@ -227,7 +227,8 @@ NUMERIC_LITERAL
 	;
 
 STRING_LITERAL
-	: ('\'' | '"') (ESC | SAFECODEPOINT)* ('\'' | '"')
+	: '"' (ESC | SAFECODEPOINT)* '"'
+	| '\'' (ESC | SAFECODEPOINT)* '\''
 	;
 
 fragment ESC
