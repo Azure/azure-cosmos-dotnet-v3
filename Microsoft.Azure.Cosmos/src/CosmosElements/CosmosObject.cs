@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
@@ -31,9 +32,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract IEnumerable<string> Keys { get; }
+        public abstract Dictionary<string, CosmosElement>.KeyCollection Keys { get; }
 
-        public abstract IEnumerable<CosmosElement> Values { get; }
+        IEnumerable<string> IReadOnlyDictionary<string, CosmosElement>.Keys => this.Keys;
+
+        public abstract Dictionary<string, CosmosElement>.ValueCollection Values { get; }
+
+        IEnumerable<CosmosElement> IReadOnlyDictionary<string, CosmosElement>.Values => this.Values;
 
         public abstract int Count { get; }
 
@@ -81,12 +86,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return true;
         }
 
-        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
+        public abstract Dictionary<string, CosmosElement>.Enumerator GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        IEnumerator<KeyValuePair<string, CosmosElement>> IEnumerable<KeyValuePair<string, CosmosElement>>.GetEnumerator() => this.GetEnumerator();
 
         public override bool Equals(CosmosElement cosmosElement)
         {
@@ -157,12 +161,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
         {
-            return new EagerCosmosObject(dictionary.ToList());
-        }
-
-        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
-        {
-            return new EagerCosmosObject(properties);
+            return new EagerCosmosObject(dictionary);
         }
 
         public static new CosmosObject CreateFromBuffer(ReadOnlyMemory<byte> buffer)
@@ -201,6 +200,110 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return CosmosElement.Monadic.Parse<CosmosObject>(json);
             }
         }
+
+        //public readonly struct Enumerator : IEnumerator<KeyValuePair<string, CosmosElement>>
+        //{
+        //    private readonly Dictionary<string, CosmosElement>.Enumerator innerEnumerator;
+
+        //    internal Enumerator(Dictionary<string, CosmosElement>.Enumerator innerEnumerator)
+        //    {
+        //        this.innerEnumerator = innerEnumerator;
+        //    }
+
+        //    public KeyValuePair<string, CosmosElement> Current => this.innerEnumerator.Current;
+
+        //    object IEnumerator.Current => this.innerEnumerator.Current;
+
+        //    public void Dispose() => this.innerEnumerator.Dispose();
+
+        //    public bool MoveNext() => this.innerEnumerator.MoveNext();
+
+        //    public void Reset()
+        //    {
+        //        throw new NotImplementedException();
+        //    }
+        //}
+
+        //public struct KeyCollection : IEnumerable<string>
+        //{
+        //    private readonly Dictionary<string, CosmosElement>.KeyCollection innerCollection;
+
+        //    internal KeyCollection(Dictionary<string, CosmosElement>.KeyCollection innerCollection)
+        //    {
+        //        this.innerCollection = innerCollection;
+        //    }
+
+        //    public Enumerator GetEnumerator() => new Enumerator(this.innerCollection.GetEnumerator());
+
+        //    IEnumerator<string> IEnumerable<string>.GetEnumerator() => this.GetEnumerator();
+
+        //    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        //    public struct Enumerator : IEnumerator<string>
+        //    {
+        //        private readonly Dictionary<string, CosmosElement>.KeyCollection.Enumerator innerEnumerator;
+
+        //        internal Enumerator(Dictionary<string, CosmosElement>.KeyCollection.Enumerator innerEnumerator)
+        //        {
+        //            this.innerEnumerator = innerEnumerator;
+        //        }
+
+        //        public string Current => this.innerEnumerator.Current;
+
+        //        object IEnumerator.Current => this.innerEnumerator.Current;
+
+        //        public void Dispose() => this.innerEnumerator.Dispose();
+
+        //        public bool MoveNext()
+        //        {
+        //            return this.innerEnumerator.MoveNext();
+        //        }
+
+        //        public void Reset()
+        //        {
+        //            throw new NotImplementedException();
+        //        }
+        //    }
+        //}
+
+        //public struct ValueCollection : IEnumerable<CosmosElement>
+        //{
+        //    private readonly Dictionary<string, CosmosElement>.ValueCollection innerCollection;
+
+        //    internal ValueCollection(Dictionary<string, CosmosElement>.ValueCollection innerCollection)
+        //    {
+        //        this.innerCollection = innerCollection;
+        //    }
+
+        //    public Enumerator GetEnumerator() => new Enumerator(this.innerCollection.GetEnumerator());
+
+        //    IEnumerator<CosmosElement> IEnumerable<CosmosElement>.GetEnumerator() => this.GetEnumerator();
+
+        //    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+
+        //    public struct Enumerator : IEnumerator<CosmosElement>
+        //    {
+        //        private readonly Dictionary<string, CosmosElement>.ValueCollection.Enumerator innerEnumerator;
+
+        //        internal Enumerator(Dictionary<string, CosmosElement>.ValueCollection.Enumerator innerEnumerator)
+        //        {
+        //            this.innerEnumerator = innerEnumerator;
+        //        }
+
+        //        public CosmosElement Current => this.innerEnumerator.Current;
+
+        //        object IEnumerator.Current => this.innerEnumerator.Current;
+
+        //        public void Dispose() => this.innerEnumerator.Dispose();
+
+        //        public bool MoveNext() => this.innerEnumerator.MoveNext();
+
+        //        public void Reset()
+        //        {
+        //            throw new NotImplementedException();
+        //        }
+        //    }
+        //}
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

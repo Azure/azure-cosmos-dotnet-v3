@@ -15,9 +15,9 @@
 | CreateAndNavigateCosmosElement |  object |                    Text |      Never |    182.4 ns |   3.10 ns |     2.59 ns |    182.2 ns | 0.0975 |     - |     - |     408 B |
 | CreateAndNavigateCosmosElement |  object |                    Text |       Once | 15,655.8 ns | 109.80 ns |    97.33 ns | 15,641.3 ns | 1.8311 |     - |     - |    7680 B |
 | CreateAndNavigateCosmosElement |  object |                    Text |       Many | 44,315.8 ns | 882.38 ns | 1,236.98 ns | 43,713.4 ns | 3.7231 |     - |     - |   15816 B |
-| CreateAndNavigateCosmosElement |  object |                  Binary |      Never |    162.6 ns |   3.20 ns |     4.79 ns |    160.7 ns | 0.0629 |     - |     - |     264 B |
-| CreateAndNavigateCosmosElement |  object |                  Binary |       Once | 11,942.2 ns | 272.27 ns |   754.45 ns | 11,662.1 ns | 1.8158 |     - |     - |    7640 B |
-| CreateAndNavigateCosmosElement |  object |                  Binary |       Many | 39,355.2 ns | 445.82 ns |   395.21 ns | 39,323.5 ns | 3.7231 |     - |     - |   15776 B |
+| CreateAndNavigateCosmosElement |  object |                  Binary |      Never |    150.5 ns |   3.39 ns |   3.33 ns | 0.0629 |     - |     - |     264 B |
+| CreateAndNavigateCosmosElement |  object |                  Binary |       Once | 10,555.3 ns | 134.32 ns | 125.64 ns | 1.4648 |     - |     - |    6184 B |
+| CreateAndNavigateCosmosElement |  object |                  Binary |       Many | 35,874.5 ns | 427.70 ns | 379.15 ns | 1.4648 |     - |     - |    6184 B |
 | CreateAndNavigateCosmosElement |  string |                    Text |      Never |  1,860.1 ns |  35.92 ns |    39.93 ns |  1,852.2 ns | 0.1068 |     - |     - |     456 B |
 | CreateAndNavigateCosmosElement |  string |                    Text |       Once |  1,990.5 ns |  21.24 ns |    19.87 ns |  1,995.9 ns | 0.3242 |     - |     - |    1368 B |
 | CreateAndNavigateCosmosElement |  string |                    Text |       Many |  2,077.8 ns |  33.28 ns |    27.79 ns |  2,083.9 ns | 0.3242 |     - |     - |    1368 B |

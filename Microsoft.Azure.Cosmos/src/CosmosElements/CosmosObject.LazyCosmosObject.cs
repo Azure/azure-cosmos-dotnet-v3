@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 });
             }
 
-            public override IEnumerable<string> Keys => this.lazyCache.Value.Keys;
+            public override Dictionary<string, CosmosElement>.KeyCollection Keys => this.lazyCache.Value.Keys;
 
-            public override IEnumerable<CosmosElement> Values => this.lazyCache.Value.Values;
+            public override Dictionary<string, CosmosElement>.ValueCollection Values => this.lazyCache.Value.Values;
 
             public override int Count => this.lazyCache.Value.Count;
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override bool ContainsKey(string key) => this.lazyCache.Value.ContainsKey(key);
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator() => this.lazyCache.Value.GetEnumerator();
+            public override Dictionary<string, CosmosElement>.Enumerator GetEnumerator() => this.lazyCache.Value.GetEnumerator();
 
             public override bool TryGetValue(string key, out CosmosElement value) => this.lazyCache.Value.TryGetValue(key, out value);
 

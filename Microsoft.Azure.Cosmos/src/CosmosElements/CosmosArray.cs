@@ -116,6 +116,29 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public static TryCatch<CosmosArray> Parse(string json) => CosmosElement.Monadic.Parse<CosmosArray>(json);
         }
+
+        //public struct Enumerator : IEnumerator<CosmosElement>
+        //{
+        //    private readonly List<CosmosElement>.Enumerator innerEnumerator;
+
+        //    internal Enumerator(List<CosmosElement>.Enumerator innerEnumerator)
+        //    {
+        //        this.innerEnumerator = innerEnumerator;
+        //    }
+
+        //    public CosmosElement Current => this.innerEnumerator.Current;
+
+        //    object IEnumerator.Current => this.innerEnumerator.Current;
+
+        //    public void Dispose() => this.innerEnumerator.Dispose();
+
+        //    public bool MoveNext() => this.innerEnumerator.MoveNext();
+
+        //    public void Reset()
+        //    {
+        //        throw new NotImplementedException();
+        //    }
+        //}
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented
