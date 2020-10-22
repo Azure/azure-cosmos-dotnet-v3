@@ -1217,7 +1217,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ContainerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.ContainerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ContainerProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -2383,7 +2383,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.DatabaseResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.DatabaseProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.DatabaseResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.DatabaseProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -2712,7 +2712,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ContainerProperties Build()": {
@@ -4168,7 +4168,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.PermissionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.PermissionProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.PermissionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.PermissionProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6054,7 +6054,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6314,7 +6314,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Scripts.TriggerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Scripts.TriggerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.TriggerProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6505,7 +6505,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -7930,7 +7930,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ThroughputResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.ThroughputResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ThroughputProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -8591,7 +8591,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.UserResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.UserProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.UserResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.UserProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
