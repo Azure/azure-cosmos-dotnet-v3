@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
