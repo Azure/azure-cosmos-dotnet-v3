@@ -104,6 +104,7 @@
                                 inMemoryCollection,
                                 feedRange: range,
                                 pageSize: 10,
+                                queryRequestOptions: default,
                                 cancellationToken: default,
                                 state: state));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
@@ -124,6 +125,7 @@
                         inMemoryCollection,
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default),
                     cancellationToken: default);
 
@@ -166,6 +168,7 @@
                         inMemoryCollection,
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default),
                     cancellationToken: default);
 
@@ -204,6 +207,7 @@
                             documentContainer,
                             feedRange: range,
                             pageSize: 10,
+                            queryRequestOptions: default,
                             cancellationToken: default,
                             state: state),
                         cancellationToken: default));
@@ -215,6 +219,7 @@
                         inMemoryCollection,
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default,
                         state: state),
                     cancellationToken: default);

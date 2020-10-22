@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     inMemoryCollection,
                     feedRange: ranges[0],
                     pageSize: 10,
+                    queryRequestOptions: default,
                     cancellationToken: default);
 
                 (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
@@ -104,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                                 feedRange: childRange,
                                 pageSize: 10,
                                 state: state,
+                                queryRequestOptions: default,
                                 cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -128,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         feedRange: range,
                         pageSize: 10,
                         state: state,
+                        queryRequestOptions: default,
                         cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
@@ -137,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     pageSize: 10,
                     state: state,
+                    queryRequestOptions: default,
                     cancellationToken: default);
         }
     }

@@ -14,10 +14,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            QueryDefinition queryDefinition,
             QueryRequestOptions queryRequestOptions,
-            string resourceLink,
-            ResourceType resourceType,
             int pageSize,
             CancellationToken cancellationToken);
     }

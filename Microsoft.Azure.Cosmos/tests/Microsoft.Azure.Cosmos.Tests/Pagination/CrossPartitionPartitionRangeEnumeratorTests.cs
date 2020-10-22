@@ -136,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         inMemoryCollection,
                         feedRange: range,
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default,
                         state: state);
 
@@ -157,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         inMemoryCollection,
                         feedRange: range,
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default,
                         state: state);
 

@@ -72,10 +72,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
         public static TryCatch<CrossPartitionReadFeedAsyncEnumerator> MonadicCreate(
             IDocumentContainer documentContainer,
-            QueryDefinition queryDefinition,
             QueryRequestOptions queryRequestOptions,
-            string resourceLink,
-            ResourceType resourceType,
             string continuationToken,
             int pageSize,
             CancellationToken cancellationToken)
@@ -95,10 +92,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 documentContainer,
                 CrossPartitionReadFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
-                    queryDefinition,
                     queryRequestOptions,
-                    resourceLink,
-                    resourceType,
                     pageSize,
                     cancellationToken),
                 comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
@@ -154,18 +148,12 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
         private static CreatePartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> MakeCreateFunction(
             IReadFeedDataSource readFeedDataSource,
-            QueryDefinition queryDefinition,
             QueryRequestOptions queryRequestOptions,
-            string resourceLink,
-            ResourceType resourceType,
             int pageSize,
             CancellationToken cancellationToken) => (FeedRangeInternal range, ReadFeedState state) => new ReadFeedPartitionRangeEnumerator(
                 readFeedDataSource,
                 range,
-                queryDefinition,
                 queryRequestOptions,
-                resourceLink,
-                resourceType,
                 pageSize,
                 cancellationToken,
                 state);

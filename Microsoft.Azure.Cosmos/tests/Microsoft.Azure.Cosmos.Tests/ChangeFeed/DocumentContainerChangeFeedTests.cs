@@ -171,14 +171,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
-                ranges[0],
-                ResourceId.Empty,
+                feedRange: ranges[0],
+                readFeedState: default,
                 pageSize: int.MaxValue,
                 cancellationToken: default,
-                queryDefinition: default,
-                queryRequestOptions: default,
-                resourceLink: default,
-                resourceType: ResourceType.Document)).Records.Count;
+                queryRequestOptions: default)).GetRecords().Count;
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 

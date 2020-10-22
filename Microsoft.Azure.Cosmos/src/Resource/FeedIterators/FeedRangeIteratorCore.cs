@@ -25,10 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         public FeedRangeIteratorCore(
             IDocumentContainer documentContainer,
-            QueryDefinition queryDefinition,
             QueryRequestOptions queryRequestOptions,
-            string resourceLink,
-            ResourceType resourceType,
             string continuationToken,
             int pageSize,
             CancellationToken cancellationToken)
@@ -82,10 +79,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.monadicEnumerator = CrossPartitionReadFeedAsyncEnumerator.MonadicCreate(
                 documentContainer,
-                queryDefinition,
                 queryRequestOptions,
-                resourceLink,
-                resourceType,
                 continuationToken: continuationToken,
                 pageSize,
                 cancellationToken);

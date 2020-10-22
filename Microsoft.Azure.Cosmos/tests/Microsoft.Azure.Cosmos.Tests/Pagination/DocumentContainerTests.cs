@@ -187,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     feedRange: childRange,
                     readFeedState: default,
                     pageSize: 100,
+                    queryRequestOptions: default,
                     cancellationToken: default);
 
                 List<long> values = new List<long>();
@@ -262,6 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     feedRange: feedRange,
                     readFeedState: default,
                     pageSize: 100,
+                    queryRequestOptions: default,
                     cancellationToken: default);
 
                 List<long> values = new List<long>();

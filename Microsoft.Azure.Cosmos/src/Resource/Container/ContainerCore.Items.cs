@@ -615,10 +615,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return new FeedRangeIteratorCore(
                     documentContainer: documentContainer,
-                    queryDefinition: null,
                     queryRequestOptions: requestOptions,
-                    resourceLink: this.LinkUri,
-                    resourceType: ResourceType.Document,
                     continuationToken: continuationToken,
                     pageSize: requestOptions.MaxItemCount ?? int.MaxValue,
                     cancellationToken: default);
@@ -640,30 +637,51 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIteratorInternal GetReadFeedIterator(
-            QueryDefinition queryDefinition, 
-            QueryRequestOptions queryRequestOptions, 
-            string resourceLink, 
-            ResourceType resourceType, 
-            string continuationToken, 
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
+            string continuationToken,
             int pageSize)
         {
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
-                    this,
-                    this.queryClient,
-                    CosmosDiagnosticsContext.Create(queryRequestOptions),
-                    queryRequestOptions);
+                this,
+                this.queryClient,
+                CosmosDiagnosticsContext.Create(queryRequestOptions),
+                queryRequestOptions,
+                resourceLink: resourceLink,
+                resourceType: resourceType);
 
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
-            return new FeedRangeIteratorCore(
-                documentContainer: documentContainer,
-                queryDefinition: null,
-                queryRequestOptions: queryRequestOptions,
-                resourceLink: this.LinkUri,
-                resourceType: ResourceType.Document,
-                continuationToken: continuationToken,
-                pageSize: queryRequestOptions.MaxItemCount ?? int.MaxValue,
-                cancellationToken: default);
+            FeedIteratorInternal feedIterator;
+            if (queryDefinition != null)
+            {
+                feedIterator = QueryIterator.Create(
+                    containerCore: this,
+                    client: this.queryClient,
+                    clientContext: this.ClientContext,
+                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+                    continuationToken: continuationToken,
+                    feedRangeInternal: FeedRangeEpk.FullRange,
+                    queryRequestOptions: queryRequestOptions,
+                    resourceLink: resourceLink,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    forcePassthrough: false,
+                    partitionedQueryExecutionInfo: null);
+            }
+            else
+            {
+                feedIterator = new FeedRangeIteratorCore(
+                    documentContainer: documentContainer,
+                    queryRequestOptions: queryRequestOptions,
+                    continuationToken: continuationToken,
+                    pageSize: queryRequestOptions.MaxItemCount ?? int.MaxValue,
+                    cancellationToken: default);
+            }
+
+            return feedIterator;
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

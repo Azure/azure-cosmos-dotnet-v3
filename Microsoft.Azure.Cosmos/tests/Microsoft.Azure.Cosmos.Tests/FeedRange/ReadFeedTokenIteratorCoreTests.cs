@@ -111,143 +111,29 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
-        public async Task ReadFeedIteratorCore_WithNoInitialState_ReadNextAsync()
-        {
-            string continuation = "TBD";
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK);
-            responseMessage.Headers.ContinuationToken = continuation;
-            responseMessage.Headers[Documents.HttpConstants.HttpHeaders.ItemCount] = "1";
-            responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
-
-            MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
-
-            Mock<CosmosClientContext> cosmosClientContext = new Mock<CosmosClientContext>();
-            cosmosClientContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
-            cosmosClientContext.Setup(c => c.DocumentClient).Returns(documentClient);
-            cosmosClientContext
-                .Setup(c => c.ProcessResourceOperationStreamAsync(
-                    It.IsAny<string>(),
-                    It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
-                    It.IsAny<Documents.OperationType>(),
-                    It.IsAny<RequestOptions>(),
-                    It.IsAny<ContainerInternal>(),
-                    It.IsAny<PartitionKey?>(),
-                    It.IsAny<Stream>(),
-                    It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(responseMessage));
-
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext.Object);
-            Mock.Get(containerCore)
-                .Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Guid.NewGuid().ToString());
-
-            FeedRangeIteratorCore feedTokenIterator = FeedRangeIteratorCore.Create(containerCore, null, null, new QueryRequestOptions());
-            ResponseMessage response = await feedTokenIterator.ReadNextAsync();
-
-            Assert.IsTrue(FeedRangeContinuation.TryParse(response.ContinuationToken, out FeedRangeContinuation parsedToken));
-            FeedRangeCompositeContinuation feedRangeCompositeContinuation = parsedToken as FeedRangeCompositeContinuation;
-            FeedRangeEpk feedTokenEPKRange = feedRangeCompositeContinuation.FeedRange as FeedRangeEpk;
-            // Assert that a FeedToken for the entire range is used
-            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, feedTokenEPKRange.Range.Min);
-            Assert.AreEqual(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, feedTokenEPKRange.Range.Max);
-            Assert.AreEqual(continuation, feedRangeCompositeContinuation.CompositeContinuationTokens.Peek().Token);
-            Assert.IsFalse(feedRangeCompositeContinuation.IsDone);
-        }
-
-        [TestMethod]
         public async Task ReadFeedIteratorCore_HandlesSplitsThroughPipeline()
         {
-            int executionCount = 0;
-            CosmosClientContext cosmosClientContext = GetMockedClientContext((RequestMessage requestMessage, CancellationToken cancellationToken) =>
+            int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+            FeedIterator iterator = CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: null,
+                pageSize: 10);
+
+            Random random = new Random();
+            int count = 0;
+            while (iterator.HasMoreResults)
             {
-                // Force OnBeforeRequestActions call
-                requestMessage.ToDocumentServiceRequest();
-                if (executionCount++ == 0)
-                {
-                    return TestHandler.ReturnStatusCode(HttpStatusCode.Gone, Documents.SubStatusCodes.PartitionKeyRangeGone);
-                }
+                ResponseMessage message = await iterator.ReadNextAsync();
+                CosmosArray documents = GetDocuments(message.Content);
+                count += documents.Count;
 
-                return TestHandler.ReturnStatusCode(HttpStatusCode.OK);
-            });
-
-            ContainerInternal containerCore = Mock.Of<ContainerInternal>();
-            Mock.Get(containerCore)
-                .Setup(c => c.ClientContext)
-                .Returns(cosmosClientContext);
-            Mock.Get(containerCore)
-                .Setup(c => c.LinkUri)
-                .Returns("/dbs/db/colls/colls");
-            FeedRangeInternal range = Mock.Of<FeedRangeInternal>();
-            Mock.Get(range)
-                .Setup(f => f.Accept(It.IsAny<FeedRangeRequestMessagePopulatorVisitor>(), It.IsAny<RequestMessage>()));
-            FeedRangeContinuation feedToken = Mock.Of<FeedRangeContinuation>();
-            Mock.Get(feedToken)
-                .Setup(f => f.FeedRange)
-                .Returns(range);
-            Mock.Get(feedToken)
-                .Setup(f => f.HandleSplitAsync(It.Is<ContainerInternal>(c => c == containerCore), It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Documents.ShouldRetryResult.NoRetry()));
-
-            FeedRangeIteratorCore changeFeedIteratorCore = new FeedRangeIteratorCore(containerCore, feedToken, new QueryRequestOptions(), Documents.ResourceType.Document, queryDefinition: null);
-
-            ResponseMessage response = await changeFeedIteratorCore.ReadNextAsync();
-
-            Assert.AreEqual(1, executionCount, "Pipeline handled the Split");
-            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
-        }
-
-        private static CosmosClientContext GetMockedClientContext(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            CosmosClientContext clientContext = ClientContextCore.Create(
-               client,
-               new MockDocumentClient(),
-               new CosmosClientOptions());
-            Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
-
-            TestHandler testHandler = new TestHandler(handlerFunc);
-
-            // Similar to FeedPipeline but with replaced transport
-            RequestHandler[] feedPipeline = new RequestHandler[]
-                {
-                    new NamedCacheRetryHandler(),
-                    new PartitionKeyRangeHandler(client),
-                    testHandler,
-                };
-
-            RequestHandler feedHandler = ClientPipelineBuilder.CreatePipeline(feedPipeline);
-
-            RequestHandler handler = clientContext.RequestHandler.InnerHandler;
-            while (handler != null)
-            {
-                if (handler.InnerHandler is RouterHandler)
-                {
-                    handler.InnerHandler = new RouterHandler(feedHandler, testHandler);
-                    break;
-                }
-
-                handler = handler.InnerHandler;
+                IReadOnlyList<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                FeedRangeEpk rangeToSplit = ranges[random.Next(0, ranges.Count)];
+                await documentContainer.SplitAsync(rangeToSplit, cancellationToken: default);
             }
 
-            return clientContext;
-        }
-
-        private class MultiRangeMockDocumentClient : MockDocumentClient
-        {
-            private List<Documents.PartitionKeyRange> availablePartitionKeyRanges = new List<Documents.PartitionKeyRange>() {
-                new Documents.PartitionKeyRange() { MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey, MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey, Id = "0" }
-            };
-
-            internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
-            {
-                return this.availablePartitionKeyRanges;
-            }
+            Assert.AreEqual(numItems, count);
         }
 
         private static CosmosArray GetDocuments(Stream stream)
@@ -272,10 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             return new FeedRangeIteratorCore(
                 documentContainer,
-                queryDefinition: null,
                 queryRequestOptions: null,
-                resourceLink: null,
-                resourceType: ResourceType.Document,
                 continuationToken: continuationToken,
                 pageSize: pageSize,
                 cancellationToken: default);

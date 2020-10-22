@@ -27,17 +27,23 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly CosmosDiagnosticsContext diagnosticsContext;
+        private readonly string resourceLink;
+        private readonly ResourceType resourceType;
 
         public NetworkAttachedDocumentContainer(
             ContainerInternal container,
             CosmosQueryClient cosmosQueryClient,
             CosmosDiagnosticsContext diagnosticsContext,
-            QueryRequestOptions queryRequestOptions = null)
+            QueryRequestOptions queryRequestOptions = null,
+            string resourceLink = null, 
+            ResourceType resourceType = ResourceType.Document)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosQueryClient = cosmosQueryClient ?? throw new ArgumentNullException(nameof(cosmosQueryClient));
             this.diagnosticsContext = diagnosticsContext;
             this.queryRequestOptions = queryRequestOptions;
+            this.resourceLink = resourceLink ?? this.container.LinkUri;
+            this.resourceType = resourceType;
         }
 
         public Task<TryCatch> MonadicSplitAsync(
@@ -114,18 +120,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public async Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            QueryDefinition queryDefinition,
             QueryRequestOptions queryRequestOptions,
-            string resourceLink,
-            ResourceType resourceType,
             int pageSize,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: resourceLink,
-               resourceType: resourceType,
+               resourceUri: this.resourceLink,
+               resourceType: this.resourceType,
                operationType: OperationType.ReadFeed,
                requestOptions: queryRequestOptions,
                cosmosContainerCore: this.container,
@@ -138,12 +141,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                    feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
                    request.Headers.PageSize = pageSize.ToString();
-
-                   if (queryDefinition != null)
-                   {
-                       request.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
-                       request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                   }
                },
                partitionKey: queryRequestOptions.PartitionKey,
                streamPayload: default,
@@ -218,8 +215,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         queryRequestOptions.PartitionKey = feedRangePartitionKey.PartitionKey;
 
                         monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                            this.container.LinkUri,
-                            Documents.ResourceType.Document,
+                            this.resourceLink,
+                            this.resourceType,
                             Documents.OperationType.Query,
                             Guid.NewGuid(),
                             queryRequestOptions,
@@ -238,8 +235,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 case FeedRangePartitionKeyRange feedRangePartitionKeyRange:
                     {
                         monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                            this.container.LinkUri,
-                            Documents.ResourceType.Document,
+                            this.resourceLink,
+                            this.resourceType,
                             Documents.OperationType.Query,
                             Guid.NewGuid(),
                             requestOptions: queryRequestOptions,
@@ -280,8 +277,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         }
 
                         monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                            this.container.LinkUri,
-                            Documents.ResourceType.Document,
+                            this.resourceLink,
+                            this.resourceType,
                             Documents.OperationType.Query,
                             Guid.NewGuid(),
                             requestOptions: queryRequestOptions,
