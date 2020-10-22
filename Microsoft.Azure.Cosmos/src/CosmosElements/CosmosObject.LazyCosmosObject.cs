@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.jsonNavigatorNode = jsonNavigatorNode;
                 this.lazyCache = new Lazy<Dictionary<string, CosmosElement>>(() =>
                 {
-                    Dictionary<string, CosmosElement> cache = new Dictionary<string, CosmosElement>();
+                    int propertyCount = this.jsonNavigator.GetObjectPropertyCount(this.jsonNavigatorNode);
+                    Dictionary<string, CosmosElement> cache = new Dictionary<string, CosmosElement>(capacity: propertyCount);
                     foreach (ObjectProperty objectProperty in this.jsonNavigator.GetObjectProperties(this.jsonNavigatorNode))
                     {
                         string key = this.jsonNavigator.GetStringValue(objectProperty.NameNode);
