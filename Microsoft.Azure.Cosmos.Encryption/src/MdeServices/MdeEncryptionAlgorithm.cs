@@ -12,10 +12,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey
     {
-        private readonly byte[] rawDek;
         private readonly EncryptionAlgorithm mdeEncryptionAlgorithm;
 
-        public override byte[] RawKey => this.rawDek;
+        // unused for MDE Algorithm.
+        public override byte[] RawKey => null;
 
         public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized;
 
@@ -28,13 +28,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionKeyStoreProvider"> EncryptionKeyStoreProvider for wrapping and unwrapping </param>
         public MdeEncryptionAlgorithm(
             DataEncryptionKeyProperties dekProperties,
-            byte[] rawDek,
             Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             TimeSpan? cacheTimeToLive)
         {
-            this.rawDek = rawDek ?? throw new ArgumentNullException(nameof(rawDek));
-
             if (dekProperties == null)
             {
                 throw new ArgumentNullException(nameof(dekProperties));

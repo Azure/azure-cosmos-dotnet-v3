@@ -479,6 +479,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ValidateCachingofProtectedDataEncryptionKey()
+        {
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            string dekId = "pDekCache";
+            DataEncryptionKeyProperties dekProperties = await MdeEncryptionTests.CreateDekAsync(MdeEncryptionTests.dualDekProvider, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(name: "metadata1", value: MdeEncryptionTests.metadata1.Value),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            // Caching for 30 min.
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, TimeSpan.FromMinutes(30));
+            await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
+
+            TestEncryptor encryptor = new TestEncryptor(dekProvider);
+            Container encryptionContainer = MdeEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            for (int i = 0; i < 2; i++)
+                await MdeEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int unwrapcount);
+            Assert.AreEqual(1, unwrapcount);
+
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            // No caching
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
+            await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
+
+            encryptor = new TestEncryptor(dekProvider);
+            encryptionContainer = MdeEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            for (int i = 0; i < 2; i++)
+                await MdeEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
+            Assert.AreEqual(32, unwrapcount);
+
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            // default 2 hours.
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
+            await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
+
+            encryptor = new TestEncryptor(dekProvider);
+            encryptionContainer = MdeEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            for (int i = 0; i < 2; i++)
+                await MdeEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
+            Assert.AreEqual(1, unwrapcount);
+        }
+
+        [TestMethod]
         public async Task EncryptionCreateItem()
         {
             TestDoc testDoc = await MdeEncryptionTests.CreateItemAsync(MdeEncryptionTests.encryptionContainer, MdeEncryptionTests.dekId, TestDoc.PathsToEncrypt);
@@ -1817,16 +1866,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             public Dictionary<string, int> WrapKeyCallsCount { get; set; }
+            public Dictionary<string, int> UnWrapKeyCallsCount { get; set; }
 
             public TestEncryptionKeyStoreProvider()
             {
                 this.WrapKeyCallsCount = new Dictionary<string, int>();
+                this.UnWrapKeyCallsCount = new Dictionary<string, int>();
             }
 
             public override string ProviderName => "TESTKEYSTORE_VAULT";
 
             public override byte[] UnwrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] encryptedKey)
             {
+                if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
+                {
+                    this.UnWrapKeyCallsCount[masterKeyPath] = 1;
+                }
+                else
+                {
+                    this.UnWrapKeyCallsCount[masterKeyPath]++;
+                }
+
                 this.keyinfo.TryGetValue(masterKeyPath, out int moveBy);
                 byte[] plainkey = encryptedKey.Select(b => (byte)(b - moveBy)).ToArray();
                 return plainkey;
