@@ -14,16 +14,42 @@ namespace Microsoft.Azure.Cosmos
     {
         public abstract HttpMessageHandler HttpMessageHandler { get; }
 
+        public enum TimeoutPolicy
+        {
+            Standard,
+            ControlPlane,
+            ControlPlaneHotPath,
+        }
+
+        public static TimeoutPolicy GetTimeoutPolicy(
+            DocumentServiceRequest documentServiceRequest)
+        {
+            if (documentServiceRequest.ResourceType == ResourceType.Document
+                && documentServiceRequest.OperationType == OperationType.QueryPlan)
+            {
+                return TimeoutPolicy.ControlPlaneHotPath;
+            }
+
+            if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
+            {
+                return TimeoutPolicy.ControlPlaneHotPath;
+            }
+
+            return TimeoutPolicy.Standard;
+        }
+
         public abstract Task<HttpResponseMessage> GetAsync(
             Uri uri,
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
+            TimeoutPolicy timeoutPolicy,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
+            TimeoutPolicy timeoutPolicy,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 

@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"));
 
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(httpRequestMessage), ResourceType.Collection, null, default);
+            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(httpRequestMessage), ResourceType.Collection, timeoutPolicy: CosmosHttpClient.TimeoutPolicy.Standard, null, default);
 
             Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
         }

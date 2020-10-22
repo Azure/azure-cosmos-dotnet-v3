@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
                 uri: new Uri("https://localhost"),
                 additionalHeaders: new DictionaryNameValueCollection(),
                 resourceType: ResourceType.Document,
+                timeoutPolicy: CosmosHttpClient.TimeoutPolicy.Standard,
                 diagnosticsContext: null,
                 cancellationToken: default);
 
