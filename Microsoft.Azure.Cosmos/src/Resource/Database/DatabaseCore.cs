@@ -213,15 +213,15 @@ namespace Microsoft.Azure.Cosmos
                     {
                         IReadOnlyList<string> retrived = retrivedContainerResponse.Resource.PartitionKeyPaths;
                         IReadOnlyList<string> received = containerProperties.PartitionKeyPaths;
-
-                        if (retrived.Count != received.Count && !Enumerable.SequenceEqual(retrived, received))
+                        
+                        if (retrived.Count != received.Count || !Enumerable.SequenceEqual(retrived, received))
                         {
                             throw new ArgumentException(
                                 string.Format(
                                     ClientResources.PartitionKeyPathConflict,
-                                    containerProperties.PartitionKeyPath,
+                                    string.Join(",", containerProperties.PartitionKeyPaths),
                                     containerProperties.Id,
-                                    retrivedContainerResponse.Resource.PartitionKeyPath),
+                                    string.Join(",", retrivedContainerResponse.Resource.PartitionKeyPaths)),
                                 nameof(containerProperties.PartitionKey));
                         }
                     }
