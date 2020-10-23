@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Documents.Routing
                 return MaximumExclusiveEffectivePartitionKey;
             }
 
-            if (this.Components.Count < partitionKeyDefinition.Paths.Count)
+            if (this.Components.Count < partitionKeyDefinition.Paths.Count && partitionKeyDefinition.Kind != PartitionKind.MultiHash)
             {
                 throw new ArgumentException(RMResources.TooFewPartitionKeyComponents);
             }
@@ -548,11 +548,6 @@ namespace Microsoft.Azure.Documents.Routing
                             throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
                     }
                 case PartitionKind.MultiHash:
-                    if (this.components.Count != partitionKeyDefinition.Paths.Count)
-                    {
-                        throw new ArgumentException(RMResources.PartitionKeyMismatch);
-                    }
-
                     return this.GetEffectivePartitionKeyForMultiHashPartitioningV2();
                 default:
                     return ToHexEncodedBinaryString(this.Components);

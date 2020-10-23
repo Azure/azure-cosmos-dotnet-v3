@@ -231,8 +231,6 @@ namespace Microsoft.Azure.Documents
                         sessionToken.ConvertToString());
                 }
             }
-
-            headers.Remove(WFConstants.BackendHeaders.PartitionKeyRangeId);
         }
 
         private void CaptureSessionToken(HttpStatusCode? statusCode, SubStatusCodes subStatusCode, DocumentServiceRequest request, INameValueCollection headers)

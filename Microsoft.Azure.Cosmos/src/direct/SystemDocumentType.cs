@@ -10,10 +10,14 @@ namespace Microsoft.Azure.Documents
         /// Set the SystemDocumentType to PartitionKey
         /// </summary>
         PartitionKey,
-
         /// <summary>
         /// Set the SystemDocumentType as MaterializedViewLeaseDocument
         /// </summary>
         MaterializedViewLeaseDocument,
+
+        /// <summary>
+        /// Set the SystemDocumentType as MaterializedViewLeaseStoreInitDocument
+        /// </summary>
+        MaterializedViewLeaseStoreInitDocument
     }
 }

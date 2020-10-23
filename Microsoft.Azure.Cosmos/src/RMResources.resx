@@ -186,6 +186,9 @@
   <data name="InvalidResourceID" xml:space="preserve">
     <value>Failed to parse the value '{0}' as ResourceId.</value>
   </data>
+  <data name="InvalidRequestUrl" xml:space="preserve">
+    <value>The request path {0} is invalid.</value>
+  </data>
   <data name="InvalidResourceUrlQuery" xml:space="preserve">
     <value>The value '{0}' specified  for query '{1}' is invalid.</value>
   </data>
@@ -233,6 +236,15 @@
   </data>
   <data name="PropertyNotFound" xml:space="preserve">
     <value>Property '{0}' is not found in the document.</value>
+  </data>
+  <data name="PrimarySuceededButAdditionalRegionsFailed" xml:space="preserve">
+    <value>Database account was created successfully, but the following regions failed to be added to account: &lt; br/ &gt;</value>
+  </data>
+  <data name="PrimaryWriteRegionFailedFormat" xml:space="preserve">
+    <value>Database account creation failed. Operation Id: {0}, Error : {1}</value>
+  </data>
+  <data name="SecondaryRegionsFailedFormat" xml:space="preserve">
+    <value>{0} : Operation Id : {1}, Error : {2} &lt; br/ &gt;</value>
   </data>
   <data name="ReadQuorumNotMet" xml:space="preserve">
     <value>Read Quorum size of {0} is not met for the request.</value>
@@ -1029,6 +1041,12 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="FreeTierUpdateNotSupported" xml:space="preserve">
     <value>Cannot update FreeTier property for existing account.</value>
+  </data>
+  <data name="AadAuthActionNotSupported" xml:space="preserve">
+    <value>The given request [{0} {1}] with ResourceType [{2}] cannot be authorized by AAD token in data plane.</value>
+  </data>
+  <data name="AadAuthCouldNotParseAction" xml:space="preserve">
+    <value>Could not parse action from [{0}] request on [{1}].</value>
   </data>
   <data name="AadAuthDisabled" xml:space="preserve">
     <value>AAD Authentication is disabled for this account. Please contact Azure Support [https://azure.microsoft.com/support] to enable it.</value>

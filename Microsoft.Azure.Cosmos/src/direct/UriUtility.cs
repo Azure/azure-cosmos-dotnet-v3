@@ -178,6 +178,13 @@ namespace Microsoft.Azure.Documents
 
             return path;
         }
+        internal static StringSegment RemoveTrailingSlashes(StringSegment path)
+        {
+            if (path.IsNullOrEmpty())
+                return path;
+
+            return path.TrimEnd(RuntimeConstants.Separators.Url);
+        }
 
         internal static string RemoveTrailingSlashes(string path)
         {
@@ -185,6 +192,14 @@ namespace Microsoft.Azure.Documents
                 return path;
 
             return path.TrimEnd(RuntimeConstants.Separators.Url);
+        }
+
+        internal static StringSegment RemoveLeadingSlashes(StringSegment path)
+        {
+            if (path.IsNullOrEmpty())
+                return path;
+
+            return path.TrimStart(RuntimeConstants.Separators.Url);
         }
 
         internal static string RemoveLeadingSlash(string path)

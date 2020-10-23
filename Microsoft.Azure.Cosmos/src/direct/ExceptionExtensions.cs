@@ -62,6 +62,28 @@ namespace Microsoft.Azure.Documents
             return sb.ToString();
         }
 
+        public static string ToStringWithMessageAndData(this Exception exception)
+        {
+            StringBuilder sb = new StringBuilder(exception.Message);
+
+            List<string> exceptionData = new List<string>();
+            ExceptionExtensions.CaptureExceptionData(exception, exceptionData);
+
+            if (exceptionData.Count() > 0)
+            {
+                sb.Append(Environment.NewLine);
+                sb.Append("AdditionalData:");
+
+                foreach (string data in exceptionData)
+                {
+                    sb.Append(Environment.NewLine);
+                    sb.Append(data);
+                }
+            }
+
+            return sb.ToString();
+        }
+
         /// <summary>
         /// Returns the equivalent exception of the SubStatusCode.
         /// Main motivation for this is because the real error code thrown in a stored procedure call is returned as the SubStatusCode of the BadRequestException.

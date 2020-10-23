@@ -401,11 +401,20 @@ namespace Microsoft.Azure.Documents
             public const string ChangeFeedPolicy = "changeFeedPolicy";
             public const string LogRetentionDuration = "retentionDuration";
 
+            //MaterializedViewDefinition
+            public const string MaterializedViewDefinition = "materializedViewDefinition";
+            public const string AllowMaterializedViews = "allowMaterializedViews";
+            public const string SourceCollectionRid = "sourceCollectionRid";
+            public const string Definition = "definition";
+
             // Schema Policy
             public const string SchemaPolicy = "schemaPolicy";
 
             // PartitionKeyDelete throughput fraction
             public const string PartitionKeyDeleteThroughputFraction = "partitionKeyDeleteThroughputFraction";
+
+            // UserBackgroundTask throughput fraction
+            public const string UserBackgroundTaskThroughputFraction = "userBackgroundTaskThroughputFraction";
 
             // Internal Schema Properties
             public const string InternalSchemaProperties = "internalSchemaProperties";
@@ -464,6 +473,7 @@ namespace Microsoft.Azure.Documents
             public const string CollectionBackupPolicy = "backupPolicy";
             public const string CollectionBackupType = "type";
             public const string BackupStrategy = "backupStrategy";
+            public const string BackupRedundancy = "backupRedundancy";
             public const string BackupIntervalInMinutes = "backupIntervalInMinutes";
             public const string BackupRetentionIntervalInHours = "backupRetentionIntervalInHours";
             public const string PeriodicModeProperties = "periodicModeProperties";
@@ -827,7 +837,6 @@ namespace Microsoft.Azure.Documents
 
             //properties to enable MaterializedViews 
             public const string EnableMaterializedViews = "enableMaterializedViews"; //at DB account level.
-            public const string AllowMaterializedViews = "allowMaterializedViews"; //at collection level.
 
             // property to enable full fidelity change feed (change feed with retention from remote+local storage).
             public const string EnableFullFidelityChangeFeed = "enableFullFidelityChangeFeed";
@@ -1246,6 +1255,7 @@ namespace Microsoft.Azure.Documents
             public const string CreationTime = "creationTime";
             public const string DeletionTime = "deletionTime";
             public const string AccountName = "accountName";
+            public const string ApiType = "apiType";
 
             public const string CreationTimeInUtc = "creationTimeInUtc";
             public const string DeletionTimeInUtc = "deletionTimeInUtc";

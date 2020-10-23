@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Documents
             CompleteUserTransaction = 0x002F,
             MasterInitiatedProgressCoordination = 0x0030,
             MetadataCheckAccess = 0x0031,
+            CreateSystemSnapshot = 0x0032,
         }
 
         public enum ConnectionContextRequestTokenIdentifiers : ushort
@@ -251,6 +252,7 @@ namespace Microsoft.Azure.Documents
             PartitionKey = 0x00,
             MaterializedViewLeaseDocument = 0x01,
             MaterializedViewBuilderOwnershipDocument = 0x02,
+            MaterializedViewLeaseStoreInitDocument = 0x03,
 
             Invalid = 0xFF,
         }
@@ -406,6 +408,8 @@ namespace Microsoft.Azure.Documents
             RetriableWriteRequestStartTimestamp = 0x0098,
             AddResourcePropertiesToResponse = 0x0099,
             ChangeFeedStartFullFidelityIfNoneMatch = 0x009A,
+            SystemRestoreOperation = 0x009B,
+            SkipRefreshDatabaseAccountConfigs = 0x009C,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -549,6 +553,8 @@ namespace Microsoft.Azure.Documents
             public RntbdToken retriableWriteRequestStartTimestamp;
             public RntbdToken addResourcePropertiesToResponse;
             public RntbdToken changeFeedStartFullFidelityIfNoneMatch;
+            public RntbdToken systemRestoreOperation;
+            public RntbdToken skipRefreshDatabaseAccountConfigs;
 
             public Request()
             {
@@ -691,6 +697,8 @@ namespace Microsoft.Azure.Documents
                 this.retriableWriteRequestStartTimestamp = new RntbdToken(false, RntbdTokenTypes.ULongLong, (ushort)RequestIdentifiers.RetriableWriteRequestStartTimestamp);
                 this.addResourcePropertiesToResponse = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AddResourcePropertiesToResponse);
                 this.changeFeedStartFullFidelityIfNoneMatch = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedStartFullFidelityIfNoneMatch);
+                this.systemRestoreOperation = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.SystemRestoreOperation);
+                this.skipRefreshDatabaseAccountConfigs = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.SkipRefreshDatabaseAccountConfigs);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -833,6 +841,8 @@ namespace Microsoft.Azure.Documents
                     this.retriableWriteRequestStartTimestamp,
                     this.addResourcePropertiesToResponse,
                     this.changeFeedStartFullFidelityIfNoneMatch,
+                    this.systemRestoreOperation,
+                    this.skipRefreshDatabaseAccountConfigs,
                 });
             }
         }
@@ -908,7 +918,10 @@ namespace Microsoft.Azure.Documents
             TimeToLiveInSeconds = 0x0048,
             ReplicaStatusRevoked = 0x0049,
             SoftMaxAllowedThroughput = 0x0050,
-            BackendRequestDurationMilliseconds = 0x0051
+            BackendRequestDurationMilliseconds = 0x0051,
+            CorrelatedActivityId = 0x0052,
+            ConfirmedStoreChecksum = 0x0053,
+            TentativeStoreChecksum = 0x0054,
         }
 
         public sealed class Response : RntbdTokenStream<ResponseIdentifiers>
@@ -976,6 +989,9 @@ namespace Microsoft.Azure.Documents
             public RntbdToken replicaStatusRevoked;
             public RntbdToken softMaxAllowedThroughput;
             public RntbdToken backendRequestDurationMilliseconds;
+            public RntbdToken correlatedActivityId;
+            public RntbdToken confirmedStoreChecksum;
+            public RntbdToken tentativeStoreChecksum;
 
             public Response()
             {
@@ -1042,6 +1058,9 @@ namespace Microsoft.Azure.Documents
                 this.replicaStatusRevoked = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ResponseIdentifiers.ReplicaStatusRevoked);
                 this.softMaxAllowedThroughput = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.SoftMaxAllowedThroughput);
                 this.backendRequestDurationMilliseconds = new RntbdToken(false, RntbdTokenTypes.Double, (ushort)ResponseIdentifiers.BackendRequestDurationMilliseconds);
+                this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)ResponseIdentifiers.CorrelatedActivityId);
+                this.confirmedStoreChecksum = new RntbdToken(false, RntbdTokenTypes.ULongLong, (ushort)ResponseIdentifiers.ConfirmedStoreChecksum);
+                this.tentativeStoreChecksum = new RntbdToken(false, RntbdTokenTypes.ULongLong, (ushort)ResponseIdentifiers.TentativeStoreChecksum);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -1106,7 +1125,10 @@ namespace Microsoft.Azure.Documents
                     this.timeToLiveInSeconds,
                     this.replicaStatusRevoked,
                     this.softMaxAllowedThroughput,
-                    this.backendRequestDurationMilliseconds
+                    this.backendRequestDurationMilliseconds,
+                    this.correlatedActivityId,
+                     this.confirmedStoreChecksum,
+                    this.tentativeStoreChecksum
                 });
             }
         }

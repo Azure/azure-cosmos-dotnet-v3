@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Documents
         private ConflictResolutionPolicy conflictResolutionPolicy;
         private ChangeFeedPolicy changeFeedPolicy;
         private CollectionBackupPolicy collectionBackupPolicy;
+        private MaterializedViewDefinition materializedViewDefinition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -168,6 +169,25 @@ namespace Microsoft.Azure.Documents
             {
                 this.geospatialConfig = value;
                 base.SetObject<GeospatialConfig>(Constants.Properties.GeospatialConfig, value);
+            }
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.MaterializedViewDefinition)]
+        internal MaterializedViewDefinition MaterializedViewDefinition
+        {
+            get
+            {
+                if (this.materializedViewDefinition == null)
+                {
+                    this.materializedViewDefinition = base.GetObject<MaterializedViewDefinition>(Constants.Properties.MaterializedViewDefinition) ?? new MaterializedViewDefinition();
+                }
+
+                return this.materializedViewDefinition;
+            }
+            set
+            {
+                this.materializedViewDefinition = value;
+                base.SetObject<MaterializedViewDefinition>(Constants.Properties.MaterializedViewDefinition, value);
             }
         }
 
@@ -456,6 +476,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Gets or sets the PartitionKeyDeleteThroughputFraction for the collection.
         /// </summary>
+        [Obsolete("PartitionKeyDeleteThroughputFraction is deprecated.")]
         [JsonProperty(PropertyName = Constants.Properties.PartitionKeyDeleteThroughputFraction)]
         public double PartitionKeyDeleteThroughputFraction
         {
@@ -466,6 +487,22 @@ namespace Microsoft.Azure.Documents
             set
             {
                 this.SetValue(Constants.Properties.PartitionKeyDeleteThroughputFraction, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the UserBackgroundTaskThroughputFraction for the collection.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.UserBackgroundTaskThroughputFraction)]
+        internal double UserBackgroundTaskThroughputFraction
+        {
+            get
+            {
+                return this.GetValue<double>(Constants.Properties.UserBackgroundTaskThroughputFraction);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.UserBackgroundTaskThroughputFraction, value);
             }
         }
 
@@ -727,6 +764,11 @@ namespace Microsoft.Azure.Documents
             {
                 base.SetValue(Constants.Properties.InternalSchemaProperties, value);
             }
+        }
+
+        internal bool IsMaterializedView()
+        {
+            return this.MaterializedViewDefinition.SourceCollectionRid != null;
         }
 
         internal override void Validate()

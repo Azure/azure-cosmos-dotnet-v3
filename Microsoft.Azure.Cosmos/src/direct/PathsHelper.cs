@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Documents
 
     internal static class PathsHelper
     {
+        private static readonly StringSegment[] EmptyArray = new StringSegment[0];
+
         /// <summary>
         ///     The output resourceId can be
         ///     a: (Rid based) DgJ5AJeIfQABAAAAAAAAAPy3CWY=
@@ -189,10 +191,10 @@ namespace Microsoft.Azure.Documents
 
             if (string.Equals(segments[0], Paths.DatabasesPathSegment, StringComparison.OrdinalIgnoreCase))
             {
-                databaseName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(segments[1])));
+                databaseName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(segments[1]))).GetString());
                 if (segments.Length >= 4 && string.Equals(segments[2], Paths.CollectionsPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    collectionName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(segments[3])));
+                    collectionName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(segments[3]))).GetString());
                 }
             }
         }
@@ -224,8 +226,7 @@ namespace Microsoft.Azure.Documents
                 if (PathsHelper.IsResourceType(segments[segments.Length - 2]))
                 {
                     resourcePath = segments[segments.Length - 2];
-                    resourceFullName = resourceUrl;
-                    resourceFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(resourceFullName)));
+                    resourceFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(resourceUrl))).GetString());
                     if (parseDatabaseAndCollectionNames)
                     {
                         PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
@@ -242,8 +243,9 @@ namespace Microsoft.Azure.Documents
                     isFeed = true;
                     resourcePath = segments[segments.Length - 1];
                     // remove the trailing resource type
-                    resourceFullName = resourceUrl.Substring(0, UrlUtility.RemoveTrailingSlashes(resourceUrl).LastIndexOf(Paths.Root, StringComparison.CurrentCultureIgnoreCase));
-                    resourceFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(resourceFullName)));
+                    StringSegment trimmedSegment = resourceUrl;
+                    trimmedSegment = trimmedSegment.Substring(0, UrlUtility.RemoveTrailingSlashes(trimmedSegment).LastIndexOf(Paths.Root[0]));
+                    resourceFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(trimmedSegment)).GetString());
                     if (parseDatabaseAndCollectionNames)
                     {
                         PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
@@ -388,10 +390,10 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.Snapshot:
                     return Paths.SnapshotsPathSegment;
-                
+
                 case ResourceType.PartitionedSystemDocument:
                     return Paths.PartitionedSystemDocumentsPathSegment;
-                
+
                 case ResourceType.RoleDefinition:
                     return Paths.RoleDefinitionsPathSegment;
 
@@ -1095,99 +1097,85 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private static bool IsResourceType(string resourcePathSegment)
+        private static bool IsResourceType(in StringSegment resourcePathSegment)
         {
-            if (string.IsNullOrEmpty(resourcePathSegment))
+            if (resourcePathSegment.IsNullOrEmpty())
             {
                 return false;
             }
 
-            switch (resourcePathSegment.ToLowerInvariant())
-            {
-                case Paths.AttachmentsPathSegment:
-                case Paths.CollectionsPathSegment:
-                case Paths.DatabasesPathSegment:
-                case Paths.PermissionsPathSegment:
-                case Paths.UsersPathSegment:
-                case Paths.ClientEncryptionKeysPathSegment:
-                case Paths.UserDefinedTypesPathSegment:
-                case Paths.DocumentsPathSegment:
-                case Paths.StoredProceduresPathSegment:
-                case Paths.TriggersPathSegment:
-                case Paths.UserDefinedFunctionsPathSegment:
-                case Paths.ConflictsPathSegment:
-                case Paths.MediaPathSegment:
-                case Paths.OffersPathSegment:
-                case Paths.PartitionsPathSegment:
-                case Paths.DatabaseAccountSegment:
-                case Paths.TopologyPathSegment:
-                case Paths.PartitionKeyRangesPathSegment:
-                case Paths.PartitionKeyRangePreSplitSegment:
-                case Paths.PartitionKeyRangePostSplitSegment:
-                case Paths.SchemasPathSegment:
-                case Paths.RidRangePathSegment:
-                case Paths.VectorClockPathSegment:
-                case Paths.AddressPathSegment:
-                case Paths.SnapshotsPathSegment:
-                case Paths.PartitionedSystemDocumentsPathSegment:
-                case Paths.RoleDefinitionsPathSegment:
-                case Paths.RoleAssignmentsPathSegment:
-                    return true;
-
-                default:
-                    return false;
-            }
+            return resourcePathSegment.Equals(Paths.AttachmentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.CollectionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.DatabasesPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.PermissionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.UsersPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.ClientEncryptionKeysPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.UserDefinedTypesPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.DocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.StoredProceduresPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.TriggersPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.UserDefinedFunctionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.ConflictsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.MediaPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.OffersPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.PartitionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.DatabaseAccountSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.TopologyPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.PartitionKeyRangesPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.PartitionKeyRangePreSplitSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.PartitionKeyRangePostSplitSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.SchemasPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.RidRangePathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.VectorClockPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.AddressPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.SnapshotsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.PartitionedSystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.RoleDefinitionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsRootOperation(string operationSegment, string operationTypeSegment)
+        private static bool IsRootOperation(in StringSegment operationSegment, in StringSegment operationTypeSegment)
         {
-            if (string.IsNullOrEmpty(operationSegment))
+            if (operationSegment.IsNullOrEmpty())
             {
                 return false;
             }
 
-            if (string.IsNullOrEmpty(operationTypeSegment))
+            if (operationTypeSegment.IsNullOrEmpty())
             {
                 return false;
             }
 
-            if (string.Compare(operationSegment, Paths.OperationsPathSegment, StringComparison.OrdinalIgnoreCase) != 0)
+            if (operationSegment.Compare(Paths.OperationsPathSegment, StringComparison.OrdinalIgnoreCase) != 0)
             {
                 return false;
             }
 
-            switch (operationTypeSegment.ToLowerInvariant())
-            {
-                case Paths.ReplicaOperations_Pause:
-                case Paths.ReplicaOperations_Resume:
-                case Paths.ReplicaOperations_Stop:
-                case Paths.ReplicaOperations_Recycle:
-                case Paths.ReplicaOperations_Crash:
-                case Paths.ReplicaOperations_ReportThroughputUtilization:
-                case Paths.ReplicaOperations_BatchReportThroughputUtilization:
-                case Paths.ControllerOperations_BatchGetOutput:
-                case Paths.ControllerOperations_BatchReportCharges:
-                case Paths.Operations_GetFederationConfigurations:
-                case Paths.Operations_GetConfiguration:
-                case Paths.Operations_GetStorageAccountKey:
-                case Paths.Operations_GetDatabaseAccountConfigurations:
-                case Paths.Operations_GetUnwrappedDek:
-                case Paths.Operations_ReadReplicaFromMasterPartition:
-                case Paths.Operations_ReadReplicaFromServerPartition:
-                case Paths.Operations_MasterInitiatedProgressCoordination:
-                    return true;
-
-                default:
-                    return false;
-            }
+            return operationTypeSegment.Equals(Paths.ReplicaOperations_Pause, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ReplicaOperations_Resume, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ReplicaOperations_Stop, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ReplicaOperations_Recycle, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ReplicaOperations_Crash, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ReplicaOperations_ReportThroughputUtilization, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ReplicaOperations_BatchReportThroughputUtilization, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_BatchGetOutput, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportCharges, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetDatabaseAccountConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetUnwrappedDek, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromMasterPartition, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromServerPartition, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_MasterInitiatedProgressCoordination, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsTopLevelOperationOperation(string replicaSegment, string addressSegment)
+        private static bool IsTopLevelOperationOperation(in StringSegment replicaSegment, in StringSegment addressSegment)
         {
-            if (string.IsNullOrEmpty(replicaSegment) && // replica part should be empty
-                (string.Compare(addressSegment, Paths.XPReplicatorAddressPathSegment, StringComparison.OrdinalIgnoreCase) == 0 ||
-                 string.Compare(addressSegment, Paths.ComputeGatewayChargePathSegment, StringComparison.OrdinalIgnoreCase) == 0 ||
-                 string.Compare(addressSegment, Paths.ServiceReservationPathSegment, StringComparison.OrdinalIgnoreCase) == 0))
+            if (replicaSegment.IsNullOrEmpty() && // replica part should be empty
+                (addressSegment.Compare(Paths.XPReplicatorAddressPathSegment, StringComparison.OrdinalIgnoreCase) == 0 ||
+                 addressSegment.Compare(Paths.ComputeGatewayChargePathSegment, StringComparison.OrdinalIgnoreCase) == 0 ||
+                 addressSegment.Compare(Paths.ServiceReservationPathSegment, StringComparison.OrdinalIgnoreCase) == 0))
             {
                 return true;
             }
@@ -1249,7 +1237,7 @@ namespace Microsoft.Azure.Documents
             return true;
         }
 
-        private static string[] GetResourcePathArray(ResourceType resourceType)
+        internal static string[] GetResourcePathArray(ResourceType resourceType)
         {
             List<string> segments = new List<string>();
 
@@ -1267,6 +1255,18 @@ namespace Microsoft.Azure.Documents
             if (resourceType == ResourceType.RoleAssignment)
             {
                 segments.Add(Paths.RoleAssignmentsPathSegment);
+                return segments.ToArray();
+            }
+
+            if (resourceType == ResourceType.Offer)
+            {
+                segments.Add(Paths.OffersPathSegment);
+                return segments.ToArray();
+            }
+
+            if (resourceType == ResourceType.Address)
+            {
+                segments.Add(Paths.AddressPathSegment);
                 return segments.ToArray();
             }
 

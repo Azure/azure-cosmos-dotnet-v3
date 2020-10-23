@@ -90,6 +90,8 @@ namespace Microsoft.Azure.Documents
 #if !COSMOSCLIENT
         SystemOperation = 53,
         MetadataCheckAccess = 54,
+        Prune = 55,
+        CreateSystemSnapshot = 56,
 #endif
 
         // These names make it unclear what they map to in RequestOperationType.
@@ -162,7 +164,8 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.EnsureSnapshotOperation ||
                    type == OperationType.GetSplitPoints ||
                    type == OperationType.ForcePartitionBackup ||
-                   type == OperationType.MetadataCheckAccess
+                   type == OperationType.MetadataCheckAccess ||
+                   type == OperationType.CreateSystemSnapshot
 #endif
                    ;
         }
@@ -259,6 +262,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ForcePartitionBackup:
                 case OperationType.MasterInitiatedProgressCoordination:
                 case OperationType.MetadataCheckAccess:
+                case OperationType.CreateSystemSnapshot:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:
