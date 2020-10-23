@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection
     {
+        private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
         public override string Authorization { get; set; }
         public string ClientRetryAttemptCount { get; set; }
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         public override string XDate { get; set; }
 
         public StoreRequestNameValueCollection()
-            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
+            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer)))
         {
         }
 
@@ -112,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override INameValueCollection Clone()
         {
-            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>());
+            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer));
             if (this.lazyNotCommonHeaders.IsValueCreated)
             {
                 foreach (KeyValuePair<string, string> notCommonHeader in this.lazyNotCommonHeaders.Value)

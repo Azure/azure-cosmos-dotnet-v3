@@ -37,13 +37,13 @@ namespace Microsoft.Azure.Cosmos
             set => this.storeResponseNameValueCollection.ETag = value;
         }
 
-        public override string SubStatusCodeLiteral
+        public override string SubStatus
         {
             get => this.storeResponseNameValueCollection.SubStatus;
             set => this.storeResponseNameValueCollection.SubStatus = value;
         }
 
-        public override string QueryMetricsText
+        public override string QueryMetrics
         {
             get => this.storeResponseNameValueCollection.QueryMetrics;
             set => this.storeResponseNameValueCollection.QueryMetrics = value;

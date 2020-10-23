@@ -57,13 +57,13 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.ContentLength, value);
         }
 
-        public virtual string SubStatusCodeLiteral
+        public virtual string SubStatus
         {
             get => this.GetValueOrDefault(WFConstants.BackendHeaders.SubStatus);
             set => this.SetProperty(WFConstants.BackendHeaders.SubStatus, value);
         }
 
-        public virtual string RetryAfterLiteral
+        public virtual string RetryAfterInMilliseconds
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.RetryAfterInMilliseconds);
             set => this.SetProperty(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, value);
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.OfferThroughput, value);
         }
 
-        public virtual string QueryMetricsText
+        public virtual string QueryMetrics
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.QueryMetrics);
             set => this.SetProperty(HttpConstants.HttpHeaders.QueryMetrics, value);

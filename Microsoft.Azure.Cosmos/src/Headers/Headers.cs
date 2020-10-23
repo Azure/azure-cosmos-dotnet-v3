@@ -122,8 +122,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual string SubStatusCodeLiteral
         {
-            get => this.CosmosMessageHeaders.SubStatusCodeLiteral;
-            set => this.CosmosMessageHeaders.SubStatusCodeLiteral = value;
+            get => this.CosmosMessageHeaders.SubStatus;
+            set => this.CosmosMessageHeaders.SubStatus = value;
         }
 
         internal TimeSpan? RetryAfter
@@ -149,8 +149,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual string RetryAfterLiteral
         {
-            get => this.CosmosMessageHeaders.RetryAfterLiteral;
-            set => this.CosmosMessageHeaders.RetryAfterLiteral = value;
+            get => this.CosmosMessageHeaders.RetryAfterInMilliseconds;
+            set => this.CosmosMessageHeaders.RetryAfterInMilliseconds = value;
         }
 
         internal virtual string PartitionKey
@@ -191,8 +191,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual string QueryMetricsText
         {
-            get => this.CosmosMessageHeaders.QueryMetricsText;
-            set => this.CosmosMessageHeaders.QueryMetricsText = value;
+            get => this.CosmosMessageHeaders.QueryMetrics;
+            set => this.CosmosMessageHeaders.QueryMetrics = value;
         }
 
         /// <summary>

@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection
     {
+        private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
 <#  List<(string headerName, bool isOverride)> sortedHeaderPropertyNamesWithIsOverride = headerNames.Select(x => (x.name.Split('.').Last(), x.isOverride)).OrderBy(x => x.Item1).ToList(); #>
 <#  List<string> sortedHeaderPropertyNames = headerNames.Select(x => x.name.Split('.').Last()).OrderBy(x => x).ToList();
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
 <# } #>
 
         public StoreRequestNameValueCollection()
-            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
+            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer)))
         {
         }
 
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override INameValueCollection Clone()
         {
-            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>());
+            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer));
             if (this.lazyNotCommonHeaders.IsValueCreated)
             {
                 foreach (KeyValuePair<string, string> notCommonHeader in this.lazyNotCommonHeaders.Value)
