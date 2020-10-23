@@ -250,7 +250,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return new EncryptionTransactionalBatchResponse(decryptedTransactionalBatchOperationResults, response);
+            return new EncryptionTransactionalBatchResponse(
+                decryptedTransactionalBatchOperationResults,
+                response,
+                this.cosmosSerializer);
         }
     }
 }

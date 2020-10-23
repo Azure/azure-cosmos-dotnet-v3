@@ -6,20 +6,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Net;
-    using Newtonsoft.Json;
 
     internal sealed class EncryptionTransactionalBatchResponse : TransactionalBatchResponse
     {
-        private readonly List<TransactionalBatchOperationResult> results;
+        private readonly IReadOnlyList<TransactionalBatchOperationResult> results;
         private readonly TransactionalBatchResponse response;
+        private readonly CosmosSerializer cosmosSerializer;
         private bool isDisposed = false;
 
-        public EncryptionTransactionalBatchResponse(List<TransactionalBatchOperationResult> results, TransactionalBatchResponse response)
+        public EncryptionTransactionalBatchResponse(
+            IReadOnlyList<TransactionalBatchOperationResult> results,
+            TransactionalBatchResponse response,
+            CosmosSerializer cosmosSerializer)
         {
             this.results = results;
             this.response = response;
+            this.cosmosSerializer = cosmosSerializer;
         }
 
         public override TransactionalBatchOperationResult this[int index] => this.results[index];
@@ -31,20 +34,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             T resource = default;
             if (result.ResourceStream != null)
             {
-                resource = FromStream<T>(result.ResourceStream);
+                resource = this.cosmosSerializer.FromStream<T>(result.ResourceStream);
             }
 
             return new EncryptionTransactionalBatchOperationResult<T>(resource);
-        }
-
-        internal static T FromStream<T>(Stream stream)
-        {
-            using (StreamReader sr = new StreamReader(stream))
-            using (JsonReader reader = new JsonTextReader(sr))
-            {
-                JsonSerializer serializer = new JsonSerializer();
-                return serializer.Deserialize<T>(reader);
-            }
         }
 
         public override IEnumerator<TransactionalBatchOperationResult> GetEnumerator()
