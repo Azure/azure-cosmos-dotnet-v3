@@ -205,12 +205,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal Headers(INameValueCollection nameValueCollection)
         {
-            if (!(nameValueCollection is StoreResponseNameValueCollection storeResponseNameValueCollection))
+            if (nameValueCollection is StoreResponseNameValueCollection storeResponseNameValueCollection)
             {
-                throw new NotSupportedException($"INameValueCollection of type {nameValueCollection.GetType().FullName} is not supported");
+                this.CosmosMessageHeaders = new StoreResponseHeaders(storeResponseNameValueCollection);
             }
 
-            this.CosmosMessageHeaders = new ResponseHeaders(storeResponseNameValueCollection);
+            this.CosmosMessageHeaders = new NameValueResponseHeaders(nameValueCollection);
         }
 
         /// <summary>

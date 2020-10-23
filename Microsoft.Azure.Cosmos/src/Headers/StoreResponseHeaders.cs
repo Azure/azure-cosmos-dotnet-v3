@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Header implementation used for Responses
     /// </summary>
-    internal sealed class ResponseHeaders : CosmosMessageHeadersInternal
+    internal sealed class StoreResponseHeaders : CosmosMessageHeadersInternal
     {
         private readonly StoreResponseNameValueCollection storeResponseNameValueCollection;
 
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             set => this.storeResponseNameValueCollection.PartitionKeyRangeId = value;
         }
 
-        public ResponseHeaders(StoreResponseNameValueCollection storeResponseNameValueCollection)
+        public StoreResponseHeaders(StoreResponseNameValueCollection storeResponseNameValueCollection)
         {
             this.storeResponseNameValueCollection = storeResponseNameValueCollection ?? throw new ArgumentNullException(nameof(storeResponseNameValueCollection));
         }
