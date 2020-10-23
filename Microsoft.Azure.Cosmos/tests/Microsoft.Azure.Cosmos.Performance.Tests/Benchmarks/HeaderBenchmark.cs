@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         private static readonly string Transport = Guid.NewGuid().ToString();
         private static readonly string Rid = Guid.NewGuid().ToString();
 
-        private static readonly StoreRequestHeaders StoreRequestHeaders = new StoreRequestHeaders
+        private static readonly StoreRequestNameValueCollection StoreRequestHeaders = new StoreRequestNameValueCollection
         {
             { HttpConstants.HttpHeaders.Authorization, AuthValue },
             { HttpConstants.HttpHeaders.XDate, Date },
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public void StoreRequestHeadersCreate()
         {
-            new StoreRequestHeaders();
+            new StoreRequestNameValueCollection();
         }
 
         [Benchmark]
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public void StoreRequestHeadersPointRead()
         {
-            _ = new StoreRequestHeaders
+            _ = new StoreRequestNameValueCollection
             {
                 { HttpConstants.HttpHeaders.Authorization, AuthValue },
                 { HttpConstants.HttpHeaders.XDate, Date },

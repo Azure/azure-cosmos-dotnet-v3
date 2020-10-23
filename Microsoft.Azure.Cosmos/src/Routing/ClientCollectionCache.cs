@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                    ResourceType.Collection,
                    collectionLink,
                    AuthorizationTokenType.PrimaryMasterKey,
-                   new StoreRequestHeaders()))
+                   new StoreRequestNameValueCollection()))
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
                 

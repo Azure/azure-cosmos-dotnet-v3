@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class StoreRequestHeaders : CosmosMessageHeadersInternal, INameValueCollection
+    internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection
     {
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
         public override string Authorization { get; set; }
@@ -45,12 +45,12 @@ namespace Microsoft.Azure.Cosmos
         public string Version { get; set; }
         public override string XDate { get; set; }
 
-        public StoreRequestHeaders()
+        public StoreRequestNameValueCollection()
             : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
         {
         }
 
-        private StoreRequestHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
+        private StoreRequestNameValueCollection(Lazy<Dictionary<string, string>> notCommonHeaders)
         {
             this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
         }
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            StoreRequestHeaders cloneHeaders = new StoreRequestHeaders(cloneNotCommonHeaders)
+            StoreRequestNameValueCollection cloneHeaders = new StoreRequestNameValueCollection(cloneNotCommonHeaders)
             {
                 Authorization = this.Authorization,
                 ClientRetryAttemptCount = this.ClientRetryAttemptCount,

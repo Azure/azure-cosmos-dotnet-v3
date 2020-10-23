@@ -45,7 +45,7 @@
 	
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
-    <None Include="Icon.png" Pack="true" PackagePath="\"/>
+    <None Include="Icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -91,17 +91,17 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>SystemStrings.tt</DependentUpon>
     </Compile>
-	  <Compile Update="Headers\StoreRequestHeaders.cs">
+	  <Compile Update="Headers\StoreRequestNameValueCollection.cs">
 		  <DesignTime>True</DesignTime>
 		  <AutoGen>True</AutoGen>
-		  <DependentUpon>StoreRequestHeaders.tt</DependentUpon>
+		  <DependentUpon>StoreRequestNameValueCollection.tt</DependentUpon>
 	</Compile>
   </ItemGroup>
 
 	<ItemGroup>
-		<None Update="Headers\StoreRequestHeaders.tt">
+		<None Update="Headers\StoreRequestNameValueCollection.tt">
 			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>StoreRequestHeaders.cs</LastGenOutput>
+			<LastGenOutput>StoreRequestNameValueCollection.cs</LastGenOutput>
 		</None>
 	</ItemGroup>
   <ItemGroup>

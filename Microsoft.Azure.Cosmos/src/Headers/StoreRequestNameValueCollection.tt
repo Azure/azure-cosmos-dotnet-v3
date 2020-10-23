@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class StoreRequestHeaders : InternalHeaders, INameValueCollection
+    internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection
     {
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
 <#  List<(string headerName, bool isOverride)> sortedHeaderPropertyNamesWithIsOverride = headerNames.Select(x => (x.name.Split('.').Last(), x.isOverride)).OrderBy(x => x.Item1).ToList(); #>
@@ -64,12 +64,12 @@ namespace Microsoft.Azure.Cosmos
         public<# if(isOverride) { #> override<# } #> string <#= headerName #> { get; set; }
 <# } #>
 
-        public StoreRequestHeaders()
+        public StoreRequestNameValueCollection()
             : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>()))
         {
         }
 
-        private StoreRequestHeaders(Lazy<Dictionary<string, string>> notCommonHeaders)
+        private StoreRequestNameValueCollection(Lazy<Dictionary<string, string>> notCommonHeaders)
         {
             this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            StoreRequestHeaders cloneHeaders = new StoreRequestHeaders(cloneNotCommonHeaders)
+            StoreRequestNameValueCollection cloneHeaders = new StoreRequestNameValueCollection(cloneNotCommonHeaders)
             {
 <#            foreach (string name in sortedHeaderPropertyNames) { #>
                 <#= name #> = this.<#= name #>,

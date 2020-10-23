@@ -66,13 +66,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             private void ValidateLazyHeadersAreNotCreated(CosmosMessageHeadersInternal internalHeaders)
             {
-                StoreRequestHeaders storeRequestHeaders = (StoreRequestHeaders)internalHeaders;
-                FieldInfo lazyHeaders = typeof(StoreRequestHeaders).GetField("lazyNotCommonHeaders", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                StoreRequestNameValueCollection storeRequestHeaders = (StoreRequestNameValueCollection)internalHeaders;
+                FieldInfo lazyHeaders = typeof(StoreRequestNameValueCollection).GetField("lazyNotCommonHeaders", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 Lazy<Dictionary<string, string>> lazyNotCommonHeaders = (Lazy<Dictionary<string, string>>)lazyHeaders.GetValue(storeRequestHeaders);
                 // Use the if instead of Assert.IsFalse to avoid creating the dictionary in the error message
                 if (lazyNotCommonHeaders.IsValueCreated)
                 {
-                    Assert.Fail($"The lazy dictionary should not be created. Please add the following headers to the {nameof(StoreRequestHeaders)}: {JsonConvert.SerializeObject(lazyNotCommonHeaders.Value)}");
+                    Assert.Fail($"The lazy dictionary should not be created. Please add the following headers to the {nameof(StoreRequestNameValueCollection)}: {JsonConvert.SerializeObject(lazyNotCommonHeaders.Value)}");
                 }
             }
         }
