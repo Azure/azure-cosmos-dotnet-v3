@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             foreach (DocumentServiceLease lease in allLeases)
             {
-                Debug.Assert(lease.CurrentLeaseToken != null, "TakeLeasesAsync: lease.PartitionId cannot be null.");
+                Debug.Assert(lease.CurrentLeaseToken != null, "TakeLeasesAsync: lease.CurrentLeaseToken cannot be null.");
 
                 allPartitions.Add(lease.CurrentLeaseToken, lease);
                 if (string.IsNullOrWhiteSpace(lease.Owner) || this.IsExpired(lease))

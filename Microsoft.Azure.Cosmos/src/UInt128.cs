@@ -13,6 +13,11 @@ namespace Microsoft.Azure.Cosmos
     internal readonly struct UInt128 : IComparable, IComparable<UInt128>, IEquatable<UInt128>
     {
         /// <summary>
+        /// The length of this struct in bytes.
+        /// </summary>
+        public const int Length = 16;
+
+        /// <summary>
         /// Maximum UInt128.
         /// </summary>
         public static readonly UInt128 MaxValue = new UInt128(ulong.MaxValue, ulong.MaxValue);
@@ -21,11 +26,6 @@ namespace Microsoft.Azure.Cosmos
         /// Maximum UInt128.
         /// </summary>
         public static readonly UInt128 MinValue = 0;
-
-        /// <summary>
-        /// The length of this struct in bytes.
-        /// </summary>
-        private const int Length = 16;
 
         /// <summary>
         /// The lowest 64 bits of the UInt128.
@@ -499,6 +499,8 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             byte[] bytes = UInt128.ToByteArray(this);
+            // Reverse the bytes and make it big endian so that the lex sort is equivalent to the numeric sort.
+            Array.Reverse(bytes, 0, bytes.Length);
             return BitConverter.ToString(bytes);
         }
 
@@ -534,7 +536,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            byte[] bytes = new byte[UInt128.Length];
+            Span<byte> bytes = stackalloc byte[UInt128.Length];
             for (int index = 0; index < UInt128.Length; index++)
             {
                 if (!byte.TryParse(hexPairs[index], System.Globalization.NumberStyles.HexNumber, null, out byte parsedBytes))
@@ -545,6 +547,8 @@ namespace Microsoft.Azure.Cosmos
 
                 bytes[index] = parsedBytes;
             }
+
+            bytes.Reverse();
 
             uInt128 = UInt128.FromByteArray(bytes);
             return true;

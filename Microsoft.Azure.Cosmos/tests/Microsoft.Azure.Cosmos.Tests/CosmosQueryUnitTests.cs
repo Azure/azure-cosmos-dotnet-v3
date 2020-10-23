@@ -8,21 +8,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Distinct;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.SkipTake;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -185,39 +178,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestCosmosQueryExecutionComponentOnFailure()
-        {
-            (IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
-
-            foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
-            {
-                QueryResponseCore response = await component.DrainAsync(1, default(CancellationToken));
-                Assert.AreEqual(setupContext.response, response);
-            }
-        }
-
-        [TestMethod]
-        public async Task TestCosmosQueryExecutionComponentCancellation()
-        {
-            (IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response) setupContext = await this.GetAllExecutionComponents();
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
-
-            foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
-            {
-                try
-                {
-                    QueryResponseCore response = await component.DrainAsync(1, cancellationTokenSource.Token);
-                    Assert.Fail("cancellation token should have thrown an exception");
-                }
-                catch (OperationCanceledException e)
-                {
-                    Assert.IsNotNull(e.Message);
-                }
-            }
-        }
-
-        [TestMethod]
         public async Task TestCosmosQueryPartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
@@ -273,7 +233,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client.Object,
-                queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
@@ -283,114 +242,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 diagnosticsContext: new CosmosDiagnosticsContextCore(),
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            CosmosQueryExecutionContext context = CosmosQueryExecutionContextFactory.Create(
+            IQueryPipelineStage pipelineStage = CosmosQueryExecutionContextFactory.Create(
+                documentContainer: null,
                 cosmosQueryContext,
                 inputParameters);
 
-            QueryResponseCore queryResponse = await context.ExecuteNextAsync(cancellationtoken);
-            Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
-            Assert.IsTrue(queryResponse.CosmosException.ToString().Contains(exceptionMessage), "response error message did not contain the proper substring.");
-        }
-
-        private async Task<(IList<IDocumentQueryExecutionComponent> components, QueryResponseCore response)> GetAllExecutionComponents()
-        {
-            (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) = this.SetupBaseContextToVerifyFailureScenario();
-
-            List<IDocumentQueryExecutionComponent> components = new List<IDocumentQueryExecutionComponent>();
-            List<AggregateOperator> operators = new List<AggregateOperator>()
-            {
-                AggregateOperator.Average,
-                AggregateOperator.Count,
-                AggregateOperator.Max,
-                AggregateOperator.Min,
-                AggregateOperator.Sum
-            };
-
-            components.Add((await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
-                ExecutionEnvironment.Client,
-                operators.ToArray(),
-                new Dictionary<string, AggregateOperator?>()
-                {
-                    { "test", AggregateOperator.Count }
-                },
-                new List<string>() { "test" },
-                false,
-                null,
-                func)).Result);
-
-            components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
-                ExecutionEnvironment.Client,
-                null,
-                func,
-                DistinctQueryType.Ordered)).Result);
-
-            components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
-                ExecutionEnvironment.Client,
-                5,
-                null,
-                func)).Result);
-
-            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
-                ExecutionEnvironment.Client,
-                5,
-                null,
-                func)).Result);
-
-            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
-                ExecutionEnvironment.Client,
-                5,
-                null,
-                func)).Result);
-
-            return (components, response);
-        }
-
-        private (Func<CosmosElement, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
-        {
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
-            diagnosticsContext.AddDiagnosticsInternal( new PointOperationStatistics(
-                    Guid.NewGuid().ToString(),
-                    System.Net.HttpStatusCode.Unauthorized,
-                    subStatusCode: SubStatusCodes.PartitionKeyMismatch,
-                    responseTimeUtc: DateTime.UtcNow,
-                    requestCharge: 4,
-                    errorMessage: null,
-                    method: HttpMethod.Post,
-                    requestUri: "http://localhost.com",
-                    requestSessionToken: null,
-                    responseSessionToken: null));
-            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
-            {
-                new QueryPageDiagnostics(
-                    Guid.NewGuid(),
-                    "0",
-                    "SomeQueryMetricText",
-                    "SomeIndexUtilText",
-                diagnosticsContext)
-            };
-
-            QueryResponseCore failure = QueryResponseCore.CreateFailure(
-                System.Net.HttpStatusCode.Unauthorized,
-                SubStatusCodes.PartitionKeyMismatch,
-                new CosmosException(
-                    statusCodes: HttpStatusCode.Unauthorized,
-                    message: "Random error message",
-                    subStatusCode: default,
-                    stackTrace: default,
-                    activityId: "TestActivityId",
-                    requestCharge: 42.89,
-                    retryAfter: default,
-                    headers: default,
-                    diagnosticsContext: default,
-                    error: default,
-                    innerException: default),
-                42.89,
-                "TestActivityId");
-
-            Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
-            baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Task<TryCatch<IDocumentQueryExecutionComponent>> callBack(CosmosElement x) => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent>.FromResult(baseContext.Object));
-            return (callBack, failure);
+            Assert.IsTrue(await pipelineStage.MoveNextAsync());
+            TryCatch<QueryPage> tryGetPage = pipelineStage.Current;
+            Assert.IsTrue(tryGetPage.Failed);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (tryGetPage.InnerMostException as CosmosException).StatusCode);
+            Assert.IsTrue(
+                (tryGetPage.InnerMostException as CosmosException).ToString().Contains(exceptionMessage),
+                "response error message did not contain the proper substring.");
         }
     }
 }

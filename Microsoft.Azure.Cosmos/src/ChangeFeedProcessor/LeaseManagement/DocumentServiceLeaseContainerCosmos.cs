@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
-            FeedIterator iterator = this.container.GetItemQueryStreamIterator(
+            using FeedIterator iterator = this.container.GetItemQueryStreamIterator(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
                 continuationToken: null,
                 requestOptions: queryRequestOptions);

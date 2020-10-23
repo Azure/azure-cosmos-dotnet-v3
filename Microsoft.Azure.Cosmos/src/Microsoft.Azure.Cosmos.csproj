@@ -26,6 +26,7 @@
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <PublishRepositoryUrl Condition=" '$(ProjectRef)' != 'True' ">true</PublishRepositoryUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+	<PackageIcon>Icon.png</PackageIcon>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -40,6 +41,10 @@
     <NoWarn>NU5125</NoWarn>
       <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
   </PropertyGroup>
+	
+  <ItemGroup>
+    <None Include="Icon.png" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="RuntimePerfCounters.cs" />
@@ -56,6 +61,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Json\JsonBinaryEncoding.SystemStrings.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonBinaryEncoding.SystemStrings.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="ClientResources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -65,6 +78,16 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CosmosNumberCodeGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\JsonBinaryEncoding.SystemStrings.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>JsonBinaryEncoding.SystemStrings.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Json\SystemStrings.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SystemStrings.tt</DependentUpon>
     </Compile>
     <Compile Update="RMResources.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -109,8 +132,6 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="ref/netstandard2.0" />
-    <None Include="$(OutputPath)\$(AssemblyName).xml" Pack="true" PackagePath="ref/netstandard2.0" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
@@ -122,6 +143,10 @@
     <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Json\JsonBinaryEncoding.SystemStrings.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>JsonBinaryEncoding.SystemStrings.cs</LastGenOutput>
     </None>
   </ItemGroup>
   

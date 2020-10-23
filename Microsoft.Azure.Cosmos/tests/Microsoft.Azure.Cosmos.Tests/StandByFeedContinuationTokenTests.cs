@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -219,92 +219,6 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(1, deserialized.Count);
             Assert.AreEqual(min, deserialized[0].Range.Min);
             Assert.AreEqual(max, deserialized[0].Range.Max);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_ContinuationIsSet()
-        {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-            ChangeFeedStartFrom.ContinuationToken("something").Accept(visitor);
-
-            Assert.AreEqual(expected: "something", actual: request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_StartFromNow()
-        {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-            ChangeFeedStartFrom.Now().Accept(visitor);
-
-            Assert.AreEqual(expected: "*", request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_StartFromBeginning()
-        {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-            ChangeFeedStartFrom.Beginning().Accept(visitor);
-
-            Assert.IsNull(request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
-        {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
-            {
-                PageSizeHint = 10,
-            };
-            requestOptions.PopulateRequestOptions(request);
-            ChangeFeedStartFrom.Beginning().Accept(visitor);
-
-            Assert.AreEqual(expected: "10", actual: request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
-            Assert.IsNull(request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_AddsStartTime()
-        {
-            RequestMessage request = new RequestMessage();
-            ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-            ChangeFeedStartFrom.Time(new DateTime(1985, 1, 1, 0, 0, 0, DateTimeKind.Utc)).Accept(visitor);
-
-            Assert.AreEqual(
-                expected: "Tue, 01 Jan 1985 00:00:00 GMT",
-                actual: request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-            Assert.IsNull(request.Headers.IfNoneMatch);
-        }
-
-        [TestMethod]
-        public void ChangeFeedRequestOptions_AddsFeedRange()
-        {
-            FeedRange feedRange = new FeedRangePartitionKeyRange("randomPK");
-            ChangeFeedStartFrom[] froms = new ChangeFeedStartFrom[]
-            {
-                ChangeFeedStartFrom.Beginning(feedRange),
-                ChangeFeedStartFrom.Now(feedRange),
-                ChangeFeedStartFrom.Time(DateTime.MinValue.ToUniversalTime(), feedRange)
-            };
-
-            foreach (ChangeFeedStartFrom from in froms)
-            {
-                RequestMessage request = new RequestMessage();
-                ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-                from.Accept(visitor);
-
-                Assert.AreEqual(
-                    expected: "randomPK",
-                    actual: request.PartitionKeyRangeId.PartitionKeyRangeId);
-            }
         }
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
