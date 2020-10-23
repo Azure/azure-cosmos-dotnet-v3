@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithHttpClientFactory(() => new HttpClient())
                 .WithConnectionModeGateway();
 
-            // Validate that setting it to null does throw an argument exception
+            // Validate that setting it to null does not throw an argument exception
             _ = new CosmosClientOptions()
             {
                 HttpClientFactory = null,
