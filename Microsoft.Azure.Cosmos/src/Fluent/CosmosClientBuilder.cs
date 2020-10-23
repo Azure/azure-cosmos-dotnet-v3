@@ -318,7 +318,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
-        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null,
+        public CosmosClientBuilder WithConnectionModeGateway(
+            int? maxConnectionLimit = null,
             IWebProxy webProxy = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
@@ -329,10 +330,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
 
-            if (webProxy != null)
-            {
-                this.clientOptions.WebProxy = webProxy;
-            }
+            this.clientOptions.WebProxy = webProxy;
 
             return this;
         }

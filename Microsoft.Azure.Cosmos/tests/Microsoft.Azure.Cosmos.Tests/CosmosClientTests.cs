@@ -6,10 +6,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosClientTests
@@ -97,6 +99,31 @@ namespace Microsoft.Azure.Cosmos.Tests
             _ = new CosmosClientBuilder("<<endpoint-here>>", "<<key-here>>")
                 .WithHttpClientFactory(() => new HttpClient())
                 .WithConnectionModeGateway();
+
+            // Validate that setting it to null does throw an argument exception
+            _ = new CosmosClientOptions()
+            {
+                HttpClientFactory = null,
+                WebProxy = new Mock<IWebProxy>().Object,
+            };
+
+            _ = new CosmosClientOptions()
+            {
+                WebProxy = new Mock<IWebProxy>().Object,
+                HttpClientFactory = null,
+            };
+
+            _ = new CosmosClientOptions()
+            {
+                WebProxy = null,
+                HttpClientFactory = () => new HttpClient(),
+            };
+
+            _ = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient(),
+                WebProxy = null,
+            };
         }
     }
 }
