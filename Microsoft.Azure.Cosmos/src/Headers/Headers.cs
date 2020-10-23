@@ -205,12 +205,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal Headers(INameValueCollection nameValueCollection)
         {
-            if (nameValueCollection is StoreResponseNameValueCollection storeResponseNameValueCollection)
+            this.CosmosMessageHeaders = nameValueCollection switch
             {
-                this.CosmosMessageHeaders = new StoreResponseHeaders(storeResponseNameValueCollection);
-            }
-
-            this.CosmosMessageHeaders = new NameValueResponseHeaders(nameValueCollection);
+                StoreResponseNameValueCollection storeResponseNameValueCollection => new StoreResponseHeaders(storeResponseNameValueCollection),
+                _ => new NameValueResponseHeaders(nameValueCollection),
+            };
         }
 
         /// <summary>
