@@ -329,7 +329,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
 
-            this.clientOptions.WebProxy = webProxy;
+            if (webProxy != null)
+            {
+                this.clientOptions.WebProxy = webProxy;
+            }
 
             return this;
         }

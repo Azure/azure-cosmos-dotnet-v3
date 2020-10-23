@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -82,12 +83,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.ThrowsException<ArgumentException>(() => new CosmosClient(""));
             Assert.ThrowsException<ArgumentNullException>(() => new CosmosClient(null));
         }
-
+        
         [TestMethod]
         public void Builder_InvalidConnectionString()
         {
             Assert.ThrowsException<ArgumentException>(() => new CosmosClientBuilder(""));
             Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder(null));
+        }
+
+        [TestMethod]
+        public void Builder_ValidateHttpFactory()
+        {
+            _ = new CosmosClientBuilder("<<endpoint-here>>", "<<key-here>>")
+                .WithHttpClientFactory(() => new HttpClient())
+                .WithConnectionModeGateway();
         }
     }
 }
