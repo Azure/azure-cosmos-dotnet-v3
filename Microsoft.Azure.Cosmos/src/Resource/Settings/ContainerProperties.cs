@@ -104,19 +104,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
 
-            Collection<string> paths = new Collection<string>();
-            foreach (string path in partitionKeyPaths)
-            {
-                paths.Add(path);
-            }
-
-            this.PartitionKey = new PartitionKeyDefinition
-            {
-                Paths = paths,
-                Kind = Documents.PartitionKind.MultiHash,
-                Version = Documents.PartitionKeyDefinitionVersion.V2
-            };
-
             this.PartitionKeyPaths = partitionKeyPaths;
 
             this.ValidateRequiredProperties();
@@ -343,12 +330,19 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentNullException(nameof(this.PartitionKeyPaths));
                 }
 
+                Collection<string> paths = new Collection<string>();
+                foreach (string path in value)
+                {
+                    paths.Add(path);
+                }
+
                 this.PartitionKey = new PartitionKeyDefinition
                 {
-                    Paths = (Collection<string>)value,
+                    Paths = paths,
                     Kind = Documents.PartitionKind.MultiHash,
                     Version = Documents.PartitionKeyDefinitionVersion.V2
                 };
+
             }
         }
 

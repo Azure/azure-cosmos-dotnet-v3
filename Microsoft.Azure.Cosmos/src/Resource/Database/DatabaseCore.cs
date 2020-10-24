@@ -211,10 +211,10 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
-                        IReadOnlyList<string> retrived = retrivedContainerResponse.Resource.PartitionKeyPaths;
-                        IReadOnlyList<string> received = containerProperties.PartitionKeyPaths;
+                        IReadOnlyList<string> retrivedPartitionKeyPaths = retrivedContainerResponse.Resource.PartitionKeyPaths;
+                        IReadOnlyList<string> receivedPartitionKeyPaths = containerProperties.PartitionKeyPaths;
                         
-                        if (retrived.Count != received.Count || !Enumerable.SequenceEqual(retrived, received))
+                        if (retrivedPartitionKeyPaths.Count != receivedPartitionKeyPaths.Count || !Enumerable.SequenceEqual(retrivedPartitionKeyPaths, receivedPartitionKeyPaths))
                         {
                             throw new ArgumentException(
                                 string.Format(
