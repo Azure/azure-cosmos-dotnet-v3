@@ -23,9 +23,9 @@ namespace Microsoft.Azure.Cosmos
         public const int DefaultAllowedClockSkewInSeconds = 900;
         public const int DefaultMasterTokenExpiryInSeconds = 900;
         private static readonly string AuthorizationFormatPrefixUrlEncoded = HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
-                Constants.Properties.MasterToken,
-                Constants.Properties.TokenVersion,
-                string.Empty));
+            Constants.Properties.MasterToken,
+            Constants.Properties.TokenVersion,
+            string.Empty));
 
         private static readonly Encoding AuthorizationEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
@@ -89,11 +89,11 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out _, out string resourceType, out string resourceIdValue, clientVersion);
 
             string authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
-                         resourceIdValue,
-                         resourceType,
-                         headers,
-                         stringHMACSHA256Helper,
-                         out ArrayOwner arrayOwner);
+                resourceIdValue,
+                resourceType,
+                headers,
+                stringHMACSHA256Helper,
+                out ArrayOwner arrayOwner);
             using (arrayOwner)
             {
                 return authorizationToken;
@@ -189,6 +189,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public static string GenerateAadAuthorizationSignature(string aadToken)
+        {
+            return HttpUtility.UrlEncode(String.Format(
+                CultureInfo.InvariantCulture,
+                Constants.Properties.AuthorizationFormat,
+                Constants.Properties.AadToken,
+                Constants.Properties.TokenVersion,
+                aadToken));
+        }
+        
         // used in Compute
         public static void ParseAuthorizationToken(
             string authorizationTokenString,
@@ -212,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             authorizationTokenString = HttpUtility.UrlDecode(authorizationTokenString);
-
+ 
             // Format of the token being deciphered is 
             // type=<master/resource/system>&ver=<version>&sig=<base64encodedstring>
 
@@ -289,12 +299,12 @@ namespace Microsoft.Azure.Cosmos
 
         // used in Compute
         public static bool CheckPayloadUsingKey(
-               ReadOnlyMemory<char> inputToken,
-               string verb,
-               string resourceId,
-               string resourceType,
-               INameValueCollection headers,
-               string key)
+            ReadOnlyMemory<char> inputToken,
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            string key)
         {
             string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationCore(
                 verb,
@@ -304,7 +314,30 @@ namespace Microsoft.Azure.Cosmos
                 key);
 
             return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
-                || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
+                   || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool CheckPayloadUsingKey(
+            ReadOnlyMemory<char> inputToken,
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash computeHash)
+        {
+            ArrayOwner payload;
+            string requestBasedToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+                verb,
+                resourceId,
+                resourceType,
+                headers,
+                computeHash,
+                out payload);
+            using (payload)
+            {
+                return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
+                       || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         // used by Compute
