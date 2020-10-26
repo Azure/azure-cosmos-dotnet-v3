@@ -269,15 +269,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
                 public override CosmosElement this[string key] => this.dictionary[key];
 
-                public override Dictionary<string, CosmosElement>.KeyCollection Keys => this.dictionary.Keys;
+                public override KeyCollection Keys => new KeyCollection(this.dictionary.Keys);
 
-                public override Dictionary<string, CosmosElement>.ValueCollection Values => this.dictionary.Values;
+                public override ValueCollection Values => new ValueCollection(this.dictionary.Values);
 
                 public override int Count => this.dictionary.Count;
 
                 public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
 
-                public override Dictionary<string, CosmosElement>.Enumerator GetEnumerator() => this.dictionary.GetEnumerator();
+                public override Enumerator GetEnumerator() => new Enumerator(this.dictionary.GetEnumerator());
 
                 public override bool TryGetValue(string key, out CosmosElement value) => this.dictionary.TryGetValue(key, out value);
 

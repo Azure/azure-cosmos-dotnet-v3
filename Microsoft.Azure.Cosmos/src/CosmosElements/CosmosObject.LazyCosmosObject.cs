@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
-        private class LazyCosmosObject : CosmosObject
+        private sealed class LazyCosmosObject : CosmosObject
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 });
             }
 
-            public override Dictionary<string, CosmosElement>.KeyCollection Keys => this.lazyCache.Value.Keys;
+            public override KeyCollection Keys => new KeyCollection(this.lazyCache.Value.Keys);
 
-            public override Dictionary<string, CosmosElement>.ValueCollection Values => this.lazyCache.Value.Values;
+            public override ValueCollection Values => new ValueCollection(this.lazyCache.Value.Values);
 
             public override int Count => this.lazyCache.Value.Count;
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override bool ContainsKey(string key) => this.lazyCache.Value.ContainsKey(key);
 
-            public override Dictionary<string, CosmosElement>.Enumerator GetEnumerator() => this.lazyCache.Value.GetEnumerator();
+            public override Enumerator GetEnumerator() => new Enumerator(this.lazyCache.Value.GetEnumerator());
 
             public override bool TryGetValue(string key, out CosmosElement value) => this.lazyCache.Value.TryGetValue(key, out value);
 

@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosArray Create() => CosmosArray.Empty;
 
-        public abstract List<CosmosElement>.Enumerator GetEnumerator();
+        public abstract Enumerator GetEnumerator();
 
         IEnumerator<CosmosElement> IEnumerable<CosmosElement>.GetEnumerator() => this.GetEnumerator();
 
@@ -115,6 +115,35 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public static TryCatch<CosmosArray> CreateFromBuffer(ReadOnlyMemory<byte> buffer) => CosmosElement.Monadic.CreateFromBuffer<CosmosArray>(buffer);
 
             public static TryCatch<CosmosArray> Parse(string json) => CosmosElement.Monadic.Parse<CosmosArray>(json);
+        }
+
+        public struct Enumerator : IEnumerator<CosmosElement>
+        {
+            private List<CosmosElement>.Enumerator innerEnumerator;
+
+            internal Enumerator(List<CosmosElement>.Enumerator innerEnumerator)
+            {
+                this.innerEnumerator = innerEnumerator;
+            }
+
+            public CosmosElement Current => this.innerEnumerator.Current;
+
+            object IEnumerator.Current => this.innerEnumerator.Current;
+
+            public void Dispose()
+            {
+                this.innerEnumerator.Dispose();
+            }
+
+            public bool MoveNext()
+            {
+                return this.innerEnumerator.MoveNext();
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 #if INTERNAL

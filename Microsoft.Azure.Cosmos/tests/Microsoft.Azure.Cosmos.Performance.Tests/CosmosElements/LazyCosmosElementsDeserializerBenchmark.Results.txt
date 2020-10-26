@@ -1,26 +1,26 @@
-﻿|                         Method | payload | jsonSerializationFormat | accessMode |        Mean |     Error |      StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
-|------------------------------- |-------- |------------------------ |----------- |------------:|----------:|------------:|-------:|------:|------:|----------:|
-| CreateAndNavigateCosmosElement |   array |                    Text |      Never |    190.3 ns |   3.78 ns |     3.54 ns | 0.1051 |     - |     - |     440 B |
-| CreateAndNavigateCosmosElement |   array |                    Text |       Once |  4,694.0 ns |  50.72 ns |    42.35 ns | 0.7935 |     - |     - |    3336 B |
-| CreateAndNavigateCosmosElement |   array |                    Text |       Many |  9,119.5 ns | 155.17 ns |   137.56 ns | 0.7935 |     - |     - |    3336 B |
-| CreateAndNavigateCosmosElement |   array |                  Binary |      Never |    160.8 ns |   3.01 ns |     2.82 ns | 0.0706 |     - |     - |     296 B |
-| CreateAndNavigateCosmosElement |   array |                  Binary |       Once |  3,180.7 ns |  62.20 ns |    85.14 ns | 0.7858 |     - |     - |    3296 B |
-| CreateAndNavigateCosmosElement |   array |                  Binary |       Many |  7,603.9 ns | 114.87 ns |   107.45 ns | 0.7782 |     - |     - |    3296 B |
-| CreateAndNavigateCosmosElement |  double |                    Text |      Never |    583.2 ns |   4.75 ns |     4.44 ns | 0.1183 |     - |     - |     496 B |
-| CreateAndNavigateCosmosElement |  double |                    Text |       Once |    707.3 ns |  11.73 ns |    10.40 ns | 0.1183 |     - |     - |     496 B |
-| CreateAndNavigateCosmosElement |  double |                    Text |       Many |    891.7 ns |  14.52 ns |    12.12 ns | 0.1183 |     - |     - |     496 B |
-| CreateAndNavigateCosmosElement |  double |                  Binary |      Never |    161.9 ns |   3.81 ns |     5.33 ns | 0.0725 |     - |     - |     304 B |
-| CreateAndNavigateCosmosElement |  double |                  Binary |       Once |    251.0 ns |   2.75 ns |     2.57 ns | 0.0725 |     - |     - |     304 B |
-| CreateAndNavigateCosmosElement |  double |                  Binary |       Many |    419.5 ns |   5.74 ns |     5.37 ns | 0.0725 |     - |     - |     304 B |
-| CreateAndNavigateCosmosElement |  object |                    Text |      Never |    191.7 ns |   3.61 ns |     3.01 ns | 0.0975 |     - |     - |     408 B |
-| CreateAndNavigateCosmosElement |  object |                    Text |       Once | 14,078.5 ns | 228.15 ns |   190.52 ns | 1.4801 |     - |     - |    6224 B |
-| CreateAndNavigateCosmosElement |  object |                    Text |       Many | 39,217.8 ns | 665.79 ns |   590.20 ns | 1.4648 |     - |     - |    6224 B |
-| CreateAndNavigateCosmosElement |  object |                  Binary |      Never |    152.4 ns |   2.46 ns |     2.19 ns | 0.0629 |     - |     - |     264 B |
-| CreateAndNavigateCosmosElement |  object |                  Binary |       Once | 10,532.2 ns | 163.12 ns |   152.59 ns | 1.4648 |     - |     - |    6184 B |
-| CreateAndNavigateCosmosElement |  object |                  Binary |       Many | 35,314.8 ns | 694.21 ns | 1,060.14 ns | 1.4648 |     - |     - |    6184 B |
-| CreateAndNavigateCosmosElement |  string |                    Text |      Never |  1,753.1 ns |  21.59 ns |    18.03 ns | 0.1087 |     - |     - |     456 B |
-| CreateAndNavigateCosmosElement |  string |                    Text |       Once |  1,945.6 ns |  25.62 ns |    23.97 ns | 0.3242 |     - |     - |    1368 B |
-| CreateAndNavigateCosmosElement |  string |                    Text |       Many |  2,063.2 ns |  39.66 ns |    44.08 ns | 0.3242 |     - |     - |    1368 B |
-| CreateAndNavigateCosmosElement |  string |                  Binary |      Never |    154.3 ns |   1.83 ns |     1.62 ns | 0.0629 |     - |     - |     264 B |
-| CreateAndNavigateCosmosElement |  string |                  Binary |       Once |  1,547.7 ns |  30.64 ns |    31.47 ns | 0.2804 |     - |     - |    1176 B |
-| CreateAndNavigateCosmosElement |  string |                  Binary |       Many |  1,523.9 ns |  30.34 ns |    65.96 ns | 0.2785 |     - |     - |    1176 B |
+﻿|                         Method | payload | jsonSerializationFormat | accessMode |        Mean |     Error |    StdDev |      Median |  Gen 0 | Gen 1 | Gen 2 | Allocated |
+|------------------------------- |-------- |------------------------ |----------- |------------:|----------:|----------:|------------:|-------:|------:|------:|----------:|
+| CreateAndNavigateCosmosElement |   array |                    Text |      Never |    193.8 ns |   5.39 ns |   8.07 ns |    190.3 ns | 0.1051 |     - |     - |     440 B |
+| CreateAndNavigateCosmosElement |   array |                    Text |       Once |  4,927.2 ns |  78.67 ns |  69.74 ns |  4,928.7 ns | 0.7935 |     - |     - |    3336 B |
+| CreateAndNavigateCosmosElement |   array |                    Text |       Many | 10,528.4 ns | 113.33 ns | 100.46 ns | 10,506.0 ns | 0.7935 |     - |     - |    3336 B |
+| CreateAndNavigateCosmosElement |   array |                  Binary |      Never |    163.1 ns |   1.00 ns |   0.93 ns |    163.4 ns | 0.0706 |     - |     - |     296 B |
+| CreateAndNavigateCosmosElement |   array |                  Binary |       Once |  3,368.9 ns |  57.71 ns |  51.16 ns |  3,355.7 ns | 0.7858 |     - |     - |    3296 B |
+| CreateAndNavigateCosmosElement |   array |                  Binary |       Many |  8,799.1 ns | 131.52 ns | 109.83 ns |  8,794.9 ns | 0.7782 |     - |     - |    3296 B |
+| CreateAndNavigateCosmosElement |  double |                    Text |      Never |    599.0 ns |  14.22 ns |  13.30 ns |    593.3 ns | 0.1183 |     - |     - |     496 B |
+| CreateAndNavigateCosmosElement |  double |                    Text |       Once |    728.3 ns |  10.22 ns |   9.56 ns |    729.4 ns | 0.1183 |     - |     - |     496 B |
+| CreateAndNavigateCosmosElement |  double |                    Text |       Many |    970.9 ns |  19.40 ns |  17.20 ns |    967.3 ns | 0.1183 |     - |     - |     496 B |
+| CreateAndNavigateCosmosElement |  double |                  Binary |      Never |    158.8 ns |   2.96 ns |   2.77 ns |    158.8 ns | 0.0725 |     - |     - |     304 B |
+| CreateAndNavigateCosmosElement |  double |                  Binary |       Once |    260.2 ns |   5.37 ns |   5.02 ns |    260.0 ns | 0.0725 |     - |     - |     304 B |
+| CreateAndNavigateCosmosElement |  double |                  Binary |       Many |    481.5 ns |   6.05 ns |   5.66 ns |    480.1 ns | 0.0725 |     - |     - |     304 B |
+| CreateAndNavigateCosmosElement |  object |                    Text |      Never |    186.6 ns |   3.74 ns |   7.21 ns |    183.6 ns | 0.0975 |     - |     - |     408 B |
+| CreateAndNavigateCosmosElement |  object |                    Text |       Once | 15,670.8 ns | 289.71 ns | 256.82 ns | 15,602.5 ns | 1.4648 |     - |     - |    6224 B |
+| CreateAndNavigateCosmosElement |  object |                    Text |       Many | 47,673.3 ns | 906.89 ns | 848.31 ns | 47,446.5 ns | 1.4648 |     - |     - |    6224 B |
+| CreateAndNavigateCosmosElement |  object |                  Binary |      Never |    159.7 ns |   2.19 ns |   2.05 ns |    159.9 ns | 0.0629 |     - |     - |     264 B |
+| CreateAndNavigateCosmosElement |  object |                  Binary |       Once | 12,350.7 ns | 254.57 ns | 584.92 ns | 12,086.6 ns | 1.4648 |     - |     - |    6184 B |
+| CreateAndNavigateCosmosElement |  object |                  Binary |       Many | 43,907.8 ns | 567.91 ns | 503.44 ns | 43,908.0 ns | 1.4648 |     - |     - |    6184 B |
+| CreateAndNavigateCosmosElement |  string |                    Text |      Never |  1,830.3 ns |  24.70 ns |  21.90 ns |  1,831.6 ns | 0.1087 |     - |     - |     456 B |
+| CreateAndNavigateCosmosElement |  string |                    Text |       Once |  1,953.0 ns |  26.04 ns |  24.36 ns |  1,956.9 ns | 0.3242 |     - |     - |    1368 B |
+| CreateAndNavigateCosmosElement |  string |                    Text |       Many |  2,204.6 ns |  30.17 ns |  26.74 ns |  2,202.8 ns | 0.3242 |     - |     - |    1368 B |
+| CreateAndNavigateCosmosElement |  string |                  Binary |      Never |    161.8 ns |   3.32 ns |   3.11 ns |    162.0 ns | 0.0629 |     - |     - |     264 B |
+| CreateAndNavigateCosmosElement |  string |                  Binary |       Once |  1,418.2 ns |  17.42 ns |  14.54 ns |  1,412.6 ns | 0.2804 |     - |     - |    1176 B |
+| CreateAndNavigateCosmosElement |  string |                  Binary |       Many |  1,580.7 ns |  19.41 ns |  18.16 ns |  1,582.4 ns | 0.2804 |     - |     - |    1176 B |

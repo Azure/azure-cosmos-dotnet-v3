@@ -225,12 +225,19 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                     "Object values are not served from the cache.");
             }
 
+            int countFromCount = lazilyDeserializedPerson.Count;
+            int countFromEnumerator = 0;
+            foreach (KeyValuePair<string, CosmosElement> kvp in lazilyDeserializedPerson)
+            {
+                countFromEnumerator++;
+            }
+
+            Assert.AreEqual(countFromCount, countFromEnumerator);
+
             CosmosString personName = lazilyDeserializedPerson[nameof(Person.Name)] as CosmosString;
             Assert.IsTrue(
                 object.ReferenceEquals(personName.Value, personName.Value),
                 "Did not return the string from the cache.");
-
-            int count = lazilyDeserializedPeople.Count;
 
             int i = 0;
             foreach (CosmosElement arrayItem in lazilyDeserializedPeople)
@@ -239,6 +246,9 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                     object.ReferenceEquals(arrayItem, lazilyDeserializedPeople[i++]));
             }
 
+            Assert.AreEqual(i, lazilyDeserializedPeople.Count);
+
+            int count = lazilyDeserializedPeople.Count;
             for (i = 0; i < count; i++)
             {
                 Assert.IsTrue(
