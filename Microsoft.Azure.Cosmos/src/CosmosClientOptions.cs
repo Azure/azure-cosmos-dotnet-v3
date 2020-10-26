@@ -371,16 +371,12 @@ namespace Microsoft.Azure.Cosmos
             get => this.webProxy;
             set
             {
-                this.webProxy = value;
-                if (this.ConnectionMode != ConnectionMode.Gateway)
-                {
-                    throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
-                }
-
-                if (this.HttpClientFactory != null)
+                if (value != null && this.HttpClientFactory != null)
                 {
                     throw new ArgumentException($"{nameof(this.WebProxy)} cannot be set along {nameof(this.HttpClientFactory)}");
                 }
+
+                this.webProxy = value;
             }
         }
 
@@ -494,7 +490,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.httpClientFactory;
             set
             {
-                if (this.WebProxy != null)
+                if (value != null && this.WebProxy != null)
                 {
                     throw new ArgumentException($"{nameof(this.HttpClientFactory)} cannot be set along {nameof(this.WebProxy)}");
                 }
