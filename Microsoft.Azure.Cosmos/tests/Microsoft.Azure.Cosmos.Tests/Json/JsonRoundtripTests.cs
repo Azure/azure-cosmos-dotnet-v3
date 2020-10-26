@@ -588,7 +588,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         break;
 
                     case IJsonNavigator sourceNavigator:
-                        sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
+                        bool writeAsRootNode = new Random().Next() % 2 == 0;
+                        if (writeAsRootNode)
+                        {
+                            sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
+                        }
+                        else
+                        {
+                            IJsonNavigatorNode rootNode = sourceNavigator.GetRootNode();
+                            JsonNodeType jsonNodeType = sourceNavigator.GetNodeType(rootNode);
+                            switch (jsonNodeType)
+                            {
+                                case JsonNodeType.Array:
+                                    writer.WriteArrayStart();
+
+                                    foreach (IJsonNavigatorNode arrayItem in sourceNavigator.GetArrayItems(rootNode))
+                                    {
+                                        sourceNavigator.WriteNode(arrayItem, writer);
+                                    }
+
+                                    writer.WriteArrayEnd();
+                                    break;
+
+                                case JsonNodeType.Object:
+                                    writer.WriteObjectStart();
+
+                                    foreach (ObjectProperty objectProperty in sourceNavigator.GetObjectProperties(rootNode))
+                                    {
+                                        sourceNavigator.WriteNode(objectProperty.NameNode, writer);
+                                        sourceNavigator.WriteNode(objectProperty.ValueNode, writer);
+                                    }
+
+                                    writer.WriteObjectEnd();
+                                    break;
+
+                                default:
+                                    sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
+                                    break;
+                            }
+                        }
                         break;
 
                     default:

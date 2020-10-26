@@ -995,28 +995,28 @@ namespace Microsoft.Azure.Cosmos.Json
                     case RawValueType.StrR1:
                         this.ForceRewriteRawJsonValue(
                             rootBuffer,
-                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: 1).Span)),
+                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: JsonBinaryEncoding.TypeMarkerLength).Span)),
                             isFieldName,
                             jsonStringDictionary);
                         break;
                     case RawValueType.StrR2:
                         this.ForceRewriteRawJsonValue(
                             rootBuffer,
-                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: 1).Span)),
+                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: JsonBinaryEncoding.TypeMarkerLength).Span)),
                             isFieldName,
                             jsonStringDictionary);
                         break;
                     case RawValueType.StrR3:
                         this.ForceRewriteRawJsonValue(
                             rootBuffer,
-                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: 1).Span)),
+                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: JsonBinaryEncoding.TypeMarkerLength).Span)),
                             isFieldName,
                             jsonStringDictionary);
                         break;
                     case RawValueType.StrR4:
                         this.ForceRewriteRawJsonValue(
                             rootBuffer,
-                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: 1).Span)),
+                            rootBuffer.Slice(JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: JsonBinaryEncoding.TypeMarkerLength).Span)),
                             isFieldName,
                             jsonStringDictionary);
                         break;
@@ -1105,27 +1105,27 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new InvalidOperationException("string is too long.");
                         }
 
-                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, (int)encodedStringLength).Span);
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: JsonBinaryEncoding.TypeMarkerLength, (int)encodedStringLength).Span);
                         break;
 
                     case RawValueType.StrL1:
-                        byte oneByteLength = JsonBinaryEncoding.GetFixedSizedValue<byte>(buffer.Slice(1).Span);
-                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, oneByteLength).Span);
+                        byte oneByteLength = JsonBinaryEncoding.GetFixedSizedValue<byte>(buffer.Slice(JsonBinaryEncoding.TypeMarkerLength).Span);
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: JsonBinaryEncoding.TypeMarkerLength + sizeof(byte), oneByteLength).Span);
                         break;
 
                     case RawValueType.StrL2:
-                        ushort twoByteLength = JsonBinaryEncoding.GetFixedSizedValue<ushort>(buffer.Slice(1).Span);
-                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, twoByteLength).Span);
+                        ushort twoByteLength = JsonBinaryEncoding.GetFixedSizedValue<ushort>(buffer.Slice(JsonBinaryEncoding.TypeMarkerLength).Span);
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: JsonBinaryEncoding.TypeMarkerLength + sizeof(ushort), twoByteLength).Span);
                         break;
 
                     case RawValueType.StrL4:
-                        ulong fourByteLength = JsonBinaryEncoding.GetFixedSizedValue<ulong>(buffer.Slice(1).Span);
+                        uint fourByteLength = JsonBinaryEncoding.GetFixedSizedValue<uint>(buffer.Slice(JsonBinaryEncoding.TypeMarkerLength).Span);
                         if (fourByteLength > int.MaxValue)
                         {
                             throw new InvalidOperationException("string is too long.");
                         }
 
-                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: 1, (int)fourByteLength).Span);
+                        rawStringValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(buffer.Slice(start: JsonBinaryEncoding.TypeMarkerLength + sizeof(uint), (int)fourByteLength).Span);
                         break;
 
                     default:
