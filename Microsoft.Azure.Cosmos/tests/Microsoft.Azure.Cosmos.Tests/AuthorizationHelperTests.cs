@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     foreach (string resourceName in this.ResourceNameValues)
                     {
-                        DictionaryNameValueCollection nvc = new DictionaryNameValueCollection();
+                        StoreRequestNameValueCollection nvc = new StoreRequestNameValueCollection();
                         nvc.Add(HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r"));
                         string authorizationKey = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                             method,
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 string[] baseline = this.AuthorizationBaseline[i];
                 string[] baselineResults = this.AuthorizationBaselineResults[i];
-                DictionaryNameValueCollection nvc = new DictionaryNameValueCollection();
+                StoreRequestNameValueCollection nvc = new StoreRequestNameValueCollection();
                 nvc.Add(HttpConstants.HttpHeaders.XDate, baseline[4]);
                 Uri uri = new Uri(baseline[0]);
                 string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(

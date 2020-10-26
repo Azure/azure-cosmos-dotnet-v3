@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ResponseMessage> ReadContainerStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
-            ContainerRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             return this.ProcessStreamAsync(
@@ -487,8 +487,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             OperationType operationType,
-            ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
             return this.ProcessResourceOperationStreamAsync(
                 diagnosticsContext: diagnosticsContext,
