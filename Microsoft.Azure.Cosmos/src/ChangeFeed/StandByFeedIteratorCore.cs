@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                     if (maxItemCount.HasValue)
                     {
-                        request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
+                        request.Headers.PageSize = maxItemCount.Value.ToString(CultureInfo.InvariantCulture);
                     }
 
                     if (!string.IsNullOrEmpty(partitionKeyRangeId))
