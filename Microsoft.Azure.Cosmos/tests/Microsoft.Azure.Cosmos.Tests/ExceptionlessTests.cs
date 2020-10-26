@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 request.UseStatusCodeForFailures = true;
                 StoreResponse mockStoreResponse404 = new StoreResponse();
-                mockStoreResponse404.Headers = new DictionaryNameValueCollection();
+                mockStoreResponse404.Headers = new StoreRequestNameValueCollection();
                 mockStoreResponse404.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
 
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 ResponseBody = Stream.Null,
                 Status = responseStatusCode,
-                Headers = new DictionaryNameValueCollection()
+                Headers = new StoreRequestNameValueCollection()
             };
 
             // This is needed because in order to Mock a TransportClient we previously need an instance of CosmosClient
