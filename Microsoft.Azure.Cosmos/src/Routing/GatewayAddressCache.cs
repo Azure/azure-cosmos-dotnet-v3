@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
 
-    internal class GatewayAddressCache : IAddressCache, IDisposable
+    internal class GatewayAddressCache : IAddressCache
     {
         private const string protocolFilterFormat = "{0} eq {1}";
 
@@ -258,10 +258,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             List<Task> tasks = new List<Task>();
-            HashSet<PartitionKeyRangeIdentity> pkRangeIds;
-            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out pkRangeIds))
+            if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
-                foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIds)
+                PartitionKeyRangeIdentity[] pkRangeIdsCopy;
+                lock (pkRangeIds)
+                {
+                    pkRangeIdsCopy = pkRangeIds.ToArray();
+                }
+
+                foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
                     DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
                        pkRangeId.CollectionRid,
@@ -270,10 +275,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     tasks.Add(this.serverPartitionAddressCache.RemoveAsync(pkRangeId));
                 }
-
-                // remove the server key from the map since we are updating the addresses
-                HashSet<PartitionKeyRangeIdentity> ignorePkRanges;
-                this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out ignorePkRanges);
             }
 
             return Task.WhenAll(tasks);
@@ -387,10 +388,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             bool useMasterCollectionResolver)
         {
-            INameValueCollection addressQuery = new DictionaryNameValueCollection(StringComparer.Ordinal);
-            addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
+            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            {
+                { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
+            };
 
-            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -447,10 +450,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
-            INameValueCollection addressQuery = new DictionaryNameValueCollection();
-            addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
+            INameValueCollection addressQuery = new StoreRequestNameValueCollection
+            {
+                { HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl) }
+            };
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -515,11 +520,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-        }
-
         internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)
         {
             Address address = addresses.First();
@@ -547,13 +547,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                        partitionKeyRangeIdentity.PartitionKeyRangeId,
                        addressInfo.PhysicalUri);
 
-                    this.serverPartitionAddressToPkRangeIdMap.AddOrUpdate(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)), new HashSet<PartitionKeyRangeIdentity>() { partitionKeyRangeIdentity },
-                        (serverKey, pkRangeIds) =>
-                        {
-                            pkRangeIds.Add(partitionKeyRangeIdentity);
-                            return pkRangeIds;
-                        });
+                    HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
+                        new ServerKey(new Uri(addressInfo.PhysicalUri)), new HashSet<PartitionKeyRangeIdentity>());
+                    lock (pkRangeIdSet)
+                    {
+                        pkRangeIdSet.Add(partitionKeyRangeIdentity);
+                    }
                 }
             }
 

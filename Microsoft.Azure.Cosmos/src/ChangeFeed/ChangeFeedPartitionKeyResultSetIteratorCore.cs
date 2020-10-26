@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -35,14 +34,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
 
-        public override CosmosElement GetCosmosElementContinuationToken() => throw new NotImplementedException();
+        public override CosmosElement GetCosmosElementContinuationToken()
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 cosmosContainerCore: this.container,
@@ -64,8 +66,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
-
-            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
+            FeedRangeInternal feedRange = this.changeFeedStartFrom switch
+            {
+                ChangeFeedStartFromNow now => now.FeedRange,
+                ChangeFeedStartFromTime time => time.FeedRange,
+                ChangeFeedStartFromContinuation continuation => throw new NotSupportedException(),
+                ChangeFeedStartFromBeginning beginning => beginning.FeedRange,
+                ChangeFeedStartFromContinuationAndFeedRange continuationAndFeedRange => continuationAndFeedRange.FeedRange,
+                _ => throw new InvalidOperationException(),
+            };
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;

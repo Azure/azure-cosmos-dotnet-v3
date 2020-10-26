@@ -5,11 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -235,8 +235,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.FeedRange != null)
             {
-                FeedRangeRequestMessagePopulatorVisitor queryFeedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(request);
-                ((FeedRangeInternal)this.FeedRange).Accept(queryFeedRangeVisitor);
+                ((FeedRangeInternal)this.FeedRange).Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
             }
 
             base.PopulateRequestOptions(request);

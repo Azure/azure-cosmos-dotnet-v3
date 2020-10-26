@@ -22,8 +22,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string value1 = Guid.NewGuid().ToString();
             string value2 = Guid.NewGuid().ToString();
-            Headers Headers = new Headers();
-            Headers.Add(Key, value1);
+            Headers Headers = new Headers
+            {
+                { Key, value1 }
+            };
             Assert.AreEqual(value1, Headers.Get(Key));
             Headers.Set(Key, value2);
             Assert.AreEqual(value2, Headers.Get(Key));
@@ -95,6 +97,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(value, Headers[header]);
                 return;
             }
+
+            IEnumerator<string> keys = Headers.GetEnumerator();
+            Assert.IsNull(keys.Current);
+            Assert.IsTrue(keys.MoveNext());
+            Assert.AreEqual(Key, keys.Current);
+            Assert.IsFalse(keys.MoveNext());
         }
 
         [TestMethod]
@@ -116,11 +124,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string value1 = Guid.NewGuid().ToString();
                 string value2 = Guid.NewGuid().ToString();
                 string value3 = Guid.NewGuid().ToString();
-                string value4 = Guid.NewGuid().ToString();
-                Headers Headers = new Headers();
-                Headers.ContinuationToken = value1;
-                Headers.PartitionKey = value2;
-                Headers.PartitionKeyRangeId = value3;
+                Headers Headers = new Headers
+                {
+                    ContinuationToken = value1,
+                    PartitionKey = value2,
+                    PartitionKeyRangeId = value3
+                };
+
                 Assert.AreEqual(value1, Headers.ContinuationToken);
                 Assert.AreEqual(value2, Headers.PartitionKey);
                 Assert.AreEqual(value3, Headers.PartitionKeyRangeId);
@@ -204,6 +214,102 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
             Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.Continuation));
             Assert.IsTrue(allKeys.Contains(WFConstants.BackendHeaders.SubStatus));
+        }
+
+
+        [TestMethod]
+        public void VerifyUnKnownHeader()
+        {
+            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+            Assert.AreEqual(0, headers.Keys().Count());
+            string key = Guid.NewGuid().ToString();
+            string value = Guid.NewGuid().ToString();
+            headers[key] = value;
+            Assert.AreEqual(value, headers[key]);
+            Assert.AreEqual(value, headers[key.ToLower()]);
+            Assert.AreEqual(value, headers[key.ToUpper()]);
+            Assert.AreEqual(value, headers.Get(key));
+            Assert.AreEqual(value, headers.Get(key.ToLower()));
+            Assert.AreEqual(value, headers.Get(key.ToUpper()));
+            Assert.AreEqual(key, headers.Keys().First());
+
+            headers.Remove(key);
+            Assert.AreEqual(0, headers.Keys().Count());
+            Assert.IsNull(headers[key]);
+        }
+
+        [TestMethod]
+        public void VerifyAllKnownProperties()
+        {
+            Dictionary<string, string> httpHeadersMap = typeof(HttpConstants.HttpHeaders).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .ToDictionary(x => x.Name, x => (string)x.GetValue(null));
+            Dictionary<string, string> backendHeadersMap = typeof(WFConstants.BackendHeaders).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .ToDictionary(x => x.Name, x => (string)x.GetValue(null));
+
+            PropertyInfo[] optimizedResponseHeaders = typeof(StoreRequestNameValueCollection).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => !string.Equals("Item", x.Name)).ToArray();
+
+            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
+            foreach (PropertyInfo propertyInfo in optimizedResponseHeaders)
+            {
+                Assert.AreEqual(0, headers.Count());
+                Assert.AreEqual(0, headers.Keys().Count());
+
+                // Test property first
+                string value = Guid.NewGuid().ToString();
+                propertyInfo.SetValue(headers, value);
+                Assert.AreEqual(value, propertyInfo.GetValue(headers));
+
+                if (!httpHeadersMap.TryGetValue(propertyInfo.Name, out string key))
+                {
+                    if (!backendHeadersMap.TryGetValue(propertyInfo.Name, out key))
+                    {
+                        Assert.Fail($"The property name {propertyInfo.Name} should match a header constant name");
+                    }
+                }
+
+                Assert.AreEqual(1, headers.Count());
+                Assert.AreEqual(1, headers.Keys().Count());
+                Assert.AreEqual(key, headers.Keys().First());
+                Assert.AreEqual(value, headers.Get(key));
+                Assert.AreEqual(value, headers.Get(key.ToUpper()));
+                Assert.AreEqual(value, headers.Get(key.ToLower()));
+
+                // Reset the value back to null
+                propertyInfo.SetValue(headers, null);
+
+                Assert.AreEqual(0, headers.Count());
+                Assert.AreEqual(0, headers.Keys().Count());
+
+                // Check adding via the interface sets the property correctly
+                headers.Add(key, value);
+                Assert.AreEqual(value, propertyInfo.GetValue(headers));
+                Assert.AreEqual(value, headers.Get(key));
+
+                Assert.AreEqual(1, headers.Count());
+                Assert.AreEqual(1, headers.Keys().Count());
+                Assert.AreEqual(key, headers.Keys().First());
+                Assert.AreEqual(value, headers.Get(key));
+
+                // Check setting via the interface sets the property correctly
+                value = Guid.NewGuid().ToString();
+                headers.Set(key, value);
+                Assert.AreEqual(value, propertyInfo.GetValue(headers));
+                Assert.AreEqual(value, headers.Get(key));
+
+                Assert.AreEqual(1, headers.Count());
+                Assert.AreEqual(1, headers.Keys().Count());
+                Assert.AreEqual(key, headers.Keys().First());
+                Assert.AreEqual(value, headers.Get(key));
+
+                // Check setting via the interface sets the property correctly
+                headers.Remove(key);
+                Assert.AreEqual(null, propertyInfo.GetValue(headers));
+                Assert.AreEqual(null, headers.Get(key));
+
+                Assert.AreEqual(0, headers.Count());
+                Assert.AreEqual(0, headers.Keys().Count());
+            }
         }
     }
 }

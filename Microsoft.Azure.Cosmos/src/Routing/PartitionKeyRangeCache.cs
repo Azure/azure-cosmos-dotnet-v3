@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
             {
-                INameValueCollection headers = new DictionaryNameValueCollection();
+                INameValueCollection headers = new StoreRequestNameValueCollection();
 
                 headers.Set(HttpConstants.HttpHeaders.PageSize, PageSizeString);
                 headers.Set(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                     ////authorizationToken =
-                    ////    this.authorizationTokenProvider.GetUserAuthorizationToken(
+                    ////    this.authorizationTokenProvider.GetUserAuthorizationTokenAsync(
                     ////        collection.AltLink,
                     ////        PathsHelper.GetResourcePath(request.ResourceType),
                     ////        HttpConstants.HttpMethods.Get,

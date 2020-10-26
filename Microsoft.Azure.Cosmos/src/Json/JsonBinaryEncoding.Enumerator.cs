@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Runtime.InteropServices;
 
     internal static partial class JsonBinaryEncoding
     {
@@ -23,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
                 // Scope to just the array
-                buffer = buffer.Slice(0, (int)arrayLength);
+                buffer = buffer.Slice(0, arrayLength);
 
                 // Seek to the first array item
                 buffer = buffer.Slice(firstArrayItemOffset);
@@ -46,6 +48,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
+            public static IEnumerable<Memory<byte>> GetMutableArrayItems(Memory<byte> buffer)
+            {
+                foreach (ReadOnlyMemory<byte> readOnlyArrayItem in Enumerator.GetArrayItems(buffer))
+                {
+                    if (!MemoryMarshal.TryGetArray(readOnlyArrayItem, out ArraySegment<byte> segment))
+                    {
+                        throw new InvalidOperationException("failed to get array segment.");
+                    }
+
+                    yield return segment;
+                }
+            }
+
             public static IEnumerable<ObjectProperty> GetObjectProperties(ReadOnlyMemory<byte> buffer)
             {
                 byte typeMarker = buffer.Span[0];
@@ -55,7 +70,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 int firstValueOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
+                int objectLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
+                // Scope to just the array
+                buffer = buffer.Slice(0, (int)objectLength);
+
+                // Seek to the first object property
                 buffer = buffer.Slice(firstValueOffset);
                 while (buffer.Length != 0)
                 {
@@ -64,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         throw new JsonInvalidTokenException();
                     }
+
                     ReadOnlyMemory<byte> name = buffer.Slice(0, nameNodeLength);
                     buffer = buffer.Slice(nameNodeLength);
 
@@ -72,10 +93,29 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         throw new JsonInvalidTokenException();
                     }
+
                     ReadOnlyMemory<byte> value = buffer.Slice(0, valueNodeLength);
                     buffer = buffer.Slice(valueNodeLength);
 
                     yield return new ObjectProperty(name, value);
+                }
+            }
+
+            public static IEnumerable<MutableObjectProperty> GetMutableObjectProperties(Memory<byte> buffer)
+            {
+                foreach (ObjectProperty objectProperty in GetObjectProperties(buffer))
+                {
+                    if (!MemoryMarshal.TryGetArray(objectProperty.Name, out ArraySegment<byte> nameSegment))
+                    {
+                        throw new InvalidOperationException("failed to get array segment.");
+                    }
+
+                    if (!MemoryMarshal.TryGetArray(objectProperty.Value, out ArraySegment<byte> valueSegment))
+                    {
+                        throw new InvalidOperationException("failed to get array segment.");
+                    }
+
+                    yield return new MutableObjectProperty(nameSegment, valueSegment);
                 }
             }
 
@@ -91,6 +131,20 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public ReadOnlyMemory<byte> Name { get; }
                 public ReadOnlyMemory<byte> Value { get; }
+            }
+
+            public readonly struct MutableObjectProperty
+            {
+                public MutableObjectProperty(
+                    Memory<byte> name,
+                    Memory<byte> value)
+                {
+                    this.Name = name;
+                    this.Value = value;
+                }
+
+                public Memory<byte> Name { get; }
+                public Memory<byte> Value { get; }
             }
         }
     }

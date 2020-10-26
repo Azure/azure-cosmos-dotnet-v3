@@ -506,6 +506,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CreateContainerIfNotExistsPropertiesTestAsync()
+        {
+            string key = Guid.NewGuid().ToString();
+            Dictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                { key, Guid.NewGuid() }
+            };
+
+            // Count is used to validate the handler actually got called.
+            int count = 0;
+            RequestHandlerHelper requestHandlerHelper = new RequestHandlerHelper
+            {
+                UpdateRequestMessage = requestMessage =>
+                {
+                    if (requestMessage.ResourceType == ResourceType.Collection)
+                    {
+                        count++;
+                        Assert.IsNotNull(requestMessage.Properties);
+                        Assert.IsTrue(object.ReferenceEquals(properties[key], requestMessage.Properties[key]));
+                    }
+                }
+            };
+
+            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestHandlerHelper));
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath1 = "/users";
+
+            RequestOptions requestOptions = new RequestOptions()
+            {
+                Properties = properties
+            };
+
+            ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
+
+            Cosmos.Database database = client.GetDatabase(this.cosmosDatabase.Id);
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(settings, requestOptions: requestOptions);
+            Assert.IsTrue(count > 0);
+
+            count = 0;
+            await database.CreateContainerIfNotExistsAsync(settings, requestOptions: requestOptions);
+            Assert.IsTrue(count > 0);
+        }
+        
+        [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncTest()
         {
             string containerName = Guid.NewGuid().ToString();

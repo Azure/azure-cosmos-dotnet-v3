@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             if (responseHeaders == null)
             {
-                responseHeaders = documentServiceResponse.Headers.ToCosmosHeaders();
+                responseHeaders = new Headers(documentServiceResponse.Headers);
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(documentServiceResponse.ResponseBody);
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(storeResponse.ResponseBody);
-            Headers headers = storeResponse.Headers.ToCosmosHeaders();
+            Headers headers = new Headers(storeResponse.Headers);
 
             return CosmosExceptionFactory.Create(
                 statusCode: storeResponse.StatusCode,
@@ -338,6 +338,32 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.BadRequest,
+                subStatusCode,
+                message,
+                stackTrace,
+                activityId,
+                requestCharge,
+                retryAfter,
+                headers,
+                diagnosticsContext,
+                error,
+                innerException);
+        }
+
+        internal static CosmosException CreateUnauthorizedException(
+            string message,
+            int subStatusCode,
+            Exception innerException,
+            string stackTrace = default,
+            string activityId = default,
+            double requestCharge = default,
+            TimeSpan? retryAfter = default,
+            Headers headers = default,
+            CosmosDiagnosticsContext diagnosticsContext = default,
+            Error error = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.Unauthorized,
                 subStatusCode,
                 message,
                 stackTrace,

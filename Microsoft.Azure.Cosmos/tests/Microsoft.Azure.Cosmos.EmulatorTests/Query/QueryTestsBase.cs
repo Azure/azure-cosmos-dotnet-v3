@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
@@ -233,25 +234,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            Container container;
-            switch (collectionType)
+            Container container = collectionType switch
             {
-                case CollectionTypes.NonPartitioned:
-                    container = await this.CreateNonPartitionedContainerAsync(indexingPolicy);
-                    break;
-
-                case CollectionTypes.SinglePartition:
-                    container = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
-                    break;
-
-                case CollectionTypes.MultiPartition:
-                    container = await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
-            }
-
+                CollectionTypes.NonPartitioned => await this.CreateNonPartitionedContainerAsync(indexingPolicy),
+                CollectionTypes.SinglePartition => await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy),
+                CollectionTypes.MultiPartition => await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy),
+                _ => throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}"),
+            };
             List<CosmosObject> insertedDocuments = new List<CosmosObject>();
             foreach (string document in documents)
             {
@@ -318,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         await client.GetDatabase(db.Id).DeleteAsync();
                     }
                 }
-            } 
+            }
         }
 
         internal async Task RunWithApiVersion(string apiVersion, Func<Task> function)
@@ -444,33 +433,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         continue;
                     }
 
-                    Task<(Container, IReadOnlyList<CosmosObject>)> createContainerTask;
-                    switch (collectionType)
+                    Task<(Container, IReadOnlyList<CosmosObject>)> createContainerTask = collectionType switch
                     {
-                        case CollectionTypes.NonPartitioned:
-                            createContainerTask = this.CreateNonPartitionedContainerAndIngestDocumentsAsync(
-                                documents,
-                                indexingPolicy);
-                            break;
-
-                        case CollectionTypes.SinglePartition:
-                            createContainerTask = this.CreateSinglePartitionContainerAndIngestDocumentsAsync(
-                                documents,
-                                partitionKey,
-                                indexingPolicy);
-                            break;
-
-                        case CollectionTypes.MultiPartition:
-                            createContainerTask = this.CreateMultiPartitionContainerAndIngestDocumentsAsync(
-                                documents,
-                                partitionKey,
-                                indexingPolicy);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
-                    }
-
+                        CollectionTypes.NonPartitioned => this.CreateNonPartitionedContainerAndIngestDocumentsAsync(
+                            documents,
+                            indexingPolicy),
+                        CollectionTypes.SinglePartition => this.CreateSinglePartitionContainerAndIngestDocumentsAsync(
+                            documents,
+                            partitionKey,
+                            indexingPolicy),
+                        CollectionTypes.MultiPartition => this.CreateMultiPartitionContainerAndIngestDocumentsAsync(
+                            documents,
+                            partitionKey,
+                            indexingPolicy),
+                        _ => throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}"),
+                    };
                     collectionsAndDocuments.Add(await createContainerTask);
                 }
 
@@ -525,48 +502,32 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static ConnectionMode GetTargetConnectionMode(ConnectionModes connectionMode)
         {
-            ConnectionMode targetConnectionMode;
-            switch (connectionMode)
+            return connectionMode switch
             {
-                case ConnectionModes.Gateway:
-                    targetConnectionMode = ConnectionMode.Gateway;
-                    break;
-
-                case ConnectionModes.Direct:
-                    targetConnectionMode = ConnectionMode.Direct;
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
-            }
-
-            return targetConnectionMode;
+                ConnectionModes.Gateway => ConnectionMode.Gateway,
+                ConnectionModes.Direct => ConnectionMode.Direct,
+                _ => throw new ArgumentException($"Unexpected connection mode: {connectionMode}"),
+            };
         }
 
         internal CosmosClient CreateDefaultCosmosClient(ConnectionMode connectionMode)
         {
-            switch (connectionMode)
+            return connectionMode switch
             {
-                case ConnectionMode.Gateway:
-                    return this.GatewayClient;
-                case ConnectionMode.Direct:
-                    return this.Client;
-                default:
-                    throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
-            }
+                ConnectionMode.Gateway => this.GatewayClient,
+                ConnectionMode.Direct => this.Client,
+                _ => throw new ArgumentException($"Unexpected connection mode: {connectionMode}"),
+            };
         }
 
         internal CosmosClient CreateNewCosmosClient(ConnectionMode connectionMode)
         {
-            switch (connectionMode)
+            return connectionMode switch
             {
-                case ConnectionMode.Gateway:
-                    return TestCommon.CreateCosmosClient(true);
-                case ConnectionMode.Direct:
-                    return TestCommon.CreateCosmosClient(false);
-                default:
-                    throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
-            }
+                ConnectionMode.Gateway => TestCommon.CreateCosmosClient(true),
+                ConnectionMode.Direct => TestCommon.CreateCosmosClient(false),
+                _ => throw new ArgumentException($"Unexpected connection mode: {connectionMode}"),
+            };
         }
 
         internal static async Task<List<T>> QueryWithCosmosElementContinuationTokenAsync<T>(
@@ -584,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             do
             {
                 QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
-                computeRequestOptions.ExecutionEnvironment = Cosmos.Query.Core.ExecutionContext.ExecutionEnvironment.Compute;
+                computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
                 using (FeedIteratorInternal<T> itemQuery = (FeedIteratorInternal<T>)container.GetItemQueryIterator<T>(
@@ -598,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         {
                             Assert.IsTrue(
                                 cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                                "Max Item Count is not being honored");
+                                $"Max Item Count is not being honored. Got {cosmosQueryResponse.Count} documents when {queryRequestOptions.MaxItemCount.Value} is the max.");
                         }
 
                         resultsFromCosmosElementContinuationToken.AddRange(cosmosQueryResponse);
@@ -607,14 +568,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         // There was a bug where resuming from double.NaN lead to an exception,
                         // since we parsed the type assuming it was always a double and not a string.
                         CosmosElement originalContinuationToken = itemQuery.GetCosmosElementContinuationToken();
-                        if (originalContinuationToken != null)
-                        {
-                            continuationToken = CosmosElement.Parse(originalContinuationToken.ToString());
-                        }
-                        else
-                        {
-                            continuationToken = null;
-                        }
+                        continuationToken = originalContinuationToken != null ? CosmosElement.Parse(originalContinuationToken.ToString()) : null;
                     }
                     catch (CosmosException cosmosException) when (cosmosException.StatusCode == (HttpStatusCode)429)
                     {
@@ -655,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             {
                                 Assert.IsTrue(
                                     cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
-                                    "Max Item Count is not being honored");
+                                    $"Max Item Count is not being honored. Got {cosmosQueryResponse.Count} when {queryRequestOptions.MaxItemCount.Value} is the max.");
                             }
 
                             resultsFromContinuationToken.AddRange(cosmosQueryResponse);
@@ -707,9 +661,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                         if (queryRequestOptions.MaxItemCount.HasValue)
                         {
+                            if (page.Count > queryRequestOptions.MaxItemCount.Value)
+                            {
+                                Console.WriteLine();
+                            }
                             Assert.IsTrue(
                                 page.Count <= queryRequestOptions.MaxItemCount.Value,
-                                "Max Item Count is not being honored");
+                                $"Max Item Count is not being honored. Got {page.Count} documents when the max is {queryRequestOptions.MaxItemCount.Value}.");
                         }
 
                         try

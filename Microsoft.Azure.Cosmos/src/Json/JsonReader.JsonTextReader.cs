@@ -738,7 +738,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case '\\':
-                            this.token.JsonTextTokenType = (JsonTextTokenType)(this.token.JsonTextTokenType | JsonTextTokenType.EscapedFlag);
+                            this.token.JsonTextTokenType = this.token.JsonTextTokenType | JsonTextTokenType.EscapedFlag;
                             char escapeCharacter = this.jsonTextBuffer.ReadCharacter();
                             if (escapeCharacter == 'u')
                             {

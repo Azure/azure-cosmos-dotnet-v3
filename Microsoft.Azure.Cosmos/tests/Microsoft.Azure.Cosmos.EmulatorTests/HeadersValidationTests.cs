@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidatePageSize(DocumentClient client)
         {
             // Invalid parsing
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.PageSize, "\"Invalid header type\"");
 
             try
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add("pageSize", "\"Invalid header type\"");
 
             try
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Invalid value
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.PageSize, "-2");
 
             try
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.PageSize, Int64.MaxValue.ToString(CultureInfo.InvariantCulture));
 
             try
@@ -146,23 +146,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Valid page size
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.PageSize, "20");
             var response = ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
 
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add("pageSize", "20");
             var result = ReadFeedScript(client, headers);
             Assert.IsTrue(result.StatusCode == HttpStatusCode.OK);
 
             // dynamic page size
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.PageSize, "-1");
             response = ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
 
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add("pageSize", "-1");
             result = ReadFeedScript(client, headers);
             Assert.IsTrue(result.StatusCode == HttpStatusCode.OK);
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
 
             // Value not supported
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, "Not a valid value");
 
             try
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Supported value
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Eventual.ToString());
             var response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateJsonSerializationFormatReadFeed(DocumentClient client, DocumentCollection collection)
         {
             // Value not supported
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, "Not a valid value");
 
             try
@@ -266,20 +266,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Supported values
 
             // Text
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.JsonText.ToString());
             var response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // None
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // Binary (Read feed should ignore all options)
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
             response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec("SELECT * FROM c");
             // Value not supported
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, "Not a valid value");
 
             try
@@ -308,20 +308,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Supported values
 
             // Text
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.JsonText.ToString());
             var response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // None
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // Binary
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
             response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateIndexingDirective(DocumentClient client)
         {
             // Number out of range.
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.IndexingDirective, "\"Invalid Value\"");
 
             try
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
             }
 
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add("indexAction", "\"Invalid Value\"");
 
             try
@@ -382,12 +382,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Valid Indexing Directive
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.IndexingDirective, IndexingDirective.Exclude.ToString());
             var response = CreateDocumentRequest(client, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.Created);
 
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add("indexAction", "\"exclude\"");
             var result = CreateDocumentScript(client, headers);
             Assert.IsTrue(result.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateEnableScanInQuery(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, "Not a boolean");
 
             try
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Valid boolean
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, "true");
             var response2 = ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -471,10 +471,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateEnableLowPrecisionOrderBy(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, "Not a boolean");
 
-            var document = CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
+            var document = CreateDocumentRequest(client, new StoreRequestNameValueCollection()).GetResource<Document>();
             try
             {
                 var response = ReadDocumentRequest(client, document, headers);
@@ -495,8 +495,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Valid boolean
-            document = CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
-            headers = new DictionaryNameValueCollection();
+            document = CreateDocumentRequest(client, new StoreRequestNameValueCollection()).GetResource<Document>();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, "true");
             var response2 = ReadDocumentRequest(client, document, headers);
             Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -526,7 +526,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateEmitVerboseTracesInQuery(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, "Not a boolean");
 
             try
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Valid boolean
-            headers = new DictionaryNameValueCollection();
+            headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, "true");
             var response2 = ReadDatabaseFeedRequest(client, headers);
             Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
@@ -949,8 +949,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void ValidateIfNonMatch(DocumentClient client)
         {
             // Valid if-match
-            var document = CreateDocumentRequest(client, new DictionaryNameValueCollection()).GetResource<Document>();
-            var headers = new DictionaryNameValueCollection();
+            var document = CreateDocumentRequest(client, new StoreRequestNameValueCollection()).GetResource<Document>();
+            var headers = new StoreRequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, document.ETag);
             var response = ReadDocumentRequest(client, document, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.NotModified, "Invalid status code");
@@ -1018,7 +1018,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.Fail("null client or collectionId");
             }
 
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+            StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(
                 HttpConstants.HttpHeaders.A_IM,
                 HttpConstants.A_IMHeaderValues.IncrementalFeed);

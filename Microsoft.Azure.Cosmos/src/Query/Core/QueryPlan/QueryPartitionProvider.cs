@@ -166,21 +166,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             string queryText = JsonConvert.SerializeObject(querySpec);
 
             List<string> paths = new List<string>(partitionKeyDefinition.Paths);
+            List<IReadOnlyList<string>> pathPartsList = new List<IReadOnlyList<string>>(paths.Count);
+            uint[] partsLengths = new uint[paths.Count];
+            int allPartsLength = 0;
 
-            List<string[]> pathParts = new List<string[]>();
-            paths.ForEach(path =>
+            for (int i = 0; i < paths.Count; i++)
+            {
+                IReadOnlyList<string> pathParts = PathParser.GetPathParts(paths[i]);
+                partsLengths[i] = (uint)pathParts.Count;
+                pathPartsList.Add(pathParts);
+                allPartsLength += pathParts.Count;
+            }
+
+            string[] allParts = new string[allPartsLength];
+            int allPartsIndex = 0;
+            foreach (IReadOnlyList<string> pathParts in pathPartsList)
+            {
+                foreach (string part in pathParts)
                 {
-                    pathParts.Add(PathParser.GetPathParts(path));
-                });
-
-            string[] allParts = pathParts.SelectMany(parts => parts).ToArray();
-            uint[] partsLengths = pathParts.Select(parts => (uint)parts.Length).ToArray();
+                    allParts[allPartsIndex++] = part;
+                }
+            }
 
             PartitionKind partitionKind = partitionKeyDefinition.Kind;
 
             this.Initialize();
 
-            byte[] buffer = new byte[InitialBufferSize];
+            Span<byte> buffer = stackalloc byte[QueryPartitionProvider.InitialBufferSize];
             uint errorCode;
             uint serializedQueryExecutionInfoResultLength;
 
@@ -205,7 +217,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                     if (errorCode == DISP_E_BUFFERTOOSMALL)
                     {
-                        buffer = new byte[serializedQueryExecutionInfoResultLength];
+                        // Allocate on stack for smaller arrays, otherwise use heap.
+                        buffer = serializedQueryExecutionInfoResultLength < 4096
+                            ? stackalloc byte[(int)serializedQueryExecutionInfoResultLength]
+                            : new byte[serializedQueryExecutionInfoResultLength];
+
                         fixed (byte* bytePtr2 = buffer)
                         {
                             errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery(
@@ -227,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 }
             }
 
-            string serializedQueryExecutionInfo = Encoding.UTF8.GetString(buffer, 0, (int)serializedQueryExecutionInfoResultLength);
+            string serializedQueryExecutionInfo = Encoding.UTF8.GetString(buffer.Slice(0, (int)serializedQueryExecutionInfoResultLength));
 
             Exception exception = Marshal.GetExceptionForHR((int)errorCode);
             if (exception != null)

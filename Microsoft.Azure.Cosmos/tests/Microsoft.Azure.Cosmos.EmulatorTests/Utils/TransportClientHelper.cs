@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, TimeSpan.FromMilliseconds(100).TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.ResourceType == ResourceType.Document)
             {
-                DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+                StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
                 headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
                 headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.WriteForbidden).ToString(CultureInfo.InvariantCulture));
                 headers.Add(HttpConstants.HttpHeaders.RequestCharge, ((double)9001).ToString(CultureInfo.InvariantCulture));

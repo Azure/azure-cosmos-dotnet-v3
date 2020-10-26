@@ -11,8 +11,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -29,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class PartitionKeyRangeHandler : RequestHandler
     {
         private readonly CosmosClient client;
-        private PartitionRoutingHelper partitionRoutingHelper;
+        private readonly PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
             if (client == null)

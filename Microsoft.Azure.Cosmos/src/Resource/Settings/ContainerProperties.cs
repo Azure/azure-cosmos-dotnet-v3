@@ -279,10 +279,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return this.geospatialConfigInternal;
             }
-            set
-            {
-                this.geospatialConfigInternal = value;
-            }
+            set => this.geospatialConfigInternal = value;
         }
         /// <summary>
         /// JSON path used for containers partitioning
@@ -290,17 +287,15 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public string PartitionKeyPath
         {
-            get 
-            { 
-                #if SUBPARTITIONING
+            get =>
+#if SUBPARTITIONING
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
                     throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
 
-                #endif
-                return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
-            }
+#endif
+                this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -583,7 +578,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentNullException(nameof(this.PartitionKey));
                 }
 
-                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != Documents.PartitionKind.MultiHash) 
+                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                 {
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }

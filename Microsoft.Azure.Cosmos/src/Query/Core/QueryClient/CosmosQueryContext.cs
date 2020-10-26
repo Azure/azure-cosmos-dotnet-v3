@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using OperationType = Documents.OperationType;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
@@ -53,8 +53,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal abstract IDisposable CreateDiagnosticScope(string name);
 
-        internal abstract Task<QueryResponseCore> ExecuteQueryAsync(
+        internal abstract Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
+            QueryRequestOptions queryRequestOptions,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,

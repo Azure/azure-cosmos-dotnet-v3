@@ -25,10 +25,13 @@ namespace Microsoft.Azure.Cosmos
             this.Operations = operations;
         }
 
-        internal bool IsSplit() => this.ServerResponse != null &&
-                                            this.ServerResponse.StatusCode == HttpStatusCode.Gone
-                                                && (this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.CompletingSplit
-                                                || this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.CompletingPartitionMigration
-                                                || this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone);
+        internal bool IsSplit()
+        {
+            return this.ServerResponse != null &&
+                       this.ServerResponse.StatusCode == HttpStatusCode.Gone
+                           && (this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.CompletingSplit
+                           || this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.CompletingPartitionMigration
+                           || this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone);
+        }
     }
 }

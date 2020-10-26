@@ -4,8 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using System.Text;
 
     /// <summary>
     /// Static class with utility functions and constants for JSON binary encoding.
@@ -47,6 +49,31 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         public const int FourByteCount = 4;
 
+        /// <summary>
+        /// For compressed strings we use a single byte base character.
+        /// </summary>
+        public const int OneByteBaseChar = 1;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 1 byte offset reference strings.
+        /// </summary>
+        public const int OneByteOffset = 1;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 2 byte offset reference strings.
+        /// </summary>
+        public const int TwoByteOffset = 2;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 2 byte offset reference strings.
+        /// </summary>
+        public const int ThreeByteOffset = 3;
+
+        /// <summary>
+        /// Reference strings are followed by an offset; this is for 4 byte offset reference strings.
+        /// </summary>
+        public const int FourByteOffset = 4;
+
         public static Guid GetGuidValue(ReadOnlySpan<byte> guidToken)
         {
             if (!JsonBinaryEncoding.TryGetGuidValue(guidToken, out Guid guidValue))
@@ -59,13 +86,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetGuidValue(
             ReadOnlySpan<byte> guidToken,
-            out Guid guidValue)
-        {
-            return JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
+            out Guid guidValue) => JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
                 guidToken,
                 JsonBinaryEncoding.TypeMarker.Guid,
                 out guidValue);
-        }
 
         public static ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryToken)
         {
@@ -192,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public static bool TryGetValueLength(ReadOnlySpan<byte> buffer, out int length)
         {
             // Too lazy to convert this right now.
-            length = (int)JsonBinaryEncoding.GetValueLength(buffer);
+            length = JsonBinaryEncoding.GetValueLength(buffer);
             return true;
         }
 
@@ -202,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Json
             out T fixedWidthValue)
             where T : struct
         {
-            fixedWidthValue = default(T);
+            fixedWidthValue = default;
             int sizeofType = Marshal.SizeOf(fixedWidthValue);
             if (token.Length < 1 + sizeofType)
             {
@@ -217,6 +241,69 @@ namespace Microsoft.Azure.Cosmos.Json
 
             fixedWidthValue = MemoryMarshal.Read<T>(token.Slice(1));
             return true;
+        }
+
+        public static void SetFixedSizedValue<TFixedType>(Span<byte> buffer, TFixedType value)
+            where TFixedType : struct
+        {
+            Span<TFixedType> bufferAsFixedType = MemoryMarshal.Cast<byte, TFixedType>(buffer);
+            bufferAsFixedType[0] = value;
+        }
+
+        public static TFixedType GetFixedSizedValue<TFixedType>(ReadOnlySpan<byte> buffer)
+            where TFixedType : struct
+        {
+            return MemoryMarshal.Cast<byte, TFixedType>(buffer)[0];
+        }
+
+        public static string HexDump(byte[] bytes, int bytesPerLine = 16)
+        {
+            //https://www.codeproject.com/Articles/36747/Quick-and-Dirty-HexDump-of-a-Byte-Array
+            StringBuilder sb = new StringBuilder();
+            for (int line = 0; line < bytes.Length; line += bytesPerLine)
+            {
+                byte[] lineBytes = bytes.Skip(line).Take(bytesPerLine).ToArray();
+                sb.AppendFormat("{0:x8} ", line);
+                sb.Append(string.Join(" ", lineBytes.Select(b => b.ToString("x2"))
+                       .ToArray()).PadRight(bytesPerLine * 3));
+                sb.Append(" ");
+                sb.Append(new string(lineBytes.Select(b => b < 32 ? '.' : (char)b)
+                       .ToArray()));
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 3)]
+        public readonly struct UInt24
+        {
+            public static readonly UInt24 MinValue = new UInt24(byte1: byte.MinValue, byte2: byte.MinValue, byte3: byte.MinValue);
+            public static readonly UInt24 MaxValue = new UInt24(byte1: byte.MaxValue, byte2: byte.MaxValue, byte3: byte.MaxValue);
+
+            public UInt24(byte byte1, byte byte2, byte byte3)
+            {
+                this.Byte1 = byte1;
+                this.Byte2 = byte2;
+                this.Byte3 = byte3;
+            }
+
+            public byte Byte1 { get; }
+            public byte Byte2 { get; }
+            public byte Byte3 { get; }
+
+            public static implicit operator int(UInt24 value) => (value.Byte3 << 16) | (value.Byte2 << 8) | (value.Byte1 << 0);
+            public static explicit operator UInt24(int value)
+            {
+                if ((value & 0xFF000000) != 0)
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(value)} must not have any of the top 8 bits set.");
+                }
+
+                return new UInt24(
+                    byte1: (byte)((value & 0x000000FF) >> 0),
+                    byte2: (byte)((value & 0x0000FF00) >> 8),
+                    byte3: (byte)((value & 0x00FF0000) >> 16));
+            }
         }
     }
 }
