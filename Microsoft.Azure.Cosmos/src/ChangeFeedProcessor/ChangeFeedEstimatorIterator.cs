@@ -49,16 +49,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                   monitoredContainer,
                   leaseContainer,
                   changeFeedEstimatorRequestOptions,
-                  (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
-                  {
-                      return ResultSetIteratorUtils.BuildResultSetIterator(
+                  (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) => ResultSetIteratorUtils.BuildResultSetIterator(
                           partitionKeyRangeId: partitionKeyRangeId,
                           continuationToken: continuationToken,
                           maxItemCount: 1,
                           container: monitoredContainer,
                           startTime: null,
-                          startFromBeginning: string.IsNullOrEmpty(continuationToken));
-                  })
+                          startFromBeginning: string.IsNullOrEmpty(continuationToken)))
         {
         }
 
@@ -98,10 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentOutOfRangeException($"{nameof(this.changeFeedEstimatorRequestOptions.MaxItemCount)} value should be a positive integer.");
             }
 
-            this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(valueFactory: (innerCancellationToken) =>
-            {
-                return this.TryInitializeLeaseDocumentsAsync(innerCancellationToken);
-            });
+            this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(valueFactory: (innerCancellationToken) => this.TryInitializeLeaseDocumentsAsync(innerCancellationToken));
             this.hasMoreResults = true;
 
             this.monitoredContainerFeedCreator = monitoredContainerFeedCreator;
@@ -168,12 +162,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             IEnumerable<DocumentServiceLease> leasesForCurrentPage = this.lazyLeaseDocuments.Result.Result.Skip(this.currentPage * this.pageSize).Take(this.pageSize);
             IEnumerable<Task<(ChangeFeedProcessorState, ResponseMessage)>> tasks = leasesForCurrentPage
-                .Select(lease => Task.Run(async () =>
-                {
-                    (long estimation, ResponseMessage responseMessage) = await this.GetRemainingWorkAsync(lease, cancellationToken);
-
-                    return (new ChangeFeedProcessorState(lease.CurrentLeaseToken, estimation, lease.Owner), responseMessage);
-                })).ToArray();
+                .Select(lease => this.GetRemainingWorkAsync(lease, cancellationToken)).ToArray();
 
             IEnumerable<(ChangeFeedProcessorState, ResponseMessage)> results = await Task.WhenAll(tasks);
 
@@ -238,8 +227,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private static long TryConvertToNumber(string number)
         {
-            long parsed = 0;
-            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out long parsed))
             {
                 DefaultTrace.TraceWarning("Cannot parse number '{0}'.", number);
                 return 0;
@@ -260,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 response.Content);
         }
 
-        private async Task<(long, ResponseMessage)> GetRemainingWorkAsync(
+        private async Task<(ChangeFeedProcessorState, ResponseMessage)> GetRemainingWorkAsync(
             DocumentServiceLease existingLease,
             CancellationToken cancellationToken)
         {
@@ -279,18 +267,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     response.EnsureSuccessStatusCode();
                 }
 
-                long parsedLSNFromSessionToken = ChangeFeedEstimatorIterator.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                long parsedLSNFromSessionToken = ChangeFeedEstimatorIterator.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers.Session));
                 IEnumerable<JObject> items = ChangeFeedEstimatorIterator.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Any()
                     ? ChangeFeedEstimatorIterator.TryConvertToNumber(ChangeFeedEstimatorIterator.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;
                 if (lastQueryLSN < 0)
                 {
-                    return (1, response);
+                    return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, 1, existingLease.Owner), response);
                 }
 
                 long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
-                return (leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork, response);
+                long estimation = leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
+                return (new ChangeFeedProcessorState(existingLease.CurrentLeaseToken, estimation, existingLease.Owner), response);
             }
             catch (Exception clientException)
             {
@@ -342,8 +331,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 this.cosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
                 this.remainingLeaseWorks = remainingLeaseWorks ?? throw new ArgumentNullException(nameof(remainingLeaseWorks));
-                this.headers = new Headers();
-                this.headers.RequestCharge = ruCost;
+                this.headers = new Headers
+                {
+                    RequestCharge = ruCost
+                };
             }
 
             public override string ContinuationToken => throw new NotSupportedException();
@@ -358,7 +349,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override CosmosDiagnostics Diagnostics => this.cosmosDiagnostics;
 
-            public override IEnumerator<ChangeFeedProcessorState> GetEnumerator() => this.remainingLeaseWorks.GetEnumerator();
+            public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
+            {
+                return this.remainingLeaseWorks.GetEnumerator();
+            }
         }
 
         private class ChangeFeedEstimatorEmptyFeedResponse : FeedResponse<ChangeFeedProcessorState>
@@ -385,7 +379,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override CosmosDiagnostics Diagnostics => this.cosmosDiagnostics;
 
-            public override IEnumerator<ChangeFeedProcessorState> GetEnumerator() => ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks.GetEnumerator();
+            public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
+            {
+                return ChangeFeedEstimatorEmptyFeedResponse.remainingLeaseWorks.GetEnumerator();
+            }
         }
     }
 }

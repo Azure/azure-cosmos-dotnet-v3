@@ -1062,7 +1062,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // failure test - trigger on non-CRUD operation
-            INameValueCollection headers = new DictionaryNameValueCollection
+            INameValueCollection headers = new StoreRequestNameValueCollection
             {
                 { "x-ms-pre-trigger-include", "t1" }
             };

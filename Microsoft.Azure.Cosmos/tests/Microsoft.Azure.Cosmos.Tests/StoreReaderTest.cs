@@ -90,12 +90,11 @@ namespace Microsoft.Azure.Cosmos
             {
 
                 // set lsn and activityid on the store response.
-                Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+                Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                })
+                }
             };
 
             // setup mock transport client
@@ -127,20 +126,18 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponseSlow = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponseFast.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponseFast.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "50"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                };
 
             // set lsn and activityid on the store response.
-            mockStoreResponseSlow.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponseSlow.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "30"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                };
 
             // setup mock transport client for the first replica
             mockTransportClient.Setup(
@@ -209,39 +206,39 @@ namespace Microsoft.Azure.Cosmos
             StoreResponse mockStoreResponse5 = new StoreResponse();
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse2.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "90"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse3.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "92"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse4.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                 { WFConstants.BackendHeaders.GlobalCommittedLSN, "92" },
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-            });
+            };
 
-            mockStoreResponse5.Headers = new DictionaryNameValueCollection(new NameValueCollection()
+            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
             {
                 { WFConstants.BackendHeaders.LSN, "100"},
                 { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
@@ -249,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
                 { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
                 { WFConstants.BackendHeaders.CurrentReplicaSetSize, "1" },
                 { WFConstants.BackendHeaders.QuorumAckedLSN, "100" },
-            });
+            };
 
             if (result == ReadQuorumResultKind.QuorumMet)
             {
@@ -342,50 +339,45 @@ namespace Microsoft.Azure.Cosmos
 
 
             // set lsn and activityid on the store response.
-            mockStoreResponse1.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse1.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "90" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse2.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse2.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "100"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_2" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "100" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse3.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse3.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "100" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse4.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse4.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "103"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "103" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
 
-            mockStoreResponse5.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse5.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "106"},
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_3" },
                     { WFConstants.BackendHeaders.GlobalCommittedLSN, "103" },
                     { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
-                });
+                };
             StoreResponse finalResponse = null;
             if (undershootGlobalCommittedLsnDuringBarrier)
             {

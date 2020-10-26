@@ -456,6 +456,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
+        [Ignore] // turn this back on when we have tracing diagnostics.
         public async Task ChangeFeedDiagnostics(bool disableDiagnostics)
         {
             string pkValue = "ChangeFeedDiagnostics";
@@ -481,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     CosmosDiagnosticsTests.VerifyChangeFeedDiagnostics(
                        diagnostics: response.Diagnostics,
-                        disableDiagnostics: disableDiagnostics);
+                       disableDiagnostics: disableDiagnostics);
                 }
             }
         }
@@ -666,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
             // If all the pages are buffered then several of the normal summary validation will fail.
-            if (diagnosticsContext.GetTotalRequestCount() > 0)
+            if (diagnosticsContext.GetTotalResponseCount() > 0)
             {
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
