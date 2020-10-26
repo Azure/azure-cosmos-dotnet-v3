@@ -187,6 +187,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore container = (ContainerCore)this.GetContainer(containerProperties.Id);
             using (ResponseMessage readResponse = await container.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken))
             {
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
@@ -227,6 +228,7 @@ namespace Microsoft.Azure.Cosmos
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
             using (ResponseMessage readResponseAfterCreate = await container.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken))
             {
                 return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
