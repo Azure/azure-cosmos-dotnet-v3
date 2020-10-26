@@ -205,7 +205,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
             else
             {
-                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.NotModified);
+                responseMessage = new ResponseMessage(
+                    statusCode: System.Net.HttpStatusCode.NotModified, 
+                    errorMessage: "No new changes from the server for ChangeFeed. Learn More @ https://aka.ms/changefeed304");
             }
 
             CosmosElement innerContinuationToken = ((ChangeFeedStateContinuation)changeFeedPage.State).ContinuationToken;
