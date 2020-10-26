@@ -588,11 +588,17 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }
 
-                if ((this.PartitionKey.Kind != Documents.PartitionKind.MultiHash && this.PartitionKeyPath == null) ||
-                    (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null))
+                if (this.PartitionKey.Kind != Documents.PartitionKind.MultiHash && this.PartitionKeyPath == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
+
+#if INTERNAL || SUBPARTITIONING
+                if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
+                {
+                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
+                }
+#endif
 
                 List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)

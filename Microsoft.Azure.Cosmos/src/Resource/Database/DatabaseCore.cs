@@ -209,6 +209,7 @@ namespace Microsoft.Azure.Cosmos
                                 nameof(containerProperties.PartitionKey));
                         }
                     }
+#if INTERNAL || SUBPARTITIONING
                     else
                     {
                         IReadOnlyList<string> retrivedPartitionKeyPaths = retrivedContainerResponse.Resource.PartitionKeyPaths;
@@ -225,6 +226,7 @@ namespace Microsoft.Azure.Cosmos
                                 nameof(containerProperties.PartitionKey));
                         }
                     }
+#endif
                     return retrivedContainerResponse;
                 }
             }
