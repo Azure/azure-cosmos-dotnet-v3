@@ -624,8 +624,95 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+            
         }
 
+#if INTERNAL || SUBPARTITIONING
+        //MultiHash container checks.
+        [TestMethod]
+        public async Task CreateContainerIfNotExistsAsyncForMultiHashCollectionsTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            List<string> partitionKeyPath1 = new List<string>();
+            partitionKeyPath1.Add("/users");
+            partitionKeyPath1.Add("/sessionId");
+
+            ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1.AsReadOnly());
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+
+            //Creating container with same partition key path
+            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+
+            //Creating container with different partition key path
+            List<string> partitionKeyPath2 = new List<string>();
+            partitionKeyPath2.Add("/users2");
+            partitionKeyPath2.Add("/sessionId");
+            try
+            {
+                settings = new ContainerProperties(containerName, partitionKeyPath2.AsReadOnly());
+                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+                Assert.Fail("Should through ArgumentException on partition key path");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
+                Assert.IsTrue(ex.Message.Contains(string.Format(
+                    ClientResources.PartitionKeyPathConflict,
+                    string.Join(",",partitionKeyPath2),
+                    containerName,
+                    string.Join(",",partitionKeyPath1))));
+            }
+
+            // Mismatch in the 2nd path
+            List<string> partitionKeyPath3 = new List<string>();
+            partitionKeyPath3.Add("/users");
+            partitionKeyPath3.Add("/sessionId2");
+            try
+            {
+                settings = new ContainerProperties(containerName, partitionKeyPath3.AsReadOnly());
+                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+                Assert.Fail("Should through ArgumentException on partition key path");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
+                Assert.IsTrue(ex.Message.Contains(string.Format(
+                    ClientResources.PartitionKeyPathConflict,
+                    string.Join(",", partitionKeyPath3),
+                    containerName,
+                    string.Join(",", partitionKeyPath1))));
+            }
+
+            
+            //Create and fetch container with same paths
+            List<string> partitionKeyPath4 = new List<string>();
+            partitionKeyPath4.Add("/users");
+            partitionKeyPath4.Add("/sessionId");
+
+            try
+            {
+                settings = new ContainerProperties(containerName, partitionKeyPath4.AsReadOnly());
+                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            }
+            catch (Exception)
+            {
+                Assert.Fail("The request should have succeeded");
+            }
+
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
+        }
+
+#endif
         [TestMethod]
         public async Task StreamPartitionedCreateWithPathDelete()
         {
