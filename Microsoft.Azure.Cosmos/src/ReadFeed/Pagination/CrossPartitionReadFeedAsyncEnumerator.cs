@@ -62,23 +62,17 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
 
-                (FeedRangeInternal range, ReadFeedState state) = rangesAndStates[i];
-                if ((i == 0) || (state != null))
+                (FeedRangeInternal range, ReadFeedState readFeedState) = rangesAndStates[i];
+                if ((i == 0) || (readFeedState != null))
                 {
-                    ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                        token: state != null ? ((CosmosString)state.Value).Value : null,
-                        range: ((FeedRangeEpk)range).Range);
+                    ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(
+                        range,
+                        readFeedState);
 
-                    activeParallelContinuationTokens.Add(parallelContinuationToken);
+                    CosmosElement cosmosElementChangeFeedContinuationToken = ReadFeedContinuationToken.ToCosmosElement(readFeedContinuationToken);
+
+                    changeFeedContinuationTokens.Add(cosmosElementChangeFeedContinuationToken);
                 }
-            }
-            foreach ((FeedRangeInternal range, ReadFeedState state) rangeAndState in crossPartitionState.Value)
-            {
-                ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(
-                    rangeAndState.range,
-                    rangeAndState.state);
-                CosmosElement cosmosElementChangeFeedContinuationToken = ReadFeedContinuationToken.ToCosmosElement(readFeedContinuationToken);
-                changeFeedContinuationTokens.Add(cosmosElementChangeFeedContinuationToken);
             }
 
             CosmosArray cosmosElementTokens = CosmosArray.Create(changeFeedContinuationTokens);
