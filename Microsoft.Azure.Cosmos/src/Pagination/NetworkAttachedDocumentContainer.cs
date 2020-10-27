@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                cosmosContainerCore: this.container,
                requestEnricher: request =>
                {
-                   if (readFeedState != null)
+                   if (!(readFeedState.ContinuationToken is CosmosNull))
                    {
                        request.Headers.ContinuationToken = (readFeedState.ContinuationToken as CosmosString).Value;
                    }

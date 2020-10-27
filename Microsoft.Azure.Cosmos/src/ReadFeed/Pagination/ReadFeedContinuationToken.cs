@@ -78,34 +78,12 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                         innerException: monadicFeedRange.Exception));
             }
 
-            TryCatch<ReadFeedState> monadicReadFeedState;
-            if (stateCosmosElement is CosmosNull)
-            {
-                monadicReadFeedState = TryCatch<ReadFeedState>.FromResult(null);
-            }
-            else if (stateCosmosElement is CosmosString cosmosString)
-            {
-                monadicReadFeedState = TryCatch<ReadFeedState>.FromResult(new ReadFeedState(cosmosString));
-            }
-            else
-            {
-                monadicReadFeedState = TryCatch<ReadFeedState>.FromException(
-                    new FormatException(
-                        "Expected state to either be null or a string."));
-            }
-
-            if (monadicReadFeedState.Failed)
-            {
-                return TryCatch<ReadFeedContinuationToken>.FromException(
-                    new FormatException(
-                        $"Failed to parse '{PropertyNames.State}' for '{nameof(ReadFeedContinuationToken)}': {cosmosElement}.",
-                        innerException: monadicReadFeedState.Exception));
-            }
+            ReadFeedState readFeedState = new ReadFeedState(stateCosmosElement);
 
             return TryCatch<ReadFeedContinuationToken>.FromResult(
                 new ReadFeedContinuationToken(
                     monadicFeedRange.Result,
-                    monadicReadFeedState.Result));
+                    readFeedState));
         }
     }
 }

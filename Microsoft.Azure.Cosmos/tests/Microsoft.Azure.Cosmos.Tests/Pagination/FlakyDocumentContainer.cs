@@ -55,9 +55,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     RequestRateTooLargeException));
         }
 
-        private static readonly ReadFeedState ReadFeedNotStartedState = new ReadFeedState(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
-
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
+
+        private static readonly ReadFeedState ReadFeedNotStartedState = new ReadFeedState(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
 
         private readonly IMonadicDocumentContainer documentContainer;
 

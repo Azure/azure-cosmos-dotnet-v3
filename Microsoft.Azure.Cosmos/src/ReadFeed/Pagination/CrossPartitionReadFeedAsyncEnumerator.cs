@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
 
@@ -51,32 +52,31 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             CrossPartitionPage<ReadFeedPage, ReadFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
             ReadFeedPage backendPage = crossPartitionPage.Page;
             CrossPartitionState<ReadFeedState> crossPartitionState = crossPartitionPage.State;
-
-            // left most and any non null continuations
-            List<(FeedRangeInternal, ReadFeedState)> rangesAndStates = crossPartitionState
-                .Value
-                .OrderBy(tuple => (FeedRangeEpk)tuple.Item1, EpkRangeComparer.Singleton)
-                .ToList();
-            List<CosmosElement> changeFeedContinuationTokens = new List<CosmosElement>();
-            for (int i = 0; i < rangesAndStates.Count; i++)
+            ReadFeedState state;
+            if (crossPartitionState != null)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
-
-                (FeedRangeInternal range, ReadFeedState readFeedState) = rangesAndStates[i];
-                if ((i == 0) || (readFeedState != null))
+                IReadOnlyList<(FeedRangeInternal, ReadFeedState)> rangesAndStates = crossPartitionState.Value;
+                List<CosmosElement> changeFeedContinuationTokens = new List<CosmosElement>();
+                foreach ((FeedRangeInternal range, ReadFeedState readFeedState) in rangesAndStates)
                 {
+                    this.cancellationToken.ThrowIfCancellationRequested();
                     ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(
-                        range,
-                        readFeedState);
+                            range,
+                            readFeedState);
 
                     CosmosElement cosmosElementChangeFeedContinuationToken = ReadFeedContinuationToken.ToCosmosElement(readFeedContinuationToken);
 
                     changeFeedContinuationTokens.Add(cosmosElementChangeFeedContinuationToken);
                 }
+
+                CosmosArray cosmosElementTokens = CosmosArray.Create(changeFeedContinuationTokens);
+                state = new ReadFeedState(cosmosElementTokens);
+            }
+            else
+            {
+                state = null;
             }
 
-            CosmosArray cosmosElementTokens = CosmosArray.Create(changeFeedContinuationTokens);
-            ReadFeedState state = new ReadFeedState(cosmosElementTokens);
             ReadFeedPage compositePage = new ReadFeedPage(backendPage.Content, backendPage.RequestCharge, backendPage.ActivityId, state);
 
             this.Current = TryCatch<ReadFeedPage>.FromResult(compositePage);
@@ -126,7 +126,13 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         {
             if (continuation == default)
             {
-                return TryCatch<CrossPartitionState<ReadFeedState>>.FromResult(default);
+                // Just start with null continuation for the full range
+                return TryCatch<CrossPartitionState<ReadFeedState>>.FromResult(
+                    new CrossPartitionState<ReadFeedState>(
+                        new List<(FeedRangeInternal, ReadFeedState)>()
+                        {
+                            (FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
+                        }));
             }
 
             TryCatch<CosmosArray> monadicCosmosArray = CosmosArray.Monadic.Parse(continuation);

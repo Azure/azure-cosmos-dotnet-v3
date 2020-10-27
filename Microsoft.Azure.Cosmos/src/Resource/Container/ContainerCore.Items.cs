@@ -613,7 +613,7 @@ namespace Microsoft.Azure.Cosmos
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
-                return new FeedRangeIteratorCore(
+                return new ReadFeedIteratorCore(
                     documentContainer: documentContainer,
                     queryRequestOptions: requestOptions,
                     continuationToken: continuationToken,
@@ -673,7 +673,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                feedIterator = new FeedRangeIteratorCore(
+                feedIterator = new ReadFeedIteratorCore(
                     documentContainer: documentContainer,
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,

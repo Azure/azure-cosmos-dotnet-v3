@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             string continuationToken,
             int pageSize)
         {
-            return new FeedRangeIteratorCore(
+            return new ReadFeedIteratorCore(
                 documentContainer,
                 queryRequestOptions: null,
                 continuationToken: continuationToken,

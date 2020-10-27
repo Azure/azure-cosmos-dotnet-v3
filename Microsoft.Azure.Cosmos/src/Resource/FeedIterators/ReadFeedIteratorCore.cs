@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -18,12 +18,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal sealed class FeedRangeIteratorCore : FeedIteratorInternal
+    internal sealed class ReadFeedIteratorCore : FeedIteratorInternal
     {
         private readonly TryCatch<CrossPartitionReadFeedAsyncEnumerator> monadicEnumerator;
         private bool hasMoreResults;
 
-        public FeedRangeIteratorCore(
+        public ReadFeedIteratorCore(
             IDocumentContainer documentContainer,
             QueryRequestOptions queryRequestOptions,
             string continuationToken,

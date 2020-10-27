@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Documents;
 
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
@@ -20,8 +19,18 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             ContainerInternal container)
         {
-            this.container = container ?? throw new ArgumentNullException(nameof(container));
-            this.ClientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
+            if (clientContext == null)
+            {
+                throw new ArgumentNullException(nameof(clientContext));
+            }
+
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            this.container = container;
+            this.ClientContext = clientContext;
         }
 
         protected CosmosClientContext ClientContext { get; }
