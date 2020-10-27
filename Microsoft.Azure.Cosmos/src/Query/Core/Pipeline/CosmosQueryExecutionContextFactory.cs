@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
-    using Microsoft.Azure.Documents;
 
     internal static class CosmosQueryExecutionContextFactory
     {
