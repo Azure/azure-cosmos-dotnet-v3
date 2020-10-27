@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            // No work to do since this enumerator is fully sync.
+            this.currentQueryPipelineStage.SetCancellationToken(cancellationToken);
         }
     }
 }
