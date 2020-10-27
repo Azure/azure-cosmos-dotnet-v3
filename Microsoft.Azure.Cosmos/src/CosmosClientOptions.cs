@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         private Protocol connectionProtocol;
         private TimeSpan? idleTcpConnectionTimeout;
         private TimeSpan? openTcpConnectionTimeout;
-        private int? maxRequestsPerTcpConnection;
+        private int? maxRequestsPerTcpConnection = 12;
         private int? maxTcpConnectionsPerEndpoint;
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
