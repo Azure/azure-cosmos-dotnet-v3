@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         private Protocol connectionProtocol;
         private TimeSpan? idleTcpConnectionTimeout;
         private TimeSpan? openTcpConnectionTimeout;
-        private int? maxRequestsPerTcpConnection = 12;
+        private int? maxRequestsPerTcpConnection;
         private int? maxTcpConnectionsPerEndpoint;
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
@@ -82,6 +82,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+            this.MaxRequestsPerTcpConnection = 12;
         }
 
         /// <summary>
