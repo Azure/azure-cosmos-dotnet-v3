@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         {
             this.Content = content ?? throw new ArgumentNullException(nameof(content));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
-            this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(content));
+            this.ActivityId = activityId;
         }
 
         public Stream Content { get; }

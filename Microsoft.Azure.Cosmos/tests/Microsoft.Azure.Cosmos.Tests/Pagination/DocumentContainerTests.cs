@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 ReadFeedPage readFeedPage = await documentContainer.ReadFeedAsync(
                     feedRange: childRange,
-                    readFeedState: default,
+                    readFeedState: new ReadFeedState(CosmosNull.Create()),
                     pageSize: 100,
                     queryRequestOptions: default,
                     cancellationToken: default);
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 ReadFeedPage page = await documentContainer.ReadFeedAsync(
                     feedRange: feedRange,
-                    readFeedState: default,
+                    readFeedState: new ReadFeedState(CosmosNull.Create()),
                     pageSize: 100,
                     queryRequestOptions: default,
                     cancellationToken: default);

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -145,7 +146,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
-                    state: state);
+                    state: state ?? new CrossPartitionState<ReadFeedState>(
+                        new List<(FeedRangeInternal, ReadFeedState)>() 
+                        { 
+                            (FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
+                        }));
             }
 
             public override IAsyncEnumerator<TryCatch<CrossPartitionPage<ReadFeedPage, ReadFeedState>>> CreateEnumerator(
@@ -168,7 +173,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
                     cancellationToken: default,
-                    state: state);
+                    state: state ?? new CrossPartitionState<ReadFeedState>(
+                        new List<(FeedRangeInternal, ReadFeedState)>()
+                        {
+                            (FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
+                        }));
 
                 return enumerator;
             }

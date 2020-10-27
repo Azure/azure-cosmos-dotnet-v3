@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
                 this.container.LinkUri,
                 ResourceType.Conflict,
                 continuationToken,
-                requestOptions.MaxItemCount ?? int.MaxValue);
+                requestOptions?.MaxItemCount ?? int.MaxValue);
         }
 
         public override FeedIterator<T> GetConflictQueryIterator<T>(

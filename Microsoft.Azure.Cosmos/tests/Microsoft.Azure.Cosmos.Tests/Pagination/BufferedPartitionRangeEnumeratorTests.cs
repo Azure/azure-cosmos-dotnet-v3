@@ -7,6 +7,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public sealed class BufferedPartitionPartitionRangeEnumeratorTests
@@ -126,7 +127,8 @@
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
                         queryRequestOptions: default,
-                        cancellationToken: default),
+                        cancellationToken: default,
+                        state: new ReadFeedState(CosmosNull.Create())),
                     cancellationToken: default);
 
                 int count = 0;
@@ -169,7 +171,8 @@
                         feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         pageSize: 10,
                         queryRequestOptions: default,
-                        cancellationToken: default),
+                        cancellationToken: default,
+                        state: new ReadFeedState(CosmosNull.Create())),
                     cancellationToken: default);
 
                     if ((random.Next() % 2) == 0)
@@ -201,7 +204,7 @@
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                    state: state,
+                    state: state ?? new ReadFeedState(CosmosNull.Create()),
                     (range, state) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
                             documentContainer,
@@ -221,7 +224,7 @@
                         pageSize: 10,
                         queryRequestOptions: default,
                         cancellationToken: default,
-                        state: state),
+                        state: state ?? new ReadFeedState(CosmosNull.Create())),
                     cancellationToken: default);
 
             private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)

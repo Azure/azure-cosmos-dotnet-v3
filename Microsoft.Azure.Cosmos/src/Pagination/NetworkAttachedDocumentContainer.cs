@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CosmosQueryClient cosmosQueryClient,
             CosmosDiagnosticsContext diagnosticsContext,
             QueryRequestOptions queryRequestOptions = null,
-            string resourceLink = null, 
+            string resourceLink = null,
             ResourceType resourceType = ResourceType.Document)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
@@ -126,6 +126,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (queryRequestOptions != null)
+            {
+                queryRequestOptions.MaxItemCount = pageSize;
+            }
+
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
@@ -140,9 +145,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    }
 
                    feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
-                   request.Headers.PageSize = pageSize.ToString();
                },
-               partitionKey: queryRequestOptions.PartitionKey,
+               partitionKey: queryRequestOptions?.PartitionKey,
                streamPayload: default,
                diagnosticsContext: default,
                cancellationToken: cancellationToken);
@@ -154,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     responseMessage.Content,
                     responseMessage.Headers.RequestCharge,
                     responseMessage.Headers.ActivityId,
-                    new ReadFeedState(CosmosString.Create(responseMessage.Headers.ETag)));
+                    responseMessage.Headers.ETag != null ? new ReadFeedState(CosmosString.Create(responseMessage.Headers.ETag)) : null);
 
                 monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
             }

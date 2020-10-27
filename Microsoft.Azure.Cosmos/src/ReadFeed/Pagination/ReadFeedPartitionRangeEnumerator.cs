@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             QueryRequestOptions queryRequestOptions,
             int pageSize,
             CancellationToken cancellationToken,
-            ReadFeedState state = null)
+            ReadFeedState state)
             : base(
                   feedRange,
                   cancellationToken,

@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos
                     documentContainer: documentContainer,
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
-                    pageSize: queryRequestOptions.MaxItemCount ?? int.MaxValue,
+                    pageSize: queryRequestOptions?.MaxItemCount ?? int.MaxValue,
                     cancellationToken: default);
             }
 

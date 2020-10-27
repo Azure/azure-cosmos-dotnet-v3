@@ -80,7 +80,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     feedRange: ranges[0],
                     pageSize: 10,
                     queryRequestOptions: default,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    state: new ReadFeedState(CosmosNull.Create()));
+
 
                 (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
@@ -129,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         documentContainer,
                         feedRange: range,
                         pageSize: 10,
-                        state: state,
+                        state: state ?? new ReadFeedState(CosmosNull.Create()),
                         queryRequestOptions: default,
                         cancellationToken: default));
 
@@ -139,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     inMemoryCollection,
                     feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                     pageSize: 10,
-                    state: state,
+                    state: state ?? new ReadFeedState(CosmosNull.Create()),
                     queryRequestOptions: default,
                     cancellationToken: default);
         }
