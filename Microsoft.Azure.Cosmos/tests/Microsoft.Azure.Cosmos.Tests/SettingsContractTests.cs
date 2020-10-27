@@ -360,7 +360,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
-                "ConflictResolutionPolicy");
+                "ConflictResolutionPolicy",
+                "PartitionKeyPaths");
 
             // Two equivalent definitions 
             ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
