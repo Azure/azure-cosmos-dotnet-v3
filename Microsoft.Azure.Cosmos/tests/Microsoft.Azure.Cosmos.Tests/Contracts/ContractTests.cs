@@ -23,8 +23,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
             }
             catch(ArgumentNullException)
             { }
-
+#if PREVIEW
+            Assert.AreEqual(HttpConstants.Versions.v2020_07_15, HttpConstants.Versions.CurrentVersion);
+#else
             Assert.AreEqual(HttpConstants.Versions.v2018_12_31, HttpConstants.Versions.CurrentVersion);
+#endif
             CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2018_12_31), HttpConstants.Versions.CurrentVersionUTF8);
         }
 
