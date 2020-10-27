@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ReadFeedIteratorCore_AllowsParallelProcessing()
         {
             int batchSize = 1000;
@@ -190,6 +191,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ReadFeedIteratorCore_OfT_WithFeedRange_ReadAll_StopResume()
         {
             int batchSize = 1000;
@@ -351,19 +353,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             Assert.AreEqual(batchSize, totalCount);
         }
 
-        [TestMethod]
-        public async Task CannotMixTokensFromOtherContainers()
-        {
-            await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
-            IReadOnlyList<FeedRange> tokens = await this.Container.GetFeedRangesAsync();
-            FeedIterator iterator = this.Container.GetItemQueryStreamIterator(feedRange: tokens[0], queryDefinition: null, continuationToken: null, new QueryRequestOptions() { MaxItemCount = 1 });
-            ResponseMessage responseMessage = await iterator.ReadNextAsync();
-            iterator = this.LargerContainer.GetItemQueryStreamIterator(queryDefinition: null, continuationToken: responseMessage.ContinuationToken);
-            responseMessage = await iterator.ReadNextAsync();
-            Assert.IsNotNull(responseMessage.CosmosException);
-            Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage.StatusCode);
-        }
-
         [DataRow(false)]
         [DataRow(true)]
         [DataTestMethod]
@@ -374,12 +363,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             try
             {
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
-                        new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id"),
-                        throughput: 50000,
-                        cancellationToken: this.cancellationToken);
+                    new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id"),
+                    throughput: 50000,
+                    cancellationToken: this.cancellationToken);
                 container = (ContainerInlineCore)containerResponse;
 
-                //create items
+                // Create Items
                 const int total = 30;
                 QueryRequestOptions requestOptions = new QueryRequestOptions()
                 {
@@ -396,8 +385,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     }}";
 
                     using (ResponseMessage createResponse = await container.CreateItemStreamAsync(
-                            ReadFeedRangeTests.GenerateStreamFromString(item),
-                            new Cosmos.PartitionKey(i.ToString())))
+                        ReadFeedRangeTests.GenerateStreamFromString(item),
+                        new Cosmos.PartitionKey(i.ToString())))
                     {
                         Assert.IsTrue(createResponse.IsSuccessStatusCode);
                     }
