@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.MaxRequestsPerTcpConnection = 12;
+            this.PortReuseMode = Cosmos.PortReuseMode.PrivatePortPool;
         }
 
         /// <summary>
