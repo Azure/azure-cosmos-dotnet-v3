@@ -18,13 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="RequestMessage"/>
     public class Headers : IEnumerable
     {
-        private string GetString(string keyName)
-        {
-            this.TryGetValue(keyName, out string valueTuple);
-            return valueTuple;
-        }
-
-        internal SubStatusCodes SubStatusCode
+        internal virtual SubStatusCodes SubStatusCode
         {
             get => Headers.GetSubStatusCodes(this.SubStatusCodeLiteral);
             set => this.SubStatusCodeLiteral = ((uint)value).ToString(CultureInfo.InvariantCulture);
@@ -35,9 +29,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ContinuationToken
         {
-            get => this.GetString(HttpConstants.HttpHeaders.Continuation);
-
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.Continuation, value);
+            get => this.CosmosMessageHeaders.Continuation;
+            internal set => this.CosmosMessageHeaders.Continuation = value;
         }
 
         /// <summary>
@@ -50,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                string value = this.GetString(HttpConstants.HttpHeaders.RequestCharge);
+                string value = this.CosmosMessageHeaders.RequestCharge;
                 if (value == null)
                 {
                     return 0;
@@ -58,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return double.Parse(value, CultureInfo.InvariantCulture);
             }
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.RequestCharge, value.ToString(CultureInfo.InvariantCulture));
+            internal set => this.CosmosMessageHeaders.RequestCharge = value.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -69,8 +62,8 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         public virtual string ActivityId
         {
-            get => this.GetString(HttpConstants.HttpHeaders.ActivityId);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.ActivityId, value);
+            get => this.CosmosMessageHeaders.ActivityId;
+            internal set => this.CosmosMessageHeaders.ActivityId = value;
         }
 
         /// <summary>
@@ -84,8 +77,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string ETag
         {
-            get => this.GetString(HttpConstants.HttpHeaders.ETag);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.ETag, value);
+            get => this.CosmosMessageHeaders.ETag;
+            internal set => this.CosmosMessageHeaders.ETag = value;
         }
 
         /// <summary>
@@ -93,8 +86,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ContentType
         {
-            get => this.GetString(HttpConstants.HttpHeaders.ContentType);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.ContentType, value);
+            get => this.CosmosMessageHeaders.ContentType;
+            internal set => this.CosmosMessageHeaders.ContentType = value;
         }
 
         /// <summary>
@@ -105,8 +98,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual string Session
         {
-            get => this.GetString(HttpConstants.HttpHeaders.SessionToken);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.SessionToken, value);
+            get => this.CosmosMessageHeaders.SessionToken;
+            internal set => this.CosmosMessageHeaders.SessionToken = value;
         }
 
         /// <summary>
@@ -114,8 +107,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ContentLength
         {
-            get => this.GetString(HttpConstants.HttpHeaders.ContentLength);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.ContentLength, value);
+            get => this.CosmosMessageHeaders.ContentLength;
+            set => this.CosmosMessageHeaders.ContentLength = value;
         }
 
         /// <summary>
@@ -123,14 +116,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string Location
         {
-            get => this.GetString(HttpConstants.HttpHeaders.Location);
-            internal set => this.SetProperty(HttpConstants.HttpHeaders.Location, value);
+            get => this.CosmosMessageHeaders.Location;
+            internal set => this.CosmosMessageHeaders.Location = value;
         }
 
-        internal string SubStatusCodeLiteral
+        internal virtual string SubStatusCodeLiteral
         {
-            get => this.GetString(WFConstants.BackendHeaders.SubStatus);
-            set => this.SetProperty(WFConstants.BackendHeaders.SubStatus, value);
+            get => this.CosmosMessageHeaders.SubStatus;
+            set => this.CosmosMessageHeaders.SubStatus = value;
         }
 
         internal TimeSpan? RetryAfter
@@ -148,52 +141,58 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal string RetryAfterLiteral
+        internal virtual string Authorization
         {
-            get => this.GetString(HttpConstants.HttpHeaders.RetryAfterInMilliseconds);
-            set => this.SetProperty(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, value);
+            get => this.CosmosMessageHeaders.Authorization;
+            set => this.CosmosMessageHeaders.Authorization = value;
         }
 
-        internal string PartitionKey
+        internal virtual string RetryAfterLiteral
         {
-            get => this.GetString(HttpConstants.HttpHeaders.PartitionKey);
-            set => this.SetProperty(HttpConstants.HttpHeaders.PartitionKey, value);
+            get => this.CosmosMessageHeaders.RetryAfterInMilliseconds;
+            set => this.CosmosMessageHeaders.RetryAfterInMilliseconds = value;
         }
 
-        internal string PartitionKeyRangeId
+        internal virtual string PartitionKey
         {
-            get => this.GetString(HttpConstants.HttpHeaders.PartitionKeyRangeId);
-            set => this.SetProperty(HttpConstants.HttpHeaders.PartitionKeyRangeId, value);
+            get => this.CosmosMessageHeaders.PartitionKey;
+            set => this.CosmosMessageHeaders.PartitionKey = value;
         }
 
-        internal string IsUpsert
+        internal virtual string PartitionKeyRangeId
         {
-            get => this.GetString(HttpConstants.HttpHeaders.IsUpsert);
-            set => this.SetProperty(HttpConstants.HttpHeaders.IsUpsert, value);
+            get => this.CosmosMessageHeaders.PartitionKeyRangeId;
+            set => this.CosmosMessageHeaders.PartitionKeyRangeId = value;
         }
 
-        internal string OfferThroughput
+        internal virtual string IsUpsert
         {
-            get => this.GetString(HttpConstants.HttpHeaders.OfferThroughput);
-            set => this.SetProperty(HttpConstants.HttpHeaders.OfferThroughput, value);
+            get => this.CosmosMessageHeaders.IsUpsert;
+            set => this.CosmosMessageHeaders.IsUpsert = value;
         }
 
-        internal string IfNoneMatch
+        internal virtual string OfferThroughput
         {
-            get => this.GetString(HttpConstants.HttpHeaders.IfNoneMatch);
-            set => this.SetProperty(HttpConstants.HttpHeaders.IfNoneMatch, value);
+            get => this.CosmosMessageHeaders.OfferThroughput;
+            set => this.CosmosMessageHeaders.OfferThroughput = value;
         }
 
-        internal string PageSize
+        internal virtual string IfNoneMatch
         {
-            get => this.GetString(HttpConstants.HttpHeaders.PageSize);
-            set => this.SetProperty(HttpConstants.HttpHeaders.PageSize, value);
+            get => this.CosmosMessageHeaders.IfNoneMatch;
+            set => this.CosmosMessageHeaders.IfNoneMatch = value;
         }
 
-        internal string QueryMetricsText
+        internal virtual string PageSize
         {
-            get => this.GetString(HttpConstants.HttpHeaders.QueryMetrics);
-            set => this.SetProperty(HttpConstants.HttpHeaders.QueryMetrics, value);
+            get => this.CosmosMessageHeaders.PageSize;
+            set => this.CosmosMessageHeaders.PageSize = value;
+        }
+
+        internal virtual string QueryMetricsText
+        {
+            get => this.CosmosMessageHeaders.QueryMetrics;
+            set => this.CosmosMessageHeaders.QueryMetrics = value;
         }
 
         /// <summary>
@@ -201,12 +200,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Headers()
         {
-            this.CosmosMessageHeaders = new CosmosMessageHeadersInternal();
+            this.CosmosMessageHeaders = new StoreRequestNameValueCollection();
         }
 
-        internal Headers(INameValueCollection nameValue)
+        internal Headers(INameValueCollection nameValueCollection)
         {
-            this.CosmosMessageHeaders = nameValue;
+            this.CosmosMessageHeaders = nameValueCollection switch
+            {
+                StoreResponseNameValueCollection storeResponseNameValueCollection => new StoreResponseHeaders(storeResponseNameValueCollection),
+                _ => new NameValueResponseHeaders(nameValueCollection),
+            };
         }
 
         /// <summary>
@@ -218,6 +221,18 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.CosmosMessageHeaders[headerName];
             set => this.CosmosMessageHeaders[headerName] = value;
+        }
+
+        /// <summary>
+        /// Enumerates all the HTTP headers names in the <see cref="Headers"/>.
+        /// </summary>
+        /// <returns>An enumerator for all headers.</returns>
+        public virtual IEnumerator<string> GetEnumerator()
+        {
+            foreach (string key in this.CosmosMessageHeaders.AllKeys())
+            {
+                yield return key;
+            }
         }
 
         /// <summary>
@@ -284,7 +299,7 @@ namespace Microsoft.Azure.Cosmos
                 return value;
             }
 
-            return default(string);
+            return default;
         }
 
         /// <summary>
@@ -319,28 +334,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enumerates all the HTTP headers names in the <see cref="Headers"/>.
         /// </summary>
-        /// <returns>An enumator for all headers.</returns>
+        /// <returns>An enumerator for all headers.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.CosmosMessageHeaders.GetEnumerator();
-        }
-
-        /// <summary>
-        /// Setting null on a property should not cause a null argument exception.
-        /// Instead just remove it from the header
-        /// </summary>
-        internal void SetProperty(
-            string headerName,
-            string value)
-        {
-            if (value == null)
-            {
-                this.Remove(headerName);
-            }
-            else
-            {
-                this.Set(headerName, value);
-            }
+            return this.GetEnumerator();
         }
 
         internal string[] GetValues(string key)
@@ -359,7 +356,7 @@ namespace Microsoft.Azure.Cosmos
             return new string[1] { this[key] };
         }
 
-        internal INameValueCollection CosmosMessageHeaders { get; }
+        internal CosmosMessageHeadersInternal CosmosMessageHeaders { get; }
 
         internal static SubStatusCodes GetSubStatusCodes(string value)
         {

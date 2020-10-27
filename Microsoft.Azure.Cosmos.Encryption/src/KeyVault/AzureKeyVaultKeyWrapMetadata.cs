@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     public sealed class AzureKeyVaultKeyWrapMetadata : EncryptionKeyWrapMetadata
     {
-        internal static string TypeConstant = "akv";
+        internal const string TypeConstant = "akv";
 
         /// <summary>
         /// Creates a new instance of metadata that the Azure Key Vault can use to wrap and unwrap keys.

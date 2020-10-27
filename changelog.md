@@ -3,6 +3,58 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.15.0-preview"/> [3.15.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.15.0-preview) - 2020-10-21
+
+#### Added
+- [#1944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1944) Performance: Adds direct version to get response header improvement
+- [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) Change Feed: Adds new continuation token format which can be migrated via new EmitOldContinuationToken.
+- [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) Change Feed: Adds the ability to retry on 304s and no longer modifies HasMoreResults
+- [#1926](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1926) Query: Adds multiple arguments in IN clause support to c# query parser when service interop is not available.
+
+#### Fixed
+- [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) Change Feed: Fixes StartFrom bug where the value was not honored
+
+### <a name="3.14.0-preview"/> [3.14.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.14.0-preview) - 2020-10-09
+
+#### Added
+- [#1830](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1830) Change Feed Estimator: Adds support for detailed estimation per lease
+
+### <a name="3.14.0"/> [3.14.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.14.0) - 2020-10-09
+
+#### Added
+- [#1876](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1876) Performance: Adds session token optimization
+- [#1879](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1879) Performance: Adds AuthorizationHelper improvements
+- [#1882](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1882) Performance: Adds SessionContainer optimizations and style fixes
+- [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) Query: Adds adoption of pagination library
+- [#1920](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1920) Query: Adds RegexMatch system function support
+
+#### Fixed
+- [#1875](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1875) HttpClient: Fixes HttpResponseMessage.RequestMessage is null in WASM
+- [#1886](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1886) Change Feed Processor: Fixes failures during initialization
+- [#1892](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1892) GatewayAddressCache: Fixes high CPU from HashSet usage on Address refresh path
+- [#1909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1909) Authorization: Fixes DocumentClientException being thrown on write operations
+
+### <a name="3.13.0"/> [3.13.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0) - 2020-09-21
+
+#### Added
+
+- [#1743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1743) Query Performance: Adds skipping getting query plan for non-aggregate single partition queries on non-Windows x64 systems when FeedOptions.PartitionKey is set
+- [#1768](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1768) Performance: Adds SessionToken optimization to reduce header size by removing session token for CRUD on stored procedure, triggers, and UDFs
+- [#1781](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1781) Performance: Adds headers optimization which can reduce response allocation by 10 KB per a request. 
+- [#1825](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1825) RequestOptions.Properties: Adds the ability for applications to specify request context
+- [#1835](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1835) Performance: Add HttpClient optimization to avoid double buffering gateway responses
+- [#1837](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1837) Query SystemFunctions : Adds DateTime System Functions
+- [#1842](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1842) Query Performance: Adds Singleton QueryPartitionProvider. Helps when Container is getting recreated.
+- [#1857](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1857) Performance: Adds finalizer optimizations in a few places (Thanks to pentp)
+- [#1843](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1843) Performance: Adds Transport serialization, SessionTokenMismatchRetryPolicy, and store response dictionary optimizations
+
+#### Fixed
+
+- [#1757](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1757) Batch API: Fixes the size limit to reduce timeouts
+- [#1758](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1758) Connectivity: Fixes address resolution calls when using EnableTcpConnectionEndpointRediscovery
+- [#1788](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1788) Transient HTTP exceptions: Adds retry logic to all http requests
+- [#1863](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1863) HttpClientHandler: Fixes HttpClientHandler PlatformNotSupportedException
+
 ### <a name="3.13.0-preview"/> [3.13.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0-preview) - 2020-08-12
 
 #### Added
@@ -34,10 +86,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1740](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1740) Connection limits: Fixes .NET core to honor gateway connection limit
 - [#1744](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1744) Transport: Fixes use of PortReuseMode and other Direct configuration settings
 
+### <a name="3.11.1-preview"/> [3.11.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.1-preview) - 2020-10-01
 
+- [#1892](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1892) Performance: Fixes High CPU caused by EnableTcpConnectionEndpointRediscovery by reducing HashSet lock contention
 
 ### <a name="3.11.0"/> [3.11.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.0) - 2020-07-07
-
+### <a name="3.11.0-preview"/> [3.11.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.11.0-preview) - 2020-07-07
 #### Added 
 
 - [#1587](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1587) & [1643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1643) & [1667](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1667)  Diagnostics: Adds synchronization context tracing to all request

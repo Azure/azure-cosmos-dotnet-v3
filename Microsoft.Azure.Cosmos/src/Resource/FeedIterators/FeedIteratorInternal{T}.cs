@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Internal API for FeedIterator<typeparamref name="T"/> for inheritance and mocking purposes.

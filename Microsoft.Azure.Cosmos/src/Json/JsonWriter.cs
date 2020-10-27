@@ -51,7 +51,9 @@ namespace Microsoft.Azure.Cosmos.Json
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
             JsonStringDictionary jsonStringDictionary = null,
-            int initalCapacity = 256) => jsonSerializationFormat switch
+            int initalCapacity = 256)
+        {
+            return jsonSerializationFormat switch
             {
                 JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             RMResources.UnexpectedJsonSerializationFormat,
                             jsonSerializationFormat)),
             };
+        }
 
         /// <inheritdoc />
         public abstract void WriteObjectStart();

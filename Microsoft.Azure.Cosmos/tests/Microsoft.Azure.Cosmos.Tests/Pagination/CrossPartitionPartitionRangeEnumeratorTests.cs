@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 : base(singlePartition: false)
             {
             }
+
             [TestMethod]
             public async Task TestSplitWithResumeContinuationAsync()
             {
@@ -79,22 +80,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerator<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-                (HashSet<Guid> firstDrainResults, CrossPartitionState<DocumentContainerState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<string> firstDrainResults, CrossPartitionState<DocumentContainerState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
-                int minPartitionKeyRangeId = (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default))
-                    .Select(range => int.Parse(range.Id)).Min();
-                int maxPartitionKeyRangeId = (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default))
-                    .Select(range => int.Parse(range.Id)).Max();
+                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+
                 // Split the partition we were reading from
-                await inMemoryCollection.SplitAsync(minPartitionKeyRangeId, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(ranges.First(), cancellationToken: default);
 
                 // And a partition we have let to read from
-                await inMemoryCollection.SplitAsync((minPartitionKeyRangeId + maxPartitionKeyRangeId) / 2, cancellationToken: default);
+                await inMemoryCollection.SplitAsync(ranges[ranges.Count / 2], cancellationToken: default);
 
                 // Resume from state
                 IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
 
-                HashSet<Guid> secondDrainResults = await this.DrainFullyAsync(enumerable);
+                HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
                 Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
             }
 
@@ -105,17 +104,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
-                HashSet<Guid> identifiers = new HashSet<Guid>();
+                HashSet<string> identifiers = new HashSet<string>();
                 Random random = new Random();
                 await foreach (TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>> tryGetPage in enumerable)
                 {
                     if (random.Next() % 2 == 0)
                     {
-                        List<int> partitionKeyRangeIds = (await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default))
-                            .Select(range => int.Parse(range.Id))
-                            .ToList();
-                        int randomIdToSplit = partitionKeyRangeIds[random.Next(0, partitionKeyRangeIds.Count)];
-                        await inMemoryCollection.SplitAsync(randomIdToSplit, cancellationToken: default);
+                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                        FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
+                        await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
                     }
 
                     tryGetPage.ThrowIfFailed();
@@ -135,17 +132,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossPartitionState<DocumentContainerState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
-                    PartitionKeyRange range,
+                    FeedRangeInternal range,
                     DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
-                        partitionKeyRangeId: int.Parse(range.Id),
+                        feedRange: range,
                         pageSize: 10,
+                        cancellationToken: default,
                         state: state);
 
                 return new CrossPartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
-                    comparer: PartitionRangePageEnumeratorComparer.Singleton,
+                    comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                    maxConcurrency: 10,
                     state: state);
             }
 
@@ -154,17 +153,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossPartitionState<DocumentContainerState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
-                    PartitionKeyRange range,
+                    FeedRangeInternal range,
                     DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
                         inMemoryCollection,
-                        partitionKeyRangeId: int.Parse(range.Id),
+                        feedRange: range,
                         pageSize: 10,
+                        cancellationToken: default,
                         state: state);
 
                 CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
-                    comparer: PartitionRangePageEnumeratorComparer.Singleton,
+                    comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                    maxConcurrency: 10,
+                    cancellationToken: default,
                     state: state);
 
                 return enumerator;
@@ -175,9 +177,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return page.Page.Records;
             }
 
-            private sealed class PartitionRangePageEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>>
+            private sealed class PartitionRangePageAsyncEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>>
             {
-                public static readonly PartitionRangePageEnumeratorComparer Singleton = new PartitionRangePageEnumeratorComparer();
+                public static readonly PartitionRangePageAsyncEnumeratorComparer Singleton = new PartitionRangePageAsyncEnumeratorComparer();
 
                 public int Compare(
                     PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> partitionRangePageEnumerator1,
@@ -190,8 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     // Either both don't have results or both do.
                     return string.CompareOrdinal(
-                        partitionRangePageEnumerator1.Range.MinInclusive,
-                        partitionRangePageEnumerator2.Range.MinInclusive);
+                        ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,
+                        ((FeedRangeEpk)partitionRangePageEnumerator2.Range).Range.Min);
                 }
             }
         }

@@ -29,15 +29,7 @@ stages:
       pool:
         vmImage: $(VmImage)
     
-    # Pipeline fails from errors in newer version
       steps:
-      - task: UseDotNet@2
-        displayName: 'Use .NET Core sdk'
-        inputs:
-          packageType: sdk
-          version: 3.1.302
-          installationPath: $(Agent.ToolsDirectory)/dotnet
-
       - task: DotNetCoreCLI@2
         displayName: Build Microsoft.Azure.Cosmos
         inputs: 
@@ -79,4 +71,7 @@ stages:
         displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
         inputs:
           artifactName: Microsoft.Azure.Cosmos
+
+      - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+        displayName: 'Component Detection'
 #

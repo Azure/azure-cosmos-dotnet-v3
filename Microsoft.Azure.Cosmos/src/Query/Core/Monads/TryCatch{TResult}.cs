@@ -62,6 +62,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             }
         }
 
+        public Exception InnerMostException
+        {
+            get
+            {
+                Exception exception = this.Exception;
+                while (exception.InnerException != null)
+                {
+                    exception = exception.InnerException;
+                }
+
+                return exception;
+            }
+        }
+
         public void Match(
             Action<TResult> onSuccess,
             Action<Exception> onError)

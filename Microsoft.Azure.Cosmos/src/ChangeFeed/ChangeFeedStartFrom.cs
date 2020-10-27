@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
 
     /// <summary>
@@ -30,11 +32,16 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract TResult Accept<TResult>(ChangeFeedStartFromVisitor<TResult> visitor);
 
+        internal abstract Task<TResult> AcceptAsync<TInput, TResult>(ChangeFeedStartFromAsyncVisitor<TInput, TResult> visitor, TInput input, CancellationToken cancellationToken);
+
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
         /// </summary>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.</returns>
-        public static ChangeFeedStartFrom Now() => Now(FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Now()
+        {
+            return Now(FeedRangeEpk.FullRange);
+        }
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
@@ -56,7 +63,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="dateTimeUtc">The time (in UTC) to start reading from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
-        public static ChangeFeedStartFrom Time(DateTime dateTimeUtc) => Time(dateTimeUtc, FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Time(DateTime dateTimeUtc)
+        {
+            return Time(dateTimeUtc, FeedRangeEpk.FullRange);
+        }
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.
@@ -79,13 +89,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="continuationToken">The continuation to resume from.</param>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from a save point.</returns>
-        public static ChangeFeedStartFrom ContinuationToken(string continuationToken) => new ChangeFeedStartFromContinuation(continuationToken);
+        public static ChangeFeedStartFrom ContinuationToken(string continuationToken)
+        {
+            return new ChangeFeedStartFromContinuation(continuationToken);
+        }
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.
         /// </summary>
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.</returns>
-        public static ChangeFeedStartFrom Beginning() => Beginning(FeedRangeEpk.FullRange);
+        public static ChangeFeedStartFrom Beginning()
+        {
+            return Beginning(FeedRangeEpk.FullRange);
+        }
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start from the beginning of time.

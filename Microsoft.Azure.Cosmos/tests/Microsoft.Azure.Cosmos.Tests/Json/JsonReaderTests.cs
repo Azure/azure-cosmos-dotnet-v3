@@ -11,8 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -370,9 +368,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(short.MaxValue)
             };
 
-            List<byte> maxShortInput = new List<byte>();
-            maxShortInput.Add(BinaryFormat);
-            maxShortInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt16);
+            List<byte> maxShortInput = new List<byte>
+            {
+                BinaryFormat,
+                JsonBinaryEncoding.TypeMarker.NumberInt16
+            };
             maxShortInput.AddRange(BitConverter.GetBytes(short.MaxValue));
 
             this.VerifyReader(short.MaxValue.ToString(), maxShortTokens);
@@ -384,9 +384,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonToken.Number(int.MinValue)
             };
 
-            List<byte> minIntInput = new List<byte>();
-            minIntInput.Add(BinaryFormat);
-            minIntInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt32);
+            List<byte> minIntInput = new List<byte>
+            {
+                BinaryFormat,
+                JsonBinaryEncoding.TypeMarker.NumberInt32
+            };
             minIntInput.AddRange(BitConverter.GetBytes(int.MinValue));
 
             this.VerifyReader(int.MinValue.ToString(), minIntTokens);
@@ -588,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void SystemStringTest()
         {
             int systemStringId = 0;
-            while (JsonBinaryEncoding.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
+            while (JsonBinaryEncoding.SystemStrings.TryGetSystemStringById(systemStringId, out UtfAllString systemString))
             {
                 string input = "\"" + systemString.Utf16String + "\"";
                 byte[] binaryInput =
@@ -613,7 +615,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             // Object with 33 field names. This creates a user string with 2 byte type marker.
 
-            List<JsonToken> tokensToWrite = new List<JsonToken>() { JsonToken.ObjectStart() };
+            List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
             StringBuilder textInput = new StringBuilder("{");
             List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength, };
             List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength };
@@ -623,8 +625,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 string userEncodedString = "a" + i.ToString();
 
-                tokensToWrite.Add(JsonToken.FieldName(userEncodedString));
-                tokensToWrite.Add(JsonToken.String(userEncodedString));
+                expectedTokens.Add(JsonToken.FieldName(userEncodedString));
+                expectedTokens.Add(JsonToken.String(userEncodedString));
 
                 if (i > 0)
                 {
@@ -654,13 +656,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 binaryInputWithEncoding.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
             }
 
-            tokensToWrite.Add(JsonToken.ObjectEnd());
+            expectedTokens.Add(JsonToken.ObjectEnd());
             textInput.Append("}");
             binaryInput.Insert(2, (byte)(binaryInput.Count() - 2));
             binaryInputWithEncoding.Insert(2, (byte)(binaryInputWithEncoding.Count() - 2));
 
-            this.VerifyReader(textInput.ToString(), tokensToWrite.ToArray());
-            this.VerifyReader(binaryInput.ToArray(), tokensToWrite.ToArray());
+            this.VerifyReader(textInput.ToString(), expectedTokens.ToArray());
+            this.VerifyReader(binaryInput.ToArray(), expectedTokens.ToArray());
 
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
             for (int i = 0; i < OneByteCount + 1; i++)
@@ -670,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 Assert.AreEqual(i, index);
             }
 
-            this.VerifyReader(binaryInputWithEncoding.ToArray(), tokensToWrite.ToArray(), jsonStringDictionary);
+            this.VerifyReader(binaryInputWithEncoding.ToArray(), expectedTokens.ToArray(), jsonStringDictionary);
         }
 
         [TestMethod]
@@ -736,6 +738,832 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             };
 
             this.VerifyReader(input, expectedTokens);
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void GuidStringsTest()
+        {
+            {
+                // Empty Guid
+                string guidString = "00000000-0000-0000-0000-000000000000";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.LowercaseGuidString,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // All numbers
+                string guidString = "11111111-2222-3333-4444-555555555555";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.LowercaseGuidString,
+                    0x11, 0x11, 0x11, 0x11, 0x22, 0x22, 0x33, 0x33,
+                    0x44, 0x44, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // All lower-case letters
+                string guidString = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.LowercaseGuidString,
+                    0xAA, 0xAA, 0xAA, 0xAA, 0xBB, 0xBB, 0xCC, 0xCC,
+                    0xDD, 0xDD, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // All upper-case letters
+                string guidString = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.UppercaseGuidString,
+                    0xAA, 0xAA, 0xAA, 0xAA, 0xBB, 0xBB, 0xCC, 0xCC,
+                    0xDD, 0xDD, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // Lower-case GUID
+                string guidString = "ed7e38aa-074e-4a74-bab0-2a4f41079baa";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.LowercaseGuidString,
+                    0xDE, 0xE7, 0x83, 0xAA, 0x70, 0xE4, 0xA4, 0x47,
+                    0xAB, 0x0B, 0xA2, 0xF4, 0x14, 0x70, 0xB9, 0xAA,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // Upper-case GUID
+                string guidString = "ED7E38AA-074E-4A74-BAB0-2A4F41079BAA";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.UppercaseGuidString,
+                    0xDE, 0xE7, 0x83, 0xAA, 0x70, 0xE4, 0xA4, 0x47,
+                    0xAB, 0x0B, 0xA2, 0xF4, 0x14, 0x70, 0xB9, 0xAA,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // Upper-case GUID
+                string guidString = "ED7E38AA-074E-4A74-BAB0-2A4F41079BAA";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.UppercaseGuidString,
+                    0xDE, 0xE7, 0x83, 0xAA, 0x70, 0xE4, 0xA4, 0x47,
+                    0xAB, 0x0B, 0xA2, 0xF4, 0x14, 0x70, 0xB9, 0xAA,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // Mixed-case GUID (just a regular string)
+                string guidString = "412D5baf-acf2-4c43-9ccb-c80a9d6f267D";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+            }
+
+            {
+                // Max-value GUID
+                string guidString = "ffffffff-ffff-ffff-ffff-ffffffffffff";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.LowercaseGuidString,
+                    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // Lowercase quoted guid
+                string guidString = "\"ffffffff-ffff-ffff-ffff-ffffffffffff\"";
+                string stringPayload = $"\"\\\"ffffffff-ffff-ffff-ffff-ffffffffffff\\\"\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)guidString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString,
+                    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void DateTimeStringsTest()
+        {
+            {
+                string dateTimeString = "2015-06-30 23:45:13";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x13, 0x13, 0x62, 0x1C, 0xC7, 0x14, 0x30, 0xB4, 0x65, 0x2B, 0x04
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string dateTimeString = "2010-08-02T14:27:44-07:00";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x19, 0x13, 0x12, 0x1C, 0xC9, 0x31, 0x2E, 0xB5, 0x83, 0x5B, 0xC5, 0x81, 0x1B, 0x01
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string dateTimeString = "2007-03-01T13:00:00Z";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x14, 0x13, 0x81, 0x1C, 0xC4, 0x21, 0x2E, 0xB4, 0x11, 0x1B, 0xF1
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string dateTimeString = "2007-03-01T13:00:00Z";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x14, 0x13, 0x81, 0x1C, 0xC4, 0x21, 0x2E, 0xB4, 0x11, 0x1B, 0xF1
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string dateTimeString = "2014-10-18T14:18:17.5337932-07:00";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x21, 0x13, 0x52, 0x2C, 0xC1, 0x92, 0x2E, 0xB5, 0x92, 0x2B, 0xD8, 0x46, 0x84, 0x4A, 0xC3, 0x81, 0x1B, 0x01
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string dateTimeString = "2014-10-18T14:18:17.5337932-07:00";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x21, 0x13, 0x52, 0x2C, 0xC1, 0x92, 0x2E, 0xB5, 0x92, 0x2B, 0xD8, 0x46, 0x84, 0x4A, 0xC3, 0x81, 0x1B, 0x01
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string dateTimeString = "0123456789:.-TZ ";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)dateTimeString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedDateTimeString,
+                    0x10, 0x21, 0x43, 0x65, 0x87, 0xA9, 0xDB, 0xEC, 0x0F
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void HexStringsTest()
+        {
+            {
+                string hexString = "eccab3900d55b946";
+                string stringPayload = $"\"{hexString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(hexString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)hexString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(hexString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedLowercaseHexString,
+                    0x10, 0xCE, 0xAC, 0x3B, 0x09, 0xD0, 0x55, 0x9B, 0x64
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                string hexString = "ECCAB3900D55B946";
+                string stringPayload = $"\"{hexString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(hexString)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    (byte)hexString.Length,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(hexString)).ToArray();
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.CompressedUppercaseHexString,
+                    0x10, 0xCE, 0xAC, 0x3B, 0x09, 0xD0, 0x55, 0x9B, 0x64
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void EncodedStringLengthTests()
+        {
+            for (int i = JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin; i < JsonBinaryEncoding.TypeMarker.EncodedStringLengthMax; i++)
+            {
+                string stringValue = new string('=', count: i - JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin);
+                string stringPayload = $"\"{stringValue}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(stringValue)
+                };
+
+                byte[] binaryPayload =
+                {
+                    BinaryFormat,
+                    (byte)i,
+                };
+                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(stringValue)).ToArray();
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(binaryPayload, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void ReferenceStringTests()
+        {
+            string stringPayload = "[\"hello\", \"hello\"]";
+            JsonToken[] expectedTokens =
+            {
+                    JsonToken.ArrayStart(),
+                    JsonToken.String("hello"),
+                    JsonToken.String("hello"),
+                    JsonToken.ArrayEnd()
+            };
+
+            this.VerifyReader(stringPayload, expectedTokens);
+
+            {
+                // 1 byte reference string
+                byte[] binaryPayload =
+                {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        9,
+                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        (byte)"hello".Length,
+                        (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+
+                        JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset,
+                        3,
+                };
+
+                this.VerifyReader(binaryPayload, expectedTokens);
+            }
+
+            {
+                // 2 byte reference string
+                byte[] binaryPayload =
+                {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        10,
+                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        (byte)"hello".Length,
+                        (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+
+                        JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset,
+                        3, 0,
+                };
+
+                this.VerifyReader(binaryPayload, expectedTokens);
+            }
+
+            {
+                // 3 byte reference string
+                byte[] binaryPayload =
+                {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        11,
+                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        (byte)"hello".Length,
+                        (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+
+                        JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset,
+                        3, 0, 0
+                };
+
+                this.VerifyReader(binaryPayload, expectedTokens);
+            }
+
+            {
+                // 4 byte reference string
+                byte[] binaryPayload =
+                {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        12,
+                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        (byte)"hello".Length,
+                        (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+
+                        JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset,
+                        3, 0, 0, 0
+                };
+
+                this.VerifyReader(binaryPayload, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void PackedStringsTest()
+        {
+            {
+                // 4 bit packed string
+                string compressedString = "ababababababababababababababababg";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed4BitString,
+                    0x21, 0x61, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                    0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                    0x10, 0x10, 0xF6
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 5 bit packed string
+                string compressedString = "thequickbrownfoxjumpedoverthelazydog";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed5BitString,
+                    0x24, 0x61, 0xF3, 0x10, 0x48, 0x91, 0x50, 0x21,
+                    0x3A, 0xDB, 0x8A, 0xBB, 0x89, 0xB2, 0x47, 0x86,
+                    0xAB, 0x24, 0xCE, 0x43, 0x16, 0xC8, 0x78, 0x38,
+                    0xF3
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 6 bit packed string
+                string compressedString = "thequickbrownfoxjumpedoverthelazydogTHEQUICKBROWNFOXJUMPEDOVERTHELAZYDOG";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed6BitString,
+                    0x48, 0x41, 0xF3, 0x49, 0xC2, 0x34, 0x2A, 0xAA,
+                    0x61, 0xEC, 0xDA, 0x6D, 0xE9, 0xDE, 0x29, 0xCD,
+                    0xBE, 0xE4, 0xE8, 0xD6, 0x64, 0x3C, 0x9F, 0xE4,
+                    0x0A, 0xE6, 0xF8, 0xE8, 0x9A, 0xD3, 0x41, 0x40,
+                    0x14, 0x22, 0x28, 0x41, 0xE4, 0x58, 0x4D, 0xE1,
+                    0x5C, 0x09, 0xC5, 0x3C, 0xC4, 0xE0, 0x54, 0x44,
+                    0x34, 0x1D, 0xC4, 0x02, 0x64, 0xD8, 0xE0, 0x18
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 7 bit packed string length 1
+                string compressedString = "thequickbrownfoxjumpedoverthelazydogTHEQUICKBROWNFOXJUMPEDOVERTHELAZYDOG0123456789!@#$%^&*";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed7BitStringLength1,
+                    0x5A, 0x74, 0x74, 0x39, 0x5E, 0x4F, 0x8F, 0xD7,
+                    0x62, 0xF9, 0xFB, 0xEE, 0x36, 0xBF, 0xF1, 0xEA,
+                    0x7A, 0x1B, 0x5E, 0x26, 0xBF, 0xED, 0x65, 0x39,
+                    0x1D, 0x5D, 0x66, 0x87, 0xF5, 0x79, 0xF2, 0xFB,
+                    0x4C, 0x45, 0x16, 0xA3, 0xD5, 0xE4, 0x70, 0x29,
+                    0x94, 0x3E, 0xAF, 0x4E, 0xE3, 0x13, 0xAB, 0xAC,
+                    0x36, 0xA1, 0x45, 0xE2, 0xD3, 0x5A, 0x94, 0x52,
+                    0x91, 0x45, 0x66, 0x50, 0x9B, 0x25, 0x3E, 0x8F,
+                    0xB0, 0x98, 0x6C, 0x46, 0xAB, 0xD9, 0x6E, 0xB8,
+                    0x5C, 0x08, 0x38, 0x22, 0x95, 0xBC, 0x26, 0x15
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
+
+            {
+                // 7 bit packed string length 2
+                string compressedString = "thequickbrownfoxjumpedoverthelazydogTHEQUICKBROWNFOXJUMPEDOVERTHELAZYDOG0123456789!@#$%^&*";
+                compressedString = compressedString + compressedString + compressedString;
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                byte[] compressedBinaryPayload =
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Packed7BitStringLength2,
+                    0x0E, 0x01, 0x74, 0x74, 0x39, 0x5E, 0x4F, 0x8F,
+                    0xD7, 0x62, 0xF9, 0xFB, 0xEE, 0x36, 0xBF, 0xF1,
+                    0xEA, 0x7A, 0x1B, 0x5E, 0x26, 0xBF, 0xED, 0x65,
+                    0x39, 0x1D, 0x5D, 0x66, 0x87, 0xF5, 0x79, 0xF2,
+                    0xFB, 0x4C, 0x45, 0x16, 0xA3, 0xD5, 0xE4, 0x70,
+                    0x29, 0x94, 0x3E, 0xAF, 0x4E, 0xE3, 0x13, 0xAB,
+                    0xAC, 0x36, 0xA1, 0x45, 0xE2, 0xD3, 0x5A, 0x94,
+                    0x52, 0x91, 0x45, 0x66, 0x50, 0x9B, 0x25, 0x3E,
+                    0x8F, 0xB0, 0x98, 0x6C, 0x46, 0xAB, 0xD9, 0x6E,
+                    0xB8, 0x5C, 0x08, 0x38, 0x22, 0x95, 0xBC, 0x26,
+                    0x15, 0x1D, 0x5D, 0x8E, 0xD7, 0xD3, 0xE3, 0xB5,
+                    0x58, 0xFE, 0xBE, 0xBB, 0xCD, 0x6F, 0xBC, 0xBA,
+                    0xDE, 0x86, 0x97, 0xC9, 0x6F, 0x7B, 0x59, 0x4E,
+                    0x47, 0x97, 0xD9, 0x61, 0x7D, 0x9E, 0xFC, 0x3E,
+                    0x53, 0x91, 0xC5, 0x68, 0x35, 0x39, 0x5C, 0x0A,
+                    0xA5, 0xCF, 0xAB, 0xD3, 0xF8, 0xC4, 0x2A, 0xAB,
+                    0x4D, 0x68, 0x91, 0xF8, 0xB4, 0x16, 0xA5, 0x54,
+                    0x64, 0x91, 0x19, 0xD4, 0x66, 0x89, 0xCF, 0x23,
+                    0x2C, 0x26, 0x9B, 0xD1, 0x6A, 0xB6, 0x1B, 0x2E,
+                    0x17, 0x02, 0x8E, 0x48, 0x25, 0xAF, 0x49, 0x45,
+                    0x47, 0x97, 0xE3, 0xF5, 0xF4, 0x78, 0x2D, 0x96,
+                    0xBF, 0xEF, 0x6E, 0xF3, 0x1B, 0xAF, 0xAE, 0xB7,
+                    0xE1, 0x65, 0xF2, 0xDB, 0x5E, 0x96, 0xD3, 0xD1,
+                    0x65, 0x76, 0x58, 0x9F, 0x27, 0xBF, 0xCF, 0x54,
+                    0x64, 0x31, 0x5A, 0x4D, 0x0E, 0x97, 0x42, 0xE9,
+                    0xF3, 0xEA, 0x34, 0x3E, 0xB1, 0xCA, 0x6A, 0x13,
+                    0x5A, 0x24, 0x3E, 0xAD, 0x45, 0x29, 0x15, 0x59,
+                    0x64, 0x06, 0xB5, 0x59, 0xE2, 0xF3, 0x08, 0x8B,
+                    0xC9, 0x66, 0xB4, 0x9A, 0xED, 0x86, 0xCB, 0x85,
+                    0x80, 0x23, 0x52, 0xC9, 0x6B, 0x52, 0x01
+                };
+
+                this.VerifyReader(stringPayload, expectedTokens);
+                this.VerifyReader(compressedBinaryPayload, expectedTokens);
+            }
         }
         #endregion
         #region Arrays

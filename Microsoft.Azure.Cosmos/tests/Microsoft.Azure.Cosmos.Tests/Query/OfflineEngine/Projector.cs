@@ -35,28 +35,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 CosmosElement value = sqlSelectItem.Expression.Accept(ScalarExpressionEvaluator.Singleton, document);
                 if (value != null)
                 {
-                    string key = default;
+                    string key;
                     if (sqlSelectItem.Alias != null)
                     {
                         key = sqlSelectItem.Alias.Value;
                     }
-                    else
+                    else if (
+                        sqlSelectItem.Expression is SqlMemberIndexerScalarExpression memberIndexer
+                        && Projector.GetLastMemberIndexerToken(memberIndexer) is SqlLiteralScalarExpression literalScalarExpression
+                        && literalScalarExpression.Literal is SqlStringLiteral stringLiteral)
                     {
-                        if (sqlSelectItem.Expression is SqlMemberIndexerScalarExpression memberIndexer)
-                        {
-                            SqlScalarExpression lastToken = this.GetLastMemberIndexerToken(memberIndexer);
-
-                            if (lastToken is SqlLiteralScalarExpression literalScalarExpression)
-                            {
-                                if (literalScalarExpression.Literal is SqlStringLiteral stringLiteral)
-                                {
-                                    key = stringLiteral.Value;
-                                }
-                            }
-                        }
+                        key = stringLiteral.Value;
                     }
-
-                    if (key == default)
+                    else if (sqlSelectItem.Expression is SqlPropertyRefScalarExpression propertyRef)
+                    {
+                        key = propertyRef.Identifier.Value;
+                    }
+                    else
                     {
                         key = $"${aliasCounter++}";
                     }
@@ -107,19 +102,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return selectSpec.Expression.Accept(ScalarExpressionEvaluator.Singleton, document);
         }
 
-        private SqlScalarExpression GetLastMemberIndexerToken(SqlMemberIndexerScalarExpression memberIndexer)
+        private static SqlScalarExpression GetLastMemberIndexerToken(SqlMemberIndexerScalarExpression memberIndexer)
         {
-            SqlScalarExpression last;
-            if (!(memberIndexer.Indexer is SqlMemberIndexerScalarExpression memberIndexerExpression))
+            if (memberIndexer.Indexer is SqlMemberIndexerScalarExpression memberIndexerExpression)
             {
-                last = memberIndexer.Indexer;
-            }
-            else
-            {
-                last = this.GetLastMemberIndexerToken(memberIndexerExpression);
+                return Projector.GetLastMemberIndexerToken(memberIndexerExpression);
             }
 
-            return last;
+            return memberIndexer.Indexer;
         }
     }
 }

@@ -5,12 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
 
@@ -210,6 +209,47 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
+            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
+
+            this.ClientContext = ClientContextCore.Create(
+                this,
+                clientOptions);
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
+        /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
+        /// <param name="clientOptions">(Optional) client options</param>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClient(
+            string accountEndpoint,
+            TokenCredential tokenCredential,
+            CosmosClientOptions clientOptions = null)
+        {
+            if (accountEndpoint == null)
+            {
+                throw new ArgumentNullException(nameof(accountEndpoint));
+            }
+
+            if (tokenCredential == null)
+            {
+                throw new ArgumentNullException(nameof(tokenCredential));
+            }
+
+            this.Endpoint = new Uri(accountEndpoint);
+            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(tokenCredential,
+                accountEndpoint,
+                clientOptions?.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
                 this,
@@ -219,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used for unit testing only.
         /// </summary>
-        /// <remarks>This constructor should be removed at some point. The mocking should happen in a derivied class.</remarks>
+        /// <remarks>This constructor should be removed at some point. The mocking should happen in a derived class.</remarks>
         internal CosmosClient(
             string accountEndpoint,
             string authKeyOrResourceToken,
@@ -248,6 +288,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = authKeyOrResourceToken;
+            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
 
             this.ClientContext = ClientContextCore.Create(
                  this,
@@ -291,6 +332,11 @@ namespace Microsoft.Azure.Cosmos
         /// The AuthKey used by the client.
         /// </value>
         internal string AccountKey { get; }
+
+        /// <summary>
+        /// Gets the AuthorizationTokenProvider used to generate the authorization token
+        /// </summary>
+        internal AuthorizationTokenProvider AuthorizationTokenProvider { get; }
 
         internal DocumentClient DocumentClient => this.ClientContext.DocumentClient;
         internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;
@@ -380,7 +426,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -392,16 +438,16 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 (diagnostics) =>
                 {
-                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
+                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                    ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
-                return this.CreateDatabaseInternalAsync(
-                    databaseProperties: databaseProperties,
-                    throughputProperties: throughputProperties,
-                    requestOptions: requestOptions,
-                    diagnosticsContext: diagnostics,
-                    cancellationToken: cancellationToken);
-            });
+                    return this.CreateDatabaseInternalAsync(
+                        databaseProperties: databaseProperties,
+                        throughputProperties: throughputProperties,
+                        requestOptions: requestOptions,
+                        diagnosticsContext: diagnostics,
+                        cancellationToken: cancellationToken);
+                });
         }
 
         /// <summary>
@@ -426,7 +472,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -484,14 +530,11 @@ namespace Microsoft.Azure.Cosmos
             string id,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            return this.ClientContext.OperationHelperAsync(
+            return string.IsNullOrEmpty(id)
+                ? throw new ArgumentNullException(nameof(id))
+                : this.ClientContext.OperationHelperAsync(
                 nameof(CreateDatabaseIfNotExistsAsync),
                 requestOptions,
                 async (diagnostics) =>
@@ -570,7 +613,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
 
@@ -810,7 +853,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {
@@ -879,7 +922,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties,
                 ThroughputProperties throughputProperties,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken))
+                CancellationToken cancellationToken = default)
         {
             if (databaseProperties == null)
             {

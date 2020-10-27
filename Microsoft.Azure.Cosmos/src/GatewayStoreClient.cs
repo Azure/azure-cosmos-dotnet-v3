@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default(CancellationToken)))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
             }
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> requestMessage,
             ResourceType resourceType,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(
                 createRequestMessageAsync: requestMessage,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)
         {
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreResponseNameValueCollection();
 
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Headers)
             {

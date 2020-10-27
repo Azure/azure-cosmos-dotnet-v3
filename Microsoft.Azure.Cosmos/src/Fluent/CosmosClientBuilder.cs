@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
-        
+
         /// <summary>
         /// Set the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>
@@ -318,7 +318,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
-        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null,
+        public CosmosClientBuilder WithConnectionModeGateway(
+            int? maxConnectionLimit = null,
             IWebProxy webProxy = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
