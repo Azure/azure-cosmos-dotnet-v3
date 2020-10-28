@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
-            this.MaxRequestsPerTcpConnection = 12;
+            this.MaxRequestsPerTcpConnection = 50;
             this.PortReuseMode = Cosmos.PortReuseMode.PrivatePortPool;
         }
 
