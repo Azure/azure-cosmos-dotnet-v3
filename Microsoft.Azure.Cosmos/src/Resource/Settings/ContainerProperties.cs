@@ -104,18 +104,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
 
-            Collection<string> paths = new Collection<string>();
-            foreach (string path in partitionKeyPaths)
-            {
-                paths.Add(path);
-            }
-
-            this.PartitionKey = new PartitionKeyDefinition
-            {
-                Paths = paths,
-                Kind = Documents.PartitionKind.MultiHash,
-                Version = Documents.PartitionKeyDefinitionVersion.V2
-            };
+            this.PartitionKeyPaths = partitionKeyPaths;
 
             this.ValidateRequiredProperties();
         }
@@ -333,15 +322,22 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(this.PartitionKeyPath));
+                    throw new ArgumentNullException(nameof(this.PartitionKeyPaths));
+                }
+
+                Collection<string> paths = new Collection<string>();
+                foreach (string path in value)
+                {
+                    paths.Add(path);
                 }
 
                 this.PartitionKey = new PartitionKeyDefinition
                 {
-                    Paths = (Collection<string>)value,
+                    Paths = paths,
                     Kind = Documents.PartitionKind.MultiHash,
                     Version = Documents.PartitionKeyDefinitionVersion.V2
                 };
+
             }
         }
 
@@ -587,10 +583,17 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }
 
-                if (this.PartitionKeyPath == null)
+                if (this.PartitionKey.Kind != Documents.PartitionKind.MultiHash && this.PartitionKeyPath == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
+
+#if INTERNAL || SUBPARTITIONING
+                if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
+                {
+                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
+                }
+#endif
 
                 List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)
