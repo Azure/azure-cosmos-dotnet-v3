@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 expression,
                 this.allowSynchronousQueryExecution,
                 this.serializationOptions);
-            return TaskHelper.RunInlineIfNeededAsync(() => cosmosLINQQuery.AggregateResultAsync());
+            return TaskHelper.RunInlineIfNeededAsync(() => cosmosLINQQuery.AggregateResultAsync(cancellationToken));
         }
     }
 }
