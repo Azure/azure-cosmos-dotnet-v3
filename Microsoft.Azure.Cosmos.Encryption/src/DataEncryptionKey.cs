@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (!CosmosEncryptionAlgorithm.VerifyIfSupportedAlgorithm(encryptionAlgorithm))
             {
-                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}.Supported Algorithms include '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}','{CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized}' algorithms", nameof(encryptionAlgorithm));
+                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}.Supported Algorithms include '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}','{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithms", nameof(encryptionAlgorithm));
             }
 
             byte[] rawKey = new byte[32];

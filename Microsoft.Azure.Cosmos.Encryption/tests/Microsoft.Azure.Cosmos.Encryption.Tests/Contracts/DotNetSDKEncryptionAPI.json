@@ -129,10 +129,10 @@
           "Attributes": [],
           "MethodInfo": "System.String AEAes256CbcHmacSha256Randomized;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String MdeAEAes256CbcHmacSha256Randomized": {
+        "System.String MdeAeadAes256CbcHmac256Randomized": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "System.String MdeAEAes256CbcHmacSha256Randomized;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "System.String MdeAeadAes256CbcHmac256Randomized;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             switch (encryptionOptions.EncryptionAlgorithm)
             {
-                case CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized:
+                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
 
                     foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
                     {
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             switch (encryptionProperties.EncryptionAlgorithm)
             {
-                case CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized:
+                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
                     decryptionContext = await EncryptionProcessor.DecryptObjectAsync(
                         itemJObj,
                         encryptor,
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             switch (encryptionProperties.EncryptionAlgorithm)
             {
-                case CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized:
+                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
                     decryptionContext = await EncryptionProcessor.DecryptObjectAsync(
                         document,
                         encryptor,

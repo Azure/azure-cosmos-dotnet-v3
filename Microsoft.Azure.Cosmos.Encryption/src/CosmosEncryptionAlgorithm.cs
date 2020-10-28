@@ -17,19 +17,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string AEAes256CbcHmacSha256Randomized = "AEAes256CbcHmacSha256Randomized";
 
         /// <summary>
-        /// MDE Randomized Encryption Algorithm
+        /// MDE Randomized Encryption Algorithm. As described <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see>. More specifically this implements
+        /// AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
         /// </summary>
-        public const string MdeAEAes256CbcHmacSha256Randomized = "MdeAEAes256CbcHmacSha256Randomized";
+        public const string MdeAeadAes256CbcHmac256Randomized = "MdeAeadAes256CbcHmac256Randomized";
 
         /// <summary>
-        /// Verify If the Encryption Algorithm is supported by Cosmos.
+        /// Verify if the Encryption Algorithm is supported by Cosmos.
         /// </summary>
         /// <param name="encryptionAlgorithm"> Encryption Algorithm. </param>
         /// <returns> Returns True if the Algorithm is supported. </returns>
         internal static bool VerifyIfSupportedAlgorithm(string encryptionAlgorithm)
         {
             if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                 !string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized))
+                 !string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
             {
                 return false;
             }

@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.AreEqual("Failed to unwrap Data Encryption Key with id: 'mydek'.", ex.Message);
-                Assert.AreEqual("Unsupported Encryption Algorithm MdeAEAes256CbcHmacSha256Randomized for the initialized WrapProvider Service.", ex.InnerException.Message);
+                Assert.AreEqual("Unsupported Encryption Algorithm MdeAeadAes256CbcHmac256Randomized for the initialized WrapProvider Service.", ex.InnerException.Message);
             }
         }
 
@@ -1514,7 +1514,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             return new EncryptionOptions()
             {
                 DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = pathsToEncrypt
             };
         }
@@ -1613,7 +1613,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
-                algorithm ?? CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized,
+                algorithm ?? CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 MdeEncryptionTests.metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);

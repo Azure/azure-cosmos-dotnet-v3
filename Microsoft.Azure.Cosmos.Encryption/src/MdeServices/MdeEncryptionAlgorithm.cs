@@ -12,18 +12,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey
     {
-        private readonly EncryptionAlgorithm mdeEncryptionAlgorithm;
+        private readonly AeadAes256CbcHmac256EncryptionAlgorithm mdeAeadAes256CbcHmac256EncryptionAlgorithm;
 
         // unused for MDE Algorithm.
         public override byte[] RawKey => null;
 
-        public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized;
+        public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
 
         /// <summary>
         /// Initializes a new instance of MdeEncryptionAlgorithm.
+        /// Uses <see cref="AeadAes256CbcHmac256EncryptionAlgorithm"/> which implements authenticated encryption algorithm with associated data as described
+        /// <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see> .
+        /// More specifically this implements AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
         /// </summary>
         /// <param name="dekProperties"> Data Encryption Key properties</param>
-        /// <param name="rawDek"> Raw bytes of Data Encryption Key </param>
         /// <param name="encryptionType"> Encryption type </param>
         /// <param name="encryptionKeyStoreProvider"> EncryptionKeyStoreProvider for wrapping and unwrapping </param>
         public MdeEncryptionAlgorithm(
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                        dekProperties.WrappedDataEncryptionKey);
             }
 
-            this.mdeEncryptionAlgorithm = Data.Encryption.Cryptography.EncryptionAlgorithm.GetOrCreate(
+            this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                 protectedDataEncryptionKey,
                 encryptionType);
         }
@@ -90,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override byte[] EncryptData(byte[] plainText)
         {
-            return this.mdeEncryptionAlgorithm.Encrypt(plainText);
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText);
         }
 
         /// <summary>
@@ -100,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Returns the plaintext corresponding to the cipherText.</returns>
         public override byte[] DecryptData(byte[] cipherText)
         {
-            return this.mdeEncryptionAlgorithm.Decrypt(cipherText);
+            return this.mdeAeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
         }
     }
 }

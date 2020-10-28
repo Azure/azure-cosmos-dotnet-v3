@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             MdeEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
             {
                 DataEncryptionKeyId = MdeEncryptionProcessorTests.dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt
             };
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new EncryptionOptions()
             {
                 DataEncryptionKeyId = MdeEncryptionProcessorTests.dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
             };
 

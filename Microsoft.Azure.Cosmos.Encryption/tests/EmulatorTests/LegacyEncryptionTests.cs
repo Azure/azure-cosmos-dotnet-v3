@@ -106,12 +106,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             string dekId = "mdeDek";
             try
             {
-                await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256Randomized);
+                await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
                 Assert.Fail();
             }
             catch (InvalidOperationException ex)
             {
-                Assert.AreEqual("For use of 'MdeAEAes256CbcHmacSha256Randomized' algorithm, DekProvider needs to be initialized with MdeKeyWrapProvider.", ex.Message);
+                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, DekProvider needs to be initialized with MdeKeyWrapProvider.", ex.Message);
             }
         }
 
