@@ -89,14 +89,14 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>d__22))]": {
+        "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__23))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -430,14 +430,14 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.EncryptionKeyWrapProvider get_EncryptionKeyWrapProvider();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>d__22))]": {
+            "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<InitializeAsync>))]": {
               "Type": "Method",
               "Attributes": [
                 "AsyncStateMachineAttribute"
               ],
               "MethodInfo": "System.Threading.Tasks.Task InitializeAsync(Microsoft.Azure.Cosmos.Database, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>d__23))]": {
+            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyAsync>))]": {
               "Type": "Method",
               "Attributes": [
                 "AsyncStateMachineAttribute"
