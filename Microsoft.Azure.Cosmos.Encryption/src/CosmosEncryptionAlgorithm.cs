@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public const string AEAes256CbcHmacSha256Randomized = "AEAes256CbcHmacSha256Randomized";
 
         /// <summary>
-        /// MDE Randomized Encryption Algorithm. As described <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see>. More specifically this implements
-        /// AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
+        /// MDE(Microsoft.Data.Encryption) Randomized AEAD_AES_256_CBC_HMAC_SHA256 Algorithm.
+        /// As described <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see>.
         /// </summary>
         public const string MdeAeadAes256CbcHmac256Randomized = "MdeAeadAes256CbcHmac256Randomized";
 
