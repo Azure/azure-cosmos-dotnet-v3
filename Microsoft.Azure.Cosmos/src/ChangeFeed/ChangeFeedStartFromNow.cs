@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Derived instance of <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.
@@ -34,6 +36,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal override TResult Accept<TResult>(ChangeFeedStartFromVisitor<TResult> visitor)
         {
             return visitor.Visit(this);
+        }
+
+        internal override Task<TOutput> AcceptAsync<TInput, TOutput>(
+            ChangeFeedStartFromAsyncVisitor<TInput, TOutput> visitor,
+            TInput input,
+            CancellationToken cancellationToken)
+        {
+            return visitor.VisitAsync(this, input, cancellationToken);
         }
     }
 }

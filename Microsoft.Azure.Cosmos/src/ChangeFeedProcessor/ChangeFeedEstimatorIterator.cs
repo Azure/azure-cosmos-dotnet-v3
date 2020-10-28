@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     response.EnsureSuccessStatusCode();
                 }
 
-                long parsedLSNFromSessionToken = ChangeFeedEstimatorIterator.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                long parsedLSNFromSessionToken = ChangeFeedEstimatorIterator.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers.Session));
                 IEnumerable<JObject> items = ChangeFeedEstimatorIterator.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Any()
                     ? ChangeFeedEstimatorIterator.TryConvertToNumber(ChangeFeedEstimatorIterator.GetFirstItemLSN(items)) - 1
