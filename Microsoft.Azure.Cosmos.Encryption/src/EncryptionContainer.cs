@@ -800,75 +800,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
 
-        public override FeedIterator GetChangeFeedStreamIterator(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    continuationToken,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                this.CosmosSerializer);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    feedRange,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                this.CosmosSerializer);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
-                    partitionKey,
-                    changeFeedRequestOptions),
-                this.Encryptor,
-                this.CosmosSerializer);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            string continuationToken = null,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    continuationToken,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            FeedRange feedRange,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    feedRange,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            PartitionKey partitionKey,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
-                    partitionKey,
-                    changeFeedRequestOptions),
-                this.ResponseFactory);
-        }
-
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
@@ -904,6 +835,36 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     queryDefinition,
                     continuationToken,
                     requestOptions),
+                this.ResponseFactory);
+        }
+
+        public override ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer)
+        {
+            return this.container.GetChangeFeedEstimator(processorName, leaseContainer);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return new EncryptionFeedIterator(
+                this.container.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom,
+                    changeFeedRequestOptions),
+                this.Encryptor,
+                this.CosmosSerializer);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
+                    changeFeedStartFrom,
+                    changeFeedRequestOptions),
                 this.ResponseFactory);
         }
     }
