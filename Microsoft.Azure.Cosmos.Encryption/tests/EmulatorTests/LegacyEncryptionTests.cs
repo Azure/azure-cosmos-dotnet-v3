@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -704,18 +705,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = LegacyEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
-                continuationToken: null,
-                new ChangeFeedRequestOptions()
-                {
-                    StartTime = DateTime.MinValue.ToUniversalTime()
-                });
+                ChangeFeedStartFrom.Beginning());
 
             while (changeIterator.HasMoreResults)
             {
-                readDocsLazily = await changeIterator.ReadNextAsync();
-                if (readDocsLazily.Resource != null)
+                try
                 {
-                    await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                    readDocsLazily = await changeIterator.ReadNextAsync();
+                    if (readDocsLazily.Resource != null)
+                    {
+                        await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                    }
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
+                    break;
                 }
             }
 
@@ -1009,7 +1014,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionTransactionBatchCrud()
+        public async Task EncryptionTransactionalBatchCrud()
         {
             string partitionKey = "thePK";
             string dek1 = LegacyEncryptionTests.dekId;
@@ -1054,6 +1059,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
 
+            TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
+            Assert.AreEqual(doc1ToCreate, doc1.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
+            Assert.AreEqual(doc2ToCreate, doc2.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc3 = batchResponse.GetOperationResultAtIndex<TestDoc>(2);
+            Assert.AreEqual(doc1ToReplace, doc3.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc4 = batchResponse.GetOperationResultAtIndex<TestDoc>(3);
+            Assert.AreEqual(doc3ToCreate, doc4.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc5 = batchResponse.GetOperationResultAtIndex<TestDoc>(4);
+            Assert.AreEqual(doc4ToCreate, doc5.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc6 = batchResponse.GetOperationResultAtIndex<TestDoc>(5);
+            Assert.AreEqual(doc2ToReplace, doc6.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc7 = batchResponse.GetOperationResultAtIndex<TestDoc>(6);
+            Assert.AreEqual(doc1ToUpsert, doc7.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc>(8);
+            Assert.AreEqual(doc2ToUpsert, doc8.Resource);
+
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc1ToCreate);
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc2ToCreate, dekId: dek2);
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc3ToCreate, isDocDecrypted: false);
@@ -1088,6 +1117,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             doc2ToUpsert.Sensitive = null;
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc2ToUpsert);
+        }
+
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchWithCustomSerializer()
+        {
+            CustomSerializer customSerializer = new CustomSerializer();
+            CosmosClient clientWithCustomSerializer = TestCommon.CreateCosmosClient(builder => builder
+                .WithCustomSerializer(customSerializer)
+                .Build());
+
+            Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(EncryptionTests.database.Id);
+            Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(EncryptionTests.itemContainer.Id);
+            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(EncryptionTests.encryptor);
+
+            string partitionKey = "thePK";
+            string dek1 = EncryptionTests.dekId;
+
+            TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
+
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await EncryptionTests.CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
+            doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToReplace.Sensitive = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await encryptionContainerWithCustomSerializer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreate, EncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, EncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+            // FromStream is called as part of CreateItem request
+            Assert.AreEqual(1, customSerializer.FromStreamCalled);
+
+            TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
+            Assert.AreEqual(doc1ToCreate, doc1.Resource);
+            Assert.AreEqual(2, customSerializer.FromStreamCalled);
+
+            TransactionalBatchOperationResult<TestDoc> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
+            Assert.AreEqual(doc1ToReplace, doc2.Resource);
+            Assert.AreEqual(3, customSerializer.FromStreamCalled);
+
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
+            await EncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
+
+            // Validate that the documents are encrypted as expected by trying to retrieve through regular (non-encryption) container
+            doc1ToCreate.Sensitive = null;
+            await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc1ToCreate);
+
+            doc1ToReplace.Sensitive = null;
+            await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc1ToReplace);
         }
 
         private static async Task ValidateSprocResultsAsync(Container container, TestDoc expectedDoc)
@@ -1259,22 +1338,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                continuationToken: null,
-                new ChangeFeedRequestOptions()
-                {
-                    StartTime = DateTime.MinValue.ToUniversalTime()
-                });
+                ChangeFeedStartFrom.Beginning());
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
             {
-                FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                for (int index = 0; index < testDocs.Count; index++)
+                try
                 {
-                    if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
+                    FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                    for (int index = 0; index < testDocs.Count; index++)
                     {
-                        changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
+                        if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
+                        {
+                            changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
+                        }
                     }
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
+                    break;
                 }
             }
 
@@ -1815,6 +1898,41 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 return await Task.FromResult(new DefaultAzureCredential());
             }        
+        }
+
+        internal class CustomSerializer : CosmosSerializer
+        {
+            private readonly JsonSerializer serializer = new JsonSerializer();
+            public int FromStreamCalled = 0;
+
+            public override T FromStream<T>(Stream stream)
+            {
+                this.FromStreamCalled++;
+                using (StreamReader sr = new StreamReader(stream))
+                using (JsonReader reader = new JsonTextReader(sr))
+                {
+                    JsonSerializer serializer = new JsonSerializer();
+                    return this.serializer.Deserialize<T>(reader);
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream streamPayload = new MemoryStream();
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: UTF8Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
+                {
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        this.serializer.Serialize(writer, input);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
+                }
+
+                streamPayload.Position = 0;
+                return streamPayload;
+            }
         }
     }
 }
