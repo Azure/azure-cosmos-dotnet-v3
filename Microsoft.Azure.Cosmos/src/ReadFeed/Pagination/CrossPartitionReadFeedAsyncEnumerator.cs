@@ -6,14 +6,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
-    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
 
@@ -103,6 +100,22 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 return TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromException(monadicCrossPartitionState.Exception);
             }
 
+            RntbdConstants.RntdbEnumerationDirection rntdbEnumerationDirection = RntbdConstants.RntdbEnumerationDirection.Forward;
+            if ((queryRequestOptions?.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
+            {
+                rntdbEnumerationDirection = (byte)direction == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? RntbdConstants.RntdbEnumerationDirection.Reverse : RntbdConstants.RntdbEnumerationDirection.Forward;
+            }
+
+            IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>> comparer;
+            if (rntdbEnumerationDirection == RntbdConstants.RntdbEnumerationDirection.Forward)
+            {
+                comparer = PartitionRangePageAsyncEnumeratorComparerForward.Singleton;
+            }
+            else
+            {
+                comparer = PartitionRangePageAsyncEnumeratorComparerReverse.Singleton;
+            }
+
             CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                 documentContainer,
                 CrossPartitionReadFeedAsyncEnumerator.MakeCreateFunction(
@@ -110,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                     queryRequestOptions,
                     pageSize,
                     cancellationToken),
-                comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
+                comparer: comparer,
                 maxConcurrency: default,
                 cancellationToken,
                 monadicCrossPartitionState.Result);
@@ -179,9 +192,9 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 cancellationToken,
                 state);
 
-        private sealed class PartitionRangePageAsyncEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>>
+        private sealed class PartitionRangePageAsyncEnumeratorComparerForward : IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>>
         {
-            public static readonly PartitionRangePageAsyncEnumeratorComparer Singleton = new PartitionRangePageAsyncEnumeratorComparer();
+            public static readonly PartitionRangePageAsyncEnumeratorComparerForward Singleton = new PartitionRangePageAsyncEnumeratorComparerForward();
 
             public int Compare(
                 PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> partitionRangePageEnumerator1,
@@ -196,6 +209,20 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 return string.CompareOrdinal(
                     ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,
                     ((FeedRangeEpk)partitionRangePageEnumerator2.Range).Range.Min);
+            }
+        }
+
+        private sealed class PartitionRangePageAsyncEnumeratorComparerReverse : IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>>
+        {
+            public static readonly PartitionRangePageAsyncEnumeratorComparerReverse Singleton = new PartitionRangePageAsyncEnumeratorComparerReverse();
+
+            public int Compare(
+                PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> partitionRangePageEnumerator1,
+                PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> partitionRangePageEnumerator2)
+            {
+                return -1 * PartitionRangePageAsyncEnumeratorComparerForward.Singleton.Compare(
+                    partitionRangePageEnumerator1,
+                    partitionRangePageEnumerator2);
             }
         }
     }
