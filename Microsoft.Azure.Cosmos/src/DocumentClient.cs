@@ -6616,7 +6616,7 @@ namespace Microsoft.Azure.Cosmos
                 this.initializeTask.IsCompleted,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
 
             if (this.UseMultipleWriteLocations)
             {

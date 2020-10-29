@@ -14,20 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
         Task<QueryPage> QueryAsync(
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            Cosmos.PartitionKey partitionKey,
-            int pageSize,
-            CancellationToken cancellationToken);
-
-        Task<QueryPage> QueryAsync(
-            SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            int partitionKeyRangeId,
-            int pageSize,
-            CancellationToken cancellationToken);
-
-        Task<QueryPage> QueryAsync(
-            SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
             CancellationToken cancellationToken);

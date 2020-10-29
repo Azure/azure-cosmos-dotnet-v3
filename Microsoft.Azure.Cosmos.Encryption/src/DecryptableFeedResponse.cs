@@ -49,11 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             using (responseMessage)
             {
-                // ReadFeed can return 304 in some scenarios (for example Change Feed)
-                if (responseMessage.StatusCode != HttpStatusCode.NotModified)
-                {
-                    responseMessage.EnsureSuccessStatusCode();
-                }
+                responseMessage.EnsureSuccessStatusCode();
 
                 return new DecryptableFeedResponse<T>(
                     responseMessage,

@@ -5,12 +5,13 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
@@ -25,30 +26,30 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerInternal container;
-        private ChangeFeedStartFrom changeFeedStartFrom;
         private string containerRid;
+        private string continuationToken;
+        private int? maxItemCount;
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,
-            ContainerCore container,
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions options)
+            ContainerInternal container,
+            string continuationToken,
+            int? maxItemCount,
+            StandByFeedIteratorRequestOptions options)
         {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
+            if (container == null) throw new ArgumentNullException(nameof(container));
 
             this.clientContext = clientContext;
             this.container = container;
-            this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.changeFeedOptions = options;
+            this.maxItemCount = maxItemCount;
+            this.continuationToken = continuationToken;
         }
 
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly ChangeFeedRequestOptions changeFeedOptions;
+        protected readonly StandByFeedIteratorRequestOptions changeFeedOptions;
 
         public override bool HasMoreResults => true;
 
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             string firstNotModifiedKeyRangeId = null;
             string currentKeyRangeId;
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return response;
         }
 
-        internal async Task<(string, ResponseMessage)> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             bool forceRefresh = false;
         retry:
@@ -99,46 +100,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.container.GetRIDAsync(cancellationToken);
-
-                if (this.changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
-                {
-                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
-                        this.containerRid,
-                        startFromContinuation.Continuation,
-                        pkRangeCache.TryGetOverlappingRangesAsync);
-                    (CompositeContinuationToken token, string id) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-
-                    if (token.Token != null)
-                    {
-                        this.changeFeedStartFrom = ChangeFeedStartFrom.ContinuationToken(token.Token);
-                    }
-                    else
-                    {
-                        this.changeFeedStartFrom = ChangeFeedStartFrom.Beginning();
-                    }
-                }
-                else
-                {
-                    this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
-                        this.containerRid,
-                        initialStandByFeedContinuationToken: null,
-                        pkRangeCache.TryGetOverlappingRangesAsync);
-                }
+                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
-            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync(forceRefresh);
-            FeedRange feedRange = new FeedRangePartitionKeyRange(rangeId);
-            if (currentRangeToken.Token != null)
-            {
-                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(currentRangeToken.Token, (FeedRangeInternal)feedRange);
-            }
-            else
-            {
-                this.changeFeedStartFrom = ChangeFeedStartFrom.Beginning(feedRange);
-            }
-
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.changeFeedOptions, cancellationToken);
-            if (ShouldRetryFailure(response))
+            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+            string partitionKeyRangeId = rangeId;
+            this.continuationToken = currentRangeToken.Token;
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 // Forcing stale refresh of Partition Key Ranges Cache
                 forceRefresh = true;
@@ -152,20 +121,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 currentRangeToken.Token = response.Headers.ETag;
             }
 
-            return (rangeId, response);
+            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
         }
 
         /// <summary>
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
-        private static bool ShouldRetryFailure(ResponseMessage response)
+        internal async Task<bool> ShouldRetryFailureAsync(
+            ResponseMessage response,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return response.StatusCode == HttpStatusCode.Gone
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
         }
 
         internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
-            ChangeFeedRequestOptions options,
+            string continuationToken,
+            string partitionKeyRangeId,
+            int? maxItemCount,
+            StandByFeedIteratorRequestOptions options,
             CancellationToken cancellationToken)
         {
             string resourceUri = this.container.LinkUri;
@@ -175,15 +149,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 containerInternal: this.container,
-                requestEnricher: (request) =>
+                requestEnricher: request =>
                 {
-                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-                    this.changeFeedStartFrom.Accept(visitor);
+                    if (!string.IsNullOrWhiteSpace(continuationToken))
+                    {
+                        // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
+                        request.Headers.IfNoneMatch = continuationToken;
+                    }
+
+                    if (maxItemCount.HasValue)
+                    {
+                        request.Headers.PageSize = maxItemCount.Value.ToString(CultureInfo.InvariantCulture);
+                    }
+
+                    if (!string.IsNullOrEmpty(partitionKeyRangeId))
+                    {
+                        request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(partitionKeyRangeId);
+                    }
                 },
                 responseCreator: response => response,
-                partitionKey: default,
-                streamPayload: default,
-                diagnosticsContext: default,
+                partitionKey: null,
+                streamPayload: null,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
         }
 

@@ -9,55 +9,127 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Globalization;
-    using System.Linq;
+    using System.Text;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    /// <summary>
-    /// Internal header class with priority access for known headers and support for dictionary-based access to other headers.
-    /// </summary>
-    internal class CosmosMessageHeadersInternal : INameValueCollection
+    internal abstract class CosmosMessageHeadersInternal : INameValueCollection
     {
-        private static readonly int HeadersDefaultCapacity = 16;
-        private readonly Dictionary<string, string> headers;
-
-        public CosmosMessageHeadersInternal()
-            : this(HeadersDefaultCapacity)
+        public virtual string Authorization
         {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.Authorization);
+            set => this.SetProperty(HttpConstants.HttpHeaders.Authorization, value);
         }
 
-        public CosmosMessageHeadersInternal(int capacity)
+        public virtual string XDate
         {
-            this.headers = new Dictionary<string, string>(
-                capacity,
-                StringComparer.OrdinalIgnoreCase);
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.XDate);
+            set => this.SetProperty(HttpConstants.HttpHeaders.XDate, value);
         }
 
-        public void Add(string headerName, string value)
+        public virtual string RequestCharge
         {
-            this.Set(headerName, value);
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.RequestCharge);
+            set => this.SetProperty(HttpConstants.HttpHeaders.RequestCharge, value);
         }
 
-        public bool TryGetValue(string headerName, out string value)
+        public virtual string ActivityId
         {
-            if (headerName == null)
-            {
-                throw new ArgumentNullException(nameof(headerName));
-            }
-
-            return this.headers.TryGetValue(headerName, out value);
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ActivityId);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ActivityId, value);
         }
 
-        public void Remove(string headerName)
+        public virtual string ETag
         {
-            if (headerName == null)
-            {
-                throw new ArgumentNullException(nameof(headerName));
-            }
-
-            this.headers.Remove(headerName);
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ETag);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ETag, value);
         }
 
-        public string this[string headerName]
+        public virtual string ContentType
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ContentType);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ContentType, value);
+        }
+
+        public virtual string ContentLength
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ContentLength);
+            set => this.SetProperty(HttpConstants.HttpHeaders.ContentLength, value);
+        }
+
+        public virtual string SubStatus
+        {
+            get => this.GetValueOrDefault(WFConstants.BackendHeaders.SubStatus);
+            set => this.SetProperty(WFConstants.BackendHeaders.SubStatus, value);
+        }
+
+        public virtual string RetryAfterInMilliseconds
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.RetryAfterInMilliseconds);
+            set => this.SetProperty(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, value);
+        }
+
+        public virtual string IsUpsert
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.IsUpsert);
+            set => this.SetProperty(HttpConstants.HttpHeaders.IsUpsert, value);
+        }
+
+        public virtual string OfferThroughput
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.OfferThroughput);
+            set => this.SetProperty(HttpConstants.HttpHeaders.OfferThroughput, value);
+        }
+
+        public virtual string QueryMetrics
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.QueryMetrics);
+            set => this.SetProperty(HttpConstants.HttpHeaders.QueryMetrics, value);
+        }
+
+        public virtual string Location
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.Location);
+            set => this.SetProperty(HttpConstants.HttpHeaders.Location, value);
+        }
+
+        public virtual string Continuation
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.Continuation);
+            set => this.SetProperty(HttpConstants.HttpHeaders.Continuation, value);
+        }
+
+        public virtual string SessionToken
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.SessionToken);
+            set => this.SetProperty(HttpConstants.HttpHeaders.SessionToken, value);
+        }
+
+        public virtual string PartitionKey
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.PartitionKey);
+            set => this.SetProperty(HttpConstants.HttpHeaders.PartitionKey, value);
+        }
+
+        public virtual string PartitionKeyRangeId
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.PartitionKeyRangeId);
+            set => this.SetProperty(HttpConstants.HttpHeaders.PartitionKeyRangeId, value);
+        }
+
+        public virtual string IfNoneMatch
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.IfNoneMatch);
+            set => this.SetProperty(HttpConstants.HttpHeaders.IfNoneMatch, value);
+        }
+
+        public virtual string PageSize
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.PageSize);
+            set => this.SetProperty(HttpConstants.HttpHeaders.PageSize, value);
+        }
+
+        public virtual string this[string headerName] 
         {
             get
             {
@@ -68,108 +140,76 @@ namespace Microsoft.Azure.Cosmos
 
                 return value;
             }
+
             set => this.Set(headerName, value);
         }
 
-        public void Set(string key, string value)
-        {
-            if (key == null)
-            {
-                throw new ArgumentNullException($"{nameof(key)}; {nameof(value)}: {value ?? "null"}");
-            }
+        public abstract IEnumerator<string> GetEnumerator();
 
+        public abstract void Add(string headerName, string value);
+
+        public abstract void Set(string headerName, string value);
+
+        public abstract string Get(string headerName);
+
+        public abstract bool TryGetValue(string headerName, out string value);
+
+        public abstract void Remove(string headerName);
+
+        public abstract string[] AllKeys();
+
+        public abstract void Clear();
+
+        public abstract int Count();
+
+        public abstract INameValueCollection Clone();
+
+        public abstract string[] GetValues(string key);
+
+        public abstract IEnumerable<string> Keys();
+
+        public abstract NameValueCollection ToNameValueCollection();
+
+        protected void SetProperty(
+           string headerName,
+           string value)
+        {
             if (value == null)
             {
-                this.headers.Remove(key);
+                this.Remove(headerName);
             }
-
-            this.headers[key] = value;
-        }
-
-        public string Get(string key)
-        {
-            if (key == null)
+            else
             {
-                throw new ArgumentNullException(nameof(key));
+                this.Set(headerName, value);
             }
-
-            return this[key];
         }
 
-        public void Clear()
+        public virtual string GetValueOrDefault(string headerName)
         {
-            this.headers.Clear();
-        }
-
-        public int Count()
-        {
-            return this.headers.Count;
-        }
-
-        public INameValueCollection Clone()
-        {
-            CosmosMessageHeadersInternal headersClone = new CosmosMessageHeadersInternal(this.headers.Count);
-            foreach (KeyValuePair<string, string> header in this.headers)
+            if (this.TryGetValue(headerName, out string value))
             {
-                headersClone.Add(header.Key, header.Value);
+                return value;
             }
 
-            return headersClone;
+            return default;
         }
 
-        public void Add(INameValueCollection collection)
+        public virtual void Add(string headerName, IEnumerable<string> values)
         {
-            foreach (string key in collection.Keys())
+            if (headerName == null)
             {
-                this.Add(key, collection[key]);
+                throw new ArgumentNullException(nameof(headerName));
             }
-        }
 
-        public string[] GetValues(string key)
-        {
-            if (key == null)
+            if (values == null)
             {
-                throw new ArgumentNullException(nameof(key));
+                throw new ArgumentNullException(nameof(values));
             }
 
-            string value = this[key];
-            if (value == null)
-            {
-                return null;
-            }
-
-            return new string[1] { this[key] };
+            this.Add(headerName, string.Join(",", values));
         }
 
-        public string[] AllKeys()
-        {
-            return this.headers.Keys.ToArray();
-        }
-
-        public IEnumerable<string> Keys()
-        {
-            foreach (string key in this.headers.Keys)
-            {
-                yield return key;
-            }
-        }
-
-        public NameValueCollection ToNameValueCollection()
-        {
-            throw new NotImplementedException(nameof(this.ToNameValueCollection));
-        }
-
-        public IEnumerator<string> GetEnumerator()
-        {
-            return this.headers.Select(x => x.Key).GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
-
-        public T GetHeaderValue<T>(string key)
+        public virtual T GetHeaderValue<T>(string key)
         {
             string value = this[key];
 
@@ -184,6 +224,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return (T)(object)value;
+        }
+
+        public virtual void Add(INameValueCollection collection)
+        {
+            foreach (string key in collection.Keys())
+            {
+                this.Set(key, collection[key]);
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
     }
 }

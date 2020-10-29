@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -186,7 +187,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
                                     inputParameters,
-                                    targetRanges);
+                                    targetRanges,
+                                    cancellationToken);
                             }
                         }
                     }
@@ -276,7 +278,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                     documentContainer,
                     inputParameters,
-                    targetRanges);
+                    targetRanges,
+                    cancellationToken);
             }
             else
             {
@@ -325,16 +328,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
-            List<Documents.PartitionKeyRange> targetRanges)
+            List<Documents.PartitionKeyRange> targetRanges,
+            CancellationToken cancellationToken)
         {
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
             return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: targetRanges,
+                targetRanges: targetRanges
+                    .Select(range => new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: range.MinInclusive, 
+                            max: range.MaxExclusive, 
+                            isMinInclusive: true, 
+                            isMaxInclusive: false)))
+                    .ToList(),
                 pageSize: inputParameters.MaxItemCount,
+                partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
-                cancellationToken: default,
+                cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -377,7 +389,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 executionEnvironment: inputParameters.ExecutionEnvironment,
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: targetRanges,
+                targetRanges: targetRanges
+                    .Select(range => new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: range.MinInclusive,
+                            max: range.MaxExclusive,
+                            isMinInclusive: true,
+                            isMaxInclusive: false)))
+                    .ToList(),
+                partitionKey: inputParameters.PartitionKey,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
                 pageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,

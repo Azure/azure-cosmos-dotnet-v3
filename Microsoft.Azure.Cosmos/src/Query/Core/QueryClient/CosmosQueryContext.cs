@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         internal abstract Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
+            QueryRequestOptions queryRequestOptions,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,

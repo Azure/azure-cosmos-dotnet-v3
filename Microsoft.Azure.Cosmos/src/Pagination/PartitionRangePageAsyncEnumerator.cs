@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private CancellationToken cancellationToken;
 
-        protected PartitionRangePageAsyncEnumerator(PartitionKeyRange range, CancellationToken cancellationToken, TState state = default)
+        protected PartitionRangePageAsyncEnumerator(FeedRangeInternal range, CancellationToken cancellationToken, TState state = default)
         {
-            this.Range = range;
+            this.Range = range ?? throw new ArgumentNullException(nameof(range));
             this.State = state;
             this.cancellationToken = cancellationToken;
         }
 
-        public PartitionKeyRange Range { get; }
+        public FeedRangeInternal Range { get; }
 
         public TryCatch<TPage> Current { get; private set; }
 
