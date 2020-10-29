@@ -173,14 +173,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static string GetStringValue(
             ReadOnlyMemory<byte> buffer,
-            ReadOnlyMemory<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary)
+            ReadOnlyMemory<byte> stringToken)
         {
             // First retrieve the string length
-            GetStringValue(buffer, stringToken, jsonStringDictionary, destinationBuffer: Span<byte>.Empty, out int valueLength);
+            GetStringValue(buffer, stringToken, destinationBuffer: Span<byte>.Empty, out int valueLength);
 
             Span<byte> destinationBuffer = valueLength < MaxStackAlloc ? stackalloc byte[valueLength] : new byte[valueLength];
-            GetStringValue(buffer, stringToken, jsonStringDictionary, destinationBuffer, out valueLength);
+            GetStringValue(buffer, stringToken, destinationBuffer, out valueLength);
 
             return Utf8Span.UnsafeFromUtf8BytesNoValidation(destinationBuffer).ToString();
         }
@@ -188,7 +187,6 @@ namespace Microsoft.Azure.Cosmos.Json
         private static void GetStringValue(
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
             Span<byte> destinationBuffer,
             out int valueLength)
         {
@@ -203,7 +201,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (!TryGetBufferedStringValue(
                     buffer,
                     stringToken,
-                    jsonStringDictionary,
                     out Utf8Memory bufferedStringValue))
                 {
                     throw new JsonInvalidTokenException();
@@ -234,7 +231,6 @@ namespace Microsoft.Azure.Cosmos.Json
         public static bool TryGetBufferedStringValue(
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out Utf8Memory value)
         {
             if (stringToken.IsEmpty)
@@ -246,7 +242,6 @@ namespace Microsoft.Azure.Cosmos.Json
             if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
                 buffer,
                 stringToken,
-                jsonStringDictionary,
                 out value))
             {
                 return true;
@@ -254,7 +249,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
             if (JsonBinaryEncoding.TryGetEncodedStringValue(
                 stringToken.Span,
-                jsonStringDictionary,
                 out UtfAllString encodedStringValue))
             {
                 value = encodedStringValue.Utf8EscapedString;
@@ -267,22 +261,18 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetDictionaryEncodedStringValue(
             ReadOnlySpan<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out UtfAllString value) => TryGetEncodedStringValue(
                 stringToken,
-                jsonStringDictionary,
                 out value);
 
         /// <summary>
         /// Try Get Encoded String Value
         /// </summary>
         /// <param name="stringToken">The string token to read from.</param>
-        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
         /// <param name="value">The encoded string if found.</param>
         /// <returns>Encoded String Value</returns>
         private static bool TryGetEncodedStringValue(
             ReadOnlySpan<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out UtfAllString value)
         {
             if (JsonBinaryEncoding.TryGetEncodedSystemStringValue(stringToken, out value))
@@ -290,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            if (JsonBinaryEncoding.TryGetEncodedUserStringValue(stringToken, jsonStringDictionary, out value))
+            if (JsonBinaryEncoding.TryGetEncodedUserStringValue(stringToken, out value))
             {
                 return true;
             }
@@ -329,27 +319,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Try Get Encoded User String Value
         /// </summary>
         /// <param name="stringToken">The string token to read from.</param>
-        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
         /// <param name="encodedUserStringValue">The encoded user string value if found.</param>
         /// <returns>Whether or not the Encoded User String Value was found</returns>
         private static bool TryGetEncodedUserStringValue(
             ReadOnlySpan<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out UtfAllString encodedUserStringValue)
         {
-            if (jsonStringDictionary == null)
-            {
-                encodedUserStringValue = default;
-                return false;
-            }
-
-            if (!JsonBinaryEncoding.TryGetUserStringId(stringToken, out int userStringId))
-            {
-                encodedUserStringValue = default;
-                return false;
-            }
-
-            return jsonStringDictionary.TryGetStringAtIndex(userStringId, out encodedUserStringValue);
+            encodedUserStringValue = default;
+            return false;
         }
 
         private static bool TryGetUserStringId(ReadOnlySpan<byte> stringToken, out int userStringId)
@@ -391,7 +368,6 @@ namespace Microsoft.Azure.Cosmos.Json
         private static bool TryGetBufferedLengthPrefixedString(
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken,
-            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out Utf8Memory value)
         {
             ReadOnlySpan<byte> stringTokenSpan = stringToken.Span;
@@ -452,7 +428,6 @@ namespace Microsoft.Azure.Cosmos.Json
                         return TryGetBufferedStringValue(
                             buffer,
                             buffer.Slice(start: stringTokenSpan[0]),
-                            jsonStringDictionary,
                             out value);
 
                     case JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset:
@@ -465,7 +440,6 @@ namespace Microsoft.Azure.Cosmos.Json
                         return TryGetBufferedStringValue(
                             buffer,
                             buffer.Slice(start: MemoryMarshal.Read<ushort>(stringTokenSpan)),
-                            jsonStringDictionary,
                             out value);
 
                     case JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset:
@@ -478,7 +452,6 @@ namespace Microsoft.Azure.Cosmos.Json
                         return TryGetBufferedStringValue(
                             buffer,
                             buffer.Slice(start: MemoryMarshal.Read<UInt24>(stringTokenSpan)),
-                            jsonStringDictionary,
                             out value);
 
                     case JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset:
@@ -491,7 +464,6 @@ namespace Microsoft.Azure.Cosmos.Json
                         return TryGetBufferedStringValue(
                             buffer,
                             buffer.Slice(start: (int)MemoryMarshal.Read<uint>(stringTokenSpan)),
-                            jsonStringDictionary,
                             out value);
 
                     default:
@@ -514,12 +486,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Try Get Encoded String Type Marker
         /// </summary>
         /// <param name="utf8Span">the value</param>
-        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
         /// <param name="multiByteTypeMarker">The encoded string type marker if found.</param>
         /// <returns>Whether or not the type marker was found.</returns>
         public static bool TryGetEncodedStringTypeMarker(
             Utf8Span utf8Span,
-            JsonStringDictionary jsonStringDictionary,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
             if (JsonBinaryEncoding.TryGetEncodedSystemStringTypeMarker(utf8Span, out multiByteTypeMarker))
@@ -527,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            if (JsonBinaryEncoding.TryGetEncodedUserStringTypeMarker(utf8Span, jsonStringDictionary, out multiByteTypeMarker))
+            if (JsonBinaryEncoding.TryGetEncodedUserStringTypeMarker(utf8Span, out multiByteTypeMarker))
             {
                 return true;
             }
@@ -563,52 +533,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Try Get Encoded User String Type Marker
         /// </summary>
         /// <param name="utf8Span">The value.</param>
-        /// <param name="jsonStringDictionary">The optional json string dictionary.</param>
         /// <param name="multiByteTypeMarker">The multi byte type marker if found.</param>
         /// <returns>Whether or not the Encoded User String Type Marker was found.</returns>
         private static bool TryGetEncodedUserStringTypeMarker(
             Utf8Span utf8Span,
-            JsonStringDictionary jsonStringDictionary,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
-            if (jsonStringDictionary == null)
-            {
-                multiByteTypeMarker = default;
-                return false;
-            }
-
-            const int MinStringLength = 2;
-            const int MaxStringLength = 128;
-            if ((utf8Span.Length < MinStringLength) || (utf8Span.Length > MaxStringLength))
-            {
-                multiByteTypeMarker = default;
-                return false;
-            }
-
-            const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
-            if (!jsonStringDictionary.TryAddString(utf8Span, out int index))
-            {
-                multiByteTypeMarker = default;
-                return false;
-            }
-
-            // Convert the index to a multibyte type marker
-            if (index < OneByteCount)
-            {
-                multiByteTypeMarker = new MultiByteTypeMarker(
-                    length: 1,
-                    one: (byte)(TypeMarker.UserString1ByteLengthMin + index));
-            }
-            else
-            {
-                int twoByteOffset = index - OneByteCount;
-                multiByteTypeMarker = new MultiByteTypeMarker(
-                    length: 2,
-                    one: (byte)((twoByteOffset / 0xFF) + TypeMarker.UserString2ByteLengthMin),
-                    two: (byte)(twoByteOffset % 0xFF));
-            }
-
-            return true;
+            multiByteTypeMarker = default;
+            return false;
         }
 
         [Flags]
