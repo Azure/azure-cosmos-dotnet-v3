@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Linq.Expressions;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
@@ -28,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions
         {
+            public static readonly bool EnableEncodedStrings = false;
+
             private enum RawValueType : byte
             {
                 Token,
