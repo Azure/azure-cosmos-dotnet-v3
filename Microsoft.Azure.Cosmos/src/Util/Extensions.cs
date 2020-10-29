@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
-            Headers headers = documentServiceResponse.Headers.ToCosmosHeaders();
+            Headers headers = new Headers(documentServiceResponse.Headers);
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
             if (!(documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics clientSideRequestStatistics) ||
@@ -156,11 +156,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return responseMessage;
-        }
-
-        internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
-        {
-            return new Headers(nameValueCollection);
         }
 
         internal static void TraceException(Exception exception)
