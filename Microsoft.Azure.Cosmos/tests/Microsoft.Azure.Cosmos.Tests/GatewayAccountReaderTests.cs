@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(httpClient);
             HttpResponseMessage response = await httpClient.GetAsync(
                 uri: new Uri("https://localhost"),
-                additionalHeaders: new DictionaryNameValueCollection(),
+                additionalHeaders: new StoreRequestNameValueCollection(),
                 resourceType: ResourceType.Document,
                 diagnosticsContext: null,
                 cancellationToken: default);

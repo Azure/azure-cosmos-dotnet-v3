@@ -6,6 +6,7 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -170,8 +171,12 @@
                     methodSignature = memberInfo.ToString();
                 }
 
+                // Certain custom attributes add the following to the string value "d__9" which sometimes changes
+                // based on the .NET SDK version it is being built on. This removes the value to avoid showing
+                // breaking change when there is none.
+                string key = Regex.Replace(memberInfo.Key, @"d__\d+", string.Empty);
                 root.Members[
-                        memberInfo.Key
+                        key
                     ] = new MemberMetadata(
                     memberInfo.Value.MemberType,
                     attributes,

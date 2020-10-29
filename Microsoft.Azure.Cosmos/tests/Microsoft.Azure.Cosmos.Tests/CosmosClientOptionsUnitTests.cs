@@ -291,17 +291,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void VerifyHttpClientHandlerSettingsThrowIfNotUsedInGatewayMode()
-        {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
-            {
-                ConnectionMode = ConnectionMode.Direct
-            };
-
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.WebProxy = new TestWebProxy(); });
-        }
-
-        [TestMethod]
         public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()

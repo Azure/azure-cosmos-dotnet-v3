@@ -257,14 +257,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = null;
+            INameValueCollection localHeaders = new StoreRequestNameValueCollection();
             if (headers != null)
             {
-                localHeaders = new DictionaryNameValueCollection(headers);
-            }
-            else
-            {
-                localHeaders = new DictionaryNameValueCollection();
+                localHeaders.Add(headers);
             }
 
             string continuationToken = null;
