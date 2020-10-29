@@ -263,25 +263,27 @@ namespace Microsoft.Azure.Cosmos
             int backoffSeconds = 1;
             int timeoutPosition = 0;
 
+            bool isDefaultCancellationToken = cancellationToken == default;
             DateTime startDateTimeUtc = DateTime.UtcNow;
             while (true)
             {
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
+                    // If the default cancellation token is passed then use the timeout policy
+                    CancellationTokenSource cancellationTokenSource = null;
+                    if (isDefaultCancellationToken)
+                    {
+                        cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.CancelAfter(timeouts[timeoutPosition]);
+                        cancellationToken = cancellationTokenSource.Token;
+                    }
+
                     cancellationToken.ThrowIfCancellationRequested();
 
                     try
                     {
                         using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpHelperAsync)))
                         {
-                            // If the default cancellation token is passed then use the timeout policy
-                            if (cancellationToken == default)
-                            {
-                                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-                                cancellationTokenSource.CancelAfter(timeouts[timeoutPosition]);
-                                cancellationToken = cancellationTokenSource.Token;
-                            }
-
                             return await this.ExecuteHttpHelperAsync(
                                 requestMessage,
                                 resourceType,
@@ -305,14 +307,14 @@ namespace Microsoft.Azure.Cosmos
                                   responseSessionToken: null));
 
                         // Throw if the user passed in cancellation was requested
-                        if (cancellationToken.IsCancellationRequested)
+                        if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
                         {
                             throw;
                         }
 
                         timeoutPosition++;
-                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) < TimeSpan.FromSeconds(30) && // Maximum of 30 seconds for all retries
-                            timeoutPosition < timeouts.Count; // No more retries are configured
+                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > TimeSpan.FromSeconds(30) || // Maximum of 30 seconds for all retries
+                            timeoutPosition >= timeouts.Count; // No more retries are configured
 
                         switch (e)
                         {
