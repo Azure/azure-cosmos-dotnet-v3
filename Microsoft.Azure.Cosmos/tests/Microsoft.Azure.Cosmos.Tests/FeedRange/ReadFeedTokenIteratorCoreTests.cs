@@ -83,8 +83,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             int count = 0;
             string continuationToken = null;
+            bool needsToRetry = false;
             do
             {
+                needsToRetry = false;
                 FeedIterator iterator = CreateReadFeedIterator(
                     documentContainer,
                     continuationToken: continuationToken,
@@ -96,11 +98,16 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     count += documents.Count;
                     continuationToken = message.ContinuationToken;
                 }
-                else
+                else if((int)message.StatusCode == 429)
                 {
                     Assert.IsNull(message.ContinuationToken);
+                    needsToRetry = true;
                 }
-            } while (continuationToken != null);
+                else
+                {
+                    Assert.Fail();
+                }
+            } while (continuationToken != null || needsToRetry);
 
             Assert.AreEqual(numItems, count);
         }

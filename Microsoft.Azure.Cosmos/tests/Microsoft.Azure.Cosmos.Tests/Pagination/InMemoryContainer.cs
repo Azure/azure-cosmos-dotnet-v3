@@ -98,18 +98,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             if (feedRange is FeedRangeEpk feedRangeEpk)
             {
                 // look for overlapping epk ranges.
-                PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-                PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
-                PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
-                List<FeedRangeEpk> overlappedIds = this.partitionKeyRangeIdToHashRange
-                    .Where(kvp => hashRange.Contains(kvp.Value))
-                    .Select(kvp => CreateRangeFromId(kvp.Key))
-                    .ToList();
+                List<FeedRangeEpk> overlappedIds;
+                if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
+                {
+                    overlappedIds = this.partitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                }
+                else
+                {
+                    PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
+                    PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+                    PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
+                    overlappedIds = this.partitionKeyRangeIdToHashRange
+                        .Where(kvp => hashRange.Contains(kvp.Value))
+                        .Select(kvp => CreateRangeFromId(kvp.Key))
+                        .ToList();
+                }
+                
                 if (overlappedIds.Count == 0)
                 {
                     return TryCatch<List<FeedRangeEpk>>.FromException(
                         new KeyNotFoundException(
-                            $"PartitionKeyRangeId: {hashRange} does not exist."));
+                            $"PartitionKeyRangeId: {feedRangeEpk} does not exist."));
                 }
 
                 return TryCatch<List<FeedRangeEpk>>.FromResult(overlappedIds);
@@ -773,7 +782,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private TryCatch<int> MonadicGetPkRangeIdFromEpk(FeedRangeEpk feedRangeEpk)
         {
             List<int> matchIds;
-            if (feedRangeEpk.Equals(FeedRangeEpk.FullRange))
+            if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
             {
                 matchIds = this.PartitionKeyRangeIds.ToList();
             }
