@@ -247,6 +247,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
             this.cancellationToken = cancellationToken;
+            this.crossPartitionRangePageAsyncEnumerator.SetCancellationToken(cancellationToken);
         }
 
         private sealed class Comparer : IComparer<PartitionRangePageAsyncEnumerator<QueryPage, QueryState>>
