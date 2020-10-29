@@ -128,12 +128,26 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
-            if (!await enumerator.MoveNextAsync())
+            TryCatch<ReadFeedPage> monadicPage;
+
+            try
             {
-                throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
+                if (!await enumerator.MoveNextAsync())
+                {
+                    throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
+                }
+
+                monadicPage = enumerator.Current;
+            }
+            catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
+            {
+                throw new CosmosOperationCanceledException(ex, diagnostics);
+            }
+            catch (Exception ex)
+            {
+                monadicPage = TryCatch<ReadFeedPage>.FromException(ex);
             }
 
-            TryCatch<ReadFeedPage> monadicPage = enumerator.Current;
             if (monadicPage.Failed)
             {
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(monadicPage.Exception);
