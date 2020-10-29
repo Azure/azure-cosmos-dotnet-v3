@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.Encryption.EmulatorTests.LegacyEncryptionTests;
     using DataEncryptionKey = Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey;
 
     [TestClass]
@@ -661,18 +662,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = MdeEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
-                continuationToken: null,
-                new ChangeFeedRequestOptions()
-                {
-                    StartTime = DateTime.MinValue.ToUniversalTime()
-                });
-
+               ChangeFeedStartFrom.Beginning());
+            
             while (changeIterator.HasMoreResults)
             {
-                readDocsLazily = await changeIterator.ReadNextAsync();
-                if (readDocsLazily.Resource != null)
+                try
                 {
-                    await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                    readDocsLazily = await changeIterator.ReadNextAsync();
+                    if (readDocsLazily.Resource != null)
+                    {
+                        await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                    }
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
+                    break;
                 }
             }
             // await this.ValidateChangeFeedProcessorResponse(EncryptionTests.itemContainerCore, testDoc1, testDoc2, false);
@@ -1051,6 +1056,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.itemContainer, doc4ToCreate);            
         }
 
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchWithCustomSerializer()
+        {
+            CustomSerializer customSerializer = new CustomSerializer();
+            CosmosClient clientWithCustomSerializer = TestCommon.CreateCosmosClient(builder => builder
+                .WithCustomSerializer(customSerializer)
+                .Build());
+
+            Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(MdeEncryptionTests.database.Id);
+            Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(MdeEncryptionTests.itemContainer.Id);
+            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(MdeEncryptionTests.encryptor);
+
+            string partitionKey = "thePK";
+            string dek1 = MdeEncryptionTests.dekId;
+
+            TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
+
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await MdeEncryptionTests.CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
+            doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await encryptionContainerWithCustomSerializer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreate, MdeEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, MdeEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+            // FromStream is called as part of CreateItem request
+            Assert.AreEqual(1, customSerializer.FromStreamCalled);
+
+            TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
+            VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);
+            Assert.AreEqual(2, customSerializer.FromStreamCalled);
+
+            TransactionalBatchOperationResult<TestDoc> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
+            VerifyExpectedDocResponse(doc1ToReplace, doc2.Resource);
+            Assert.AreEqual(3, customSerializer.FromStreamCalled);
+
+            await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
+            await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);           
+        }
+
         // One of query or queryDefinition is to be passed in non-null
         private static async Task ValidateQueryResultsAsync(
             Container container,
@@ -1215,22 +1263,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                continuationToken: null,
-                new ChangeFeedRequestOptions()
-                {
-                    StartTime = DateTime.MinValue.ToUniversalTime()
-                });
+                ChangeFeedStartFrom.Beginning());
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
             {
-                FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                for (int index = 0; index < testDocs.Count; index++)
+                try
                 {
-                    if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
+                    FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                    for (int index = 0; index < testDocs.Count; index++)
                     {
-                        changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
+                        if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
+                        {
+                            changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
+                        }
                     }
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
+                    break;
                 }
             }
 

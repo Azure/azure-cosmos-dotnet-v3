@@ -1127,23 +1127,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .WithCustomSerializer(customSerializer)
                 .Build());
 
-            Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(EncryptionTests.database.Id);
-            Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(EncryptionTests.itemContainer.Id);
-            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(EncryptionTests.encryptor);
+            Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(LegacyEncryptionTests.database.Id);
+            Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(LegacyEncryptionTests.itemContainer.Id);
+            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(LegacyEncryptionTests.encryptor);
 
             string partitionKey = "thePK";
-            string dek1 = EncryptionTests.dekId;
+            string dek1 = LegacyEncryptionTests.dekId;
 
             TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
 
-            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await EncryptionTests.CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await LegacyEncryptionTests.CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
             doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc1ToReplace.Sensitive = Guid.NewGuid().ToString();
 
             TransactionalBatchResponse batchResponse = await encryptionContainerWithCustomSerializer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreate, EncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, EncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+                .CreateItem(doc1ToCreate, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -1158,15 +1158,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(doc1ToReplace, doc2.Resource);
             Assert.AreEqual(3, customSerializer.FromStreamCalled);
 
-            await EncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
-            await EncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
+            await LegacyEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
+            await LegacyEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
 
             // Validate that the documents are encrypted as expected by trying to retrieve through regular (non-encryption) container
             doc1ToCreate.Sensitive = null;
-            await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc1ToCreate);
+            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToCreate);
 
             doc1ToReplace.Sensitive = null;
-            await EncryptionTests.VerifyItemByReadAsync(EncryptionTests.itemContainer, doc1ToReplace);
+            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
         }
 
         private static async Task ValidateSprocResultsAsync(Container container, TestDoc expectedDoc)
