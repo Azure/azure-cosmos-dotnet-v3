@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Timers
 #nullable enable
     internal sealed class TimerWheelCore : TimerWheel, IDisposable
     {
-        private readonly ConcurrentDictionary<int, ConcurrentQueue<TimerWheelTimer>> timers;
+        private readonly List<ConcurrentQueue<TimerWheelTimer>> timers;
         private readonly int resolutionInTicks;
         private readonly int resolutionInMs;
         private readonly int buckets;
@@ -42,7 +42,12 @@ namespace Microsoft.Azure.Cosmos.Timers
             this.resolutionInMs = (int)resolution;
             this.resolutionInTicks = (int)TimeSpan.FromMilliseconds(this.resolutionInMs).Ticks;
             this.buckets = buckets;
-            this.timers = new ConcurrentDictionary<int, ConcurrentQueue<TimerWheelTimer>>();
+            this.timers = new List<ConcurrentQueue<TimerWheelTimer>>(buckets);
+            for (int i = 0; i < buckets; i++)
+            {
+                this.timers.Add(new ConcurrentQueue<TimerWheelTimer>());
+            }
+
             this.timerConcurrencyLock = new object();
         }
 
@@ -106,15 +111,7 @@ namespace Microsoft.Azure.Cosmos.Timers
             long timerTimeoutInTicks = timer.Timeout.Ticks;
             int bucket = (int)timerTimeoutInTicks / this.resolutionInTicks;
             int index = this.GetIndexForTimeout(bucket);
-            if (this.timers.TryGetValue(index, out ConcurrentQueue<TimerWheelTimer> timerQueue))
-            {
-                timerQueue.Enqueue(timer);
-                return;
-            }
-
-            timerQueue = new ConcurrentQueue<TimerWheelTimer>();
-            this.timers.TryAdd(index, timerQueue);
-            timerQueue = this.timers[index];
+            ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers[index];
             timerQueue.Enqueue(timer);
         }
 
@@ -134,12 +131,10 @@ namespace Microsoft.Azure.Cosmos.Timers
 
             try
             {
-                if (this.timers.TryGetValue(this.expirationIndex, out ConcurrentQueue<TimerWheelTimer> timerQueue))
+                ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers[this.expirationIndex];
+                while (timerQueue.TryDequeue(out TimerWheelTimer timer))
                 {
-                    while (timerQueue.TryDequeue(out TimerWheelTimer timer))
-                    {
-                        timer.FireTimeout();
-                    }
+                    timer.FireTimeout();
                 }
 
                 if (++this.expirationIndex == this.buckets)
@@ -173,10 +168,9 @@ namespace Microsoft.Azure.Cosmos.Timers
 
         private void DisposeAllTimers()
         {
-            foreach (KeyValuePair<int, ConcurrentQueue<TimerWheelTimer>> kv in this.timers)
+            foreach (ConcurrentQueue<TimerWheelTimer> queueTimer in this.timers)
             {
-                ConcurrentQueue<TimerWheelTimer> pooledTimerQueue = kv.Value;
-                while (pooledTimerQueue.TryDequeue(out TimerWheelTimer timer))
+                while (queueTimer.TryDequeue(out TimerWheelTimer timer))
                 {
                     timer.CancelTimer();
                 }
