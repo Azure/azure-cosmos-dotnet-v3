@@ -1,11 +1,11 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -28,6 +28,9 @@ namespace Microsoft.Azure.Cosmos
         // Making the default 25% of the token life span. This gives 75% of the tokens life for transient error
         // to get resolved before the token expires.
         public static readonly double DefaultBackgroundTokenCredentialRefreshIntervalPercentage = .25;
+
+        // The maximum time a task delayed is allowed is Int32.MaxValue in Milliseconds which is roughly 24 days
+        public static readonly TimeSpan MaxBackgroundRefreshInterval = TimeSpan.FromMilliseconds(Int32.MaxValue);
 
         private const string ScopeFormat = "https://{0}/.default";
         private readonly TokenRequestContext tokenRequestContext;
@@ -56,6 +59,26 @@ namespace Microsoft.Azure.Cosmos
             {
                 string.Format(TokenCredentialCache.ScopeFormat, accountEndpointHost)
             });
+
+            if (requestTimeout <= TimeSpan.Zero)
+            {
+                throw new ArgumentException($"{nameof(requestTimeout)} must be a positive value greater than 0. Value '{requestTimeout.TotalMilliseconds.ToString(CultureInfo.InvariantCulture)}'Milliseconds.");
+            }
+
+            if (backgroundTokenCredentialRefreshInterval.HasValue)
+            {
+                if (backgroundTokenCredentialRefreshInterval.Value <= TimeSpan.Zero)
+                {
+                    throw new ArgumentException($"{nameof(backgroundTokenCredentialRefreshInterval)} must be a positive value greater than 0. Value '{backgroundTokenCredentialRefreshInterval.Value.TotalMilliseconds}'.");
+                }
+
+                // TimeSpan.MaxValue disables the background refresh
+                if (backgroundTokenCredentialRefreshInterval.Value > TokenCredentialCache.MaxBackgroundRefreshInterval &&
+                    backgroundTokenCredentialRefreshInterval.Value != TimeSpan.MaxValue)
+                {
+                    throw new ArgumentException($"{nameof(backgroundTokenCredentialRefreshInterval)} must be less than or equal to {TokenCredentialCache.MaxBackgroundRefreshInterval}. Value '{backgroundTokenCredentialRefreshInterval.Value}'.");
+                }
+            }
 
             this.userDefinedBackgroundTokenCredentialRefreshInterval = backgroundTokenCredentialRefreshInterval;
             this.requestTimeout = requestTimeout;
@@ -279,6 +302,16 @@ namespace Microsoft.Azure.Cosmos
                     if (!this.BackgroundTokenCredentialRefreshInterval.HasValue)
                     {
                         throw new ArgumentException(nameof(this.BackgroundTokenCredentialRefreshInterval));
+                    }
+
+                    // Stop the background refresh if the interval is greater than Task.Delay allows. 
+                    if (this.BackgroundTokenCredentialRefreshInterval.Value > TokenCredentialCache.MaxBackgroundRefreshInterval)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "StartRefreshToken() Stopped - The BackgroundTokenCredentialRefreshInterval is {0} which is greater than the maximum allow.",
+                            this.BackgroundTokenCredentialRefreshInterval.Value);
+
+                        return;
                     }
 
                     await Task.Delay(this.BackgroundTokenCredentialRefreshInterval.Value, this.cancellationToken);
