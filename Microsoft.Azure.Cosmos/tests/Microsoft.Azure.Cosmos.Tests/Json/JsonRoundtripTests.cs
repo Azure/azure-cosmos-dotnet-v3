@@ -483,7 +483,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 foreach (SerializationFormat destinationFormat in Enum.GetValues(typeof(SerializationFormat)))
                 {
-                    PerformRoundTrip(sourceFormat, destinationFormat, json);
+                    foreach (bool writeAsRootNode in new bool[] { true, false })
+                    {
+                        PerformRoundTrip(sourceFormat, destinationFormat, json, writeAsRootNode);
+                    }
                 }
             }
         }
@@ -491,7 +494,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private static void PerformRoundTrip(
             SerializationFormat sourceFormat,
             SerializationFormat destinationFormat,
-            string json)
+            string json,
+            bool writeAsRootNode)
         {
             IJsonReader reader = sourceFormat switch
             {
@@ -526,7 +530,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         break;
 
                     case IJsonNavigator sourceNavigator:
-                        bool writeAsRootNode = new Random().Next() % 2 == 0;
                         if (writeAsRootNode)
                         {
                             sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
