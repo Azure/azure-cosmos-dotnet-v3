@@ -605,10 +605,11 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
+                CosmosDiagnosticsContext readFeedDiagnostics = CosmosDiagnosticsContext.Create(requestOptions);
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     this,
                     this.queryClient,
-                    CosmosDiagnosticsContext.Create(requestOptions),
+                    readFeedDiagnostics,
                     requestOptions);
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -618,7 +619,8 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: requestOptions,
                     continuationToken: continuationToken,
                     pageSize: requestOptions.MaxItemCount ?? int.MaxValue,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    diagnosticsContext: readFeedDiagnostics);
             }
 
             return QueryIterator.Create(

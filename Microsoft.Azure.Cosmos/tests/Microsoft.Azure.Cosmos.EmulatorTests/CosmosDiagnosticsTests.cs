@@ -740,8 +740,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Verify the typed query iterator
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                    sql,
-                    requestOptions: requestOptions);
+                sql,
+                requestOptions: requestOptions);
 
             List<ToDoActivity> results = new List<ToDoActivity>();
             long totalOutDocumentCount = 0;

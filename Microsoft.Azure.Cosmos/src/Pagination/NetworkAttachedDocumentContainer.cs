@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                },
                partitionKey: queryRequestOptions?.PartitionKey,
                streamPayload: default,
-               diagnosticsContext: default,
+               diagnosticsContext: this.diagnosticsContext,
                cancellationToken: cancellationToken);
 
             TryCatch<ReadFeedPage> monadicReadFeedPage;
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 },
                 partitionKey: default,
                 streamPayload: default,
-                diagnosticsContext: default,
+                diagnosticsContext: this.diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
