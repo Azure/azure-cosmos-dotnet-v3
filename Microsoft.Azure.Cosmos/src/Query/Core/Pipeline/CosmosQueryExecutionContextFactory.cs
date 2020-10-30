@@ -187,7 +187,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
                                     inputParameters,
-                                    targetRanges);
+                                    targetRanges,
+                                    cancellationToken);
                             }
                         }
                     }
@@ -277,7 +278,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                     documentContainer,
                     inputParameters,
-                    targetRanges);
+                    targetRanges,
+                    cancellationToken);
             }
             else
             {
@@ -326,7 +328,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
             DocumentContainer documentContainer,
             InputParameters inputParameters,
-            List<Documents.PartitionKeyRange> targetRanges)
+            List<Documents.PartitionKeyRange> targetRanges,
+            CancellationToken cancellationToken)
         {
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
             return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
@@ -343,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 pageSize: inputParameters.MaxItemCount,
                 partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
-                cancellationToken: default,
+                cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
