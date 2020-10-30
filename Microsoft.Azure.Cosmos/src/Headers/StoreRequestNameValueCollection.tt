@@ -1,0 +1,335 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<# List<(string name, string value, bool isOverride)> headerNames = new List<(string name, string value, bool isOverride)>()
+{
+    ("HttpConstants.HttpHeaders.Authorization", "authorization", true),
+    ("HttpConstants.HttpHeaders.HttpDate", "date", false),
+    ("HttpConstants.HttpHeaders.XDate", "x-ms-date", true),
+    ("HttpConstants.HttpHeaders.Version", "x-ms-version", false),
+    ("HttpConstants.HttpHeaders.ClientRetryAttemptCount", "x-ms-client-retry-attempt-count", false),
+    ("HttpConstants.HttpHeaders.ConsistencyLevel", "x-ms-consistency-level", false),
+    ("HttpConstants.HttpHeaders.Continuation", "x-ms-continuation", true),
+    ("HttpConstants.HttpHeaders.IsBatchAtomic", "x-ms-cosmos-batch-atomic", false),
+    ("HttpConstants.HttpHeaders.IsBatchOrdered", "x-ms-cosmos-batch-ordered", false),
+    ("HttpConstants.HttpHeaders.IsUpsert", "x-ms-documentdb-is-upsert", true),
+    ("HttpConstants.HttpHeaders.PartitionKey", "x-ms-documentdb-partitionkey", true),
+    ("HttpConstants.HttpHeaders.Prefer", "Prefer", false),
+    ("HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest", "x-ms-remaining-time-in-ms-on-client", false),
+    ("HttpConstants.HttpHeaders.ResourceTokenExpiry", "x-ms-documentdb-expiry-seconds", false),
+    ("HttpConstants.HttpHeaders.SessionToken", "x-ms-session-token", true),
+    ("HttpConstants.HttpHeaders.ShouldBatchContinueOnError", "x-ms-cosmos-batch-continue-on-error", false),
+    ("HttpConstants.HttpHeaders.TargetGlobalCommittedLsn", "x-ms-target-global-committed-lsn", false),
+    ("HttpConstants.HttpHeaders.TargetLsn", "x-ms-target-lsn", false),
+    ("HttpConstants.HttpHeaders.TransportRequestID", "x-ms-transport-request-id", false),
+    ("WFConstants.BackendHeaders.CollectionRid", "x-ms-documentdb-collection-rid", false),
+    ("WFConstants.BackendHeaders.EffectivePartitionKey", "x-ms-effective-partition-key", false),
+    ("WFConstants.BackendHeaders.ExcludeSystemProperties", "x-ms-exclude-system-properties", false),
+    ("WFConstants.BackendHeaders.ResourceTypes", "x-ms-cosmos-resourcetypes", false),
+    ("WFConstants.BackendHeaders.TimeToLiveInSeconds", "x-ms-time-to-live-in-seconds", false),
+    ("WFConstants.BackendHeaders.TransactionCommit", "x-ms-cosmos-tx-commit", false),
+    ("WFConstants.BackendHeaders.TransactionId", "x-ms-cosmos-tx-id", false),
+    
+}; #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// This is auto-generated code.
+
+namespace Microsoft.Azure.Cosmos
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.Globalization;
+    using System.Linq;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+
+    internal class StoreRequestNameValueCollection : CosmosMessageHeadersInternal, INameValueCollection
+    {
+        private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
+        private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
+<#  List<(string headerName, bool isOverride)> sortedHeaderPropertyNamesWithIsOverride = headerNames.Select(x => (x.name.Split('.').Last(), x.isOverride)).OrderBy(x => x.Item1).ToList(); #>
+<#  List<string> sortedHeaderPropertyNames = headerNames.Select(x => x.name.Split('.').Last()).OrderBy(x => x).ToList();
+    foreach((string headerName, bool isOverride) in sortedHeaderPropertyNamesWithIsOverride) { #>
+        public<# if(isOverride) { #> override<# } #> string <#= headerName #> { get; set; }
+<# } #>
+
+        public StoreRequestNameValueCollection()
+            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer)))
+        {
+        }
+
+        private StoreRequestNameValueCollection(Lazy<Dictionary<string, string>> notCommonHeaders)
+        {
+            this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
+        }
+
+        public override bool TryGetValue(string headerName, out string value)
+        {
+            value = this.Get(headerName);
+            return value != null;
+        }
+
+        public override void Add(INameValueCollection collection)
+        {
+            foreach (string key in collection.Keys())
+            {
+                this.Set(key, collection[key]);
+            }
+        }
+
+        public override string[] AllKeys()
+        {
+            return this.Keys().ToArray();
+        }
+
+        public override void Clear()
+        {
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                this.lazyNotCommonHeaders.Value.Clear();
+            }
+
+<#      foreach (string name in sortedHeaderPropertyNames) { #>
+            this.<#= name #> = null;
+<#      } #>
+
+        }
+
+        public override INameValueCollection Clone()
+        {
+            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreRequestNameValueCollection.DefaultStringComparer));
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                foreach (KeyValuePair<string, string> notCommonHeader in this.lazyNotCommonHeaders.Value)
+                {
+                    cloneNotCommonHeaders.Value[notCommonHeader.Key] = notCommonHeader.Value;
+                }
+            }
+
+            StoreRequestNameValueCollection cloneHeaders = new StoreRequestNameValueCollection(cloneNotCommonHeaders)
+            {
+<#            foreach (string name in sortedHeaderPropertyNames) { #>
+                <#= name #> = this.<#= name #>,
+<#      } #>
+            };
+
+            return cloneHeaders;
+        }
+
+        public override int Count()
+        {
+            return this.Keys().Count();
+        }
+
+        public override IEnumerator<string> GetEnumerator()
+        {
+            return this.Keys().GetEnumerator();
+        }
+
+        public override string[] GetValues(string key)
+        {
+            string value = this.Get(key);
+            if (value != null)
+            {
+                return new string[] { value };
+            }
+            
+            return null;
+        }
+
+        public override IEnumerable<string> Keys()
+        {
+<#      foreach ((string fullName, string keyValue, bool isOverride) in headerNames) { #>
+            if (this.<#= fullName.Split('.').Last() #> != null)
+            {
+                yield return <#= fullName #>;
+            }
+<#      } #>
+
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                foreach (string key in this.lazyNotCommonHeaders.Value.Keys)
+                {
+                    yield return key;
+                }
+            }
+        }
+
+        public override NameValueCollection ToNameValueCollection()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string Get(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            switch (key.Length)
+            {
+<#      IEnumerable<IGrouping<int, (string name, string value)>> getGroupByLength = headerNames.Select(x => (x.name, x.value)).GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+        foreach(IGrouping<int, (string name, string value)> group in getGroupByLength) { #>
+                case <#= group.Key #>:
+<#      
+        if(group.Count() > 1)
+        {
+            foreach((string name, string value) in group) { #>
+                    if (object.ReferenceEquals(<#= name #>, key))
+                    {
+                        return this.<#= name.Split('.').Last() #>;
+                    }
+<#          } #>
+<#      } #>
+<#      foreach((string name, string value) in group) { #>
+                    if (string.Equals(<#= name #>, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.<#= name.Split('.').Last() #>;
+                    }
+                
+<#      } #>
+                    break;
+<#     } #>
+                default:
+                    break;
+            }
+
+            if (this.lazyNotCommonHeaders.IsValueCreated
+                && this.lazyNotCommonHeaders.Value.TryGetValue(key, out string value))
+            {
+                return value;
+            }
+            
+            return null;
+        }
+
+        public override void Add(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            this.UpdateHelper(
+                key: key, 
+                value: value, 
+                throwIfAlreadyExists: true);
+        }
+
+        public override void Remove(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            this.UpdateHelper(
+                key: key, 
+                value: null, 
+                throwIfAlreadyExists: false);
+        }
+
+        public override void Set(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                this.Remove(key);
+                return;
+            }
+
+            this.UpdateHelper(
+                key: key, 
+                value: value, 
+                throwIfAlreadyExists: false);
+        }
+
+        public void UpdateHelper(
+            string key, 
+            string value,
+            bool throwIfAlreadyExists)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            switch (key.Length)
+            {
+<#      IEnumerable<IGrouping<int, (string name, string value)>> groupByLength = headerNames.Select(x => (x.name, x.value)).GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+        foreach(IGrouping<int, (string name, string value)> group in groupByLength) { #>
+                case <#= group.Key #>:
+<#      
+        if(group.Count() > 1)
+        {
+            foreach((string name, string value) in group) { #>
+                    if (object.ReferenceEquals(<#= name #>, key))
+                    {
+                        if (throwIfAlreadyExists && this.<#= name.Split('.').Last() #> != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.<#= name.Split('.').Last() #> = value;
+                        return;
+                    }
+<#          } #>
+<#      } #>
+<#      foreach((string name, string value) in group) { #>
+                    if (string.Equals(<#= name #>, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.<#= name.Split('.').Last() #> != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.<#= name.Split('.').Last() #> = value;
+                        return;
+                    }
+<#      } #>
+                    break;
+<#      } #>
+                default:
+                    break;
+            }
+
+            if (throwIfAlreadyExists)
+            {
+                this.lazyNotCommonHeaders.Value.Add(key, value);
+            }
+            else
+            {
+                if (value == null)
+                {
+                    this.lazyNotCommonHeaders.Value.Remove(key);
+                }
+                else
+                {
+                    this.lazyNotCommonHeaders.Value[key] = value;
+                }
+            }
+        }
+    }
+}

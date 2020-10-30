@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
             while (localFeedIterator.HasMoreResults)
             {
-                FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
+                FeedResponse<T> response = await localFeedIterator.ReadNextAsync(cancellationToken);
                 headers.RequestCharge += response.RequestCharge;
 
                 // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.

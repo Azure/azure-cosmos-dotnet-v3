@@ -111,12 +111,11 @@ namespace Microsoft.Azure.Cosmos
 
             // setup mock to return respone
             StoreResponse mockStoreResponse = new StoreResponse();
-            mockStoreResponse.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "110" },
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                };
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<Uri>(),

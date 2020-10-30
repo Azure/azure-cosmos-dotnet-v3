@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
-            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
                 serviceEndpoint,
