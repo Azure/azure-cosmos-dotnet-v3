@@ -483,7 +483,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 foreach (SerializationFormat destinationFormat in Enum.GetValues(typeof(SerializationFormat)))
                 {
-                    PerformRoundTrip(sourceFormat, destinationFormat, json);
+                    foreach (bool writeAsRootNode in new bool[] { true, false })
+                    {
+                        PerformRoundTrip(sourceFormat, destinationFormat, json, writeAsRootNode);
+                    }
                 }
             }
         }
@@ -491,7 +494,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private static void PerformRoundTrip(
             SerializationFormat sourceFormat,
             SerializationFormat destinationFormat,
-            string json)
+            string json,
+            bool writeAsRootNode)
         {
             IJsonReader reader = sourceFormat switch
             {
@@ -526,7 +530,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         break;
 
                     case IJsonNavigator sourceNavigator:
-                        sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
+                        if (writeAsRootNode)
+                        {
+                            sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
+                        }
+                        else
+                        {
+                            IJsonNavigatorNode rootNode = sourceNavigator.GetRootNode();
+                            JsonNodeType jsonNodeType = sourceNavigator.GetNodeType(rootNode);
+                            switch (jsonNodeType)
+                            {
+                                case JsonNodeType.Array:
+                                    writer.WriteArrayStart();
+
+                                    foreach (IJsonNavigatorNode arrayItem in sourceNavigator.GetArrayItems(rootNode))
+                                    {
+                                        sourceNavigator.WriteNode(arrayItem, writer);
+                                    }
+
+                                    writer.WriteArrayEnd();
+                                    break;
+
+                                case JsonNodeType.Object:
+                                    writer.WriteObjectStart();
+
+                                    foreach (ObjectProperty objectProperty in sourceNavigator.GetObjectProperties(rootNode))
+                                    {
+                                        sourceNavigator.WriteNode(objectProperty.NameNode, writer);
+                                        sourceNavigator.WriteNode(objectProperty.ValueNode, writer);
+                                    }
+
+                                    writer.WriteObjectEnd();
+                                    break;
+
+                                default:
+                                    sourceNavigator.WriteNode(sourceNavigator.GetRootNode(), writer);
+                                    break;
+                            }
+                        }
                         break;
 
                     default:
