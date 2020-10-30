@@ -306,12 +306,6 @@ namespace Microsoft.Azure.Cosmos
                                   requestSessionToken: null,
                                   responseSessionToken: null));
 
-                        // Throw if the user passed in cancellation was requested
-                        if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
-                        {
-                            throw;
-                        }
-
                         timeoutPosition++;
                         bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > TimeSpan.FromSeconds(30) || // Maximum of 30 seconds for all retries
                             timeoutPosition >= timeouts.Count; // No more retries are configured
@@ -319,6 +313,12 @@ namespace Microsoft.Azure.Cosmos
                         switch (e)
                         {
                             case OperationCanceledException operationCanceledException:
+                                // Throw if the user passed in cancellation was requested
+                                if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
+                                {
+                                    throw;
+                                }
+
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
                                 if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
