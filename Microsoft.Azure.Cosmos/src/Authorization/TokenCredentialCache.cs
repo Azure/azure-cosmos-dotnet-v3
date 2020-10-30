@@ -83,7 +83,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     try
                     {
-                        await this.RefreshCachedTokenWithRetryHelperAsync(diagnosticsContext);
+                        await this.RefreshCachedTokenWithRetryHelperAsync(
+                            diagnosticsContext);
                         this.StartRefreshToken();
                     }
                     finally
@@ -166,6 +167,31 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                     }
+                    catch (OperationCanceledException operationCancelled)
+                    {
+                        lastException = operationCancelled;
+                        diagnosticsContext.AddDiagnosticsInternal(
+                            new PointOperationStatistics(
+                                activityId: Trace.CorrelationManager.ActivityId.ToString(),
+                                statusCode: HttpStatusCode.RequestTimeout,
+                                subStatusCode: SubStatusCodes.Unknown,
+                                responseTimeUtc: DateTime.UtcNow,
+                                requestCharge: default,
+                                errorMessage: operationCancelled.ToString(),
+                                method: default,
+                                requestUri: default,
+                                requestSessionToken: default,
+                                responseSessionToken: default));
+
+                        DefaultTrace.TraceError(
+                            $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+
+                        throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                            message: ClientResources.FailedToGetAadToken,
+                            subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
+                            innerException: lastException,
+                            diagnosticsContext: diagnosticsContext);
+                    }
                     catch (Exception exception)
                     {
                         lastException = exception;
@@ -183,11 +209,11 @@ namespace Microsoft.Azure.Cosmos
                                 responseSessionToken: default));
 
                         DefaultTrace.TraceError(
-                            $"TokenCredential.GetToken() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                            $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
                     }
 
                     DefaultTrace.TraceError(
-                        $"TokenCredential.GetToken() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                        $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
                 }
 
                 throw CosmosExceptionFactory.CreateUnauthorizedException(
