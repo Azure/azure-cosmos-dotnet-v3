@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Timers
         private readonly int resolutionInMs;
         private readonly int buckets;
         private readonly Timer timer;
-        private readonly object subscriptionLock;
         private readonly object timerConcurrencyLock;
         private bool isDisposed = false;
         private bool isRunning = false;
@@ -44,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.Timers
             this.resolutionInTicks = (int)TimeSpan.FromMilliseconds(this.resolutionInMs).Ticks;
             this.buckets = buckets;
             this.timers = new ConcurrentDictionary<int, ConcurrentQueue<TimerWheelTimer>>();
-            this.subscriptionLock = new object();
             this.timerConcurrencyLock = new object();
         }
 
@@ -107,16 +105,17 @@ namespace Microsoft.Azure.Cosmos.Timers
             this.ThrowIfDisposed();
             long timerTimeoutInTicks = timer.Timeout.Ticks;
             int bucket = (int)timerTimeoutInTicks / this.resolutionInTicks;
-            lock (this.subscriptionLock)
+            int index = this.GetIndexForTimeout(bucket);
+            if (this.timers.TryGetValue(index, out ConcurrentQueue<TimerWheelTimer> timerQueue))
             {
-                int index = this.GetIndexForTimeout(bucket);
-                ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers.GetOrAdd(index,
-                        _ =>
-                        {
-                            return new ConcurrentQueue<TimerWheelTimer>();
-                        });
                 timerQueue.Enqueue(timer);
+                return;
             }
+
+            timerQueue = new ConcurrentQueue<TimerWheelTimer>();
+            this.timers.TryAdd(index, timerQueue);
+            timerQueue = this.timers[index];
+            timerQueue.Enqueue(timer);
         }
 
         public void OnTimer(object stateInfo)
