@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     abstract partial class JsonWriter : IJsonWriter
     {
-        public static bool EnableEncodedStrings = false;
+        internal static bool EnableEncodedStrings = false;
 
         /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.
