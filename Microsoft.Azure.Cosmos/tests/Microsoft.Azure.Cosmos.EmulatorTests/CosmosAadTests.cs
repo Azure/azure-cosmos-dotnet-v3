@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, getAadTokenCount);
 
             // Token should be refreshed after 1 second
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(1.2));
             Assert.AreEqual(2, getAadTokenCount);
         }
 
