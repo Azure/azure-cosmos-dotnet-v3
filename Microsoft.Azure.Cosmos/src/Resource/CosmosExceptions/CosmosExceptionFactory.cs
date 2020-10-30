@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             if (responseHeaders == null)
             {
-                responseHeaders = documentServiceResponse.Headers.ToCosmosHeaders();
+                responseHeaders = new Headers(documentServiceResponse.Headers);
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(documentServiceResponse.ResponseBody);
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             }
 
             (Error error, string errorMessage) = CosmosExceptionFactory.GetErrorFromStream(storeResponse.ResponseBody);
-            Headers headers = storeResponse.Headers.ToCosmosHeaders();
+            Headers headers = new Headers(storeResponse.Headers);
 
             return CosmosExceptionFactory.Create(
                 statusCode: storeResponse.StatusCode,

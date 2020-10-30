@@ -204,14 +204,56 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 "Array did not return the item from the cache.");
 
             CosmosObject lazilyDeserializedPerson = lazilyDeserializedPeople[0] as CosmosObject;
-            Assert.IsTrue(
-                object.ReferenceEquals(lazilyDeserializedPerson[nameof(Person.Age)], lazilyDeserializedPerson[nameof(Person.Age)]),
-                "Object did not return the property from the cache.");
+            foreach (string key in lazilyDeserializedPerson.Keys)
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(lazilyDeserializedPerson[key], lazilyDeserializedPerson[key]),
+                    "Object property was not served from the cache");
+            }
+
+            foreach ((string key1, string key2) in lazilyDeserializedPerson.Keys.Zip(lazilyDeserializedPerson.Keys, (first, second) => (first, second)))
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(key1, key2),
+                    "Object keys are not served from the cache.");
+            }
+
+            foreach ((CosmosElement value1, CosmosElement value2) in lazilyDeserializedPerson.Values.Zip(lazilyDeserializedPerson.Values, (first, second) => (first, second)))
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(value1, value2),
+                    "Object values are not served from the cache.");
+            }
+
+            int countFromCount = lazilyDeserializedPerson.Count;
+            int countFromEnumerator = 0;
+            foreach (KeyValuePair<string, CosmosElement> kvp in lazilyDeserializedPerson)
+            {
+                countFromEnumerator++;
+            }
+
+            Assert.AreEqual(countFromCount, countFromEnumerator);
 
             CosmosString personName = lazilyDeserializedPerson[nameof(Person.Name)] as CosmosString;
             Assert.IsTrue(
                 object.ReferenceEquals(personName.Value, personName.Value),
                 "Did not return the string from the cache.");
+
+            int i = 0;
+            foreach (CosmosElement arrayItem in lazilyDeserializedPeople)
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(arrayItem, lazilyDeserializedPeople[i++]));
+            }
+
+            Assert.AreEqual(i, lazilyDeserializedPeople.Count);
+
+            int count = lazilyDeserializedPeople.Count;
+            for (i = 0; i < count; i++)
+            {
+                Assert.IsTrue(
+                    object.ReferenceEquals(lazilyDeserializedPeople[i], lazilyDeserializedPeople[i]));
+            }
 
             // Numbers is a value type so we don't need to test for the cache.
             // Booleans are multitons so we don't need to test for the cache.
@@ -365,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         {
             LazyCosmosElementTests.TestCosmosElementVisitabilityFromJson("[1, 2, 3]");
         }
-        
+
         [TestMethod]
         [Owner("brchon")]
         public void Object()
