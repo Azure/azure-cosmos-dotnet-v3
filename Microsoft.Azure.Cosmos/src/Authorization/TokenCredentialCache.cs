@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
                                 responseSessionToken: default));
 
                         DefaultTrace.TraceError(
-                        $"TokenCredential.GetToken() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                            $"TokenCredential.GetToken() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
                     }
 
                     DefaultTrace.TraceError(
@@ -207,14 +207,13 @@ namespace Microsoft.Azure.Cosmos
             using (diagnosticsContext.CreateScope(nameof(this.RefreshCachedTokenWithRetryHelperAsync)))
             {
                 using CancellationTokenSource singleRequestCancellationTokenSource = new CancellationTokenSource(this.requestTimeout);
-                CancellationToken requestCancellationToken = singleRequestCancellationTokenSource.Token;
 
                 Task[] valueTasks = new Task[2];
                 valueTasks[0] = Task.Delay(this.requestTimeout);
 
                 Task<AccessToken> valueTaskTokenCredential = this.tokenCredential.GetTokenAsync(
                     this.tokenRequestContext,
-                    requestCancellationToken).AsTask();
+                    singleRequestCancellationTokenSource.Token).AsTask();
 
                 valueTasks[1] = valueTaskTokenCredential;
                 await Task.WhenAny(valueTasks);
@@ -260,7 +259,6 @@ namespace Microsoft.Azure.Cosmos
 
                     DefaultTrace.TraceInformation("StartRefreshToken() - Invoking refresh");
 
-                    Console.WriteLine("Background:" + DateTime.UtcNow);
                     await this.RefreshCachedTokenWithRetryHelperAsync(EmptyCosmosDiagnosticsContext.Singleton);
                 }
                 catch (Exception ex)
