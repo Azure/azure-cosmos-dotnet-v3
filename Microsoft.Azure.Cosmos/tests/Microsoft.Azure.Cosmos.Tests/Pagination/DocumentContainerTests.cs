@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
