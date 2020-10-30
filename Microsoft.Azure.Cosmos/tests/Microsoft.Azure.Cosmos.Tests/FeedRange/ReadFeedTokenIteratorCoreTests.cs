@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -65,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     continuationToken: continuationToken,
                     pageSize: 10);
                 ResponseMessage message = await iterator.ReadNextAsync();
+                Assert.AreEqual(HttpStatusCode.OK, message.StatusCode, message.ErrorMessage);
                 CosmosArray documents = GetDocuments(message.Content);
                 count += documents.Count;
                 continuationToken = message.ContinuationToken;

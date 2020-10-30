@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
@@ -45,11 +46,11 @@ namespace Microsoft.Azure.Cosmos
                             FeedRangeEpk.FullRange,
                             new List<Documents.Routing.Range<string>>()
                             {
-                            new Documents.Routing.Range<string>(
-                                Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                                Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                                isMinInclusive: true,
-                                isMaxInclusive: false)
+                                new Documents.Routing.Range<string>(
+                                    Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                                    Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false)
                             },
                             continuationToken);
                     }
@@ -63,9 +64,10 @@ namespace Microsoft.Azure.Cosmos
                     foreach (CosmosElement continuation in continuations)
                     {
                         CosmosObject continuationObject = (CosmosObject)continuation;
-                        string min = ((CosmosString)continuationObject["min"]).Value;
-                        string max = ((CosmosString)continuationObject["max"]).Value;
-                        CosmosElement token = continuationObject["token"];
+                        CosmosObject rangeObject = (CosmosObject)continuationObject["range"];
+                        string min = ((CosmosString)rangeObject["min"]).Value;
+                        string max = ((CosmosString)rangeObject["max"]).Value;
+                        CosmosElement token = CosmosElement.Parse(((CosmosString)continuationObject["token"]).Value);
 
                         FeedRangeInternal feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false));
                         ReadFeedState state = new ReadFeedState(token);
@@ -85,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 pageSize,
                 cancellationToken);
 
-            this.diagnosticsContext = diagnosticsContext;
+            this.diagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
 
             this.hasMoreResults = true;
         }
@@ -164,6 +166,38 @@ namespace Microsoft.Azure.Cosmos
                     this.hasMoreResults = false;
                 }
 
+                // Make the continuation token match the older format:
+                string continuationToken;
+                if (readFeedPage.State != null)
+                {
+                    List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
+                    CosmosArray compositeContinuationTokensCosmosArray = (CosmosArray)readFeedPage.State.ContinuationToken;
+                    foreach (CosmosElement arrayItem in compositeContinuationTokensCosmosArray)
+                    {
+                        ReadFeedContinuationToken readFeedContinuationToken = ReadFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem).Result;
+                        FeedRangeEpk feedRangeEpk = (FeedRangeEpk)readFeedContinuationToken.Range;
+                        ReadFeedState readFeedState = readFeedContinuationToken.State;
+                        CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
+                        {
+                            Range = feedRangeEpk.Range, 
+                            Token = readFeedState.ContinuationToken.ToString(),
+                        };
+
+                        compositeContinuationTokens.Add(compositeContinuationToken);
+                    }
+
+                    FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(
+                        containerRid: string.Empty,
+                        feedRange: FeedRangeEpk.FullRange,
+                        compositeContinuationTokens);
+
+                    continuationToken = feedRangeCompositeContinuation.ToString();
+                }
+                else
+                {
+                    continuationToken = null;
+                }
+
                 return new ResponseMessage(
                     statusCode: System.Net.HttpStatusCode.OK,
                     requestMessage: default,
@@ -171,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         RequestCharge = readFeedPage.RequestCharge,
                         ActivityId = readFeedPage.ActivityId,
-                        ContinuationToken = readFeedPage.State?.ContinuationToken.ToString(),
+                        ContinuationToken = continuationToken,
                     },
                     cosmosException: default,
                     diagnostics: this.diagnosticsContext)

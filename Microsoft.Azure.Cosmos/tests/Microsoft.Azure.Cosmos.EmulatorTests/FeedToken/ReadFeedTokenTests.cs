@@ -302,6 +302,37 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             Assert.AreEqual(firstRunTotal, totalCount);
+
+            string continuationToken = null;
+            totalCount = 0;
+            do
+            {
+                feedIterator = itemsCore.GetItemQueryStreamIterator(
+                    requestOptions: new QueryRequestOptions() 
+                    { 
+                        PartitionKey = new PartitionKey(pkToRead),
+                        MaxItemCount = 1,
+                    },
+                    continuationToken: continuationToken);
+
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    totalCount += response.Count;
+                    foreach (ToDoActivity toDoActivity in response)
+                    {
+                        Assert.AreEqual(pkToRead, toDoActivity.status);
+                    }
+
+                    continuationToken = responseMessage.ContinuationToken;
+                }
+            }
+            while (continuationToken != null);
+
+            Assert.AreEqual(firstRunTotal, totalCount);
         }
 
         /// <summary>
