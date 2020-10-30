@@ -418,6 +418,7 @@
         [Owner("brchon")]
         public void DateTimeStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 string dateTimeString = "2015-06-30 23:45:13";
                 string stringPayload = $"\"{dateTimeString}\"";
@@ -550,12 +551,34 @@
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
+
+            JsonWriter.EnableEncodedStrings = false;
+            {
+                string dateTimeString = "2015-06-30 23:45:13";
+                string stringPayload = $"\"{dateTimeString}\"";
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String(dateTimeString)
+                };
+
+                List<byte> binaryPayload = new List<byte>()
+                {
+                    BinaryFormat,
+                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                };
+
+                binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+
+                this.VerifyWriter(tokensToWrite, stringPayload);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
+            }
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void HexStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 string hexString = "eccab3900d55b946";
                 string stringPayload = $"\"{hexString}\"";
@@ -613,12 +636,34 @@
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
+
+            JsonWriter.EnableEncodedStrings = false;
+            {
+                string hexString = "eccab3900d55b946";
+                string stringPayload = $"\"{hexString}\"";
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String(hexString)
+                };
+
+                List<byte> binaryPayload = new List<byte>()
+                {
+                    BinaryFormat,
+                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + hexString.Length),
+                };
+
+                binaryPayload.AddRange(Encoding.UTF8.GetBytes(hexString));
+
+                this.VerifyWriter(tokensToWrite, stringPayload);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
+            }
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void CompressedStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 // 4 bit packed string
                 string compressedString = "ababababababababababababababababg";
@@ -768,12 +813,34 @@
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
+
+            JsonWriter.EnableEncodedStrings = false;
+            {
+                string compressedString = "thequickbrownfoxjumpedoverthelazydog";
+                string stringPayload = $"\"{compressedString}\"";
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String(compressedString)
+                };
+
+                List<byte> binaryPayload = new List<byte>()
+                {
+                    BinaryFormat,
+                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + compressedString.Length),
+                };
+
+                binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
+
+                this.VerifyWriter(tokensToWrite, stringPayload);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
+            }
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void GuidStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 // Empty Guid
                 string guidString = "00000000-0000-0000-0000-000000000000";
@@ -1023,12 +1090,34 @@
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
+
+            JsonWriter.EnableEncodedStrings = false;
+            {
+                string guidString = "00000000-0000-0000-0000-000000000000";
+                string stringPayload = $"\"{guidString}\"";
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.String(guidString)
+                };
+
+                List<byte> binaryPayload = new List<byte>()
+                {
+                    BinaryFormat,
+                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length),
+                };
+
+                binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+
+                this.VerifyWriter(tokensToWrite, stringPayload);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
+            }
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void ReferenceStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 // 1 byte reference string
                 string stringValue = "hello";
@@ -1278,6 +1367,34 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, binaryPayload);
+            }
+
+            JsonWriter.EnableEncodedStrings = false;
+            {
+                // 1 byte reference string
+                string stringValue = "hello";
+                string stringPayload = "[\"hello\",\"hello\"]";
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                    JsonToken.String(stringValue),
+                    JsonToken.String(stringValue),
+                    JsonToken.ArrayEnd()
+                };
+
+                List<byte> binaryPayload = new List<byte>()
+                {
+                    BinaryFormat,
+                    JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                    12,
+                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
+                    (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
+                    (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+                };
+
+                this.VerifyWriter(tokensToWrite, stringPayload);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
         #endregion
@@ -1893,6 +2010,7 @@
         [Owner("brchon")]
         public void AllPrimitivesObjectTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             string expectedString = @"{
                 ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
                 ""double"": 0.18963001816981939,
