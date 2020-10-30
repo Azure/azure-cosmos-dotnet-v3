@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationToken cancellationToken;
         private readonly TimeSpan? userDefinedBackgroundTokenCredentialRefreshInterval;
+        private readonly TimeSpan requestTimeout;
 
         private readonly SemaphoreSlim getTokenRefreshLock = new SemaphoreSlim(1);
         private readonly SemaphoreSlim backgroundRefreshLock = new SemaphoreSlim(1);
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
         internal TokenCredentialCache(
             TokenCredential tokenCredential,
             string accountEndpointHost,
+            TimeSpan requestTimeout,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
             this.tokenCredential = tokenCredential;
@@ -56,6 +58,7 @@ namespace Microsoft.Azure.Cosmos
             });
 
             this.userDefinedBackgroundTokenCredentialRefreshInterval = backgroundTokenCredentialRefreshInterval;
+            this.requestTimeout = requestTimeout;
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
         }
@@ -108,8 +111,8 @@ namespace Microsoft.Azure.Cosmos
         private async ValueTask RefreshCachedTokenWithRetryHelperAsync(
             CosmosDiagnosticsContext diagnosticsContext)
         {
-            // A different thread is already updating the access token
-            bool skipRefreshBecause = this.backgroundRefreshLock.CurrentCount == 1;
+            // A different thread is already updating the access token. Count starts off at 1.
+            bool skipRefreshBecause = this.backgroundRefreshLock.CurrentCount != 1;
             await this.backgroundRefreshLock.WaitAsync();
             try
             {
@@ -133,19 +136,8 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        using (diagnosticsContext.CreateScope(nameof(this.RefreshCachedTokenWithRetryHelperAsync)))
-                        {
-                            this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
-                                this.tokenRequestContext,
-                                this.cancellationToken);
-                            if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
-                            {
-                                double totalSecondUntilExpire = (this.cachedAccessToken.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
-                                this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
-                            }
-                             
-                            return;
-                        }
+                        await this.ExecuteGetTokenWithRequestTimeoutAsync(diagnosticsContext);
+                        return;
                     }
                     catch (RequestFailedException requestFailedException)
                     {
@@ -199,13 +191,49 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 throw CosmosExceptionFactory.CreateUnauthorizedException(
-                    ClientResources.FailedToGetAadToken,
-                    (int)SubStatusCodes.FailedToGetAadToken,
-                    lastException);
+                    message: ClientResources.FailedToGetAadToken,
+                    subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
+                    innerException: lastException,
+                    diagnosticsContext: diagnosticsContext);
             }
             finally
             {
                 this.backgroundRefreshLock.Release();
+            }
+        }
+
+        private async ValueTask ExecuteGetTokenWithRequestTimeoutAsync(CosmosDiagnosticsContext diagnosticsContext)
+        {
+            using (diagnosticsContext.CreateScope(nameof(this.RefreshCachedTokenWithRetryHelperAsync)))
+            {
+                using CancellationTokenSource singleRequestCancellationTokenSource = new CancellationTokenSource(this.requestTimeout);
+                CancellationToken requestCancellationToken = singleRequestCancellationTokenSource.Token;
+
+                Task[] valueTasks = new Task[2];
+                valueTasks[0] = Task.Delay(this.requestTimeout);
+
+                Task<AccessToken> valueTaskTokenCredential = this.tokenCredential.GetTokenAsync(
+                    this.tokenRequestContext,
+                    requestCancellationToken).AsTask();
+
+                valueTasks[1] = valueTaskTokenCredential;
+                await Task.WhenAny(valueTasks);
+
+                // Time out completed and the GetTokenAsync did not
+                if (valueTasks[0].IsCompleted && !valueTasks[1].IsCompleted)
+                {
+                    throw new OperationCanceledException($"TokenCredential.GetTokenAsync request timed out after {this.requestTimeout}");
+                }
+
+                this.cachedAccessToken = await valueTaskTokenCredential;
+
+                if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
+                {
+                    double totalSecondUntilExpire = (this.cachedAccessToken.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
+                    this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
+                }
+
+                return;
             }
         }
 
@@ -232,6 +260,7 @@ namespace Microsoft.Azure.Cosmos
 
                     DefaultTrace.TraceInformation("StartRefreshToken() - Invoking refresh");
 
+                    Console.WriteLine("Background:" + DateTime.UtcNow);
                     await this.RefreshCachedTokenWithRetryHelperAsync(EmptyCosmosDiagnosticsContext.Singleton);
                 }
                 catch (Exception ex)
