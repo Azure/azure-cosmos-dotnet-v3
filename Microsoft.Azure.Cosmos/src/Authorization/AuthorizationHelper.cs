@@ -289,22 +289,26 @@ namespace Microsoft.Azure.Cosmos
 
         // used in Compute
         public static bool CheckPayloadUsingKey(
-               ReadOnlyMemory<char> inputToken,
-               string verb,
-               string resourceId,
-               string resourceType,
-               INameValueCollection headers,
-               string key)
+            ReadOnlyMemory<char> inputToken,
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash computeHash)
         {
-            string requestBasedToken = AuthorizationHelper.GenerateKeyAuthorizationCore(
+            ArrayOwner payload;
+            string requestBasedToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
                 headers,
-                key);
-
-            return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
-                || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
+                computeHash,
+                out payload);
+            using (payload)
+            {
+                return inputToken.Span.SequenceEqual(requestBasedToken.AsSpan())
+                       || inputToken.ToString().Equals(requestBasedToken, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         // used by Compute
@@ -714,7 +718,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
+        // This function is used by Compute
+        internal static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
         {
             return
                 verbInput.Length
