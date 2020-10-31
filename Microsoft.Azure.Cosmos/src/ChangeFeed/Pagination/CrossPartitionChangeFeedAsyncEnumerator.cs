@@ -108,10 +108,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             List<CosmosElement> changeFeedContinuationTokens = new List<CosmosElement>();
             foreach ((FeedRangeInternal range, ChangeFeedState state) rangeAndState in crossPartitionState.Value)
             {
-                ChangeFeedContinuationToken changeFeedContinuationToken = new ChangeFeedContinuationToken(
+                ChangeFeedFeedRangeState changeFeedContinuationToken = new ChangeFeedFeedRangeState(
                     rangeAndState.range,
                     rangeAndState.state);
-                CosmosElement cosmosElementChangeFeedContinuationToken = ChangeFeedContinuationToken.ToCosmosElement(changeFeedContinuationToken);
+                CosmosElement cosmosElementChangeFeedContinuationToken = changeFeedContinuationToken.ToCosmosElement();
                 changeFeedContinuationTokens.Add(cosmosElementChangeFeedContinuationToken);
             }
 
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 List<(FeedRangeInternal, ChangeFeedState)> rangeAndStates = new List<(FeedRangeInternal, ChangeFeedState)>();
                 foreach (CosmosElement arrayItem in cosmosArray)
                 {
-                    TryCatch<ChangeFeedContinuationToken> monadicChangeFeedContinuationToken = ChangeFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem);
+                    TryCatch<ChangeFeedFeedRangeState> monadicChangeFeedContinuationToken = ChangeFeedFeedRangeState.Monadic.CreateFromCosmosElement(arrayItem);
                     if (monadicChangeFeedContinuationToken.Failed)
                     {
                         return TryCatch<CrossPartitionState<ChangeFeedState>>.FromException(
@@ -254,8 +254,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                 innerException: monadicChangeFeedContinuationToken.Exception));
                     }
 
-                    ChangeFeedContinuationToken changeFeedContinuationToken = monadicChangeFeedContinuationToken.Result;
-                    rangeAndStates.Add((changeFeedContinuationToken.Range, changeFeedContinuationToken.State));
+                    ChangeFeedFeedRangeState changeFeedContinuationToken = monadicChangeFeedContinuationToken.Result;
+                    rangeAndStates.Add((changeFeedContinuationToken.FeedRange, changeFeedContinuationToken.State));
                 }
 
                 CrossPartitionState<ChangeFeedState> crossPartitionState = new CrossPartitionState<ChangeFeedState>(rangeAndStates);

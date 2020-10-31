@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Routing;
 
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
@@ -109,8 +108,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                     isMaxInclusive: false));
                                 ChangeFeedState state = token is CosmosNull ? ChangeFeedState.Beginning() : ChangeFeedStateContinuation.Continuation(token);
 
-                                ChangeFeedContinuationToken changeFeedContinuationToken = new ChangeFeedContinuationToken(feedRangeEpk, state);
-                                changeFeedTokensV2.Add(ChangeFeedContinuationToken.ToCosmosElement(changeFeedContinuationToken));
+                                ChangeFeedFeedRangeState changeFeedContinuationToken = new ChangeFeedFeedRangeState(feedRangeEpk, state);
+                                changeFeedTokensV2.Add(changeFeedContinuationToken.ToCosmosElement());
                             }
 
                             CosmosArray changeFeedTokensArrayV2 = CosmosArray.Create(changeFeedTokensV2);
@@ -212,18 +211,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string continuationToken;
             if (this.changeFeedRequestOptions.EmitOldContinuationToken)
             {
-                List<ChangeFeedContinuationToken> parsedChangeFeedTokens = new List<ChangeFeedContinuationToken>();
+                List<ChangeFeedFeedRangeState> parsedChangeFeedTokens = new List<ChangeFeedFeedRangeState>();
                 CosmosArray changeFeedTokens = (CosmosArray)innerContinuationToken;
                 foreach (CosmosElement changeFeedToken in changeFeedTokens)
                 {
-                    parsedChangeFeedTokens.Add(ChangeFeedContinuationToken.MonadicConvertFromCosmosElement(changeFeedToken).Result);
+                    parsedChangeFeedTokens.Add(ChangeFeedFeedRangeState.Monadic.CreateFromCosmosElement(changeFeedToken).Result);
                 }
 
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                foreach (ChangeFeedContinuationToken changeFeedContinuationToken in parsedChangeFeedTokens)
+                foreach (ChangeFeedFeedRangeState changeFeedContinuationToken in parsedChangeFeedTokens)
                 {
                     string token = changeFeedContinuationToken.State is ChangeFeedStateContinuation changeFeedStateContinuation ? ((CosmosString)changeFeedStateContinuation.ContinuationToken).Value : null;
-                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedContinuationToken.Range).Range;
+                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedContinuationToken.FeedRange).Range;
                     CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                     {
                         Range = range,
