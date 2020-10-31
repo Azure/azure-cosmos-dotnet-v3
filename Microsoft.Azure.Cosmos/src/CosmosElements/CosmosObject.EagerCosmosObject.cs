@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -22,32 +21,64 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class EagerCosmosObject : CosmosObject
         {
-            private readonly Dictionary<string, CosmosElement> dictionary;
+            private readonly List<KeyValuePair<string, CosmosElement>> properties;
 
-            public EagerCosmosObject(IReadOnlyDictionary<string, CosmosElement> dictionary)
+            public EagerCosmosObject(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
             {
-                this.dictionary = new Dictionary<string, CosmosElement>(dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
+                this.properties = new List<KeyValuePair<string, CosmosElement>>(properties);
             }
 
-            public override CosmosElement this[string key] => this.dictionary[key];
+            public override CosmosElement this[string key]
+            {
+                get
+                {
+                    if (!this.TryGetValue(key, out CosmosElement value))
+                    {
+                        throw new KeyNotFoundException($"Failed to find key: {key}");
+                    }
 
-            public override int Count => this.dictionary.Count;
+                    return value;
+                }
+            }
 
-            public override KeyCollection Keys => new KeyCollection(this.dictionary.Keys);
+            public override IEnumerable<string> Keys => this.properties.Select(kvp => kvp.Key);
 
-            public override ValueCollection Values => new ValueCollection(this.dictionary.Values);
+            public override IEnumerable<CosmosElement> Values => this.properties.Select(kvp => kvp.Value);
 
-            public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
+            public override int Count => this.properties.Count;
 
-            public override Enumerator GetEnumerator() => new Enumerator(this.dictionary.GetEnumerator());
+            public override bool ContainsKey(string key)
+            {
+                return this.TryGetValue(key, out _);
+            }
 
-            public override bool TryGetValue(string key, out CosmosElement value) => this.dictionary.TryGetValue(key, out value);
+            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
+            {
+                return this.properties.GetEnumerator();
+            }
+
+            public override bool TryGetValue(string key, out CosmosElement value)
+            {
+                foreach (KeyValuePair<string, CosmosElement> property in this.properties)
+                {
+                    if (property.Key == key)
+                    {
+                        value = property.Value;
+                        return true;
+                    }
+                }
+
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                value = default; // Dictionary.TryGetValue does not do nullable references
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+                return false;
+            }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 jsonWriter.WriteObjectStart();
 
-                foreach (KeyValuePair<string, CosmosElement> kvp in this.dictionary)
+                foreach (KeyValuePair<string, CosmosElement> kvp in this.properties)
                 {
                     jsonWriter.WriteFieldName(kvp.Key);
                     kvp.Value.WriteTo(jsonWriter);

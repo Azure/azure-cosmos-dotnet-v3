@@ -960,24 +960,32 @@
 
         private static CosmosElement GenerateRandomJsonValue(Random random)
         {
-            return (random.Next(0, 7)) switch
+            switch (random.Next(0, 7))
             {
                 // Number
-                0 => CosmosNumber64.Create(random.Next()),
+                case 0:
+                    return CosmosNumber64.Create(random.Next());
                 // String
-                1 => CosmosString.Create(new string('a', random.Next(0, 100))),
+                case 1:
+                    return CosmosString.Create(new string('a', random.Next(0, 100)));
                 // Null
-                2 => CosmosNull.Create(),
+                case 2:
+                    return CosmosNull.Create();
                 // Bool
-                3 => CosmosBoolean.Create((random.Next() % 2) == 0),
+                case 3:
+                    return CosmosBoolean.Create((random.Next() % 2) == 0);
                 // Object
-                4 => CosmosObject.Create(new Dictionary<string, CosmosElement>()),
+                case 4:
+                    return CosmosObject.Create(new List<KeyValuePair<string, CosmosElement>>());
                 // Array
-                5 => CosmosArray.Create(new List<CosmosElement>()),
+                case 5:
+                    return CosmosArray.Create(new List<CosmosElement>());
                 // Undefined
-                6 => null,
-                _ => throw new ArgumentException(),
-            };
+                case 6:
+                    return null;
+                default:
+                    throw new ArgumentException();
+            }
         }
 
         private sealed class MockOrderByComparer : IComparer<CosmosElement>

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
@@ -137,19 +136,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             public override CosmosElement GetResult()
             {
-                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>(capacity: this.orderedAliases.Count);
-                List<string> keys = new List<string>(this.orderedAliases.Count);
+                List<KeyValuePair<string, CosmosElement>> aliasToElement = new List<KeyValuePair<string, CosmosElement>>();
                 foreach (string alias in this.orderedAliases)
                 {
                     AggregateValue aggregateValue = this.aliasToValue[alias];
                     if (aggregateValue.Result != null)
                     {
-                        dictionary[alias] = aggregateValue.Result;
-                        keys.Add(alias);
+                        KeyValuePair<string, CosmosElement> kvp = new KeyValuePair<string, CosmosElement>(alias, aggregateValue.Result);
+                        aliasToElement.Add(kvp);
                     }
                 }
 
-                return new OrderedCosmosObject(dictionary, keys);
+                return CosmosObject.Create(aliasToElement);
             }
 
             public override CosmosElement GetCosmosElementContinuationToken()
@@ -249,50 +247,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             public override string ToString()
             {
                 return Newtonsoft.Json.JsonConvert.SerializeObject(this.aliasToValue);
-            }
-
-            private sealed class OrderedCosmosObject : CosmosObject
-            {
-                private readonly Dictionary<string, CosmosElement> dictionary;
-                private readonly IReadOnlyList<string> keyOrdering;
-
-                public OrderedCosmosObject(Dictionary<string, CosmosElement> dictionary, IReadOnlyList<string> keyOrdering)
-                {
-                    this.dictionary = dictionary;
-                    this.keyOrdering = keyOrdering;
-
-                    if (dictionary.Count != keyOrdering.Count)
-                    {
-                        throw new ArgumentException("key counts don't add up.");
-                    }
-                }
-
-                public override CosmosElement this[string key] => this.dictionary[key];
-
-                public override KeyCollection Keys => new KeyCollection(this.dictionary.Keys);
-
-                public override ValueCollection Values => new ValueCollection(this.dictionary.Values);
-
-                public override int Count => this.dictionary.Count;
-
-                public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
-
-                public override Enumerator GetEnumerator() => new Enumerator(this.dictionary.GetEnumerator());
-
-                public override bool TryGetValue(string key, out CosmosElement value) => this.dictionary.TryGetValue(key, out value);
-
-                public override void WriteTo(IJsonWriter jsonWriter)
-                {
-                    jsonWriter.WriteObjectStart();
-
-                    foreach (string key in this.keyOrdering)
-                    {
-                        jsonWriter.WriteFieldName(key);
-                        this[key].WriteTo(jsonWriter);
-                    }
-
-                    jsonWriter.WriteObjectEnd();
-                }
             }
         }
 

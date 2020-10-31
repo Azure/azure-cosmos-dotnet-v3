@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class LazyCosmosArray : CosmosArray
         {
-            private readonly Lazy<List<CosmosElement>> lazyCosmosElementArray;
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
+            private readonly Lazy<Lazy<CosmosElement>[]> lazyCosmosElementArray;
 
             public LazyCosmosArray(
                 IJsonNavigator jsonNavigator,
@@ -38,24 +38,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
 
-                this.lazyCosmosElementArray = new Lazy<List<CosmosElement>>(() =>
+                this.lazyCosmosElementArray = new Lazy<Lazy<CosmosElement>[]>(() =>
                 {
-                    List<CosmosElement> elements = new List<CosmosElement>(jsonNavigator.GetArrayItemCount(jsonNavigatorNode));
+                    Lazy<CosmosElement>[] lazyArray = new Lazy<CosmosElement>[this.jsonNavigator.GetArrayItemCount(this.jsonNavigatorNode)];
+                    int index = 0;
                     // Using foreach instead of indexer, since the navigator doesn't support random seeks efficiently.
-                    foreach (IJsonNavigatorNode arrayItem in jsonNavigator.GetArrayItems(jsonNavigatorNode))
+                    foreach (IJsonNavigatorNode arrayItem in this.jsonNavigator.GetArrayItems(this.jsonNavigatorNode))
                     {
-                        elements.Add(CosmosElement.Dispatch(jsonNavigator, arrayItem));
+                        lazyArray[index] = new Lazy<CosmosElement>(() => CosmosElement.Dispatch(this.jsonNavigator, arrayItem));
+                        index++;
                     }
 
-                    return elements;
+                    return lazyArray;
                 });
             }
 
-            public override int Count => this.lazyCosmosElementArray.Value.Count;
+            public override int Count => this.lazyCosmosElementArray.Value.Length;
 
-            public override CosmosElement this[int index] => this.lazyCosmosElementArray.Value[index];
+            public override CosmosElement this[int index] => this.lazyCosmosElementArray.Value[index].Value;
 
-            public override Enumerator GetEnumerator() => new Enumerator(this.lazyCosmosElementArray.Value.GetEnumerator());
+            public override IEnumerator<CosmosElement> GetEnumerator() => this.lazyCosmosElementArray.Value.Select(lazyItem => lazyItem.Value).GetEnumerator();
 
             public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
 
