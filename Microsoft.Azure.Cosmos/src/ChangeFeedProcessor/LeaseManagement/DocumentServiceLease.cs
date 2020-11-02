@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public abstract string CurrentLeaseToken { get; }
 
         /// <summary>
+        /// Gets the processing distribution unit identifier.
+        /// </summary>
+        public abstract FeedRangeInternal CurrentFeedRange { get; }
+
+        /// <summary>
         /// Gets or sets the host name owner of the lease.
         /// The Owner keeps track which <see cref="ChangeFeedProcessor"/> is currently processing that Partition Key Range.
         /// </summary>

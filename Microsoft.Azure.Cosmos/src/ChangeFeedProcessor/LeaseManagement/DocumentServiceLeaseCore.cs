@@ -67,6 +67,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonIgnore]
         public override string CurrentLeaseToken => this.LeaseToken;
 
+        [JsonIgnore]
+        public override FeedRangeInternal CurrentFeedRange
+        {
+            get
+            {
+                FeedRangeInternal.TryParse(this.CurrentLeaseToken, out FeedRangeInternal parsedRange);
+                return parsedRange;
+            }
+        }
+
         [JsonProperty("Owner")]
         public override string Owner { get; set; }
 

@@ -44,12 +44,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 });
         }
 
-        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string leaseToken, string continuationToken)
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            FeedRangeInternal feedRangeInternal,
+            string continuationToken)
         {
-            if (leaseToken == null)
+            if (feedRangeInternal == null)
             {
-                throw new ArgumentNullException(nameof(leaseToken));
+                throw new ArgumentNullException(nameof(feedRangeInternal));
             }
+
+            string leaseToken = feedRangeInternal.ToJsonString();
 
             DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
             {

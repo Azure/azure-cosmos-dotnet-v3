@@ -15,9 +15,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// <summary>
         /// Checks whether the lease exists and creates it if it does not exist.
         /// </summary>
-        /// <param name="partitionId">Partition to work on.</param>
+        /// <param name="feedRange">Feed range for the lease.</param>
         /// <param name="continuationToken">Continuation token if it exists.</param>
-        public abstract Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken);
+        public abstract Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(FeedRangeInternal feedRange, string continuationToken);
 
         /// <summary>
         /// Delete the lease.
