@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -51,40 +50,48 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             await this.CreateLeasesAsync(partitionIds).ConfigureAwait(false);
         }
 
-        public override async Task<IEnumerable<DocumentServiceLease>> SplitPartitionAsync(DocumentServiceLease lease)
+        public override async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(DocumentServiceLease lease)
         {
             if (lease == null)
             {
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            string partitionId = lease.CurrentLeaseToken;
-            string lastContinuationToken = lease.ContinuationToken;
+            string leaseToken = lease.CurrentLeaseToken;
 
-            DefaultTrace.TraceInformation("Lease {0} is gone due to split", partitionId);
+            DefaultTrace.TraceInformation("Lease {0} is gone due to split or merge", leaseToken);
 
-            // After split the childs are either all or none available
             List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
-            List<string> addedPartitionIds = ranges.Where(range => range.Parents.Contains(partitionId)).Select(range => range.Id).ToList();
-            if (addedPartitionIds.Count == 0)
+            List<PartitionKeyRange> resultingRanges = ranges.Where(range => range.Parents.Contains(leaseToken)).ToList();
+            if (resultingRanges.Count == 0)
             {
-                DefaultTrace.TraceError("Lease {0} had split but we failed to find at least one child partition", partitionId);
+                DefaultTrace.TraceError("Lease {0} is gone but we failed to find at least one child partition", leaseToken);
                 throw new InvalidOperationException();
             }
 
             ConcurrentQueue<DocumentServiceLease> newLeases = new ConcurrentQueue<DocumentServiceLease>();
-            await addedPartitionIds.ForEachAsync(
-                async addedRangeId =>
-                {
-                    DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(addedRangeId, lastContinuationToken).ConfigureAwait(false);
-                    if (newLease != null)
+            if (resultingRanges.Count > 1)
+            {
+                // Split
+                string lastContinuationToken = lease.ContinuationToken;                
+                await resultingRanges.ForEachAsync(
+                    async addedRange =>
                     {
-                        newLeases.Enqueue(newLease);
-                    }
-                },
-                this.degreeOfParallelism).ConfigureAwait(false);
+                        DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangePartitionKeyRange(addedRange.Id), lastContinuationToken).ConfigureAwait(false);
+                        if (newLease != null)
+                        {
+                            newLeases.Enqueue(newLease);
+                        }
+                    },
+                    this.degreeOfParallelism).ConfigureAwait(false);
 
-            DefaultTrace.TraceInformation("lease {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
+                DefaultTrace.TraceInformation("Lease {0} split into {1}", leaseToken, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
+            }
+            else
+            {
+                // Merge
+
+            }
 
             return newLeases;
         }
@@ -92,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         private async Task<List<PartitionKeyRange>> EnumPartitionKeyRangesAsync()
         {
             string containerUri = this.container.LinkUri.ToString();
-            string partitionKeyRangesPath = string.Format(CultureInfo.InvariantCulture, "{0}/pkranges", containerUri);
 
             IDocumentFeedResponse<PartitionKeyRange> response = null;
             List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>();
@@ -132,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             addedPartitionIds.ExceptWith(existingPartitionIds);
 
             await addedPartitionIds.ForEachAsync(
-                async addedRangeId => { await this.leaseManager.CreateLeaseIfNotExistAsync(addedRangeId, continuationToken: null).ConfigureAwait(false); },
+                async addedRangeId => await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangePartitionKeyRange(addedRangeId), continuationToken: null).ConfigureAwait(false),
                 this.degreeOfParallelism).ConfigureAwait(false);
         }
     }
