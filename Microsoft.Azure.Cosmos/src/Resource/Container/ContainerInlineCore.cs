@@ -424,10 +424,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
-            ChangeFeedRequestOptions changeFeedRequestOptions, 
-            ChangeFeedCrossFeedRangeState state)
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
-            return base.GetChangeFeedAsyncEnumerable(changeFeedRequestOptions, state);
+            return base.GetChangeFeedAsyncEnumerable(state, changeFeedRequestOptions);
         }
     }
 }

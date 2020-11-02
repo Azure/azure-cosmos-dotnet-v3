@@ -77,16 +77,16 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
         public IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
-            ChangeFeedRequestOptions changeFeedRequestOptions)
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return this.GetChangeFeedAsyncEnumerable(
-                changeFeedRequestOptions,
-                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                changeFeedRequestOptions);
         }
 
         public abstract IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
-            ChangeFeedRequestOptions changeFeedRequestOptions,
-            ChangeFeedCrossFeedRangeState state);
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         /// Throw an exception if the partition key is null or empty string

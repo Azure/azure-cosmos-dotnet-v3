@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new CrossFeedRangeState<ChangeFeedState>(
                     new List<FeedRangeState<ChangeFeedState>>()
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
                     }.ToImmutableArray()),
                 cancellationToken: default);
 
