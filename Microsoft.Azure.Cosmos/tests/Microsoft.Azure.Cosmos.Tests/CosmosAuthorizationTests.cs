@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderResourceToken("VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=");
 
-            { 
+            {
                 StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
                 (string token, string payload) = await cosmosAuthorization.GetUserAuthorizationAsync(
                     "dbs\\test",
@@ -342,9 +342,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string t2 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token1, t2);
 
-                // After waiting for another 3 seconds (5 seconds for background refresh), token1 is still valid,
+                // After waiting for another 4 seconds (5 seconds for background refresh with .5 second delay), token1 is still valid,
                 // but cached token has been refreshed to token2 by the background task started before.
-                await Task.Delay(TimeSpan.FromSeconds(3.6));
+                await Task.Delay(TimeSpan.FromSeconds(4));
                 string t3 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token2, t3);
 
