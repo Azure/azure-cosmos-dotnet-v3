@@ -105,6 +105,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return BackendMetricsExtractor.MetricsNotFound;
         }
 
+        public override (ParseFailureReason, BackendMetrics) Visit(CosmosDiagnosticScopeOld cosmosDiagnosticScope)
+        {
+            return BackendMetricsExtractor.MetricsNotFound;
+        }
+
+        public override (ParseFailureReason, BackendMetrics) Visit(RequestHandlerScopeOld requestHandlerScope)
+        {
+            return BackendMetricsExtractor.MetricsNotFound;
+        }
+
         public enum ParseFailureReason
         {
             None,

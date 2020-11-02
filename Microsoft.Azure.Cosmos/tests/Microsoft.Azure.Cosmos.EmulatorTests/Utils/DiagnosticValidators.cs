@@ -349,6 +349,16 @@ namespace Microsoft.Azure.Cosmos
                     Assert.IsTrue(this.isQueryPageVisited);
                 }
             }
+
+            public override void Visit(CosmosDiagnosticScopeOld cosmosDiagnosticScope)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Visit(RequestHandlerScopeOld requestHandlerScope)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private sealed class PointDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
@@ -460,6 +470,16 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
+
+            public override void Visit(CosmosDiagnosticScopeOld cosmosDiagnosticScope)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Visit(RequestHandlerScopeOld requestHandlerScope)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private sealed class ChangeFeedDiagnosticValidatorHelper : CosmosDiagnosticsInternalVisitor
@@ -532,6 +552,16 @@ namespace Microsoft.Azure.Cosmos
                 Assert.IsNotNull(this.StartTimeUtc);
                 Assert.IsNotNull(this.TotalElapsedTime);
                 Assert.IsTrue(this.isRequestHandlerVisited);
+            }
+
+            public override void Visit(CosmosDiagnosticScopeOld cosmosDiagnosticScope)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Visit(RequestHandlerScopeOld requestHandlerScope)
+            {
+                throw new NotImplementedException();
             }
         }
     }

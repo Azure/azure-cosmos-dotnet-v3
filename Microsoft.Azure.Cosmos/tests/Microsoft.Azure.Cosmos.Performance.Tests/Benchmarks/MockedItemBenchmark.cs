@@ -68,6 +68,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task ReadItemExists()
         {
+            CosmosDiagnosticsContextCore.UseNewScope = true;
+            await this.CurrentBenchmark.ReadItemExists();
+        }
+
+        [Benchmark]
+        public async Task ReadItemExistsOld()
+        {
+            CosmosDiagnosticsContextCore.UseNewScope = false;
             await this.CurrentBenchmark.ReadItemExists();
         }
 

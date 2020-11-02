@@ -58,6 +58,8 @@ namespace Microsoft.Azure.Cosmos
             this.overallScope = new CosmosDiagnosticScope("Overall");
         }
 
+        public static bool UseNewScope = false;
+
         public override DateTime StartUtc { get; }
 
         public override string UserAgent { get; }
@@ -103,17 +105,37 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDisposable CreateScope(string name)
         {
-            CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
+            if (UseNewScope)
+            {
+                CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
 
-            this.ContextList.Add(scope);
-            return scope;
+                this.ContextList.Add(scope);
+                return scope;
+            }
+            else
+            {
+                CosmosDiagnosticScopeOld scope = new CosmosDiagnosticScopeOld(name);
+
+                this.ContextList.Add(scope);
+                return scope;
+            }
+            
         }
 
         internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
-            RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
-            this.ContextList.Add(requestHandlerScope);
-            return requestHandlerScope;
+            if (UseNewScope)
+            {
+                RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
+                this.ContextList.Add(requestHandlerScope);
+                return requestHandlerScope;
+            }
+            else
+            {
+                RequestHandlerScopeOld requestHandlerScope = new RequestHandlerScopeOld(requestHandler);
+                this.ContextList.Add(requestHandlerScope);
+                return requestHandlerScope;
+            }
         }
 
         internal override void AddDiagnosticsInternal(CosmosSystemInfo processInfo)
