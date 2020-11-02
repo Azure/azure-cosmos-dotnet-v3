@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            this.Id = handler.GetType().FullName;
+            this.Id = handler.FullHandlerName;
             this.ElapsedTimeStopWatch = Stopwatch.StartNew();
         }
 
