@@ -124,9 +124,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
             }
-            catch (FeedSplitException ex)
+            catch (FeedRangeGoneException ex)
             {
-                await this.HandleSplitAsync(lease, ex.LastContinuation).ConfigureAwait(false);
+                await this.HandlePartitionGoneAsync(lease, ex.LastContinuation).ConfigureAwait(false);
             }
             catch (TaskCanceledException)
             {
@@ -141,12 +141,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             await this.RemoveLeaseAsync(lease).ConfigureAwait(false);
         }
 
-        private async Task HandleSplitAsync(DocumentServiceLease lease, string lastContinuationToken)
+        private async Task HandlePartitionGoneAsync(DocumentServiceLease lease, string lastContinuationToken)
         {
             try
             {
                 lease.ContinuationToken = lastContinuationToken;
-                IEnumerable<DocumentServiceLease> addedLeases = await this.synchronizer.SplitPartitionAsync(lease).ConfigureAwait(false);
+                IEnumerable<DocumentServiceLease> addedLeases = await this.synchronizer.HandlePartitionGoneAsync(lease).ConfigureAwait(false);
                 Task[] addLeaseTasks = addedLeases.Select(l =>
                     {
                         l.Properties = lease.Properties;
