@@ -10,33 +10,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal sealed class ChangeFeedFeedRangeState : FeedRangeState<ChangeFeedState>
+    internal static class ChangeFeedFeedRangeStateSerializer
     {
-        public ChangeFeedFeedRangeState(
-            FeedRangeInternal feedRange,
-            ChangeFeedState changeFeedState)
-            : base(feedRange, changeFeedState)
+        private static class PropertyNames
         {
+            public const string FeedRange = "FeedRange";
+            public const string State = "State";
         }
 
-        public CosmosElement ToCosmosElement()
+        public static CosmosElement ToCosmosElement(FeedRangeState<ChangeFeedState> feedRangeState)
         {
             return CosmosObject.Create(new Dictionary<string, CosmosElement>()
             {
                 {
                     PropertyNames.FeedRange,
-                    FeedRangeCosmosElementSerializer.ToCosmosElement(this.FeedRange)
+                    FeedRangeCosmosElementSerializer.ToCosmosElement(feedRangeState.FeedRange)
                 },
                 {
                     PropertyNames.State,
-                    ChangeFeedStateCosmosElementSerializer.ToCosmosElement(this.State)
+                    ChangeFeedStateCosmosElementSerializer.ToCosmosElement(feedRangeState.State)
                 }
             });
         }
 
         public static class Monadic
         {
-            public static TryCatch<ChangeFeedFeedRangeState> CreateFromCosmosElement(CosmosElement cosmosElement)
+            public static TryCatch<FeedRangeState<ChangeFeedState>> CreateFromCosmosElement(CosmosElement cosmosElement)
             {
                 if (cosmosElement == null)
                 {
@@ -45,45 +44,45 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
                 if (!(cosmosElement is CosmosObject cosmosObject))
                 {
-                    return TryCatch<ChangeFeedFeedRangeState>.FromException(
+                    return TryCatch<FeedRangeState<ChangeFeedState>>.FromException(
                         new FormatException(
                             $"Expected object for ChangeFeed Continuation: {cosmosElement}."));
                 }
 
                 if (!cosmosObject.TryGetValue(PropertyNames.FeedRange, out CosmosElement feedRangeCosmosElement))
                 {
-                    return TryCatch<ChangeFeedFeedRangeState>.FromException(
+                    return TryCatch<FeedRangeState<ChangeFeedState>>.FromException(
                         new FormatException(
-                            $"Expected '{PropertyNames.FeedRange}' for '{nameof(ChangeFeedFeedRangeState)}': {cosmosElement}."));
+                            $"Expected '{PropertyNames.FeedRange}' for '{nameof(ChangeFeedFeedRangeStateSerializer)}': {cosmosElement}."));
                 }
 
                 if (!cosmosObject.TryGetValue(PropertyNames.State, out CosmosElement stateCosmosElement))
                 {
-                    return TryCatch<ChangeFeedFeedRangeState>.FromException(
+                    return TryCatch<FeedRangeState<ChangeFeedState>>.FromException(
                         new FormatException(
-                            $"Expected '{PropertyNames.State}' for '{nameof(ChangeFeedFeedRangeState)}': {cosmosElement}."));
+                            $"Expected '{PropertyNames.State}' for '{nameof(ChangeFeedFeedRangeStateSerializer)}': {cosmosElement}."));
                 }
 
                 TryCatch<FeedRangeInternal> monadicFeedRange = FeedRangeCosmosElementSerializer.MonadicCreateFromCosmosElement(feedRangeCosmosElement);
                 if (monadicFeedRange.Failed)
                 {
-                    return TryCatch<ChangeFeedFeedRangeState>.FromException(
+                    return TryCatch<FeedRangeState<ChangeFeedState>>.FromException(
                         new FormatException(
-                            $"Failed to parse '{PropertyNames.FeedRange}' for '{nameof(ChangeFeedFeedRangeState)}': {cosmosElement}.",
+                            $"Failed to parse '{PropertyNames.FeedRange}' for '{nameof(ChangeFeedFeedRangeStateSerializer)}': {cosmosElement}.",
                             innerException: monadicFeedRange.Exception));
                 }
 
                 TryCatch<ChangeFeedState> monadicChangeFeedState = ChangeFeedStateCosmosElementSerializer.MonadicFromCosmosElement(stateCosmosElement);
                 if (monadicChangeFeedState.Failed)
                 {
-                    return TryCatch<ChangeFeedFeedRangeState>.FromException(
+                    return TryCatch<FeedRangeState<ChangeFeedState>>.FromException(
                         new FormatException(
-                            $"Failed to parse '{PropertyNames.State}' for '{nameof(ChangeFeedFeedRangeState)}': {cosmosElement}.",
+                            $"Failed to parse '{PropertyNames.State}' for '{nameof(ChangeFeedFeedRangeStateSerializer)}': {cosmosElement}.",
                             innerException: monadicChangeFeedState.Exception));
                 }
 
-                return TryCatch<ChangeFeedFeedRangeState>.FromResult(
-                    new ChangeFeedFeedRangeState(
+                return TryCatch<FeedRangeState<ChangeFeedState>>.FromResult(
+                    new FeedRangeState<ChangeFeedState>(
                         monadicFeedRange.Result,
                         monadicChangeFeedState.Result));
             }

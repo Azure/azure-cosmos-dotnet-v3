@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -419,6 +421,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
+        }
+
+        public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedRequestOptions changeFeedRequestOptions, 
+            ChangeFeedCrossFeedRangeState state)
+        {
+            return base.GetChangeFeedAsyncEnumerable(changeFeedRequestOptions, state);
         }
     }
 }

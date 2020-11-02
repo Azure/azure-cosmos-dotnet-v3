@@ -7,63 +7,103 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal sealed class ChangeFeedCrossFeedRangeState
+    internal readonly struct ChangeFeedCrossFeedRangeState
     {
-        public static readonly ChangeFeedCrossFeedRangeState FullRangeStartFromBeginning = new ChangeFeedCrossFeedRangeState(
-            new List<ChangeFeedFeedRangeState>()
-            {
-                new ChangeFeedFeedRangeState(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
-            }.ToImmutableArray());
-
-        public ChangeFeedCrossFeedRangeState(ImmutableArray<ChangeFeedFeedRangeState> feedRangeStates)
+        private static class FullRangeStatesSingletons
         {
-            if (feedRangeStates.IsEmpty)
-            {
-                throw new ArgumentException($"{nameof(feedRangeStates)} is empty.");
-            }
+            public static readonly ChangeFeedCrossFeedRangeState Beginning = new ChangeFeedCrossFeedRangeState(
+                new List<FeedRangeState<ChangeFeedState>>()
+                {
+                    new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
+                }.ToImmutableArray());
 
-            this.FeedRangeStates = feedRangeStates;
+            public static readonly ChangeFeedCrossFeedRangeState Now = new ChangeFeedCrossFeedRangeState(
+                new List<FeedRangeState<ChangeFeedState>>()
+                {
+                    new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
+                }.ToImmutableArray());
         }
 
-        public ImmutableArray<ChangeFeedFeedRangeState> FeedRangeStates { get; }
+        private readonly CrossFeedRangeState<ChangeFeedState> crossFeedRangeState;
+
+        public ChangeFeedCrossFeedRangeState(ImmutableArray<FeedRangeState<ChangeFeedState>> feedRangeStates)
+        {
+            this.crossFeedRangeState = new CrossFeedRangeState<ChangeFeedState>(feedRangeStates);
+        }
+
+        internal ImmutableArray<FeedRangeState<ChangeFeedState>> FeedRangeStates => this.crossFeedRangeState.Value;
 
         public ChangeFeedCrossFeedRangeState Merge(ChangeFeedCrossFeedRangeState other)
         {
-            ImmutableArray<ChangeFeedFeedRangeState> mergedStates = this.FeedRangeStates.Concat(other.FeedRangeStates).ToImmutableArray();
-            return new ChangeFeedCrossFeedRangeState(mergedStates);
+            return new ChangeFeedCrossFeedRangeState(this.crossFeedRangeState.Merge(other.crossFeedRangeState).Value);
         }
 
         public bool TrySplit(out (ChangeFeedCrossFeedRangeState left, ChangeFeedCrossFeedRangeState right) children)
         {
-            if (this.FeedRangeStates.Length <= 1)
+            if (!this.crossFeedRangeState.TrySplit(out (CrossFeedRangeState<ChangeFeedState> left, CrossFeedRangeState<ChangeFeedState> right) result))
             {
-                // TODO: in the future we should be able to split a single feed range state as long as it's not a single point epk range.
                 children = default;
                 return false;
             }
 
-            ImmutableArray<ChangeFeedFeedRangeState> leftRanges = this.FeedRangeStates.AsMemory().Slice(start: 0, this.FeedRangeStates.Length / 2).ToArray().ToImmutableArray();
-            ImmutableArray<ChangeFeedFeedRangeState> rightRanges = this.FeedRangeStates.AsMemory().Slice(start: this.FeedRangeStates.Length / 2).ToArray().ToImmutableArray();
-            ChangeFeedCrossFeedRangeState leftCrossFeedRangeStates = new ChangeFeedCrossFeedRangeState(leftRanges);
-            ChangeFeedCrossFeedRangeState rightCrossFeedRangeStates = new ChangeFeedCrossFeedRangeState(rightRanges);
-
-            children = (leftCrossFeedRangeStates, rightCrossFeedRangeStates);
+            children = (new ChangeFeedCrossFeedRangeState(result.left.Value), new ChangeFeedCrossFeedRangeState(result.right.Value));
             return true;
         }
 
         public CosmosElement ToCosmosElement()
         {
             List<CosmosElement> elements = new List<CosmosElement>();
-            foreach (ChangeFeedFeedRangeState changeFeedFeedRangeState in this.FeedRangeStates)
+            foreach (FeedRangeState<ChangeFeedState> changeFeedFeedRangeState in this.FeedRangeStates)
             {
-                elements.Add(changeFeedFeedRangeState.ToCosmosElement());
+                elements.Add(ChangeFeedFeedRangeStateSerializer.ToCosmosElement(changeFeedFeedRangeState));
             }
 
             return CosmosArray.Create(elements);
+        }
+
+        public override string ToString()
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            this.ToCosmosElement().WriteTo(jsonWriter);
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            return Encoding.UTF8.GetString(result.Span);
+        }
+
+        public static ChangeFeedCrossFeedRangeState Parse(string text)
+        {
+            if (text == null)
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
+
+            TryCatch<ChangeFeedCrossFeedRangeState> monadicParse = Monadic.Parse(text);
+            monadicParse.ThrowIfFailed();
+
+            return monadicParse.Result;
+        }
+
+        public static bool TryParse(string text, out ChangeFeedCrossFeedRangeState state)
+        {
+            if (text == null)
+            {
+                throw new ArgumentNullException(nameof(text));
+            }
+
+            TryCatch<ChangeFeedCrossFeedRangeState> monadicParse = Monadic.Parse(text);
+            if (monadicParse.Failed)
+            {
+                state = default;
+                return false;
+            }
+
+            state = monadicParse.Result;
+            return true;
         }
 
         public static class Monadic
@@ -84,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 return CreateFromCosmosElement(monadicCosmosElement.Result);
             }
 
-            private static TryCatch<ChangeFeedCrossFeedRangeState> CreateFromCosmosElement(CosmosElement cosmosElement)
+            internal static TryCatch<ChangeFeedCrossFeedRangeState> CreateFromCosmosElement(CosmosElement cosmosElement)
             {
                 if (cosmosElement == null)
                 {
@@ -98,10 +138,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                             $"Expected array: {cosmosElement}"));
                 }
 
-                List<ChangeFeedFeedRangeState> changeFeedFeedRangeStates = new List<ChangeFeedFeedRangeState>();
+                List<FeedRangeState<ChangeFeedState>> changeFeedFeedRangeStates = new List<FeedRangeState<ChangeFeedState>>();
                 foreach (CosmosElement arrayItem in cosmosArray)
                 {
-                    TryCatch<ChangeFeedFeedRangeState> monadicChangeFeedFeedRangeState = ChangeFeedFeedRangeState.Monadic.CreateFromCosmosElement(arrayItem);
+                    TryCatch<FeedRangeState<ChangeFeedState>> monadicChangeFeedFeedRangeState = ChangeFeedFeedRangeStateSerializer.Monadic.CreateFromCosmosElement(arrayItem);
                     if (monadicChangeFeedFeedRangeState.Failed)
                     {
                         return TryCatch<ChangeFeedCrossFeedRangeState>.FromException(monadicChangeFeedFeedRangeState.Exception);
@@ -110,10 +150,96 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     changeFeedFeedRangeStates.Add(monadicChangeFeedFeedRangeState.Result);
                 }
 
-                ImmutableArray<ChangeFeedFeedRangeState> feedRangeStates = changeFeedFeedRangeStates.ToImmutableArray();
+                ImmutableArray<FeedRangeState<ChangeFeedState>> feedRangeStates = changeFeedFeedRangeStates.ToImmutableArray();
                 ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(feedRangeStates);
                 return TryCatch<ChangeFeedCrossFeedRangeState>.FromResult(changeFeedCrossFeedRangeState);
             }
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromBeginning()
+        {
+            return CreateFromBeginning(FeedRangeEpk.FullRange);
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromBeginning(FeedRange feedRange)
+        {
+            if (!(feedRange is FeedRangeInternal feedRangeInternal))
+            {
+                throw new ArgumentException($"{nameof(feedRange)} needs to be a {nameof(FeedRangeInternal)}.");
+            }
+
+            if (feedRange.Equals(FeedRangeEpk.FullRange))
+            {
+                return FullRangeStatesSingletons.Beginning;
+            }
+
+            return new ChangeFeedCrossFeedRangeState(
+                new List<FeedRangeState<ChangeFeedState>>()
+                {
+                    new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Beginning())
+                }.ToImmutableArray());
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromNow()
+        {
+            return CreateFromNow(FeedRangeEpk.FullRange);
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromNow(FeedRange feedRange)
+        {
+            if (!(feedRange is FeedRangeInternal feedRangeInternal))
+            {
+                throw new ArgumentException($"{nameof(feedRange)} needs to be a {nameof(FeedRangeInternal)}.");
+            }
+
+            if (feedRange.Equals(FeedRangeEpk.FullRange))
+            {
+                return FullRangeStatesSingletons.Now;
+            }
+
+            return new ChangeFeedCrossFeedRangeState(
+                new List<FeedRangeState<ChangeFeedState>>()
+                {
+                    new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Now())
+                }.ToImmutableArray());
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromTime(DateTime dateTimeUtc)
+        {
+            return CreateFromTime(dateTimeUtc, FeedRangeEpk.FullRange);
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromTime(DateTime dateTimeUtc, FeedRange feedRange)
+        {
+            if (!(feedRange is FeedRangeInternal feedRangeInternal))
+            {
+                throw new ArgumentException($"{nameof(feedRange)} needs to be a {nameof(FeedRangeInternal)}.");
+            }
+
+            return new ChangeFeedCrossFeedRangeState(
+                new List<FeedRangeState<ChangeFeedState>>()
+                {
+                    new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Time(dateTimeUtc))
+                }.ToImmutableArray());
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromContinuation(CosmosElement continuation)
+        {
+            return CreateFromContinuation(continuation, FeedRangeEpk.FullRange);
+        }
+
+        public static ChangeFeedCrossFeedRangeState CreateFromContinuation(CosmosElement continuation, FeedRange feedRange)
+        {
+            if (!(feedRange is FeedRangeInternal feedRangeInternal))
+            {
+                throw new ArgumentException($"{nameof(feedRange)} needs to be a {nameof(FeedRangeInternal)}.");
+            }
+
+            return new ChangeFeedCrossFeedRangeState(
+                new List<FeedRangeState<ChangeFeedState>>()
+                {
+                    new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Continuation(continuation))
+                }.ToImmutableArray());
         }
     }
 }

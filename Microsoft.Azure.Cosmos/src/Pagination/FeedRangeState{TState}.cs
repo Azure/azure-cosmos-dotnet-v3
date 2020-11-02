@@ -6,15 +6,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
 
-    internal abstract class FeedRangeState<TState>
+    internal readonly struct FeedRangeState<TState>
         where TState : State
     {
-        protected static class PropertyNames
-        {
-            public const string FeedRange = "FeedRange";
-            public const string State = "State";
-        }
-
         public FeedRangeState(FeedRangeInternal feedRange, TState state)
         {
             this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
