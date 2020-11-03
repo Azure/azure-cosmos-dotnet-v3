@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     internal abstract class ContainerInternal : Container
     {
@@ -66,6 +67,14 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions);
+
+        public abstract FeedIteratorInternal GetReadFeedIterator(
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
+            string continuationToken,
+            int pageSize);
 
         public abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
