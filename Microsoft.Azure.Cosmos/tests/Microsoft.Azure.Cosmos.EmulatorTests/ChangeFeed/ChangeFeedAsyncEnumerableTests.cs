@@ -8,10 +8,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -112,10 +114,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             countAndState = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, countAndState.totalCount);
 
+            // Serialize the state and send it over the wire for your user to resume execution.
             string continuationToken = countAndState.state.ToString();
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(ChangeFeedCrossFeedRangeState.Parse(continuationToken));
+
+            // Deserialize the state that the user came back with to resume from.
+            ChangeFeedCrossFeedRangeState state = ChangeFeedCrossFeedRangeState.Parse(continuationToken);
+            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(state);
             countAndState = await PartialDrainAsync(asyncEnumerable);
 
             Assert.AreEqual(batchSize, countAndState.totalCount);
@@ -127,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             int batchSize = 25;
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
 
+            // Create one start state for each physical partition.
             List<ChangeFeedCrossFeedRangeState> startStates = new List<ChangeFeedCrossFeedRangeState>();
             IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
             foreach (FeedRange feedRange in feedRanges)
@@ -134,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 startStates.Add(ChangeFeedCrossFeedRangeState.CreateFromBeginning(feedRange));
             }
 
+            // Create an independant enumerable for each of those start states.
             List<IAsyncEnumerable<TryCatch<ChangeFeedPage>>> asyncEnumerables = new List<IAsyncEnumerable<TryCatch<ChangeFeedPage>>>();
             foreach (ChangeFeedCrossFeedRangeState state in startStates)
             {
@@ -141,22 +149,69 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 asyncEnumerables.Add(asyncEnumerable);
             }
 
-            List<ChangeFeedCrossFeedRangeState> resumeStates = new List<ChangeFeedCrossFeedRangeState>();
             int totalCount = 0;
             foreach (IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable in asyncEnumerables)
             {
+                // This part can be done in parallel on the same machine or on different machines,
+                // since they are independant enumerables.
                 (int totalCount, ChangeFeedCrossFeedRangeState state) countAndState = await PartialDrainAsync(asyncEnumerable);
                 totalCount += countAndState.totalCount;
-                resumeStates.Add(countAndState.state);
             }
 
             Assert.AreEqual(batchSize, totalCount);
-
-            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
         }
 
         [TestMethod]
-        public async Task TestSplitAndMerge()
+        public async Task TargetMultipleLogicalPartitionKeys()
+        {
+            int batchSize = 25;
+
+            string pkToRead1 = "pkToRead1";
+            string pkToRead2 = "pkToRead2";
+            string otherPK = "otherPK";
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead1));
+            }
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead2));
+            }
+
+            for (int i = 0; i < batchSize; i++)
+            {
+                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+            }
+
+            // Create one start state for each logical partition key.
+            List<FeedRangeState<ChangeFeedState>> feedRangeStates = new List<FeedRangeState<ChangeFeedState>>();
+            IReadOnlyList<string> partitionKeysToTarget = new List<string>()
+            {
+                pkToRead1,
+                pkToRead2
+            };
+
+            foreach (string partitionKeyToTarget in partitionKeysToTarget)
+            {
+                feedRangeStates.Add(
+                    new FeedRangeState<ChangeFeedState>(
+                        (FeedRangeInternal)FeedRange.FromPartitionKey(
+                            new Cosmos.PartitionKey(partitionKeyToTarget)),
+                        ChangeFeedState.Beginning()));
+            }
+
+            // Use the list composition property of the constructor to merge them in to a single state.
+            ChangeFeedCrossFeedRangeState multipleLogicalPartitionKeyState = new ChangeFeedCrossFeedRangeState(feedRangeStates.ToImmutableArray());
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(multipleLogicalPartitionKeyState);
+            (int totalCount, ChangeFeedCrossFeedRangeState _) = await PartialDrainAsync(asyncEnumerable);
+
+            Assert.AreEqual(2 * batchSize, totalCount);
+        }
+
+        [TestMethod]
+        public async Task TestScaleUpAndScaleDown()
         {
             int batchSize = 25;
 
