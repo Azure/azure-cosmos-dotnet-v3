@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
     internal sealed class DocumentServiceLeaseConverter : JsonConverter
     {
-        internal static readonly string VersionPropertyName = "Version";
+        private static readonly string VersionPropertyName = "version";
 
         public override bool CanConvert(Type objectType)
         {
@@ -42,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
                 if (documentServiceLeaseVersion == DocumentServiceLeaseVersion.EPKRangeBasedLease)
                 {
-                    return serializer.Deserialize(reader, typeof(DocumentServiceLeaseCoreEpk));
+                    return serializer.Deserialize(jObject.CreateReader(), typeof(DocumentServiceLeaseCoreEpk));
                 }
             }
 
-            return serializer.Deserialize(reader, typeof(DocumentServiceLeaseCore));
+            return serializer.Deserialize(jObject.CreateReader(), typeof(DocumentServiceLeaseCore));
         }
 
         public override void WriteJson(

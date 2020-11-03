@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Newtonsoft.Json.Converters;
 
     [Serializable]
+    [JsonConverter(typeof(DocumentServiceLeaseDisabledConverter))]
     internal sealed class DocumentServiceLeaseCoreEpk : DocumentServiceLease
     {
         private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
@@ -22,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public string LeaseId { get; set; }
 
         [JsonProperty("version")]
-        [JsonConverter(typeof(StringEnumConverter))]
         public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.EPKRangeBasedLease;
 
         [JsonIgnore]
