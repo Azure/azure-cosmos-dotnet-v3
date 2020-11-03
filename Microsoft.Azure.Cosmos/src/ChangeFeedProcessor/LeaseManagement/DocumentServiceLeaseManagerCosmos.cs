@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
-            DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             // Get fresh lease. The assumption here is that checkpointing is done with higher frequency than lease renewal so almost
             // certainly the lease was updated in between.
-            DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
@@ -184,9 +184,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }).ConfigureAwait(false);
         }
 
-        private async Task<DocumentServiceLeaseCore> TryGetLeaseAsync(DocumentServiceLease lease)
+        private async Task<DocumentServiceLease> TryGetLeaseAsync(DocumentServiceLease lease)
         {
-            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLeaseCore>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id).ConfigureAwait(false);
+            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLease>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id).ConfigureAwait(false);
         }
 
         private string GetDocumentId(string partitionId)
