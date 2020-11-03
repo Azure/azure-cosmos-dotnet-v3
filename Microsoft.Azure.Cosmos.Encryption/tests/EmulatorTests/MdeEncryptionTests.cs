@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (InvalidOperationException ex)
             {
-                Assert.AreEqual("For use of 'AEAes256CbcHmacSha256Randomized' algorithm, DekProvider needs to be initialized with EncryptionKeyWrapProvider.", ex.Message);
+                Assert.AreEqual("For use of 'AEAes256CbcHmacSha256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.", ex.Message);
             }
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             catch(ArgumentException ex)
             {
                 Assert.AreEqual("Failed to unwrap Data Encryption Key with id: 'mylegacydek'.", ex.Message);
-                Assert.AreEqual("Unsupported Encryption Algorithm AEAes256CbcHmacSha256Randomized for the initialized WrapProvider Service.", ex.InnerException.Message);
+                Assert.AreEqual("Unsupported encryption algorithm AEAes256CbcHmacSha256Randomized. Please initialize the Encryptor or CosmosDataEncryptionKeyProvider with an implementation of the EncryptionKeyStoreProvider / EncryptionKeyWrapProvider.", ex.InnerException.Message);
             }
 
             try
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.AreEqual("Failed to unwrap Data Encryption Key with id: 'mydek'.", ex.Message);
-                Assert.AreEqual("Unsupported Encryption Algorithm MdeAeadAes256CbcHmac256Randomized for the initialized WrapProvider Service.", ex.InnerException.Message);
+                Assert.AreEqual("Unsupported encryption algorithm MdeAeadAes256CbcHmac256Randomized. Please initialize the Encryptor or CosmosDataEncryptionKeyProvider with an implementation of the EncryptionKeyStoreProvider / EncryptionKeyWrapProvider.", ex.InnerException.Message);
             }
         }
 
@@ -921,7 +921,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.CreateItemAsync(MdeEncryptionTests.encryptionContainer, MdeEncryptionTests.dekId, new List<string>() { "/id" });
                 Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
             }
-            catch (ArgumentException ex)
+            catch (InvalidOperationException ex)
             {
                 Assert.AreEqual("PathsToEncrypt includes a invalid path: '/id'.", ex.Message);
             }

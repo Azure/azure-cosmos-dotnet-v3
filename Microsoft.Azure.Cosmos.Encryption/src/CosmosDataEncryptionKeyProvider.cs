@@ -47,7 +47,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Gets a provider of type EncryptionKeyStoreProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
         /// </summary>
-        public EncryptionKeyWrapProvider EncryptionKeyStoreWrapProvider { get; }
+        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+
+        internal MdeKeyWrapProvider MdeKeyWrapProvider { get; }
 
         /// <summary>
         /// Gets Container for data encryption keys.
@@ -79,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan? cacheTimeToLive = null,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
-            this.EncryptionKeyStoreWrapProvider = new MdeKeyWrapProvider(
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(
                 encryptionKeyStoreProvider
                 ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
@@ -101,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
-            this.EncryptionKeyStoreWrapProvider = new MdeKeyWrapProvider(
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(
                 encryptionKeyStoreProvider
                 ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
@@ -156,6 +160,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 id,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
+
+            // Key Compatibility check. Legacy Cosmos Algorithm Key is Compatibile with MDE Based Encryption algorithm.
+            if (CosmosEncryptionAlgorithm.VerifyIfSupportedAlgorithm(encryptionAlgorithm))
+            {
+                // modify this if new Algorithm is added in the supported list.
+                if (!CosmosEncryptionAlgorithm.VerifyIfSupportedAlgorithm(dataEncryptionKeyProperties.EncryptionAlgorithm))
+                {
+                    throw new InvalidOperationException($" Using '{encryptionAlgorithm}' algorithm, " +
+                            $"With incompatible Data Encryption Key which is initialized with {dataEncryptionKeyProperties.EncryptionAlgorithm}");
+                }
+            }
 
             InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 dataEncryptionKeyProperties,

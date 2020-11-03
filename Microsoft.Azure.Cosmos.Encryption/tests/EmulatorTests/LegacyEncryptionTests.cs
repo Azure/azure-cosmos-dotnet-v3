@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (InvalidOperationException ex)
             {
-                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, DekProvider needs to be initialized with MdeKeyWrapProvider.", ex.Message);
+                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
             }
         }
 
@@ -964,7 +964,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, new List<string>() { "/id" });
                 Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
             }
-            catch (ArgumentException ex)
+            catch (InvalidOperationException ex)
             {
                 Assert.AreEqual("PathsToEncrypt includes a invalid path: '/id'.", ex.Message);
             }
