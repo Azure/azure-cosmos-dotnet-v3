@@ -39,7 +39,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             // Always write the updated version. This will change with each run.
             string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
-            File.WriteAllText("Contracts/CurrentBenchmarkResults.json", currentBenchmarkResults);
+            try
+            {
+                File.WriteAllText("Contracts/CurrentBenchmarkResults.json", currentBenchmarkResults);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Write failed:"+ e.ToString());
+            }
+            
 
             string baselineJson = File.ReadAllText("Contracts/BenchmarkResults.json");
             Dictionary<string, double> baselineBenchmarkResults = JsonConvert.DeserializeObject<Dictionary<string, double>>(baselineJson);
