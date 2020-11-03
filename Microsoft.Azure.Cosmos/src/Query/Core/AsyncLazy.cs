@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
     internal sealed class AsyncLazy<T>
     {
-        private readonly Func<CancellationToken, Task<T>> valueFactory;
+        private Func<CancellationToken, Task<T>> valueFactory;
         private T value;
 
         public AsyncLazy(Func<CancellationToken, Task<T>> valueFactory)
@@ -18,17 +18,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             this.valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
         }
 
-        public bool ValueInitialized { get; private set; }
+        public bool ValueInitialized => this.valueFactory is null;
 
-        public async Task<T> GetValueAsync(CancellationToken cancellationToken)
+        public async ValueTask<T> GetValueAsync(CancellationToken cancellationToken)
         {
             // Note that this class is not thread safe.
             // if the valueFactory has side effects than this will have issues.
             cancellationToken.ThrowIfCancellationRequested();
-            if (!this.ValueInitialized)
+            if (this.valueFactory is { } factory)
             {
-                this.value = await this.valueFactory(cancellationToken);
-                this.ValueInitialized = true;
+                this.value = await factory(cancellationToken);
+                this.valueFactory = null;
             }
 
             return this.value;

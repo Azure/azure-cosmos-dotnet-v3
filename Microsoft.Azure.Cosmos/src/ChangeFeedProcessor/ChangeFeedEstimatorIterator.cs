@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentOutOfRangeException($"{nameof(this.changeFeedEstimatorRequestOptions.MaxItemCount)} value should be a positive integer.");
             }
 
-            this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(valueFactory: (innerCancellationToken) => this.TryInitializeLeaseDocumentsAsync(innerCancellationToken));
+            this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(this.TryInitializeLeaseDocumentsAsync);
             this.hasMoreResults = true;
 
             this.monitoredContainerFeedCreator = monitoredContainerFeedCreator;

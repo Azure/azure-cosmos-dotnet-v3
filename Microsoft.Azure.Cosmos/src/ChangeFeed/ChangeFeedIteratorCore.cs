@@ -157,6 +157,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.lazyMonadicEnumerator.GetValueAsync(cancellationToken);
+
             if (monadicEnumerator.Failed)
             {
                 Exception createException = monadicEnumerator.Exception;

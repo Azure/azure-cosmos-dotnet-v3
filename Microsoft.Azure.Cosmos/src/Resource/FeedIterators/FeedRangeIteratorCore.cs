@@ -105,10 +105,7 @@ namespace Microsoft.Azure.Cosmos
             this.hasMoreResultsInternal = true;
             this.resourceType = resourceType;
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
-            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
-            {
-                return this.TryInitializeContainerRIdAsync(innerCancellationToken);
-            });
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(this.TryInitializeContainerRIdAsync);
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
