@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             try
             {
-                if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+                if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
                 {
                     return await this.UnwrapAsync(
                         dekProperties,
