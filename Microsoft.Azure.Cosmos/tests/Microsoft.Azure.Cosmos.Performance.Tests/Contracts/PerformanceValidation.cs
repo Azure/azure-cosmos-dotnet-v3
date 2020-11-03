@@ -38,6 +38,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
 
             string directory = Directory.GetCurrentDirectory() + "/bin/Release/netcoreapp3.1/Contracts/";
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine(Directory.GetCurrentDirectory());
+            Console.WriteLine(Directory.EnumerateDirectories(Directory.GetCurrentDirectory()));
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine();
 
             // Always write the updated version. This will change with each run.
             string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
