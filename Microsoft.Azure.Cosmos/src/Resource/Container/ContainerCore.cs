@@ -284,7 +284,6 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                this.ClientContext,
                 new CosmosDiagnosticsContextCore());
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -306,7 +305,6 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                this.ClientContext,
                 new CosmosDiagnosticsContextCore());
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
