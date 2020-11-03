@@ -49,8 +49,6 @@ namespace Microsoft.Azure.Cosmos
 
         public string ResourceSeedKey => throw new NotImplementedException();
 
-        public bool EnableAuthorization => true;
-
         public string SubscriptionId => throw new NotImplementedException();
 
         public async Task InitializeAsync()
