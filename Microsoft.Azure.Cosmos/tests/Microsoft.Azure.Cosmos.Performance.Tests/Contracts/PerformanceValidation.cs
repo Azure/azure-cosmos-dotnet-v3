@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (baselineBenchmarkResults.Count != operationToMemoryAllocated.Count)
             {
-                Console.WriteLine("CurrentBenchmarkResults count does not match the baseline BenchmarkResults.json. Please update the BenchmarkResults.json");
+                Console.WriteLine("CurrentBenchmarkResults count does not match the baseline BenchmarkResults.json. Please update the BenchmarkResults.json: " + currentBenchmarkResults);
                 return 1;
             }
 
@@ -59,13 +59,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 if (diff > 1000)
                 {
                     Console.WriteLine("The current results have exceed the baseline memory allocations. Please fix the performance regression. " +
-                        "If this is by design please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder");
+                        "If this is by design please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
                     return 1;
                 }
                 else if (diff < -1000)
                 {
                     Console.WriteLine("The current results show over a 1000 byte performance improvement. " +
-                        "Please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder");
+                        "Please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
                     return 1;
                 }
             }

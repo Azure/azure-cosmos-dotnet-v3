@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             IEnumerable<Summary> summaries = BenchmarkSwitcher
                 .FromAssembly(typeof(Program).Assembly)
-                .Run(argsList.ToArray(), new DebugInProcessConfig());
+                .Run(argsList.ToArray());
 
             if (validateBaseline)
             {
