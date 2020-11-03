@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -191,6 +192,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             (int mergedTotalCount, ChangeFeedCrossFeedRangeState _) = await PartialDrainAsync(mergedEnumerable);
 
             Assert.AreEqual(batchSize, mergedTotalCount);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(OperationCanceledException))]
+        public async Task TestCancellationToken()
+        {
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable();
+            await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable.WithCancellation(cancellationTokenSource.Token))
+            {
+                monadicPage.ThrowIfFailed();
+            }
         }
 
         private static async Task<(int, ChangeFeedCrossFeedRangeState)> PartialDrainAsync(IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable)
