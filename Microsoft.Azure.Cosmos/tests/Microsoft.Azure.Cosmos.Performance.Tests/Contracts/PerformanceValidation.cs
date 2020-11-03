@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine(Directory.GetCurrentDirectory());
-            Console.WriteLine(Directory.EnumerateDirectories(Directory.GetCurrentDirectory()));
+            Console.WriteLine(string.Join(';', Directory.EnumerateDirectories(Directory.GetCurrentDirectory())));
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine();
