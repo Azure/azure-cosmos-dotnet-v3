@@ -37,11 +37,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
             }
 
+            string directory = Directory.GetCurrentDirectory() + "/bin/Release/netcoreapp3.1/Contracts/";
+
             // Always write the updated version. This will change with each run.
             string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
             try
             {
-                File.WriteAllText("Contracts/CurrentBenchmarkResults.json", currentBenchmarkResults);
+                File.WriteAllText(directory + "CurrentBenchmarkResults.json", currentBenchmarkResults);
             }
             catch(Exception e)
             {
@@ -49,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
             
 
-            string baselineJson = File.ReadAllText("Contracts/BenchmarkResults.json");
+            string baselineJson = File.ReadAllText(directory + "BenchmarkResults.json");
             Dictionary<string, double> baselineBenchmarkResults = JsonConvert.DeserializeObject<Dictionary<string, double>>(baselineJson);
 
             if (baselineBenchmarkResults.Count != operationToMemoryAllocated.Count)
