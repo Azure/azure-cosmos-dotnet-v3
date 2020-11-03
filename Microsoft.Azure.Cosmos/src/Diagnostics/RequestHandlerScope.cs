@@ -40,6 +40,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         internal TimeSpan GetCurrentElapsedTime()
         {
+            if (this.elapsedTimeSpan.HasValue)
+            {
+                return this.elapsedTimeSpan.Value;
+            }
+
             return RequestHandlerScope.SingletonTimer.Elapsed - this.startTimeSpan;
         }
 
