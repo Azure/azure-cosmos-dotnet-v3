@@ -37,31 +37,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
             }
 
-            string directory = Directory.GetCurrentDirectory() + "/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/bin/Release/netcoreapp3.1/Contracts/";
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine(Directory.GetCurrentDirectory());
-            Console.WriteLine(string.Join(';', Directory.EnumerateDirectories(directory)));
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine();
+            const string relativePathToExecuteFolder = "/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/bin/Release/netcoreapp3.1/";
+            
+            // Using dotnet run in the gates puts the current directory at the root of the github project rather than the execute folder.
+            string currentDirectory = Directory.GetCurrentDirectory();
+            if (!currentDirectory.Contains(relativePathToExecuteFolder))
+            {
+                currentDirectory += relativePathToExecuteFolder;
+            }
+
+            currentDirectory += "Contracts/";
 
             // Always write the updated version. This will change with each run.
             string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
-            try
-            {
-                File.WriteAllText(directory + "CurrentBenchmarkResults.json", currentBenchmarkResults);
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Write failed:"+ e.ToString());
-            }
-            
+            File.WriteAllText(currentDirectory + "CurrentBenchmarkResults.json", currentBenchmarkResults);
 
-            string baselineJson = File.ReadAllText(directory + "BenchmarkResults.json");
+            string baselineJson = File.ReadAllText(currentDirectory + "BenchmarkResults.json");
             Dictionary<string, double> baselineBenchmarkResults = JsonConvert.DeserializeObject<Dictionary<string, double>>(baselineJson);
 
             if (baselineBenchmarkResults.Count != operationToMemoryAllocated.Count)
@@ -76,13 +67,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 // Add 1000 bytes of buffer to avoid minor variation between test runs
                 double diff = currentResult.Value - baselineResult;
-                if (diff > 1000)
+                if (diff > 3000)
                 {
                     Console.WriteLine("The current results have exceed the baseline memory allocations. Please fix the performance regression. " +
                         "If this is by design please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
                     return 1;
                 }
-                else if (diff < -1000)
+                else if (diff < -3000)
                 {
                     Console.WriteLine("The current results show over a 1000 byte performance improvement. " +
                         "Please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
