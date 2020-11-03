@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
             }
 
-            string directory = Directory.GetCurrentDirectory() + "/bin/Release/netcoreapp3.1/Contracts/";
+            string directory = Directory.GetCurrentDirectory() + "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/bin/Release/netcoreapp3.1/Contracts/";
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine();
