@@ -1,0 +1,5 @@
+﻿{
+  "MockedItemBenchmark.ReadItemExists;[Type=Stream]": 38392.0,
+  "MockedItemBenchmark.ReadItemExists;[Type=OfT]": 40301.0,
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTCustom]": 42146.0
+}
