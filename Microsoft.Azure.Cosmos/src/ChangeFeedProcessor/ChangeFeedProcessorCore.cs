@@ -99,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.documentServiceLeaseStoreManager.LeaseContainer,
                 this.documentServiceLeaseStoreManager.LeaseManager,
                 PartitionSynchronizerCore.DefaultDegreeOfParallelism,
-                this.changeFeedProcessorOptions.QueryFeedMaxBatchSize,
                 partitionKeyRangeCache,
                 containerRid);
             BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer, this.documentServiceLeaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);

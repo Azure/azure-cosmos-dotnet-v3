@@ -5,18 +5,20 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
     using System;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     internal static class ResultSetIteratorUtils
     {
         public static ChangeFeedPartitionKeyResultSetIteratorCore BuildResultSetIterator(
-            string partitionKeyRangeId,
+            DocumentServiceLease lease,
             string continuationToken,
             int? maxItemCount,
             ContainerInternal container,
             DateTime? startTime,
             bool startFromBeginning)
         {
-            FeedRangeInternal feedRange = new FeedRangePartitionKeyRange(partitionKeyRangeId);
+            // Back compat with Partition based leases
+            FeedRangeInternal feedRange = lease is DocumentServiceLeaseCoreEpk ? lease.FeedRange : new FeedRangePartitionKeyRange(lease.CurrentLeaseToken);
 
             ChangeFeedStartFrom startFrom;
             if (continuationToken != null)

@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly int degreeOfParallelism;
-        private readonly int maxBatchSize;
         private readonly Routing.PartitionKeyRangeCache partitionKeyRangeCache;
         private readonly string containerRid;
 
@@ -35,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             DocumentServiceLeaseContainer leaseContainer,
             DocumentServiceLeaseManager leaseManager,
             int degreeOfParallelism,
-            int maxBatchSize,
             Routing.PartitionKeyRangeCache partitionKeyRangeCache,
             string containerRid)
         {
@@ -43,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             this.leaseContainer = leaseContainer;
             this.leaseManager = leaseManager;
             this.degreeOfParallelism = degreeOfParallelism;
-            this.maxBatchSize = maxBatchSize;
             this.partitionKeyRangeCache = partitionKeyRangeCache;
             this.containerRid = containerRid;
         }
@@ -74,12 +71,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 throw new InvalidOperationException();
             }
 
-            if (lease is DocumentServiceLeaseCoreEpk feedRangeBaseLease)
+            return lease switch
             {
-                return await this.HandlePartitionGoneAsync(leaseToken, lastContinuationToken, feedRangeBaseLease, overlappingRanges);
-            }
-
-            return await this.HandlePartitionGoneAsync(leaseToken, lastContinuationToken, (DocumentServiceLeaseCore)lease, overlappingRanges);
+                DocumentServiceLeaseCoreEpk feedRangeBaseLease => await this.HandlePartitionGoneAsync(leaseToken, lastContinuationToken, feedRangeBaseLease, overlappingRanges),
+                _ => await this.HandlePartitionGoneAsync(leaseToken, lastContinuationToken, (DocumentServiceLeaseCore)lease, overlappingRanges)
+            };
         }
 
         /// <summary>

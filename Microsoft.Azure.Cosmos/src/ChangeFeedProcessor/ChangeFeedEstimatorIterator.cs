@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ContainerInternal monitoredContainer;
         private readonly ContainerInternal leaseContainer;
         private readonly string processorName;
-        private readonly Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator;
+        private readonly Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator;
         private readonly ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions;
         private readonly AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>> lazyLeaseDocuments;
         private DocumentServiceLeaseContainer documentServiceLeaseContainer;
@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                   monitoredContainer,
                   leaseContainer,
                   changeFeedEstimatorRequestOptions,
-                  (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) => ResultSetIteratorUtils.BuildResultSetIterator(
-                          partitionKeyRangeId: partitionKeyRangeId,
+                  (DocumentServiceLease lease, string continuationToken, bool startFromBeginning) => ResultSetIteratorUtils.BuildResultSetIterator(
+                          lease: lease,
                           continuationToken: continuationToken,
                           maxItemCount: 1,
                           container: monitoredContainer,
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
-            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator,
+            Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
             : this(
                   processorName: string.Empty,
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions,
-            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator)
+            Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator)
         {
             this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
@@ -252,10 +252,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             DocumentServiceLease existingLease,
             CancellationToken cancellationToken)
         {
-            // Current lease schema maps Token to PKRangeId
-            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
             using FeedIterator iterator = this.monitoredContainerFeedCreator(
-                partitionKeyRangeId,
+                existingLease,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));
 
