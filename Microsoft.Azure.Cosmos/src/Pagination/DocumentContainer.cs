@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -83,24 +84,28 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
+        public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifer,
+            QueryRequestOptions queryRequestOptions,
             int pageSize,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
+                readFeedState,
                 feedRange,
-                resourceIdentifer,
+                queryRequestOptions,
                 pageSize,
                 cancellationToken);
 
-        public Task<DocumentContainerPage> ReadFeedAsync(
+        public Task<ReadFeedPage> ReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifier,
+            QueryRequestOptions queryRequestOptions,
             int pageSize,
-            CancellationToken cancellationToken) => TryCatch<DocumentContainerPage>.UnsafeGetResultAsync(
+            CancellationToken cancellationToken) => TryCatch<ReadFeedPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(
+                    readFeedState,
                     feedRange,
-                    resourceIdentifier,
+                    queryRequestOptions,
                     pageSize,
                     cancellationToken),
                 cancellationToken);
