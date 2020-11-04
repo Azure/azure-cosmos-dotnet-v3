@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {
+        private readonly Routing.PartitionKeyRangeCache partitionKeyRangeCache;
         private readonly ContainerInternal container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
@@ -22,12 +23,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             ContainerInternal container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer,
-            CosmosSerializerCore serializerCore)
+            CosmosSerializerCore serializerCore,
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedProcessorOptions = changeFeedProcessorOptions ?? throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
             this.leaseCheckpointer = leaseCheckpointer ?? throw new ArgumentNullException(nameof(leaseCheckpointer));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
+            this.partitionKeyRangeCache = partitionKeyRangeCache ?? throw new ArgumentNullException(nameof(partitionKeyRangeCache));
         }
 
         public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
@@ -49,13 +52,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             };
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            ChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
+            ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: lease,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
                 container: this.container,
                 startTime: options.StartTime,
-                startFromBeginning: options.StartFromBeginning);
+                startFromBeginning: options.StartFromBeginning,
+                partitionKeyRangeCache: this.partitionKeyRangeCache);
 
             return new FeedProcessorCore<T>(observer, iterator, options, checkpointer, this.serializerCore);
         }
