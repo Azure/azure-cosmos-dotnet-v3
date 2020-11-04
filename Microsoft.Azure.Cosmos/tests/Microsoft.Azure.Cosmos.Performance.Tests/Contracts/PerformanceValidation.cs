@@ -40,7 +40,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // Using dotnet run in the gates puts the current directory at the root of the github project rather than the execute folder.
             string currentDirectory = Directory.GetCurrentDirectory();
             int removePathsLowerThanIndex = currentDirectory.IndexOf(@"\Microsoft.Azure.Cosmos");
-            currentDirectory = currentDirectory.Remove(removePathsLowerThanIndex);
+            if(removePathsLowerThanIndex >= 0)
+            {
+                currentDirectory = currentDirectory.Remove(removePathsLowerThanIndex);
+            }
+            
             currentDirectory += @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\netcoreapp3.1\Contracts\";
 
             // Always write the updated version. This will change with each run.
