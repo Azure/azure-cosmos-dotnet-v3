@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class CrossPartitionChangeFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<ChangeFeedPage>>
     {
@@ -31,9 +32,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         public ValueTask DisposeAsync() => this.crossPartitionEnumerator.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             if (this.bufferedException.HasValue)
             {
                 this.Current = this.bufferedException.Value;
@@ -41,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 return true;
             }
 
-            if (!await this.crossPartitionEnumerator.MoveNextAsync())
+            if (!await this.crossPartitionEnumerator.MoveNextAsync(trace))
             {
                 throw new InvalidOperationException("ChangeFeed should always have a next page.");
             }
@@ -63,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 double totalRequestCharge = backendPage.RequestCharge;
                 do
                 {
-                    if (!await this.crossPartitionEnumerator.MoveNextAsync())
+                    if (!await this.crossPartitionEnumerator.MoveNextAsync(trace))
                     {
                         throw new InvalidOperationException("ChangeFeed should always have a next page.");
                     }

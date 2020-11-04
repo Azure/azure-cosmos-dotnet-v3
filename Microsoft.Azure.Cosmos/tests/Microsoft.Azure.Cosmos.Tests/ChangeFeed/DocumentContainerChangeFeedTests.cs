@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -24,11 +25,12 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task EmptyContainerTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 0);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                 ChangeFeedState.Beginning(),
                 ranges[0],
                 pageSize: 10,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
             Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -39,15 +41,16 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromBeginingTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             // Should get back the all the documents inserted so far
-            ChangeFeedState resumeState = default;
+            ChangeFeedState resumeState;
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Beginning(),
                     ranges[0],
                     pageSize: int.MaxValue,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -61,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     resumeState,
                     ranges[0],
                     pageSize: 10,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -72,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromTimeTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
 
             DateTime now = DateTime.UtcNow;
             // No changes let
@@ -81,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Time(now),
                     ranges[0],
                     pageSize: 10,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -108,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Time(now),
                     ranges[0],
                     pageSize: int.MaxValue,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -118,15 +124,16 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromNowAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
 
-            ChangeFeedState resumeState = default;
+            ChangeFeedState resumeState;
             // No changes starting from now
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Now(),
                     ranges[0],
                     pageSize: 10,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -159,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     resumeState,
                     ranges[0],
                     pageSize: 10,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -169,17 +177,18 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task ReadChangesAcrossSplitsAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
                 feedRange: ranges[0],
                 readFeedState: default,
                 pageSize: int.MaxValue,
-                cancellationToken: default,
-                queryRequestOptions: default)).GetRecords().Count;
+                queryRequestOptions: default,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: default)).GetRecords().Count;
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
 
-            List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], cancellationToken: default);
+            List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], trace: NoOpTrace.Singleton, cancellationToken: default);
 
             long sumOfChildCounts = 0;
             foreach (FeedRangeInternal child in children)
@@ -188,6 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Beginning(),
                     child,
                     pageSize: 1000,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
@@ -231,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
             for (int i = 0; i < 3; i++)
             {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);

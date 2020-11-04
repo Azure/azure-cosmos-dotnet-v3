@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -245,7 +246,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             IQueryPipelineStage pipelineStage = CosmosQueryExecutionContextFactory.Create(
                 documentContainer: null,
                 cosmosQueryContext,
-                inputParameters);
+                inputParameters, 
+                trace: NoOpTrace.Singleton);
 
             Assert.IsTrue(await pipelineStage.MoveNextAsync());
             TryCatch<QueryPage> tryGetPage = pipelineStage.Current;

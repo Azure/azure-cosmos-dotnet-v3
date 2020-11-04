@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -261,7 +262,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             for (int i = 0; i < 3; i++)
             {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
@@ -291,7 +294,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
-                documentContainer.GetFeedRangesAsync(default(CancellationToken)).Result,
+                documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default).Result,
                 partitionKey: null,
                 GetQueryPlan(query),
                 pageSize: pageSize,

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -85,10 +86,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             int count = 0;
             string continuationToken = null;
-            bool needsToRetry = false;
+            bool needsToRetry;
             do
             {
-                needsToRetry = false;
                 FeedIterator iterator = CreateReadFeedIterator(
                     documentContainer,
                     continuationToken: continuationToken,
@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 ResponseMessage message = await iterator.ReadNextAsync();
                 if (message.IsSuccessStatusCode)
                 {
+                    needsToRetry = false;
                     CosmosArray documents = GetDocuments(message.Content);
                     count += documents.Count;
                     continuationToken = message.ContinuationToken;
@@ -108,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 else
                 {
                     Assert.Fail();
+                    return;
                 }
             } while (continuationToken != null || needsToRetry);
 
@@ -132,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 CosmosArray documents = GetDocuments(message.Content);
                 count += documents.Count;
 
-                IReadOnlyList<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 FeedRangeEpk rangeToSplit = ranges[random.Next(0, ranges.Count)];
                 await documentContainer.SplitAsync(rangeToSplit, cancellationToken: default);
             }
@@ -192,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             for (int i = 0; i < 3; i++)
             {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);

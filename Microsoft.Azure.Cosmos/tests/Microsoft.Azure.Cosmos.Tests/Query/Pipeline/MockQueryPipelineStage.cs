@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MockQueryPipelineStage : QueryPipelineStageBase
     {
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
         }
 
-        public override ValueTask<bool> MoveNextAsync()
+        public override ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             if (this.pageIndex == this.pages.Count)
             {

@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
@@ -58,12 +59,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
                 FeedRangeEpk.FullRange,
+                trace,
                 cancellationToken);
 
         public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -158,13 +162,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeInternal left = new FeedRangePartitionKeyRange(children.left.ToString());
             FeedRangeInternal right = new FeedRangePartitionKeyRange(children.right.ToString());
 
-            TryCatch<List<FeedRangeEpk>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, cancellationToken);
+            TryCatch<List<FeedRangeEpk>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, trace, cancellationToken);
             if (tryGetLeftRanges.Failed)
             {
                 return tryGetLeftRanges;
             }
 
-            TryCatch<List<FeedRangeEpk>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, cancellationToken);
+            TryCatch<List<FeedRangeEpk>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, trace, cancellationToken);
             if (tryGetRightRanges.Failed)
             {
                 return tryGetRightRanges;
@@ -283,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeInternal feedRange,
             QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -372,6 +377,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -520,6 +526,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

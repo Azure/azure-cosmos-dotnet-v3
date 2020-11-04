@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -37,14 +38,24 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private bool HasMoreResults => !this.HasStarted || (this.State != default);
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             if (!this.HasMoreResults)
             {
                 return false;
             }
 
-            this.Current = await this.GetNextPageAsync(cancellationToken: this.cancellationToken);
+            this.Current = await this.GetNextPageAsync(trace: trace, cancellationToken: this.cancellationToken);
             if (this.Current.Succeeded)
             {
                 this.State = this.Current.Result.State;
@@ -54,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return true;
         }
 
-        protected abstract Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken);
+        protected abstract Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken);
 
         public abstract ValueTask DisposeAsync();
 

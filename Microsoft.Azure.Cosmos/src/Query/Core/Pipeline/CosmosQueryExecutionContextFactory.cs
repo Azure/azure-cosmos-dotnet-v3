@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -33,7 +34,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
-            InputParameters inputParameters)
+            InputParameters inputParameters,
+            ITrace trace)
         {
             if (cosmosQueryContext == null)
             {
@@ -45,16 +47,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 throw new ArgumentNullException(nameof(inputParameters));
             }
 
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             NameCacheStaleRetryQueryPipelineStage nameCacheStaleRetryQueryPipelineStage = new NameCacheStaleRetryQueryPipelineStage(
                 cosmosQueryContext: cosmosQueryContext,
                 queryPipelineStageFactory: () =>
                 {
                     // Query Iterator requires that the creation of the query context is deferred until the user calls ReadNextAsync
                     AsyncLazy<TryCatch<IQueryPipelineStage>> lazyTryCreateStage = new AsyncLazy<TryCatch<IQueryPipelineStage>>(
-                        valueFactory: (innerCancellationToken) => CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
+                        valueFactory: (trace, innerCancellationToken) => CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
                             documentContainer,
                             cosmosQueryContext,
                             inputParameters,
+                            trace,
                             innerCancellationToken));
 
                     LazyQueryPipelineStage lazyQueryPipelineStage = new LazyQueryPipelineStage(lazyTryCreateStage: lazyTryCreateStage, cancellationToken: default);
@@ -69,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             // The default
@@ -202,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             inputParameters.SqlQuerySpec,
                             cosmosQueryContext.ResourceLink,
                             inputParameters.PartitionKey,
+                            trace,
                             cancellationToken);
                     }
                     else
@@ -338,9 +348,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 targetRanges: targetRanges
                     .Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
-                            min: range.MinInclusive, 
-                            max: range.MaxExclusive, 
-                            isMinInclusive: true, 
+                            min: range.MinInclusive,
+                            max: range.MaxExclusive,
+                            isMinInclusive: true,
                             isMaxInclusive: false)))
                     .ToList(),
                 pageSize: inputParameters.MaxItemCount,

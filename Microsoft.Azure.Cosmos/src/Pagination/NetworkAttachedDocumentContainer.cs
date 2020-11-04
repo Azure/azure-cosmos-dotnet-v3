@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
@@ -87,10 +88,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, cancellationToken);
+            ITrace trace,
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, trace, cancellationToken);
 
         public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             try
@@ -122,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -174,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                partitionKey: queryRequestOptions?.PartitionKey,
                streamPayload: default,
                diagnosticsContext: this.diagnosticsContext,
+               trace: trace,
                cancellationToken: cancellationToken);
 
             TryCatch<ReadFeedPage> monadicReadFeedPage;
@@ -208,8 +213,26 @@ namespace Microsoft.Azure.Cosmos.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (feedRange == null)
+            {
+                throw new ArgumentNullException(nameof(feedRange));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions.Clone();
             TryCatch<QueryPage> monadicQueryPage;
             switch (feedRange)
@@ -257,6 +280,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 overlappingRanges[0].Id),
                             isContinuationExpected: false,
                             pageSize,
+                            trace,
                             cancellationToken);
                     }
                     break;
@@ -277,6 +301,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 feedRangePartitionKeyRange.PartitionKeyRangeId),
                             isContinuationExpected: false,
                             pageSize,
+                            trace,
                             cancellationToken);
                     }
                     break;
@@ -319,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 overlappingRanges[0].Id),
                             isContinuationExpected: false,
                             pageSize,
+                            trace,
                             cancellationToken);
                     }
                     break;
@@ -334,6 +360,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -385,6 +412,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 partitionKey: default,
                 streamPayload: default,
                 diagnosticsContext: this.diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;

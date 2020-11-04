@@ -8,6 +8,7 @@
     using System;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public sealed class BufferedPartitionPartitionRangeEnumeratorTests
@@ -136,7 +137,7 @@
                 for (int i = 0; i < 10; i++)
                 {
                     // This call is idempotent;
-                    await enumerator.PrefetchAsync(default);
+                    await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                 }
 
                 Random random = new Random();
@@ -148,7 +149,7 @@
                         for (int i = 0; i < 10; i++)
                         {
                             // This call is idempotent;
-                            await enumerator.PrefetchAsync(default);
+                            await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                         }
                     }
                 }
@@ -177,7 +178,7 @@
 
                     if ((random.Next() % 2) == 0)
                     {
-                        await enumerator.PrefetchAsync(default);
+                        await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                     }
 
                     int count = 0;
@@ -187,7 +188,7 @@
                         
                         if ((random.Next() % 2) == 0)
                         {
-                            await enumerator.PrefetchAsync(default);
+                            await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                         }
                     }
 
@@ -231,7 +232,7 @@
             {
                 while (true)
                 {
-                    await enumerator.PrefetchAsync(default);
+                    await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                     await Task.Delay(10);
                 }
             }

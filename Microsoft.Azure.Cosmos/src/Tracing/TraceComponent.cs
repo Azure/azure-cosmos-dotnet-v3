@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     internal enum TraceComponent
     {
+        Pagination,
+        ReadFeed,
         Transport,
         Query,
         Unknown,

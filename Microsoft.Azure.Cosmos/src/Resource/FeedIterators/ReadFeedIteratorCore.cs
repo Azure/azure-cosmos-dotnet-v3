@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
@@ -99,11 +100,23 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override async Task<ResponseMessage> ReadNextAsync(
+            ITrace trace,
+            CancellationToken cancellationToken = default)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (this.diagnosticsContext.GetOverallScope())
+            using (ITrace readNextTrace = trace.StartChild(name: nameof(this.ReadNextAsync), component: TraceComponent.ReadFeed, level: TraceLevel.Info))
             {
                 if (!this.hasMoreResults)
                 {
@@ -128,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    if (!await enumerator.MoveNextAsync())
+                    if (!await enumerator.MoveNextAsync(readNextTrace))
                     {
                         throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
                     }
@@ -179,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                         ReadFeedState readFeedState = readFeedContinuationToken.State;
                         CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                         {
-                            Range = feedRangeEpk.Range, 
+                            Range = feedRangeEpk.Range,
                             Token = readFeedState.ContinuationToken.ToString(),
                         };
 

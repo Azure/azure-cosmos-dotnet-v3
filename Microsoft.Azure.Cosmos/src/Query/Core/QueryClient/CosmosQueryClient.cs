@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract class CosmosQueryClient
     {
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -66,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract void ClearSessionTokenCache(string collectionFullName);

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using OperationType = Documents.OperationType;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using ResourceType = Documents.ResourceType;
@@ -81,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             string resourceLink,
             PartitionKey? partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             if (queryContext == null)
@@ -107,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 sqlQuerySpec,
                 partitionKey,
                 QueryPlanRetriever.SupportedQueryFeaturesString,
+                trace,
                 cancellationToken);
         }
     }

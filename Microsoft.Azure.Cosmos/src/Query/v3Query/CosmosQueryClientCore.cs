@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -109,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             requestOptions.MaxItemCount = pageSize;
@@ -134,6 +136,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
                 diagnosticsContext: null,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return CosmosQueryClientCore.GetCosmosElementResponse(
@@ -153,6 +156,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -173,6 +177,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.UseGatewayMode = true;
                 },
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
