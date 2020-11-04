@@ -50,15 +50,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public async Task<InMemoryRawDek> GetOrAddRawDekAsync(
             DataEncryptionKeyProperties dekProperties,
-            Func<DataEncryptionKeyProperties, string, CosmosDiagnosticsContext, CancellationToken, Task<InMemoryRawDek>> unwrapper,
-            string encryptionAlgorithm,
+            Func<DataEncryptionKeyProperties, CosmosDiagnosticsContext, CancellationToken, Task<InMemoryRawDek>> unwrapper,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             InMemoryRawDek inMemoryRawDek = await this.RawDekCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
-                   () => unwrapper(dekProperties, encryptionAlgorithm, diagnosticsContext, cancellationToken),
+                   () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken);
 
             if (inMemoryRawDek.RawDekExpiry <= DateTime.UtcNow)
@@ -66,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 inMemoryRawDek = await this.RawDekCache.GetAsync(
                    dekProperties.SelfLink,
                    null,
-                   () => unwrapper(dekProperties, encryptionAlgorithm, diagnosticsContext, cancellationToken),
+                   () => unwrapper(dekProperties, diagnosticsContext, cancellationToken),
                    cancellationToken,
                    forceRefresh: true);
             }

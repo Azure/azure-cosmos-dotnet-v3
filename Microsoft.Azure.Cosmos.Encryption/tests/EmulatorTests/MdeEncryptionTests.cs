@@ -164,10 +164,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new PartitionKey(testDoc.PK),
                 MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
             }
-            catch(ArgumentException ex)
+            catch(InvalidOperationException ex)
             {
-                Assert.AreEqual("Failed to unwrap Data Encryption Key with id: 'mylegacydek'.", ex.Message);
-                Assert.AreEqual("Unsupported encryption algorithm AEAes256CbcHmacSha256Randomized. Please initialize the Encryptor or CosmosDataEncryptionKeyProvider with an implementation of the EncryptionKeyStoreProvider / EncryptionKeyWrapProvider.", ex.InnerException.Message);
+                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
             }
 
             try
@@ -179,11 +178,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.AreEqual("Failed to unwrap Data Encryption Key with id: 'mydek'.", ex.Message);
-                Assert.AreEqual("Unsupported encryption algorithm MdeAeadAes256CbcHmac256Randomized. Please initialize the Encryptor or CosmosDataEncryptionKeyProvider with an implementation of the EncryptionKeyStoreProvider / EncryptionKeyWrapProvider.", ex.InnerException.Message);
+                Assert.AreEqual(" Using 'AEAes256CbcHmacSha256Randomized' algorithm, With incompatible Data Encryption Key which is initialized with MdeAeadAes256CbcHmac256Randomized", ex.Message);
             }
         }
-
+        
         [TestMethod]
         public async Task EncryptionCreateItemUsingMDEAlgoWithLegacyDek()
         {
