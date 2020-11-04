@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -183,6 +184,38 @@ namespace Microsoft.Azure.Cosmos
                 await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                 return new UsableSemaphoreWrapper(semaphoreSlim);
             }
+        }
+
+        public static bool ContainsRange(this Documents.Routing.Range<string> parentRange,
+            Documents.Routing.Range<string> childRange)
+        {
+            if (parentRange.Min.Equals(childRange.Min))
+            {
+                return true;
+            }
+
+            if (parentRange.Max.Equals(childRange.Max))
+            {
+                return true;
+            }
+
+            PartitionKeyHash hashparentRangeMax = PartitionKeyHash.Parse(parentRange.Max);
+            PartitionKeyHash hashchildRangeMin = PartitionKeyHash.Parse(childRange.Min);
+
+            if (hashchildRangeMin > hashparentRangeMax)
+            {
+                return false;
+            }
+
+            PartitionKeyHash hashchildRangeMax = PartitionKeyHash.Parse(childRange.Max);
+            PartitionKeyHash hashparentRangeMin = PartitionKeyHash.Parse(parentRange.Min);
+
+            if (hashparentRangeMin > hashchildRangeMax)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static void TraceExceptionInternal(Exception exception)

@@ -27,27 +27,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly int degreeOfParallelism;
         private readonly int maxBatchSize;
+        private readonly Routing.PartitionKeyRangeCache partitionKeyRangeCache;
+        private readonly string containerRid;
 
         public PartitionSynchronizerCore(
             ContainerInternal container,
             DocumentServiceLeaseContainer leaseContainer,
             DocumentServiceLeaseManager leaseManager,
             int degreeOfParallelism,
-            int maxBatchSize)
+            int maxBatchSize,
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache,
+            string containerRid)
         {
             this.container = container;
             this.leaseContainer = leaseContainer;
             this.leaseManager = leaseManager;
             this.degreeOfParallelism = degreeOfParallelism;
             this.maxBatchSize = maxBatchSize;
+            this.partitionKeyRangeCache = partitionKeyRangeCache;
+            this.containerRid = containerRid;
         }
 
         public override async Task CreateMissingLeasesAsync()
         {
-            List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
-            HashSet<string> partitionIds = new HashSet<string>(ranges.Select(range => range.Id));
-            DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri.ToString(), partitionIds.Count);
-            await this.CreateLeasesAsync(partitionIds).ConfigureAwait(false);
+            IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(this.containerRid, FeedRangeEpk.FullRange.Range, forceRefresh: true);
+            DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri.ToString(), ranges.Count);
+            await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
 
         public override async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(DocumentServiceLease lease)
@@ -58,26 +63,42 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             }
 
             string leaseToken = lease.CurrentLeaseToken;
+            string lastContinuationToken = lease.ContinuationToken;
 
             DefaultTrace.TraceInformation("Lease {0} is gone due to split or merge", leaseToken);
 
-            List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
-            List<PartitionKeyRange> resultingRanges = ranges.Where(range => range.Parents.Contains(leaseToken)).ToList();
-            if (resultingRanges.Count == 0)
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(this.containerRid, ((FeedRangeEpk)lease.FeedRange).Range, forceRefresh: true);
+            if (overlappingRanges.Count == 0)
             {
-                DefaultTrace.TraceError("Lease {0} is gone but we failed to find at least one child partition", leaseToken);
+                DefaultTrace.TraceError("Lease {0} is gone but we failed to find at least one child range", leaseToken);
                 throw new InvalidOperationException();
             }
 
-            ConcurrentQueue<DocumentServiceLease> newLeases = new ConcurrentQueue<DocumentServiceLease>();
-            if (resultingRanges.Count > 1)
+            if (lease is DocumentServiceLeaseCoreEpk feedRangeBaseLease)
             {
-                // Split
-                string lastContinuationToken = lease.ContinuationToken;                
-                await resultingRanges.ForEachAsync(
+                return await this.HandlePartitionGoneAsync(leaseToken, lastContinuationToken, feedRangeBaseLease, overlappingRanges);
+            }
+
+            return await this.HandlePartitionGoneAsync(leaseToken, lastContinuationToken, (DocumentServiceLeaseCore)lease, overlappingRanges);
+        }
+
+        /// <summary>
+        /// Handles splits and merges for partition based leases.
+        /// </summary>
+        private async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(
+            string leaseToken,
+            string lastContinuationToken,
+            DocumentServiceLeaseCore partitionBasedLease,
+            IReadOnlyList<PartitionKeyRange> overlappingRanges)
+        {
+            ConcurrentQueue<DocumentServiceLease> newLeases = new ConcurrentQueue<DocumentServiceLease>();
+            if (overlappingRanges.Count > 1)
+            {
+                // Split: More than two children
+                await overlappingRanges.ForEachAsync(
                     async addedRange =>
                     {
-                        DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangePartitionKeyRange(addedRange.Id), lastContinuationToken).ConfigureAwait(false);
+                        DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(addedRange, lastContinuationToken);
                         if (newLease != null)
                         {
                             newLeases.Enqueue(newLease);
@@ -89,37 +110,70 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             }
             else
             {
-                // Merge
+                // Merge: 1 children, multiple ranges merged into 1
+                PartitionKeyRange mergedRange = overlappingRanges[0];
+                DefaultTrace.TraceInformation("Lease {0} merged into {1}", leaseToken, mergedRange.Id);
 
+                DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync((FeedRangeEpk)partitionBasedLease.FeedRange, lastContinuationToken);
+                if (newLease != null)
+                {
+                    newLeases.Enqueue(newLease);
+                }
             }
 
             return newLeases;
         }
 
-        private async Task<List<PartitionKeyRange>> EnumPartitionKeyRangesAsync()
+        /// <summary>
+        /// Handles splits and merges for feed range based leases.
+        /// </summary>
+        private async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(
+            string leaseToken,
+            string lastContinuationToken,
+            DocumentServiceLeaseCoreEpk feedRangeBasedLease,
+            IReadOnlyList<PartitionKeyRange> overlappingRanges)
         {
-            string containerUri = this.container.LinkUri.ToString();
-
-            IDocumentFeedResponse<PartitionKeyRange> response = null;
-            List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>();
-            do
+            List<DocumentServiceLease> newLeases = new List<DocumentServiceLease>();
+            if (overlappingRanges.Count > 1)
             {
-                FeedOptions feedOptions = new FeedOptions
-                {
-                    MaxItemCount = this.maxBatchSize,
-                    RequestContinuationToken = response?.ResponseContinuation,
-                };
+                // Split: More than two children spanning the feed range
+                FeedRangeEpk splitRange = (FeedRangeEpk)feedRangeBasedLease.FeedRange;
+                string min = splitRange.Range.Min;
+                string max = splitRange.Range.Max;
 
-                response = await this.container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(containerUri, feedOptions).ConfigureAwait(false);
-                IEnumerator<PartitionKeyRange> enumerator = response.GetEnumerator();
-                while (enumerator.MoveNext())
+                // Create new leases starting from the current min and ending in the current max and across the ordered list of partitions
+                for (int i = 0; i < overlappingRanges.Count - 1; i++)
                 {
-                    partitionKeyRanges.Add(enumerator.Current);
+                    Documents.Routing.Range<string> partitionRange = overlappingRanges[i].ToRange();
+                    Documents.Routing.Range<string> mergedRange = new Documents.Routing.Range<string>(min, partitionRange.Max, true, false);
+                    DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpk(mergedRange), lastContinuationToken);
+                    if (newLease != null)
+                    {
+                        newLeases.Add(newLease);
+                    }
+
+                    min = partitionRange.Max;
                 }
-            }
-            while (!string.IsNullOrEmpty(response.ResponseContinuation));
 
-            return partitionKeyRanges;
+                // Add the last range with the original max and the last min from the split
+                Documents.Routing.Range<string> lastRangeAfterSplit = new Documents.Routing.Range<string>(min, max, true, false);
+                DocumentServiceLease lastLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpk(lastRangeAfterSplit), lastContinuationToken);
+                if (lastLease != null)
+                {
+                    newLeases.Add(lastLease);
+                }
+
+                DefaultTrace.TraceInformation("Lease {0} split into {1}", leaseToken, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
+            }
+            else
+            {
+                // If we have only 1 mapped partition after the Gone, it means this epk range just remapped to another partition
+                newLeases.Add(feedRangeBasedLease);
+
+                DefaultTrace.TraceInformation("Lease {0} redirected to {1}", leaseToken, overlappingRanges[0].Id);
+            }
+
+            return newLeases;
         }
 
         /// <summary>
@@ -129,16 +183,40 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         /// Same applies also to split partitions. We do not search for parent lease and take continuation token since this might end up
         /// of reprocessing all the events since the split.
         /// </summary>
-        private async Task CreateLeasesAsync(HashSet<string> partitionIds)
+        private async Task CreateLeasesAsync(IReadOnlyList<PartitionKeyRange> partitionKeyRanges)
         {
             // Get leases after getting ranges, to make sure that no other hosts checked in continuation token for split partition after we got leases.
-            IEnumerable<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
-            HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken));
-            HashSet<string> addedPartitionIds = new HashSet<string>(partitionIds);
-            addedPartitionIds.ExceptWith(existingPartitionIds);
+            IReadOnlyList<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
+            IReadOnlyList<PartitionKeyRange> rangesToAdd = partitionKeyRanges;
+            if (leases.Count > 0)
+            {
+                List<string> pkRangeBasedLeases = leases.Where(lease => lease is DocumentServiceLeaseCore).Select(lease => lease.CurrentLeaseToken).ToList();
+                List<PartitionKeyRange> missingRanges = new List<PartitionKeyRange>();
+                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                {
+                    // Check if there is a PKRange based lease already
+                    if (pkRangeBasedLeases.Contains(partitionKeyRange.Id))
+                    {
+                        continue;
+                    }
 
-            await addedPartitionIds.ForEachAsync(
-                async addedRangeId => await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangePartitionKeyRange(addedRangeId), continuationToken: null).ConfigureAwait(false),
+                    // Check if there are EPKBased leases for the partition range
+                    Documents.Routing.Range<string> partitionRange = partitionKeyRange.ToRange();
+                    if (leases.Where(lease => lease is DocumentServiceLeaseCoreEpk 
+                        && lease.FeedRange is FeedRangeEpk feedRangeEpk
+                        && partitionRange.ContainsRange(feedRangeEpk.Range)).Any())
+                    {
+                        continue;
+                    }
+
+                    missingRanges.Add(partitionKeyRange);
+                }
+
+                rangesToAdd = missingRanges;
+            }
+
+            await rangesToAdd.ForEachAsync(
+                async addedRange => await this.leaseManager.CreateLeaseIfNotExistAsync(addedRange, continuationToken: null).ConfigureAwait(false),
                 this.degreeOfParallelism).ConfigureAwait(false);
         }
     }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses Azure Cosmos DB service
@@ -58,35 +59,48 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }).ConfigureAwait(false);
         }
 
-        public override async Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
-            FeedRangeInternal feedRangeInternal, 
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            PartitionKeyRange partitionKeyRange, 
             string continuationToken)
         {
-            if (feedRangeInternal == null)
+            if (partitionKeyRange == null)
             {
-                throw new ArgumentNullException(nameof(feedRangeInternal));
+                throw new ArgumentNullException(nameof(partitionKeyRange));
             }
 
-            string leaseToken = feedRangeInternal.ToJsonString();
+            string leaseToken = partitionKeyRange.Id;
             string leaseDocId = this.GetDocumentId(leaseToken);
             DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
             {
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
+                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
             };
 
-            bool created = await this.leaseContainer.TryCreateItemAsync<DocumentServiceLeaseCore>(
-                this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id),
-                documentServiceLease).ConfigureAwait(false) != null;
-            if (created)
+            return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
+        }
+
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            FeedRangeEpk feedRange,
+            string continuationToken)
+        {
+            if (feedRange == null)
             {
-                DefaultTrace.TraceInformation("Created lease with lease token {0}.", leaseToken);
-                return documentServiceLease;
+                throw new ArgumentNullException(nameof(feedRange));
             }
 
-            DefaultTrace.TraceInformation("Some other host created lease for {0}.", leaseToken);
-            return null;
+            string leaseToken = $"{feedRange.Range.Min}-{feedRange.Range.Max}";
+            string leaseDocId = this.GetDocumentId(leaseToken);
+            DocumentServiceLeaseCoreEpk documentServiceLease = new DocumentServiceLeaseCoreEpk
+            {
+                LeaseId = leaseDocId,
+                LeaseToken = leaseToken,
+                ContinuationToken = continuationToken,
+                FeedRange = feedRange
+            };
+
+            return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
         public override async Task ReleaseAsync(DocumentServiceLease lease)
@@ -182,6 +196,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     serverLease.Properties = lease.Properties;
                     return serverLease;
                 }).ConfigureAwait(false);
+        }
+
+        private async Task<DocumentServiceLease> TryCreateDocumentServiceLeaseAsync(DocumentServiceLease documentServiceLease)
+        {
+            bool created = await this.leaseContainer.TryCreateItemAsync<DocumentServiceLease>(
+                this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id),
+                documentServiceLease).ConfigureAwait(false) != null;
+            if (created)
+            {
+                DefaultTrace.TraceInformation("Created lease with lease token {0}.", documentServiceLease.CurrentLeaseToken);
+                return documentServiceLease;
+            }
+
+            DefaultTrace.TraceInformation("Some other host created lease for {0}.", documentServiceLease.CurrentLeaseToken);
+            return null;
         }
 
         private async Task<DocumentServiceLease> TryGetLeaseAsync(DocumentServiceLease lease)
