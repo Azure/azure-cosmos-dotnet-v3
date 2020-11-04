@@ -44,10 +44,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 .WithRequestOptionsFactory(requestOptionsFactory)
                 .WithHostName(instanceName);
 
-            return await leaseStoreManagerBuilder.BuildAsync().ConfigureAwait(false);
+            return leaseStoreManagerBuilder.Build();
         }
 
-        private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
+        private readonly DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
         private Container container;
         private RequestOptionsFactory requestOptionsFactory;
 
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this;
         }
 
-        private Task<DocumentServiceLeaseStoreManager> BuildAsync()
+        private DocumentServiceLeaseStoreManager Build()
         {
             if (this.container == null)
             {
@@ -87,8 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
             }
 
-            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
-            return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
+            return new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
         }
     }
 }
