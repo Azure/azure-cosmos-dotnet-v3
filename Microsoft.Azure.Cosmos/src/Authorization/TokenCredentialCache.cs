@@ -54,7 +54,12 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan requestTimeout,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
-            this.tokenCredential = tokenCredential;
+            this.tokenCredential = tokenCredential ?? throw new ArgumentNullException(nameof(tokenCredential));
+
+            if (accountEndpoint == null)
+            {
+                throw new ArgumentNullException(nameof(accountEndpoint));
+            }
 
             this.tokenRequestContext = new TokenRequestContext(new string[]
             {
