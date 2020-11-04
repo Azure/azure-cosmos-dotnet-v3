@@ -25,14 +25,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // on performance changes
             List<string> argsList = args != null ? new List<string>(args) : new List<string>();
             bool validateBaseline = argsList.Remove("--BaselineValidation");
-
-            IEnumerable<Summary> summaries = BenchmarkSwitcher
-                .FromAssembly(typeof(Program).Assembly)
-                .Run(argsList.ToArray());
+            string[] updatedArgs = argsList.ToArray();
 
             if (validateBaseline)
             {
-                return PerformanceValidation.ValidateSummaryResults(summaries);
+                Dictionary<string, double> operationToAllocatedMemory = new Dictionary<string, double>();
+
+                // Run the test 3 times and average the results to help reduce any random variance in the results
+                for(int i = 0; i < 3; i++)
+                {
+                    IEnumerable<Summary> summaries = BenchmarkSwitcher
+                        .FromAssembly(typeof(Program).Assembly)
+                        .Run(updatedArgs);
+
+                    if (!PerformanceValidation.TryUpdateAllocatedMemoryAverage(summaries, operationToAllocatedMemory))
+                    {
+                        return -1;
+                    }
+                }
+
+                return PerformanceValidation.ValidateSummaryResultsAgainstBaseline(operationToAllocatedMemory);
+            }
+            else
+            {
+                BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
+                    .Run(updatedArgs);
             }
 
             return 0;

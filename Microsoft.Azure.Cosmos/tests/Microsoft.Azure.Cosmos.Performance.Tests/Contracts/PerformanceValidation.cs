@@ -13,10 +13,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
     public class PerformanceValidation
     {
-        public static int ValidateSummaryResults(IEnumerable<Summary> summaries)
+        public static bool TryUpdateAllocatedMemoryAverage(IEnumerable<Summary> summaries, Dictionary<string, double> operationToMemoryAllocated)
         {
-            Dictionary<string, double> operationToMemoryAllocated = new Dictionary<string, double>();
-
             // If any of the operations have NA then something failed. Returning -1 will cause the gates to fail.
             foreach (Summary summary in summaries)
             {
@@ -25,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     if (string.Equals(@"NA", ops))
                     {
-                        return -1;
+                        return false;
                     }
                 }
 
@@ -33,10 +31,24 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     double allocatedMemory = report.Metrics["Allocated Memory"].Value;
                     string operationName = report.BenchmarkCase.Descriptor.ToString() + ";" + string.Join(';', report.BenchmarkCase.Parameters.ValueInfo);
-                    operationToMemoryAllocated.Add(operationName, allocatedMemory);
+                    
+                    // Average if the operation name already is in the dictionary
+                    if(operationToMemoryAllocated.TryGetValue(operationName, out double value))
+                    {
+                        operationToMemoryAllocated[operationName] = (allocatedMemory + value)/2;
+                    }
+                    else
+                    {
+                        operationToMemoryAllocated.Add(operationName, allocatedMemory);
+                    }
                 }
             }
 
+            return true;
+        }
+
+        public static int ValidateSummaryResultsAgainstBaseline(Dictionary<string, double> operationToMemoryAllocated)
+        {
             // Using dotnet run in the gates puts the current directory at the root of the github project rather than the execute folder.
             string currentDirectory = Directory.GetCurrentDirectory();
             int removePathsLowerThanIndex = currentDirectory.IndexOf(@"\Microsoft.Azure.Cosmos");
