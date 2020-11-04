@@ -294,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
                 string leasePrefix = this.monitoredContainer.GetLeasePrefix(this.processorName, monitoredContainerAndDatabaseRid);
                 DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(
+                    monitoredContainer: this.monitoredContainer,
                     leaseContainer: this.leaseContainer,
                     leaseContainerPrefix: leasePrefix,
                     instanceName: ChangeFeedEstimatorIterator.EstimatorDefaultHostName);

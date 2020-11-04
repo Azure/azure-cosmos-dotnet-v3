@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -16,17 +17,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class DocumentServiceLeaseManagerCosmos : DocumentServiceLeaseManager
     {
-        private readonly Container leaseContainer;
+        private readonly ContainerInternal monitoredContainer;
+        private readonly ContainerInternal leaseContainer;
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly DocumentServiceLeaseStoreManagerOptions options;
         private readonly RequestOptionsFactory requestOptionsFactory;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
 
         public DocumentServiceLeaseManagerCosmos(
-            Container leaseContainer,
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer,
             DocumentServiceLeaseUpdater leaseUpdater,
             DocumentServiceLeaseStoreManagerOptions options,
             RequestOptionsFactory requestOptionsFactory)
         {
+            this.monitoredContainer = monitoredContainer;
             this.leaseContainer = leaseContainer;
             this.leaseUpdater = leaseUpdater;
             this.options = options;
@@ -41,6 +46,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
 
             string oldOwner = lease.Owner;
+
+            // We need to add the range information to any older leases
+            // This would not happen with new created leases but we need to be back compat
+            if (lease.FeedRange == null)
+            {
+                if (this.partitionKeyRangeCache == null)
+                {
+                    this.partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                }
+
+                PartitionKeyRange partitionKeyRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                    await this.monitoredContainer.GetRIDAsync(default), 
+                    lease.CurrentLeaseToken);
+
+                if (partitionKeyRange != null)
+                {
+                    lease.FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange());
+                }
+            }
 
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,

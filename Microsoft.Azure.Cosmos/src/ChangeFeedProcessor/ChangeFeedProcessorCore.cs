@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             if (this.documentServiceLeaseStoreManager == null)
             {
-                this.documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(this.leaseContainer, leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
+                this.documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(this.monitoredContainer, this.leaseContainer, leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
             }
 
             this.partitionManager = this.BuildPartitionManager(
