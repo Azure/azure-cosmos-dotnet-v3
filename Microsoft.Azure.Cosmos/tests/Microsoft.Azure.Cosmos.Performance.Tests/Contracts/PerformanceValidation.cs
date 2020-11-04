@@ -39,12 +39,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             // Using dotnet run in the gates puts the current directory at the root of the github project rather than the execute folder.
             string currentDirectory = Directory.GetCurrentDirectory();
-            if (!currentDirectory.Contains("Microsoft.Azure.Cosmos.Performance.Tests"))
-            {
-                currentDirectory += "/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests";
-            }
-
-            currentDirectory += "/bin/Release/netcoreapp3.1/Contracts/";
+            int removePathsLowerThanIndex = currentDirectory.IndexOf(@"\Microsoft.Azure.Cosmos");
+            currentDirectory = currentDirectory.Remove(removePathsLowerThanIndex);
+            currentDirectory += @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\netcoreapp3.1\Contracts\";
 
             // Always write the updated version. This will change with each run.
             string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
@@ -65,16 +62,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 // Add 5% buffer to avoid minor variation between test runs
                 double diff = currentResult.Value - baselineResult;
-                double bufferInDiff = baselineResult * .05;
-                if (diff > bufferInDiff)
+                double maxAllowedDiff = baselineResult * .05;
+                if (diff > maxAllowedDiff)
                 {
                     Console.WriteLine("The current results have exceed the baseline memory allocations. Please fix the performance regression. " +
                         "If this is by design please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
                     return 1;
                 }
-                else if (diff < bufferInDiff)
+                else if (-diff > maxAllowedDiff)
                 {
-                    Console.WriteLine("The current results show over a 1000 byte performance improvement. " +
+                    Console.WriteLine("The current results show a performance improvement. " +
                         "Please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
                     return 1;
                 }
