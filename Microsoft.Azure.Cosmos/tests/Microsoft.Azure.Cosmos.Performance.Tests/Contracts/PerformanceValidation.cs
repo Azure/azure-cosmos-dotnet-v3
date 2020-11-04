@@ -13,6 +13,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
     public class PerformanceValidation
     {
+        private const string BaselineBenchmarkResultsFileName = "BenchmarkResults.json";
+        private const string CurrentBenchmarkResultsFileName = "CurrentBenchmarkResults.json";
+
+#if DEBUG
+        private const string DirectoryPath =  @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\netcoreapp3.1\Contracts\";
+#else
+        private const string DirectoryPath =  @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Debug\netcoreapp3.1\Contracts\";
+#endif
+
+        private static readonly string UpdateMessage = $"Please update the Microsoft.Azure.Cosmos.Performance.Tests\\Contracts\\{PerformanceValidation.BaselineBenchmarkResultsFileName} " +
+            $" file by using the following results found at {PerformanceValidation.DirectoryPath}\\{PerformanceValidation.CurrentBenchmarkResultsFileName} or by using: ";
+
         public static bool TryUpdateAllocatedMemoryAverage(IEnumerable<Summary> summaries, Dictionary<string, double> operationToMemoryAllocated)
         {
             // If any of the operations have NA then something failed. Returning -1 will cause the gates to fail.
@@ -56,19 +68,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 currentDirectory = currentDirectory.Remove(removePathsLowerThanIndex);
             }
-            
-            currentDirectory += @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\netcoreapp3.1\Contracts\";
+
+            currentDirectory += PerformanceValidation.DirectoryPath;
 
             // Always write the updated version. This will change with each run.
             string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
-            File.WriteAllText(currentDirectory + "CurrentBenchmarkResults.json", currentBenchmarkResults);
+            File.WriteAllText(currentDirectory + PerformanceValidation.CurrentBenchmarkResultsFileName, currentBenchmarkResults);
 
-            string baselineJson = File.ReadAllText(currentDirectory + "BenchmarkResults.json");
+            string baselineJson = File.ReadAllText(currentDirectory + PerformanceValidation.BaselineBenchmarkResultsFileName);
             Dictionary<string, double> baselineBenchmarkResults = JsonConvert.DeserializeObject<Dictionary<string, double>>(baselineJson);
 
             if (baselineBenchmarkResults.Count != operationToMemoryAllocated.Count)
             {
-                Console.WriteLine("CurrentBenchmarkResults count does not match the baseline BenchmarkResults.json. Please update the BenchmarkResults.json: " + currentBenchmarkResults);
+                Console.WriteLine(PerformanceValidation.UpdateMessage + currentBenchmarkResults);
                 return 1;
             }
 
@@ -81,14 +93,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 double maxAllowedDiff = baselineResult * .05;
                 if (diff > maxAllowedDiff)
                 {
-                    Console.WriteLine("The current results have exceed the baseline memory allocations. Please fix the performance regression. " +
-                        "If this is by design please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
+                    Console.WriteLine(PerformanceValidation.UpdateMessage + currentBenchmarkResults);
                     return 1;
                 }
                 else if (-diff > maxAllowedDiff)
                 {
-                    Console.WriteLine("The current results show a performance improvement. " +
-                        "Please update the BenchmarkResults.json file using the CurrentBenchmarkResults.json in the output folder: " + currentBenchmarkResults);
+                    Console.WriteLine(PerformanceValidation.UpdateMessage + currentBenchmarkResults);
                     return 1;
                 }
             }
