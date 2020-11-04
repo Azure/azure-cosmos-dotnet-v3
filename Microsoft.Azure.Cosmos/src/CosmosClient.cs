@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
             this.Endpoint = new Uri(accountEndpoint);
             this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(
                 tokenCredential,
-                this.Endpoint.Host,
+                this.Endpoint,
                 clientOptions.RequestTimeout,
                 clientOptions.TokenCredentialBackgroundRefreshInterval);
 

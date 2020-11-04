@@ -50,14 +50,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal TokenCredentialCache(
             TokenCredential tokenCredential,
-            string accountEndpointHost,
+            Uri accountEndpoint,
             TimeSpan requestTimeout,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
             this.tokenCredential = tokenCredential;
+
             this.tokenRequestContext = new TokenRequestContext(new string[]
             {
-                string.Format(TokenCredentialCache.ScopeFormat, accountEndpointHost)
+                string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
             });
 
             if (requestTimeout <= TimeSpan.Zero)
