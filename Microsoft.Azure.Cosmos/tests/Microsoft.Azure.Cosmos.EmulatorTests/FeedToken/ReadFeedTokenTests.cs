@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -510,6 +511,37 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 await container?.DeleteContainerAsync();
             }
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_Trace()
+        {
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerInternal itemsCore = this.LargerContainer;
+            FeedIteratorInternal feedIterator = (FeedIteratorInternal)itemsCore.GetItemQueryStreamIterator(
+                queryDefinition: null, 
+                requestOptions: new QueryRequestOptions() { MaxItemCount = int.MaxValue });
+            ITrace rootTrace;
+            int childCount = 0;
+            using (rootTrace = Trace.GetRootTrace("Cross Partition Read Feed"))
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(rootTrace, this.cancellationToken))
+                    {
+                        responseMessage.EnsureSuccessStatusCode();
+                        childCount++;
+                    }
+                }
+            }
+
+            string trace = TraceWriter.TraceToText(rootTrace);
+
+            Console.WriteLine(trace);
+
+            Assert.AreEqual(childCount, rootTrace.Children.Count);
         }
 
         private static Stream GenerateStreamFromString(string s)

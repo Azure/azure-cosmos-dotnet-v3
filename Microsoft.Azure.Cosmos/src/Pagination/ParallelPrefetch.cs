@@ -28,45 +28,48 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            HashSet<Task> tasks = new HashSet<Task>();
-            IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
-            for (int i = 0; i < maxConcurrency; i++)
+            using (ITrace prefetchTrace = trace.StartChild(name: "Prefetching", TraceComponent.Pagination, TraceLevel.Info))
             {
-                if (!prefetchersEnumerator.MoveNext())
+                HashSet<Task> tasks = new HashSet<Task>();
+                IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
+                for (int i = 0; i < maxConcurrency; i++)
                 {
-                    break;
+                    if (!prefetchersEnumerator.MoveNext())
+                    {
+                        break;
+                    }
+
+                    IPrefetcher prefetcher = prefetchersEnumerator.Current;
+                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(prefetchTrace, cancellationToken)));
                 }
 
-                IPrefetcher prefetcher = prefetchersEnumerator.Current;
-                tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(trace, cancellationToken)));
-            }
-
-            while (tasks.Count != 0)
-            {
-                Task completedTask = await Task.WhenAny(tasks);
-                tasks.Remove(completedTask);
-                try
+                while (tasks.Count != 0)
                 {
-                    await completedTask;
-                }
-                catch
-                {
-                    // Observe the remaining tasks
+                    Task completedTask = await Task.WhenAny(tasks);
+                    tasks.Remove(completedTask);
                     try
                     {
-                        await Task.WhenAll(tasks);
+                        await completedTask;
                     }
                     catch
                     {
+                        // Observe the remaining tasks
+                        try
+                        {
+                            await Task.WhenAll(tasks);
+                        }
+                        catch
+                        {
+                        }
+
+                        throw;
                     }
 
-                    throw;
-                }
-
-                if (prefetchersEnumerator.MoveNext())
-                {
-                    IPrefetcher bufferable = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(trace, cancellationToken)));
+                    if (prefetchersEnumerator.MoveNext())
+                    {
+                        IPrefetcher bufferable = prefetchersEnumerator.Current;
+                        tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(prefetchTrace, cancellationToken)));
+                    }
                 }
             }
         }

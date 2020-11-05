@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -295,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -325,6 +327,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
                 diagnosticsScope: diagnosticsScope,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 

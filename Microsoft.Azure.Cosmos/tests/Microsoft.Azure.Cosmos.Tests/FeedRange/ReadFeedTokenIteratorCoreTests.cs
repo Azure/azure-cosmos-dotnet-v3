@@ -142,6 +142,33 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreEqual(numItems, count);
         }
 
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_Trace()
+        {
+            int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+            FeedIteratorInternal iterator = CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: null,
+                pageSize: 10);
+
+            int count = 0;
+            Trace rootTrace;
+            using (rootTrace = Trace.GetRootTrace("test"))
+            {
+                while (iterator.HasMoreResults)
+                {
+                    ResponseMessage message = await iterator.ReadNextAsync(rootTrace, default);
+                    CosmosArray documents = GetDocuments(message.Content);
+                    count += documents.Count;
+                }
+            }
+
+            string trace = TraceWriter.TraceToText(rootTrace);
+
+            Assert.AreEqual(numItems, count);
+        }
+
         private static CosmosArray GetDocuments(Stream stream)
         {
             using (MemoryStream memoryStream = new MemoryStream())

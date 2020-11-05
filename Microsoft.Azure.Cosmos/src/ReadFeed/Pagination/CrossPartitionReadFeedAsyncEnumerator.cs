@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
             using (ITrace moveNextAsyncTrace = trace.StartChild(name: nameof(MoveNextAsync), component: TraceComponent.ReadFeed, level: TraceLevel.Info))
             {
-                if (!await this.crossPartitionEnumerator.MoveNextAsync())
+                if (!await this.crossPartitionEnumerator.MoveNextAsync(moveNextAsyncTrace))
                 {
                     this.Current = default;
                     return false;

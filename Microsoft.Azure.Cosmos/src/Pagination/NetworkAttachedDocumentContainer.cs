@@ -105,7 +105,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     this.container.LinkUri,
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
-                    feedRange);
+                    feedRange,
+                    trace);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -139,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     this.container.LinkUri,
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
-                    feedRange);
+                    feedRange,
+                    trace);
 
                 if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
                 {
@@ -261,7 +263,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 this.container.LinkUri,
                                 await this.container.GetRIDAsync(cancellationToken),
                                 containerProperties.PartitionKey,
-                                feedRange);
+                                feedRange,
+                                trace);
                         }
 
                         queryRequestOptions.PartitionKey = feedRangePartitionKey.PartitionKey;
@@ -315,7 +318,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             this.container.LinkUri,
                             await this.container.GetRIDAsync(cancellationToken),
                             containerProperties.PartitionKey,
-                            feedRange);
+                            feedRange,
+                            trace);
 
                         if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
                         {
@@ -375,7 +379,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     this.container.LinkUri,
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
-                    feedRange);
+                    feedRange,
+                    trace);
 
                 if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
                 {

@@ -82,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string resourceLink,
             string collectionResourceId,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal);
+            FeedRangeInternal feedRangeInternal,
+            ITrace trace);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,

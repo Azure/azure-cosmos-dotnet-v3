@@ -12,14 +12,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -386,8 +383,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     using (new ActivityScope(Guid.NewGuid()))
                     {
-                        DocumentServiceResponse response = await base.ProcessMessageAsync(request, cancellationToken);
-                        return response.ToCosmosResponseMessage(request);
+                        return await base.ProcessMessageAsync(request, cancellationToken);
                     }
                 }
                 catch (DocumentClientException)

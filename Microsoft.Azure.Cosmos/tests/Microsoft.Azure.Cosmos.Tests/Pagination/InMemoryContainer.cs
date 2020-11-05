@@ -72,110 +72,123 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            FeedRangeEpk CreateRangeFromId(int id)
+            if (feedRange == null)
             {
-                PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
-                return new FeedRangeEpk(
-                    new Documents.Routing.Range<string>(
-                        min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.Value.ToString() : string.Empty,
-                        max: hashRange.EndExclusive.HasValue ? hashRange.EndExclusive.Value.ToString() : string.Empty,
-                        isMinInclusive: true,
-                        isMaxInclusive: false));
+                throw new ArgumentNullException(nameof(feedRange));
             }
 
-            if (feedRange is FeedRangePartitionKey)
+            if (trace == null)
             {
-                throw new ArgumentException("Can not get the child of a logical partition key");
+                throw new ArgumentNullException(nameof(trace));
             }
 
-            if (feedRange.Equals(FeedRangeEpk.FullRange))
+            using (ITrace getChildRangesTrace = trace.StartChild(name: "Get Child Ranges", TraceComponent.Routing, TraceLevel.Info))
             {
-                List<FeedRangeEpk> ranges = new List<FeedRangeEpk>();
-                foreach (int id in this.partitionKeyRangeIdToHashRange.Keys)
+                FeedRangeEpk CreateRangeFromId(int id)
                 {
-                    ranges.Add(CreateRangeFromId(id));
+                    PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
+                    return new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.Value.ToString() : string.Empty,
+                            max: hashRange.EndExclusive.HasValue ? hashRange.EndExclusive.Value.ToString() : string.Empty,
+                            isMinInclusive: true,
+                            isMaxInclusive: false));
                 }
 
-                return TryCatch<List<FeedRangeEpk>>.FromResult(ranges);
-            }
+                if (feedRange is FeedRangePartitionKey)
+                {
+                    throw new ArgumentException("Can not get the child of a logical partition key");
+                }
 
-            if (feedRange is FeedRangeEpk feedRangeEpk)
-            {
-                // look for overlapping epk ranges.
-                List<FeedRangeEpk> overlappedIds;
-                if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
+                if (feedRange.Equals(FeedRangeEpk.FullRange))
                 {
-                    overlappedIds = this.partitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                    List<FeedRangeEpk> ranges = new List<FeedRangeEpk>();
+                    foreach (int id in this.partitionKeyRangeIdToHashRange.Keys)
+                    {
+                        ranges.Add(CreateRangeFromId(id));
+                    }
+
+                    return TryCatch<List<FeedRangeEpk>>.FromResult(ranges);
                 }
-                else
+
+                if (feedRange is FeedRangeEpk feedRangeEpk)
                 {
-                    PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-                    PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
-                    PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
-                    overlappedIds = this.partitionKeyRangeIdToHashRange
-                        .Where(kvp => hashRange.Contains(kvp.Value))
-                        .Select(kvp => CreateRangeFromId(kvp.Key))
-                        .ToList();
+                    // look for overlapping epk ranges.
+                    List<FeedRangeEpk> overlappedIds;
+                    if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
+                    {
+                        overlappedIds = this.partitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                    }
+                    else
+                    {
+                        PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
+                        PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+                        PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
+                        overlappedIds = this.partitionKeyRangeIdToHashRange
+                            .Where(kvp => hashRange.Contains(kvp.Value))
+                            .Select(kvp => CreateRangeFromId(kvp.Key))
+                            .ToList();
+                    }
+
+                    if (overlappedIds.Count == 0)
+                    {
+                        return TryCatch<List<FeedRangeEpk>>.FromException(
+                            new KeyNotFoundException(
+                                $"PartitionKeyRangeId: {feedRangeEpk} does not exist."));
+                    }
+
+                    return TryCatch<List<FeedRangeEpk>>.FromResult(overlappedIds);
                 }
-                
-                if (overlappedIds.Count == 0)
+
+                if (!(feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange))
+                {
+                    throw new InvalidOperationException("Expected feed range to be a partition key range at this point.");
+                }
+
+                if (!int.TryParse(feedRangePartitionKeyRange.PartitionKeyRangeId, out int partitionKeyRangeId))
                 {
                     return TryCatch<List<FeedRangeEpk>>.FromException(
-                        new KeyNotFoundException(
-                            $"PartitionKeyRangeId: {feedRangeEpk} does not exist."));
+                        new FormatException(
+                            $"PartitionKeyRangeId: {feedRangePartitionKeyRange.PartitionKeyRangeId} is not an integer."));
                 }
 
-                return TryCatch<List<FeedRangeEpk>>.FromResult(overlappedIds);
-            }
-
-            if (!(feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange))
-            {
-                throw new InvalidOperationException("Expected feed range to be a partition key range at this point.");
-            }
-
-            if (!int.TryParse(feedRangePartitionKeyRange.PartitionKeyRangeId, out int partitionKeyRangeId))
-            {
-                return TryCatch<List<FeedRangeEpk>>.FromException(
-                    new FormatException(
-                        $"PartitionKeyRangeId: {feedRangePartitionKeyRange.PartitionKeyRangeId} is not an integer."));
-            }
-
-            if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
-            {
-                // This range has no children (base case)
-                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
+                if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
                 {
-                    return TryCatch<List<FeedRangeEpk>>.FromException(
-                        new KeyNotFoundException(
-                            $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist."));
-                }
+                    // This range has no children (base case)
+                    if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
+                    {
+                        return TryCatch<List<FeedRangeEpk>>.FromException(
+                            new KeyNotFoundException(
+                                $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist."));
+                    }
 
-                List<FeedRangeEpk> singleRange = new List<FeedRangeEpk>()
+                    List<FeedRangeEpk> singleRange = new List<FeedRangeEpk>()
                 {
                     CreateRangeFromId(partitionKeyRangeId),
                 };
 
-                return TryCatch<List<FeedRangeEpk>>.FromResult(singleRange);
+                    return TryCatch<List<FeedRangeEpk>>.FromResult(singleRange);
+                }
+
+                // Recurse on the left and right child.
+                FeedRangeInternal left = new FeedRangePartitionKeyRange(children.left.ToString());
+                FeedRangeInternal right = new FeedRangePartitionKeyRange(children.right.ToString());
+
+                TryCatch<List<FeedRangeEpk>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, trace, cancellationToken);
+                if (tryGetLeftRanges.Failed)
+                {
+                    return tryGetLeftRanges;
+                }
+
+                TryCatch<List<FeedRangeEpk>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, trace, cancellationToken);
+                if (tryGetRightRanges.Failed)
+                {
+                    return tryGetRightRanges;
+                }
+
+                List<FeedRangeEpk> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
+                return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
             }
-
-            // Recurse on the left and right child.
-            FeedRangeInternal left = new FeedRangePartitionKeyRange(children.left.ToString());
-            FeedRangeInternal right = new FeedRangePartitionKeyRange(children.right.ToString());
-
-            TryCatch<List<FeedRangeEpk>> tryGetLeftRanges = await this.MonadicGetChildRangeAsync(left, trace, cancellationToken);
-            if (tryGetLeftRanges.Failed)
-            {
-                return tryGetLeftRanges;
-            }
-
-            TryCatch<List<FeedRangeEpk>> tryGetRightRanges = await this.MonadicGetChildRangeAsync(right, trace, cancellationToken);
-            if (tryGetRightRanges.Failed)
-            {
-                return tryGetRightRanges;
-            }
-
-            List<FeedRangeEpk> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
-            return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
         }
 
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
@@ -292,84 +305,87 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (feedRange is FeedRangePartitionKey)
+            using (ITrace inMemoryTrace = trace.StartChild(name: "ReadFeed 'Transport'", TraceComponent.Transport, TraceLevel.Info))
             {
-                throw new NotImplementedException();
-            }
-
-            int partitionKeyRangeId;
-            if (feedRange is FeedRangeEpk feedRangeEpk)
-            {
-                // Check to see if it lines up exactly with one physical partition
-                TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
-                if (monadicGetPkRangeIdFromEpkRange.Failed)
+                if (feedRange is FeedRangePartitionKey)
                 {
-                    return Task.FromResult(TryCatch<ReadFeedPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    throw new NotImplementedException();
                 }
 
-                partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+                int partitionKeyRangeId;
+                if (feedRange is FeedRangeEpk feedRangeEpk)
+                {
+                    // Check to see if it lines up exactly with one physical partition
+                    TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
+                    if (monadicGetPkRangeIdFromEpkRange.Failed)
+                    {
+                        return Task.FromResult(TryCatch<ReadFeedPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    }
+
+                    partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+                }
+                else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+                {
+                    partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+
+                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                    partitionKeyRangeId,
+                    out PartitionKeyHashRange range))
+                {
+                    return Task.FromResult(
+                        TryCatch<ReadFeedPage>.FromException(
+                            new CosmosException(
+                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: 42)));
+                }
+
+                if (!this.partitionedRecords.TryGetValue(range, out Records records))
+                {
+                    throw new InvalidOperationException("failed to find the range.");
+                }
+
+                ulong documentIndex = (readFeedState == null) || readFeedState.ContinuationToken is CosmosNull ? 0 : (ulong)Number64.ToLong(((CosmosNumber)readFeedState.ContinuationToken).Value);
+                List<Record> page = records
+                    .Where(record => record.ResourceIdentifier.Document > documentIndex)
+                    .Take(pageSize)
+                    .ToList();
+
+                List<CosmosObject> documents = new List<CosmosObject>();
+                foreach (Record record in page)
+                {
+                    CosmosObject document = ConvertRecordToCosmosElement(record);
+                    documents.Add(CosmosObject.Create(document));
+                }
+
+                ReadFeedState continuationState = documents.Count == 0 ? null : new ReadFeedState(CosmosNumber64.Create(page.Last().ResourceIdentifier.Document));
+                CosmosArray cosmosDocuments = CosmosArray.Create(documents);
+                CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
+                CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
+
+                Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
+                {
+                    { "Documents", cosmosDocuments },
+                    { "_count", cosmosCount },
+                    { "_rid", cosmosRid },
+                };
+                CosmosObject cosmosResponse = CosmosObject.Create(responseDictionary);
+                IJsonWriter jsonWriter = Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
+                cosmosResponse.WriteTo(jsonWriter);
+                byte[] result = jsonWriter.GetResult().ToArray();
+                MemoryStream responseStream = new MemoryStream(result);
+
+                ReadFeedPage readFeedPage = new ReadFeedPage(responseStream, requestCharge: 42, activityId: Guid.NewGuid().ToString(), continuationState);
+
+                return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
             }
-            else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
-            {
-                partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
-            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
-                partitionKeyRangeId,
-                out PartitionKeyHashRange range))
-            {
-                return Task.FromResult(
-                    TryCatch<ReadFeedPage>.FromException(
-                        new CosmosException(
-                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: 42)));
-            }
-
-            if (!this.partitionedRecords.TryGetValue(range, out Records records))
-            {
-                throw new InvalidOperationException("failed to find the range.");
-            }
-
-            ulong documentIndex = (readFeedState == null) || readFeedState.ContinuationToken is CosmosNull ? 0 : (ulong)Number64.ToLong(((CosmosNumber)readFeedState.ContinuationToken).Value);
-            List<Record> page = records
-                .Where(record => record.ResourceIdentifier.Document > documentIndex)
-                .Take(pageSize)
-                .ToList();
-
-            List<CosmosObject> documents = new List<CosmosObject>();
-            foreach (Record record in page)
-            {
-                CosmosObject document = ConvertRecordToCosmosElement(record);
-                documents.Add(CosmosObject.Create(document));
-            }
-
-            ReadFeedState continuationState = documents.Count == 0 ? null : new ReadFeedState(CosmosNumber64.Create(page.Last().ResourceIdentifier.Document));
-            CosmosArray cosmosDocuments = CosmosArray.Create(documents);
-            CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
-            CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
-
-            Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
-            {
-                { "Documents", cosmosDocuments },
-                { "_count", cosmosCount },
-                { "_rid", cosmosRid },
-            };
-            CosmosObject cosmosResponse = CosmosObject.Create(responseDictionary);
-            IJsonWriter jsonWriter = Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
-            cosmosResponse.WriteTo(jsonWriter);
-            byte[] result = jsonWriter.GetResult().ToArray();
-            MemoryStream responseStream = new MemoryStream(result);
-
-            ReadFeedPage readFeedPage = new ReadFeedPage(responseStream, requestCharge: 42, activityId: Guid.NewGuid().ToString(), continuationState);
-
-            return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
         }
 
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(
@@ -551,93 +567,96 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new NotImplementedException();
             }
 
-            int partitionKeyRangeId;
-            if (feedRange is FeedRangeEpk feedRangeEpk)
+            using (ITrace inMemoryTrace = trace.StartChild(name: "ChangeFeed 'Transport'", TraceComponent.Transport, TraceLevel.Info))
             {
-                // Check to see if it lines up exactly with one physical partition
-                TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
-                if (monadicGetPkRangeIdFromEpkRange.Failed)
+                int partitionKeyRangeId;
+                if (feedRange is FeedRangeEpk feedRangeEpk)
                 {
-                    return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    // Check to see if it lines up exactly with one physical partition
+                    TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
+                    if (monadicGetPkRangeIdFromEpkRange.Failed)
+                    {
+                        return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    }
+
+                    partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+                }
+                else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+                {
+                    partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+                }
+                else
+                {
+                    throw new NotImplementedException();
                 }
 
-                partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
-            }
-            else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
-            {
-                partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                    partitionKeyRangeId,
+                    out PartitionKeyHashRange range))
+                {
+                    return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(
+                        new CosmosException(
+                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: 42)));
+                }
 
-            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
-                partitionKeyRangeId,
-                out PartitionKeyHashRange range))
-            {
-                return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(
-                    new CosmosException(
-                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: 42)));
-            }
+                if (!this.partitionedChanges.TryGetValue(range, out List<Change> changes))
+                {
+                    throw new InvalidOperationException("failed to find the range.");
+                }
 
-            if (!this.partitionedChanges.TryGetValue(range, out List<Change> changes))
-            {
-                throw new InvalidOperationException("failed to find the range.");
-            }
+                List<Change> filteredChanges = changes
+                    .Where(change => state.Accept(ChangeFeedPredicate.Singleton, change))
+                    .Take(pageSize)
+                    .ToList();
 
-            List<Change> filteredChanges = changes
-                .Where(change => state.Accept(ChangeFeedPredicate.Singleton, change))
-                .Take(pageSize)
-                .ToList();
+                if (filteredChanges.Count == 0)
+                {
+                    ChangeFeedState notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
+                    return Task.FromResult(
+                    TryCatch<ChangeFeedPage>.FromResult(
+                        new ChangeFeedNotModifiedPage(
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            notModifiedResponseState)));
+                }
 
-            if (filteredChanges.Count == 0)
-            {
-                ChangeFeedState notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
+                ChangeFeedState responseState = new ChangeFeedStateTime(filteredChanges.Last().Time.AddTicks(1).ToUniversalTime());
+
+                List<CosmosObject> documents = new List<CosmosObject>();
+                foreach (Change change in filteredChanges)
+                {
+                    CosmosObject document = ConvertRecordToCosmosElement(change.Record);
+                    documents.Add(CosmosObject.Create(document));
+                }
+
+                CosmosArray cosmosDocuments = CosmosArray.Create(documents);
+                CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
+                CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
+
+                Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
+                {
+                    { "Documents", cosmosDocuments },
+                    { "_count", cosmosCount },
+                    { "_rid", cosmosRid },
+                };
+                CosmosObject cosmosResponse = CosmosObject.Create(responseDictionary);
+                IJsonWriter jsonWriter = Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
+                cosmosResponse.WriteTo(jsonWriter);
+                byte[] result = jsonWriter.GetResult().ToArray();
+                MemoryStream responseStream = new MemoryStream(result);
+
                 return Task.FromResult(
-                TryCatch<ChangeFeedPage>.FromResult(
-                    new ChangeFeedNotModifiedPage(
-                        requestCharge: 42,
-                        activityId: Guid.NewGuid().ToString(),
-                        notModifiedResponseState)));
+                    TryCatch<ChangeFeedPage>.FromResult(
+                        new ChangeFeedSuccessPage(
+                            responseStream,
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            responseState)));
             }
-
-            ChangeFeedState responseState = new ChangeFeedStateTime(filteredChanges.Last().Time.AddTicks(1).ToUniversalTime());
-
-            List<CosmosObject> documents = new List<CosmosObject>();
-            foreach (Change change in filteredChanges)
-            {
-                CosmosObject document = ConvertRecordToCosmosElement(change.Record);
-                documents.Add(CosmosObject.Create(document));
-            }
-
-            CosmosArray cosmosDocuments = CosmosArray.Create(documents);
-            CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
-            CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
-
-            Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
-            {
-                { "Documents", cosmosDocuments },
-                { "_count", cosmosCount },
-                { "_rid", cosmosRid },
-            };
-            CosmosObject cosmosResponse = CosmosObject.Create(responseDictionary);
-            IJsonWriter jsonWriter = Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
-            cosmosResponse.WriteTo(jsonWriter);
-            byte[] result = jsonWriter.GetResult().ToArray();
-            MemoryStream responseStream = new MemoryStream(result);
-
-            return Task.FromResult(
-                TryCatch<ChangeFeedPage>.FromResult(
-                    new ChangeFeedSuccessPage(
-                        responseStream,
-                        requestCharge: 42,
-                        activityId: Guid.NewGuid().ToString(),
-                        responseState)));
         }
 
         public Task<TryCatch> MonadicSplitAsync(

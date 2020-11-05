@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Transactions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -50,19 +51,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (!this.HasMoreResults)
+            using (ITrace childTrace = trace.StartChild(name: $"{this.Range} move next", TraceComponent.Pagination, TraceLevel.Info))
             {
-                return false;
-            }
+                if (!this.HasMoreResults)
+                {
+                    return false;
+                }
 
-            this.Current = await this.GetNextPageAsync(trace: trace, cancellationToken: this.cancellationToken);
-            if (this.Current.Succeeded)
-            {
-                this.State = this.Current.Result.State;
-                this.HasStarted = true;
-            }
+                this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
+                if (this.Current.Succeeded)
+                {
+                    this.State = this.Current.Result.State;
+                    this.HasStarted = true;
+                }
 
-            return true;
+                return true;
+            }
         }
 
         protected abstract Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken);

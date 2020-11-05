@@ -206,15 +206,19 @@ namespace Microsoft.Azure.Cosmos
             string resourceLink,
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal)
+            FeedRangeInternal feedRangeInternal,
+            ITrace trace)
         {
-            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-            List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+            using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
+            {
+                IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
+                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
 
-            return await this.GetTargetPartitionKeyRangesAsync(
-                resourceLink,
-                collectionResourceId,
-                ranges);
+                return await this.GetTargetPartitionKeyRangesAsync(
+                    resourceLink,
+                    collectionResourceId,
+                    ranges);
+            }
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(

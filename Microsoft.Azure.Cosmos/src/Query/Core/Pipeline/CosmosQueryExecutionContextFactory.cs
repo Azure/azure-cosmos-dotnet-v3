@@ -236,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     containerQueryProperties,
                     cosmosQueryContext,
                     inputParameters,
+                    trace,
                     cancellationToken);
             }
         }
@@ -245,7 +246,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             CosmosQueryContext cosmosQueryContext,
-            InputParameters inputParameters,
+            InputParameters inputParameters, 
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -256,7 +258,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
                    inputParameters.Properties,
-                   inputParameters.InitialFeedRange);
+                   inputParameters.InitialFeedRange,
+                   trace);
 
             bool singleLogicalPartitionKeyQuery = inputParameters.PartitionKey.HasValue
                 || ((partitionedQueryExecutionInfo.QueryRanges.Count == 1)
@@ -429,7 +432,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyDictionary<string, object> properties,
-            FeedRangeInternal feedRangeInternal)
+            FeedRangeInternal feedRangeInternal,
+            ITrace trace)
         {
             List<Documents.PartitionKeyRange> targetRanges;
             if (containerQueryProperties.EffectivePartitionKeyString != null)
@@ -452,7 +456,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.PartitionKeyDefinition,
-                    feedRangeInternal);
+                    feedRangeInternal,
+                    trace);
             }
             else
             {
