@@ -19,13 +19,13 @@ namespace Microsoft.Azure.Cosmos
 
         public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
-            string accountEndpointHost,
+            Uri accountEndpoint,
             TimeSpan requestTimeout,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
             this.tokenCredentialCache = new TokenCredentialCache(
                 tokenCredential: tokenCredential,
-                accountEndpointHost: accountEndpointHost,
+                accountEndpoint: accountEndpoint,
                 requestTimeout: requestTimeout,
                 backgroundTokenCredentialRefreshInterval: backgroundTokenCredentialRefreshInterval);
         }
