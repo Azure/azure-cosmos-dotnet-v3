@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 simpleEmulatorTokenCredential,
-                new Uri("https://localhost:8081"),
+                new Uri("https://127.0.0.1:8081"),
                 requestTimeout: TimeSpan.FromSeconds(30),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
 
