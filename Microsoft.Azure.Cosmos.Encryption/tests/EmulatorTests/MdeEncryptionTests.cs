@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             _ = context;
             MdeEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            MdeEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(MdeEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
+            MdeEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),MdeEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
             MdeEncryptionTests.encryptor = new TestEncryptor(MdeEncryptionTests.dekProvider);
 
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
@@ -136,9 +136,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateDekWithNonMdeAlgorithmFails()
         {
             string dekId = "oldDek";
+            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
             try
             {
-                await MdeEncryptionTests.CreateDekAsync(MdeEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+                await MdeEncryptionTests.CreateDekAsync(dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
                 Assert.Fail();
             }
             catch (InvalidOperationException ex)
@@ -164,9 +166,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new PartitionKey(testDoc.PK),
                 MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
             }
-            catch(InvalidOperationException ex)
+            catch(ArgumentException ex)
             {
-                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
+                Assert.AreEqual(" Using 'MdeAeadAes256CbcHmac256Randomized' algorithm, With incompatible Data Encryption Key which is initialized with AEAes256CbcHmacSha256Randomized", ex.Message);
             }
 
             try
@@ -181,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.AreEqual(" Using 'AEAes256CbcHmacSha256Randomized' algorithm, With incompatible Data Encryption Key which is initialized with MdeAeadAes256CbcHmac256Randomized", ex.Message);
             }
         }
-        
+
         [TestMethod]
         public async Task EncryptionCreateItemUsingMDEAlgoWithLegacyDek()
         {
@@ -189,14 +191,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await legacydekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
 
             TestDoc testDoc = TestDoc.Create(null);
+
             ItemResponse<TestDoc> createResponse = await MdeEncryptionTests.encryptionContainer.CreateItemAsync(
-                 testDoc,
-                 new PartitionKey(testDoc.PK),
-                 MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
+
             VerifyExpectedDocResponse(testDoc, createResponse);
+
+            await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, testDoc, dekId: MdeEncryptionTests.legacydekId);
         }
 
-            [TestMethod]
+        [TestMethod]
         public async Task EncryptionRewrapDek()
         {
             string dekId = "randomDek";

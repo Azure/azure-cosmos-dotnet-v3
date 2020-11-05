@@ -86,6 +86,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
+        /// Initializes a new instance of MdeEncryptionAlgorithm.
+        /// Uses <see cref="AeadAes256CbcHmac256EncryptionAlgorithm"/> which implements authenticated encryption algorithm with associated data as described
+        /// <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see> .
+        /// More specifically this implements AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
+        /// </summary>
+        /// <param name="dataEncryptionKey"> Data Encryption Key </param>
+        /// <param name="encryptionType"> Encryption type </param>
+        public MdeEncryptionAlgorithm(
+            Data.Encryption.Cryptography.DataEncryptionKey dataEncryptionKey,
+            Data.Encryption.Cryptography.EncryptionType encryptionType)
+        {
+            this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
+                dataEncryptionKey,
+                encryptionType);
+        }
+
+        /// <summary>
         /// Encrypt data using EncryptionAlgorithm
         /// </summary>
         /// <param name="plainText">Plaintext data to be encrypted</param>

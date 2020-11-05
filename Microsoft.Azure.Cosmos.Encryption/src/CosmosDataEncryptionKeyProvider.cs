@@ -161,16 +161,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
-            // Key Compatibility check. Legacy Cosmos Algorithm Key is Compatibile with MDE Based Encryption algorithm.
+            // Key Compatibility check. Legacy Cosmos Algorithm Key is Compatible with MDE Based Encryption algorithm.
             if (!CosmosEncryptionAlgorithm.VerifyIfKeyIsCompatible(encryptionAlgorithm, dataEncryptionKeyProperties.EncryptionAlgorithm))
             {
                 throw new ArgumentException($" Using '{encryptionAlgorithm}' algorithm, " +
                         $"With incompatible Data Encryption Key which is initialized with {dataEncryptionKeyProperties.EncryptionAlgorithm}");
             }
 
-            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            // supports Encryption with MDE based algorithm using Legacy DEK.
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized) &&
+                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
-                return this.dataEncryptionKeyContainerCore.InitMdeEncryptionAlgorithm(dataEncryptionKeyProperties);
+                return await this.dataEncryptionKeyContainerCore.FetchUnWrappedMdeSupportedLegacyDekAsync(
+                    dataEncryptionKeyProperties,
+                    cancellationToken);
             }
 
             InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(

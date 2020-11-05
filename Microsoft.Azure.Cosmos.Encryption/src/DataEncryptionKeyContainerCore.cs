@@ -247,6 +247,47 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
+        /// <summary>
+        /// For providing support to Encrypt/Decrypt items using Legacy DEK with MDE based algorithm.
+        /// UnWrap using Legacy Key Provider and Init MDE Encryption Algorithm with Unwrapped Key.
+        /// </summary>
+        /// <param name="dekProperties"> DEK Properties </param>
+        /// <param name="cancellationToken"> Cancellation Token </param>
+        /// <returns> Data Encryption Key </returns>
+        internal async Task<DataEncryptionKey> FetchUnWrappedMdeSupportedLegacyDekAsync(
+            DataEncryptionKeyProperties dekProperties,
+            CancellationToken cancellationToken)
+        {
+            if (this.DekProvider.EncryptionKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm based DEK, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+            }
+
+            EncryptionKeyUnwrapResult unwrapResult;
+            try
+            {
+                // unwrap with original wrap provider
+                unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+                            dekProperties.WrappedDataEncryptionKey,
+                            dekProperties.EncryptionKeyWrapMetadata,
+                            cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                    $"Failed to unwrap Data Encryption Key with id: '{dekProperties.Id}'.",
+                    exception);
+            }
+
+            // init MDE Data Encryption Key and Init MDE Algorithm
+            MdeDataEncryptionKey mdeDataEncryptionKey = new MdeDataEncryptionKey(
+                dekProperties.EncryptionKeyWrapMetadata.GetName(dekProperties.EncryptionKeyWrapMetadata),
+                unwrapResult.DataEncryptionKey);
+
+            return new MdeEncryptionAlgorithm(mdeDataEncryptionKey, Data.Encryption.Cryptography.EncryptionType.Randomized);
+        }
+
         internal async Task<InMemoryRawDek> FetchUnwrappedAsync(
             DataEncryptionKeyProperties dekProperties,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -254,6 +295,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             try
             {
+                if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+                {
+                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties);
+
+                    // TTL is not used since DEK is not cached.
+                    return new InMemoryRawDek(dek, TimeSpan.FromMilliseconds(0));
+                }
+
                 return await this.DekProvider.DekCache.GetOrAddRawDekAsync(
                     dekProperties,
                     this.UnwrapAsync,
