@@ -12,6 +12,19 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Equals (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("STR", Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE StringEquals(root["StringField"], "STR", false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Equals (case-insensitive)]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("STR", OrdinalIgnoreCase))]]></Expression>
     </Input>

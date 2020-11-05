@@ -8,11 +8,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -182,14 +182,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             async Task<int> AssertChildPartitionAsync(FeedRangeInternal childRange)
             {
-                DocumentContainerPage readFeedPage = await documentContainer.ReadFeedAsync(
+                ReadFeedPage readFeedPage = await documentContainer.ReadFeedAsync(
                     feedRange: childRange,
-                    resourceIdentifier: ResourceId.Empty,
+                    readFeedState: new ReadFeedState(CosmosNull.Create()),
                     pageSize: 100,
+                    queryRequestOptions: default,
                     cancellationToken: default);
 
                 List<long> values = new List<long>();
-                foreach (Record record in readFeedPage.Records)
+                foreach (Record record in readFeedPage.GetRecords())
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }
@@ -257,14 +258,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             async Task<int> AssertChildPartitionAsync(FeedRangeInternal feedRange)
             {
-                DocumentContainerPage page = await documentContainer.ReadFeedAsync(
+                ReadFeedPage page = await documentContainer.ReadFeedAsync(
                     feedRange: feedRange,
-                    resourceIdentifier: ResourceId.Empty,
+                    readFeedState: new ReadFeedState(CosmosNull.Create()),
                     pageSize: 100,
+                    queryRequestOptions: default,
                     cancellationToken: default);
 
                 List<long> values = new List<long>();
-                foreach (Record record in page.Records)
+                foreach (Record record in page.GetRecords())
                 {
                     values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
                 }

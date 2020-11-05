@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosAadTests
     {
         [TestMethod]
-        public async Task AadMockTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task AadMockTest(ConnectionMode connectionMode)
         {
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
@@ -37,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ConnectionMode = ConnectionMode.Gateway,
-                ConnectionProtocol = Protocol.Https
+                ConnectionMode = connectionMode,
+                ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https
             };
 
             using CosmosClient aadClient = new CosmosClient(
@@ -116,8 +118,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Should use cached token
             Assert.AreEqual(1, getAadTokenCount);
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            Assert.AreEqual(1, getAadTokenCount);
+            // Token should be refreshed after 1 second
+            await Task.Delay(TimeSpan.FromSeconds(1.2));
+            Assert.AreEqual(2, getAadTokenCount);
         }
 
         [TestMethod]
