@@ -6,15 +6,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -152,7 +146,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 RequestMessage requestMessage = new RequestMessage();
                 enricher(requestMessage);
-                return requestMessage.PartitionKeyRangeId != null;
+                return requestMessage.PartitionKeyRangeId != null
+                    && !requestMessage.Properties.ContainsKey(HandlerConstants.StartEpkString)
+                    && !requestMessage.Properties.ContainsKey(HandlerConstants.EndEpkString);
             };
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
@@ -282,8 +278,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 RequestMessage requestMessage = new RequestMessage();
                 enricher(requestMessage);
-                return requestMessage.Properties[HandlerConstants.StartEpkString] == range.Min
-                        && requestMessage.Properties[HandlerConstants.EndEpkString] == range.Max;
+                return requestMessage.PartitionKeyRangeId != null
+                    && (string)requestMessage.Properties[HandlerConstants.StartEpkString] == range.Min
+                    && (string)requestMessage.Properties[HandlerConstants.EndEpkString] == range.Max;
             };
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();

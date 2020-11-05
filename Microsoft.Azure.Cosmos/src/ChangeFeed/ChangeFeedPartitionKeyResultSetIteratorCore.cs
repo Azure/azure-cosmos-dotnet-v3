@@ -98,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <returns>A change feed response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            PartitionKeyRange targetPartitionKeyRange = null;
             if (this.feedRangeInternal is FeedRangeEpk feedRangeEpk)
             {
                 if (this.partitionKeyRangeCache == null)
@@ -117,6 +118,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                     return goneResponse;
                 }
+
+                targetPartitionKeyRange = overlappingRanges[0];
             }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -129,6 +132,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 {
                     ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
                     this.changeFeedStartFrom.Accept(visitor);
+
+                    // We avoid the PartitionKeyRangeHandler 
+                    if (targetPartitionKeyRange != null)
+                    {
+                        requestMessage.PartitionKeyRangeId = new PartitionKeyRangeIdentity(targetPartitionKeyRange.Id);
+                    }
                 },
                 partitionKey: default,
                 streamPayload: default,
