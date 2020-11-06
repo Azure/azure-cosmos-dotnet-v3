@@ -178,6 +178,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task Controller_ShouldRunNotDeleteLease()
+        {
+            //arrange
+            DocumentServiceLease lease = this.CreateMockLease(PartitionId);
+            PartitionSynchronizer synchronizer = Mock.Of<PartitionSynchronizer>();
+            Mock.Get(synchronizer)
+                .Setup(s => s.HandlePartitionGoneAsync(It.Is<DocumentServiceLease>(l => l.CurrentLeaseToken == PartitionId && l.ContinuationToken == LastContinuationToken)))
+                .ReturnsAsync((new[] { lease }, false));
+
+            PartitionSupervisor partitionSupervisor = Mock.Of<PartitionSupervisor>(o => o.RunAsync(It.IsAny<CancellationToken>()) == Task.FromException(new FeedRangeGoneException("message", LastContinuationToken)));
+
+            PartitionSupervisorFactory partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f =>
+                f.Create(lease) == partitionSupervisor);
+            DocumentServiceLeaseManager leaseManager = Mock.Of<DocumentServiceLeaseManager>(manager => manager.AcquireAsync(lease) == Task.FromResult(lease));
+            DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
+
+            PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+
+            await sut.InitializeAsync().ConfigureAwait(false);
+
+            //act
+            await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
+
+            //assert
+            await sut.ShutdownAsync().ConfigureAwait(false);
+
+            Mock.Get(leaseManager).Verify(manager => manager.DeleteAsync(lease), Times.Never);
+        }
+
+        [TestMethod]
         public async Task Controller_ShouldIgnoreProcessingChildPartition_IfPartitionAlreadyAdded()
         {
             //arrange
