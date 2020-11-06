@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
 
-        public override async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(DocumentServiceLease lease)
+        public override async Task<(IEnumerable<DocumentServiceLease>, bool)> HandlePartitionGoneAsync(DocumentServiceLease lease)
         {
             if (lease == null)
             {
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         /// <summary>
         /// Handles splits and merges for partition based leases.
         /// </summary>
-        private async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(
+        private async Task<(IEnumerable<DocumentServiceLease>, bool)> HandlePartitionGoneAsync(
             string leaseToken,
             string lastContinuationToken,
             DocumentServiceLeaseCore partitionBasedLease,
@@ -117,13 +117,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 }
             }
 
-            return newLeases;
+            return (newLeases, true);
         }
 
         /// <summary>
         /// Handles splits and merges for feed range based leases.
         /// </summary>
-        private async Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(
+        private async Task<(IEnumerable<DocumentServiceLease>, bool)> HandlePartitionGoneAsync(
             string leaseToken,
             string lastContinuationToken,
             DocumentServiceLeaseCoreEpk feedRangeBasedLease,
@@ -160,6 +160,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 }
 
                 DefaultTrace.TraceInformation("Lease {0} split into {1}", leaseToken, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
+
+                return (newLeases, true);
             }
             else
             {
@@ -167,9 +169,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 newLeases.Add(feedRangeBasedLease);
 
                 DefaultTrace.TraceInformation("Lease {0} redirected to {1}", leaseToken, overlappingRanges[0].Id);
-            }
 
-            return newLeases;
+                // Since the lease was just redirected, we don't need to delete it
+                return (newLeases, false);
+            }
         }
 
         /// <summary>

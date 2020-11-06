@@ -146,14 +146,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             try
             {
                 lease.ContinuationToken = lastContinuationToken;
-                IEnumerable<DocumentServiceLease> addedLeases = await this.synchronizer.HandlePartitionGoneAsync(lease).ConfigureAwait(false);
+                (IEnumerable<DocumentServiceLease> addedLeases, bool shouldDeleteGoneLease) = await this.synchronizer.HandlePartitionGoneAsync(lease).ConfigureAwait(false);
                 Task[] addLeaseTasks = addedLeases.Select(l =>
                     {
                         l.Properties = lease.Properties;
                         return this.AddOrUpdateLeaseAsync(l);
                     }).ToArray();
 
-                await this.leaseManager.DeleteAsync(lease).ConfigureAwait(false);
+                if (shouldDeleteGoneLease)
+                {
+                    await this.leaseManager.DeleteAsync(lease).ConfigureAwait(false);
+                }
+
                 await Task.WhenAll(addLeaseTasks).ConfigureAwait(false);
             }
             catch (Exception e)

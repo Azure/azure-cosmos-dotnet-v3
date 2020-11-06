@@ -15,6 +15,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     {
         public abstract Task CreateMissingLeasesAsync();
 
-        public abstract Task<IEnumerable<DocumentServiceLease>> HandlePartitionGoneAsync(DocumentServiceLease lease);
+        public abstract Task<(IEnumerable<DocumentServiceLease>, bool)> HandlePartitionGoneAsync(DocumentServiceLease lease);
     }
 }
