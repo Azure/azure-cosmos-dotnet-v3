@@ -65,6 +65,141 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(options.HostName, afterAcquire.Owner);
         }
 
+        [TestMethod]
+        public async Task CreatesEPKBasedLease()
+        {
+            string continuation = Guid.NewGuid().ToString();
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions options, CancellationToken token) => new ResponseMessage(System.Net.HttpStatusCode.OK) { Content = stream });
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                mockUpdater.Object,
+                options,
+                Mock.Of<RequestOptionsFactory>());
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+
+            DocumentServiceLeaseCoreEpk epkBasedLease = (DocumentServiceLeaseCoreEpk)afterAcquire;
+
+            Assert.IsNotNull(epkBasedLease);
+            Assert.AreEqual(continuation, afterAcquire.ContinuationToken);
+            Assert.AreEqual(feedRangeEpk.Range.Min, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Min);
+            Assert.AreEqual(feedRangeEpk.Range.Max, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Max);
+        }
+
+        [TestMethod]
+        public async Task CreatesPartitionKeyBasedLease()
+        {
+            string continuation = Guid.NewGuid().ToString();
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "",
+                MaxExclusive = "FF"
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync((Stream stream, PartitionKey partitionKey, ItemRequestOptions options, CancellationToken token) => new ResponseMessage(System.Net.HttpStatusCode.OK) { Content = stream });
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                mockUpdater.Object,
+                options,
+                Mock.Of<RequestOptionsFactory>());
+
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+
+            DocumentServiceLeaseCore pkRangeBasedLease = (DocumentServiceLeaseCore)afterAcquire;
+
+            Assert.IsNotNull(pkRangeBasedLease);
+            Assert.AreEqual(continuation, afterAcquire.ContinuationToken);
+            Assert.AreEqual(partitionKeyRange.Id, pkRangeBasedLease.CurrentLeaseToken);
+        }
+
+        /// <summary>
+        /// Verifies a Release sets the owner on null
+        /// </summary>
+        [TestMethod]
+        public async Task ReleaseCompletes()
+        {
+            DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
+            {
+                HostName = Guid.NewGuid().ToString()
+            };
+
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore()
+            {
+                LeaseId = Guid.NewGuid().ToString(),
+                LeaseToken = "0",
+                Owner = Guid.NewGuid().ToString(),
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+
+            Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
+
+            Func<Func<DocumentServiceLease, DocumentServiceLease>, bool> validateUpdater = (Func<DocumentServiceLease, DocumentServiceLease> updater) =>
+            {
+                DocumentServiceLease afterUpdateLease = updater(lease);
+                return afterUpdateLease.Owner == null;
+            };
+
+            mockUpdater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(),
+                It.IsAny<string>(),
+                It.IsAny<PartitionKey>(),
+                It.Is<Func<DocumentServiceLease, DocumentServiceLease>>(f => validateUpdater(f))))
+                .ReturnsAsync(lease);
+
+            ResponseMessage leaseResponse = new ResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new CosmosJsonDotNetSerializer().ToStream(lease)
+            };
+
+            Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
+            mockedContainer.Setup(c => c.ReadItemStreamAsync(
+                It.Is<string>(id => id == lease.LeaseId),
+                It.IsAny<PartitionKey>(),
+                It.IsAny<ItemRequestOptions>(),
+                It.IsAny<CancellationToken>())).ReturnsAsync(leaseResponse);
+
+
+            DocumentServiceLeaseManagerCosmos documentServiceLeaseManagerCosmos = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(),
+                mockedContainer.Object,
+                mockUpdater.Object,
+                options,
+                Mock.Of<RequestOptionsFactory>());
+
+            await documentServiceLeaseManagerCosmos.ReleaseAsync(lease);
+        }
+
         /// <summary>
         /// Verifies that if the updater read a different Owner from the captured in memory, throws a LeaseLost
         /// </summary>
