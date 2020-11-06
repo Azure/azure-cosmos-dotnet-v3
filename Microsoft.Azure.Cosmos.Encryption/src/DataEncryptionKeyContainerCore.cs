@@ -280,7 +280,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     exception);
             }
 
-            // init MDE Data Encryption Key and Init MDE Algorithm
+            // Init MDE Data Encryption Key and then Init MDE Algorithm using MdeDataEncryptionKey.
+            // MdeDataEncrytionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
             MdeDataEncryptionKey mdeDataEncryptionKey = new MdeDataEncryptionKey(
                 dekProperties.EncryptionKeyWrapMetadata.GetName(dekProperties.EncryptionKeyWrapMetadata),
                 unwrapResult.DataEncryptionKey);

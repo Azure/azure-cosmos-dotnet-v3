@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal static bool VerifyIfSupportedAlgorithm(string encryptionAlgorithm)
         {
             if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                 !string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+                !string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
             {
                 return false;
             }
@@ -41,40 +41,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal static bool VerifyIfKeyIsCompatible(string encOptions_encryptionAlgorithm, string dek_encryptionAlgorithm)
         {
-            // List of DEKs compatible with AEAes256CbcHmacSha256Randomized Algorithm.
-            IReadOnlyDictionary<string, bool> legacyEncAlgoSupportedDEK = new Dictionary<string, bool>
-            {
-                { CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, true },
-                { CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, false },
-            };
-
-            // List of DEKs compatible with MdeAeadAes256CbcHmac256Randomized Algorithm.
-            IReadOnlyDictionary<string, bool> mdeEncAlgoSupportedDEK = new Dictionary<string, bool>
-            {
-                { CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, true },
-                { CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, true },
-            };
-
-            // unlikely
-            if (string.IsNullOrEmpty(encOptions_encryptionAlgorithm) || string.IsNullOrEmpty(dek_encryptionAlgorithm))
+            // Legacy Encryption Algorithm supports only Legacy DEKs.
+            if (string.Equals(encOptions_encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
+                string.Equals(dek_encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
             {
                 return false;
             }
 
-            if (string.Equals(encOptions_encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
-            {
-                legacyEncAlgoSupportedDEK.TryGetValue(dek_encryptionAlgorithm, out bool ifsupported);
-                return ifsupported;
-            }
-
-            if (string.Equals(encOptions_encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
-            {
-                mdeEncAlgoSupportedDEK.TryGetValue(dek_encryptionAlgorithm, out bool ifsupported);
-                return ifsupported;
-            }
-
-            // unsupported Encryption algorithm.
-            return false;
+            return true;
         }
     }
 }
