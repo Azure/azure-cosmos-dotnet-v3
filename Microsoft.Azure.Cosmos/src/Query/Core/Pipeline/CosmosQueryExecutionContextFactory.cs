@@ -128,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
                         cosmosQueryContext.ResourceLink,
                         inputParameters.PartitionKey,
+                        createQueryPipelineTrace,
                         cancellationToken);
                     cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
