@@ -2,8 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-
-
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.ObjectModel;
@@ -40,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         public Collection<string> Paths { get; internal set; } = new Collection<string>();
 
         /// <summary>
-        /// 
+        /// Filter for sparse unique keys.
         /// </summary>
         [JsonIgnore]
         public QueryDefinition Filter {

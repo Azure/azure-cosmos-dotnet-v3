@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     public class QueryDefinition
     {
         /// <summary>
-        /// 
+        /// SQL parameters for query.
         /// </summary>
 #if INTERNAL
         public
