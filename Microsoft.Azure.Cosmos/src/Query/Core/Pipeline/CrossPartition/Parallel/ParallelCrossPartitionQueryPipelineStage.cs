@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (!await this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync())
+            if (!await this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync(trace))
             {
                 this.Current = default;
                 return false;

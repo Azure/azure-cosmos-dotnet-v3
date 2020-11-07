@@ -175,6 +175,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(expected: documents.Count, actual: documentsQueried.Count);
         }
 
+        [TestMethod]
+        public async Task Tracing()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i} }}"));
+            }
+
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(documents);
+            IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
+
+            Trace rootTrace;
+            int numTraces = 0;
+            using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
+            {
+                while (await pipelineStage.MoveNextAsync(rootTrace))
+                {
+                    TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
+                    tryGetQueryPage.ThrowIfFailed();
+
+                    numTraces++;
+                }
+            }
+
+            string traceString = TraceWriter.TraceToText(rootTrace);
+
+            Console.WriteLine(traceString);
+
+            Assert.AreEqual(numTraces, rootTrace.Children.Count);
+        }
+
         private static async Task<List<CosmosElement>> ExecuteQueryAsync(
             string query,
             IReadOnlyList<CosmosObject> documents,
@@ -263,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             for (int i = 0; i < 3; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
@@ -294,9 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
-                documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
-                    cancellationToken: default).Result,
+                new List<FeedRangeEpk>() { FeedRangeEpk.FullRange},
                 partitionKey: null,
                 GetQueryPlan(query),
                 pageSize: pageSize,

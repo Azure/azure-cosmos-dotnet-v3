@@ -407,135 +407,138 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new NotImplementedException();
             }
 
-            int partitionKeyRangeId;
-            if (feedRange is FeedRangeEpk feedRangeEpk)
+            using (ITrace simulatedQueryTransportTrace = trace.StartChild("Query Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                // Check to see if it lines up exactly with one physical partition
-                TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
-                if (monadicGetPkRangeIdFromEpkRange.Failed)
+                int partitionKeyRangeId;
+                if (feedRange is FeedRangeEpk feedRangeEpk)
                 {
-                    return Task.FromResult(TryCatch<QueryPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    // Check to see if it lines up exactly with one physical partition
+                    TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
+                    if (monadicGetPkRangeIdFromEpkRange.Failed)
+                    {
+                        return Task.FromResult(TryCatch<QueryPage>.FromException(monadicGetPkRangeIdFromEpkRange.Exception));
+                    }
+
+                    partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+                }
+                else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+                {
+                    partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
+                }
+                else
+                {
+                    throw new NotImplementedException();
                 }
 
-                partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
-            }
-            else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
-            {
-                partitionKeyRangeId = int.Parse(feedRangePartitionKeyRange.PartitionKeyRangeId);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
-            TryCatch<SqlQuery> monadicParse = SqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
-            if (monadicParse.Failed)
-            {
-                return Task.FromResult(TryCatch<QueryPage>.FromException(monadicParse.Exception));
-            }
-
-            SqlQuery sqlQuery = monadicParse.Result;
-
-            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
-                partitionKeyRangeId,
-                out PartitionKeyHashRange range))
-            {
-                return Task.FromResult(TryCatch<QueryPage>.FromException(
-                    new CosmosException(
-                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: 42)));
-            }
-
-            if (!this.partitionedRecords.TryGetValue(range, out Records records))
-            {
-                throw new InvalidOperationException("failed to find the range.");
-            }
-
-            List<CosmosObject> documents = new List<CosmosObject>();
-            foreach (Record record in records)
-            {
-                CosmosObject document = ConvertRecordToCosmosElement(record);
-                documents.Add(CosmosObject.Create(document));
-            }
-
-            IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
-
-            IEnumerable<CosmosElement> queryPageResults = queryResults;
-
-            string continuationResourceId;
-            int continuationSkipCount;
-
-            if (continuationToken != null)
-            {
-                CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
-                continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
-                continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
-
-                ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
-                queryPageResults = queryPageResults.Where((Func<CosmosElement, bool>)(c =>
+                TryCatch<SqlQuery> monadicParse = SqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
+                if (monadicParse.Failed)
                 {
-                    ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
-                    return documentResourceId.Document >= continuationParsedResourceId.Document;
-                }));
+                    return Task.FromResult(TryCatch<QueryPage>.FromException(monadicParse.Exception));
+                }
 
-                for (int i = 0; i < continuationSkipCount; i++)
+                SqlQuery sqlQuery = monadicParse.Result;
+
+                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                    partitionKeyRangeId,
+                    out PartitionKeyHashRange range))
                 {
-                    if (queryPageResults.FirstOrDefault() is CosmosObject firstDocument)
+                    return Task.FromResult(TryCatch<QueryPage>.FromException(
+                        new CosmosException(
+                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: 42)));
+                }
+
+                if (!this.partitionedRecords.TryGetValue(range, out Records records))
+                {
+                    throw new InvalidOperationException("failed to find the range.");
+                }
+
+                List<CosmosObject> documents = new List<CosmosObject>();
+                foreach (Record record in records)
+                {
+                    CosmosObject document = ConvertRecordToCosmosElement(record);
+                    documents.Add(CosmosObject.Create(document));
+                }
+
+                IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
+
+                IEnumerable<CosmosElement> queryPageResults = queryResults;
+
+                string continuationResourceId;
+                int continuationSkipCount;
+
+                if (continuationToken != null)
+                {
+                    CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
+                    continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
+                    continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
+
+                    ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
+                    queryPageResults = queryPageResults.Where((Func<CosmosElement, bool>)(c =>
                     {
-                        string currentResourceId = ((CosmosString)firstDocument["_rid"]).Value;
-                        if (currentResourceId == continuationResourceId)
+                        ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
+                        return documentResourceId.Document >= continuationParsedResourceId.Document;
+                    }));
+
+                    for (int i = 0; i < continuationSkipCount; i++)
+                    {
+                        if (queryPageResults.FirstOrDefault() is CosmosObject firstDocument)
                         {
-                            queryPageResults = queryPageResults.Skip(1);
+                            string currentResourceId = ((CosmosString)firstDocument["_rid"]).Value;
+                            if (currentResourceId == continuationResourceId)
+                            {
+                                queryPageResults = queryPageResults.Skip(1);
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                continuationResourceId = null;
-                continuationSkipCount = 0;
-            }
-
-            queryPageResults = queryPageResults.Take(pageSize);
-            List<CosmosElement> queryPageResultList = queryPageResults.ToList();
-            QueryState queryState;
-            if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
-            {
-                string currentResourceId = ((CosmosString)lastDocument["_rid"]).Value;
-                int currentSkipCount = queryPageResultList
-                    .Where(document => ((CosmosString)((CosmosObject)document)["_rid"]).Value == currentResourceId)
-                    .Count();
-                if (currentResourceId == continuationResourceId)
+                else
                 {
-                    currentSkipCount += continuationSkipCount;
+                    continuationResourceId = null;
+                    continuationSkipCount = 0;
                 }
 
-                CosmosObject queryStateValue = CosmosObject.Create(new Dictionary<string, CosmosElement>()
+                queryPageResults = queryPageResults.Take(pageSize);
+                List<CosmosElement> queryPageResultList = queryPageResults.ToList();
+                QueryState queryState;
+                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
+                {
+                    string currentResourceId = ((CosmosString)lastDocument["_rid"]).Value;
+                    int currentSkipCount = queryPageResultList
+                        .Where(document => ((CosmosString)((CosmosObject)document)["_rid"]).Value == currentResourceId)
+                        .Count();
+                    if (currentResourceId == continuationResourceId)
+                    {
+                        currentSkipCount += continuationSkipCount;
+                    }
+
+                    CosmosObject queryStateValue = CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
                     { "resourceId", CosmosString.Create(currentResourceId) },
                     { "skipCount", CosmosNumber64.Create(currentSkipCount) },
                 });
 
-                queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
-            }
-            else
-            {
-                queryState = default;
-            }
+                    queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
+                }
+                else
+                {
+                    queryState = default;
+                }
 
-            return Task.FromResult(
-                TryCatch<QueryPage>.FromResult(
-                    new QueryPage(
-                        queryPageResultList,
-                        requestCharge: 42,
-                        activityId: Guid.NewGuid().ToString(),
-                        responseLengthInBytes: 1337,
-                        cosmosQueryExecutionInfo: default,
-                        disallowContinuationTokenMessage: default,
-                        state: queryState)));
+                return Task.FromResult(
+                    TryCatch<QueryPage>.FromResult(
+                        new QueryPage(
+                            queryPageResultList,
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            responseLengthInBytes: 1337,
+                            cosmosQueryExecutionInfo: default,
+                            disallowContinuationTokenMessage: default,
+                            state: queryState)));
+            }
         }
 
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(

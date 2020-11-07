@@ -191,7 +191,8 @@ namespace Microsoft.Azure.Cosmos
         public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
-            string effectivePartitionKeyString)
+            string effectivePartitionKeyString,
+            ITrace trace)
         {
             return this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
@@ -199,7 +200,8 @@ namespace Microsoft.Azure.Cosmos
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
-                });
+                },
+                trace);
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
@@ -217,14 +219,16 @@ namespace Microsoft.Azure.Cosmos
                 return await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collectionResourceId,
-                    ranges);
+                    ranges,
+                    trace);
             }
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges)
+            List<Range<string>> providedRanges,
+            ITrace trace)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -238,26 +242,29 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(providedRanges));
             }
 
-            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
-            if (ranges == null && PathsHelper.IsNameBased(resourceLink))
+            using (ITrace getPKRangesTrace = trace.StartChild("Get Partition Key Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
-                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
-                // happened based on previously resolved collection rid.
-                // Return NotFoundException this time. Next query will succeed.
-                // This can only happen if collection is deleted/created with same name and client was not restarted
-                // in between.
-                CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
-                collectionCache.Refresh(resourceLink);
-            }
+                IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-            if (ranges == null)
-            {
-                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
-            }
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+                if (ranges == null && PathsHelper.IsNameBased(resourceLink))
+                {
+                    // Refresh the cache and don't try to re-resolve collection as it is not clear what already
+                    // happened based on previously resolved collection rid.
+                    // Return NotFoundException this time. Next query will succeed.
+                    // This can only happen if collection is deleted/created with same name and client was not restarted
+                    // in between.
+                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+                    collectionCache.Refresh(resourceLink);
+                }
 
-            return ranges;
+                if (ranges == null)
+                {
+                    throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
+                }
+
+                return ranges;
+            }
         }
 
         public override bool ByPassQueryParsing()

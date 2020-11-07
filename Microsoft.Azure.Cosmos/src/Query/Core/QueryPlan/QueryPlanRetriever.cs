@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             if (queryClient == null)
@@ -53,28 +54,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
-            TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = await queryPlanHandler.TryGetQueryPlanAsync(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                QueryPlanRetriever.SupportedQueryFeatures,
-                hasLogicalPartitionKey,
-                cancellationToken);
-
-            if (!tryGetQueryPlan.Succeeded)
+            using (ITrace serviceInteropTrace = trace.StartChild("Service Interop Query Plan", TraceComponent.Query, TraceLevel.Info))
             {
-                if (tryGetQueryPlan.Exception is CosmosException)
+                QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
+
+                TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = await queryPlanHandler.TryGetQueryPlanAsync(
+                    sqlQuerySpec,
+                    partitionKeyDefinition,
+                    QueryPlanRetriever.SupportedQueryFeatures,
+                    hasLogicalPartitionKey,
+                    cancellationToken);
+
+                if (!tryGetQueryPlan.Succeeded)
                 {
-                    throw tryGetQueryPlan.Exception;
+                    if (tryGetQueryPlan.Exception is CosmosException)
+                    {
+                        throw tryGetQueryPlan.Exception;
+                    }
+
+                    throw CosmosExceptionFactory.CreateBadRequestException(
+                        message: tryGetQueryPlan.Exception.ToString(),
+                        stackTrace: tryGetQueryPlan.Exception.StackTrace);
                 }
 
-                throw CosmosExceptionFactory.CreateBadRequestException(
-                    message: tryGetQueryPlan.Exception.ToString(),
-                    stackTrace: tryGetQueryPlan.Exception.StackTrace);
+                return tryGetQueryPlan.Result;
             }
-
-            return tryGetQueryPlan.Result;
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
@@ -102,15 +107,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            return queryContext.ExecuteQueryPlanRequestAsync(
-                resourceLink,
-                ResourceType.Document,
-                OperationType.QueryPlan,
-                sqlQuerySpec,
-                partitionKey,
-                QueryPlanRetriever.SupportedQueryFeaturesString,
-                trace,
-                cancellationToken);
+            using (ITrace gatewayQueryPlanTrace = trace.StartChild("Gateway QueryPlan", TraceComponent.Query, TraceLevel.Info))
+            {
+                return queryContext.ExecuteQueryPlanRequestAsync(
+                    resourceLink,
+                    ResourceType.Document,
+                    OperationType.QueryPlan,
+                    sqlQuerySpec,
+                    partitionKey,
+                    QueryPlanRetriever.SupportedQueryFeaturesString,
+                    trace,
+                    cancellationToken);
+            }
         }
     }
 }
