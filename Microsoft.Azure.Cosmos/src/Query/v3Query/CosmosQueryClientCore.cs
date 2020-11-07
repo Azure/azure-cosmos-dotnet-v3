@@ -16,12 +16,14 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -51,10 +53,12 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,
             PartitionKey? partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
                 containerLink,
+                trace,
                 cancellationToken);
 
             string effectivePartitionKeyString = null;
@@ -145,7 +149,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 message,
                 partitionKeyRange,
-                queryPageDiagnostics);
+                queryPageDiagnostics,
+                trace);
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -220,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceLink,
                     collectionResourceId,
                     ranges,
-                    trace);
+                    childTrace);
             }
         }
 
@@ -284,80 +289,93 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            Action<QueryPageDiagnostics> queryPageDiagnostics)
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
+            ITrace trace)
         {
-            using (cosmosResponseMessage)
+            using (ITrace getCosmosElementResponse = trace.StartChild("Get Cosmos Element Response", TraceComponent.Json, Tracing.TraceLevel.Info))
             {
-                QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
-                    clientQueryCorrelationId: clientQueryCorrelationId,
-                    partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
-                    queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
-                    indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
-                queryPageDiagnostics(queryPage);
-
-                if (!cosmosResponseMessage.IsSuccessStatusCode)
+                using (cosmosResponseMessage)
                 {
-                    CosmosException exception;
-                    if (cosmosResponseMessage.CosmosException != null)
+                    QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
+                        clientQueryCorrelationId: clientQueryCorrelationId,
+                        partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
+                        queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
+                        indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
+                        diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
+                    queryPageDiagnostics(queryPage);
+
+                    if (
+                        cosmosResponseMessage.Headers.QueryMetricsText != null &&
+                        BackendMetricsParser.TryParse(cosmosResponseMessage.Headers.QueryMetricsText, out BackendMetrics backendMetrics))
                     {
-                        exception = cosmosResponseMessage.CosmosException;
+                        QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
+                            new QueryMetrics(backendMetrics, IndexUtilizationInfo.Empty, ClientSideMetrics.Empty));
+                        trace.AddDatum("Query Metrics", datum);
+                    }
+
+                    if (!cosmosResponseMessage.IsSuccessStatusCode)
+                    {
+                        CosmosException exception;
+                        if (cosmosResponseMessage.CosmosException != null)
+                        {
+                            exception = cosmosResponseMessage.CosmosException;
+                        }
+                        else
+                        {
+                            exception = new CosmosException(
+                                cosmosResponseMessage.ErrorMessage,
+                                cosmosResponseMessage.StatusCode,
+                                (int)cosmosResponseMessage.Headers.SubStatusCode,
+                                cosmosResponseMessage.Headers.ActivityId,
+                                cosmosResponseMessage.Headers.RequestCharge);
+                        }
+
+                        return TryCatch<QueryPage>.FromException(exception);
+                    }
+
+                    if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
+                    {
+                        memoryStream = new MemoryStream();
+                        cosmosResponseMessage.Content.CopyTo(memoryStream);
+                    }
+
+                    long responseLengthBytes = memoryStream.Length;
+                    CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
+                        memoryStream,
+                        resourceType,
+                        requestOptions.CosmosSerializationFormatOptions);
+
+                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
+                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                    {
+                        cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
                     }
                     else
                     {
-                        exception = new CosmosException(
-                            cosmosResponseMessage.ErrorMessage,
-                            cosmosResponseMessage.StatusCode,
-                            (int)cosmosResponseMessage.Headers.SubStatusCode,
-                            cosmosResponseMessage.Headers.ActivityId,
-                            cosmosResponseMessage.Headers.RequestCharge);
+                        cosmosQueryExecutionInfo = default;
                     }
 
-                    return TryCatch<QueryPage>.FromException(exception);
-                }
+                    QueryState queryState;
+                    if (cosmosResponseMessage.Headers.ContinuationToken != null)
+                    {
+                        queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
+                    }
+                    else
+                    {
+                        queryState = default;
+                    }
 
-                if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
-                {
-                    memoryStream = new MemoryStream();
-                    cosmosResponseMessage.Content.CopyTo(memoryStream);
-                }
+                    QueryPage response = new QueryPage(
+                        documents,
+                        cosmosResponseMessage.Headers.RequestCharge,
+                        cosmosResponseMessage.Headers.ActivityId,
+                        responseLengthBytes,
+                        cosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: null,
+                        queryState);
 
-                long responseLengthBytes = memoryStream.Length;
-                CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
-                    memoryStream,
-                    resourceType,
-                    requestOptions.CosmosSerializationFormatOptions);
-
-                CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
-                if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
-                {
-                    cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
+                    return TryCatch<QueryPage>.FromResult(response);
                 }
-                else
-                {
-                    cosmosQueryExecutionInfo = default;
-                }
-
-                QueryState queryState;
-                if (cosmosResponseMessage.Headers.ContinuationToken != null)
-                {
-                    queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
-                }
-                else
-                {
-                    queryState = default;
-                }
-
-                QueryPage response = new QueryPage(
-                    documents,
-                    cosmosResponseMessage.Headers.RequestCharge,
-                    cosmosResponseMessage.Headers.ActivityId,
-                    responseLengthBytes,
-                    cosmosQueryExecutionInfo,
-                    disallowContinuationTokenMessage: null,
-                    queryState);
-
-                return TryCatch<QueryPage>.FromResult(response);
             }
         }
 

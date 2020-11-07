@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             string exceptionMessage = "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query";
             client
-                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
+                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), NoOpTrace.Singleton, cancellationtoken))
                 .ReturnsAsync(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition));
             client
                 .Setup(x => x.ByPassQueryParsing())

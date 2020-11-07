@@ -51,9 +51,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
             int sourceLineNumber = 0)
         {
             return this.StartChild(
-name,
-component: this.Component,
-level: TraceLevel.Info);
+                name,
+                component: this.Component,
+                level: TraceLevel.Info);
         }
 
         public ITrace StartChild(

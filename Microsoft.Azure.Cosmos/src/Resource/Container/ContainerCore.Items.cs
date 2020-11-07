@@ -356,6 +356,7 @@ namespace Microsoft.Azure.Cosmos
                 ContainerQueryProperties containerQueryProperties = await this.queryClient.GetCachedContainerQueryPropertiesAsync(
                     this.LinkUri,
                     requestOptions.PartitionKey,
+                    NoOpTrace.Singleton,
                     cancellationToken);
                 partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
             }

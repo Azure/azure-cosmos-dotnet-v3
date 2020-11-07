@@ -51,13 +51,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (this.bufferedPage.HasValue)
+            using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
             {
-                return;
-            }
+                if (this.bufferedPage.HasValue)
+                {
+                    return;
+                }
 
-            await this.enumerator.MoveNextAsync(trace);
-            this.bufferedPage = this.enumerator.Current;
+                await this.enumerator.MoveNextAsync(prefetchTrace);
+                this.bufferedPage = this.enumerator.Current;
+            }
         }
     }
 }

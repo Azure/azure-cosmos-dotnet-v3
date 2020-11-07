@@ -369,38 +369,38 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public static AsciiTreeIndents Create(AsciiTreeCharacters asciiTreeCharacters)
                 {
                     return new AsciiTreeIndents(
-child: new string(
-new char[]
-{
-                        asciiTreeCharacters.Child,
-                        asciiTreeCharacters.Dash,
-                        asciiTreeCharacters.Dash,
-                        asciiTreeCharacters.Blank
-}),
-parent: new string(
-new char[]
-{
-                        asciiTreeCharacters.Parent,
-                        asciiTreeCharacters.Blank,
-                        asciiTreeCharacters.Blank,
-                        asciiTreeCharacters.Blank
-}),
-last: new string(
-new char[]
-{
-                        asciiTreeCharacters.Last,
-                        asciiTreeCharacters.Dash,
-                        asciiTreeCharacters.Dash,
-                        asciiTreeCharacters.Blank
-}),
-blank: new string(
-new char[]
-{
-                        asciiTreeCharacters.Blank,
-                        asciiTreeCharacters.Blank,
-                        asciiTreeCharacters.Blank,
-                        asciiTreeCharacters.Blank
-}));
+                        child: new string(
+                            new char[]
+                            {
+                                asciiTreeCharacters.Child,
+                                asciiTreeCharacters.Dash,
+                                asciiTreeCharacters.Dash,
+                                asciiTreeCharacters.Blank
+                            }),
+                        parent: new string(
+                            new char[]
+                            {
+                                asciiTreeCharacters.Parent,
+                                asciiTreeCharacters.Blank,
+                                asciiTreeCharacters.Blank,
+                                asciiTreeCharacters.Blank
+                            }),
+                        last: new string(
+                            new char[]
+                            {
+                                asciiTreeCharacters.Last,
+                                asciiTreeCharacters.Dash,
+                                asciiTreeCharacters.Dash,
+                                asciiTreeCharacters.Blank
+                            }),
+                        blank: new string(
+                            new char[]
+                            {
+                                asciiTreeCharacters.Blank,
+                                asciiTreeCharacters.Blank,
+                                asciiTreeCharacters.Blank,
+                                asciiTreeCharacters.Blank
+                            }));
                 }
             }
         }

@@ -333,29 +333,32 @@ namespace Microsoft.Azure.Cosmos
 
         internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            this.ThrowIfDisposed();
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
-            using (diagnosticsContext.GetOverallScope())
+            using (ITrace childTrace = trace.StartChild("Get Container Properties", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
-                ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
-                try
+                this.ThrowIfDisposed();
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
+                using (diagnosticsContext.GetOverallScope())
                 {
-                    using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                    ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+                    try
                     {
-                        return await collectionCache.ResolveByNameAsync(
-                            HttpConstants.Versions.CurrentVersion,
-                            containerUri,
-                            cancellationToken);
+                        using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                        {
+                            return await collectionCache.ResolveByNameAsync(
+                                HttpConstants.Versions.CurrentVersion,
+                                containerUri,
+                                cancellationToken);
+                        }
+                    }
+                    catch (DocumentClientException ex)
+                    {
+                        throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
                     }
                 }
-                catch (DocumentClientException ex)
-                {
-                    throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
-                }
             }
-
         }
 
         internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)

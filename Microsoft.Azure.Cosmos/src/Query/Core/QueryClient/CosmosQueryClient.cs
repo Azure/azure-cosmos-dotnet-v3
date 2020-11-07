@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,
             PartitionKey? partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         /// <summary>

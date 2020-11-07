@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         internal abstract Task<TResult> OperationHelperAsync<TResult>(

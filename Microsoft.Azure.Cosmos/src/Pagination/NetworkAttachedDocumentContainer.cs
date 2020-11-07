@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
                     this.container.LinkUri,
+                    trace,
                     cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
@@ -135,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
                     this.container.LinkUri,
+                    trace,
                     cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
@@ -243,6 +245,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     {
                         ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
                             this.container.LinkUri,
+                            trace,
                             cancellationToken);
                         PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
 
@@ -313,6 +316,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     {
                         ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
                             this.container.LinkUri,
+                            trace,
                             cancellationToken);
                         List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                             this.container.LinkUri,
@@ -373,8 +377,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 // convert into physical range or throw a split exception
                 ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                            this.container.LinkUri,
-                            cancellationToken);
+                    this.container.LinkUri,
+                    trace,
+                    cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
                     await this.container.GetRIDAsync(cancellationToken),
