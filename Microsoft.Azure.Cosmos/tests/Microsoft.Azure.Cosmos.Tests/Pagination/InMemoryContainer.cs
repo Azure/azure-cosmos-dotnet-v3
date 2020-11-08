@@ -726,7 +726,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
                 matchIds = this.partitionKeyRangeIdToHashRange
-                    .Where(kvp => kvp.Value.Equals(hashRange))
+                    .Where(kvp => kvp.Value.Contains(hashRange) || hashRange.Contains(kvp.Value))
                     .Select(kvp => kvp.Key)
                     .ToList();
             }
