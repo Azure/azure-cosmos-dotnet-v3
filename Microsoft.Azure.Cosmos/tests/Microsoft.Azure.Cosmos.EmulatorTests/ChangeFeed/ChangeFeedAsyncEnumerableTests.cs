@@ -279,8 +279,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 }
 
                 ChangeFeedSuccessPage successPage = (ChangeFeedSuccessPage)page;
-                Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(successPage.Content).Data;
-                totalCount += response.Count;
+                totalCount += successPage.Documents.Count;
             }
 
             return (totalCount, state);

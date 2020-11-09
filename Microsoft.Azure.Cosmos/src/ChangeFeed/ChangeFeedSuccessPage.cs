@@ -5,21 +5,21 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.IO;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal sealed class ChangeFeedSuccessPage : ChangeFeedPage
     {
         public ChangeFeedSuccessPage(
-            Stream content,
+            CosmosArray documents,
             double requestCharge,
             string activityId,
             ChangeFeedCrossFeedRangeState state)
             : base(requestCharge, activityId, state)
         {
-            this.Content = content ?? throw new ArgumentNullException(nameof(content));
+            this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
         }
 
-        public Stream Content { get; }
+        public CosmosArray Documents { get; }
     }
 }

@@ -44,7 +44,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedPage page = innerChangeFeedPage.Page switch
             {
                 Pagination.ChangeFeedSuccessPage successPage => new ChangeFeedSuccessPage(
-                    successPage.Content,
+                    CosmosQueryClientCore.ParseElementsFromRestStream(
+                        successPage.Content, 
+                        Documents.ResourceType.Document, 
+                        cosmosSerializationOptions: null),
                     successPage.RequestCharge,
                     successPage.ActivityId,
                     state),
