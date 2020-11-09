@@ -52,7 +52,7 @@ jobs:
     inputs:
       command: run
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release --framework netcoreapp3.1 -- -j Medium --category=GateBenchmark -m  --BaselineValidation
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release --framework netcoreapp3.1 --allCategories=GateBenchmark -- -j Medium  -m  --BaselineValidation
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests
