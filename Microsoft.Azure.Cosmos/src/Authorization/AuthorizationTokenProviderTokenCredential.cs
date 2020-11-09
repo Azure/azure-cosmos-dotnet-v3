@@ -19,13 +19,15 @@ namespace Microsoft.Azure.Cosmos
 
         public AuthorizationTokenProviderTokenCredential(
             TokenCredential tokenCredential,
-            string accountEndpointHost,
+            Uri accountEndpoint,
+            TimeSpan requestTimeout,
             TimeSpan? backgroundTokenCredentialRefreshInterval)
         {
             this.tokenCredentialCache = new TokenCredentialCache(
-                tokenCredential,
-                accountEndpointHost,
-                backgroundTokenCredentialRefreshInterval);
+                tokenCredential: tokenCredential,
+                accountEndpoint: accountEndpoint,
+                requestTimeout: requestTimeout,
+                backgroundTokenCredentialRefreshInterval: backgroundTokenCredentialRefreshInterval);
         }
 
         public override async ValueTask<(string token, string payload)> GetUserAuthorizationAsync(

@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                             $"Expected array: {cosmosElement}"));
                 }
 
-                List<FeedRangeState<ChangeFeedState>> changeFeedFeedRangeStates = new List<FeedRangeState<ChangeFeedState>>();
+                List<FeedRangeState<ChangeFeedState>> changeFeedFeedRangeStates = new List<FeedRangeState<ChangeFeedState>>(capacity: cosmosArray.Count);
                 foreach (CosmosElement arrayItem in cosmosArray)
                 {
                     TryCatch<FeedRangeState<ChangeFeedState>> monadicChangeFeedFeedRangeState = ChangeFeedFeedRangeStateSerializer.Monadic.CreateFromCosmosElement(arrayItem);

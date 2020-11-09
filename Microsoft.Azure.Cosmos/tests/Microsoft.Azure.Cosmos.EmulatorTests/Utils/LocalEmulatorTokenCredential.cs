@@ -5,11 +5,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
     using IdentityModel.Tokens;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class LocalEmulatorTokenCredential : TokenCredential
     {
@@ -39,6 +41,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private AccessToken GetAccessToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
         {
+            // Verify that the request context is a valid URI
+            Assert.AreEqual("https://127.0.0.1/.default", requestContext.Scopes.First());
+
             this.GetTokenCallback?.Invoke(
                 requestContext,
                 cancellationToken);
