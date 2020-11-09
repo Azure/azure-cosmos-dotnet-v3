@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public FeedRangeState(FeedRangeInternal feedRange, TState state)
         {
             this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
-            this.State = state ?? throw new ArgumentNullException(nameof(state));
+            this.State = state;
         }
 
         public FeedRangeInternal FeedRange { get; }

@@ -277,6 +277,11 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
@@ -293,6 +298,11 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            if (changeFeedStartFrom == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
@@ -305,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(
-                changeFeedIteratorCore, 
+                changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
