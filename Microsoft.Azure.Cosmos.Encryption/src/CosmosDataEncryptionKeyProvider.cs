@@ -82,9 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(
-                encryptionKeyStoreProvider
-                ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)));
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
             this.PdekCacheTimeToLive = cacheTimeToLive;
@@ -105,9 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(
-                encryptionKeyStoreProvider
-                ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider)));
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
             this.PdekCacheTimeToLive = cacheTimeToLive;
