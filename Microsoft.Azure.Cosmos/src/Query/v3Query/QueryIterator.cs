@@ -153,8 +153,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
