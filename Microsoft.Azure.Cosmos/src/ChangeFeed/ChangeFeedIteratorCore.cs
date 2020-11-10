@@ -291,25 +291,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             innerException: monadicParsedToken.Exception));
                 }
 
-                TryCatch<VersionedAndRidCheckedCompositeToken> monadicVersionedToken = VersionedAndRidCheckedCompositeToken
-                    .MonadicCreateFromCosmosElement(monadicParsedToken.Result);
-                if (monadicVersionedToken.Failed)
-                {
-                    return TryCatch<ChangeFeedCrossFeedRangeState>.FromException(
-                        new MalformedChangeFeedContinuationTokenException(
-                            message: $"Failed to parse continuation token: {startFromContinuation.Continuation}.",
-                            innerException: monadicVersionedToken.Exception));
-                }
-
-                VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = monadicVersionedToken.Result;
-                if (versionedAndRidCheckedCompositeToken.VersionNumber != VersionedAndRidCheckedCompositeToken.Version.V2)
-                {
-                    return TryCatch<ChangeFeedCrossFeedRangeState>.FromException(
-                        new MalformedChangeFeedContinuationTokenException(
-                            message: $"Wrong version number: {versionedAndRidCheckedCompositeToken.VersionNumber}."));
-                }
-
-                return ChangeFeedCrossFeedRangeState.Monadic.CreateFromCosmosElement(versionedAndRidCheckedCompositeToken.ContinuationToken);
+                return ChangeFeedCrossFeedRangeState.Monadic.CreateFromCosmosElement(monadicParsedToken.Result);
             }
 
             public override TryCatch<ChangeFeedCrossFeedRangeState> Visit(ChangeFeedStartFromBeginning startFromBeginning)
