@@ -101,7 +101,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the sql parameters for the class
         /// </summary>
-        internal IReadOnlyDictionary<string, SqlParameter> Parameters
+#if INTERNAL
+        public
+#else
+        internal
+#endif
+        IReadOnlyDictionary<string, SqlParameter> Parameters
         {
             get
             {
