@@ -20,8 +20,10 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="UniqueKeyPolicy"/>
     public class UniqueKey
     {
+#if INTERNAL
         [JsonProperty(PropertyName = Constants.Properties.Filter, NullValueHandling = NullValueHandling.Ignore)]
         private SqlQuerySpec querySpec;
+#endif
 
         /// <summary>
         /// Gets the paths, a set of which must be unique for each document in the Azure Cosmos DB service.
@@ -37,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; internal set; } = new Collection<string>();
 
+#if INTERNAL
         /// <summary>
         /// Filter for sparse unique keys.
         /// </summary>
@@ -45,5 +48,6 @@ namespace Microsoft.Azure.Cosmos
             get => this.querySpec == null ? null : new QueryDefinition(this.querySpec);
             set => this.querySpec = value.ToSqlQuerySpec();
         }
+#endif
     }
 }
