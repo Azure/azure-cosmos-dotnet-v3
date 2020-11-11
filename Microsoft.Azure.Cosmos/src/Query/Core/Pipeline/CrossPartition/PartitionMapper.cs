@@ -65,9 +65,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 Comparer<FeedRangeEpk>.Create((range1, range2) => string.CompareOrdinal(range1.Range.Min, range2.Range.Min)));
             if (matchedIndex < 0)
             {
-                return TryCatch<PartitionMapping<PartitionedToken>>.FromException(
+                if (partitionKeyRanges.Count != 1)
+                {
+                    return TryCatch<PartitionMapping<PartitionedToken>>.FromException(
                     new MalformedContinuationTokenException(
                         $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
+                }
+
+                // The user is doing a partition key query that got split, so it no longer aligns with our continuation token.
+                matchedIndex = 0;
             }
 
             ReadOnlyMemory<FeedRangeEpk> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<FeedRangeEpk>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex);
