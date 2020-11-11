@@ -127,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
+                            diagnostics: CosmosDiagnosticsContext.Create(default),
                             nonNullState)));
             }
 
