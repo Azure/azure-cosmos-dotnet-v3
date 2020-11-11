@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
-                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}", nameof(encryptionAlgorithm));
+                throw new ArgumentException($"Encryption algorithm not supported: {encryptionAlgorithm}. Supported Algorithm is '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}'", nameof(encryptionAlgorithm));
             }
 
             AeadAes256CbcHmac256EncryptionKey aeKey = new AeadAes256CbcHmac256EncryptionKey(rawKey, AeadAes256CbcHmac256Algorithm.AlgorithmNameConstant);
