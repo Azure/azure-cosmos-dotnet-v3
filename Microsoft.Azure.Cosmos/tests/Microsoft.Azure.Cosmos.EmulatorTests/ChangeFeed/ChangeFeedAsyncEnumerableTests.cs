@@ -52,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             (int totalCount, ChangeFeedCrossFeedRangeState state) countAndState;
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable();
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
             countAndState = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, countAndState.totalCount);
 
@@ -218,7 +219,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
 
             // Start draining as 1 iterator
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable();
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
             (int totalCount, ChangeFeedCrossFeedRangeState state) = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, totalCount);
 
@@ -256,7 +258,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable();
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
             await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable.WithCancellation(cancellationTokenSource.Token))
             {
                 monadicPage.ThrowIfFailed();
