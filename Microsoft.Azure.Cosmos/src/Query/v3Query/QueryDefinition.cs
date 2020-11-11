@@ -14,9 +14,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        /// <summary>
-        /// SQL parameters for query.
-        /// </summary>
         private Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
@@ -101,12 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the sql parameters for the class
         /// </summary>
-#if INTERNAL
-        public
-#else
-        internal
-#endif
-        IReadOnlyDictionary<string, SqlParameter> Parameters
+        internal IReadOnlyDictionary<string, SqlParameter> Parameters
         {
             get
             {

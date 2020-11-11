@@ -9,18 +9,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
     /// <summary>
     /// Represents a parameter associated with <see cref="SqlQuerySpec"/> in the Azure Cosmos DB service.
-    /// </summary> 
+    /// </summary>
     /// <remarks>
-    /// Azure Cosmos DB SQL parameters are name-value pairs referenced in parameterized queries. 
+    /// Azure Cosmos DB SQL parameters are name-value pairs referenced in parameterized queries.
     /// Unlike in relation SQL databases, they don't have types associated with them.
     /// </remarks>
     [DataContract]
-#if INTERNAL
-    public
-#else
-    internal
-#endif
-        sealed class SqlParameter : IEquatable<SqlParameter>
+    internal sealed class SqlParameter : IEquatable<SqlParameter>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlParameter"/> class for the Azure Cosmos DB service.
