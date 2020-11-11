@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 state = null;
             }
 
-            ReadFeedPage compositePage = new ReadFeedPage(backendPage.Content, backendPage.RequestCharge, backendPage.ActivityId, state);
+            ReadFeedPage compositePage = new ReadFeedPage(backendPage.Content, backendPage.RequestCharge, backendPage.ActivityId, backendPage.Diagnostics, state);
 
             this.Current = TryCatch<ReadFeedPage>.FromResult(compositePage);
             return true;

@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ReadFeedIteratorCore : FeedIteratorInternal
     {
         private readonly TryCatch<CrossPartitionReadFeedAsyncEnumerator> monadicEnumerator;
-        private readonly CosmosDiagnosticsContext diagnosticsContext;
         private bool hasMoreResults;
 
         public ReadFeedIteratorCore(
@@ -29,8 +28,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions queryRequestOptions,
             string continuationToken,
             int pageSize,
-            CancellationToken cancellationToken,
-            CosmosDiagnosticsContext diagnosticsContext = null)
+            CancellationToken cancellationToken)
         {
             if (!string.IsNullOrEmpty(continuationToken))
             {
@@ -87,8 +85,6 @@ namespace Microsoft.Azure.Cosmos
                 pageSize,
                 cancellationToken);
 
-            this.diagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
-
             this.hasMoreResults = true;
         }
 
@@ -103,116 +99,109 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (this.diagnosticsContext.GetOverallScope())
+            if (!this.hasMoreResults)
             {
-                if (!this.hasMoreResults)
+                throw new InvalidOperationException("Should not be calling FeedIterator that does not have any more results");
+            }
+
+            if (this.monadicEnumerator.Failed)
+            {
+                this.hasMoreResults = false;
+
+                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(this.monadicEnumerator.Exception);
+                return new ResponseMessage(
+                    statusCode: System.Net.HttpStatusCode.BadRequest,
+                    requestMessage: null,
+                    headers: cosmosException.Headers,
+                    cosmosException: cosmosException,
+                    diagnostics: cosmosException.DiagnosticsContext);
+            }
+
+            CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
+            TryCatch<ReadFeedPage> monadicPage;
+
+            try
+            {
+                if (!await enumerator.MoveNextAsync())
                 {
-                    throw new InvalidOperationException("Should not be calling FeedIterator that does not have any more results");
+                    throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
                 }
 
-                if (this.monadicEnumerator.Failed)
+                monadicPage = enumerator.Current;
+            }
+            catch (Exception ex)
+            {
+                monadicPage = TryCatch<ReadFeedPage>.FromException(ex);
+            }
+
+            if (monadicPage.Failed)
+            {
+                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(monadicPage.Exception);
+                if (!IsRetriableException(cosmosException))
                 {
                     this.hasMoreResults = false;
-
-                    CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(this.monadicEnumerator.Exception);
-                    return new ResponseMessage(
-                        statusCode: System.Net.HttpStatusCode.BadRequest,
-                        requestMessage: null,
-                        headers: cosmosException.Headers,
-                        cosmosException: cosmosException,
-                        diagnostics: this.diagnosticsContext);
-                }
-
-                CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
-                TryCatch<ReadFeedPage> monadicPage;
-
-                try
-                {
-                    if (!await enumerator.MoveNextAsync())
-                    {
-                        throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
-                    }
-
-                    monadicPage = enumerator.Current;
-                }
-                catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
-                {
-                    throw new CosmosOperationCanceledException(ex, this.diagnosticsContext);
-                }
-                catch (Exception ex)
-                {
-                    monadicPage = TryCatch<ReadFeedPage>.FromException(ex);
-                }
-
-                if (monadicPage.Failed)
-                {
-                    CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(monadicPage.Exception);
-                    if (!IsRetriableException(cosmosException))
-                    {
-                        this.hasMoreResults = false;
-                    }
-
-                    return new ResponseMessage(
-                        statusCode: cosmosException.StatusCode,
-                        requestMessage: null,
-                        headers: cosmosException.Headers,
-                        cosmosException: cosmosException,
-                        diagnostics: this.diagnosticsContext);
-                }
-
-                ReadFeedPage readFeedPage = monadicPage.Result;
-                if (readFeedPage.State == default)
-                {
-                    this.hasMoreResults = false;
-                }
-
-                // Make the continuation token match the older format:
-                string continuationToken;
-                if (readFeedPage.State != null)
-                {
-                    List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                    CosmosArray compositeContinuationTokensCosmosArray = (CosmosArray)readFeedPage.State.ContinuationToken;
-                    foreach (CosmosElement arrayItem in compositeContinuationTokensCosmosArray)
-                    {
-                        ReadFeedContinuationToken readFeedContinuationToken = ReadFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem).Result;
-                        FeedRangeEpk feedRangeEpk = (FeedRangeEpk)readFeedContinuationToken.Range;
-                        ReadFeedState readFeedState = readFeedContinuationToken.State;
-                        CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-                        {
-                            Range = feedRangeEpk.Range, 
-                            Token = readFeedState.ContinuationToken.ToString(),
-                        };
-
-                        compositeContinuationTokens.Add(compositeContinuationToken);
-                    }
-
-                    FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(
-                        containerRid: string.Empty,
-                        feedRange: FeedRangeEpk.FullRange,
-                        compositeContinuationTokens);
-
-                    continuationToken = feedRangeCompositeContinuation.ToString();
-                }
-                else
-                {
-                    continuationToken = null;
                 }
 
                 return new ResponseMessage(
-                    statusCode: System.Net.HttpStatusCode.OK,
-                    requestMessage: default,
-                    headers: new Headers()
-                    {
-                        RequestCharge = readFeedPage.RequestCharge,
-                        ActivityId = readFeedPage.ActivityId,
-                        ContinuationToken = continuationToken,
-                    },
-                    cosmosException: default,
-                    diagnostics: this.diagnosticsContext)
-                {
-                    Content = readFeedPage.Content,
-                };
+                    statusCode: cosmosException.StatusCode,
+                    requestMessage: null,
+                    headers: cosmosException.Headers,
+                    cosmosException: cosmosException,
+                    diagnostics: cosmosException.DiagnosticsContext);
             }
+
+            ReadFeedPage readFeedPage = monadicPage.Result;
+            if (readFeedPage.State == default)
+            {
+                this.hasMoreResults = false;
+            }
+
+            // Make the continuation token match the older format:
+            string continuationToken;
+            if (readFeedPage.State != null)
+            {
+                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
+                CosmosArray compositeContinuationTokensCosmosArray = (CosmosArray)readFeedPage.State.ContinuationToken;
+                foreach (CosmosElement arrayItem in compositeContinuationTokensCosmosArray)
+                {
+                    ReadFeedContinuationToken readFeedContinuationToken = ReadFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem).Result;
+                    FeedRangeEpk feedRangeEpk = (FeedRangeEpk)readFeedContinuationToken.Range;
+                    ReadFeedState readFeedState = readFeedContinuationToken.State;
+                    CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
+                    {
+                        Range = feedRangeEpk.Range,
+                        Token = readFeedState.ContinuationToken.ToString(),
+                    };
+
+                    compositeContinuationTokens.Add(compositeContinuationToken);
+                }
+
+                FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(
+                    containerRid: string.Empty,
+                    feedRange: FeedRangeEpk.FullRange,
+                    compositeContinuationTokens);
+
+                continuationToken = feedRangeCompositeContinuation.ToString();
+            }
+            else
+            {
+                continuationToken = null;
+            }
+
+            return new ResponseMessage(
+                statusCode: System.Net.HttpStatusCode.OK,
+                requestMessage: default,
+                headers: new Headers()
+                {
+                    RequestCharge = readFeedPage.RequestCharge,
+                    ActivityId = readFeedPage.ActivityId,
+                    ContinuationToken = continuationToken,
+                },
+                cosmosException: default,
+                diagnostics: readFeedPage.Diagnostics)
+            {
+                Content = readFeedPage.Content,
+            };
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()
