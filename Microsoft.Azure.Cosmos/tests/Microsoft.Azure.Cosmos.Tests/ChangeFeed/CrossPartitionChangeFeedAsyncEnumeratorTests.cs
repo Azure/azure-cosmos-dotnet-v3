@@ -28,10 +28,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
-                    new List<FeedRangeState<ChangeFeedState>>()
+                    new FeedRangeState<ChangeFeedState>[]
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
-                    }.ToImmutableArray()),
+                    }),
                 cancellationToken: default);
 
             Assert.IsTrue(await enumerator.MoveNextAsync());
@@ -48,10 +48,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
-                    new List<FeedRangeState<ChangeFeedState>>()
+                    new FeedRangeState<ChangeFeedState>[]
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
-                    }.ToImmutableArray()),
+                    }),
                 cancellationToken: default);
 
             // First page should be true and skip the 304 not modified
@@ -76,10 +76,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
-                    new List<FeedRangeState<ChangeFeedState>>()
+                    new FeedRangeState<ChangeFeedState>[]
                     {
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
-                    }.ToImmutableArray()),
+                    }),
                 cancellationToken: default);
 
             int globalCount = await (useContinuations
@@ -99,10 +99,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
-                    new List<FeedRangeState<ChangeFeedState>>()
+                    new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
-                    }.ToImmutableArray()),
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
+                    }),
                 cancellationToken: default);
 
             for (int i = 0; i < numItems; i++)
@@ -137,10 +137,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
-                    new List<FeedRangeState<ChangeFeedState>>()
+                    new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
-                    }.ToImmutableArray()),
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
+                    }),
                 cancellationToken: default);
 
             Assert.AreEqual(0, await (useContinuations

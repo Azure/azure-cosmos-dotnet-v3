@@ -223,17 +223,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             Assert.AreEqual(batchSize, totalCount);
 
             // Continue draining as two iterators
-            if (!state.TrySplit(out (ChangeFeedCrossFeedRangeState left, ChangeFeedCrossFeedRangeState right)childrenStates))
+            if (!state.TrySplit(out ChangeFeedCrossFeedRangeState first, out ChangeFeedCrossFeedRangeState second))
             {
                 Assert.Fail("Failed to split");
             }
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
 
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> leftEnumerable = this.Container.GetChangeFeedAsyncEnumerable(childrenStates.left);
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> leftEnumerable = this.Container.GetChangeFeedAsyncEnumerable(first);
             (int leftTotalCount, ChangeFeedCrossFeedRangeState leftResumeState) = await PartialDrainAsync(leftEnumerable);
 
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> rightEnumerable = this.Container.GetChangeFeedAsyncEnumerable(childrenStates.right);
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> rightEnumerable = this.Container.GetChangeFeedAsyncEnumerable(second);
             (int rightTotalCount, ChangeFeedCrossFeedRangeState rightResumeState) = await PartialDrainAsync(rightEnumerable);
 
             Assert.AreEqual(batchSize, leftTotalCount + rightTotalCount);
@@ -265,21 +265,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private static async Task<(int, ChangeFeedCrossFeedRangeState)> PartialDrainAsync(IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable)
         {
-            ChangeFeedCrossFeedRangeState state;
+            ChangeFeedCrossFeedRangeState state = default;
             int totalCount = 0;
             await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
             {
                 monadicPage.ThrowIfFailed();
 
                 ChangeFeedPage page = monadicPage.Result;
-                if (page is ChangeFeedNotModifiedPage changeFeedNotModifedPage)
+                state = page.State;
+                if (page.NotModified)
                 {
-                    state = changeFeedNotModifedPage.State;
                     break;
                 }
 
-                ChangeFeedSuccessPage successPage = (ChangeFeedSuccessPage)page;
-                totalCount += successPage.Documents.Count;
+                totalCount += page.Documents.Count;
             }
 
             return (totalCount, state);

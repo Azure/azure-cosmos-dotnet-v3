@@ -222,10 +222,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (this.changeFeedRequestOptions.EmitOldContinuationToken)
             {
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                foreach (FeedRangeState<ChangeFeedState> changeFeedContinuationToken in crossFeedRangeState.Value)
+                for (int i = 0; i < crossFeedRangeState.Value.Length; i++)
                 {
-                    string token = changeFeedContinuationToken.State is ChangeFeedStateContinuation changeFeedStateContinuation ? ((CosmosString)changeFeedStateContinuation.ContinuationToken).Value : null;
-                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedContinuationToken.FeedRange).Range;
+                    FeedRangeState<ChangeFeedState> changeFeedFeedRangeState = crossFeedRangeState.Value.Span[i];
+                    string token = changeFeedFeedRangeState.State is ChangeFeedStateContinuation changeFeedStateContinuation ? ((CosmosString)changeFeedStateContinuation.ContinuationToken).Value : null;
+                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedFeedRangeState.FeedRange).Range;
                     CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                     {
                         Range = range,

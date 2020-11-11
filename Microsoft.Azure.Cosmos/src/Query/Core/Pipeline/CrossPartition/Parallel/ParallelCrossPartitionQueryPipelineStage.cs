@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 // left most and any non null continuations
                 List<FeedRangeState<QueryState>> feedRangeStates = crossPartitionState
                     .Value
+                    .ToArray()
                     .OrderBy(tuple => (FeedRangeEpk)tuple.FeedRange, EpkRangeComparer.Singleton)
                     .ToList();
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
@@ -166,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             if (continuationToken == null)
             {
                 // Full fan out to the ranges with null continuations
-                CrossFeedRangeState<QueryState> fullFanOutState = new CrossFeedRangeState<QueryState>(ranges.Select(range => new FeedRangeState<QueryState>((FeedRangeInternal)range, (QueryState)null)).ToImmutableArray());
+                CrossFeedRangeState<QueryState> fullFanOutState = new CrossFeedRangeState<QueryState>(ranges.Select(range => new FeedRangeState<QueryState>(range, (QueryState)null)).ToArray());
                 return TryCatch<CrossFeedRangeState<QueryState>>.FromResult(fullFanOutState);
             }
 
@@ -225,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 }
             }
 
-            CrossFeedRangeState<QueryState> crossPartitionState = new CrossFeedRangeState<QueryState>(feedRangeStates.ToImmutableArray());
+            CrossFeedRangeState<QueryState> crossPartitionState = new CrossFeedRangeState<QueryState>(feedRangeStates.ToArray());
 
             return TryCatch<CrossFeedRangeState<QueryState>>.FromResult(crossPartitionState);
         }

@@ -148,10 +148,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
-                        new List<FeedRangeState<ReadFeedState>>() 
+                        new FeedRangeState<ReadFeedState>[]
                         { 
                             new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
-                        }.ToImmutableArray()));
+                        }));
             }
 
             public override IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerator(
@@ -175,10 +175,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     maxConcurrency: 10,
                     cancellationToken: default,
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
-                        new List<FeedRangeState<ReadFeedState>>()
+                        new FeedRangeState<ReadFeedState>[]
                         {
                             new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
-                        }.ToImmutableArray()));
+                        }));
 
                 return enumerator;
             }

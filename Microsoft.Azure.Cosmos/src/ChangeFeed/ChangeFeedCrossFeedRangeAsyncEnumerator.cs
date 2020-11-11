@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedCrossFeedRangeState state = new ChangeFeedCrossFeedRangeState(crossFeedRangeState.Value);
             ChangeFeedPage page = innerChangeFeedPage.Page switch
             {
-                Pagination.ChangeFeedSuccessPage successPage => new ChangeFeedSuccessPage(
+                Pagination.ChangeFeedSuccessPage successPage => ChangeFeedPage.CreatePageWithChanges(
                     CosmosQueryClientCore.ParseElementsFromRestStream(
                         successPage.Content, 
                         Documents.ResourceType.Document, 
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     successPage.RequestCharge,
                     successPage.ActivityId,
                     state),
-                Pagination.ChangeFeedNotModifiedPage notModifiedPage => new ChangeFeedNotModifiedPage(
+                Pagination.ChangeFeedNotModifiedPage notModifiedPage => ChangeFeedPage.CreateNotModifiedPage(
                      notModifiedPage.RequestCharge,
                      notModifiedPage.ActivityId,
                      state),

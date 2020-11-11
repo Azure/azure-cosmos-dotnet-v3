@@ -2,12 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -15,51 +17,155 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
     internal readonly struct ChangeFeedCrossFeedRangeState
     {
+        // TODO: this class be auto generated. 
+
         private static class FullRangeStatesSingletons
         {
             public static readonly ChangeFeedCrossFeedRangeState Beginning = new ChangeFeedCrossFeedRangeState(
                 new List<FeedRangeState<ChangeFeedState>>()
                 {
                     new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
-                }.ToImmutableArray());
+                });
 
             public static readonly ChangeFeedCrossFeedRangeState Now = new ChangeFeedCrossFeedRangeState(
                 new List<FeedRangeState<ChangeFeedState>>()
                 {
                     new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
-                }.ToImmutableArray());
+                });
         }
 
-        private readonly CrossFeedRangeState<ChangeFeedState> crossFeedRangeState;
-
-        public ChangeFeedCrossFeedRangeState(ImmutableArray<FeedRangeState<ChangeFeedState>> feedRangeStates)
+        public ChangeFeedCrossFeedRangeState(IReadOnlyList<FeedRangeState<ChangeFeedState>> feedRangeStates)
+            : this(feedRangeStates.ToArray().AsMemory())
         {
-            this.crossFeedRangeState = new CrossFeedRangeState<ChangeFeedState>(feedRangeStates);
+            // This constructor is just to provide the user with an easy interface
+            // We make a copy of the array, since we don't want user side effects
+            // And call on the private constructor.
+            // All the split and merge methods will call that constructor to avoid additional allocations.
         }
 
-        internal ImmutableArray<FeedRangeState<ChangeFeedState>> FeedRangeStates => this.crossFeedRangeState.Value;
-
-        public ChangeFeedCrossFeedRangeState Merge(ChangeFeedCrossFeedRangeState other)
+        internal ChangeFeedCrossFeedRangeState(ReadOnlyMemory<FeedRangeState<ChangeFeedState>> feedRangeStates)
         {
-            return new ChangeFeedCrossFeedRangeState(this.crossFeedRangeState.Merge(other.crossFeedRangeState).Value);
-        }
-
-        public bool TrySplit(out (ChangeFeedCrossFeedRangeState left, ChangeFeedCrossFeedRangeState right) children)
-        {
-            if (!this.crossFeedRangeState.TrySplit(out (CrossFeedRangeState<ChangeFeedState> left, CrossFeedRangeState<ChangeFeedState> right) result))
+            if (feedRangeStates.IsEmpty)
             {
-                children = default;
+                throw new ArgumentException($"Expected {nameof(feedRangeStates)} to be non empty.");
+            }
+
+            this.FeedRangeStates = feedRangeStates;
+        }
+
+        internal ReadOnlyMemory<FeedRangeState<ChangeFeedState>> FeedRangeStates { get; }
+
+        public ChangeFeedCrossFeedRangeState Merge(ChangeFeedCrossFeedRangeState first)
+        {
+            Memory<FeedRangeState<ChangeFeedState>> mergedRange = CrossFeedRangeStateSplitterAndMerger.Merge<ChangeFeedState>(
+                this.FeedRangeStates,
+                first.FeedRangeStates);
+
+            return new ChangeFeedCrossFeedRangeState(mergedRange);
+        }
+
+        public ChangeFeedCrossFeedRangeState Merge(ChangeFeedCrossFeedRangeState first, ChangeFeedCrossFeedRangeState second)
+        {
+            Memory<FeedRangeState<ChangeFeedState>> mergedRange = CrossFeedRangeStateSplitterAndMerger.Merge<ChangeFeedState>(
+                this.FeedRangeStates,
+                first.FeedRangeStates,
+                second.FeedRangeStates);
+
+            return new ChangeFeedCrossFeedRangeState(mergedRange);
+        }
+
+        // TODO: Add more varadic merge methods.
+
+        public ChangeFeedCrossFeedRangeState Merge(params ChangeFeedCrossFeedRangeState[] changeFeedCrossFeedRangeStates)
+        {
+            return this.Merge(changeFeedCrossFeedRangeStates.ToList());
+        }
+
+        public ChangeFeedCrossFeedRangeState Merge(IReadOnlyList<ChangeFeedCrossFeedRangeState> changeFeedCrossFeedRangeStates)
+        {
+            List<ReadOnlyMemory<FeedRangeState<ChangeFeedState>>> varArgs = new List<ReadOnlyMemory<FeedRangeState<ChangeFeedState>>>(1 + changeFeedCrossFeedRangeStates.Count)
+            {
+                this.FeedRangeStates
+            };
+
+            foreach (ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState in changeFeedCrossFeedRangeStates)
+            {
+                varArgs.Add(changeFeedCrossFeedRangeState.FeedRangeStates);
+            }
+
+            Memory<FeedRangeState<ChangeFeedState>> mergedRange = CrossFeedRangeStateSplitterAndMerger.Merge<ChangeFeedState>(varArgs);
+
+            return new ChangeFeedCrossFeedRangeState(mergedRange);
+        }
+
+        public bool TrySplit(out ChangeFeedCrossFeedRangeState first, out ChangeFeedCrossFeedRangeState second)
+        {
+            if (!CrossFeedRangeStateSplitterAndMerger.TrySplit(
+                this.FeedRangeStates,
+                out ReadOnlyMemory<FeedRangeState<ChangeFeedState>> firstRange,
+                out ReadOnlyMemory<FeedRangeState<ChangeFeedState>> secondRange))
+            {
+                first = default;
+                second = default;
                 return false;
             }
 
-            children = (new ChangeFeedCrossFeedRangeState(result.left.Value), new ChangeFeedCrossFeedRangeState(result.right.Value));
+            first = new ChangeFeedCrossFeedRangeState(firstRange);
+            second = new ChangeFeedCrossFeedRangeState(secondRange);
+            return true;
+        }
+
+        public bool TrySplit(
+            out ChangeFeedCrossFeedRangeState first, 
+            out ChangeFeedCrossFeedRangeState second, 
+            out ChangeFeedCrossFeedRangeState third)
+        {
+            if (!CrossFeedRangeStateSplitterAndMerger.TrySplit(
+                this.FeedRangeStates,
+                out ReadOnlyMemory<FeedRangeState<ChangeFeedState>> firstRange,
+                out ReadOnlyMemory<FeedRangeState<ChangeFeedState>> secondRange,
+                out ReadOnlyMemory<FeedRangeState<ChangeFeedState>> thirdRange))
+            {
+                first = default;
+                second = default;
+                third = default;
+                return false;
+            }
+
+            first = new ChangeFeedCrossFeedRangeState(firstRange);
+            second = new ChangeFeedCrossFeedRangeState(secondRange);
+            third = new ChangeFeedCrossFeedRangeState(thirdRange);
+            return true;
+        }
+
+        // TODO: Add more varadic split methods.
+
+        public bool TrySplit(
+            int numberOfPartitions,
+            out List<ChangeFeedCrossFeedRangeState> partitions)
+        {
+            if (!CrossFeedRangeStateSplitterAndMerger.TrySplit(
+                this.FeedRangeStates,
+                numberOfPartitions,
+                out List<ReadOnlyMemory<FeedRangeState<ChangeFeedState>>> partitionsAfterSplit))
+            {
+                partitions = default;
+                return false;
+            }
+
+            partitions = new List<ChangeFeedCrossFeedRangeState>(partitionsAfterSplit.Count);
+            foreach (ReadOnlyMemory<FeedRangeState<ChangeFeedState>> partition in partitionsAfterSplit)
+            {
+                partitions.Add(new ChangeFeedCrossFeedRangeState(partition));
+            }
+
             return true;
         }
 
         public CosmosElement ToCosmosElement()
         {
             List<CosmosElement> elements = new List<CosmosElement>();
-            foreach (FeedRangeState<ChangeFeedState> changeFeedFeedRangeState in this.FeedRangeStates)
+            foreach (FeedRangeState<ChangeFeedState> changeFeedFeedRangeState in this.FeedRangeStates.Span)
             {
                 elements.Add(ChangeFeedFeedRangeStateSerializer.ToCosmosElement(changeFeedFeedRangeState));
             }
@@ -177,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 new List<FeedRangeState<ChangeFeedState>>()
                 {
                     new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Beginning())
-                }.ToImmutableArray());
+                });
         }
 
         public static ChangeFeedCrossFeedRangeState CreateFromNow()
@@ -201,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 new List<FeedRangeState<ChangeFeedState>>()
                 {
                     new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Now())
-                }.ToImmutableArray());
+                });
         }
 
         public static ChangeFeedCrossFeedRangeState CreateFromTime(DateTime dateTimeUtc)
@@ -220,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 new List<FeedRangeState<ChangeFeedState>>()
                 {
                     new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Time(dateTimeUtc))
-                }.ToImmutableArray());
+                });
         }
 
         public static ChangeFeedCrossFeedRangeState CreateFromContinuation(CosmosElement continuation)
@@ -239,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 new List<FeedRangeState<ChangeFeedState>>()
                 {
                     new FeedRangeState<ChangeFeedState>(feedRangeInternal, ChangeFeedState.Continuation(continuation))
-                }.ToImmutableArray());
+                });
         }
     }
 }
