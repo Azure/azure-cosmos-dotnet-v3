@@ -85,14 +85,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
             CancellationToken cancellationToken = default);
 
-        public IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return this.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
-                changeFeedRequestOptions);
-        }
-
         public abstract IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
