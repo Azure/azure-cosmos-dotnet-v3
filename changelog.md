@@ -3,6 +3,24 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.15.1-preview"/> [3.15.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.15.1-preview) - 2020-11-05
+
+#### Fixed
+- [#1972](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1972) Private preview Azure Active Directory: Fixes TokenCredentialCache timeout logic and ports tests from master
+- [#1984](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1984) Private preview Azure Active Directory: Fixes issue with using wrong scope value
+
+### <a name="3.15.0-preview"/> [3.15.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.15.0-preview) - 2020-10-21
+
+#### Added
+- [#1944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1944) Performance: Adds direct version to get response header improvement
+- [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) Change Feed: Adds new continuation token format which can be migrated via new EmitOldContinuationToken.
+- [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) Change Feed: Adds the ability to retry on 304s and no longer modifies HasMoreResults
+- [#1926](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1926) Query: Adds multiple arguments in IN clause support to c# query parser when service interop is not available.
+- [#1798](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1798) Private Preview Azure Active Directory: Adds Azure Active Directory support to the SDK
+
+#### Fixed
+- [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) Change Feed: Fixes StartFrom bug where the value was not honored
+
 ### <a name="3.14.0-preview"/> [3.14.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.14.0-preview) - 2020-10-09
 
 #### Added

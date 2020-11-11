@@ -6,6 +6,7 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -67,7 +68,22 @@
 
         private static string GenerateNameWithClassAttributes(Type type)
         {
-            return $"{type.FullName};{type.BaseType.FullName};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
+            // FullName contains unwanted assembly artifacts like version when it has a generic type
+            Type baseType = type.BaseType;
+            string baseTypeString = string.Empty;
+            if(baseType != null)
+            {
+                // Remove assembly info to avoid breaking the contract just from version change
+                baseTypeString = baseType.FullName;
+                string assemblyInfo = baseType.Assembly?.ToString();
+                if (!string.IsNullOrEmpty(assemblyInfo) &&
+                    !string.IsNullOrWhiteSpace(baseTypeString))
+                {
+                    baseTypeString = baseTypeString.Replace(assemblyInfo, string.Empty);
+                }
+            }
+
+            return $"{type.FullName};{baseTypeString};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsEnum)}:{(type.IsEnum ? bool.TrueString : bool.FalseString)};" +
@@ -155,8 +171,12 @@
                     methodSignature = memberInfo.ToString();
                 }
 
+                // Certain custom attributes add the following to the string value "d__9" which sometimes changes
+                // based on the .NET SDK version it is being built on. This removes the value to avoid showing
+                // breaking change when there is none.
+                string key = Regex.Replace(memberInfo.Key, @"d__\d+", string.Empty);
                 root.Members[
-                        memberInfo.Key
+                        key
                     ] = new MemberMetadata(
                     memberInfo.Value.MemberType,
                     attributes,

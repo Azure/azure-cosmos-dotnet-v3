@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -218,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ResponseMessage> ReadContainerStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
-            ContainerRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             return this.ProcessStreamAsync(
@@ -280,8 +281,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
             return new ChangeFeedIteratorCore(
-                container: this,
+                documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
@@ -295,12 +302,20 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
             }
 
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
-                container: this,
+                documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
-            return new FeedIteratorCore<T>(changeFeedIteratorCore, responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+            return new FeedIteratorCore<T>(
+                changeFeedIteratorCore, 
+                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -472,8 +487,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             OperationType operationType,
-            ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
             return this.ProcessResourceOperationStreamAsync(
                 diagnosticsContext: diagnosticsContext,

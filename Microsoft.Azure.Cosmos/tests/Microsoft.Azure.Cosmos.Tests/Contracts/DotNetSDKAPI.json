@@ -1248,7 +1248,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ContainerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.ContainerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ContainerProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -2414,7 +2414,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.DatabaseResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.DatabaseProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.DatabaseResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.DatabaseProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -2743,7 +2743,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.ContainerProperties Build()": {
@@ -2761,28 +2761,28 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__9))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>d__11))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__10))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__12))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -3105,7 +3105,7 @@
           "Attributes": [],
           "MethodInfo": "Double RequestCharge;CanRead:True;CanWrite:True;Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()[System.Runtime.CompilerServices.IteratorStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Headers+<GetEnumerator>d__63))]": {
+        "System.Collections.Generic.IEnumerator`1[System.String] GetEnumerator()[System.Runtime.CompilerServices.IteratorStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Headers+<GetEnumerator>))]": {
           "Type": "Method",
           "Attributes": [
             "IteratorStateMachineAttribute"
@@ -4199,7 +4199,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.PermissionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.PermissionProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.PermissionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.PermissionProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -4853,12 +4853,17 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.RequestHandler InnerHandler;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.RequestHandler get_InnerHandler();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_InnerHandler(Microsoft.Azure.Cosmos.RequestHandler);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.RequestHandler+<SendAsync>d__4))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.RequestHandler+<SendAsync>))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
         "Void set_InnerHandler(Microsoft.Azure.Cosmos.RequestHandler)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -6085,7 +6090,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6345,7 +6350,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Scripts.TriggerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Scripts.TriggerResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.TriggerProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -6536,7 +6541,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -7961,7 +7966,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ThroughputResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.ThroughputResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.ThroughputProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {
@@ -8622,7 +8627,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.UserResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.UserProperties, Microsoft.Azure.Cosmos.Client, Version=3.14.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.UserResponse;Microsoft.Azure.Cosmos.Response`1[[Microsoft.Azure.Cosmos.UserProperties, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double get_RequestCharge()": {

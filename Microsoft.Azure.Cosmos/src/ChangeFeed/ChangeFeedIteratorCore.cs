@@ -6,242 +6,258 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Routing;
 
-    /// <summary>
-    /// Cosmos Change Feed iterator using FeedToken
-    /// </summary>
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
-        private readonly ContainerInternal container;
-        private readonly CosmosClientContext clientContext;
-        private readonly ChangeFeedRequestOptions changeFeedOptions;
-        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
-        private ChangeFeedStartFrom changeFeedStartFrom;
+        private readonly IDocumentContainer documentContainer;
+        private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
+        private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
         private bool hasMoreResults;
 
-        private FeedRangeContinuation FeedRangeContinuation;
-
         public ChangeFeedIteratorCore(
-            ContainerInternal container,
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions changeFeedRequestOptions)
+            IDocumentContainer documentContainer,
+            ChangeFeedRequestOptions changeFeedRequestOptions,
+            ChangeFeedStartFrom changeFeedStartFrom)
         {
-            this.container = container ?? throw new ArgumentNullException(nameof(container));
-            this.clientContext = container.ClientContext;
-            this.changeFeedOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
-            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) =>
+            if (changeFeedStartFrom == null)
             {
-                return this.TryInitializeContainerRIdAsync(innerCancellationToken);
-            });
+                throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+            this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+            this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
+                valueFactory: async (cancellationToken) =>
+                {
+                    if (changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
+                    {
+                        TryCatch<CosmosElement> monadicParsedToken = CosmosElement.Monadic.Parse(startFromContinuation.Continuation);
+                        if (monadicParsedToken.Failed)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"Failed to parse continuation token: {startFromContinuation.Continuation}.",
+                                    innerException: monadicParsedToken.Exception));
+                        }
+
+                        TryCatch<VersionedAndRidCheckedCompositeToken> monadicVersionedToken = VersionedAndRidCheckedCompositeToken
+                            .MonadicCreateFromCosmosElement(monadicParsedToken.Result);
+                        if (monadicVersionedToken.Failed)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"Failed to parse continuation token: {startFromContinuation.Continuation}.",
+                                    innerException: monadicVersionedToken.Exception));
+                        }
+
+                        VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = monadicVersionedToken.Result;
+
+                        if (versionedAndRidCheckedCompositeToken.VersionNumber == VersionedAndRidCheckedCompositeToken.Version.V1)
+                        {
+                            // Need to migrate continuation token
+                            if (!(versionedAndRidCheckedCompositeToken.ContinuationToken is CosmosArray cosmosArray))
+                            {
+                                return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                    new MalformedChangeFeedContinuationTokenException(
+                                        message: $"Failed to parse get array continuation token: {startFromContinuation.Continuation}."));
+                            }
+
+                            List<CosmosElement> changeFeedTokensV2 = new List<CosmosElement>();
+                            foreach (CosmosElement arrayItem in cosmosArray)
+                            {
+                                if (!(arrayItem is CosmosObject cosmosObject))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse get object in composite continuation: {startFromContinuation.Continuation}."));
+                                }
+
+                                if (!cosmosObject.TryGetValue("min", out CosmosString min))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse start of range: {cosmosObject}."));
+                                }
+
+                                if (!cosmosObject.TryGetValue("max", out CosmosString max))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse end of range: {cosmosObject}."));
+                                }
+
+                                if (!cosmosObject.TryGetValue("token", out CosmosElement token))
+                                {
+                                    return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                        new MalformedChangeFeedContinuationTokenException(
+                                            message: $"Failed to parse token: {cosmosObject}."));
+                                }
+
+                                FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>(
+                                    min: min.Value,
+                                    max: max.Value,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false));
+                                ChangeFeedState state = token is CosmosNull ? ChangeFeedState.Beginning() : ChangeFeedStateContinuation.Continuation(token);
+
+                                ChangeFeedContinuationToken changeFeedContinuationToken = new ChangeFeedContinuationToken(feedRangeEpk, state);
+                                changeFeedTokensV2.Add(ChangeFeedContinuationToken.ToCosmosElement(changeFeedContinuationToken));
+                            }
+
+                            CosmosArray changeFeedTokensArrayV2 = CosmosArray.Create(changeFeedTokensV2);
+
+                            versionedAndRidCheckedCompositeToken = new VersionedAndRidCheckedCompositeToken(
+                                VersionedAndRidCheckedCompositeToken.Version.V2,
+                                changeFeedTokensArrayV2,
+                                versionedAndRidCheckedCompositeToken.Rid);
+                        }
+
+                        if (versionedAndRidCheckedCompositeToken.VersionNumber != VersionedAndRidCheckedCompositeToken.Version.V2)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"Wrong version number: {versionedAndRidCheckedCompositeToken.VersionNumber}."));
+                        }
+
+                        string collectionRid = await documentContainer.GetResourceIdentifierAsync(cancellationToken);
+                        if (versionedAndRidCheckedCompositeToken.Rid != collectionRid)
+                        {
+                            return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
+                                new MalformedChangeFeedContinuationTokenException(
+                                    message: $"rids mismatched. Expected: {collectionRid} but got {versionedAndRidCheckedCompositeToken.Rid}."));
+                        }
+
+                        changeFeedStartFrom = ChangeFeedStartFrom.ContinuationToken(versionedAndRidCheckedCompositeToken.ContinuationToken.ToString());
+                    }
+
+                    TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
+                        documentContainer,
+                        changeFeedRequestOptions,
+                        changeFeedStartFrom,
+                        cancellationToken: default);
+
+                    return monadicEnumerator;
+                });
             this.hasMoreResults = true;
 
-            this.changeFeedStartFrom = changeFeedStartFrom;
-            if (this.changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
-            {
-                if (!FeedRangeContinuation.TryParse(startFromContinuation.Continuation, out FeedRangeContinuation feedRangeContinuation))
-                {
-                    throw new ArgumentException(string.Format(ClientResources.FeedToken_UnknownFormat, startFromContinuation.Continuation));
-                }
-
-                this.FeedRangeContinuation = feedRangeContinuation;
-                FeedRange feedRange = feedRangeContinuation.GetFeedRange();
-                string etag = feedRangeContinuation.GetContinuation();
-
-                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
-            }
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        /// <summary>
-        /// Get the next set of results from the cosmos service
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.changeFeedOptions);
-            using (diagnostics.GetOverallScope())
+            cancellationToken.ThrowIfCancellationRequested();
+
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.lazyMonadicEnumerator.GetValueAsync(cancellationToken);
+
+            if (monadicEnumerator.Failed)
             {
-                diagnostics.AddDiagnosticsInternal(
-                    new FeedRangeStatistics(
-                        this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton)));
-                if (!this.lazyContainerRid.ValueInitialized)
+                Exception createException = monadicEnumerator.Exception;
+                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(createException);
+                return new ResponseMessage(
+                    cosmosException.StatusCode,
+                    requestMessage: null,
+                    headers: cosmosException.Headers,
+                    cosmosException: cosmosException,
+                    diagnostics: new CosmosDiagnosticsContextCore());
+            }
+
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
+
+            if (!await enumerator.MoveNextAsync())
+            {
+                throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+            }
+
+            if (enumerator.Current.Failed)
+            {
+                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(enumerator.Current.Exception);
+                if (!IsRetriableException(cosmosException))
                 {
-                    using (diagnostics.CreateScope("InitializeContainerResourceId"))
-                    {
-                        TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
-                        if (!tryInitializeContainerRId.Succeeded)
-                        {
-                            if (!(tryInitializeContainerRId.Exception.InnerException is CosmosException cosmosException))
-                            {
-                                throw new InvalidOperationException("Failed to convert to CosmosException.");
-                            }
-
-                            return cosmosException.ToCosmosResponseMessage(
-                                new RequestMessage(
-                                    method: null,
-                                    requestUriString: null,
-                                    diagnosticsContext: diagnostics));
-                        }
-                    }
-
-                    using (diagnostics.CreateScope("InitializeContinuation"))
-                    {
-                        await this.InitializeFeedContinuationAsync(cancellationToken);
-                    }
-
-                    TryCatch validateContainer = this.FeedRangeContinuation.ValidateContainer(this.lazyContainerRid.Result.Result);
-                    if (!validateContainer.Succeeded)
-                    {
-                        return CosmosExceptionFactory
-                            .CreateBadRequestException(
-                                message: validateContainer.Exception.InnerException.Message,
-                                innerException: validateContainer.Exception.InnerException,
-                                diagnosticsContext: diagnostics)
-                            .ToCosmosResponseMessage(
-                                new RequestMessage(
-                                    method: null,
-                                    requestUriString: null,
-                                    diagnosticsContext: diagnostics));
-                    }
+                    this.hasMoreResults = false;
                 }
 
-                return await this.ReadNextInternalAsync(diagnostics, cancellationToken);
+                return new ResponseMessage(
+                    cosmosException.StatusCode,
+                    requestMessage: null,
+                    headers: cosmosException.Headers,
+                    cosmosException: cosmosException,
+                    diagnostics: new CosmosDiagnosticsContextCore());
             }
+
+            ChangeFeedPage changeFeedPage = enumerator.Current.Result;
+            ResponseMessage responseMessage;
+            if (changeFeedPage is ChangeFeedSuccessPage changeFeedSuccessPage)
+            {
+                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.OK)
+                {
+                    Content = changeFeedSuccessPage.Content
+                };
+            }
+            else
+            {
+                responseMessage = new ResponseMessage(statusCode: System.Net.HttpStatusCode.NotModified);
+            }
+
+            CosmosElement innerContinuationToken = ((ChangeFeedStateContinuation)changeFeedPage.State).ContinuationToken;
+            string continuationToken;
+            if (this.changeFeedRequestOptions.EmitOldContinuationToken)
+            {
+                List<ChangeFeedContinuationToken> parsedChangeFeedTokens = new List<ChangeFeedContinuationToken>();
+                CosmosArray changeFeedTokens = (CosmosArray)innerContinuationToken;
+                foreach (CosmosElement changeFeedToken in changeFeedTokens)
+                {
+                    parsedChangeFeedTokens.Add(ChangeFeedContinuationToken.MonadicConvertFromCosmosElement(changeFeedToken).Result);
+                }
+
+                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
+                foreach (ChangeFeedContinuationToken changeFeedContinuationToken in parsedChangeFeedTokens)
+                {
+                    string token = changeFeedContinuationToken.State is ChangeFeedStateContinuation changeFeedStateContinuation ? ((CosmosString)changeFeedStateContinuation.ContinuationToken).Value : null;
+                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedContinuationToken.Range).Range;
+                    CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
+                    {
+                        Range = range,
+                        Token = token,
+                    };
+
+                    compositeContinuationTokens.Add(compositeContinuationToken);
+                }
+
+                FeedRangeCompositeContinuation feedRangeCompositeContinuationToken = new FeedRangeCompositeContinuation(
+                    await this.documentContainer.GetResourceIdentifierAsync(cancellationToken),
+                    FeedRangeEpk.FullRange,
+                    compositeContinuationTokens);
+
+                continuationToken = feedRangeCompositeContinuationToken.ToString();
+            }
+            else
+            {
+                continuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(
+                    new VersionedAndRidCheckedCompositeToken(
+                        VersionedAndRidCheckedCompositeToken.Version.V2,
+                        innerContinuationToken,
+                        await this.documentContainer.GetResourceIdentifierAsync(cancellationToken))).ToString();
+            }
+
+            responseMessage.Headers.ContinuationToken = continuationToken;
+            responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
+            responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
+
+            return responseMessage;
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()
         {
-            return CosmosElement.Parse(this.FeedRangeContinuation.ToString());
-        }
-
-        private async Task<ResponseMessage> ReadNextInternalAsync(
-            CosmosDiagnosticsContext diagnosticsScope,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.container.LinkUri,
-                resourceType: ResourceType.Document,
-                operationType: OperationType.ReadFeed,
-                requestOptions: this.changeFeedOptions,
-                cosmosContainerCore: this.container,
-                requestEnricher: (request) =>
-                {
-                    ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(request);
-                    this.changeFeedStartFrom.Accept(visitor);
-                },
-                partitionKey: default,
-                streamPayload: default,
-                diagnosticsContext: diagnosticsScope,
-                cancellationToken: cancellationToken);
-
-            if (await this.ShouldRetryAsync(responseMessage, cancellationToken))
-            {
-                string etag = this.FeedRangeContinuation.GetContinuation();
-                FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
-                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
-
-                return await this.ReadNextInternalAsync(diagnosticsScope, cancellationToken);
-            }
-
-            if (responseMessage.IsSuccessStatusCode
-                || (responseMessage.StatusCode == HttpStatusCode.NotModified))
-            {
-                // Change Feed read uses Etag for continuation
-                this.hasMoreResults = responseMessage.IsSuccessStatusCode;
-                this.FeedRangeContinuation.ReplaceContinuation(responseMessage.Headers.ETag);
-
-                string etag = this.FeedRangeContinuation.GetContinuation();
-                FeedRange feedRange = this.FeedRangeContinuation.GetFeedRange();
-                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)feedRange);
-
-                return FeedRangeResponse.CreateSuccess(
-                    responseMessage,
-                    this.FeedRangeContinuation);
-            }
-            else
-            {
-                this.hasMoreResults = false;
-                return FeedRangeResponse.CreateFailure(responseMessage);
-            }
-        }
-
-        private async Task<bool> ShouldRetryAsync(
-            ResponseMessage responseMessage,
-            CancellationToken cancellationToken)
-        {
-            ShouldRetryResult shouldRetryOnNotModified = this.FeedRangeContinuation.HandleChangeFeedNotModified(responseMessage);
-            if (shouldRetryOnNotModified.ShouldRetry)
-            {
-                return true;
-            }
-
-            ShouldRetryResult shouldRetryOnSplit = await this.FeedRangeContinuation.HandleSplitAsync(this.container, responseMessage, cancellationToken);
-            if (shouldRetryOnSplit.ShouldRetry)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                string containerRId = await this.container.GetRIDAsync(cancellationToken);
-                return TryCatch<string>.FromResult(containerRId);
-            }
-            catch (CosmosException cosmosException)
-            {
-                return TryCatch<string>.FromException(cosmosException);
-            }
-        }
-
-        private async Task InitializeFeedContinuationAsync(CancellationToken cancellationToken)
-        {
-            // Initializing FeedRangeContinuation (double init pattern, since async needs to be deffered until the first read).
-            if (this.FeedRangeContinuation == null)
-            {
-                FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
-
-                FeedRange feedRange = this.changeFeedStartFrom.Accept(ChangeFeedRangeExtractor.Singleton);
-                IReadOnlyList<Documents.Routing.Range<string>> ranges = await ((FeedRangeInternal)feedRange).AcceptAsync(
-                    feedRangePartitionKeyRangeExtractor,
-                    cancellationToken);
-
-                this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
-                    containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: (FeedRangeInternal)feedRange,
-                    ranges: ranges);
-            }
-            else if (this.FeedRangeContinuation?.FeedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
-            {
-                // Migration from PKRangeId scenario
-                FeedRangePartitionKeyRangeExtractor feedRangePartitionKeyRangeExtractor = new FeedRangePartitionKeyRangeExtractor(this.container);
-
-                IReadOnlyList<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.AcceptAsync(
-                    feedRangePartitionKeyRangeExtractor,
-                    cancellationToken);
-
-                this.FeedRangeContinuation = new FeedRangeCompositeContinuation(
-                    containerRid: this.lazyContainerRid.Result.Result,
-                    feedRange: new FeedRangeEpk(ranges[0]),
-                    ranges: ranges,
-                    continuation: this.FeedRangeContinuation.GetContinuation());
-            }
+            throw new NotSupportedException();
         }
     }
 }
