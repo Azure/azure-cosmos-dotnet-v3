@@ -280,13 +280,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     exception);
             }
 
-            // Init MDE Data Encryption Key and then Init MDE Algorithm using MdeDataEncryptionKey.
-            // MdeDataEncrytionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
-            MdeDataEncryptionKey mdeDataEncryptionKey = new MdeDataEncryptionKey(
+            // Init PlainDataEncryptionKey and then Init MDE Algorithm using PlaintextDataEncryptionKey.
+            // PlaintextDataEncryptionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
+            PlaintextDataEncryptionKey plaintextDataEncryptionKey = new PlaintextDataEncryptionKey(
                 dekProperties.EncryptionKeyWrapMetadata.GetName(dekProperties.EncryptionKeyWrapMetadata),
                 unwrapResult.DataEncryptionKey);
 
-            return new MdeEncryptionAlgorithm(mdeDataEncryptionKey, Data.Encryption.Cryptography.EncryptionType.Randomized);
+            return new MdeEncryptionAlgorithm(
+                plaintextDataEncryptionKey,
+                Data.Encryption.Cryptography.EncryptionType.Randomized);
         }
 
         internal async Task<InMemoryRawDek> FetchUnwrappedAsync(

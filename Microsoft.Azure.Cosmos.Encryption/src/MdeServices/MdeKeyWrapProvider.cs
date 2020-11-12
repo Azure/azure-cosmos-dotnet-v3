@@ -30,10 +30,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(metadata));
             }
 
-            string keyName = metadata.GetName(metadata);
-
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                keyName,
+                metadata.Name,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 
@@ -51,10 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(metadata));
             }
 
-            string keyName = metadata.GetName(metadata);
-
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                keyName,
+                metadata.Name,
                 metadata.Value,
                 this.EncryptionKeyStoreProvider);
 

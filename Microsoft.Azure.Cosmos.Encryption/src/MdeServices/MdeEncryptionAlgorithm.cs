@@ -44,10 +44,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
 
-            string keyName = dekProperties.EncryptionKeyWrapMetadata.GetName(dekProperties.EncryptionKeyWrapMetadata);
-
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                keyName,
+                dekProperties.EncryptionKeyWrapMetadata.Name,
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
