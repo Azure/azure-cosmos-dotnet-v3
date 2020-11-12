@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal sealed class ChangeFeedPage

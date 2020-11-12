@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -25,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -699,6 +699,22 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return feedIterator;
+        }
+
+        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+            ReadFeedCrossFeedRangeState state,
+            QueryRequestOptions queryRequestOptions = default)
+        {
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new ReadFeedCrossFeedRangeAsyncEnumerable(
+                documentContainer,
+                queryRequestOptions,
+                state);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

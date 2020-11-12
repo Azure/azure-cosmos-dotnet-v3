@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
