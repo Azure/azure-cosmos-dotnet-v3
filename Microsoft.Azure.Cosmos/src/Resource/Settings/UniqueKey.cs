@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Filter for sparse unique keys.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Filter, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = "filter", NullValueHandling = NullValueHandling.Ignore)]
         public QueryDefinition Filter { get; internal set; }
 #endif
     }
