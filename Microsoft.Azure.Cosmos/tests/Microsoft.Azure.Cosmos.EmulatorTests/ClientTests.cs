@@ -297,7 +297,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", 5) }
                 });
             verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
-                    "{\"name\":\"@p1\",\"value\":5}," +
                     "{\"name\":\"@p1\",\"value\":true}" +
                 "]}",
                 new SqlQuerySpec()
