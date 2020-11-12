@@ -36,6 +36,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 // Per cancellationToken.ThrowIfCancellationRequested(); line above, this function should still throw OperationCanceledException.
                 throw;
             }
+            catch (AggregateException e) when (e.InnerException is OperationCanceledException ex && this.cancellationToken.IsCancellationRequested)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(ex);
