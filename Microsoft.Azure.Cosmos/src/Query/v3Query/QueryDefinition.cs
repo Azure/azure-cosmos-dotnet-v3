@@ -7,14 +7,17 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using Documents;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Defines a Cosmos SQL query
     /// </summary>
     public class QueryDefinition
     {
-        private Dictionary<string, SqlParameter> SqlParameters { get; }
+        [JsonProperty(PropertyName = Constants.Properties.Parameters, NullValueHandling = NullValueHandling.Ignore, Order = 1)]
+        private List<SqlParameter> parameters { get; set; }
 
         /// <summary>
         /// Create a <see cref="QueryDefinition"/>
@@ -37,28 +40,29 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.QueryText = query;
-            this.SqlParameters = new Dictionary<string, SqlParameter>();
         }
 
         /// <summary>
         /// Gets the text of the Azure Cosmos DB SQL query.
         /// </summary>
         /// <value>The text of the SQL query.</value>
+        [JsonProperty(PropertyName = Constants.Properties.Query, Order = 0)]
         public string QueryText { get; }
 
-        internal QueryDefinition(SqlQuerySpec sqlQuery)
+        internal static QueryDefinition CreateFromQuerySpec(SqlQuerySpec sqlQuery)
         {
             if (sqlQuery == null)
             {
                 throw new ArgumentNullException(nameof(sqlQuery));
             }
 
-            this.QueryText = sqlQuery.QueryText;
-            this.SqlParameters = new Dictionary<string, SqlParameter>();
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQuery.QueryText);
             foreach (SqlParameter sqlParameter in sqlQuery.Parameters)
             {
-                this.SqlParameters.Add(sqlParameter.Name, sqlParameter);
+                queryDefinition = queryDefinition.WithParameter(sqlParameter.Name, sqlParameter.Value);
             }
+
+            return queryDefinition;
         }
 
         /// <summary>
@@ -86,24 +90,24 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(name));
             }
 
-            this.SqlParameters[name] = new SqlParameter(name, value);
+            if (this.parameters == null)
+            {
+                this.parameters = new List<SqlParameter>();
+            }
+
+            this.parameters.Add(new SqlParameter(name, value));
             return this;
         }
 
         internal SqlQuerySpec ToSqlQuerySpec()
         {
-            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
+            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.parameters));
         }
 
         /// <summary>
         /// Gets the sql parameters for the class
         /// </summary>
-        internal IReadOnlyDictionary<string, SqlParameter> Parameters
-        {
-            get
-            {
-                return this.SqlParameters;
-            }
-        }
+        [JsonIgnore]
+        internal IReadOnlyList<SqlParameter> Parameters => this.parameters;
     }
 }
