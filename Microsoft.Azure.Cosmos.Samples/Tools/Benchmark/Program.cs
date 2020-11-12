@@ -74,7 +74,7 @@ namespace CosmosBenchmark
             {
                 using HttpResponseMessage httpResponseMessage = await httpClient.SendAsync(httpRequest);
                 string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
-                Utility.TeePrint(jsonVmInfo);
+                Console.WriteLine(jsonVmInfo);
                 RunSummary.AzureVmInfo = jsonVmInfo;
                 JObject jObject = JObject.Parse(jsonVmInfo);
                 RunSummary.Location = jObject["compute"]["location"].ToString();
