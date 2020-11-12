@@ -6,7 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
 
-    class RunSummary
+    public class RunSummary
     {
         public string pk { get; set; } 
 
@@ -29,11 +29,13 @@ namespace CosmosBenchmark
         public int Concurrency { get; set; }
         public int TotalOps { get; set; }
 
-        public string MachineName { get; set; } = Environment.MachineName;
-        public string OS { get; set; } = Environment.OSVersion.Platform.ToString();
-        public string OSVersion { get; set; } = Environment.OSVersion.VersionString;
-        public string RuntimeVersion { get; set; } = Environment.Version.ToString();
-        public int Cores { get; set; } = Environment.ProcessorCount;
+        public static string MachineName { get; set; } = Environment.MachineName;
+        public static string OS { get; set; } = Environment.OSVersion.Platform.ToString();
+        public static string OSVersion { get; set; } = Environment.OSVersion.VersionString;
+        public static string RuntimeVersion { get; set; } = Environment.Version.ToString();
+        public static int Cores { get; set; } = Environment.ProcessorCount;
+        public static string Location { get; set; }
+        public static string AzureVmInfo { get; set; }
 
         public double Top10PercentAverageRps { get; set; }
         public double Top20PercentAverageRps { get; set; }
