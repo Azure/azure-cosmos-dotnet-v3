@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Query.Core;
 
     /// <summary>
     /// Represents a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
@@ -18,6 +19,11 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="UniqueKeyPolicy"/>
     public class UniqueKey
     {
+#if INTERNAL
+        [JsonProperty(PropertyName = "filter", NullValueHandling = NullValueHandling.Ignore)]
+        private SqlQuerySpec querySpec;
+#endif
+
         /// <summary>
         /// Gets the paths, a set of which must be unique for each document in the Azure Cosmos DB service.
         /// </summary>
@@ -31,5 +37,17 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; internal set; } = new Collection<string>();
+
+#if INTERNAL
+        /// <summary>
+        /// Filter for sparse unique keys.
+        /// </summary>
+        [JsonIgnore]
+        public QueryDefinition Filter
+        {
+            get => this.querySpec == null ? null : new QueryDefinition(this.querySpec);
+            set => this.querySpec = value.ToSqlQuerySpec();
+        }
+#endif
     }
 }
