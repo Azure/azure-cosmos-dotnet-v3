@@ -6,6 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     public class RunSummary
     {
@@ -43,7 +44,7 @@ namespace CosmosBenchmark
         [JsonProperty]
         public static string Location { get; set; }
         [JsonProperty]
-        public static string AzureVmInfo { get; set; }
+        public static JObject AzureVmInfo { get; set; }
 
         public double Top10PercentAverageRps { get; set; }
         public double Top20PercentAverageRps { get; set; }
