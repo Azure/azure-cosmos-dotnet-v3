@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
@@ -93,7 +94,15 @@ namespace Microsoft.Azure.Cosmos
                 this.parameters = new List<SqlParameter>();
             }
 
+            // Required to maintain previous contract when backed by a dictionary.
+            int index = this.parameters.FindIndex(param => param.Name == name);
+            if (index > -1)
+            {
+                this.parameters.RemoveAt(index);
+            }
+
             this.parameters.Add(new SqlParameter(name, value));
+
             return this;
         }
 
