@@ -487,6 +487,51 @@
         }
 
         [TestMethod]
+        [Owner("girobins")]
+        public void Like()
+        {
+            List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>
+            {
+                Hash(
+                @"Projection LIKE",
+                @"SELECT VALUE 'a' LIKE '$a'",
+                @"/a"),
+
+                Hash(
+                @"LIKE SELECT * NonPartitioned",
+                @"SELECT * FROM c WHERE c.a LIKE '%a%'"),
+
+                Hash(
+                @"LIKE SELECT *",
+                @"SELECT * FROM c WHERE c.a LIKE '%a%'",
+                @"/a"),
+
+                Hash(
+                @"Parameterized LIKE",
+                new SqlQuerySpec(
+                    @"SELECT * FROM c WHERE c.a LIKE @LIKEPATTERN",
+                    new SqlParameterCollection(
+                        new SqlParameter[]
+                        {
+                            new SqlParameter("@LIKEPATTERN", "%a"),
+                        })),
+                @"/a"),
+
+                Hash(
+                @"LIKE and non partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/key"),
+
+                Hash(
+                @"LIKE and partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/a")
+            };
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void ManyRanges()
         {

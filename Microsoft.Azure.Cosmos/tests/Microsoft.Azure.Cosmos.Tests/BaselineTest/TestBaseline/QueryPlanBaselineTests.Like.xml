@@ -1,0 +1,84 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Projection LIKE</Description>
+      <Query>SELECT VALUE 'a' LIKE '$a'</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>TryCatch resulted in an exception.</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LIKE SELECT * NonPartitioned</Description>
+      <Query>SELECT * FROM c WHERE c.a LIKE '%a%'</Query>
+      <PartitionKeys />
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>TryCatch resulted in an exception.</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LIKE SELECT *</Description>
+      <Query>SELECT * FROM c WHERE c.a LIKE '%a%'</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>TryCatch resulted in an exception.</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Parameterized LIKE</Description>
+      <Query>SELECT * FROM c WHERE c.a LIKE @LIKEPATTERN</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <QueryParameters><![CDATA[[
+  {
+    "name": "@LIKEPATTERN",
+    "value": "%a"
+  }
+]]]></QueryParameters>
+    </Input>
+    <Output>
+      <Exception>TryCatch resulted in an exception.</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LIKE and non partition filter</Description>
+      <Query>SELECT * FROM c WHERE c.a LIKE 'a%'</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>TryCatch resulted in an exception.</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LIKE and partition filter</Description>
+      <Query>SELECT * FROM c WHERE c.a LIKE 'a%'</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>TryCatch resulted in an exception.</Exception>
+    </Output>
+  </Result>
+</Results>
