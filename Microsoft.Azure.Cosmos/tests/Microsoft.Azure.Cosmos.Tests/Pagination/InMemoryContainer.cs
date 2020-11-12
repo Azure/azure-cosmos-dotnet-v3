@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new InvalidOperationException("failed to find the range.");
             }
 
-            ulong documentIndex = (readFeedState == null) || readFeedState is ReadFeedBeginningState ? 0 : (ulong)Number64.ToLong(((readFeedState as ReadFeedContinuationState).ContinuationToken as CosmosNumber64).Value);
+            ulong documentIndex = (readFeedState == null) || readFeedState is ReadFeedBeginningState ? 0 : (ulong)Number64.ToLong(((CosmosNumber64)((ReadFeedContinuationState)readFeedState).ContinuationToken).Value);
             List<Record> page = records
                 .Where(record => record.ResourceIdentifier.Document > documentIndex)
                 .Take(pageSize)

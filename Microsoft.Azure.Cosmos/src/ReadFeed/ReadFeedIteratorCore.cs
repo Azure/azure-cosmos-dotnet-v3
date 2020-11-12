@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                         CosmosObject rangeObject = (CosmosObject)continuationObject["range"];
                         string min = ((CosmosString)rangeObject["min"]).Value;
                         string max = ((CosmosString)rangeObject["max"]).Value;
-                        CosmosElement token = CosmosElement.Parse(((CosmosString)continuationObject["token"]).Value);
+                        CosmosElement token = continuationObject["token"];
 
                         FeedRangeInternal feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false));
                         ReadFeedState state;
@@ -75,7 +75,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                         }
                         else
                         {
-                            state = ReadFeedState.Continuation(token);
+                            CosmosString tokenAsString = (CosmosString)token;
+                            state = ReadFeedState.Continuation(CosmosElement.Parse(tokenAsString.Value));
                         }
 
                         FeedRangeState<ReadFeedState> readFeedContinuationToken = new FeedRangeState<ReadFeedState>(feedRange, state);
@@ -87,10 +88,19 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 }
             }
 
-            TryCatch<ReadFeedCrossFeedRangeState> readFeedState = ReadFeedCrossFeedRangeState.Monadic.Parse(continuationToken);
-            if (readFeedState.Failed)
+            TryCatch<ReadFeedCrossFeedRangeState> monadicReadFeedState;
+            if (continuationToken == null)
             {
-                this.monadicEnumerator = TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromException(readFeedState.Exception);
+                monadicReadFeedState = TryCatch<ReadFeedCrossFeedRangeState>.FromResult(ReadFeedCrossFeedRangeState.CreateFromBeginning());
+            }
+            else
+            {
+                monadicReadFeedState = ReadFeedCrossFeedRangeState.Monadic.Parse(continuationToken);
+            }
+
+            if (monadicReadFeedState.Failed)
+            {
+                this.monadicEnumerator = TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromException(monadicReadFeedState.Exception);
             }
             else
             {
@@ -98,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                     CrossPartitionReadFeedAsyncEnumerator.Create(
                         documentContainer,
                         queryRequestOptions,
-                        new CrossFeedRangeState<ReadFeedState>(readFeedState.Result.FeedRangeStates),
+                        new CrossFeedRangeState<ReadFeedState>(monadicReadFeedState.Result.FeedRangeStates),
                         pageSize,
                         cancellationToken));
             }

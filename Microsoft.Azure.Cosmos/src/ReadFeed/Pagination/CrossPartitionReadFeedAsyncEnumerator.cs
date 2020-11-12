@@ -129,6 +129,18 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                     return 0;
                 }
 
+                // Order does not matter for logical partition keys, since they are vacously split proof.
+                if (partitionRangePageEnumerator1.Range is FeedRangePartitionKey)
+                {
+                    return -1;
+                }
+
+                // Order does not matter for logical partition keys, since they are vacously split proof.
+                if (partitionRangePageEnumerator2.Range is FeedRangePartitionKey)
+                {
+                    return -1;
+                }
+
                 // Either both don't have results or both do.
                 return string.CompareOrdinal(
                     ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,

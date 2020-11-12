@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 this.documentContainer,
                 this.requestOptions,
                 innerState,
-                this.requestOptions.MaxItemCount ?? int.MaxValue,
+                this.requestOptions?.MaxItemCount ?? int.MaxValue,
                 cancellationToken);
 
             return new ReadFeedCrossFeedRangeAsyncEnumerator(innerEnumerator);

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CosmosArray documents,
             double requestCharge,  
             string activityId, 
-            ReadFeedCrossFeedRangeState state)
+            ReadFeedCrossFeedRangeState? state)
         {
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
@@ -27,6 +27,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
         public string ActivityId { get; }
 
-        public ReadFeedCrossFeedRangeState State { get; }
+        public ReadFeedCrossFeedRangeState? State { get; }
     }
 }

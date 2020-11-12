@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    {
                        if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
                        {
-                           request.Headers.ContinuationToken = (readFeedContinuationState.ContinuationToken as CosmosString).Value;
+                           request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                        }
 
                        feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
