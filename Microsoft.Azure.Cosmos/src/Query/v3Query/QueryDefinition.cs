@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using Documents;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
@@ -108,6 +106,6 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the sql parameters for the class
         /// </summary>
         [JsonIgnore]
-        internal IReadOnlyList<SqlParameter> Parameters => this.parameters;
+        internal IReadOnlyList<SqlParameter> Parameters => this.parameters != null ? this.parameters : new List<SqlParameter>();
     }
 }
