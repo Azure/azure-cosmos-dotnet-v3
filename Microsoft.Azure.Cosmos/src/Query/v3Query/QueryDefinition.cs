@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>

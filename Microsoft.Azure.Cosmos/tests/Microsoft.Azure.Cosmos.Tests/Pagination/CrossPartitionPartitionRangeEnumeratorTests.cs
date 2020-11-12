@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
                         { 
-                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
                         }));
             }
 
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
                         {
-                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
                         }));
 
                 return enumerator;

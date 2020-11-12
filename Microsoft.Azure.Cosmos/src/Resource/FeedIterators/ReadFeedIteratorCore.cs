@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
 
@@ -68,9 +69,18 @@ namespace Microsoft.Azure.Cosmos
                         CosmosElement token = CosmosElement.Parse(((CosmosString)continuationObject["token"]).Value);
 
                         FeedRangeInternal feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false));
-                        ReadFeedState state = new ReadFeedState(token);
-                        ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(feedRange, state);
-                        readFeedContinuationTokens.Add(ReadFeedContinuationToken.ToCosmosElement(readFeedContinuationToken));
+                        ReadFeedState state;
+                        if (token is CosmosNull)
+                        {
+                            state = ReadFeedState.Beginning();
+                        }
+                        else
+                        {
+                            state = ReadFeedState.Continuation(token);
+                        }
+
+                        FeedRangeState<ReadFeedState> readFeedContinuationToken = new FeedRangeState<ReadFeedState>(feedRange, state);
+                        readFeedContinuationTokens.Add(ReadFeedFeedRangeStateSerializer.ToCosmosElement(readFeedContinuationToken));
                     }
 
                     CosmosArray cosmosArrayContinuationTokens = CosmosArray.Create(readFeedContinuationTokens);
@@ -78,12 +88,20 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            this.monadicEnumerator = CrossPartitionReadFeedAsyncEnumerator.MonadicCreate(
-                documentContainer,
-                queryRequestOptions,
-                continuationToken: continuationToken,
-                pageSize,
-                cancellationToken);
+            TryCatch<ReadFeedCrossFeedRangeState> readFeedState = ReadFeedCrossFeedRangeState.Monadic.Parse(continuationToken);
+            if (readFeedState.Failed)
+            {
+                this.monadicEnumerator = TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromException(readFeedState.Exception);
+            }
+            else
+            {
+                this.monadicEnumerator = CrossPartitionReadFeedAsyncEnumerator.MonadicCreate(
+                    documentContainer,
+                    queryRequestOptions,
+                    new CrossFeedRangeState<ReadFeedState>(readFeedState.Result.FeedRangeStates),
+                    pageSize,
+                    cancellationToken);
+            }
 
             this.hasMoreResults = true;
         }
@@ -161,16 +179,16 @@ namespace Microsoft.Azure.Cosmos
             if (readFeedPage.State != null)
             {
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                CosmosArray compositeContinuationTokensCosmosArray = (CosmosArray)readFeedPage.State.ContinuationToken;
+                CosmosArray compositeContinuationTokensCosmosArray = (CosmosArray)((ReadFeedContinuationState)readFeedPage.State).ContinuationToken;
                 foreach (CosmosElement arrayItem in compositeContinuationTokensCosmosArray)
                 {
-                    ReadFeedContinuationToken readFeedContinuationToken = ReadFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem).Result;
-                    FeedRangeEpk feedRangeEpk = (FeedRangeEpk)readFeedContinuationToken.Range;
+                    FeedRangeState<ReadFeedState> readFeedContinuationToken = ReadFeedFeedRangeStateSerializer.Monadic.CreateFromCosmosElement(arrayItem).Result;
+                    FeedRangeEpk feedRangeEpk = (FeedRangeEpk)readFeedContinuationToken.FeedRange;
                     ReadFeedState readFeedState = readFeedContinuationToken.State;
                     CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                     {
                         Range = feedRangeEpk.Range,
-                        Token = readFeedState.ContinuationToken.ToString(),
+                        Token = readFeedState is ReadFeedBeginningState ? null : ((ReadFeedContinuationState)readFeedState).ContinuationToken.ToString(),
                     };
 
                     compositeContinuationTokens.Add(compositeContinuationToken);
