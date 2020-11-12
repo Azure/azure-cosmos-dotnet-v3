@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        [JsonProperty(PropertyName = Constants.Properties.Parameters, NullValueHandling = NullValueHandling.Ignore, Order = 1)]
+        [JsonProperty(PropertyName = "parameters", NullValueHandling = NullValueHandling.Ignore, Order = 1)]
         private List<SqlParameter> parameters { get; set; }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the text of the Azure Cosmos DB SQL query.
         /// </summary>
         /// <value>The text of the SQL query.</value>
-        [JsonProperty(PropertyName = Constants.Properties.Query, Order = 0)]
+        [JsonProperty(PropertyName = "query", Order = 0)]
         public string QueryText { get; }
 
         internal static QueryDefinition CreateFromQuerySpec(SqlQuerySpec sqlQuery)
