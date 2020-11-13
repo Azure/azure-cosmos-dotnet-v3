@@ -45,5 +45,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             AuthorizationHelper.GenerateKeyAuthorizationSignature(verb, resourceId, resourceType, this.testHeaders, this.authKeyHashFunction, out payload);
             payload.Dispose();
         }
+
+        [Benchmark]
+        public void SmallBuffer()
+        {
+            AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
+                "GET",
+                "dbs/testdb/colls/testcollection/dbs/item1",
+                "docs",
+                this.testHeaders,
+                this.authKeyHashFunction,
+                out AuthorizationHelper.ArrayOwner payload);
+            payload.Dispose();
+        }
+
+        [Benchmark]
+        public void BigBuffer()
+        {
+            AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCoreLargeAlloc(
+                "GET",
+                "dbs/testdb/colls/testcollection/dbs/item1",
+                "docs",
+                this.testHeaders,
+                this.authKeyHashFunction,
+                out AuthorizationHelper.ArrayOwner payload);
+            payload.Dispose();
+        }
     }
 }

@@ -653,7 +653,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
-        private static unsafe string GenerateUrlEncodedAuthorizationTokenWithHashCore(
+        public static unsafe string GenerateUrlEncodedAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
@@ -705,8 +705,11 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                // Create a large enough buffer that URL encode can use it.
-                Span<byte> encodingBuffer = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length)];
+
+                // Create a large enough buffer that URL encode can use it. 
+                // Testing shows it is normally around 50 bytes which stackalloc is faster for under roughly 600 bytes
+                // Increase the buffer by 3x so it can be used for the URL encoding
+                Span<byte> encodingBuffer = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3];
 
                 // This replaces the Convert.ToBase64String
                 OperationStatus status = Base64.EncodeToUtf8(
@@ -720,7 +723,9 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"Authorization key payload is invalid. {status}");
                 }
 
-                return AuthorizationHelper.UrlEncodeBase64Span(encodingBuffer.Slice(0, bytesWritten));
+                string base64 = Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten).ToArray());
+                string auth = AuthorizationHelper.UrlEncodeBase64Span(encodingBuffer, bytesWritten);
+                return auth;
             }
             catch
             {
@@ -806,71 +811,52 @@ namespace Microsoft.Azure.Cosmos
         /// creating the new buffer.
         /// </summary>
         /// <param name="base64Bytes">The buffer that include the bytes to url encode.</param>
+        /// <param name="length">The length of bytes used in the buffer</param>
         /// <returns>The URLEncoded string of the bytes in the buffer</returns>
-        public unsafe static string UrlEncodeBase64Span(Span<byte> base64Bytes)
+        public unsafe static string UrlEncodeBase64Span(Span<byte> base64Bytes, int length)
         {
             if (base64Bytes == default)
             {
                 throw new ArgumentNullException(nameof(base64Bytes));
             }
 
-            // Count number of special chars to see if a new buffer is required
-            int totalCharCount = base64Bytes.Length;
-            foreach (byte curr in base64Bytes)
+            if (base64Bytes.Length < length * 3)
             {
+                throw new ArgumentException($"{nameof(base64Bytes)} should be 3x to avoid running out of space in worst case scenario where all characters are special");
+            }
+
+            int escapeBufferPosition = base64Bytes.Length - 1;
+            for (int i = length - 1; i >= 0; i--)
+            { 
+                byte curr = base64Bytes[i];
                 // Base64 is limited to Alphanumeric characters and '/' '=' '+'
                 switch (curr)
                 {
                     case (byte)'/':
-                    case (byte)'=':
-                    case (byte)'+':
-                        totalCharCount += 2;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (totalCharCount == base64Bytes.Length)
-            {
-                fixed (byte* bp = base64Bytes)
-                {
-                    return Encoding.UTF8.GetString(bp, base64Bytes.Length);
-                }
-            }
-
-            // Use the overflow buffer by default else just use the original buffer
-            Span<byte> escapedStringBuffer = stackalloc byte[totalCharCount];
-            int escapeBufferPosition = 0;
-            foreach (byte curr in base64Bytes)
-            {
-                // Base64 is limited to Alphanumeric characters and '/' '=' '+'
-                switch (curr)
-                {
-                    case (byte)'/':
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'%';
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'2';
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'f';
+                        base64Bytes[escapeBufferPosition--] = (byte)'f';
+                        base64Bytes[escapeBufferPosition--] = (byte)'2';
+                        base64Bytes[escapeBufferPosition--] = (byte)'%';
                         break;
                     case (byte)'=':
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'%';
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'3';
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'d';
+                        base64Bytes[escapeBufferPosition--] = (byte)'d';
+                        base64Bytes[escapeBufferPosition--] = (byte)'3';
+                        base64Bytes[escapeBufferPosition--] = (byte)'%';
                         break;
                     case (byte)'+':
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'%';
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'2';
-                        escapedStringBuffer[escapeBufferPosition++] = (byte)'b';
+                        base64Bytes[escapeBufferPosition--] = (byte)'b';
+                        base64Bytes[escapeBufferPosition--] = (byte)'2';
+                        base64Bytes[escapeBufferPosition--] = (byte)'%';
                         break;
                     default:
-                        escapedStringBuffer[escapeBufferPosition++] = curr;
+                        base64Bytes[escapeBufferPosition--] = curr;
                         break;
                 }
             }
 
-            fixed (byte* bp = escapedStringBuffer)
+            Span<byte> endSlice = base64Bytes.Slice(escapeBufferPosition + 1);
+            fixed (byte* bp = endSlice)
             {
-                return Encoding.UTF8.GetString(bp, escapedStringBuffer.Length);
+                return Encoding.UTF8.GetString(bp, endSlice.Length);
             }
         }
 

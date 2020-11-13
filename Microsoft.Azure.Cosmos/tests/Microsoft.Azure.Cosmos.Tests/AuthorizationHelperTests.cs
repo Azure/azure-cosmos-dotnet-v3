@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     baseline = HttpUtility.UrlEncode(randomBase64Bytes);
-                    newResults = AuthorizationHelper.UrlEncodeBase64Span(randomBase64Bytes);
+                    newResults = AuthorizationHelper.UrlEncodeBase64Span(randomBase64Bytes, randomBase64Bytes.Length);
                 }
                 catch(Exception e)
                 {
