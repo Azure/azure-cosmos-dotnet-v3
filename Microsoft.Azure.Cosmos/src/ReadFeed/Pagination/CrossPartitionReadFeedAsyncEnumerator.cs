@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -39,27 +40,27 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 return false;
             }
 
-            TryCatch<CrossPartitionPage<ReadFeedPage, ReadFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+            TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
             if (monadicCrossPartitionPage.Failed)
             {
                 this.Current = TryCatch<ReadFeedPage>.FromException(monadicCrossPartitionPage.Exception);
                 return true;
             }
 
-            CrossPartitionPage<ReadFeedPage, ReadFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
+            CrossFeedRangePage<ReadFeedPage, ReadFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
             ReadFeedPage backendPage = crossPartitionPage.Page;
-            CrossPartitionState<ReadFeedState> crossPartitionState = crossPartitionPage.State;
+            CrossFeedRangeState<ReadFeedState> crossPartitionState = crossPartitionPage.State;
             ReadFeedState state;
             if (crossPartitionState != null)
             {
-                IReadOnlyList<(FeedRangeInternal, ReadFeedState)> rangesAndStates = crossPartitionState.Value;
                 List<CosmosElement> changeFeedContinuationTokens = new List<CosmosElement>();
-                foreach ((FeedRangeInternal range, ReadFeedState readFeedState) in rangesAndStates)
+                for (int i = 0; i < crossPartitionState.Value.Length; i++)
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
+                    FeedRangeState<ReadFeedState> feedRangeState = crossPartitionState.Value.Span[i];
                     ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(
-                            range,
-                            readFeedState);
+                        feedRangeState.FeedRange,
+                        feedRangeState.State);
 
                     CosmosElement cosmosElementChangeFeedContinuationToken = ReadFeedContinuationToken.ToCosmosElement(readFeedContinuationToken);
 
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 state = null;
             }
 
-            ReadFeedPage compositePage = new ReadFeedPage(backendPage.Content, backendPage.RequestCharge, backendPage.ActivityId, state);
+            ReadFeedPage compositePage = new ReadFeedPage(backendPage.Content, backendPage.RequestCharge, backendPage.ActivityId, backendPage.Diagnostics, state);
 
             this.Current = TryCatch<ReadFeedPage>.FromResult(compositePage);
             return true;
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 throw new ArgumentNullException(nameof(documentContainer));
             }
 
-            TryCatch<CrossPartitionState<ReadFeedState>> monadicCrossPartitionState = MonadicParseCrossPartitionState(continuationToken);
+            TryCatch<CrossFeedRangeState<ReadFeedState>> monadicCrossPartitionState = MonadicParseCrossPartitionState(continuationToken);
             if (monadicCrossPartitionState.Failed)
             {
                 return TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromException(monadicCrossPartitionState.Exception);
@@ -135,49 +136,45 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             return TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromResult(enumerator);
         }
 
-        private static TryCatch<CrossPartitionState<ReadFeedState>> MonadicParseCrossPartitionState(string continuation)
+        private static TryCatch<CrossFeedRangeState<ReadFeedState>> MonadicParseCrossPartitionState(string continuation)
         {
             if (continuation == default)
             {
                 // Just start with null continuation for the full range
-                return TryCatch<CrossPartitionState<ReadFeedState>>.FromResult(
-                    new CrossPartitionState<ReadFeedState>(
-                        new List<(FeedRangeInternal, ReadFeedState)>()
+                return TryCatch<CrossFeedRangeState<ReadFeedState>>.FromResult(
+                    new CrossFeedRangeState<ReadFeedState>(
+                        new FeedRangeState<ReadFeedState>[]
                         {
-                            (FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, new ReadFeedState(CosmosNull.Create()))
                         }));
             }
 
             TryCatch<CosmosArray> monadicCosmosArray = CosmosArray.Monadic.Parse(continuation);
             if (monadicCosmosArray.Failed)
             {
-                return TryCatch<CrossPartitionState<ReadFeedState>>.FromException(
-                    new FormatException($"Expected array for {nameof(CrossPartitionState<ReadFeedState>)}: {continuation}",
+                return TryCatch<CrossFeedRangeState<ReadFeedState>>.FromException(
+                    new FormatException($"Expected array for {nameof(CrossFeedRangeState<ReadFeedState>)}: {continuation}",
                     monadicCosmosArray.Exception));
             }
 
-            List<ReadFeedContinuationToken> readFeedContinuationTokens = new List<ReadFeedContinuationToken>();
+            FeedRangeState<ReadFeedState>[] feedRangeStates = new FeedRangeState<ReadFeedState>[monadicCosmosArray.Result.Count];
+            int i = 0;
             foreach (CosmosElement arrayItem in monadicCosmosArray.Result)
             {
                 TryCatch<ReadFeedContinuationToken> monadicReadFeedContinuationToken = ReadFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem);
                 if (monadicReadFeedContinuationToken.Failed)
                 {
-                    return TryCatch<CrossPartitionState<ReadFeedState>>.FromException(
-                        new FormatException($"failed to parse array item for {nameof(CrossPartitionState<ReadFeedState>)}: {continuation}",
+                    return TryCatch<CrossFeedRangeState<ReadFeedState>>.FromException(
+                        new FormatException($"failed to parse array item for {nameof(CrossFeedRangeState<ReadFeedState>)}: {continuation}",
                         monadicReadFeedContinuationToken.Exception));
                 }
 
-                readFeedContinuationTokens.Add(monadicReadFeedContinuationToken.Result);
+                ReadFeedContinuationToken readFeedContinuationToken = monadicReadFeedContinuationToken.Result;
+                feedRangeStates[i++] = new FeedRangeState<ReadFeedState>(readFeedContinuationToken.Range, readFeedContinuationToken.State);
             }
 
-            List<(FeedRangeInternal, ReadFeedState)> crossPartitionStateElements = new List<(FeedRangeInternal, ReadFeedState)>();
-            foreach (ReadFeedContinuationToken token in readFeedContinuationTokens)
-            {
-                crossPartitionStateElements.Add((token.Range, token.State));
-            }
-
-            CrossPartitionState<ReadFeedState> crossPartitionState = new CrossPartitionState<ReadFeedState>(crossPartitionStateElements);
-            return TryCatch<CrossPartitionState<ReadFeedState>>.FromResult(crossPartitionState);
+            CrossFeedRangeState<ReadFeedState> crossPartitionState = new CrossFeedRangeState<ReadFeedState>(feedRangeStates);
+            return TryCatch<CrossFeedRangeState<ReadFeedState>>.FromResult(crossPartitionState);
         }
 
         private static CreatePartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> MakeCreateFunction(

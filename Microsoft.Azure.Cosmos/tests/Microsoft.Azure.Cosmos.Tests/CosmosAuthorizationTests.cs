@@ -21,6 +21,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosAuthorizationTests
     {
+        private static readonly Uri AccountEndpoint = new Uri("https://test-account.documents.azure.com");
+        private const string ExpectedScope = "https://test-account.documents.azure.com/.default";
+
+        private readonly AccessToken AccessToken = new AccessToken("AccessToken", DateTimeOffset.MaxValue);
+
+
         public CosmosAuthorizationTests()
         {
         }
@@ -79,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 simpleEmulatorTokenCredential,
-                "https://localhost:8081",
+                new Uri("https://127.0.0.1:8081"),
                 requestTimeout: TimeSpan.FromSeconds(30),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
 
@@ -137,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TimeSpan toLarge = TimeSpan.MaxValue - TimeSpan.FromMilliseconds(1);
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: toLarge);
                 Assert.Fail("Should throw ArgumentException");
@@ -151,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue);
                 Assert.Fail("Should throw ArgumentException");
@@ -165,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.Zero);
                 Assert.Fail("Should throw ArgumentException");
@@ -179,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1));
                 Assert.Fail("Should throw ArgumentException");
@@ -193,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.MinValue,
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
                 Assert.Fail("Should throw ArgumentException");
@@ -207,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.Zero,
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
                 Assert.Fail("Should throw ArgumentException");
@@ -220,21 +226,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Which is roughly 24 days
             using TokenCredentialCache token = new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpointHost,
+                    CosmosAuthorizationTests.AccountEndpoint,
                     requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue));
 
             using TokenCredentialCache disableBackgroundTask = new TokenCredentialCache(
                    new Mock<TokenCredential>().Object,
-                   CosmosAuthorizationTests.AccountEndpointHost,
+                   CosmosAuthorizationTests.AccountEndpoint,
                    requestTimeout: TimeSpan.FromSeconds(15),
                    backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue);
         }
-
-        private const string AccountEndpointHost = "test-account.documents.azure.com";
-        private const string ExpectedScope = "https://test-account.documents.azure.com/.default";
-
-        private readonly AccessToken AccessToken = new AccessToken("AccessToken", DateTimeOffset.MaxValue);
 
         [TestMethod]
         public async Task TestTokenCredentialCacheHappyPathAsync()
@@ -440,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             return new TokenCredentialCache(
                 tokenCredential,
-                CosmosAuthorizationTests.AccountEndpointHost,
+                CosmosAuthorizationTests.AccountEndpoint,
                 requestTimeout: requestTimeout ?? TimeSpan.FromSeconds(15),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(5));
         }
