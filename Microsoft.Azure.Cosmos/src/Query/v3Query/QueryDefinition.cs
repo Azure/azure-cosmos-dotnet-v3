@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Required to maintain previous contract when backed by a dictionary.
             int index = this.parameters.FindIndex(param => param.Name == name);
-            if (index > -1)
+            if (index != -1)
             {
                 this.parameters.RemoveAt(index);
             }
