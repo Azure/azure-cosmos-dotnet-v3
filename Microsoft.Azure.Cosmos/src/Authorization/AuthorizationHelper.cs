@@ -805,18 +805,18 @@ namespace Microsoft.Azure.Cosmos
         /// This does HttpUtility.UrlEncode functionality with Span buffer. It does an in place update to avoid
         /// creating the new buffer.
         /// </summary>
-        /// <param name="base64String">The buffer that include the bytes to url encode.</param>
+        /// <param name="base64Bytes">The buffer that include the bytes to url encode.</param>
         /// <returns>The URLEncoded string of the bytes in the buffer</returns>
-        public unsafe static string UrlEncodeBase64Span(Span<byte> base64String)
+        public unsafe static string UrlEncodeBase64Span(Span<byte> base64Bytes)
         {
-            if (base64String == default)
+            if (base64Bytes == default)
             {
-                throw new ArgumentNullException(nameof(base64String));
+                throw new ArgumentNullException(nameof(base64Bytes));
             }
 
             // Count number of special chars to see if a new buffer is required
-            int totalCharCount = base64String.Length;
-            foreach (byte curr in base64String)
+            int totalCharCount = base64Bytes.Length;
+            foreach (byte curr in base64Bytes)
             {
                 // Base64 is limited to Alphanumeric characters and '/' '=' '+'
                 switch (curr)
@@ -831,20 +831,19 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (totalCharCount == base64String.Length)
+            if (totalCharCount == base64Bytes.Length)
             {
-                fixed (byte* bp = base64String)
+                fixed (byte* bp = base64Bytes)
                 {
-                    return Encoding.UTF8.GetString(bp, base64String.Length);
+                    return Encoding.UTF8.GetString(bp, base64Bytes.Length);
                 }
             }
 
             // Use the overflow buffer by default else just use the original buffer
             Span<byte> escapedStringBuffer = stackalloc byte[totalCharCount];
             int escapeBufferPosition = 0;
-            for (int i = 0; i < base64String.Length; i++)
+            foreach (byte curr in base64Bytes)
             {
-                byte curr = base64String[i];
                 // Base64 is limited to Alphanumeric characters and '/' '=' '+'
                 switch (curr)
                 {
