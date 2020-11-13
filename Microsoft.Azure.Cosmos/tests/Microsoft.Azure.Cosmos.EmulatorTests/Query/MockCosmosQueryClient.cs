@@ -65,11 +65,11 @@
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
+            FeedRange feedRange,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
             CancellationToken cancellationToken)
@@ -83,7 +83,7 @@
                 queryPageDiagnostics: queryPageDiagnostics,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
-                partitionKeyRange: partitionKeyRange,
+                feedRange: feedRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 cancellationToken: cancellationToken);

@@ -23,10 +23,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedStartFrom"/> class.
         /// </summary>
-        internal ChangeFeedStartFrom()
+        internal ChangeFeedStartFrom(FeedRange feedRange)
         {
             // Internal so people can't derive from this type.
+            this.FeedRange = feedRange ?? feedRange;
         }
+
+        /// <summary>
+        /// Gets the (optional) range to start from.
+        /// </summary>
+        public FeedRange FeedRange { get; }
 
         internal abstract void Accept(ChangeFeedStartFromVisitor visitor);
 

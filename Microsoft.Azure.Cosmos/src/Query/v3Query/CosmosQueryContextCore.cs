@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec querySpecForInit,
             QueryRequestOptions queryRequestOptions,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
+            FeedRange feedRange,
             bool isContinuationExpected,
             int pageSize,
             CancellationToken cancellationToken)
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestOptions: queryRequestOptions,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
-                partitionKeyRange: partitionKeyRange,
+                feedRange: feedRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 queryPageDiagnostics: this.AddQueryPageDiagnostic,

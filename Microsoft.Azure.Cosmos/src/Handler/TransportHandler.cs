@@ -18,12 +18,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public TransportHandler(CosmosClient client)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         public override async Task<ResponseMessage> SendAsync(

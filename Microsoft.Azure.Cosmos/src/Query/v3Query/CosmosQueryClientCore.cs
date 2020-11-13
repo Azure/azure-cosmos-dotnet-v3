@@ -102,11 +102,11 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
+            FeedRange feedRange,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
             CancellationToken cancellationToken)
@@ -118,12 +118,11 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
-                partitionKey: requestOptions.PartitionKey,
+                feedRange: feedRange,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (cosmosRequestMessage) =>
                 {
-                    this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
                     cosmosRequestMessage.Headers.Add(
                         HttpConstants.HttpHeaders.IsContinuationExpected,
                         isContinuationExpected.ToString());
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 resourceType,
                 message,
-                partitionKeyRange,
+                feedRange,
                 queryPageDiagnostics);
         }
 
@@ -161,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,
-                partitionKey: partitionKey,
+                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (requestMessage) =>
@@ -267,14 +266,14 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
+            FeedRange feedRange,
             Action<QueryPageDiagnostics> queryPageDiagnostics)
         {
             using (cosmosResponseMessage)
             {
                 QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
                     clientQueryCorrelationId: clientQueryCorrelationId,
-                    partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
+                    partitionKeyRangeId: feedRange.ToJsonString(),
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
                     diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);

@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
-            Cosmos.PartitionKey? partitionKey,
+            FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType: operationType,
                 requestOptions: requestOptions,
                 cosmosContainerCore: cosmosContainerCore,
-                partitionKey: partitionKey,
+                feedRange: feedRange,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 diagnosticsContext: diagnosticsScope,
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
-            Cosmos.PartitionKey? partitionKey,
+            FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -132,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
                 RequestMessage request = new RequestMessage(
-                        method,
-                        resourceUriString,
-                        diagnosticsContext)
+                    method,
+                    resourceUriString,
+                    diagnosticsContext)
                 {
                     OperationType = operationType,
                     ResourceType = resourceType,
@@ -142,34 +142,50 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     Content = streamPayload,
                 };
 
-                if (partitionKey.HasValue)
+                if (feedRange != null)
                 {
-                    if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                    if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
                     {
-                        throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                    }
-                    else if (partitionKey.Value.IsNone)
-                    {
-                        using (diagnosticsContext.CreateScope("GetNonePkValue"))
+                        if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
                         {
-                            try
+                            throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                        }
+                        else if (feedRangePartitionKey.PartitionKey.IsNone)
+                        {
+                            using (diagnosticsContext.CreateScope("GetNonePkValue"))
                             {
-                                PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                                request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                            }
-                            catch (DocumentClientException dce)
-                            {
-                                return dce.ToCosmosResponseMessage(request);
-                            }
-                            catch (CosmosException ce)
-                            {
-                                return ce.ToCosmosResponseMessage(request);
+                                try
+                                {
+                                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
+                                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                                }
+                                catch (DocumentClientException dce)
+                                {
+                                    return dce.ToCosmosResponseMessage(request);
+                                }
+                                catch (CosmosException ce)
+                                {
+                                    return ce.ToCosmosResponseMessage(request);
+                                }
                             }
                         }
+                        else
+                        {
+                            request.Headers.PartitionKey = feedRangePartitionKey.PartitionKey.ToJsonString();
+                        }
+                    }
+                    else if (feedRange is FeedRangeEpk feedRangeEpk)
+                    {
+                        request.Properties[HandlerConstants.StartEpkString] = feedRangeEpk.Range.Min;
+                        request.Properties[HandlerConstants.EndEpkString] = feedRangeEpk.Range.Max;
+                    }
+                    else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+                    {
+                        request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId);
                     }
                     else
                     {
-                        request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
+                        throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
                     }
                 }
 
@@ -290,6 +306,24 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             consistencyLevel.Value.ToString(),
                             this.AccountConsistencyLevel));
                 }
+            }
+        }
+
+        private sealed class FeedRangeRequestMessageFiller : IFeedRangeVisitor<(RequestMessage requestMessage, ContainerCore container)>
+        {
+            public void Visit(FeedRangePartitionKey feedRange, (RequestMessage requestMessage, ContainerCore container) input)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Visit(FeedRangePartitionKeyRange feedRange, (RequestMessage requestMessage, ContainerCore container) input)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Visit(FeedRangeEpk feedRange, (RequestMessage requestMessage, ContainerCore container) input)
+            {
+                throw new NotImplementedException();
             }
         }
     }

@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
                         OperationType.Batch,
                         new RequestOptions(),
                         cosmosContainerCore: this.cosmosContainer,
-                        partitionKey: null,
+                        feedRange: null,
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         diagnosticsContext: diagnosticsContext,
