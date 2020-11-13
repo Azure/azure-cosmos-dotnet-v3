@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -562,6 +563,22 @@ namespace Microsoft.Azure.Cosmos
                         true);
 
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
+        }
+
+        public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = default)
+        {
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new ChangeFeedCrossFeedRangeAsyncEnumerable(
+                documentContainer,
+                changeFeedRequestOptions,
+                state);
         }
 
         public override FeedIterator GetStandByFeedIterator(
