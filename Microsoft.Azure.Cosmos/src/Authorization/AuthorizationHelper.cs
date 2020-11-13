@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Buffers;
+    using System.Buffers.Text;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -135,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                 out ArrayOwner payloadStream);
             using (payloadStream)
             {
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + authorizationToken;
             }
         }
 
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out string payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
             using (payloadStream)
             {
                 payload = AuthorizationHelper.AuthorizationEncoding.GetString(payloadStream.Buffer.Array, payloadStream.Buffer.Offset, (int)payloadStream.Buffer.Count);
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + authorizationToken;
             }
         }
 
@@ -171,16 +172,16 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out ArrayOwner payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
-                verb,
-                resourceId,
-                resourceType,
-                headers,
-                stringHMACSHA256Helper,
-                out payload);
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
+                verb: verb,
+                resourceId: resourceId,
+                resourceType: resourceType,
+                headers: headers,
+                stringHMACSHA256Helper: stringHMACSHA256Helper,
+                payload: out payload);
             try
             {
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + authorizationToken;
             }
             catch
             {
@@ -652,7 +653,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
-        private static string GenerateAuthorizationTokenWithHashCore(
+        private static unsafe string GenerateUrlEncodedAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
@@ -704,8 +705,22 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                string authorizationToken = Convert.ToBase64String(hashPayLoad);
-                return authorizationToken;
+                // Create a large enough buffer that URL encode can use it.
+                Span<byte> encodingBuffer = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length)];
+
+                // This replaces the Convert.ToBase64String
+                OperationStatus status = Base64.EncodeToUtf8(
+                    hashPayLoad,
+                    encodingBuffer,
+                    out int _,
+                    out int bytesWritten);
+
+                if (status != OperationStatus.Done)
+                {
+                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                }
+
+                return AuthorizationHelper.UrlEncodeBase64Span(encodingBuffer.Slice(0, bytesWritten));
             }
             catch
             {
@@ -783,6 +798,80 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
                 }
+            }
+        }
+
+        /// <summary>
+        /// This does HttpUtility.UrlEncode functionality with Span buffer. It does an in place update to avoid
+        /// creating the new buffer.
+        /// </summary>
+        /// <param name="base64String">The buffer that include the bytes to url encode.</param>
+        /// <returns>The URLEncoded string of the bytes in the buffer</returns>
+        public unsafe static string UrlEncodeBase64Span(Span<byte> base64String)
+        {
+            if (base64String == default)
+            {
+                throw new ArgumentNullException(nameof(base64String));
+            }
+
+            // Count number of special chars to see if a new buffer is required
+            int totalCharCount = base64String.Length;
+            foreach (byte curr in base64String)
+            {
+                // Base64 is limited to Alphanumeric characters and '/' '=' '+'
+                switch (curr)
+                {
+                    case (byte)'/':
+                    case (byte)'=':
+                    case (byte)'+':
+                        totalCharCount += 2;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (totalCharCount == base64String.Length)
+            {
+                fixed (byte* bp = base64String)
+                {
+                    return Encoding.UTF8.GetString(bp, base64String.Length);
+                }
+            }
+
+            // Use the overflow buffer by default else just use the original buffer
+            Span<byte> escapedStringBuffer = stackalloc byte[totalCharCount];
+            int escapeBufferPosition = 0;
+            for (int i = 0; i < base64String.Length; i++)
+            {
+                byte curr = base64String[i];
+                // Base64 is limited to Alphanumeric characters and '/' '=' '+'
+                switch (curr)
+                {
+                    case (byte)'/':
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'%';
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'2';
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'f';
+                        break;
+                    case (byte)'=':
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'%';
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'3';
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'d';
+                        break;
+                    case (byte)'+':
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'%';
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'2';
+                        escapedStringBuffer[escapeBufferPosition++] = (byte)'b';
+                        break;
+                    default:
+                        escapedStringBuffer[escapeBufferPosition++] = curr;
+                        break;
+                }
+            }
+
+            fixed (byte* bp = escapedStringBuffer)
+            {
+                return Encoding.UTF8.GetString(bp, escapedStringBuffer.Length);
             }
         }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Net.Http;
+    using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -225,6 +226,33 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput1, baseline[2], baseline[1], baseline[3], nvc, key));
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput2, baseline[2], baseline[1], baseline[3], nvc, key));
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput3, baseline[2], baseline[1], baseline[3], nvc, key));
+            }
+        }
+
+        [TestMethod]
+        public void Base64UrlEncoderFuzzTest()
+        {
+            Random random = new Random();
+            for(int i = 0; i < 2000; i++)
+            {
+                Span<byte> randomBytes = stackalloc byte[700];
+                random.NextBytes(randomBytes);
+                string randomBase64String = Convert.ToBase64String(randomBytes);
+                byte[] randomBase64Bytes = Encoding.UTF8.GetBytes(randomBase64String);
+
+                string baseline = null;
+                string newResults = null;
+                try
+                {
+                    baseline = HttpUtility.UrlEncode(randomBase64Bytes);
+                    newResults = AuthorizationHelper.UrlEncodeBase64Span(randomBase64Bytes);
+                }
+                catch(Exception e)
+                {
+                    Assert.Fail($"Url encode failed with string {randomBase64String} ; Exception:{e}");
+                }
+
+                Assert.AreEqual(baseline, newResults);
             }
         }
     }
