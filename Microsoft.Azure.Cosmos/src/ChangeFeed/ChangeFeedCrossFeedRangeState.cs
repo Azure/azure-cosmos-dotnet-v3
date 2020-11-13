@@ -244,8 +244,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             $"Expected array: {cosmosElement}"));
                 }
 
-                FeedRangeState<ChangeFeedState>[] changeFeedFeedRangeStates = new FeedRangeState<ChangeFeedState>[cosmosArray.Count];
-                int i = 0;
+                List<FeedRangeState<ChangeFeedState>> changeFeedFeedRangeStates = new List<FeedRangeState<ChangeFeedState>>(capacity: cosmosArray.Count);
                 foreach (CosmosElement arrayItem in cosmosArray)
                 {
                     TryCatch<FeedRangeState<ChangeFeedState>> monadicChangeFeedFeedRangeState = ChangeFeedFeedRangeStateSerializer.Monadic.CreateFromCosmosElement(arrayItem);
@@ -254,10 +253,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         return TryCatch<ChangeFeedCrossFeedRangeState>.FromException(monadicChangeFeedFeedRangeState.Exception);
                     }
 
-                    changeFeedFeedRangeStates[i++] = monadicChangeFeedFeedRangeState.Result;
+                    changeFeedFeedRangeStates.Add(monadicChangeFeedFeedRangeState.Result);
                 }
 
-                ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(changeFeedFeedRangeStates.AsMemory());
+                ImmutableArray<FeedRangeState<ChangeFeedState>> feedRangeStates = changeFeedFeedRangeStates.ToImmutableArray();
+                ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(feedRangeStates);
                 return TryCatch<ChangeFeedCrossFeedRangeState>.FromResult(changeFeedCrossFeedRangeState);
             }
         }

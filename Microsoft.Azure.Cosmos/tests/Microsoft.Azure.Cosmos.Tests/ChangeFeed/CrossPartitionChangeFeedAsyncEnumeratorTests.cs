@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using System.IO;
+    using System.Collections.Immutable;
 
     [TestClass]
     public sealed class CrossPartitionChangeFeedAsyncEnumeratorTests
