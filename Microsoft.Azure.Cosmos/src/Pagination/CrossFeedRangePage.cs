@@ -4,11 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Pagination
 {
-    internal sealed class CrossPartitionPage<TBackendPage, TBackendState> : Page<CrossPartitionState<TBackendState>>
+    internal sealed class CrossFeedRangePage<TBackendPage, TBackendState> : Page<CrossFeedRangeState<TBackendState>>
         where TBackendPage : Page<TBackendState>
         where TBackendState : State
     {
-        public CrossPartitionPage(TBackendPage backendEndPage, CrossPartitionState<TBackendState> state)
+        public CrossFeedRangePage(TBackendPage backendEndPage, CrossFeedRangeState<TBackendState> state)
             : base(state)
         {
             this.Page = backendEndPage;
