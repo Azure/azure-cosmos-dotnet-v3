@@ -724,7 +724,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 string base64 = Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten).ToArray());
-                string auth = AuthorizationHelper.UrlEncodeBase64Span(encodingBuffer, bytesWritten);
+                string auth = AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten);
                 return auth;
             }
             catch
@@ -813,7 +813,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="base64Bytes">The buffer that include the bytes to url encode.</param>
         /// <param name="length">The length of bytes used in the buffer</param>
         /// <returns>The URLEncoded string of the bytes in the buffer</returns>
-        public unsafe static string UrlEncodeBase64Span(Span<byte> base64Bytes, int length)
+        public unsafe static string UrlEncodeBase64SpanInPlace(Span<byte> base64Bytes, int length)
         {
             if (base64Bytes == default)
             {

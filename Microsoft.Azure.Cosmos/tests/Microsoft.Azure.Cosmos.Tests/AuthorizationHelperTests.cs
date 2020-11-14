@@ -235,17 +235,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             Random random = new Random();
             for(int i = 0; i < 2000; i++)
             {
-                Span<byte> randomBytes = stackalloc byte[700];
+                Span<byte> randomBytes = new byte[300];
                 random.NextBytes(randomBytes);
                 string randomBase64String = Convert.ToBase64String(randomBytes);
                 byte[] randomBase64Bytes = Encoding.UTF8.GetBytes(randomBase64String);
+                Span<byte> buffered = new byte[randomBase64Bytes.Length * 4];
+                randomBase64Bytes.CopyTo(buffered);
 
                 string baseline = null;
                 string newResults = null;
                 try
                 {
                     baseline = HttpUtility.UrlEncode(randomBase64Bytes);
-                    newResults = AuthorizationHelper.UrlEncodeBase64Span(randomBase64Bytes, randomBase64Bytes.Length);
+                    newResults = AuthorizationHelper.UrlEncodeBase64SpanInPlace(buffered, randomBase64Bytes.Length);
                 }
                 catch(Exception e)
                 {
