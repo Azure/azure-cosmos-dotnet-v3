@@ -5,12 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -19,11 +22,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RequestInvokerHandler : RequestHandler
     {
+        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
+        private static (bool, ResponseMessage) clientIsValid = (false, null);
+
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
-        private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
+
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
-        private static (bool, ResponseMessage) clientIsValid = (false, null);
 
         public RequestInvokerHandler(
             CosmosClient client,
@@ -176,8 +181,63 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
                     else if (feedRange is FeedRangeEpk feedRangeEpk)
                     {
-                        request.Properties[HandlerConstants.StartEpkString] = feedRangeEpk.Range.Min;
-                        request.Properties[HandlerConstants.EndEpkString] = feedRangeEpk.Range.Max;
+                        DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+
+                        PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                        CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                        ContainerProperties collectionFromCache =
+                            await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
+
+                        IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                            collectionFromCache.ResourceId,
+                            feedRangeEpk.Range,
+                            forceRefresh: true);
+                        if (overlappingRanges == null)
+                        {
+                            CosmosException notFound = new CosmosException(
+                                $"Stale cache for rid '{collectionFromCache.ResourceId}'",
+                                statusCode: System.Net.HttpStatusCode.NotFound,
+                                subStatusCode: default,
+                                activityId: Guid.Empty.ToString(),
+                                requestCharge: default);
+                            return notFound.ToCosmosResponseMessage(request);
+                        }
+
+                        // For epk range filtering we can end up in one of 3 cases:
+                        if (overlappingRanges.Count > 1)
+                        {
+                            // 1) The EpkRange spans more than one physical partition
+                            // In this case it means we have encountered a split and 
+                            // we need to bubble that up to the higher layers to update their datastructures
+                            CosmosException goneException = new CosmosException(
+                                message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                                statusCode: System.Net.HttpStatusCode.Gone,
+                                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                                activityId: Guid.NewGuid().ToString(),
+                                requestCharge: default);
+
+                            return goneException.ToCosmosResponseMessage(request);
+                        }
+                        // overlappingRanges.Count == 1
+                        else
+                        {
+                            Range<string> singleRange = overlappingRanges[0].ToRange();
+                            if ((singleRange.Min == feedRangeEpk.Range.Min) && (singleRange.Max == feedRangeEpk.Range.Max))
+                            {
+                                // 2) The EpkRange spans exactly one physical partition
+                                // In this case we can route to the physical pkrange id
+                                request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
+                            }
+                            else
+                            {
+                                // 3) The EpkRange spans less than single physical partition
+                                // In this case we route to the physical partition and 
+                                // pass the epk range headers to filter within partition
+                                request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
+                                request.Properties[HandlerConstants.StartEpkString] = feedRangeEpk.Range.Min;
+                                request.Properties[HandlerConstants.EndEpkString] = feedRangeEpk.Range.Max;
+                            }
+                        }
                     }
                     else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
                     {
