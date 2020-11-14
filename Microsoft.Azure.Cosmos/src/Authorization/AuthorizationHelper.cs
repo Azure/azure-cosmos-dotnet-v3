@@ -653,7 +653,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
-        public static unsafe string GenerateUrlEncodedAuthorizationTokenWithHashCore(
+        private static unsafe string GenerateUrlEncodedAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
