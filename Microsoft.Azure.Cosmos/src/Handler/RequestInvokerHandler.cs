@@ -368,23 +368,5 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
             }
         }
-
-        private sealed class FeedRangeRequestMessageFiller : IFeedRangeVisitor<(RequestMessage requestMessage, ContainerCore container)>
-        {
-            public void Visit(FeedRangePartitionKey feedRange, (RequestMessage requestMessage, ContainerCore container) input)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Visit(FeedRangePartitionKeyRange feedRange, (RequestMessage requestMessage, ContainerCore container) input)
-            {
-                throw new NotImplementedException();
-            }
-
-            public void Visit(FeedRangeEpk feedRange, (RequestMessage requestMessage, ContainerCore container) input)
-            {
-                throw new NotImplementedException();
-            }
-        }
     }
 }
