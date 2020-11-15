@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -564,6 +565,22 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
+        public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = default)
+        {
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new ChangeFeedCrossFeedRangeAsyncEnumerable(
+                documentContainer,
+                changeFeedRequestOptions,
+                state);
+        }
+
         public override FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
@@ -605,11 +622,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                CosmosDiagnosticsContext readFeedDiagnostics = CosmosDiagnosticsContext.Create(requestOptions);
                 NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                     this,
                     this.queryClient,
-                    readFeedDiagnostics,
+                    diagnosticsContext: null,
                     requestOptions);
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -619,8 +635,7 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: requestOptions,
                     continuationToken: continuationToken,
                     pageSize: requestOptions.MaxItemCount ?? int.MaxValue,
-                    cancellationToken: default,
-                    diagnosticsContext: readFeedDiagnostics);
+                    cancellationToken: default);
             }
 
             return QueryIterator.Create(

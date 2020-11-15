@@ -110,7 +110,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)
         {
-            INameValueCollection headers = new StoreResponseNameValueCollection();
+            // Use DictionaryNameValueCollection because some Compute scenarios have duplicate headers
+            INameValueCollection headers = new DictionaryNameValueCollection();
 
             foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Headers)
             {

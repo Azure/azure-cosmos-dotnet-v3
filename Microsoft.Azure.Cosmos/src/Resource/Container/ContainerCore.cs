@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -314,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(
-                changeFeedIteratorCore, 
+                changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
@@ -378,12 +379,12 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
             if (containerProperties == null)
             {
-                throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
+                throw new ArgumentOutOfRangeException($"Container {this.LinkUri} not found");
             }
 
             if (containerProperties.PartitionKey?.Paths == null)
             {
-                throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri.ToString()}");
+                throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri}");
             }
 
             return containerProperties.PartitionKeyPathTokens;
