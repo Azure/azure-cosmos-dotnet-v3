@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 await this.container.GetRIDAsync(cancellationToken),
                                 containerProperties.PartitionKey,
                                 feedRange,
-                                forceRefresh: true);
+                                forceRefresh: false);
                         }
 
                         queryRequestOptions.PartitionKey = feedRangePartitionKey.PartitionKey;
