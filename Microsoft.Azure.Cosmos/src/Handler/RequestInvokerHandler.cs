@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return HttpMethod.Get;
             }
-            else if (operationType == OperationType.Replace)
+            else if ((operationType == OperationType.Replace) || (operationType == OperationType.CollectionTruncate))
             {
                 return HttpMethod.Put;
             }
