@@ -257,5 +257,53 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(baseline, newResults);
             }
         }
+
+        [TestMethod]
+        public void Base64UrlEncoderEdgeCasesTest()
+        {
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'=';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%3d", urlEncoded);
+            }
+
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'+';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%2b", urlEncoded);
+            }
+
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'/';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%2f", urlEncoded);
+            }
+
+            {
+                Span<byte> multipleInvalidChar = new byte[9];
+                multipleInvalidChar[0] = (byte)'=';
+                multipleInvalidChar[1] = (byte)'+';
+                multipleInvalidChar[2] = (byte)'/';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(multipleInvalidChar, 3);
+                Assert.AreEqual("%3d%2b%2f", urlEncoded);
+            }
+
+            {
+                Span<byte> singleValidChar = new byte[3];
+                singleValidChar[0] = (byte)'a';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleValidChar, 1);
+                Assert.AreEqual("a", urlEncoded);
+            }
+
+            {
+                byte[] singleInvalidChar = new byte[0];
+                string result = HttpUtility.UrlEncode(singleInvalidChar);
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 0);
+                Assert.AreEqual(result, urlEncoded);
+            }
+        }
     }
 }

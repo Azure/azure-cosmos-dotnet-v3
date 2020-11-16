@@ -825,6 +825,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"{nameof(base64Bytes)} should be 3x to avoid running out of space in worst case scenario where all characters are special");
             }
 
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+
             int escapeBufferPosition = base64Bytes.Length - 1;
             for (int i = length - 1; i >= 0; i--)
             { 
