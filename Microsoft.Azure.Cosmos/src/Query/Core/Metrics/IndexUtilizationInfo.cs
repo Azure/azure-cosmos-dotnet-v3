@@ -21,49 +21,82 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     sealed class IndexUtilizationInfo
     {
         public static readonly IndexUtilizationInfo Empty = new IndexUtilizationInfo(
-            utilizedIndexes: new List<IndexUtilizationData>(),
-            potentialIndexes: new List<IndexUtilizationData>());
+            utilizedSingleIndexes: new List<SingleIndexUtilizationEntity>(),
+            potentialSingleIndexes: new List<SingleIndexUtilizationEntity>(),
+            utilizedCompositeIndexes: new List<CompositeIndexUtilizationEntity>(),
+            potentialCompositeIndexes: new List<CompositeIndexUtilizationEntity>());
 
-        public IReadOnlyList<IndexUtilizationData> UtilizedIndexes { get; }
-        public IReadOnlyList<IndexUtilizationData> PotentialIndexes { get; }
-
+        public IReadOnlyList<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
+        public IReadOnlyList<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; }
+        public IReadOnlyList<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; }
+        public IReadOnlyList<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; }
+        
         /// <summary>
         /// Initializes a new instance of the Index Utilization class.
         /// </summary>
-        /// <param name="utilizedIndexes">The utilized indexes list</param>
-        /// <param name="potentialIndexes">The potential indexes list</param>
+        /// <param name="utilizedSingleIndexes">The utilized single indexes list</param>
+        /// <param name="potentialSingleIndexes">The potential single indexes list</param>
+        /// <param name="utilizedCompositeIndexes">The potential composite indexes list</param>
+        /// <param name="potentialCompositeIndexes">The utilized composite indexes list</param>
         [JsonConstructor]
         public IndexUtilizationInfo(
-             IReadOnlyList<IndexUtilizationData> utilizedIndexes,
-             IReadOnlyList<IndexUtilizationData> potentialIndexes)
+             IReadOnlyList<SingleIndexUtilizationEntity> utilizedSingleIndexes,
+             IReadOnlyList<SingleIndexUtilizationEntity> potentialSingleIndexes,
+             IReadOnlyList<CompositeIndexUtilizationEntity> utilizedCompositeIndexes,
+             IReadOnlyList<CompositeIndexUtilizationEntity> potentialCompositeIndexes)
         {
-            List<IndexUtilizationData> utilizedIndexesCopy = new List<IndexUtilizationData>();
-            List<IndexUtilizationData> potentialIndexesCopy = new List<IndexUtilizationData>();
+            List<SingleIndexUtilizationEntity> utilizedSingleIndexesCopy = new List<SingleIndexUtilizationEntity>();
+            List<SingleIndexUtilizationEntity> potentialSingleIndexesCopy = new List<SingleIndexUtilizationEntity>();
+            List<CompositeIndexUtilizationEntity> utilizedCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
+            List<CompositeIndexUtilizationEntity> potentialCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
 
-            if (utilizedIndexes != null)
+            if (utilizedSingleIndexes != null)
             {
-                foreach (IndexUtilizationData indexUtilizationData in utilizedIndexes)
+                foreach (SingleIndexUtilizationEntity indexUtilizationEntity in utilizedSingleIndexes)
                 {
-                    if (indexUtilizationData != null)
+                    if (indexUtilizationEntity != null)
                     {
-                        utilizedIndexesCopy.Add(indexUtilizationData);
+                        utilizedSingleIndexesCopy.Add(indexUtilizationEntity);
                     }
                 }
             }
 
-            if (potentialIndexes != null)
+            if (potentialSingleIndexes != null)
             {
-                foreach (IndexUtilizationData indexUtilizationData in potentialIndexes)
+                foreach (SingleIndexUtilizationEntity indexUtilizationEntiy in potentialSingleIndexes)
                 {
-                    if (indexUtilizationData != null)
+                    if (indexUtilizationEntiy != null)
                     {
-                        potentialIndexesCopy.Add(indexUtilizationData);
+                        potentialSingleIndexesCopy.Add(indexUtilizationEntiy);
                     }
                 }
             }
 
-            this.UtilizedIndexes = utilizedIndexesCopy;
-            this.PotentialIndexes = potentialIndexesCopy;
+            if (utilizedCompositeIndexes != null)
+            {
+                foreach (CompositeIndexUtilizationEntity indexUtilizationEntiy in utilizedCompositeIndexes)
+                {
+                    if (indexUtilizationEntiy != null)
+                    {
+                        utilizedCompositeIndexesCopy.Add(indexUtilizationEntiy);
+                    }
+                }
+            }
+
+            if (potentialCompositeIndexes != null)
+            {
+                foreach (CompositeIndexUtilizationEntity indexUtilizationEntiy in potentialCompositeIndexes)
+                {
+                    if (indexUtilizationEntiy != null)
+                    {
+                        potentialCompositeIndexesCopy.Add(indexUtilizationEntiy);
+                    }
+                }
+            }
+            this.UtilizedSingleIndexes = utilizedSingleIndexesCopy;
+            this.PotentialSingleIndexes = potentialSingleIndexesCopy;
+            this.UtilizedCompositeIndexes = utilizedCompositeIndexesCopy;
+            this.PotentialCompositeIndexes = potentialCompositeIndexesCopy;
         }
 
         /// <summary>
@@ -101,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             if (!TryCreateFromDelimitedString(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
             {
-                throw new FormatException();
+                throw new FormatException(delimitedString);
             }
 
             return indexUtilizationInfo;
@@ -110,28 +143,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public ref struct Accumulator
         {
             public Accumulator(
-                IEnumerable<IndexUtilizationData> utilizedIndexes,
-                IEnumerable<IndexUtilizationData> potentialIndexes)
+                IEnumerable<SingleIndexUtilizationEntity> utilizedSingleIndexes,
+                IEnumerable<SingleIndexUtilizationEntity> potentialSingleIndexes,
+                IEnumerable<CompositeIndexUtilizationEntity> utilizedCompositeIndexes,
+                IEnumerable<CompositeIndexUtilizationEntity> potentialCompositeIndexes)
             {
-                this.UtilizedIndexes = utilizedIndexes;
-                this.PotentialIndexes = potentialIndexes;
+                this.UtilizedSingleIndexes = utilizedSingleIndexes;
+                this.PotentialSingleIndexes = potentialSingleIndexes;
+                this.UtilizedCompositeIndexes = utilizedCompositeIndexes;
+                this.PotentialCompositeIndexes = potentialCompositeIndexes;
             }
 
-            public IEnumerable<IndexUtilizationData> UtilizedIndexes { get; }
-            public IEnumerable<IndexUtilizationData> PotentialIndexes { get; }
+            public IEnumerable<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
+            public IEnumerable<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; }
+            public IEnumerable<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; }
+            public IEnumerable<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; }
 
             public Accumulator Accumulate(IndexUtilizationInfo indexUtilizationInfo)
             {
                 return new Accumulator(
-                    utilizedIndexes: (this.UtilizedIndexes ?? Enumerable.Empty<IndexUtilizationData>()).Concat(indexUtilizationInfo.UtilizedIndexes),
-                    potentialIndexes: (this.PotentialIndexes ?? Enumerable.Empty<IndexUtilizationData>()).Concat(indexUtilizationInfo.PotentialIndexes));
+                    utilizedSingleIndexes: (this.UtilizedSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Concat(indexUtilizationInfo.UtilizedSingleIndexes),
+                    potentialSingleIndexes: (this.PotentialSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Concat(indexUtilizationInfo.PotentialSingleIndexes),
+                    utilizedCompositeIndexes: (this.UtilizedCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Concat(indexUtilizationInfo.UtilizedCompositeIndexes),
+                    potentialCompositeIndexes: (this.PotentialCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Concat(indexUtilizationInfo.PotentialCompositeIndexes));
             }
 
             public static IndexUtilizationInfo ToIndexUtilizationInfo(Accumulator accumulator)
             {
                 return new IndexUtilizationInfo(
-                    utilizedIndexes: accumulator.UtilizedIndexes.ToList(),
-                    potentialIndexes: accumulator.PotentialIndexes.ToList());
+                    utilizedSingleIndexes: accumulator.UtilizedSingleIndexes.ToList(),
+                    potentialSingleIndexes: accumulator.PotentialSingleIndexes.ToList(),
+                    utilizedCompositeIndexes: accumulator.UtilizedCompositeIndexes.ToList(),
+                    potentialCompositeIndexes: accumulator.PotentialCompositeIndexes.ToList());
             }
         }
     }

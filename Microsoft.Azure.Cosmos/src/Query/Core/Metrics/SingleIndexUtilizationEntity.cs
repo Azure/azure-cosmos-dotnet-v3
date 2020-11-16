@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
     internal
 #endif
-    sealed class IndexUtilizationData
+    sealed class SingleIndexUtilizationEntity
     {
         [JsonProperty(PropertyName = "FilterExpression")]
         public string FilterExpression { get; }
@@ -30,6 +30,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         [JsonProperty(PropertyName = "IndexPreciseSet")]
         public bool IndexPlanFullFidelity { get; }
 
+        [JsonProperty(PropertyName = "IndexImpactScore")]
+        public string IndexImpactScore { get; }
+
         /// <summary>
         /// Iniialized a new instance of the Index Utilization Data class.
         /// </summary>
@@ -37,17 +40,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="indexDocumentExpression">The index representation of the filter expression.</param>
         /// <param name="filterExpressionPrecision">The precision flag of the filter expression.</param>
         /// <param name="indexPlanFullFidelity">The index plan full fidelity.</param>
+        /// <param name="indexImpactScore">The index impact score.</param>
         [JsonConstructor]
-        public IndexUtilizationData(
+        public SingleIndexUtilizationEntity(
             string filterExpression,
             string indexDocumentExpression,
             bool filterExpressionPrecision,
-            bool indexPlanFullFidelity)
+            bool indexPlanFullFidelity,
+            string indexImpactScore)
         {
             this.FilterExpression = filterExpression ?? throw new ArgumentNullException(nameof(filterExpression));
             this.IndexDocumentExpression = indexDocumentExpression ?? throw new ArgumentNullException(nameof(indexDocumentExpression));
             this.FilterExpressionPrecision = filterExpressionPrecision;
             this.IndexPlanFullFidelity = indexPlanFullFidelity;
+            this.IndexImpactScore = indexImpactScore ?? throw new ArgumentNullException(nameof(indexImpactScore));
         }
     }
 }

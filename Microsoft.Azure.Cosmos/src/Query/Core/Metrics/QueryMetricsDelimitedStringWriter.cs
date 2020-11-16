@@ -47,6 +47,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private const string KeyValueDelimiter = "=";
         private const string KeyValuePairDelimiter = ";";
+
+        // IndexUtilizationInfo
+        private const string IndexUtilizationInfo = "Index Utilization Information";
+        private const string UtilizedSingleIndexes = "Utilized Single Indexes";
+        private const string PotentialSingleIndexes = "Potential Single Indexes";
+        private const string UtilizedCompositeIndexes = "Utilized Composite Indexes";
+        private const string PotentialCompositeIndexes = "Potential Composite Indexes";
+        private const string FilterExpression = "Filter Expression";
+        private const string IndexExpression = "Index Spec";
+        private const string FilterExpressionPrecision = "FilterPreciseSet";
+        private const string IndexPlanFullFidelity = "IndexPreciseSet";
+        private const string IndexImpactScore = "Index Impact Score";
         #endregion
 
         private readonly StringBuilder stringBuilder;
@@ -300,7 +312,46 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected override void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo)
         {
-            // Do nothing
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.UtilizedSingleIndexes, string.Empty);
+
+            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.UtilizedSingleIndexes)
+            {
+                WriteSingleIndexUtilizationEntity(indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.PotentialSingleIndexes, string.Empty);
+
+            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.PotentialSingleIndexes)
+            {
+                WriteSingleIndexUtilizationEntity(indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.UtilizedCompositeIndexes, string.Empty);
+
+            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.UtilizedCompositeIndexes)
+            {
+                WriteCompositeIndexUtilizationEntity(indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.PotentialCompositeIndexes, string.Empty);
+
+            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.PotentialCompositeIndexes)
+            {
+                WriteCompositeIndexUtilizationEntity(indexUtilizationEntity);
+            }
+
+            void WriteSingleIndexUtilizationEntity(SingleIndexUtilizationEntity indexUtilizationEntity)
+            {
+                this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.FilterExpression, indexUtilizationEntity.FilterExpression);
+                this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.IndexExpression, indexUtilizationEntity.IndexDocumentExpression);
+                this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.IndexImpactScore, indexUtilizationEntity.IndexImpactScore);   
+            }
+
+            void WriteCompositeIndexUtilizationEntity(CompositeIndexUtilizationEntity indexUtilizationEntity)
+            {
+                this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.IndexExpression, String.Join(", ", indexUtilizationEntity.IndexDocumentExpressions));
+                this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.IndexImpactScore, indexUtilizationEntity.IndexImpactScore);
+            }
         }
 
         protected override void WriteAfterIndexUtilizationInfo()
