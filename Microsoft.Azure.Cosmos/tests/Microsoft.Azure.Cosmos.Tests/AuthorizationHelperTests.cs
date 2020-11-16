@@ -235,11 +235,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Random random = new Random();
             for(int i = 0; i < 2000; i++)
             {
-                Span<byte> randomBytes = new byte[300];
+                Span<byte> randomBytes = new byte[random.Next(1, 500)];
                 random.NextBytes(randomBytes);
                 string randomBase64String = Convert.ToBase64String(randomBytes);
                 byte[] randomBase64Bytes = Encoding.UTF8.GetBytes(randomBase64String);
-                Span<byte> buffered = new byte[randomBase64Bytes.Length * 4];
+                Span<byte> buffered = new byte[randomBase64Bytes.Length * 3];
                 randomBase64Bytes.CopyTo(buffered);
 
                 string baseline = null;
