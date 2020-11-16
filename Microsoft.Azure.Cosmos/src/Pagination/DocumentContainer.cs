@@ -52,6 +52,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
+        public Task RefreshProviderAsync(CancellationToken cancellationToken) => TryCatch.UnsafeWaitAsync(
+            this.MonadicRefreshProviderAsync(cancellationToken),
+            cancellationToken);
+
+        public Task<TryCatch> MonadicRefreshProviderAsync(CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicRefreshProviderAsync(
+            cancellationToken);
+
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicCreateItemAsync(

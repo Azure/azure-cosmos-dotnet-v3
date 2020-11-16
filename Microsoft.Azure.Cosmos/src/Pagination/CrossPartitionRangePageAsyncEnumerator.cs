@@ -130,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 if (IsSplitException(exception))
                 {
                     // Handle split
+                    await this.feedRangeProvider.MonadicRefreshProviderAsync(this.cancellationToken);
                     IEnumerable<FeedRangeInternal> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                         currentPaginator.Range,
                         cancellationToken: this.cancellationToken);

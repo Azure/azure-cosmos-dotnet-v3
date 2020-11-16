@@ -278,6 +278,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
+            await this.documentContainer.RefreshProviderAsync(this.cancellationToken);
             IEnumerable<FeedRangeInternal> childRanges = await this.documentContainer.GetChildRangeAsync(
                 uninitializedEnumerator.Range,
                 cancellationToken: this.cancellationToken);

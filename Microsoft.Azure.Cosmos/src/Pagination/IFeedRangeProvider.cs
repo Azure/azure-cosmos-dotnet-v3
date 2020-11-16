@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
 
     internal interface IFeedRangeProvider : IMonadicFeedRangeProvider
     {
@@ -17,5 +16,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         Task<List<FeedRangeEpk>> GetFeedRangesAsync(
             CancellationToken cancellationToken);
+
+        Task RefreshProviderAsync(CancellationToken cancellationToken);
     }
 }

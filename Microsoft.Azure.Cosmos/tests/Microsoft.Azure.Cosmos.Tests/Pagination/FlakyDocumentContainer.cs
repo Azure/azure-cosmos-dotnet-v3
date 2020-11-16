@@ -234,6 +234,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
                 cancellationToken);
 
+        public Task<TryCatch> MonadicRefreshProviderAsync(
+            CancellationToken cancellationToken) => this.documentContainer.MonadicRefreshProviderAsync(cancellationToken);
+
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
 
