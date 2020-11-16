@@ -282,6 +282,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             IEnumerable<FeedRangeInternal> childRanges = await this.documentContainer.GetChildRangeAsync(
                 uninitializedEnumerator.Range,
                 cancellationToken: this.cancellationToken);
+            if (childRanges.Count() <= 1)
+            {
+                throw new InvalidOperationException("Expected more than 1 child");
+            }
+
             foreach (FeedRangeInternal childRange in childRanges)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();

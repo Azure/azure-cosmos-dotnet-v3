@@ -134,6 +134,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     IEnumerable<FeedRangeInternal> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                         currentPaginator.Range,
                         cancellationToken: this.cancellationToken);
+                    if (childRanges.Count() <= 1)
+                    {
+                        throw new InvalidOperationException("Expected more than 1 child");
+                    }
+
                     foreach (FeedRangeInternal childRange in childRanges)
                     {
                         PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
