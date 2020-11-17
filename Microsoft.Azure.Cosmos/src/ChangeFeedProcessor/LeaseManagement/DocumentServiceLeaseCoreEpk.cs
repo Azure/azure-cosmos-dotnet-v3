@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Generic;
     using System.Globalization;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
+    /// <summary>
+    /// Lease implementation for EPK based leases.
+    /// </summary>
     [Serializable]
     [JsonConverter(typeof(DocumentServiceLeaseDisabledConverter))]
     internal sealed class DocumentServiceLeaseCoreEpk : DocumentServiceLease

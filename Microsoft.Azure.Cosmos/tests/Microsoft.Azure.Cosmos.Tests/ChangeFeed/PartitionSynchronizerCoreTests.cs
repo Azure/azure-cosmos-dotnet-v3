@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class PartitionSynchronizerCoreTests
     {
+        /// <summary>
+        /// Verifies handling of Splits on PKRange based leases
+        /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_PKRangeBasedLease_Split()
         {
@@ -76,6 +79,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.Is<string>(c => c == continuation)), Times.Once);
         }
 
+        /// <summary>
+        /// Verifies handling of Splits on EPK based leases
+        /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_EpkBasedLease_Split()
         {
@@ -140,6 +146,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.Is<string>(c => c == continuation)), Times.Once);
         }
 
+        /// <summary>
+        /// Verifies handling of Merges on PKRange based leases
+        /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_PKRangeBasedLease_Merge()
         {
@@ -194,6 +203,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.Is<string>(c => c == continuation)), Times.Once);
         }
 
+        /// <summary>
+        /// Verifies handling of Merges on EPK based leases
+        /// </summary>
         [TestMethod]
         public async Task HandlePartitionGoneAsync_EpkBasedLease_Merge()
         {

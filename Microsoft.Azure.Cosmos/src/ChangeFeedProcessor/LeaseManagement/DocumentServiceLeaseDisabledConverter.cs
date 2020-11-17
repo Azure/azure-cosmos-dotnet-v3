@@ -6,8 +6,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
+    /// <summary>
+    /// This is used to force DocumentServiceLease implementations to be serialized throught <see cref="DocumentServiceLeaseConverter"/>
+    /// </summary>
     internal sealed class DocumentServiceLeaseDisabledConverter : JsonConverter
     {
         public override bool CanRead => false;
