@@ -37,7 +37,7 @@
             {"sqlAllowSubQuery", true},
             {"sqlAllowScalarSubQuery", false},
             {"allowNewKeywords", true},
-            {"sqlAllowLike", false},
+            {"sqlAllowLike", true},
             {"sqlAllowGroupByClause", false},
             {"maxSpatialQueryCells", 12},
             {"spatialMaxGeometryPointCount", 256},
