@@ -714,6 +714,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// This an optimized version of doing HttpUtility.UrlEncode(Convert.ToBase64String(hashPayLoad)).
+        /// This avoids the over head of converting it to a string and back to a byte[].
+        /// </summary>
         private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad)
         {
             // Create a large enough buffer that URL encode can use it. 
