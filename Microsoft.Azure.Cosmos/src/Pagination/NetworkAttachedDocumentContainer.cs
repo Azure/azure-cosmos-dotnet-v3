@@ -167,9 +167,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    cosmosContainerCore: this.container,
                    requestEnricher: request =>
                    {
-                       if (!(readFeedState.ContinuationToken is CosmosNull))
+                       if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
                        {
-                           request.Headers.ContinuationToken = (readFeedState.ContinuationToken as CosmosString).Value;
+                           request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                        }
 
                        feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.ActivityId,
                         responseMessage.DiagnosticsContext,
-                        responseMessage.Headers.ContinuationToken != null ? new ReadFeedState(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
+                        responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
 
                     monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
                 }
