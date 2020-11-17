@@ -172,6 +172,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
         }
 
+        public Task<TryCatch> MonadicRefreshProviderAsync(CancellationToken cancellationToken)
+        {
+            // The feedrangeprovider is always insync in memory
+            // so we can no op for this one
+            return Task.FromResult(TryCatch.FromResult());
+        }
+
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken)
@@ -312,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new InvalidOperationException("failed to find the range.");
             }
 
-            ulong documentIndex = (readFeedState == null) || readFeedState.ContinuationToken is CosmosNull ? 0 : (ulong)Number64.ToLong(((CosmosNumber)readFeedState.ContinuationToken).Value);
+            ulong documentIndex = (readFeedState == null) || readFeedState is ReadFeedBeginningState ? 0 : (ulong)Number64.ToLong(((CosmosNumber64)((ReadFeedContinuationState)readFeedState).ContinuationToken).Value);
             List<Record> page = records
                 .Where(record => record.ResourceIdentifier.Document > documentIndex)
                 .Take(pageSize)
@@ -325,9 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 documents.Add(CosmosObject.Create(document));
             }
 
-            documents = FilterDocumentsWithFeedRange(documents, feedRange, this.partitionKeyDefinition);
-
-            ReadFeedState continuationState = documents.Count == 0 ? null : new ReadFeedState(CosmosNumber64.Create(page.Last().ResourceIdentifier.Document));
+            ReadFeedState continuationState = documents.Count == 0 ? null : ReadFeedState.Continuation(CosmosNumber64.Create(page.Last().ResourceIdentifier.Document));
             CosmosArray cosmosDocuments = CosmosArray.Create(documents);
             CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
             CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
