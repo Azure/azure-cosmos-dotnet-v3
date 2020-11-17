@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.ReadFeed
 {
     using System;
     using System.Collections.Generic;
@@ -65,12 +65,22 @@ namespace Microsoft.Azure.Cosmos
                         CosmosObject rangeObject = (CosmosObject)continuationObject["range"];
                         string min = ((CosmosString)rangeObject["min"]).Value;
                         string max = ((CosmosString)rangeObject["max"]).Value;
-                        CosmosElement token = CosmosElement.Parse(((CosmosString)continuationObject["token"]).Value);
+                        CosmosElement token = continuationObject["token"];
 
                         FeedRangeInternal feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false));
-                        ReadFeedState state = new ReadFeedState(token);
-                        ReadFeedContinuationToken readFeedContinuationToken = new ReadFeedContinuationToken(feedRange, state);
-                        readFeedContinuationTokens.Add(ReadFeedContinuationToken.ToCosmosElement(readFeedContinuationToken));
+                        ReadFeedState state;
+                        if (token is CosmosNull)
+                        {
+                            state = ReadFeedState.Beginning();
+                        }
+                        else
+                        {
+                            CosmosString tokenAsString = (CosmosString)token;
+                            state = ReadFeedState.Continuation(CosmosElement.Parse(tokenAsString.Value));
+                        }
+
+                        FeedRangeState<ReadFeedState> readFeedContinuationToken = new FeedRangeState<ReadFeedState>(feedRange, state);
+                        readFeedContinuationTokens.Add(ReadFeedFeedRangeStateSerializer.ToCosmosElement(readFeedContinuationToken));
                     }
 
                     CosmosArray cosmosArrayContinuationTokens = CosmosArray.Create(readFeedContinuationTokens);
@@ -78,12 +88,30 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            this.monadicEnumerator = CrossPartitionReadFeedAsyncEnumerator.MonadicCreate(
-                documentContainer,
-                queryRequestOptions,
-                continuationToken: continuationToken,
-                pageSize,
-                cancellationToken);
+            TryCatch<ReadFeedCrossFeedRangeState> monadicReadFeedState;
+            if (continuationToken == null)
+            {
+                monadicReadFeedState = TryCatch<ReadFeedCrossFeedRangeState>.FromResult(ReadFeedCrossFeedRangeState.CreateFromBeginning());
+            }
+            else
+            {
+                monadicReadFeedState = ReadFeedCrossFeedRangeState.Monadic.Parse(continuationToken);
+            }
+
+            if (monadicReadFeedState.Failed)
+            {
+                this.monadicEnumerator = TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromException(monadicReadFeedState.Exception);
+            }
+            else
+            {
+                this.monadicEnumerator = TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromResult(
+                    CrossPartitionReadFeedAsyncEnumerator.Create(
+                        documentContainer,
+                        queryRequestOptions,
+                        new CrossFeedRangeState<ReadFeedState>(monadicReadFeedState.Result.FeedRangeStates),
+                        pageSize,
+                        cancellationToken));
+            }
 
             this.hasMoreResults = true;
         }
@@ -118,8 +146,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
-            TryCatch<ReadFeedPage> monadicPage;
-
+            TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>> monadicPage;
             try
             {
                 if (!await enumerator.MoveNextAsync())
@@ -131,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                monadicPage = TryCatch<ReadFeedPage>.FromException(ex);
+                monadicPage = TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>>.FromException(ex);
             }
 
             if (monadicPage.Failed)
@@ -150,27 +177,27 @@ namespace Microsoft.Azure.Cosmos
                     diagnostics: cosmosException.DiagnosticsContext);
             }
 
-            ReadFeedPage readFeedPage = monadicPage.Result;
-            if (readFeedPage.State == default)
+            CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState> crossFeedRangePage = monadicPage.Result;
+            if (crossFeedRangePage.State == default)
             {
                 this.hasMoreResults = false;
             }
 
             // Make the continuation token match the older format:
             string continuationToken;
-            if (readFeedPage.State != null)
+            if (crossFeedRangePage.State != null)
             {
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                CosmosArray compositeContinuationTokensCosmosArray = (CosmosArray)readFeedPage.State.ContinuationToken;
-                foreach (CosmosElement arrayItem in compositeContinuationTokensCosmosArray)
+                CrossFeedRangeState<ReadFeedState> crossFeedRangeState = crossFeedRangePage.State;
+                for (int i = 0; i < crossFeedRangeState.Value.Length; i++)
                 {
-                    ReadFeedContinuationToken readFeedContinuationToken = ReadFeedContinuationToken.MonadicConvertFromCosmosElement(arrayItem).Result;
-                    FeedRangeEpk feedRangeEpk = (FeedRangeEpk)readFeedContinuationToken.Range;
-                    ReadFeedState readFeedState = readFeedContinuationToken.State;
+                    FeedRangeState<ReadFeedState> feedRangeState = crossFeedRangeState.Value.Span[i];
+                    FeedRangeEpk feedRangeEpk = (FeedRangeEpk)feedRangeState.FeedRange;
+                    ReadFeedState readFeedState = feedRangeState.State;
                     CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
                     {
                         Range = feedRangeEpk.Range,
-                        Token = readFeedState.ContinuationToken.ToString(),
+                        Token = readFeedState is ReadFeedBeginningState ? null : ((ReadFeedContinuationState)readFeedState).ContinuationToken.ToString(),
                     };
 
                     compositeContinuationTokens.Add(compositeContinuationToken);
@@ -188,19 +215,20 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken = null;
             }
 
+            Pagination.ReadFeedPage page = crossFeedRangePage.Page;
             return new ResponseMessage(
                 statusCode: System.Net.HttpStatusCode.OK,
                 requestMessage: default,
                 headers: new Headers()
                 {
-                    RequestCharge = readFeedPage.RequestCharge,
-                    ActivityId = readFeedPage.ActivityId,
+                    RequestCharge = page.RequestCharge,
+                    ActivityId = page.ActivityId,
                     ContinuationToken = continuationToken,
                 },
                 cosmosException: default,
-                diagnostics: readFeedPage.Diagnostics)
+                diagnostics: page.Diagnostics)
             {
-                Content = readFeedPage.Content,
+                Content = page.Content,
             };
         }
 
