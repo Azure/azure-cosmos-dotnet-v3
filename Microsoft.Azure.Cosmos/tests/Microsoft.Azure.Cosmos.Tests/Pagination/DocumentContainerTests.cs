@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             {
                 ReadFeedPage fullRangePage = await documentContainer.ReadFeedAsync(
-                    readFeedState: new ReadFeedState(CosmosNull.Create()),
+                    readFeedState: ReadFeedState.Beginning(),
                     range,
                     new QueryRequestOptions(),
                     pageSize: 100,
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             {
                 ReadFeedPage partitionKeyPage = await documentContainer.ReadFeedAsync(
-                    readFeedState: new ReadFeedState(CosmosNull.Create()),
+                    readFeedState: ReadFeedState.Beginning(),
                     new FeedRangePartitionKey(new Cosmos.PartitionKey(0)),
                     new QueryRequestOptions(),
                     pageSize: 100,
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     // Should get back only the document within the epk range.
                     ReadFeedPage partitionKeyRangePage = await documentContainer.ReadFeedAsync(
-                        readFeedState: new ReadFeedState(CosmosNull.Create()),
+                        readFeedState: ReadFeedState.Beginning(),
                         new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
                             min: value.StartInclusive.HasValue ? value.StartInclusive.Value.ToString() : string.Empty,
