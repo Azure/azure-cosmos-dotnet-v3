@@ -106,8 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionKeyRange targetPartitionKeyRange = null;
             Documents.Routing.Range<string> targetEPKRange = null;
 
-            // Is lease an EPK lease
-            if (this.feedRangeInternal is FeedRangeEpk feedRangeEpk)
+            if (this.ShouldApplyEPKFiltering(out FeedRangeEpk feedRangeEpk))
             {
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
@@ -186,6 +185,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             requestMessage.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
             requestMessage.Headers[HttpConstants.HttpHeaders.StartEpk] = targetRange.Min;
             requestMessage.Headers[HttpConstants.HttpHeaders.EndEpk] = targetRange.Max;
+        }
+
+        private bool ShouldApplyEPKFiltering(out FeedRangeEpk feedRangeEpk)
+        {
+            if (this.feedRangeInternal is FeedRangeEpk feedRangeEpkInternal)
+            {
+                feedRangeEpk = feedRangeEpkInternal;
+                return true;
+            }
+
+            feedRangeEpk = null;
+            return false;
         }
 
         private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
