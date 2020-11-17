@@ -4,17 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 {
-    using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
 
-    internal sealed class ReadFeedState : State
+    internal abstract class ReadFeedState : State
     {
-        public ReadFeedState(CosmosElement continuationToken)
-        {
-            this.ContinuationToken = continuationToken ?? throw new ArgumentNullException(nameof(continuationToken));
-        }
+        public static ReadFeedState Beginning() => ReadFeedBeginningState.Singleton;
 
-        public CosmosElement ContinuationToken { get; }
+        public static ReadFeedState Continuation(CosmosElement cosmosElement) => new ReadFeedContinuationState(cosmosElement);
     }
 }
