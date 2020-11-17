@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<ChangeFeedRequestOptions>(),
                 It.IsAny<ContainerInternal>(),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -186,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -219,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -279,8 +280,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 RequestMessage requestMessage = new RequestMessage();
                 enricher(requestMessage);
                 return requestMessage.PartitionKeyRangeId != null
-                    && (string)requestMessage.Properties[HandlerConstants.StartEpkString] == range.Min
-                    && (string)requestMessage.Properties[HandlerConstants.EndEpkString] == range.Max;
+                    && (string)requestMessage.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] == RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString()
+                    && (string)requestMessage.Headers[HttpConstants.HttpHeaders.StartEpk] == range.Min
+                    && (string)requestMessage.Headers[HttpConstants.HttpHeaders.EndEpk] == range.Max;
             };
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
@@ -291,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
@@ -320,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<PartitionKey?>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
