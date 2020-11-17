@@ -120,5 +120,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="writer"></param>
         void WriteAll(IJsonWriter writer);
+
+        /// <summary>
+        /// Attempt to read a '$t': TYPECODE, '$v' in one call.
+        /// If unsuccessful, the reader is left in its original state.
+        /// Otherwise it is positioned at the value after the $v.
+        /// </summary>
+        /// <param name="typeCode">The type code read.</param>
+        /// <returns>Success.</returns>
+        bool TryReadTypedJsonValueWrapper(out int typeCode);
     }
 }

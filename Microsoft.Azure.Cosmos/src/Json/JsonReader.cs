@@ -127,6 +127,9 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract ReadOnlyMemory<byte> GetBinaryValue();
 
         /// <inheritdoc />
+        public abstract bool TryReadTypedJsonValueWrapper(out int typeCode);
+
+        /// <inheritdoc />
         public virtual void WriteCurrentToken(IJsonWriter writer)
         {
             if (writer == null)

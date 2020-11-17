@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using RMResources = Documents.RMResources;
 
     /// <summary>
@@ -230,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Registers the end of a json array (']')
         /// </summary>
-        private void RegisterEndArray()
+        public void RegisterEndArray()
         {
             if (this.currentContext != JsonObjectContext.Array)
             {
@@ -262,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Registers a end of a json object ('}')
         /// </summary>
-        private void RegisterEndObject()
+        public void RegisterEndObject()
         {
             if (this.currentContext != JsonObjectContext.Object)
             {
@@ -297,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Register a Json FieldName
         /// </summary>
-        private void RegisterFieldName()
+        public void RegisterFieldName()
         {
             if (this.currentContext != JsonObjectContext.Object)
             {
