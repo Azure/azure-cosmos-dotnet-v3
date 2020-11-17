@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using RMResources = Documents.RMResources;
 
     /// <summary>
