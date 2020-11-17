@@ -132,84 +132,95 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (feedRange is FeedRangeEpk feedRangeEpk)
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+            using (cosmosDiagnosticsContext.GetOverallScope())
             {
-                ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                    this.container.LinkUri,
-                    trace,
-                    cancellationToken);
-                List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                    this.container.LinkUri,
-                    await this.container.GetRIDAsync(cancellationToken),
-                    containerProperties.PartitionKey,
-                    feedRange,
-                    trace);
-
-                if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
+                if (feedRange is FeedRangeEpk feedRangeEpk)
                 {
-                    // Simulate a split exception, since we don't have a partition key range id to route to.
-                    CosmosException goneException = new CosmosException(
-                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: default);
+                    ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
+                        this.container.LinkUri,
+                        trace,
+                        cancellationToken);
+                    List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                        this.container.LinkUri,
+                        await this.container.GetRIDAsync(cancellationToken),
+                        containerProperties.PartitionKey,
+                        feedRange,
+                        trace);
 
-                    return TryCatch<ReadFeedPage>.FromException(goneException);
+                    if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
+                    {
+                        // Simulate a split exception, since we don't have a partition key range id to route to.
+                        CosmosException goneException = new CosmosException(
+                            message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: default);
+
+                        return TryCatch<ReadFeedPage>.FromException(goneException);
+                    }
                 }
-            }
 
-            if (queryRequestOptions != null)
-            {
-                queryRequestOptions.MaxItemCount = pageSize;
-            }
+                if (queryRequestOptions != null)
+                {
+                    queryRequestOptions.MaxItemCount = pageSize;
+                }
 
-            ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.resourceLink,
-               resourceType: this.resourceType,
-               operationType: OperationType.ReadFeed,
-               requestOptions: queryRequestOptions,
-               cosmosContainerCore: this.container,
-               requestEnricher: request =>
-               {
-                   if (!(readFeedState.ContinuationToken is CosmosNull))
+                ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
+                   resourceUri: this.resourceLink,
+                   resourceType: this.resourceType,
+                   operationType: OperationType.ReadFeed,
+                   requestOptions: queryRequestOptions,
+                   cosmosContainerCore: this.container,
+                   requestEnricher: request =>
                    {
-                       request.Headers.ContinuationToken = (readFeedState.ContinuationToken as CosmosString).Value;
-                   }
+                       if (!(readFeedState.ContinuationToken is CosmosNull))
+                       {
+                           request.Headers.ContinuationToken = (readFeedState.ContinuationToken as CosmosString).Value;
+                       }
 
-                   feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
-               },
-               partitionKey: queryRequestOptions?.PartitionKey,
-               streamPayload: default,
-               diagnosticsContext: this.diagnosticsContext,
-               trace: trace,
-               cancellationToken: cancellationToken);
+                       feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
+                   },
+                   partitionKey: queryRequestOptions?.PartitionKey,
+                   streamPayload: default,
+                   diagnosticsContext: cosmosDiagnosticsContext,
+                   trace: trace,
+                   cancellationToken: cancellationToken);
 
-            TryCatch<ReadFeedPage> monadicReadFeedPage;
-            if (responseMessage.StatusCode == HttpStatusCode.OK)
-            {
-                ReadFeedPage readFeedPage = new ReadFeedPage(
-                    responseMessage.Content,
-                    responseMessage.Headers.RequestCharge,
-                    responseMessage.Headers.ActivityId,
-                    responseMessage.Headers.ContinuationToken != null ? new ReadFeedState(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
+                TryCatch<ReadFeedPage> monadicReadFeedPage;
+                if (responseMessage.StatusCode == HttpStatusCode.OK)
+                {
+                    ReadFeedPage readFeedPage = new ReadFeedPage(
+                        responseMessage.Content,
+                        responseMessage.Headers.RequestCharge,
+                        responseMessage.Headers.ActivityId,
+                        responseMessage.DiagnosticsContext,
+                        responseMessage.Headers.ContinuationToken != null ? new ReadFeedState(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
 
-                monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
+                    monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
+                }
+                else
+                {
+                    CosmosException cosmosException = new CosmosException(
+                        statusCode: responseMessage.StatusCode,
+                        responseMessage.ErrorMessage,
+                        (int)responseMessage.Headers.SubStatusCode,
+                        stackTrace: null,
+                        responseMessage.Headers.ActivityId,
+                        responseMessage.Headers.RequestCharge,
+                        responseMessage.Headers.RetryAfter,
+                        responseMessage.Headers,
+                        responseMessage.DiagnosticsContext,
+                        error: null,
+                        innerException: null);
+                    cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
+
+                    monadicReadFeedPage = TryCatch<ReadFeedPage>.FromException(cosmosException);
+                }
+
+                return monadicReadFeedPage;
             }
-            else
-            {
-                CosmosException cosmosException = new CosmosException(
-                    responseMessage.ErrorMessage,
-                    statusCode: responseMessage.StatusCode,
-                    (int)responseMessage.Headers.SubStatusCode,
-                    responseMessage.Headers.ActivityId,
-                    responseMessage.Headers.RequestCharge);
-                cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
-
-                monadicReadFeedPage = TryCatch<ReadFeedPage>.FromException(cosmosException);
-            }
-
-            return monadicReadFeedPage;
         }
 
         public async Task<TryCatch<QueryPage>> MonadicQueryAsync(

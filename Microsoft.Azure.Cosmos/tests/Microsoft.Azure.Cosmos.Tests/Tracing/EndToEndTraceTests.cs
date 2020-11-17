@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -111,11 +112,12 @@
         {
             int numItems = 100;
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
-            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.MonadicCreate(
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning(),
-                cancellationToken: default).Result;
+                new CrossFeedRangeState<ChangeFeedState>(
+                    ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
+                cancellationToken: default);
 
             int numChildren = 0;
             Trace rootTrace;
@@ -125,7 +127,7 @@
                 {
                     numChildren++;
 
-                    if (enumerator.Current.Result is ChangeFeedNotModifiedPage)
+                    if (enumerator.Current.Result.Page is ChangeFeedNotModifiedPage)
                     {
                         break;
                     }

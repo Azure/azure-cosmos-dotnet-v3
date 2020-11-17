@@ -382,7 +382,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 byte[] result = jsonWriter.GetResult().ToArray();
                 MemoryStream responseStream = new MemoryStream(result);
 
-                ReadFeedPage readFeedPage = new ReadFeedPage(responseStream, requestCharge: 42, activityId: Guid.NewGuid().ToString(), continuationState);
+            ReadFeedPage readFeedPage = new ReadFeedPage(
+                responseStream, 
+                requestCharge: 42, 
+                activityId: Guid.NewGuid().ToString(), 
+                CosmosDiagnosticsContext.Create(default), 
+                continuationState);
 
                 return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
             }

@@ -436,21 +436,27 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
-        /// <param name="memoryStream">The memory stream response for the query REST response Azure Cosmos</param>
+        /// <param name="stream">The memory stream response for the query REST response Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>An array of CosmosElements parsed from the response body.</returns>
-        private static CosmosArray ParseElementsFromRestStream(
-            MemoryStream memoryStream,
+        public static CosmosArray ParseElementsFromRestStream(
+            Stream stream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions)
         {
+            if (!(stream is MemoryStream memoryStream))
+            {
+                memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+            }
+
             if (!memoryStream.CanRead)
             {
                 throw new InvalidDataException("Stream can not be read");
             }
 
-            // Parse out the document from the REST response this:
+            // Parse out the document from the REST response like this:
             // {
             //    "_rid": "qHVdAImeKAQ=",
             //    "Documents": [{
