@@ -9,9 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -82,6 +85,14 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
             CancellationToken cancellationToken = default);
+
+        public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+            ReadFeedCrossFeedRangeState state,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Throw an exception if the partition key is null or empty string

@@ -15,6 +15,9 @@ namespace CosmosBenchmark
     using System.Collections.Generic;
     using System.Reflection;
     using System.Diagnostics;
+    using System.Net.Http;
+    using System.Runtime.CompilerServices;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -30,6 +33,8 @@ namespace CosmosBenchmark
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
+                await Program.AddAzureInfoToRunSummary();
+                
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
                 if (config.EnableLatencyPercentiles)
@@ -54,6 +59,29 @@ namespace CosmosBenchmark
                     Console.WriteLine("Press any key to exit...");
                     Console.ReadLine();
                 }
+            }
+        }
+
+        private static async Task AddAzureInfoToRunSummary()
+        {
+            using HttpClient httpClient = new HttpClient();
+            using HttpRequestMessage httpRequest = new HttpRequestMessage(
+                HttpMethod.Get,
+                "http://169.254.169.254/metadata/instance?api-version=2020-06-01");
+            httpRequest.Headers.Add("Metadata", "true");
+
+            try
+            {
+                using HttpResponseMessage httpResponseMessage = await httpClient.SendAsync(httpRequest);
+                string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
+                JObject jObject = JObject.Parse(jsonVmInfo);
+                RunSummary.AzureVmInfo = jObject;
+                RunSummary.Location = jObject["compute"]["location"].ToString();
+                Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
             }
         }
 

@@ -10,7 +10,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.ReadFeed;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class ContainerInlineCore : ContainerCore
@@ -424,6 +427,20 @@ namespace Microsoft.Azure.Cosmos
         public override FeedIteratorInternal GetReadFeedIterator(QueryDefinition queryDefinition, QueryRequestOptions queryRequestOptions, string resourceLink, Documents.ResourceType resourceType, string continuationToken, int pageSize)
         {
             return base.GetReadFeedIterator(queryDefinition, queryRequestOptions, resourceLink, resourceType, continuationToken, pageSize);
+        }
+
+        public override IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = default)
+        {
+            return base.GetChangeFeedAsyncEnumerable(state, changeFeedRequestOptions);
+        }
+
+        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable( 
+            ReadFeedCrossFeedRangeState state, 
+            QueryRequestOptions requestOptions = null)
+        {
+            return base.GetReadFeedAsyncEnumerable(state, requestOptions);
         }
     }
 }
