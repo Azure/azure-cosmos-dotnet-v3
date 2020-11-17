@@ -7,34 +7,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Query index utilization data (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
+    /// Query index utilization data for single index (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
     /// </summary>
-#if INTERNAL
-#pragma warning disable SA1600
-#pragma warning disable CS1591
-    public
-#else
-    internal
-#endif
-    sealed class SingleIndexUtilizationEntity
+    internal sealed class SingleIndexUtilizationEntity
     {
-        [JsonProperty(PropertyName = "FilterExpression")]
-        public string FilterExpression { get; }
-
-        [JsonProperty(PropertyName = "IndexSpec")]
-        public string IndexDocumentExpression { get; }
-
-        [JsonProperty(PropertyName = "FilterPreciseSet")]
-        public bool FilterExpressionPrecision { get; }
-
-        [JsonProperty(PropertyName = "IndexPreciseSet")]
-        public bool IndexPlanFullFidelity { get; }
-
-        [JsonProperty(PropertyName = "IndexImpactScore")]
-        public string IndexImpactScore { get; }
-
         /// <summary>
-        /// Iniialized a new instance of the Index Utilization Data class.
+        /// Initialized a new instance of the Single Index Utilization Entity class.
         /// </summary>
         /// <param name="filterExpression">The filter expression.</param>
         /// <param name="indexDocumentExpression">The index representation of the filter expression.</param>
@@ -55,5 +33,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.IndexPlanFullFidelity = indexPlanFullFidelity;
             this.IndexImpactScore = indexImpactScore ?? throw new ArgumentNullException(nameof(indexImpactScore));
         }
+
+        [JsonProperty(PropertyName = "FilterExpression")]
+        public string FilterExpression { get; }
+
+        [JsonProperty(PropertyName = "IndexSpec")]
+        public string IndexDocumentExpression { get; }
+
+        [JsonProperty(PropertyName = "FilterPreciseSet")]
+        public bool FilterExpressionPrecision { get; }
+
+        [JsonProperty(PropertyName = "IndexPreciseSet")]
+        public bool IndexPlanFullFidelity { get; }
+
+        [JsonProperty(PropertyName = "IndexImpactScore")]
+        public string IndexImpactScore { get; }
     }
 }

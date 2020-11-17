@@ -1825,15 +1825,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [Ignore] // Ignore until backend index utilization is on by default and other query metrics test are completed
         [TestMethod]
-        public void TestIndexUtilizationParsing()
+        public async Task TestIndexUtilizationParsing()
         {
 
-            Database database = TestCommon.RetryRateLimiting<Database>(() =>
-            {
-                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-            });
-
-            this.TestQueryMetricsHeaders(database, true);
+            Database database = await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
 
             DocumentCollection collection;
             RequestOptions options = new RequestOptions();
@@ -1844,11 +1839,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             options.OfferThroughput = 10000;
-            
-            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
-            {
-                return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
-            });
+
+            collection = await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
 
             int maxDocumentCount = 2000;
             for (int i = 0; i < maxDocumentCount; i++)
@@ -1860,30 +1852,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = i.ToString(CultureInfo.InvariantCulture),
                 };
 
-                TestCommon.RetryRateLimiting<Document>(() =>
-                {
-                    return this.client.CreateDocumentAsync(collection, doc).Result.Resource;
-                });
+                await this.client.CreateDocumentAsync(collection, doc);
             }
 
-            DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r.name = 'Julien' and r.age > 12", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r.name = 'Julien' and r.age > 12", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
-            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); // False for now
+            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); 
 
             QueryMetrics queryMetrics = new QueryMetrics(
-                                BackendMetrics.ParseFromDelimitedString(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics]),
-                                IndexUtilizationInfo.CreateFromString(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization]),
-                                ClientSideMetrics.Empty);
+                BackendMetrics.ParseFromDelimitedString(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics]),
+                IndexUtilizationInfo.CreateFromString(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization]),
+                ClientSideMetrics.Empty);
             
             // If these fields populate then the parsing is successful and correct.
             Assert.AreEqual("/name/?", queryMetrics.IndexUtilizationInfo.UtilizedSingleIndexes[0].IndexDocumentExpression);
             Assert.AreEqual(String.Join(", ", new object[] { "/name ASC", "/age ASC" }), String.Join(", ", queryMetrics.IndexUtilizationInfo.PotentialCompositeIndexes[0].IndexDocumentExpressions));
-
-
-            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
-            {
-                return this.client.DeleteDatabaseAsync(database).Result;
-            });
+            
+            await this.client.DeleteDatabaseAsync(database);
         }
 
         [TestMethod]

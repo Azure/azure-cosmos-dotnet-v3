@@ -25,11 +25,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             potentialSingleIndexes: new List<SingleIndexUtilizationEntity>(),
             utilizedCompositeIndexes: new List<CompositeIndexUtilizationEntity>(),
             potentialCompositeIndexes: new List<CompositeIndexUtilizationEntity>());
-
-        public IReadOnlyList<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
-        public IReadOnlyList<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; }
-        public IReadOnlyList<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; }
-        public IReadOnlyList<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; }
         
         /// <summary>
         /// Initializes a new instance of the Index Utilization class.
@@ -50,54 +45,75 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             List<CompositeIndexUtilizationEntity> utilizedCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
             List<CompositeIndexUtilizationEntity> potentialCompositeIndexesCopy = new List<CompositeIndexUtilizationEntity>();
 
-            if (utilizedSingleIndexes != null)
+            if (utilizedSingleIndexes == null)
             {
-                foreach (SingleIndexUtilizationEntity indexUtilizationEntity in utilizedSingleIndexes)
-                {
-                    if (indexUtilizationEntity != null)
-                    {
-                        utilizedSingleIndexesCopy.Add(indexUtilizationEntity);
-                    }
-                }
+                throw new ArgumentNullException(nameof(utilizedSingleIndexes));
             }
 
-            if (potentialSingleIndexes != null)
+            if (potentialSingleIndexes == null)
             {
-                foreach (SingleIndexUtilizationEntity indexUtilizationEntiy in potentialSingleIndexes)
-                {
-                    if (indexUtilizationEntiy != null)
-                    {
-                        potentialSingleIndexesCopy.Add(indexUtilizationEntiy);
-                    }
-                }
+                throw new ArgumentNullException(nameof(potentialSingleIndexes));
             }
 
-            if (utilizedCompositeIndexes != null)
+            if (utilizedCompositeIndexes == null)
             {
-                foreach (CompositeIndexUtilizationEntity indexUtilizationEntiy in utilizedCompositeIndexes)
-                {
-                    if (indexUtilizationEntiy != null)
-                    {
-                        utilizedCompositeIndexesCopy.Add(indexUtilizationEntiy);
-                    }
-                }
+                throw new ArgumentNullException(nameof(utilizedCompositeIndexes));
             }
 
-            if (potentialCompositeIndexes != null)
+            if (potentialCompositeIndexes == null)
             {
-                foreach (CompositeIndexUtilizationEntity indexUtilizationEntiy in potentialCompositeIndexes)
+                throw new ArgumentNullException(nameof(potentialCompositeIndexes));
+            }
+
+            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in utilizedSingleIndexes)
+            {
+                if (indexUtilizationEntity == null)
                 {
-                    if (indexUtilizationEntiy != null)
-                    {
-                        potentialCompositeIndexesCopy.Add(indexUtilizationEntiy);
-                    }
+                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
                 }
+
+                utilizedSingleIndexesCopy.Add(indexUtilizationEntity);
+            }
+
+            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in potentialSingleIndexes)
+            {
+                if (indexUtilizationEntity == null)
+                {
+                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                }
+
+                potentialSingleIndexesCopy.Add(indexUtilizationEntity);
+            }
+
+            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in utilizedCompositeIndexes)
+            {
+                if (indexUtilizationEntity == null)
+                {
+                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                }
+
+                utilizedCompositeIndexesCopy.Add(indexUtilizationEntity);
+            }
+
+            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in potentialCompositeIndexes)
+            {
+                if (indexUtilizationEntity == null)
+                {
+                    throw new ArgumentNullException(nameof(indexUtilizationEntity));
+                }
+
+                potentialCompositeIndexesCopy.Add(indexUtilizationEntity);
             }
             this.UtilizedSingleIndexes = utilizedSingleIndexesCopy;
             this.PotentialSingleIndexes = potentialSingleIndexesCopy;
             this.UtilizedCompositeIndexes = utilizedCompositeIndexesCopy;
             this.PotentialCompositeIndexes = potentialCompositeIndexesCopy;
         }
+
+        public IReadOnlyList<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
+        public IReadOnlyList<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; }
+        public IReadOnlyList<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; }
+        public IReadOnlyList<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; }
 
         /// <summary>
         /// Creates a new IndexUtilizationInfo from the backend delimited string.
@@ -134,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             if (!TryCreateFromDelimitedString(delimitedString, out IndexUtilizationInfo indexUtilizationInfo))
             {
-                throw new FormatException(delimitedString);
+                throw new FormatException($"Failed to parse {nameof(IndexUtilizationInfo)} : '{delimitedString}'");
             }
 
             return indexUtilizationInfo;
