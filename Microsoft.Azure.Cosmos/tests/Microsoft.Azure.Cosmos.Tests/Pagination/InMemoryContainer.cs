@@ -174,6 +174,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
         }
 
+        public Task<TryCatch> MonadicRefreshProviderAsync(CancellationToken cancellationToken)
+        {
+            // The feedrangeprovider is always insync in memory
+            // so we can no op for this one
+            return Task.FromResult(TryCatch.FromResult());
+        }
+
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken)
