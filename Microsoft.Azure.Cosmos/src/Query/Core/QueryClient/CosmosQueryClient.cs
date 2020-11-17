@@ -73,18 +73,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
-            string effectivePartitionKeyString);
+            string effectivePartitionKeyString,
+            bool forceRefresh);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal);
+            FeedRangeInternal feedRangeInternal,
+            bool forceRefresh);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Documents.Routing.Range<string>> providedRanges);
+            List<Documents.Routing.Range<string>> providedRanges,
+            bool forceRefresh);
 
         public abstract bool ByPassQueryParsing();
 
