@@ -122,11 +122,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             if (continuationToken == null)
             {
                 FeedRange feedRange;
-                if (queryRequestOptions.PartitionKey.HasValue)
+                if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
                 {
                     feedRange = new FeedRangePartitionKey(queryRequestOptions.PartitionKey.Value);
                 }
-                else if (queryRequestOptions.FeedRange != null)
+                else if ((this.queryRequestOptions != null) && (queryRequestOptions.FeedRange != null))
                 {
                     feedRange = queryRequestOptions.FeedRange;
                 }
@@ -259,11 +259,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 }
 
                 FeedRangeInternal outerFeedRange;
-                if (this.queryRequestOptions.PartitionKey.HasValue)
+                if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
                 {
                     outerFeedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
-                else if (this.queryRequestOptions.FeedRange != null)
+                else if ((this.queryRequestOptions != null) && (queryRequestOptions.FeedRange != null))
                 {
                     outerFeedRange = (FeedRangeInternal)this.queryRequestOptions.FeedRange;
                 }
