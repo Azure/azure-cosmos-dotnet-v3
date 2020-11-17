@@ -20,5 +20,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
         Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             ITrace trace,
             CancellationToken cancellationToken);
+
+        Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace, 
+            CancellationToken cancellationToken);
     }
 }

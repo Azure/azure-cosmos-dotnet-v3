@@ -60,6 +60,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
+        public Task RefreshProviderAsync(ITrace trace, CancellationToken cancellationToken) => TryCatch.UnsafeWaitAsync(
+            this.MonadicRefreshProviderAsync(trace, cancellationToken),
+            cancellationToken);
+
+        public Task<TryCatch> MonadicRefreshProviderAsync(ITrace trace, CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicRefreshProviderAsync(
+            trace,
+            cancellationToken);
+
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicCreateItemAsync(
@@ -193,11 +201,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 cancellationToken);
 
         public Task<string> GetResourceIdentifierAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => TryCatch<string>.UnsafeGetResultAsync(
-                this.MonadicGetResourceIdentifierAsync(cancellationToken),
+                this.MonadicGetResourceIdentifierAsync(trace, cancellationToken),
                 cancellationToken);
 
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
-            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
+            ITrace trace, 
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
     }
 }

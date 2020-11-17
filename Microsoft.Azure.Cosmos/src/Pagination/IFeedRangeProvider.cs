@@ -19,5 +19,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
         Task<List<FeedRangeEpk>> GetFeedRangesAsync(
             ITrace trace,
             CancellationToken cancellationToken);
+
+        Task RefreshProviderAsync(
+            ITrace trace, 
+            CancellationToken cancellationToken);
     }
 }

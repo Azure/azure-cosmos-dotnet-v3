@@ -198,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                         cosmosQueryContext.ResourceLink,
                                         containerQueryProperties.ResourceId,
                                         inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                                        forceRefresh: false,
                                         createQueryPipelineTrace);
 
                                     return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
@@ -451,6 +452,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.EffectivePartitionKeyString,
+                    forceRefresh: false,
                     trace);
             }
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
@@ -459,6 +461,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     effectivePartitionKeyString,
+                    forceRefresh: false,
                     trace);
             }
             else if (feedRangeInternal != null)
@@ -468,6 +471,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.PartitionKeyDefinition,
                     feedRangeInternal,
+                    forceRefresh: false,
                     trace);
             }
             else
@@ -476,6 +480,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges,
+                    forceRefresh: false,
                     trace);
             }
 

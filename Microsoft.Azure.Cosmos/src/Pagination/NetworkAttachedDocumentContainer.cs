@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
                     feedRange,
+                    forceRefresh: false,
                     trace);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
@@ -119,6 +120,31 @@ namespace Microsoft.Azure.Cosmos.Pagination
             catch (Exception ex)
             {
                 return TryCatch<List<FeedRangeEpk>>.FromException(ex);
+            }
+        }
+
+        public async Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            using (ITrace refreshTrace = trace.StartChild("Refresh FeedRangeProvider", TraceComponent.Routing, TraceLevel.Info))
+            {
+                try
+                {
+                    // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
+                    _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
+                        this.container.LinkUri,
+                        FeedRangeEpk.FullRange.Range,
+                        forceRefresh: true);
+
+                    return TryCatch.FromResult();
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch.FromException(ex);
+                }
             }
         }
 
@@ -146,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         await this.container.GetRIDAsync(cancellationToken),
                         containerProperties.PartitionKey,
                         feedRange,
+                        forceRefresh: false,
                         trace);
 
                     if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
@@ -175,9 +202,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    cosmosContainerCore: this.container,
                    requestEnricher: request =>
                    {
-                       if (!(readFeedState.ContinuationToken is CosmosNull))
+                       if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
                        {
-                           request.Headers.ContinuationToken = (readFeedState.ContinuationToken as CosmosString).Value;
+                           request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                        }
 
                        feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
@@ -196,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.ActivityId,
                         responseMessage.DiagnosticsContext,
-                        responseMessage.Headers.ContinuationToken != null ? new ReadFeedState(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
+                        responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
 
                     monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
                 }
@@ -278,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 await this.container.GetRIDAsync(cancellationToken),
                                 containerProperties.PartitionKey,
                                 feedRange,
+                                forceRefresh: false,
                                 trace);
                         }
 
@@ -334,6 +362,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             await this.container.GetRIDAsync(cancellationToken),
                             containerProperties.PartitionKey,
                             feedRange,
+                            forceRefresh: false,
                             trace);
 
                         if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
@@ -396,6 +425,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
                     feedRange,
+                    forceRefresh: false,
                     trace);
 
                 if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
@@ -477,16 +507,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
         }
 
-        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken)
+        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            try
+            using (ITrace getRidTrace = trace.StartChild("Get Container RID", TraceComponent.Routing, TraceLevel.Info))
             {
-                string resourceIdentifier = await this.container.GetRIDAsync(cancellationToken);
-                return TryCatch<string>.FromResult(resourceIdentifier);
-            }
-            catch (Exception ex)
-            {
-                return TryCatch<string>.FromException(ex);
+                try
+                {
+                    string resourceIdentifier = await this.container.GetRIDAsync(cancellationToken);
+                    return TryCatch<string>.FromResult(resourceIdentifier);
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch<string>.FromException(ex);
+                }
             }
         }
 

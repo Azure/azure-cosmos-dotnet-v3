@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
 
-        private static readonly ReadFeedState ReadFeedNotStartedState = new ReadFeedState(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
+        private static readonly ReadFeedState ReadFeedNotStartedState = ReadFeedState.Continuation(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
 
         private readonly IMonadicDocumentContainer documentContainer;
 
@@ -245,8 +245,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 trace,
                 cancellationToken);
 
+        public Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);
+
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
 
         private bool ShouldReturn429() => (this.failureConfigs != null)
             && this.failureConfigs.Inject429s

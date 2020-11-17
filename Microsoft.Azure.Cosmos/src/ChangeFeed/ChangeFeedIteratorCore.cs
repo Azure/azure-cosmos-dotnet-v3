@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                     message: $"Wrong version number: {versionedAndRidCheckedCompositeToken.VersionNumber}."));
                         }
 
-                        string collectionRid = await documentContainer.GetResourceIdentifierAsync(cancellationToken);
+                        string collectionRid = await documentContainer.GetResourceIdentifierAsync(trace, cancellationToken);
                         if (versionedAndRidCheckedCompositeToken.Rid != collectionRid)
                         {
                             return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 }
 
                 FeedRangeCompositeContinuation feedRangeCompositeContinuationToken = new FeedRangeCompositeContinuation(
-                    await this.documentContainer.GetResourceIdentifierAsync(cancellationToken),
+                    await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken),
                     FeedRangeEpk.FullRange,
                     compositeContinuationTokens);
 
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     new VersionedAndRidCheckedCompositeToken(
                         VersionedAndRidCheckedCompositeToken.Version.V2,
                         changeFeedCrossFeedRangeState.ToCosmosElement(),
-                        await this.documentContainer.GetResourceIdentifierAsync(cancellationToken))).ToString();
+                        await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken))).ToString();
             }
 
             responseMessage.Headers.ContinuationToken = continuationToken;

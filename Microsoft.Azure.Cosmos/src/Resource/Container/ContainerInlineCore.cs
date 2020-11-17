@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -429,11 +430,18 @@ namespace Microsoft.Azure.Cosmos
             return base.GetReadFeedIterator(queryDefinition, queryRequestOptions, resourceLink, resourceType, continuationToken, pageSize);
         }
 
-        public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+        public override IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
             return base.GetChangeFeedAsyncEnumerable(state, changeFeedRequestOptions);
+        }
+
+        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable( 
+            ReadFeedCrossFeedRangeState state, 
+            QueryRequestOptions requestOptions = null)
+        {
+            return base.GetReadFeedAsyncEnumerable(state, requestOptions);
         }
     }
 }

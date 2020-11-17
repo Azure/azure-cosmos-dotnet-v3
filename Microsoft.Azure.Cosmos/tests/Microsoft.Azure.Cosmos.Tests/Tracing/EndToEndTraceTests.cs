@@ -12,6 +12,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -59,12 +60,12 @@
         {
             int numItems = 100;
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
-            CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.MonadicCreate(
+            CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
                 documentContainer,
                 new QueryRequestOptions(),
-                continuationToken: null,
+                new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
                 pageSize: 10,
-                cancellationToken: default).Result;
+                cancellationToken: default);
 
             int numChildren = 0;
             Trace rootTrace;

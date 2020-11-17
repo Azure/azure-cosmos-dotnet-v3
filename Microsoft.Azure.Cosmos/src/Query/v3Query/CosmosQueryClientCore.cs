@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -26,7 +27,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+
     using Newtonsoft.Json;
+
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
@@ -197,6 +200,7 @@ namespace Microsoft.Azure.Cosmos
             string resourceLink,
             string collectionResourceId,
             string effectivePartitionKeyString,
+            bool forceRefresh,
             ITrace trace)
         {
             return this.GetTargetPartitionKeyRangesAsync(
@@ -206,6 +210,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
                 },
+                forceRefresh,
                 trace);
         }
 
@@ -214,6 +219,7 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
             FeedRangeInternal feedRangeInternal,
+            bool forceRefresh,
             ITrace trace)
         {
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
@@ -225,6 +231,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceLink,
                     collectionResourceId,
                     ranges,
+                    forceRefresh,
                     childTrace);
             }
         }
@@ -233,6 +240,7 @@ namespace Microsoft.Azure.Cosmos
             string resourceLink,
             string collectionResourceId,
             List<Range<string>> providedRanges,
+            bool forceRefresh,
             ITrace trace)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
