@@ -439,9 +439,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Verify the reader is at the required position and the required
                 // number of bytes are available.
                 if (this.CurrentTokenType != JsonTokenType.BeginObject ||
-                    !this.JsonObjectState.IsPropertyExpected
-                    //|| this.currentEndExclusive < 0
-                    )
+                    !this.JsonObjectState.IsPropertyExpected)
                 {
                     typeCode = default;
                     return false;
@@ -449,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 ReadOnlySpan<byte> bytes = this.jsonBinaryBuffer.GetBufferedRawJsonToken(
                     this.jsonBinaryBuffer.Position,
-                    this.jsonBinaryBuffer.Position + 4).Span;
+                    this.jsonBinaryBuffer.Position + 3).Span;
 
                 // Pattern: $t .. int value carried as part of type marker .. $v
                 if (bytes[0] == dollarTSystemStringSingleByteEncoding &&
@@ -461,20 +459,6 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.SkipBytes(3);
                     this.currentTokenPosition = this.jsonBinaryBuffer.Position;
                     typeCode = bytes[1];
-
-                    return true;
-                }
-
-                // Pattern: $t .. uint8 type marker .. uint8 typeCode .. $v
-                // Used for decoding CosmosBsonType.MaxKey (127) and MinKey (255).
-                if (bytes[0] == dollarTSystemStringSingleByteEncoding &&
-                    bytes[1] == JsonBinaryEncoding.TypeMarker.NumberUInt8 &&
-                    bytes[3] == dollarVSystemStringSingleByteEncoding)
-                {
-                    this.JsonObjectState.RegisterFieldName();
-                    this.jsonBinaryBuffer.SkipBytes(4);
-                    this.currentTokenPosition = this.jsonBinaryBuffer.Position;
-                    typeCode = bytes[2];
 
                     return true;
                 }
