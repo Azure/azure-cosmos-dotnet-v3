@@ -332,6 +332,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 documents.Add(CosmosObject.Create(document));
             }
 
+            documents = FilterDocumentsWithFeedRange(documents, feedRange, this.partitionKeyDefinition);
+
             ReadFeedState continuationState = documents.Count == 0 ? null : ReadFeedState.Continuation(CosmosNumber64.Create(page.Last().ResourceIdentifier.Document));
             CosmosArray cosmosDocuments = CosmosArray.Create(documents);
             CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
