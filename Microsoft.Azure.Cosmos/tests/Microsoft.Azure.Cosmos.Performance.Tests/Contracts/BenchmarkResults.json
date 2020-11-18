@@ -1,6 +1,6 @@
 ﻿{
-  "MasterKeyAuthorizationBenchmark.CreateSignatureGeneration;": 718.0,
-  "MasterKeyAuthorizationBenchmark.ReadSignatureGeneration;": 724.0,
+  "MasterKeyAuthorizationBenchmark.CreateSignatureGeneration;": 546.0,
+  "MasterKeyAuthorizationBenchmark.ReadSignatureGeneration;": 536.0,
   "MockedItemBenchmark.CreateItem;[Type=Stream]": 27406.0,
   "MockedItemBenchmark.DeleteItemExists;[Type=Stream]": 27438.0,
   "MockedItemBenchmark.DeleteItemNotExists;[Type=Stream]": 44810.0,

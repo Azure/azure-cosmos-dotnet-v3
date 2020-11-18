@@ -720,24 +720,35 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad)
         {
-            // Create a large enough buffer that URL encode can use it. 
-            // Testing shows it is normally around 50 bytes which stackalloc is faster for under roughly 600 bytes
+            // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
-            Span<byte> encodingBuffer = stackalloc byte[Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3];
+            int capacity = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3;
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(capacity);
 
-            // This replaces the Convert.ToBase64String
-            OperationStatus status = Base64.EncodeToUtf8(
-                hashPayLoad,
-                encodingBuffer,
-                out int _,
-                out int bytesWritten);
-
-            if (status != OperationStatus.Done)
+            try
             {
-                throw new ArgumentException($"Authorization key payload is invalid. {status}");
-            }
+                Span<byte> encodingBuffer = rentedBuffer;
+                // This replaces the Convert.ToBase64String
+                OperationStatus status = Base64.EncodeToUtf8(
+                    hashPayLoad,
+                    encodingBuffer,
+                    out int _,
+                    out int bytesWritten);
 
-            return AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten);
+                if (status != OperationStatus.Done)
+                {
+                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                }
+
+                return AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten);
+            }
+            finally
+            {
+                if (rentedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
+            }
         }
 
         private static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
