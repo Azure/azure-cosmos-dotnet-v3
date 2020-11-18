@@ -186,38 +186,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static bool ContainsRange(this Documents.Routing.Range<string> parentRange,
-            Documents.Routing.Range<string> childRange)
-        {
-            if (parentRange.Min.Equals(childRange.Min))
-            {
-                return true;
-            }
-
-            if (parentRange.Max.Equals(childRange.Max))
-            {
-                return true;
-            }
-
-            PartitionKeyHash hashparentRangeMax = PartitionKeyHash.Parse(parentRange.Max);
-            PartitionKeyHash hashchildRangeMin = PartitionKeyHash.Parse(childRange.Min);
-
-            if (hashchildRangeMin > hashparentRangeMax)
-            {
-                return false;
-            }
-
-            PartitionKeyHash hashchildRangeMax = PartitionKeyHash.Parse(childRange.Max);
-            PartitionKeyHash hashparentRangeMin = PartitionKeyHash.Parse(parentRange.Min);
-
-            if (hashparentRangeMin > hashchildRangeMax)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
         private static void TraceExceptionInternal(Exception exception)
         {
             while (exception != null)

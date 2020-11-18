@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         public override async Task CreateMissingLeasesAsync()
         {
             IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(this.containerRid, FeedRangeEpk.FullRange.Range, forceRefresh: true);
-            DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri.ToString(), ranges.Count);
+            DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
 
@@ -200,10 +200,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                     }
 
                     // Check if there are EPKBased leases for the partition range
+                    // If there is at least one, we assume there are others that cover the rest of the full partition range 
+                    // based on the fact that the lease store was always initialized for the full collection
                     Documents.Routing.Range<string> partitionRange = partitionKeyRange.ToRange();
-                    if (leases.Where(lease => lease is DocumentServiceLeaseCoreEpk 
+                    if (leases.Where(lease => lease is DocumentServiceLeaseCoreEpk
                         && lease.FeedRange is FeedRangeEpk feedRangeEpk
-                        && partitionRange.ContainsRange(feedRangeEpk.Range)).Any())
+                        && (partitionRange.Min == feedRangeEpk.Range.Min || partitionRange.Max == feedRangeEpk.Range.Max)).Any())
                     {
                         continue;
                     }

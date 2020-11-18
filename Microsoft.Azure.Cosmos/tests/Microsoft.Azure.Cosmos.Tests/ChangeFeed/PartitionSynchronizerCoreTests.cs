@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -258,6 +260,166 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
                It.IsAny<FeedRangeEpk>(),
                It.IsAny<string>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Verifies it can create missing leases
+        /// </summary>
+        [TestMethod]
+        public async Task CreateMissingLeases_NoLeases()
+        {
+            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
+                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<Documents.IStoreModel>(),
+                Mock.Of<Common.CollectionCache>());
+
+            List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB" },
+                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "BB", MaxExclusive = "FF" },
+            };
+
+            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(),
+                It.IsAny<Documents.Routing.Range<string>>(),
+                It.Is<bool>(b => b == true)))
+                .ReturnsAsync(resultingRanges);
+
+            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(c => c.GetAllLeasesAsync())
+                .ReturnsAsync(new List<DocumentServiceLeaseCore>());
+
+            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(),
+                leaseContainer.Object,
+                leaseManager.Object,
+                1,
+                pkRangeCache.Object,
+                Guid.NewGuid().ToString());
+
+            await partitionSynchronizerCore.CreateMissingLeasesAsync();
+
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.Is<PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[0].Id), It.IsAny<string>()), Times.Once);
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.Is<PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[1].Id), It.IsAny<string>()), Times.Once);
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.IsAny<PartitionKeyRange>(), It.IsAny<string>()), Times.Exactly(2));
+        }
+
+        /// <summary>
+        /// Verifies it can create missing leases if the lease store has some PKRange leases
+        /// </summary>
+        [TestMethod]
+        public async Task CreateMissingLeases_SomePKRangeLeases()
+        {
+            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
+                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<Documents.IStoreModel>(),
+                Mock.Of<Common.CollectionCache>());
+
+            List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "BB" },
+                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "BB", MaxExclusive = "FF" },
+            };
+
+            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(),
+                It.IsAny<Documents.Routing.Range<string>>(),
+                It.Is<bool>(b => b == true)))
+                .ReturnsAsync(resultingRanges);
+
+            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
+            
+            // Existing for only one partition
+            List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
+            {
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = resultingRanges[0].Id,
+                    Owner = Guid.NewGuid().ToString()
+                }
+            };
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(c => c.GetAllLeasesAsync())
+                .ReturnsAsync(existingLeases);
+
+            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(),
+                leaseContainer.Object,
+                leaseManager.Object,
+                1,
+                pkRangeCache.Object,
+                Guid.NewGuid().ToString());
+
+            await partitionSynchronizerCore.CreateMissingLeasesAsync();
+
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.Is<PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[1].Id), It.IsAny<string>()), Times.Once);
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.IsAny<PartitionKeyRange>(), It.IsAny<string>()), Times.Exactly(1));
+        }
+
+        [TestMethod]
+        public async Task CreateMissingLeases_SomePKRangeAndEPKLeases()
+        {
+            Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
+                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<Documents.IStoreModel>(),
+                Mock.Of<Common.CollectionCache>());
+
+            List<Documents.PartitionKeyRange> resultingRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange(){ Id = "1", MinInclusive = "", MaxExclusive = "AA" },
+                new Documents.PartitionKeyRange(){ Id = "2", MinInclusive = "AA", MaxExclusive = "CC" },
+                new Documents.PartitionKeyRange(){ Id = "3", MinInclusive = "CC", MaxExclusive = "FF" },
+            };
+
+            pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(),
+                It.IsAny<Documents.Routing.Range<string>>(),
+                It.Is<bool>(b => b == true)))
+                .ReturnsAsync(resultingRanges);
+
+            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
+    
+            // Existing for only one partition
+            List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
+            {
+                new DocumentServiceLeaseCore()
+                {
+                    LeaseToken = resultingRanges[0].Id,
+                    Owner = Guid.NewGuid().ToString()
+                },
+                new DocumentServiceLeaseCoreEpk()
+                {
+                    LeaseToken = "AA-BB",
+                    Owner = Guid.NewGuid().ToString(),
+                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false))
+                },
+                new DocumentServiceLeaseCoreEpk()
+                {
+                    LeaseToken = "BB-CC",
+                    Owner = Guid.NewGuid().ToString(),
+                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "CC", true, false))
+                }
+            };
+
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(c => c.GetAllLeasesAsync())
+                .ReturnsAsync(existingLeases);
+
+            PartitionSynchronizerCore partitionSynchronizerCore = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(),
+                leaseContainer.Object,
+                leaseManager.Object,
+                1,
+                pkRangeCache.Object,
+                Guid.NewGuid().ToString());
+
+            await partitionSynchronizerCore.CreateMissingLeasesAsync();
+
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.Is<PartitionKeyRange>(pkRange => pkRange.Id == resultingRanges[2].Id), It.IsAny<string>()), Times.Once);
+            leaseManager.Verify(m => m.CreateLeaseIfNotExistAsync(It.IsAny<PartitionKeyRange>(), It.IsAny<string>()), Times.Exactly(1));
         }
     }
 }
