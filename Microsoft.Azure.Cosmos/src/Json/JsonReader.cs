@@ -84,22 +84,6 @@ namespace Microsoft.Azure.Cosmos.Json
             };
         }
 
-        /// <summary>
-        /// Creates a TypedJsonReader with a given serialization format and byte array.
-        /// </summary>
-        /// <param name="buffer">The buffer to read from.</param>
-        /// <returns>An <see cref="IJsonReader"/> for the buffer, format, and dictionary.</returns>
-        public static ITypedJsonReader CreateTypedJsonBinaryReader(ReadOnlyMemory<byte> buffer)
-        {
-            if (buffer.IsEmpty)
-            {
-                throw new ArgumentOutOfRangeException($"{nameof(buffer)} can not be empty.");
-            }
-
-            Contract.Requires(buffer.Span[0] == (byte)JsonSerializationFormat.Binary, "Expected binary JSON buffer");
-            return new JsonBinaryReader(buffer);
-        }
-
         internal static IJsonReader CreateBinaryFromOffset(
             ReadOnlyMemory<byte> buffer,
             int offset) => new JsonBinaryReader(buffer, offset);

@@ -38,7 +38,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return (double)this.reader.Value;
         }
 
-        /// <inheritdoc />
         public override Guid GetGuidValue()
         {
             return (Guid)this.reader.Value;
