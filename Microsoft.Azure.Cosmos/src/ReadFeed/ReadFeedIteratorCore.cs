@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             int pageSize,
             CancellationToken cancellationToken)
         {
+            this.queryRequestOptions = queryRequestOptions;
+
             if (!string.IsNullOrEmpty(continuationToken))
             {
                 bool isNewArrayFormat = (continuationToken.Length >= 2) && (continuationToken[0] == '[') && (continuationToken[continuationToken.Length - 1] == ']');
@@ -156,8 +158,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                         pageSize,
                         cancellationToken));
             }
-
-            this.queryRequestOptions = queryRequestOptions;
 
             this.hasMoreResults = true;
         }
