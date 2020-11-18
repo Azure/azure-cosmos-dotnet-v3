@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         writer.Write(']');
                         writer.WriteLine();
 
-                        if (value is ITraceDatum traceDatum)
+                        if (value is TraceDatum traceDatum)
                         {
                             TraceDatumTextWriter traceDatumTextWriter = new TraceDatumTextWriter();
                             traceDatum.Accept(traceDatumTextWriter);

@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 parent: null);
         }
 
-        public void AddDatum(string key, ITraceDatum traceDatum)
+        public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
         }

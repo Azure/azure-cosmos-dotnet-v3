@@ -7,14 +7,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
-    /// Visitor for <see cref="ITraceDatum"/>
+    /// Visitor for <see cref="TraceDatum"/>
     /// </summary>
-#if INTERNAL
-    public
-#else
-    internal
-#endif
-        interface ITraceDatumVisitor
+    internal interface ITraceDatumVisitor
     {
         /// <summary>
         /// Visits a <see cref="CosmosDiagnosticsTraceDatum"/> instance.

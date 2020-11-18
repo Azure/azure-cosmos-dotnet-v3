@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return this;
         }
 
-        public void AddDatum(string key, ITraceDatum traceDatum)
+        public void AddDatum(string key, TraceDatum traceDatum)
         {
             // NoOp
         }

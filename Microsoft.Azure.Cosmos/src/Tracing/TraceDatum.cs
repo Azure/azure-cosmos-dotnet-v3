@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
     public
 #else
     internal
-#endif
-        interface ITraceDatum
+#endif 
+        abstract class TraceDatum
     {
         /// <summary>
         /// Accept the visitor.
         /// </summary>
         /// <param name="traceDatumVisitor">The visitor to accept.</param>
-        void Accept(ITraceDatumVisitor traceDatumVisitor);
+        internal abstract void Accept(ITraceDatumVisitor traceDatumVisitor);
     }
 }
