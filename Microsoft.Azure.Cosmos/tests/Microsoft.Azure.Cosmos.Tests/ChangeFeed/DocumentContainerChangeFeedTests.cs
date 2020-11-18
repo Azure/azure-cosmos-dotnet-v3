@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
             // Should get back the all the documents inserted so far
-            ChangeFeedState resumeState = default;
+            ChangeFeedState resumeState;
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     ChangeFeedState.Beginning(),
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
 
-            ChangeFeedState resumeState = default;
+            ChangeFeedState resumeState;
             // No changes starting from now
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
@@ -163,6 +164,97 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
                 Assert.IsTrue(monadicChangeFeedPage.Succeeded);
             }
+        }
+
+        [TestMethod]
+        public async Task ReadPartitionKeyTestAsync()
+        {
+            IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 0);
+            for (int i = 0; i < 10; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                while (true)
+                {
+                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
+                    if (monadicCreateRecord.Succeeded)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Should get back only the document with the partition key.
+            TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
+                ChangeFeedState.Beginning(),
+                new FeedRangePartitionKey(new Cosmos.PartitionKey(0)),
+                pageSize: int.MaxValue,
+                cancellationToken: default);
+
+            Assert.IsTrue(monadicChangeFeedPage.Succeeded);
+
+            if (!(monadicChangeFeedPage.Result is ChangeFeedSuccessPage changeFeedSuccessPage))
+            {
+                Assert.Fail();
+                throw new Exception();
+            }
+
+            MemoryStream memoryStream = new MemoryStream();
+            changeFeedSuccessPage.Content.CopyTo(memoryStream);
+            CosmosObject response = CosmosObject.CreateFromBuffer(memoryStream.ToArray());
+            long count = Number64.ToLong(((CosmosNumber)response["_count"]).Value);
+
+            Assert.AreEqual(1, count);
+        }
+
+        [TestMethod]
+        public async Task EpkRangeFilteringAsync()
+        {
+            IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
+
+            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            FeedRangeEpk range = ranges[0];
+
+            PartitionKeyHashRange hashRange = new PartitionKeyHashRange(PartitionKeyHash.Parse(range.Range.Min), PartitionKeyHash.Parse(range.Range.Max));
+            PartitionKeyHashRanges hashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(hashRange, rangeCount: 2);
+
+            long sumChildCount = 0;
+            foreach (PartitionKeyHashRange value in hashRanges)
+            {
+                // Should get back only the document within the epk range.
+                TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
+                    ChangeFeedState.Beginning(),
+                    new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: value.StartInclusive.Value.ToString(),
+                            max: value.EndExclusive.Value.ToString(),
+                            isMinInclusive: true,
+                            isMaxInclusive: false)),
+                    pageSize: int.MaxValue,
+                    cancellationToken: default);
+
+                Assert.IsTrue(monadicChangeFeedPage.Succeeded);
+
+                if (!(monadicChangeFeedPage.Result is ChangeFeedSuccessPage changeFeedSuccessPage))
+                {
+                    Assert.Fail();
+                    throw new Exception();
+                }
+
+                MemoryStream memoryStream = new MemoryStream();
+                changeFeedSuccessPage.Content.CopyTo(memoryStream);
+                CosmosObject response = CosmosObject.CreateFromBuffer(memoryStream.ToArray());
+                sumChildCount += Number64.ToLong(((CosmosNumber)response["_count"]).Value);
+            }
+
+            long numRecords = (await documentContainer.ReadFeedAsync(
+                feedRange: range,
+                readFeedState: default,
+                pageSize: int.MaxValue,
+                cancellationToken: default,
+                queryRequestOptions: default)).GetRecords().Count;
+
+            Assert.AreEqual(numRecords, sumChildCount);
         }
 
         [TestMethod]
