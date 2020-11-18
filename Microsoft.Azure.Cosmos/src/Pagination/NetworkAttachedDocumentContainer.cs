@@ -102,7 +102,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     this.container.LinkUri,
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
-                    feedRange);
+                    feedRange,
+                    forceRefresh: false);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -114,6 +115,26 @@ namespace Microsoft.Azure.Cosmos.Pagination
             catch (Exception ex)
             {
                 return TryCatch<List<FeedRangeEpk>>.FromException(ex);
+            }
+        }
+
+        public async Task<TryCatch> MonadicRefreshProviderAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
+                _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
+                    this.container.LinkUri,
+                    FeedRangeEpk.FullRange.Range,
+                    forceRefresh: true);
+
+                return TryCatch.FromResult();
+            }
+            catch (Exception ex)
+            {
+                return TryCatch.FromException(ex);
             }
         }
 
@@ -138,7 +159,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         this.container.LinkUri,
                         await this.container.GetRIDAsync(cancellationToken),
                         containerProperties.PartitionKey,
-                        feedRange);
+                        feedRange,
+                        forceRefresh: false);
 
                     if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
                     {
@@ -249,7 +271,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 this.container.LinkUri,
                                 await this.container.GetRIDAsync(cancellationToken),
                                 containerProperties.PartitionKey,
-                                feedRange);
+                                feedRange,
+                                forceRefresh: false);
                         }
 
                         queryRequestOptions.PartitionKey = feedRangePartitionKey.PartitionKey;
@@ -301,7 +324,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             this.container.LinkUri,
                             await this.container.GetRIDAsync(cancellationToken),
                             containerProperties.PartitionKey,
-                            feedRange);
+                            feedRange,
+                            forceRefresh: false);
 
                         if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
                         {
@@ -359,7 +383,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     this.container.LinkUri,
                     await this.container.GetRIDAsync(cancellationToken),
                     containerProperties.PartitionKey,
-                    feedRange);
+                    feedRange,
+                    forceRefresh: false);
 
                 if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
                 {
