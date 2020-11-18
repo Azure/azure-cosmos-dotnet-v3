@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryReadTypedJsonValueWrapper(out int typeCode)
+            public bool TryReadTypedJsonValueWrapper(out int typeCode)
             {
                 const byte dollarTSystemStringSingleByteEncoding = 33;
                 const byte dollarVSystemStringSingleByteEncoding = 34;

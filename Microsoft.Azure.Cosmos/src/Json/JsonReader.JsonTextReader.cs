@@ -562,19 +562,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            /// <summary>
-            /// Attempt to read a '$t': TYPECODE, '$v' in one call.
-            /// If unsuccessful, the reader is left in its original state.
-            /// Otherwise it is positioned at the value after the $v.
-            /// </summary>
-            /// <param name="typeCode">The type code read.</param>
-            /// <returns>Success.</returns>
-            public override bool TryReadTypedJsonValueWrapper(out int typeCode)
-            {
-                typeCode = default;
-                return false;
-            }
-
             private void ProcessInt8()
             {
                 if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int8TokenPrefix)

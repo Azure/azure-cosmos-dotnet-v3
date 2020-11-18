@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Creates a TypedJsonReader with a given serialization format and byte array.
         /// </summary>
-        /// <param name="jsonSerializationFormat">The serialization format of the payload.</param>
         /// <param name="buffer">The buffer to read from.</param>
         /// <returns>An <see cref="IJsonReader"/> for the buffer, format, and dictionary.</returns>
         public static ITypedJsonReader CreateTypedJsonBinaryReader(ReadOnlyMemory<byte> buffer)

@@ -39,12 +39,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         }
 
         /// <inheritdoc />
-        public override bool TryReadTypedJsonValueWrapper(out int typeCode)
-        {
-            typeCode = default;
-            return false;
-        }
-
         public override Guid GetGuidValue()
         {
             return (Guid)this.reader.Value;
