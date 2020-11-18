@@ -182,7 +182,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
-                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
+                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                                    forceRefresh: false);
 
                                 return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
@@ -427,14 +428,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
-                    containerQueryProperties.EffectivePartitionKeyString);
+                    containerQueryProperties.EffectivePartitionKeyString,
+                    forceRefresh: false);
             }
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
-                    effectivePartitionKeyString);
+                    effectivePartitionKeyString,
+                    forceRefresh: false);
             }
             else if (feedRangeInternal != null)
             {
@@ -442,14 +445,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     resourceLink,
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.PartitionKeyDefinition,
-                    feedRangeInternal);
+                    feedRangeInternal,
+                    forceRefresh: false);
             }
             else
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
-                    partitionedQueryExecutionInfo.QueryRanges);
+                    partitionedQueryExecutionInfo.QueryRanges,
+                    forceRefresh: false);
             }
 
             return targetRanges;

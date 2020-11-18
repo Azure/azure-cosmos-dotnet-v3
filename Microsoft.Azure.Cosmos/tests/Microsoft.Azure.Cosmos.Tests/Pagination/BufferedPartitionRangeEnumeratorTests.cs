@@ -128,7 +128,7 @@
                         pageSize: 10,
                         queryRequestOptions: default,
                         cancellationToken: default,
-                        state: new ReadFeedState(CosmosNull.Create())),
+                        state: ReadFeedState.Beginning()),
                     cancellationToken: default);
 
                 int count = 0;
@@ -172,7 +172,7 @@
                         pageSize: 10,
                         queryRequestOptions: default,
                         cancellationToken: default,
-                        state: new ReadFeedState(CosmosNull.Create())),
+                        state: ReadFeedState.Beginning()),
                     cancellationToken: default);
 
                     if ((random.Next() % 2) == 0)
@@ -204,7 +204,7 @@
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                    state: state ?? new ReadFeedState(CosmosNull.Create()),
+                    state: state ?? ReadFeedState.Beginning(),
                     (range, state) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
                             documentContainer,
@@ -224,7 +224,7 @@
                         pageSize: 10,
                         queryRequestOptions: default,
                         cancellationToken: default,
-                        state: state ?? new ReadFeedState(CosmosNull.Create())),
+                        state: state ?? ReadFeedState.Beginning()),
                     cancellationToken: default);
 
             private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)
