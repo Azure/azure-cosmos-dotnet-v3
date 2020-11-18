@@ -284,11 +284,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            await this.documentContainer.RefreshProviderAsync(trace, this.cancellationToken);
-            IEnumerable<FeedRangeInternal> childRanges = await this.documentContainer.GetChildRangeAsync(
+            IReadOnlyList<FeedRangeEpk> childRanges = await this.documentContainer.GetChildRangeAsync(
                 uninitializedEnumerator.Range,
                 trace,
-                cancellationToken: this.cancellationToken);
+                this.cancellationToken); 
+            if (childRanges.Count == 0)
+            {
+                throw new InvalidOperationException("Got back no children");
+            }
+
+            if (childRanges.Count == 1)
+            {
+                // We optimistically assumed that the cache is not stale.
+                // In the event that it is (where we only get back one child / the partition that we think got split)
+                // Then we need to refresh the cache
+                await this.documentContainer.RefreshProviderAsync(trace, this.cancellationToken);
+                childRanges = await this.documentContainer.GetChildRangeAsync(
+                    uninitializedEnumerator.Range,
+                    trace,
+                    this.cancellationToken);
+            }
+
             if (childRanges.Count() <= 1)
             {
                 throw new InvalidOperationException("Expected more than 1 child");

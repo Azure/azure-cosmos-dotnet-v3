@@ -275,16 +275,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+                await this.LargerContainer.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
             }
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+                await this.LargerContainer.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
             }
 
-            ContainerInternal itemsCore = this.Container;
-            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey(pkToRead) });
+            ContainerInternal itemsCore = this.LargerContainer;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(
+                requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey(pkToRead), MaxItemCount = 1 });
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
