@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// JsonReader that can read from a json serialized in binary <see cref="JsonBinaryEncoding"/>.
         /// </summary>
-        private sealed class JsonBinaryReader : JsonReader
+        private sealed class JsonBinaryReader : JsonReader, ITypedJsonReader
         {
             /// <summary>
             /// Buffer to read from.
@@ -451,8 +451,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Pattern: $t .. int value carried as part of type marker .. $v
                 if (bytes[0] == dollarTSystemStringSingleByteEncoding &&
-                    bytes[1] >= JsonBinaryEncoding.TypeMarker.LiteralIntMin &&
-                    bytes[1] < JsonBinaryEncoding.TypeMarker.LiteralIntMax &&
+                    JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(bytes[1]) &&
                     bytes[2] == dollarVSystemStringSingleByteEncoding)
                 {
                     this.JsonObjectState.RegisterFieldName();
