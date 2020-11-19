@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="ChangeFeedMode"/>  to receive notifications for insertions, updates, and delete operations.</returns>
         public static ChangeFeedMode FullFidelity()
         {
-            return ChangeFeedModeIFullFidelity.Instance;
+            return ChangeFeedModeFullFidelity.Instance;
         }
     }
 }

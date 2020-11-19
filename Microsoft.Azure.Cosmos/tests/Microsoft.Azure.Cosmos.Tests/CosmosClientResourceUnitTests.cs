@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System;
     using System.Collections.Generic;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -105,6 +106,57 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
+        }
+
+        [TestMethod]
+        public void ValidateChangeFeedRequestOptions_Default()
+        {
+            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions();
+
+            RequestMessage httpRequest = new RequestMessage(
+                HttpMethod.Post,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
+
+            options.PopulateRequestOptions(httpRequest);
+
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.A_IM, out string aIM));
+            Assert.AreEqual(HttpConstants.A_IMHeaderValues.IncrementalFeed, aIM);
+        }
+
+        [TestMethod]
+        public void ValidateChangeFeedRequestOptions_Incremental()
+        {
+            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+            {
+                FeedMode = ChangeFeedMode.Incremental()
+            };
+
+            RequestMessage httpRequest = new RequestMessage(
+                HttpMethod.Post,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
+
+            options.PopulateRequestOptions(httpRequest);
+
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.A_IM, out string aIM));
+            Assert.AreEqual(HttpConstants.A_IMHeaderValues.IncrementalFeed, aIM);
+        }
+
+        [TestMethod]
+        public void ValidateChangeFeedRequestOptions_FullFidelity()
+        {
+            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+            {
+                FeedMode = ChangeFeedMode.FullFidelity()
+            };
+
+            RequestMessage httpRequest = new RequestMessage(
+                HttpMethod.Post,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
+
+            options.PopulateRequestOptions(httpRequest);
+
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.A_IM, out string aIM));
+            Assert.AreEqual(ChangeFeedModeFullFidelity.FullFidelityHeader, aIM);
         }
 
         [TestMethod]
