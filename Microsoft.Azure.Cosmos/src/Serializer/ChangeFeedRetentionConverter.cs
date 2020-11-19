@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Newtonsoft.Json;
 
-    internal class TimeSpanConverter : JsonConverter
+    internal class ChangeFeedRetentionConverter : JsonConverter
     {
         public override void WriteJson(
             JsonWriter writer, 
@@ -34,12 +34,13 @@ namespace Microsoft.Azure.Cosmos
             object existingValue, 
             JsonSerializer serializer)
         {
-            if (existingValue is int timeSpanInMinutes)
+            if (reader.TokenType == JsonToken.Integer)
             {
+                int timeSpanInMinutes = Convert.ToInt32(reader.Value);
                 return TimeSpan.FromMinutes(timeSpanInMinutes);
             }
 
-            throw new JsonReaderException($"Cannot parse {existingValue} as TimeSpan.");
+            throw new JsonReaderException($"Cannot parse {reader.Value} as TimeSpan.");
         }
 
         public override bool CanConvert(Type objectType)

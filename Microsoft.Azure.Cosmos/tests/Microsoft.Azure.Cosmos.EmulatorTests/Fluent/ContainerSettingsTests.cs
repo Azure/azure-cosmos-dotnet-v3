@@ -351,9 +351,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                string containerName = "conflictResolutionContainerTest";
+                string containerName = "changeFeedRetentionContainerTest";
                 string partitionKeyPath = "/users";
-                TimeSpan retention = TimeSpan.FromHours(1);
+                TimeSpan retention = TimeSpan.FromMinutes(5);
 
                 ContainerResponse containerResponse =
                     await databaseForChangeFeed.DefineContainer(containerName, partitionKeyPath)

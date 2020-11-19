@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Value is in TimeSpan. Any seconds will be ceiled as 1 minute.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(TimeSpanConverter))]
+        [JsonConverter(typeof(ChangeFeedRetentionConverter))]
         public TimeSpan RetentionDuration { get; set; }
     }
 }
