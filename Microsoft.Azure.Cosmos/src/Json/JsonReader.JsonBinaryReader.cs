@@ -440,8 +440,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 // number of bytes are available.
                 int startPosition = this.jsonBinaryBuffer.Position;
                 if (this.CurrentTokenType != JsonTokenType.BeginObject ||
-                    !this.JsonObjectState.IsPropertyExpected
-                    || this.arrayAndObjectEndStack.Peek() - startPosition <= 3)
+                    !this.JsonObjectState.IsPropertyExpected ||
+                    this.arrayAndObjectEndStack.Peek() - startPosition <= 3)
                 {
                     typeCode = default;
                     return false;
