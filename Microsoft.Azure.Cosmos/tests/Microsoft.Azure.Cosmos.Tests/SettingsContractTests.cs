@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Id",
                 "UniqueKeyPolicy",
                 "DefaultTimeToLive",
+                "ChangeFeedPolicy",
                 "AnalyticalStoreTimeToLiveInSeconds",
                 "IndexingPolicy",
                 "GeospatialConfig",
@@ -374,6 +375,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(cosmosContainerSettings.DefaultTimeToLive);
 
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy);
+            Assert.IsNotNull(cosmosContainerSettings.ChangeFeedPolicy);
             Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy, cosmosContainerSettings.IndexingPolicy));
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy.IncludedPaths);
