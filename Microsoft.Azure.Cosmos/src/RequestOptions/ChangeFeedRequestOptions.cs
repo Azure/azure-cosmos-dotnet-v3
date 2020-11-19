@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public bool EmitOldContinuationToken { get; set; }
 
+        public bool EnableFullFidelity { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -73,9 +75,16 @@ namespace Microsoft.Azure.Cosmos
                     this.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
             }
 
+            string changeFeedTypeAIMHeader = HttpConstants.A_IMHeaderValues.IncrementalFeed;
+            if (this.EnableFullFidelity)
+            {
+                changeFeedTypeAIMHeader = (this.feedOptions.StartFullFidelityIfNoneMatch == null)
+                    ? HttpConstants.A_IMHeaderValues.FullFidelityFeed : HttpConstants.A_IMHeaderValues.IncrementalFullFidelityFeed;
+            }
+
             request.Headers.Add(
                 HttpConstants.HttpHeaders.A_IM,
-                HttpConstants.A_IMHeaderValues.IncrementalFeed);
+                changeFeedTypeAIMHeader);
         }
 
         /// <summary>
