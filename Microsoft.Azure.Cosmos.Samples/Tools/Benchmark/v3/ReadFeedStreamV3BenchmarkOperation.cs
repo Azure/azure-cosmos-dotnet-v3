@@ -53,12 +53,12 @@ namespace CosmosBenchmark
                 throw new Exception($"ReadItem failed wth {feedResponse.StatusCode}");
             }
 
-            CosmosDiagnosticsLogger.Log(feedResponse.Diagnostics);
             return new OperationResult()
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
                 RuCharges = feedResponse.Headers.RequestCharge,
+                CosmosDiagnostics = feedResponse.Diagnostics,
                 LazyDiagnostics = () => feedResponse.Diagnostics.ToString(),
             };
         }

@@ -58,6 +58,11 @@ namespace CosmosBenchmark
                             // Success case
                             this.SuccessOperationCount++;
                             this.TotalRuCharges += operationResult.Value.RuCharges;
+
+                            if (!isWarmup)
+                            {
+                                CosmosDiagnosticsLogger.Log(operationResult.Value.CosmosDiagnostics);
+                            }
                         }
                         catch (Exception ex)
                         {
