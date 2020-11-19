@@ -8,6 +8,6 @@
         public string ContainerName { get; set; }
         public double RuCharges { get; set; }
 
-        public Func<string> lazyDiagnostics { get; set; }
+        public Func<string> LazyDiagnostics { get; set; }
     }
 }

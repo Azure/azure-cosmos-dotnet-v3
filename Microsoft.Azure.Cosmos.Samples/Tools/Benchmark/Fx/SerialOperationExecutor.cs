@@ -79,9 +79,9 @@ namespace CosmosBenchmark
 
                             operationResult = new OperationResult()
                             {
-                                // TODO: Populate account, databse, collection context into ComsosDiagnostics
+                                // TODO: Populate account, database, collection context into ComsosDiagnostics
                                 RuCharges = opCharge,
-                                lazyDiagnostics = () => ex.ToString(),
+                                LazyDiagnostics = () => ex.ToString(),
                             };
                         }
                     }
