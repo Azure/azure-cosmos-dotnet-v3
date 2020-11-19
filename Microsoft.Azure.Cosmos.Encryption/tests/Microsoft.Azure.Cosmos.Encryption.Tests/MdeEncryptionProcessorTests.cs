@@ -71,6 +71,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
+        public async Task DuplicatePathToEncrypt()
+        {
+            TestDoc testDoc = TestDoc.Create();
+            EncryptionOptions encryptionOptionsWithDuplicatePathToEncrypt = new EncryptionOptions()
+            {
+                DataEncryptionKeyId = MdeEncryptionProcessorTests.dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = new List<string>() { "/SensitiveStr", "/SensitiveStr" }
+            };
+
+            try
+            {
+                await EncryptionProcessor.EncryptAsync(
+                    testDoc.ToStream(),
+                    MdeEncryptionProcessorTests.mockEncryptor.Object,
+                    encryptionOptionsWithDuplicatePathToEncrypt,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None);
+
+                Assert.Fail("Duplicate paths in PathToEncrypt didn't result in exception.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.AreEqual("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.", ex.Message);
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptDecryptPropertyWithNullValue()
         {        
             TestDoc testDoc = TestDoc.Create();

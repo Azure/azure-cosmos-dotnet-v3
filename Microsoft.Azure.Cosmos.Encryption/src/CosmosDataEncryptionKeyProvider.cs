@@ -157,19 +157,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
-            // Key Compatibility check. Legacy Cosmos Algorithm Key is Compatible with MDE Based Encryption algorithm.
-            if (!CosmosEncryptionAlgorithm.VerifyIfKeyIsCompatible(encryptionAlgorithm, dataEncryptionKeyProperties.EncryptionAlgorithm))
-            {
-                throw new ArgumentException($" Using '{encryptionAlgorithm}' algorithm, " +
-                        $"With incompatible Data Encryption Key which is initialized with {dataEncryptionKeyProperties.EncryptionAlgorithm}");
-            }
-
-            // supports Encryption with MDE based algorithm using Legacy DEK.
+            // supports Encryption with MDE based algorithm using Legacy Encryption Algorithm Configured DEK.
             if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized) &&
                 string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
             {
                 return await this.dataEncryptionKeyContainerCore.FetchUnWrappedMdeSupportedLegacyDekAsync(
                     dataEncryptionKeyProperties,
+                    cancellationToken);
+            }
+
+            // supports Encryption with Legacy based algorithm using Mde Encryption Algorithm Configured DEK.
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
+                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            {
+                return await this.dataEncryptionKeyContainerCore.FetchUnWrappedLegacySupportedMdeDekAsync(
+                    dataEncryptionKeyProperties,
+                    encryptionAlgorithm,
+                    diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                     cancellationToken);
             }
 

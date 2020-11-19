@@ -158,18 +158,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestEncryptor legacyEncryptor = new TestEncryptor(legacydekProvider);
             legacyEncryptionContainer = MdeEncryptionTests.itemContainer.WithEncryptor(legacyEncryptor);
             TestDoc testDoc = TestDoc.Create(null);
-
+            
             try
             {
                 ItemResponse<TestDoc> createResponse = await legacyEncryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
+                MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
             }
-            catch(ArgumentException ex)
+            catch(InvalidOperationException ex)
             {
-                Assert.AreEqual(" Using 'MdeAeadAes256CbcHmac256Randomized' algorithm, With incompatible Data Encryption Key which is initialized with AEAes256CbcHmacSha256Randomized", ex.Message);
-            }
+                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm based DEK, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
+            }           
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateItemUsingLegacyAlgoWithMdeDek()
+        {
+            TestDoc testDoc = TestDoc.Create(null);
 
             try
             {
@@ -177,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc,
                 new PartitionKey(testDoc.PK),
                 MdeEncryptionTests.GetRequestOptions(MdeEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
+                VerifyExpectedDocResponse(testDoc, createResponse);
             }
             catch (ArgumentException ex)
             {

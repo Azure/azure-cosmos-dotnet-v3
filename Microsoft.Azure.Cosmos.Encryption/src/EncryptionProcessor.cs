@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return input;
             }
 
+            if (!encryptionOptions.PathsToEncrypt.Distinct().SequenceEqual(encryptionOptions.PathsToEncrypt))
+            {
+                throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
+            }
+
             foreach (string path in encryptionOptions.PathsToEncrypt)
             {
                 if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)

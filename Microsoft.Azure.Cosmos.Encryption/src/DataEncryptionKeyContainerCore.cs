@@ -291,6 +291,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Data.Encryption.Cryptography.EncryptionType.Randomized);
         }
 
+        internal async Task<DataEncryptionKey> FetchUnWrappedLegacySupportedMdeDekAsync(
+            DataEncryptionKeyProperties dekProperties,
+            string encryptionAlgorithm,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            EncryptionKeyUnwrapResult unwrapResult;
+
+            if (this.DekProvider.EncryptionKeyStoreProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithm based DEK, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
+            }
+
+            try
+            {
+                using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
+                {
+                    unwrapResult = await this.UnWrapDekMdeEncAlgoAsync(
+                       dekProperties,
+                       diagnosticsContext,
+                       cancellationToken);
+                }
+
+                return DataEncryptionKey.Create(
+                    unwrapResult.DataEncryptionKey,
+                    encryptionAlgorithm);
+            }
+            catch (Exception exception)
+            {
+                throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                    $"Failed to unwrap Data Encryption Key with id: '{dekProperties.Id}'.",
+                    exception);
+            }
+        }
+
         internal async Task<InMemoryRawDek> FetchUnwrappedAsync(
             DataEncryptionKeyProperties dekProperties,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -390,9 +426,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
             {
                 unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
-                                dekProperties.WrappedDataEncryptionKey,
-                                dekProperties.EncryptionKeyWrapMetadata,
-                                cancellationToken);
+                    dekProperties.WrappedDataEncryptionKey,
+                    dekProperties.EncryptionKeyWrapMetadata,
+                    cancellationToken);
             }
 
             DataEncryptionKey dek = DataEncryptionKey.Create(

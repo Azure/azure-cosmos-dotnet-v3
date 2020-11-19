@@ -38,17 +38,5 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return true;
         }
-
-        internal static bool VerifyIfKeyIsCompatible(string encOptions_encryptionAlgorithm, string dek_encryptionAlgorithm)
-        {
-            // Legacy Encryption Algorithm supports only Legacy DEKs.
-            if (string.Equals(encOptions_encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                string.Equals(dek_encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
-            {
-                return false;
-            }
-
-            return true;
-        }
     }
 }
