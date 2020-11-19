@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     ///     ContainerProperties containerProperties = new ContainerProperties("MyCollection", "/country");
     ///     containerProperties.ChangeFeedPolicy.RetentionDuration = TimeSpan.FromMinutes(5);
     ///     
-    ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName"].CreateContainerAsync(containerProperties, 50000);
+    ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName").CreateContainerAsync(containerProperties, 5000);
     ///     ContainerProperties createdContainerProperties = containerCreateResponse.Container;
     /// ]]>
     /// </code>
