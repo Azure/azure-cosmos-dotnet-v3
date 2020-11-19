@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Core;
 
     /// <summary>
     /// Base abstract class for JSON readers.
