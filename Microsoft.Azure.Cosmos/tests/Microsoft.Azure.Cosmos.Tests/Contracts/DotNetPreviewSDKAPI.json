@@ -51,7 +51,7 @@
           ],
           "MethodInfo": "System.TimeSpan get_RetentionDuration();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.TimeSpan RetentionDuration[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"retentionDuration\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.TimeSpanConverter))]": {
+        "System.TimeSpan RetentionDuration[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"retentionDuration\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.ChangeFeedRetentionConverter))]": {
           "Type": "Property",
           "Attributes": [
             "JsonConverterAttribute",
