@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
 
             Trace rootTrace;
-            int numTraces = 0;
+            int numTraces = 1;
             using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
             {
                 while (await pipelineStage.MoveNextAsync(rootTrace))
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
-                new List<FeedRangeEpk>() { FeedRangeEpk.FullRange},
+                documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result,
                 partitionKey: null,
                 GetQueryPlan(query),
                 pageSize: pageSize,
