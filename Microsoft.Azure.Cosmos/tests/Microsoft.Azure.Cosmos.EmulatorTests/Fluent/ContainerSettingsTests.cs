@@ -344,6 +344,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestChangeFeedPolicy()
+        {
+            Database databaseForChangeFeed = await this.cosmosClient.CreateDatabaseAsync("changeFeedRetentionContainerTest",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                string containerName = "conflictResolutionContainerTest";
+                string partitionKeyPath = "/users";
+                TimeSpan retention = TimeSpan.FromHours(1);
+
+                ContainerResponse containerResponse =
+                    await databaseForChangeFeed.DefineContainer(containerName, partitionKeyPath)
+                        .WithChangeFeedPolicy()
+                            .WithRetentionDuration(retention)
+                            .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+                Assert.IsNotNull(containerSettings.ChangeFeedPolicy);
+                Assert.AreEqual(retention.TotalMinutes, containerSettings.ChangeFeedPolicy.RetentionDuration.TotalMinutes);
+            }
+            finally
+            {
+                await databaseForChangeFeed.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
         public async Task WithIndexingPolicy()
         {
             string containerName = Guid.NewGuid().ToString();
