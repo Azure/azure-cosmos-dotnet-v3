@@ -71,6 +71,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
+        [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private ClientEncryptionPolicy clientEncryptionPolicyInternal;
+
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
 
@@ -232,6 +235,31 @@ namespace Microsoft.Azure.Cosmos
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
+        /// Gets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// By default, ClientEncryptionPolicy is set to null meaning the feature is turned off for the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="ClientEncryptionPolicy"/> will be applied to all the items in the container as the default policy.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+            ClientEncryptionPolicy ClientEncryptionPolicy
+        {
+            get => this.clientEncryptionPolicyInternal;
+
+            set => this.clientEncryptionPolicyInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
+        }
+
+        /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -281,6 +309,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set => this.geospatialConfigInternal = value;
         }
+
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
