@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos
+﻿// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using Newtonsoft.Json;
@@ -18,6 +22,7 @@
             if (value is TimeSpan timeSpan)
             {
                 writer.WriteValue((int)timeSpan.TotalMinutes);
+                return;
             }
 
             throw new JsonException("Unsupported TimeSpan format.");
