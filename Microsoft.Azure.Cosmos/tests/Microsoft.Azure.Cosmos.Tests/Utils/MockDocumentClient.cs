@@ -179,6 +179,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         m.ResolveByNameAsync(
                         It.IsAny<string>(),
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(() => {
@@ -192,6 +193,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         m.ResolveByNameAsync(
                         It.IsAny<string>(),
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(() =>
