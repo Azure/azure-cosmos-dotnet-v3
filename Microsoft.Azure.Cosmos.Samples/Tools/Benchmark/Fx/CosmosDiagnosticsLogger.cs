@@ -9,6 +9,7 @@ namespace CosmosBenchmark
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
@@ -16,10 +17,11 @@ namespace CosmosBenchmark
     public static class CosmosDiagnosticsLogger
     {
         private readonly static ConcurrentQueue<CosmosDiagnostics> CosmosDiagnosticsToLog = new ConcurrentQueue<CosmosDiagnostics>();
-        private static TimeSpan maxTimeSpan = TimeSpan.Zero;
         private static readonly int MaxSize = 2;
         private static readonly TimeSpan minimumDelayBetweenDiagnostics = TimeSpan.FromSeconds(10);
         private static readonly Stopwatch stopwatch = new Stopwatch();
+        private static readonly Object UpdateLock = new Object();
+        private static TimeSpan maxTimeSpan = TimeSpan.Zero;
 
         public static void Log(CosmosDiagnostics cosmosDiagnostics)
         {
@@ -29,10 +31,22 @@ namespace CosmosBenchmark
             if (stopwatch.Elapsed > CosmosDiagnosticsLogger.minimumDelayBetweenDiagnostics &&
                 elapsedTime > CosmosDiagnosticsLogger.maxTimeSpan)
             {
-                stopwatch.Restart();
-                maxTimeSpan = elapsedTime;
+                // This can be called concurrently by multiple tasks. Take a lock and
+                // validate the check again and update the times.
+                lock (CosmosDiagnosticsLogger.UpdateLock)
+                {
+                    if (stopwatch.Elapsed <= CosmosDiagnosticsLogger.minimumDelayBetweenDiagnostics &&
+                        elapsedTime <= CosmosDiagnosticsLogger.maxTimeSpan)
+                    {
+                        return;
+                    }
+
+                    stopwatch.Restart();
+                    maxTimeSpan = elapsedTime;
+                }
+
                 CosmosDiagnosticsLogger.CosmosDiagnosticsToLog.Enqueue(cosmosDiagnostics);
-                if(CosmosDiagnosticsToLog.Count > MaxSize)
+                if (CosmosDiagnosticsToLog.Count > MaxSize)
                 {
                     CosmosDiagnosticsToLog.TryDequeue(out _);
                 }
@@ -47,14 +61,14 @@ namespace CosmosBenchmark
             }
 
             JArray jArray = new JArray();
-            foreach(CosmosDiagnostics cosmosDiagnostics in CosmosDiagnosticsLogger.CosmosDiagnosticsToLog)
+            foreach (CosmosDiagnostics cosmosDiagnostics in CosmosDiagnosticsLogger.CosmosDiagnosticsToLog)
             {
                 try
                 {
                     JObject jObject = JObject.Parse(cosmosDiagnostics.ToString());
                     jArray.Add(jObject);
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     JObject jObject = new JObject
                     {

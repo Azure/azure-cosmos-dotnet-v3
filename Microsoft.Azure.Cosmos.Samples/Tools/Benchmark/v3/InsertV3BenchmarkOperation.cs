@@ -49,8 +49,6 @@ namespace CosmosBenchmark
 
                 System.Buffers.ArrayPool<byte>.Shared.Return(input.GetBuffer());
 
-                CosmosDiagnosticsLogger.Log(itemResponse.Diagnostics);
-
                 return new OperationResult()
                 {
                     DatabseName = databaseName,
