@@ -649,8 +649,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerResponse recreatedContainer = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
                         new ContainerProperties("coll", "/pk"),
                         throughput: 10000);
-                IReadOnlyList<FeedRange> result = await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
+                await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
                 await recreatedContainer.Container.DeleteContainerAsync();
+
+                try
+                {
+                    await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+                {
+                    Assert.IsTrue(ce.ToString().Contains("Resource Not Found"));
+                }
             }
         }
 

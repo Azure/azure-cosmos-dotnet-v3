@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
                         forceRefresh: true);
             }
 
-            if (partitionKeyRangeCache == null)
+            if (partitionKeyRanges == null)
             {
                 string refreshedContainerRId;
                 using (diagnosticsContext.CreateScope("GetRIDAsyncForceRefresh"))
