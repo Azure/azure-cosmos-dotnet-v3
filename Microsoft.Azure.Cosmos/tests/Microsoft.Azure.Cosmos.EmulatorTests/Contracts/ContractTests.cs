@@ -140,11 +140,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                throughput: 20000,
                cancellationToken: this.cancellationToken);
 
-            ContainerCore container = (ContainerInlineCore)largerContainer;
+            ContainerInternal container = (ContainerInlineCore)largerContainer;
 
             int expected = 100;
             int count = 0;
-            await this.CreateRandomItems(container, expected, randomPartitionKey: true);
+            await this.CreateRandomItems((ContainerCore)container, expected, randomPartitionKey: true);
 
             IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
             List<string> continuations = new List<string>();
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 dynamic oldContinuation = new
                 {
                     V = 0,
-                    Rid = await container.GetRIDAsync(this.cancellationToken),
+                    Rid = await container.GetRIDAsync(cancellationToken: this.cancellationToken),
                     Continuation = ct
                 };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));

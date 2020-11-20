@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             this Container monitoredContainer,
             CancellationToken cancellationToken = default)
         {
-            string containerRid = await ((ContainerInternal)monitoredContainer).GetRIDAsync(cancellationToken);
+            string containerRid = await ((ContainerInternal)monitoredContainer).GetRIDAsync(cancellationToken: cancellationToken);
             string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }

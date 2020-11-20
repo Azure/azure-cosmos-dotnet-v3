@@ -35,12 +35,15 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken);
 
-        public abstract Task<string> GetRIDAsync(CancellationToken cancellationToken);
+        public abstract Task<string> GetRIDAsync(
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<Documents.PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(
             CancellationToken cancellationToken);
 
         public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            bool forceRefresh = false,
             CancellationToken cancellationToken = default);
 
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(

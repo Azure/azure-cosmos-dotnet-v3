@@ -255,8 +255,15 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRId = await this.GetRIDAsync(cancellationToken);
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges;
+            bool forceRidRefresh = false;
+            do
+            {
+                string containerRId = await this.GetRIDAsync(
+                    forceRidRefresh,
+                    cancellationToken);
+                partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         containerRId,
                         new Range<string>(
                             PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -264,6 +271,11 @@ namespace Microsoft.Azure.Cosmos
                             isMinInclusive: true,
                             isMaxInclusive: false),
                         forceRefresh: true);
+
+                forceRidRefresh = partitionKeyRanges == null;
+            }
+            while (partitionKeyRanges == null);
+
             List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
@@ -324,7 +336,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRid = await this.GetRIDAsync(cancellationToken);
+            string containerRid = await this.GetRIDAsync(
+                forceRefresh: false,
+                cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
             if (!(feedRange is FeedRangeInternal feedTokenInternal))
@@ -339,14 +353,21 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the container's Properties by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
         /// </summary>
+        /// <param name="forceRefresh">Forces the cache to refresh</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="ContainerProperties"/> for this container.</returns>
-        public override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default)
+        public override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default)
         {
             try
             {
                 ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
-                return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri, cancellationToken);
+                return await collectionCache.ResolveByNameAsync(
+                    HttpConstants.Versions.CurrentVersion, 
+                    this.LinkUri,
+                    forceRefresh,
+                    cancellationToken);
             }
             catch (DocumentClientException ex)
             {
@@ -357,16 +378,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Name based look-up, needs re-computation and can't be cached
-        public override async Task<string> GetRIDAsync(CancellationToken cancellationToken)
+        public override async Task<string> GetRIDAsync(
+            bool forceRefresh, 
+            CancellationToken cancellationToken)
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
+                forceRefresh,
+                cancellationToken);
             return containerProperties?.ResourceId;
         }
 
         public override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default)
         {
-            return this.GetCachedContainerPropertiesAsync(cancellationToken)
-                            .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
+            return this.GetCachedContainerPropertiesAsync(
+                forceRefresh: false,
+                cancellationToken: cancellationToken)
+                .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
         }
 
         /// <summary>
@@ -376,7 +403,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns the partition key path</returns>
         public override async Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default)
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
+                forceRefresh: false,
+                cancellationToken: cancellationToken);
             if (containerProperties == null)
             {
                 throw new ArgumentOutOfRangeException($"Container {this.LinkUri} not found");
@@ -402,14 +431,16 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public override async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default)
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken: cancellationToken);
             return containerProperties.GetNoneValue();
         }
 
         public override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
             string collectionRID = null;
-            return this.GetRIDAsync(cancellationToken)
+            return this.GetRIDAsync(
+                forceRefresh: false,
+                cancellationToken: cancellationToken)
                 .ContinueWith(ridTask =>
                 {
                     collectionRID = ridTask.Result;
@@ -433,7 +464,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
+            string rid = await this.GetRIDAsync(
+                forceRefresh: false,
+                cancellationToken: cancellationToken);
             ThroughputResponse throughputResponse = await executeOfferOperation(rid);
             if (throughputResponse.StatusCode != HttpStatusCode.NotFound)
             {

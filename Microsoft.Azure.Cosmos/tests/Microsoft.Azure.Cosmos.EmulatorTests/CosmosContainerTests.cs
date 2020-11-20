@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await database.CreateContainerIfNotExistsAsync(settings, requestOptions: requestOptions);
             Assert.IsTrue(count > 0);
         }
-        
+
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncTest()
         {
@@ -577,7 +577,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
                 Assert.Fail("Should through ArgumentException on partition key path");
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
                 Assert.IsTrue(ex.Message.Contains(string.Format(
@@ -624,7 +624,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
+        }
+
+        [TestMethod]
+        public async Task GetFeedRangeOnContainerRecreateScenariosTestAsync()
+        {
+            try
+            {
+                await ((ContainerInternal)this.cosmosDatabase.GetContainer(Guid.NewGuid().ToString())).GetFeedRangesAsync();
+            }
+            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.IsTrue(ce.ToString().Contains("Resource Not Found"));
+            }
             
+            for (int i = 0; i < 3; i++) // using a loop to repro because sometimes cache refresh happens providing correct collection rid
+            {
+                try
+                {
+                    ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                            new ContainerProperties("coll", "/pk"),
+                            throughput: 10000);
+                    await containerResponse.Container.DeleteContainerAsync();
+
+                    ContainerResponse recreatedContainer = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                            new ContainerProperties("coll", "/pk"),
+                            throughput: 10000);
+                    IReadOnlyList<FeedRange> result = await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
+                    await recreatedContainer.Container.DeleteContainerAsync();
+                }
+                catch (Exception ex)
+                {
+                    Assert.IsTrue(ex is NullReferenceException);
+                }
+            }
         }
 
 #if INTERNAL || SUBPARTITIONING
