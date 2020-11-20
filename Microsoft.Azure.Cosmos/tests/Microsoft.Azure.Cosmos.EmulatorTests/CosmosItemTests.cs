@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                await testContainer.GetNonePartitionKeyValueAsync(default);
             }
 
             // expected once post create 
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRIDAsync(default(CancellationToken));
+                await testContainer.GetCachedRIDAsync(cancellationToken: default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRoutingMapAsync(default(CancellationToken));
+                await testContainer.GetRoutingMapAsync(default);
                 expected = count;
             }
 
