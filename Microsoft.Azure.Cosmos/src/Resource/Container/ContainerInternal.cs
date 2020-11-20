@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken);
 
-        public abstract Task<string> GetRIDAsync(
+        public abstract Task<string> GetCachedRIDAsync(
             bool forceRefresh = false,
             CancellationToken cancellationToken = default);
 

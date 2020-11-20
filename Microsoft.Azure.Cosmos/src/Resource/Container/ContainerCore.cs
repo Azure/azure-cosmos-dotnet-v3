@@ -262,9 +262,9 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             
             string containerRId;
-            using (diagnosticsContext.CreateScope(nameof(GetRIDAsync)))
+            using (diagnosticsContext.CreateScope(nameof(GetCachedRIDAsync)))
             {
-                containerRId = await this.GetRIDAsync(
+                containerRId = await this.GetCachedRIDAsync(
                     forceRefresh: false,
                     cancellationToken);
             }
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
                 string refreshedContainerRId;
                 using (diagnosticsContext.CreateScope("GetRIDAsyncForceRefresh"))
                 {
-                    refreshedContainerRId = await this.GetRIDAsync(
+                    refreshedContainerRId = await this.GetCachedRIDAsync(
                         forceRefresh: true,
                         cancellationToken);
                 }
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRid = await this.GetRIDAsync(
+            string containerRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
                 cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Name based look-up, needs re-computation and can't be cached
-        public override async Task<string> GetRIDAsync(
+        public override async Task<string> GetCachedRIDAsync(
             bool forceRefresh,
             CancellationToken cancellationToken)
         {
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
             string collectionRID = null;
-            return this.GetRIDAsync(
+            return this.GetCachedRIDAsync(
                 forceRefresh: false,
                 cancellationToken: cancellationToken)
                 .ContinueWith(ridTask =>
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            string rid = await this.GetRIDAsync(
+            string rid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
                 cancellationToken: cancellationToken);
             ThroughputResponse throughputResponse = await executeOfferOperation(rid);

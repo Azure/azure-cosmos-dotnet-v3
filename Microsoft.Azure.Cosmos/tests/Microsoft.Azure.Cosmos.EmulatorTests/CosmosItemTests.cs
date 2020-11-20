@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRIDAsync(cancellationToken: default);
+                await testContainer.GetCachedRIDAsync(cancellationToken: default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before

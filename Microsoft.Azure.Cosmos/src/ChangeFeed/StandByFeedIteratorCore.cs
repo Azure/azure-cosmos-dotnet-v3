@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.container.GetRIDAsync(cancellationToken: cancellationToken);
+                this.containerRid = await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 

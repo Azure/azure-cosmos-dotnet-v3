@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 dynamic oldContinuation = new
                 {
                     V = 0,
-                    Rid = await container.GetRIDAsync(cancellationToken: this.cancellationToken),
+                    Rid = await container.GetCachedRIDAsync(cancellationToken: this.cancellationToken),
                     Continuation = ct
                 };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));
