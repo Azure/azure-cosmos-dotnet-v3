@@ -28,6 +28,11 @@ namespace Microsoft.Azure.Cosmos
     internal abstract partial class ContainerCore : ContainerInternal
     {
         private readonly Lazy<BatchAsyncContainerExecutor> lazyBatchExecutor;
+        private static readonly Range<string> allRanges = new Range<string>(
+                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false);
 
         protected ContainerCore(
             CosmosClientContext clientContext,
@@ -255,26 +260,56 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            
+            string containerRId;
+            using (diagnosticsContext.CreateScope(nameof(GetRIDAsync)))
+            {
+                containerRId = await this.GetRIDAsync(
+                    forceRefresh: false,
+                    cancellationToken);
+            }
 
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges;
-            bool forceRidRefresh = false;
-            do
+            using (diagnosticsContext.CreateScope(nameof(partitionKeyRangeCache.TryGetOverlappingRangesAsync)))
             {
-                string containerRId = await this.GetRIDAsync(
-                    forceRidRefresh,
-                    cancellationToken);
                 partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         containerRId,
-                        new Range<string>(
-                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                            isMinInclusive: true,
-                            isMaxInclusive: false),
+                        ContainerCore.allRanges,
                         forceRefresh: true);
-
-                forceRidRefresh = partitionKeyRanges == null;
             }
-            while (partitionKeyRanges == null);
+
+            if (partitionKeyRangeCache == null)
+            {
+                string refreshedContainerRId;
+                using (diagnosticsContext.CreateScope("GetRIDAsyncForceRefresh"))
+                {
+                    refreshedContainerRId = await this.GetRIDAsync(
+                        forceRefresh: true,
+                        cancellationToken);
+                }
+
+                if (string.Equals(containerRId, refreshedContainerRId))
+                {
+                    throw CosmosExceptionFactory.CreateInternalServerErrorException(
+                        $"Container rid {containerRId} did not have a partition key range after refresh",
+                        diagnosticsContext: diagnosticsContext);
+                }
+
+                using (diagnosticsContext.CreateScope(nameof(partitionKeyRangeCache.TryGetOverlappingRangesAsync)))
+                {
+                    partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                            containerRId,
+                            ContainerCore.allRanges,
+                            forceRefresh: true);
+                }
+
+                if (partitionKeyRanges == null)
+                {
+                    throw CosmosExceptionFactory.CreateInternalServerErrorException(
+                        $"Container rid {containerRId} returned partitionKeyRanges null after Container RID refresh",
+                        diagnosticsContext: diagnosticsContext);
+                }
+            }
 
             List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
@@ -364,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
                 return await collectionCache.ResolveByNameAsync(
-                    HttpConstants.Versions.CurrentVersion, 
+                    HttpConstants.Versions.CurrentVersion,
                     this.LinkUri,
                     forceRefresh,
                     cancellationToken);
@@ -379,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
 
         // Name based look-up, needs re-computation and can't be cached
         public override async Task<string> GetRIDAsync(
-            bool forceRefresh, 
+            bool forceRefresh,
             CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
