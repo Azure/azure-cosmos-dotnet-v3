@@ -438,16 +438,18 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Verify the reader is at the required position and the required
                 // number of bytes are available.
+                int startPosition = this.jsonBinaryBuffer.Position;
                 if (this.CurrentTokenType != JsonTokenType.BeginObject ||
-                    !this.JsonObjectState.IsPropertyExpected)
+                    !this.JsonObjectState.IsPropertyExpected ||
+                    this.arrayAndObjectEndStack.Peek() - startPosition <= 3)
                 {
                     typeCode = default;
                     return false;
                 }
 
                 ReadOnlySpan<byte> bytes = this.jsonBinaryBuffer.GetBufferedRawJsonToken(
-                    this.jsonBinaryBuffer.Position,
-                    this.jsonBinaryBuffer.Position + 3).Span;
+                    startPosition,
+                    startPosition + 3).Span;
 
                 // Pattern: $t .. int value carried as part of type marker .. $v
                 if (bytes[0] == dollarTSystemStringSingleByteEncoding &&
@@ -456,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.JsonObjectState.RegisterFieldName();
                     this.jsonBinaryBuffer.SkipBytes(3);
-                    this.currentTokenPosition = this.jsonBinaryBuffer.Position;
+                    this.currentTokenPosition = startPosition;
                     typeCode = bytes[1];
 
                     return true;
