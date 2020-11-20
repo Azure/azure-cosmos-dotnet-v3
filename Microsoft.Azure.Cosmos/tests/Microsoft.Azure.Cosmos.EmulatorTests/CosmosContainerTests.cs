@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerRequestOptions requestOptions = new ContainerRequestOptions();
             requestOptions.PopulateQuotaInfo = true;
 
-            while(true)
+            while (true)
             {
                 ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
                 string indexTransformationStatus = readResponse.Headers["x-ms-documentdb-collection-index-transformation-progress"];
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 containerResponse = await this.cosmosDatabase.CreateContainerAsync(geographyWithBoundingBox);
                 Assert.Fail("Expected an exception");
-            }            
+            }
             catch
             {
                 //"Incorrect parameter 'boundingBox' specified for 'Geography' collection"
@@ -634,30 +634,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await ((ContainerInternal)this.cosmosDatabase.GetContainer(Guid.NewGuid().ToString())).GetFeedRangesAsync();
             }
-            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
             {
                 Assert.IsTrue(ce.ToString().Contains("Resource Not Found"));
             }
-            
+
             for (int i = 0; i < 3; i++) // using a loop to repro because sometimes cache refresh happens providing correct collection rid
             {
-                try
-                {
-                    ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                            new ContainerProperties("coll", "/pk"),
-                            throughput: 10000);
-                    await containerResponse.Container.DeleteContainerAsync();
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                        new ContainerProperties("coll", "/pk"),
+                        throughput: 10000);
+                await containerResponse.Container.DeleteContainerAsync();
 
-                    ContainerResponse recreatedContainer = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
-                            new ContainerProperties("coll", "/pk"),
-                            throughput: 10000);
-                    IReadOnlyList<FeedRange> result = await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
-                    await recreatedContainer.Container.DeleteContainerAsync();
-                }
-                catch (Exception ex)
-                {
-                    Assert.IsTrue(ex is NullReferenceException);
-                }
+                ContainerResponse recreatedContainer = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                        new ContainerProperties("coll", "/pk"),
+                        throughput: 10000);
+                IReadOnlyList<FeedRange> result = await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
+                await recreatedContainer.Container.DeleteContainerAsync();
             }
         }
 
@@ -784,7 +777,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail("Multiple partition keys should have caused an exception.");
             }
-            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
             {
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
@@ -962,7 +955,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         response.EnsureSuccessStatusCode();
                         using (StreamReader streamReader = new StreamReader(response.Content))
-                        using(JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
                         {
                             // Output will be:
                             // {"_rid":"FwsdAA==","DocumentCollections":[{"id":"2fdd3591-4ba7-415d-bbe1-c2ca635d409c"},{"id":"3caa5692-3645-4d65-a2aa-a0b67f4dbf52"}],"_count":2}
@@ -1028,7 +1021,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-            }            
+            }
         }
 
         [TestMethod]
@@ -1271,7 +1264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
-        
+
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
         {
             Assert.IsNotNull(containerResponse);
