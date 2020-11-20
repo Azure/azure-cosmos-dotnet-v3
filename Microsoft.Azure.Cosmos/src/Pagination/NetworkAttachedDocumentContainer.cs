@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
-                    await this.container.GetRIDAsync(cancellationToken),
+                    await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                     containerProperties.PartitionKey,
                     feedRange,
                     forceRefresh: false);
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         cancellationToken);
                     List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                         this.container.LinkUri,
-                        await this.container.GetRIDAsync(cancellationToken),
+                        await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                         containerProperties.PartitionKey,
                         feedRange,
                         forceRefresh: false);
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         {
                             overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                                 this.container.LinkUri,
-                                await this.container.GetRIDAsync(cancellationToken),
+                                await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                                 containerProperties.PartitionKey,
                                 feedRange,
                                 forceRefresh: false);
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             sqlQuerySpec,
                             continuationToken,
                             partitionKeyRange: new PartitionKeyRangeIdentity(
-                                await this.container.GetRIDAsync(cancellationToken),
+                                await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                                 overlappingRanges[0].Id),
                             isContinuationExpected: false,
                             pageSize,
@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             sqlQuerySpec,
                             continuationToken,
                             partitionKeyRange: new PartitionKeyRangeIdentity(
-                                await this.container.GetRIDAsync(cancellationToken),
+                                await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                                 feedRangePartitionKeyRange.PartitionKeyRangeId),
                             isContinuationExpected: false,
                             pageSize,
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             cancellationToken);
                         List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                             this.container.LinkUri,
-                            await this.container.GetRIDAsync(cancellationToken),
+                            await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                             containerProperties.PartitionKey,
                             feedRange,
                             forceRefresh: false);
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             sqlQuerySpec,
                             continuationToken,
                             partitionKeyRange: new PartitionKeyRangeIdentity(
-                                await this.container.GetRIDAsync(cancellationToken),
+                                await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                                 overlappingRanges[0].Id),
                             isContinuationExpected: false,
                             pageSize,
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
-                    await this.container.GetRIDAsync(cancellationToken),
+                    await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                     containerProperties.PartitionKey,
                     feedRange,
                     forceRefresh: false);
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             try
             {
-                string resourceIdentifier = await this.container.GetRIDAsync(cancellationToken);
+                string resourceIdentifier = await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken);
                 return TryCatch<string>.FromResult(resourceIdentifier);
             }
             catch (Exception ex)
