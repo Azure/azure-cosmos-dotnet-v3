@@ -283,6 +283,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
+        public async Task TestMergeAsync()
+        {
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+
+            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            Assert.AreEqual(1, ranges.Count);
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            Assert.AreEqual(2, childRanges.Count);
+
+            int numItemsToInsert = 10;
+            for (int i = 0; i < numItemsToInsert; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                await documentContainer.CreateItemAsync(item, cancellationToken: default);
+            }
+
+            await documentContainer.MergeAsync(childRanges[0], childRanges[1], cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> mergedRanges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+            Assert.AreEqual(1, mergedRanges.Count);
+
+            ReadFeedPage readFeedPage = await documentContainer.ReadFeedAsync(
+                feedRange: mergedRanges[0],
+                readFeedState: ReadFeedState.Beginning(),
+                pageSize: 100,
+                queryRequestOptions: default,
+                cancellationToken: default);
+
+            List<long> values = new List<long>();
+            foreach (Record record in readFeedPage.GetRecords())
+            {
+                values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+            }
+
+            Assert.AreEqual(numItemsToInsert, values.Count);
+        }
+
+        [TestMethod]
         public async Task TestReadFeedAsync()
         {
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);

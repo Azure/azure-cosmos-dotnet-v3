@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Represent a list of ranges with the following properties
@@ -28,23 +29,60 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.partitionKeyHashRanges = partitionKeyHashRanges;
         }
 
+        public IOrderedEnumerable<PartitionKeyHashRange> CreateOrderedEnumerable<TKey>(
+            Func<PartitionKeyHashRange, TKey> keySelector,
+            IComparer<TKey> comparer,
+            bool descending)
+        {
+            IOrderedEnumerable<PartitionKeyHashRange> orderedEnumerable;
+            if (descending)
+            {
+                orderedEnumerable = this.partitionKeyHashRanges
+                    .OrderByDescending((range) => range.StartInclusive.Value)
+                    .ThenByDescending(keySelector, comparer);
+            }
+            else
+            {
+                orderedEnumerable = this.partitionKeyHashRanges
+                    .OrderBy((range) => range.StartInclusive.Value)
+                    .ThenBy(keySelector, comparer);
+            }
+
+            return orderedEnumerable;
+        }
+
+        public IEnumerator<PartitionKeyHashRange> GetEnumerator()
+        {
+            return this.partitionKeyHashRanges.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.partitionKeyHashRanges.GetEnumerator();
+        }
+
+        public override string ToString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append("[");
+
+            foreach (PartitionKeyHashRange partitionKeyHashRange in this.partitionKeyHashRanges)
+            {
+                stringBuilder.Append(partitionKeyHashRange.ToString());
+                stringBuilder.Append(",");
+            }
+
+            stringBuilder.Append("]");
+
+            return stringBuilder.ToString();
+        }
+
         public static PartitionKeyHashRanges Create(IEnumerable<PartitionKeyHashRange> partitionKeyHashRanges)
         {
-            CreateOutcome createStatus = PartitionKeyHashRanges.TryCreate(
-                partitionKeyHashRanges,
-                out PartitionKeyHashRanges partitionedSortedEffectiveRanges);
+            TryCatch<PartitionKeyHashRanges> tryCreateMonad = Monadic.Create(partitionKeyHashRanges);
+            tryCreateMonad.ThrowIfFailed();
 
-            return createStatus switch
-            {
-                CreateOutcome.DuplicatePartitionKeyRange => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have duplicate values."),
-                CreateOutcome.EmptyPartitionKeyRange => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have an empty range."),
-                CreateOutcome.NoPartitionKeyRanges => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not be empty."),
-                CreateOutcome.NullPartitionKeyRanges => throw new ArgumentNullException(nameof(partitionKeyHashRanges)),
-                CreateOutcome.RangesAreNotContiguous => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must have contiguous ranges."),
-                CreateOutcome.RangesOverlap => throw new ArgumentException($"{nameof(partitionKeyHashRanges)} must not overlapping ranges."),
-                CreateOutcome.Success => partitionedSortedEffectiveRanges,
-                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(CreateOutcome)}: {createStatus}."),
-            };
+            return tryCreateMonad.Result;
         }
 
         public static CreateOutcome TryCreate(
@@ -143,52 +181,32 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public IOrderedEnumerable<PartitionKeyHashRange> CreateOrderedEnumerable<TKey>(
-            Func<PartitionKeyHashRange, TKey> keySelector,
-            IComparer<TKey> comparer,
-            bool descending)
+        public static class Monadic
         {
-            IOrderedEnumerable<PartitionKeyHashRange> orderedEnumerable;
-            if (descending)
+            public static TryCatch<PartitionKeyHashRanges> Create(IEnumerable<PartitionKeyHashRange> partitionKeyHashRanges)
             {
-                orderedEnumerable = this.partitionKeyHashRanges
-                    .OrderByDescending((range) => range.StartInclusive.Value)
-                    .ThenByDescending(keySelector, comparer);
+                CreateOutcome createStatus = PartitionKeyHashRanges.TryCreate(
+                    partitionKeyHashRanges,
+                    out PartitionKeyHashRanges partitionedSortedEffectiveRanges);
+
+                return createStatus switch
+                {
+                    CreateOutcome.DuplicatePartitionKeyRange => TryCatch<PartitionKeyHashRanges>.FromException(
+                        new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have duplicate values.")),
+                    CreateOutcome.EmptyPartitionKeyRange => TryCatch<PartitionKeyHashRanges>.FromException(
+                        new ArgumentException($"{nameof(partitionKeyHashRanges)} must not have an empty range.")),
+                    CreateOutcome.NoPartitionKeyRanges => TryCatch<PartitionKeyHashRanges>.FromException(
+                        new ArgumentException($"{nameof(partitionKeyHashRanges)} must not be empty.")),
+                    CreateOutcome.NullPartitionKeyRanges => TryCatch<PartitionKeyHashRanges>.FromException(
+                        new ArgumentNullException(nameof(partitionKeyHashRanges))),
+                    CreateOutcome.RangesAreNotContiguous => TryCatch<PartitionKeyHashRanges>.FromException(
+                        new ArgumentException($"{nameof(partitionKeyHashRanges)} must have contiguous ranges.")),
+                    CreateOutcome.RangesOverlap => TryCatch<PartitionKeyHashRanges>.FromException(
+                        new ArgumentException($"{nameof(partitionKeyHashRanges)} must not overlapping ranges.")),
+                    CreateOutcome.Success => TryCatch<PartitionKeyHashRanges>.FromResult(partitionedSortedEffectiveRanges),
+                    _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(CreateOutcome)}: {createStatus}."),
+                };
             }
-            else
-            {
-                orderedEnumerable = this.partitionKeyHashRanges
-                    .OrderBy((range) => range.StartInclusive.Value)
-                    .ThenBy(keySelector, comparer);
-            }
-
-            return orderedEnumerable;
-        }
-
-        public IEnumerator<PartitionKeyHashRange> GetEnumerator()
-        {
-            return this.partitionKeyHashRanges.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.partitionKeyHashRanges.GetEnumerator();
-        }
-
-        public override string ToString()
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append("[");
-
-            foreach (PartitionKeyHashRange partitionKeyHashRange in this.partitionKeyHashRanges)
-            {
-                stringBuilder.Append(partitionKeyHashRange.ToString());
-                stringBuilder.Append(",");
-            }
-
-            stringBuilder.Append("]");
-
-            return stringBuilder.ToString();
         }
 
         public enum CreateOutcome

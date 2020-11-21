@@ -352,10 +352,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             MemoryStream responseStream = new MemoryStream(result);
 
             ReadFeedPage readFeedPage = new ReadFeedPage(
-                responseStream, 
-                requestCharge: 42, 
-                activityId: Guid.NewGuid().ToString(), 
-                CosmosDiagnosticsContext.Create(default), 
+                responseStream,
+                requestCharge: 42,
+                activityId: Guid.NewGuid().ToString(),
+                CosmosDiagnosticsContext.Create(default),
                 continuationState);
 
             return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
@@ -600,9 +600,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (feedRange is FeedRangePartitionKey)
+            if (feedRange == null)
             {
-                throw new NotSupportedException("Can not split a logical partition");
+                throw new ArgumentNullException(nameof(feedRange));
             }
 
             TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
@@ -638,14 +638,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new InvalidOperationException("failed to find the range.");
             }
 
-            int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
-
             // Split the range space
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(
                 parentRange,
                 rangeCount: 2);
 
             // Update the partition routing map
+            int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
             this.parentToChildMapping[partitionKeyRangeId] = (maxPartitionKeyRangeId + 1, maxPartitionKeyRangeId + 2);
             Dictionary<int, PartitionKeyHashRange> newPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
             {
@@ -720,6 +719,186 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 changes.Add(change);
+            }
+
+            return Task.FromResult(TryCatch.FromResult());
+        }
+
+        public Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (feedRange1 == null)
+            {
+                throw new ArgumentNullException(nameof(feedRange1));
+            }
+
+            if (feedRange2 == null)
+            {
+                throw new ArgumentNullException(nameof(feedRange2));
+            }
+
+            TryCatch<int> monadicPartitionKeyRangeId1 = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange1);
+            if (monadicPartitionKeyRangeId1.Failed)
+            {
+                return Task.FromResult(TryCatch.FromException(monadicPartitionKeyRangeId1.Exception));
+            }
+
+            int sourceRangeId1 = monadicPartitionKeyRangeId1.Result;
+
+            TryCatch<int> monadicPartitionKeyRangeId2 = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange2);
+            if (monadicPartitionKeyRangeId2.Failed)
+            {
+                return Task.FromResult(TryCatch.FromException(monadicPartitionKeyRangeId2.Exception));
+            }
+
+            int sourceRangeId2 = monadicPartitionKeyRangeId2.Result;
+
+            // Get the range and records
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                sourceRangeId1,
+                out PartitionKeyHashRange sourceHashRange1))
+            {
+                return Task.FromResult(
+                    TryCatch.FromException(
+                        new CosmosException(
+                        message: $"PartitionKeyRangeId {sourceRangeId1} is gone",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: 42)));
+            }
+
+            if (!this.partitionedRecords.TryGetValue(sourceHashRange1, out Records sourceRecords1))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            if (!this.partitionedChanges.TryGetValue(sourceHashRange1, out List<Change> sourceChanges1))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            if (!this.partitionKeyRangeIdToHashRange.TryGetValue(
+                sourceRangeId2,
+                out PartitionKeyHashRange sourceHashRange2))
+            {
+                return Task.FromResult(
+                    TryCatch.FromException(
+                        new CosmosException(
+                        message: $"PartitionKeyRangeId {sourceRangeId2} is gone",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: 42)));
+            }
+
+            if (!this.partitionedRecords.TryGetValue(sourceHashRange2, out Records sourceRecords2))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            if (!this.partitionedChanges.TryGetValue(sourceHashRange2, out List<Change> sourceChanges2))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            // Merge the range space
+            TryCatch<PartitionKeyHashRanges> monadicRanges = PartitionKeyHashRanges.Monadic.Create(new List<PartitionKeyHashRange>()
+            {
+                sourceHashRange1,
+                sourceHashRange2
+            });
+
+            if (monadicRanges.Failed)
+            {
+                return Task.FromResult(TryCatch.FromException(monadicRanges.Exception));
+            }
+
+            PartitionKeyHashRange mergedHashRange = PartitionKeyHashRangeSplitterAndMerger.MergeRanges(
+                monadicRanges.Result);
+
+            // Update the partition routing map 
+            int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
+            Dictionary<int, PartitionKeyHashRange> newPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
+            {
+                { maxPartitionKeyRangeId + 1, mergedHashRange },
+            };
+
+            foreach (KeyValuePair<int, PartitionKeyHashRange> kvp in this.partitionKeyRangeIdToHashRange)
+            {
+                int oldRangeId = kvp.Key;
+                PartitionKeyHashRange oldRange = kvp.Value;
+                if (!(oldRange.Equals(sourceHashRange1) || oldRange.Equals(sourceHashRange2)))
+                {
+                    newPartitionKeyRangeIdToHashRange[oldRangeId] = oldRange;
+                }
+            }
+
+            // Copy over the partitioned records (minus the source ranges)
+            PartitionKeyHashRangeDictionary<Records> newPartitionedRecords = new PartitionKeyHashRangeDictionary<Records>(
+                PartitionKeyHashRanges.Create(newPartitionKeyRangeIdToHashRange.Values));
+
+            newPartitionedRecords[mergedHashRange] = new Records();
+
+            foreach (PartitionKeyHashRange range in this.partitionKeyRangeIdToHashRange.Values)
+            {
+                if (!(range.Equals(sourceHashRange1) || range.Equals(sourceHashRange2)))
+                {
+                    newPartitionedRecords[range] = this.partitionedRecords[range];
+                }
+            }
+
+            PartitionKeyHashRangeDictionary<List<Change>> newPartitionedChanges = new PartitionKeyHashRangeDictionary<List<Change>>(
+                PartitionKeyHashRanges.Create(newPartitionKeyRangeIdToHashRange.Values));
+
+            newPartitionedChanges[mergedHashRange] = new List<Change>();
+
+            foreach (PartitionKeyHashRange range in this.partitionKeyRangeIdToHashRange.Values)
+            {
+                if (!(range.Equals(sourceHashRange1) || range.Equals(sourceHashRange2)))
+                {
+                    newPartitionedChanges[range] = this.partitionedChanges[range];
+                }
+            }
+
+            this.partitionedRecords = newPartitionedRecords;
+            this.partitionedChanges = newPartitionedChanges;
+            this.partitionKeyRangeIdToHashRange = newPartitionKeyRangeIdToHashRange;
+
+            // Rehash the records in the source ranges
+            foreach (Records sourceRecords in new Records[] { sourceRecords1, sourceRecords2 })
+            {
+                foreach (Record record in sourceRecords)
+                {
+                    PartitionKeyHash partitionKeyHash = GetHashFromPayload(record.Payload, this.partitionKeyDefinition);
+                    if (!this.partitionedRecords.TryGetValue(partitionKeyHash, out Records records))
+                    {
+                        records = new Records();
+                        this.partitionedRecords[partitionKeyHash] = records;
+                    }
+
+                    records.Add(record);
+                }
+            }
+
+            // Rehash the changes in the parent range 
+            foreach (List<Change> sourceChanges in new List<Change>[] { sourceChanges1, sourceChanges2 })
+            {
+                foreach (Change change in sourceChanges)
+                {
+                    PartitionKeyHash partitionKeyHash = GetHashFromPayload(change.Record.Payload, this.partitionKeyDefinition);
+                    if (!this.partitionedChanges.TryGetValue(partitionKeyHash, out List<Change> changes))
+                    {
+                        changes = new List<Change>();
+                        this.partitionedChanges[partitionKeyHash] = changes;
+                    }
+
+                    changes.Add(change);
+                }
             }
 
             return Task.FromResult(TryCatch.FromResult());

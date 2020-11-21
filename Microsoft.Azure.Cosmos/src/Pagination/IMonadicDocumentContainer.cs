@@ -27,6 +27,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
 
+        Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken);
+
         Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken);
     }
 }
