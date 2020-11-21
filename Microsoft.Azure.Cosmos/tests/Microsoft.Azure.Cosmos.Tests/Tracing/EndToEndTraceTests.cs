@@ -67,7 +67,7 @@
                 pageSize: 10,
                 cancellationToken: default);
 
-            int numChildren = 0;
+            int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
             Trace rootTrace;
             using (rootTrace = Trace.GetRootTrace("Cross Partition Read Feed"))
             {
@@ -92,7 +92,7 @@
             IQueryPipelineStage pipelineStage = CreatePipeline(documentContainer, "SELECT * FROM c", pageSize: 10);
 
             Trace rootTrace;
-            int numChildren = 0;
+            int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
             using (rootTrace = Trace.GetRootTrace("Cross Partition Query"))
             {
                 while (await pipelineStage.MoveNextAsync(rootTrace))
@@ -115,7 +115,10 @@
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
-                new ChangeFeedRequestOptions(),
+                new ChangeFeedRequestOptions()
+                { 
+                    PageSizeHint = int.MaxValue
+                },
                 new CrossFeedRangeState<ChangeFeedState>(
                     ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
                 cancellationToken: default);

@@ -15,6 +15,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         enum TraceComponent
     {
         /// <summary>
+        /// Component that handles aggregating ChangeFeed results across multiple pages and partitions.
+        /// </summary>
+        ChangeFeed,
+
+        /// <summary>
         /// Component that handles JSON reading, writing, navigating, serialization, and deserialization.
         /// </summary>
         Json, 

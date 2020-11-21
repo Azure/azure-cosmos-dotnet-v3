@@ -155,10 +155,21 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.ClientContext.OperationHelperAsync(
+            Task<ResponseMessage> func(CosmosDiagnosticsContext diagnostics, ITrace trace)
+            {
+                return base.CreateItemStreamAsync(
+                    diagnostics,
+                    streamPayload,
+                    partitionKey,
+                    trace,
+                    requestOptions,
+                    cancellationToken);
+            }
+
+            return this.ClientContext.OperationHelperAsync<ResponseMessage>(
                 nameof(CreateItemStreamAsync),
                 requestOptions,
-                (diagnostics, trace) => base.CreateItemStreamAsync(diagnostics, streamPayload, partitionKey, trace, requestOptions, cancellationToken));
+                func);
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,
@@ -437,8 +448,8 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedAsyncEnumerable(state, changeFeedRequestOptions);
         }
 
-        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable( 
-            ReadFeedCrossFeedRangeState state, 
+        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+            ReadFeedCrossFeedRangeState state,
             QueryRequestOptions requestOptions = null)
         {
             return base.GetReadFeedAsyncEnumerable(state, requestOptions);

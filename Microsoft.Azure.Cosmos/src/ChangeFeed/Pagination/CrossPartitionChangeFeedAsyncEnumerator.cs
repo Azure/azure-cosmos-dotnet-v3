@@ -44,81 +44,87 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            if (this.bufferedException.HasValue)
+            using (ITrace changeFeedMoveNextTrace = trace.StartChild("ChangeFeed MoveNextAsync", TraceComponent.ChangeFeed, TraceLevel.Info))
             {
-                this.Current = this.bufferedException.Value;
-                this.bufferedException = null;
+                if (this.bufferedException.HasValue)
+                {
+                    this.Current = this.bufferedException.Value;
+                    this.bufferedException = null;
+                    return true;
+                }
+
+                if (!await this.crossPartitionEnumerator.MoveNextAsync(changeFeedMoveNextTrace))
+                {
+                    throw new InvalidOperationException("ChangeFeed should always have a next page.");
+                }
+
+                TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+                if (monadicCrossPartitionPage.Failed)
+                {
+                    this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                    return true;
+                }
+
+                CrossFeedRangePage<ChangeFeedPage, ChangeFeedState> crossFeedRangePage = monadicCrossPartitionPage.Result;
+                ChangeFeedPage backendPage = crossFeedRangePage.Page;
+                if (backendPage is ChangeFeedNotModifiedPage)
+                {
+                    using (ITrace drainNotModifedPages = changeFeedMoveNextTrace.StartChild("Drain NotModified Pages", TraceComponent.ChangeFeed, TraceLevel.Info))
+                    {
+                        // Keep draining the cross partition enumerator until
+                        // We get a non 304 page or we loop back to the same range or run into an exception
+                        FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
+                        double totalRequestCharge = backendPage.RequestCharge;
+                        do
+                        {
+                            if (!await this.crossPartitionEnumerator.MoveNextAsync(drainNotModifedPages))
+                            {
+                                throw new InvalidOperationException("ChangeFeed should always have a next page.");
+                            }
+
+                            monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+                            if (monadicCrossPartitionPage.Failed)
+                            {
+                                // Buffer the exception, since we need to return the request charge so far.
+                                this.bufferedException = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                            }
+                            else
+                            {
+                                crossFeedRangePage = monadicCrossPartitionPage.Result;
+                                backendPage = crossFeedRangePage.Page;
+                                totalRequestCharge += backendPage.RequestCharge;
+                            }
+                        }
+                        while (!(backendPage is ChangeFeedSuccessPage
+                            || this.crossPartitionEnumerator.CurrentRange.Equals(originalRange)
+                            || this.bufferedException.HasValue));
+
+                        // Create a page with the aggregated request charge
+                        if (backendPage is ChangeFeedSuccessPage changeFeedSuccessPage)
+                        {
+                            backendPage = new ChangeFeedSuccessPage(
+                                changeFeedSuccessPage.Content,
+                                totalRequestCharge,
+                                changeFeedSuccessPage.ActivityId,
+                                changeFeedSuccessPage.State);
+                        }
+                        else
+                        {
+                            backendPage = new ChangeFeedNotModifiedPage(
+                                totalRequestCharge,
+                                backendPage.ActivityId,
+                                backendPage.State);
+                        }
+                    }
+                }
+
+                crossFeedRangePage = new CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>(
+                    backendPage,
+                    crossFeedRangePage.State);
+
+                this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromResult(crossFeedRangePage);
                 return true;
             }
-
-            if (!await this.crossPartitionEnumerator.MoveNextAsync(trace))
-            {
-                throw new InvalidOperationException("ChangeFeed should always have a next page.");
-            }
-
-            TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
-            if (monadicCrossPartitionPage.Failed)
-            {
-                this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
-                return true;
-            }
-
-            CrossFeedRangePage<ChangeFeedPage, ChangeFeedState> crossFeedRangePage = monadicCrossPartitionPage.Result;
-            ChangeFeedPage backendPage = crossFeedRangePage.Page;
-            if (backendPage is ChangeFeedNotModifiedPage)
-            {
-                // Keep draining the cross partition enumerator until
-                // We get a non 304 page or we loop back to the same range or run into an exception
-                FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
-                double totalRequestCharge = backendPage.RequestCharge;
-                do
-                {
-                    if (!await this.crossPartitionEnumerator.MoveNextAsync(trace))
-                    {
-                        throw new InvalidOperationException("ChangeFeed should always have a next page.");
-                    }
-
-                    monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
-                    if (monadicCrossPartitionPage.Failed)
-                    {
-                        // Buffer the exception, since we need to return the request charge so far.
-                        this.bufferedException = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
-                    }
-                    else
-                    {
-                        crossFeedRangePage = monadicCrossPartitionPage.Result;
-                        backendPage = crossFeedRangePage.Page;
-                        totalRequestCharge += backendPage.RequestCharge;
-                    }
-                }
-                while (!(backendPage is ChangeFeedSuccessPage
-                    || this.crossPartitionEnumerator.CurrentRange.Equals(originalRange)
-                    || this.bufferedException.HasValue));
-
-                // Create a page with the aggregated request charge
-                if (backendPage is ChangeFeedSuccessPage changeFeedSuccessPage)
-                {
-                    backendPage = new ChangeFeedSuccessPage(
-                        changeFeedSuccessPage.Content,
-                        totalRequestCharge,
-                        changeFeedSuccessPage.ActivityId,
-                        changeFeedSuccessPage.State);
-                }
-                else
-                {
-                    backendPage = new ChangeFeedNotModifiedPage(
-                        totalRequestCharge,
-                        backendPage.ActivityId,
-                        backendPage.State);
-                }
-            }
-
-            crossFeedRangePage = new CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>(
-                backendPage,
-                crossFeedRangePage.State);
-
-            this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromResult(crossFeedRangePage);
-            return true;
         }
 
         public static CrossPartitionChangeFeedAsyncEnumerator Create(
