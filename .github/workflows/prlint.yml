@@ -8,7 +8,7 @@ jobs:
   pr-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: morrisoncole/pr-lint-action@v1.1.1
+    - uses: morrisoncole/pr-lint-action@v1.4.1
       with:
         title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors) .{3}.+'
         repo-token: "${{ secrets.GITHUB_TOKEN }}"

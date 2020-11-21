@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
 
     /// <summary>
@@ -29,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract void Accept(ChangeFeedStartFromVisitor visitor);
 
         internal abstract TResult Accept<TResult>(ChangeFeedStartFromVisitor<TResult> visitor);
+
+        internal abstract Task<TResult> AcceptAsync<TInput, TResult>(ChangeFeedStartFromAsyncVisitor<TInput, TResult> visitor, TInput input, CancellationToken cancellationToken);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.

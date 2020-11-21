@@ -31,11 +31,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonNavigator that can navigate a supplied buffer
         /// </summary>
         /// <param name="buffer">The buffer to navigate</param>
-        /// <param name="jsonStringDictionary">The optional json string dictionary for binary encoding.</param>
         /// <returns>A concrete JsonNavigator that can navigate the supplied buffer.</returns>
         public static IJsonNavigator Create(
-            ReadOnlyMemory<byte> buffer,
-            IReadOnlyJsonStringDictionary jsonStringDictionary = null)
+            ReadOnlyMemory<byte> buffer)
         {
             if (buffer.IsEmpty)
             {
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return ((JsonSerializationFormat)firstByte) switch
             {
                 // Explicitly pick from the set of supported formats
-                JsonSerializationFormat.Binary => new JsonBinaryNavigator(buffer, jsonStringDictionary),
+                JsonSerializationFormat.Binary => new JsonBinaryNavigator(buffer),
 
                 // or otherwise assume text format
                 _ => new JsonTextNavigator(buffer),

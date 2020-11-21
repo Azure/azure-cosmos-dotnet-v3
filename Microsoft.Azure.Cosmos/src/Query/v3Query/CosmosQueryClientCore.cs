@@ -186,7 +186,8 @@ namespace Microsoft.Azure.Cosmos
         public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
-            string effectivePartitionKeyString)
+            string effectivePartitionKeyString,
+            bool forceRefresh)
         {
             return this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
@@ -194,14 +195,16 @@ namespace Microsoft.Azure.Cosmos
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
-                });
+                },
+                forceRefresh);
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal)
+            FeedRangeInternal feedRangeInternal,
+            bool forceRefresh)
         {
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
             List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
@@ -209,13 +212,15 @@ namespace Microsoft.Azure.Cosmos
             return await this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
                 collectionResourceId,
-                ranges);
+                ranges,
+                forceRefresh);
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges)
+            List<Range<string>> providedRanges,
+            bool forceRefresh)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -231,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
 
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, forceRefresh);
             if (ranges == null && PathsHelper.IsNameBased(resourceLink))
             {
                 // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -402,21 +407,27 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
-        /// <param name="memoryStream">The memory stream response for the query REST response Azure Cosmos</param>
+        /// <param name="stream">The memory stream response for the query REST response Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>An array of CosmosElements parsed from the response body.</returns>
-        private static CosmosArray ParseElementsFromRestStream(
-            MemoryStream memoryStream,
+        public static CosmosArray ParseElementsFromRestStream(
+            Stream stream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions)
         {
+            if (!(stream is MemoryStream memoryStream))
+            {
+                memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+            }
+
             if (!memoryStream.CanRead)
             {
                 throw new InvalidDataException("Stream can not be read");
             }
 
-            // Parse out the document from the REST response this:
+            // Parse out the document from the REST response like this:
             // {
             //    "_rid": "qHVdAImeKAQ=",
             //    "Documents": [{
@@ -462,67 +473,22 @@ namespace Microsoft.Azure.Cosmos
                 _ => resourceType.ToResourceTypeString() + "s",
             };
 
-            CosmosArray documents;
-            if ((jsonNavigator.SerializationFormat == JsonSerializationFormat.Binary) && jsonNavigator.TryGetObjectProperty(
+            if (!jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
-                "stringDictionary",
-                out ObjectProperty stringDictionaryProperty))
+                resourceName,
+                out ObjectProperty objectProperty))
             {
-                // Payload is string dictionary encode so we have to decode using the string dictionary.
-                IJsonNavigatorNode stringDictionaryNode = stringDictionaryProperty.ValueNode;
-                JsonStringDictionary jsonStringDictionary = JsonStringDictionary.CreateFromStringArray(
-                    jsonNavigator
-                        .GetArrayItems(stringDictionaryNode)
-                        .Select(item => jsonNavigator.GetStringValue(item))
-                        .ToList());
-
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
-                    resourceName,
-                    out ObjectProperty resourceProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                IJsonNavigatorNode resources = resourceProperty.ValueNode;
-                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out ReadOnlyMemory<byte> resourceBinary))
-                {
-                    resourceBinary = jsonNavigator.GetBinaryValue(resources);
-                }
-
-                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary, jsonStringDictionary);
-
-                if (!(CosmosElement.Dispatch(
-                    navigatorWithStringDictionary,
-                    navigatorWithStringDictionary.GetRootNode()) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
-            }
-            else
-            {
-                // Payload is not string dictionary encoded so we can just do for the documents as is.
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
-                    resourceName,
-                    out ObjectProperty objectProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                if (!(CosmosElement.Dispatch(
-                    jsonNavigator,
-                    objectProperty.ValueNode) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
+                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
             }
 
-            return documents;
+            if (!(CosmosElement.Dispatch(
+                jsonNavigator,
+                objectProperty.ValueNode) is CosmosArray cosmosArray))
+            {
+                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+            }
+
+            return cosmosArray;
         }
     }
 }

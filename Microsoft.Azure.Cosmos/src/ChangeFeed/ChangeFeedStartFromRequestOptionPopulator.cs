@@ -14,12 +14,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private static readonly DateTime StartFromBeginningTime = DateTime.MinValue.ToUniversalTime();
 
         private readonly RequestMessage requestMessage;
-        private readonly FeedRangeRequestMessagePopulatorVisitor feedRangeVisitor;
 
         public ChangeFeedStartFromRequestOptionPopulator(RequestMessage requestMessage)
         {
             this.requestMessage = requestMessage ?? throw new ArgumentNullException(nameof(requestMessage));
-            this.feedRangeVisitor = new FeedRangeRequestMessagePopulatorVisitor(requestMessage);
         }
 
         public override void Visit(ChangeFeedStartFromNow startFromNow)
@@ -28,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             if (startFromNow.FeedRange != null)
             {
-                startFromNow.FeedRange.Accept(this.feedRangeVisitor);
+                startFromNow.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
             }
         }
 
@@ -43,10 +41,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 this.requestMessage.Headers.Add(
                     HttpConstants.HttpHeaders.IfModifiedSince,
-                    startFromTime.StartTime.ToString("r", CultureInfo.InvariantCulture));
+                    startFromTime.StartTime.ToString("o", CultureInfo.InvariantCulture));
             }
 
-            startFromTime.FeedRange.Accept(this.feedRangeVisitor);
+            startFromTime.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
         }
 
         public override void Visit(ChangeFeedStartFromContinuation startFromContinuation)
@@ -60,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             // We don't need to set any headers to start from the beginning
 
             // Except for the feed range.
-            startFromBeginning.FeedRange.Accept(this.feedRangeVisitor);
+            startFromBeginning.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
         }
 
         public override void Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange)
@@ -71,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.requestMessage.Headers.IfNoneMatch = startFromContinuationAndFeedRange.Etag;
             }
 
-            startFromContinuationAndFeedRange.FeedRange.Accept(this.feedRangeVisitor);
+            startFromContinuationAndFeedRange.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
         }
     }
 }

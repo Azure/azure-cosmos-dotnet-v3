@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosClientTests
@@ -82,12 +85,45 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.ThrowsException<ArgumentException>(() => new CosmosClient(""));
             Assert.ThrowsException<ArgumentNullException>(() => new CosmosClient(null));
         }
-
+        
         [TestMethod]
         public void Builder_InvalidConnectionString()
         {
             Assert.ThrowsException<ArgumentException>(() => new CosmosClientBuilder(""));
             Assert.ThrowsException<ArgumentNullException>(() => new CosmosClientBuilder(null));
+        }
+
+        [TestMethod]
+        public void Builder_ValidateHttpFactory()
+        {
+            _ = new CosmosClientBuilder("<<endpoint-here>>", "<<key-here>>")
+                .WithHttpClientFactory(() => new HttpClient())
+                .WithConnectionModeGateway();
+
+            // Validate that setting it to null does not throw an argument exception
+            _ = new CosmosClientOptions()
+            {
+                HttpClientFactory = null,
+                WebProxy = new Mock<IWebProxy>().Object,
+            };
+
+            _ = new CosmosClientOptions()
+            {
+                WebProxy = new Mock<IWebProxy>().Object,
+                HttpClientFactory = null,
+            };
+
+            _ = new CosmosClientOptions()
+            {
+                WebProxy = null,
+                HttpClientFactory = () => new HttpClient(),
+            };
+
+            _ = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient(),
+                WebProxy = null,
+            };
         }
     }
 }

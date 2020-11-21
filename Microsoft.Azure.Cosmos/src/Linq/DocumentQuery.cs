@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal sealed class DocumentQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
-        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new DictionaryNameValueCollection());
+        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new StoreResponseNameValueCollection());
 
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;

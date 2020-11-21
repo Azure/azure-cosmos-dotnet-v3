@@ -16,10 +16,20 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     public abstract class RequestHandler
     {
+        internal readonly string FullHandlerName;
+
         /// <summary>
         /// Defines a next handler to be called in the chain.
         /// </summary>
         public RequestHandler InnerHandler { get; set; }
+
+        /// <summary>
+        /// The default constructor for the RequestHandler
+        /// </summary>
+        protected RequestHandler()
+        {
+            this.FullHandlerName = this.GetType().FullName;
+        }
 
         /// <summary>
         /// Processes the current <see cref="RequestMessage"/> in the current handler and sends the current <see cref="RequestMessage"/> to the next handler in the chain.

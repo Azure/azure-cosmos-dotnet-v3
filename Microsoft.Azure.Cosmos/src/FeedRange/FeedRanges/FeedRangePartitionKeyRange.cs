@@ -78,6 +78,16 @@ namespace Microsoft.Azure.Cosmos
             visitor.Visit(this);
         }
 
+        public override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input)
+        {
+            visitor.Visit(this, input);
+        }
+
+        public override TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input)
+        {
+            return visitor.Visit(this, input);
+        }
+
         public override Task<TResult> AcceptAsync<TResult>(
             IFeedRangeAsyncVisitor<TResult> visitor,
             CancellationToken cancellationToken = default)
@@ -91,5 +101,10 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
 
         public override string ToString() => this.PartitionKeyRangeId;
+
+        public override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
+        {
+            return transformer.Visit(this);
+        }
     }
 }
