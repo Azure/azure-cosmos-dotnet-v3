@@ -180,6 +180,7 @@
             {
                 for (int i = 0; i < 3; i++)
                 {
+                    await documentContainer.RefreshProviderAsync(cancellationToken: default);
                     IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
                     foreach (FeedRangeInternal range in ranges)
                     {

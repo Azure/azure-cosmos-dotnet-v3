@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private PartitionKeyHashRangeDictionary<List<Change>> partitionedChanges;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
+        private Dictionary<int, PartitionKeyHashRange> cachedPartitionKeyRangeIdToHashRange;
 
         public InMemoryContainer(
             PartitionKeyDefinition partitionKeyDefinition)
@@ -51,6 +52,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             this.partitionedChanges = new PartitionKeyHashRangeDictionary<List<Change>>(partitionKeyHashRanges);
             this.partitionedChanges[fullRange] = new List<Change>();
             this.partitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
+            {
+                { 0, fullRange }
+            };
+            this.cachedPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
             {
                 { 0, fullRange }
             };
@@ -70,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             FeedRangeEpk CreateRangeFromId(int id)
             {
-                PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
+                PartitionKeyHashRange hashRange = this.cachedPartitionKeyRangeIdToHashRange[id];
                 return new FeedRangeEpk(
                     new Documents.Routing.Range<string>(
                         min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.Value.ToString() : string.Empty,
@@ -87,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             if (feedRange.Equals(FeedRangeEpk.FullRange))
             {
                 List<FeedRangeEpk> ranges = new List<FeedRangeEpk>();
-                foreach (int id in this.partitionKeyRangeIdToHashRange.Keys)
+                foreach (int id in this.cachedPartitionKeyRangeIdToHashRange.Keys)
                 {
                     ranges.Add(CreateRangeFromId(id));
                 }
@@ -101,12 +106,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<FeedRangeEpk> overlappedIds;
                 if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
                 {
-                    overlappedIds = this.partitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                    overlappedIds = this.cachedPartitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
                 }
                 else
                 {
                     PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
-                    overlappedIds = this.partitionKeyRangeIdToHashRange
+                    overlappedIds = this.cachedPartitionKeyRangeIdToHashRange
                         .Where(kvp => hashRange.Contains(kvp.Value))
                         .Select(kvp => CreateRangeFromId(kvp.Key))
                         .ToList();
@@ -137,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
             {
                 // This range has no children (base case)
-                if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
+                if (!this.cachedPartitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
                 {
                     return TryCatch<List<FeedRangeEpk>>.FromException(
                         new KeyNotFoundException(
@@ -174,8 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch> MonadicRefreshProviderAsync(CancellationToken cancellationToken)
         {
-            // The feedrangeprovider is always insync in memory
-            // so we can no op for this one
+            this.cachedPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>(this.partitionKeyRangeIdToHashRange);
             return Task.FromResult(TryCatch.FromResult());
         }
 

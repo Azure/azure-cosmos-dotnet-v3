@@ -133,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 CosmosArray documents = GetDocuments(message.Content);
                 count += documents.Count;
 
+                await documentContainer.RefreshProviderAsync(cancellationToken: default);
                 IReadOnlyList<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
                 FeedRangeEpk rangeToSplit = ranges[random.Next(0, ranges.Count)];
                 await documentContainer.SplitAsync(rangeToSplit, cancellationToken: default);
@@ -193,6 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             for (int i = 0; i < 3; i++)
             {
+                await documentContainer.RefreshProviderAsync(cancellationToken: default);
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
