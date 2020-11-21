@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(cancellationToken: default);
 
             {
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(cancellationToken: default);
 
             // Check the leaves
             foreach (int i in new int[] { 1, 2 })

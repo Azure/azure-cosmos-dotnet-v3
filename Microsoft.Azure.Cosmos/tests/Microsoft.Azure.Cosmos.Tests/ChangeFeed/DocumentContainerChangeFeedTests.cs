@@ -270,6 +270,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 queryRequestOptions: default)).GetRecords().Count;
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(cancellationToken: default);
 
             List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], cancellationToken: default);
 
@@ -323,12 +324,13 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
             for (int i = 0; i < 3; i++)
             {
-                await documentContainer.RefreshProviderAsync(cancellationToken: default);
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)

@@ -85,6 +85,7 @@
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
 
+                await documentContainer.RefreshProviderAsync(cancellationToken: default);
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
                 foreach (FeedRangeEpk range in ranges)
                 {
