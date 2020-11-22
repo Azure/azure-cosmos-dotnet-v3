@@ -24,6 +24,7 @@ namespace CosmosBenchmark
         public string EndPoint { get; set; }
 
         [Option('k', Required = true, HelpText = "Cosmos account master key")]
+        [JsonIgnore]
         public string Key { get; set; }
 
         [Option(Required = false, HelpText = "Database to use")]
