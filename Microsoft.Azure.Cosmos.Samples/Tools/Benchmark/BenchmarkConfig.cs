@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using CommandLine;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
+    using Newtonsoft.Json;
 
     public class BenchmarkConfig
     {
@@ -96,10 +97,10 @@ namespace CosmosBenchmark
         public string ResultsKey { get; set; }
 
         [Option(Required = false, HelpText = "Database to publish results to")]
-        internal string ResultsDatabase { get; set; } 
+        public string ResultsDatabase { get; set; } 
 
         [Option(Required = false, HelpText = "Container to publish results to")]
-        internal string ResultsContainer { get; set; } = "runsummary";
+        public string ResultsContainer { get; set; } = "runsummary";
 
         internal int GetTaskCount(int containerThroughput)
         {
