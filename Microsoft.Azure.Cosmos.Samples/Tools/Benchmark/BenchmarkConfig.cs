@@ -88,6 +88,16 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
+        [Option(Required = false, HelpText = "Endpoint to publish results to")]
+        public string ResultsEndpoint { get; set; }
+
+        [Option(Required = false, HelpText = "Key to publish results to")]
+        [JsonIgnore]
+        public string ResultsKey { get; set; }
+
+        [Option(Required = false, HelpText = "Database to publish results to")]
+        internal string ResultsDatabase { get; set; } 
+
         [Option(Required = false, HelpText = "Container to publish results to")]
         internal string ResultsContainer { get; set; } = "runsummary";
 
@@ -120,7 +130,8 @@ namespace CosmosBenchmark
         internal static BenchmarkConfig From(string[] args)
         {
             BenchmarkConfig options = null;
-            Parser.Default.ParseArguments<BenchmarkConfig>(args)
+            Parser parser = new Parser((settings) => settings.CaseSensitive = false);
+            parser.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
 
