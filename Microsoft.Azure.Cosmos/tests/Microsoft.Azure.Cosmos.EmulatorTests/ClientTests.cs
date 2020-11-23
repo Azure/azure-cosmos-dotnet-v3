@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(text, otherText);
             };
 
-            // Verify serialization 
+            // Verify serialization
             verifyJsonSerialization("{\"query\":null}", new SqlQuerySpec());
             verifyJsonSerialization("{\"query\":\"SELECT 1\"}", new SqlQuerySpec("SELECT 1"));
             verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[{\"name\":null,\"value\":null}]}",
@@ -261,6 +261,128 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "]" +
                 "}");
         }
+
+        [TestMethod]
+        public void QueryDefinitionSerializationTest()
+        {
+            Action<string, SqlQuerySpec> verifyJsonSerialization = (expectedText, query) =>
+            {
+                QueryDefinition queryDefinition = QueryDefinition.CreateFromQuerySpec(query);
+                string actualText = JsonConvert.SerializeObject(queryDefinition);
+
+                Assert.AreEqual(expectedText, actualText);
+
+                QueryDefinition otherQuery = JsonConvert.DeserializeObject<QueryDefinition>(actualText);
+                string otherText = JsonConvert.SerializeObject(otherQuery);
+                Assert.AreEqual(expectedText, otherText);
+            };
+
+            Action<string> verifyJsonSerializationText = (text) =>
+            {
+                QueryDefinition query = JsonConvert.DeserializeObject<QueryDefinition>(text);
+                string otherText = JsonConvert.SerializeObject(query);
+
+                Assert.AreEqual(text, otherText);
+            };
+
+            // Verify serialization
+            verifyJsonSerialization("{\"query\":\"SELECT 1\"}", new SqlQuerySpec("SELECT 1"));
+
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                                    "{\"name\":\"@p1\",\"value\":5}" +
+                                    "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", 5) }
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":true}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", 5), new SqlParameter("@p1", true) }
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":\"abc\"}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", "abc") }
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":[1,2,3]}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new int[] { 1, 2, 3 }) }
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", JObject.Parse("{\"a\":[1,2,3]}")) }
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) }
+                });
+
+            // Verify roundtrips
+            verifyJsonSerializationText("{\"query\":\"SELECT 1\"}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":null}" +
+                    "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":true}" +
+                    "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":false}" +
+                    "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":123}" +
+                    "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":\"abc\"}" +
+                    "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,\"abc\"]}}" +
+                    "]" +
+                "}");
+        }
+
 
         [TestMethod]
         public async Task VerifyNegativeWebProxySettings()

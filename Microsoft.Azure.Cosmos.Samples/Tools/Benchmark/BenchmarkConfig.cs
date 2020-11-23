@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using CommandLine;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
+    using Newtonsoft.Json;
 
     public class BenchmarkConfig
     {
@@ -23,6 +24,7 @@ namespace CosmosBenchmark
         public string EndPoint { get; set; }
 
         [Option('k', Required = true, HelpText = "Cosmos account master key")]
+        [JsonIgnore]
         public string Key { get; set; }
 
         [Option(Required = false, HelpText = "Database to use")]
@@ -87,6 +89,16 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
+
+        [Option(Required = false, HelpText = "Endpoint to publish results to")]
+        internal string ResultsEndpoint { get; set; }
+
+        [Option(Required = false, HelpText = "Key to publish results to")]
+        [JsonIgnore]
+        internal string ResultsKey { get; set; }
+
+        [Option(Required = false, HelpText = "Database to publish results to")]
+        internal string ResultsDatabase { get; set; }
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         internal string ResultsContainer { get; set; } = "runsummary";

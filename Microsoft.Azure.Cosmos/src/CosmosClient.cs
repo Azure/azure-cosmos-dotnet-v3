@@ -242,10 +242,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(tokenCredential));
             }
 
+            clientOptions ??= new CosmosClientOptions();
+
             this.Endpoint = new Uri(accountEndpoint);
-            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(tokenCredential,
-                accountEndpoint,
-                clientOptions?.TokenCredentialBackgroundRefreshInterval);
+            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(
+                tokenCredential,
+                this.Endpoint,
+                clientOptions.RequestTimeout,
+                clientOptions.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
                 this,

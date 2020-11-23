@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos
         // Verify that for known exceptions, session token is updated
         public async Task GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException()
         {
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.SessionToken, "0:1#100#1=20#2=5#3=31");
             headers.Set(WFConstants.BackendHeaders.LocalLSN, "10");
             await this.GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException(new ConflictException("test", headers, new Uri("http://one.com")));
@@ -391,7 +391,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
             headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
             headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
         // Verify that for 429 exceptions, session token is not updated
         public async Task GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownExceptions()
         {
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.SessionToken, "0:1#100#1=20#2=5#3=30");
             headers.Set(WFConstants.BackendHeaders.LocalLSN, "10");
             await this.GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownException(new RequestRateTooLargeException("429", headers, new Uri("http://one.com")));
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
             headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
             headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
             headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
             headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() =>new HttpClient(messageHandler)));
 
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
             headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
             headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
@@ -738,7 +738,7 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                     ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
                     "dbs/db1/colls/coll1",
-                    new DictionaryNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#9#4=8#5=7" } });
+                    new StoreRequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#9#4=8#5=7" } });
 
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler httpMessageHandler = new MockMessageHandler(messageHandler);

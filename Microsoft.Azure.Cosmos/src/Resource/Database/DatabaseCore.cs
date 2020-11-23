@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -187,6 +189,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore container = (ContainerCore)this.GetContainer(containerProperties.Id);
             using (ResponseMessage readResponse = await container.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken))
             {
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
@@ -194,17 +197,37 @@ namespace Microsoft.Azure.Cosmos
                     ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                         container,
                         readResponse);
-                    if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                    if (containerProperties.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                     {
-                        throw new ArgumentException(
-                            string.Format(
-                                ClientResources.PartitionKeyPathConflict,
-                                containerProperties.PartitionKeyPath,
-                                containerProperties.Id,
-                                retrivedContainerResponse.Resource.PartitionKeyPath),
-                            nameof(containerProperties.PartitionKey));
+                        if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    ClientResources.PartitionKeyPathConflict,
+                                    containerProperties.PartitionKeyPath,
+                                    containerProperties.Id,
+                                    retrivedContainerResponse.Resource.PartitionKeyPath),
+                                nameof(containerProperties.PartitionKey));
+                        }
                     }
-
+#if INTERNAL || SUBPARTITIONING
+                    else
+                    {
+                        IReadOnlyList<string> retrivedPartitionKeyPaths = retrivedContainerResponse.Resource.PartitionKeyPaths;
+                        IReadOnlyList<string> receivedPartitionKeyPaths = containerProperties.PartitionKeyPaths;
+                        
+                        if (retrivedPartitionKeyPaths.Count != receivedPartitionKeyPaths.Count || !Enumerable.SequenceEqual(retrivedPartitionKeyPaths, receivedPartitionKeyPaths))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    ClientResources.PartitionKeyPathConflict,
+                                    string.Join(",", containerProperties.PartitionKeyPaths),
+                                    containerProperties.Id,
+                                    string.Join(",", retrivedContainerResponse.Resource.PartitionKeyPaths)),
+                                nameof(containerProperties.PartitionKey));
+                        }
+                    }
+#endif
                     return retrivedContainerResponse;
                 }
             }
@@ -227,6 +250,7 @@ namespace Microsoft.Azure.Cosmos
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
             using (ResponseMessage readResponseAfterCreate = await container.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken))
             {
                 return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
