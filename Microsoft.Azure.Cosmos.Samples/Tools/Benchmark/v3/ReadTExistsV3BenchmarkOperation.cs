@@ -50,13 +50,13 @@ namespace CosmosBenchmark
                 throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
             }
 
-            double ruCharges = itemResponse.Headers.RequestCharge;
             return new OperationResult()
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
-                RuCharges = ruCharges,
-                lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                RuCharges = itemResponse.Headers.RequestCharge,
+                CosmosDiagnostics = itemResponse.Diagnostics,
+                LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
             };
         }
 
