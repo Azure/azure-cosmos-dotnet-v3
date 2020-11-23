@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                             collectionFromCache.ResourceId,
                             feedRangeEpk.Range,
-                            forceRefresh: true);
+                            forceRefresh: false);
                         if (overlappingRanges == null)
                         {
                             CosmosException notFound = new CosmosException(
