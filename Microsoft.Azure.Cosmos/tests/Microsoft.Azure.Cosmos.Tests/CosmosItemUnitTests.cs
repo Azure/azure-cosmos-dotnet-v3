@@ -658,15 +658,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
