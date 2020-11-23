@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Buffers;
+    using System.Buffers.Text;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -135,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
                 out ArrayOwner payloadStream);
             using (payloadStream)
             {
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + authorizationToken;
             }
         }
 
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out string payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
                 verb,
                 resourceId,
                 resourceType,
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
             using (payloadStream)
             {
                 payload = AuthorizationHelper.AuthorizationEncoding.GetString(payloadStream.Buffer.Array, payloadStream.Buffer.Offset, (int)payloadStream.Buffer.Count);
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + authorizationToken;
             }
         }
 
@@ -171,16 +172,16 @@ namespace Microsoft.Azure.Cosmos
             IComputeHash stringHMACSHA256Helper,
             out ArrayOwner payload)
         {
-            string authorizationToken = AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
-                verb,
-                resourceId,
-                resourceType,
-                headers,
-                stringHMACSHA256Helper,
-                out payload);
+            string authorizationToken = AuthorizationHelper.GenerateUrlEncodedAuthorizationTokenWithHashCore(
+                verb: verb,
+                resourceId: resourceId,
+                resourceType: resourceType,
+                headers: headers,
+                stringHMACSHA256Helper: stringHMACSHA256Helper,
+                payload: out payload);
             try
             {
-                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + HttpUtility.UrlEncode(authorizationToken);
+                return AuthorizationHelper.AuthorizationFormatPrefixUrlEncoded + authorizationToken;
             }
             catch
             {
@@ -652,7 +653,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
-        private static string GenerateAuthorizationTokenWithHashCore(
+        private static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
@@ -704,13 +705,49 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                string authorizationToken = Convert.ToBase64String(hashPayLoad);
-                return authorizationToken;
+                return AuthorizationHelper.OptimizedConvertToBase64string(hashPayLoad);
             }
             catch
             {
                 ArrayPool<byte>.Shared.Return(buffer);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// This an optimized version of doing HttpUtility.UrlEncode(Convert.ToBase64String(hashPayLoad)).
+        /// This avoids the over head of converting it to a string and back to a byte[].
+        /// </summary>
+        private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad)
+        {
+            // Create a large enough buffer that URL encode can use it.
+            // Increase the buffer by 3x so it can be used for the URL encoding
+            int capacity = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3;
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(capacity);
+
+            try
+            {
+                Span<byte> encodingBuffer = rentedBuffer;
+                // This replaces the Convert.ToBase64String
+                OperationStatus status = Base64.EncodeToUtf8(
+                    hashPayLoad,
+                    encodingBuffer,
+                    out int _,
+                    out int bytesWritten);
+
+                if (status != OperationStatus.Done)
+                {
+                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                }
+
+                return AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten);
+            }
+            finally
+            {
+                if (rentedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
             }
         }
 
@@ -783,6 +820,65 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
                 }
+            }
+        }
+
+        /// <summary>
+        /// This does HttpUtility.UrlEncode functionality with Span buffer. It does an in place update to avoid
+        /// creating the new buffer.
+        /// </summary>
+        /// <param name="base64Bytes">The buffer that include the bytes to url encode.</param>
+        /// <param name="length">The length of bytes used in the buffer</param>
+        /// <returns>The URLEncoded string of the bytes in the buffer</returns>
+        public unsafe static string UrlEncodeBase64SpanInPlace(Span<byte> base64Bytes, int length)
+        {
+            if (base64Bytes == default)
+            {
+                throw new ArgumentNullException(nameof(base64Bytes));
+            }
+
+            if (base64Bytes.Length < length * 3)
+            {
+                throw new ArgumentException($"{nameof(base64Bytes)} should be 3x to avoid running out of space in worst case scenario where all characters are special");
+            }
+
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+
+            int escapeBufferPosition = base64Bytes.Length - 1;
+            for (int i = length - 1; i >= 0; i--)
+            { 
+                byte curr = base64Bytes[i];
+                // Base64 is limited to Alphanumeric characters and '/' '=' '+'
+                switch (curr)
+                {
+                    case (byte)'/':
+                        base64Bytes[escapeBufferPosition--] = (byte)'f';
+                        base64Bytes[escapeBufferPosition--] = (byte)'2';
+                        base64Bytes[escapeBufferPosition--] = (byte)'%';
+                        break;
+                    case (byte)'=':
+                        base64Bytes[escapeBufferPosition--] = (byte)'d';
+                        base64Bytes[escapeBufferPosition--] = (byte)'3';
+                        base64Bytes[escapeBufferPosition--] = (byte)'%';
+                        break;
+                    case (byte)'+':
+                        base64Bytes[escapeBufferPosition--] = (byte)'b';
+                        base64Bytes[escapeBufferPosition--] = (byte)'2';
+                        base64Bytes[escapeBufferPosition--] = (byte)'%';
+                        break;
+                    default:
+                        base64Bytes[escapeBufferPosition--] = curr;
+                        break;
+                }
+            }
+
+            Span<byte> endSlice = base64Bytes.Slice(escapeBufferPosition + 1);
+            fixed (byte* bp = endSlice)
+            {
+                return Encoding.UTF8.GetString(bp, endSlice.Length);
             }
         }
 

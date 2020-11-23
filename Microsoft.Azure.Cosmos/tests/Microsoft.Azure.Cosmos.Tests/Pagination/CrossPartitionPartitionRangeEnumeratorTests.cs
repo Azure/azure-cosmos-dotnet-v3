@@ -6,12 +6,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             await implementation.TestSplitWithResumeContinuationAsync();
         }
 
-        private sealed class Implementation : PartitionRangeEnumeratorTests<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>, CrossPartitionState<DocumentContainerState>>
+        private sealed class Implementation : PartitionRangeEnumeratorTests<CrossFeedRangePage<ReadFeedPage, ReadFeedState>, CrossFeedRangeState<ReadFeedState>>
         {
             public Implementation()
                 : base(singlePartition: false)
@@ -78,9 +79,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 int numItems = 1000;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerator<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
+                IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-                (HashSet<string> firstDrainResults, CrossPartitionState<DocumentContainerState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
+                (HashSet<string> firstDrainResults, CrossFeedRangeState<ReadFeedState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
 
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await inMemoryCollection.SplitAsync(ranges[ranges.Count / 2], cancellationToken: default);
 
                 // Resume from state
-                IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
+                IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
 
                 HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
                 Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
@@ -102,11 +103,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 int numItems = 1000;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
+                IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
 
                 HashSet<string> identifiers = new HashSet<string>();
                 Random random = new Random();
-                await foreach (TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>> tryGetPage in enumerable)
+                await foreach (TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> tryGetPage in enumerable)
                 {
                     if (random.Next() % 2 == 0)
                     {
@@ -127,63 +128,73 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(numItems, identifiers.Count);
             }
 
-            public override IAsyncEnumerable<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> CreateEnumerable(
+            public override IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerable(
                 IDocumentContainer inMemoryCollection,
-                CrossPartitionState<DocumentContainerState> state = null)
+                CrossFeedRangeState<ReadFeedState> state = null)
             {
-                PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
+                PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
                     FeedRangeInternal range,
-                    DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
+                    ReadFeedState state) => new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRange: range,
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default,
                         state: state);
 
-                return new CrossPartitionRangePageAsyncEnumerable<DocumentContainerPage, DocumentContainerState>(
+                return new CrossPartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
-                    state: state);
+                    state: state ?? new CrossFeedRangeState<ReadFeedState>(
+                        new FeedRangeState<ReadFeedState>[]
+                        { 
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
+                        }));
             }
 
-            public override IAsyncEnumerator<TryCatch<CrossPartitionPage<DocumentContainerPage, DocumentContainerState>>> CreateEnumerator(
+            public override IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> CreateEnumerator(
                 IDocumentContainer inMemoryCollection,
-                CrossPartitionState<DocumentContainerState> state = null)
+                CrossFeedRangeState<ReadFeedState> state = null)
             {
-                PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> createEnumerator(
+                PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
                     FeedRangeInternal range,
-                    DocumentContainerState state) => new DocumentContainerPartitionRangeEnumerator(
+                    ReadFeedState state) => new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRange: range,
                         pageSize: 10,
+                        queryRequestOptions: default,
                         cancellationToken: default,
                         state: state);
 
-                CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> enumerator = new CrossPartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>(
+                CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     feedRangeProvider: inMemoryCollection,
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
                     cancellationToken: default,
-                    state: state);
+                    state: state ?? new CrossFeedRangeState<ReadFeedState>(
+                        new FeedRangeState<ReadFeedState>[]
+                        {
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
+                        }));
 
                 return enumerator;
             }
 
-            public override IReadOnlyList<Record> GetRecordsFromPage(CrossPartitionPage<DocumentContainerPage, DocumentContainerState> page)
+            public override IReadOnlyList<Record> GetRecordsFromPage(CrossFeedRangePage<ReadFeedPage, ReadFeedState> page)
             {
-                return page.Page.Records;
+                return page.Page.GetRecords();
             }
 
-            private sealed class PartitionRangePageAsyncEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState>>
+            private sealed class PartitionRangePageAsyncEnumeratorComparer : IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>>
             {
                 public static readonly PartitionRangePageAsyncEnumeratorComparer Singleton = new PartitionRangePageAsyncEnumeratorComparer();
 
                 public int Compare(
-                    PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> partitionRangePageEnumerator1,
-                    PartitionRangePageAsyncEnumerator<DocumentContainerPage, DocumentContainerState> partitionRangePageEnumerator2)
+                    PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> partitionRangePageEnumerator1,
+                    PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> partitionRangePageEnumerator2)
                 {
                     if (object.ReferenceEquals(partitionRangePageEnumerator1, partitionRangePageEnumerator2))
                     {

@@ -33,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Contracts\BenchmarkResults.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Json\CuratedDocsBenchmark.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CuratedDocsBenchmark.cs</LastGenOutput>

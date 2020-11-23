@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override CosmosElement this[int index] => this.cosmosElements[index];
 
-            public override IEnumerator<CosmosElement> GetEnumerator() => this.cosmosElements.GetEnumerator();
+            public override Enumerator GetEnumerator() => new Enumerator(this.cosmosElements.GetEnumerator());
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

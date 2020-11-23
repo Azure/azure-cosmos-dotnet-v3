@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="DocumentServiceResponse"/> instance.</returns>
         public static DocumentServiceResponse GetDocumentServiceResponse(DocumentServiceRequest request)
         {
-            DictionaryNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+            StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
 
             if (request.OperationType == OperationType.Read)
             {
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
-            DictionaryNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+            StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
 
             if (request.OperationType == OperationType.Read)
             {
@@ -180,9 +180,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return null;
         }
 
-        private static DictionaryNameValueCollection GenerateTestHeaders()
+        private static StoreResponseNameValueCollection GenerateTestHeaders()
         {
-            DictionaryNameValueCollection headers = new DictionaryNameValueCollection();
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
             for (int i = 0; i < 15; i++)
             {
                 string random = Guid.NewGuid().ToString();
