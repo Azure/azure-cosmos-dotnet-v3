@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Net.Http;
+    using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -225,6 +226,83 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput1, baseline[2], baseline[1], baseline[3], nvc, key));
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput2, baseline[2], baseline[1], baseline[3], nvc, key));
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput3, baseline[2], baseline[1], baseline[3], nvc, key));
+            }
+        }
+
+        [TestMethod]
+        public void Base64UrlEncoderFuzzTest()
+        {
+            Random random = new Random();
+            for(int i = 0; i < 2000; i++)
+            {
+                Span<byte> randomBytes = new byte[random.Next(1, 500)];
+                random.NextBytes(randomBytes);
+                string randomBase64String = Convert.ToBase64String(randomBytes);
+                byte[] randomBase64Bytes = Encoding.UTF8.GetBytes(randomBase64String);
+                Span<byte> buffered = new byte[randomBase64Bytes.Length * 3];
+                randomBase64Bytes.CopyTo(buffered);
+
+                string baseline = null;
+                string newResults = null;
+                try
+                {
+                    baseline = HttpUtility.UrlEncode(randomBase64Bytes);
+                    newResults = AuthorizationHelper.UrlEncodeBase64SpanInPlace(buffered, randomBase64Bytes.Length);
+                }
+                catch(Exception e)
+                {
+                    Assert.Fail($"Url encode failed with string {randomBase64String} ; Exception:{e}");
+                }
+
+                Assert.AreEqual(baseline, newResults);
+            }
+        }
+
+        [TestMethod]
+        public void Base64UrlEncoderEdgeCasesTest()
+        {
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'=';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%3d", urlEncoded);
+            }
+
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'+';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%2b", urlEncoded);
+            }
+
+            {
+                Span<byte> singleInvalidChar = new byte[3];
+                singleInvalidChar[0] = (byte)'/';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 1);
+                Assert.AreEqual("%2f", urlEncoded);
+            }
+
+            {
+                Span<byte> multipleInvalidChar = new byte[9];
+                multipleInvalidChar[0] = (byte)'=';
+                multipleInvalidChar[1] = (byte)'+';
+                multipleInvalidChar[2] = (byte)'/';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(multipleInvalidChar, 3);
+                Assert.AreEqual("%3d%2b%2f", urlEncoded);
+            }
+
+            {
+                Span<byte> singleValidChar = new byte[3];
+                singleValidChar[0] = (byte)'a';
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleValidChar, 1);
+                Assert.AreEqual("a", urlEncoded);
+            }
+
+            {
+                byte[] singleInvalidChar = new byte[0];
+                string result = HttpUtility.UrlEncode(singleInvalidChar);
+                string urlEncoded = AuthorizationHelper.UrlEncodeBase64SpanInPlace(singleInvalidChar, 0);
+                Assert.AreEqual(result, urlEncoded);
             }
         }
     }

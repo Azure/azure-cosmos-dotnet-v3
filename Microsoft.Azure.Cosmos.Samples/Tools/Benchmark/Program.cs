@@ -43,13 +43,11 @@ namespace CosmosBenchmark
                     TelemetrySpan.ResetLatencyHistogram(config.ItemCount);
                 }
 
-                string accountKey = config.Key;
-                config.Key = null; // Don't print
                 config.Print();
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config, accountKey);
+                RunSummary runSummary = await program.ExecuteAsync(config);
             }
             finally
             {
@@ -89,9 +87,9 @@ namespace CosmosBenchmark
         /// Run samples for Order By queries.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, string accountKey)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
-            using (CosmosClient cosmosClient = config.CreateCosmosClient(accountKey))
+            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
             {
                 if (config.CleanupOnStart)
                 {
@@ -115,7 +113,7 @@ namespace CosmosBenchmark
 
                 // TBD: 2 clients SxS some overhead
                 RunSummary runSummary;
-                using (DocumentClient documentClient = config.CreateDocumentClient(accountKey))
+                using (DocumentClient documentClient = config.CreateDocumentClient(config.Key))
                 {
                     Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
                         config,
@@ -167,11 +165,35 @@ namespace CosmosBenchmark
 
                 if (config.PublishResults)
                 {
-                    Container resultsContainer = cosmosClient.GetContainer(config.Database, config.ResultsContainer);
-                    await resultsContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
+                    runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
+                    await this.PublishResults(
+                        config, 
+                        runSummary, 
+                        cosmosClient);
                 }
 
                 return runSummary;
+            }
+        }
+
+        private async Task PublishResults(
+            BenchmarkConfig config, 
+            RunSummary runSummary, 
+            CosmosClient benchmarkClient)
+        {
+            if (string.IsNullOrEmpty(config.ResultsEndpoint))
+            {
+                Container resultContainer = benchmarkClient.GetContainer(
+                    databaseId: config.ResultsDatabase ?? config.Database,
+                    containerId: config.ResultsContainer);
+
+                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
+            }
+            else
+            {
+                using CosmosClient cosmosClient = new CosmosClient(config.ResultsEndpoint, config.ResultsKey);
+                Container resultContainer = cosmosClient.GetContainer(config.ResultsDatabase, config.ResultsContainer);
+                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
             }
         }
 

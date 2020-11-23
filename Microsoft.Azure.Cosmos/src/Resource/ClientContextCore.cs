@@ -335,9 +335,10 @@ namespace Microsoft.Azure.Cosmos
                     using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
                     {
                         return await collectionCache.ResolveByNameAsync(
-                            HttpConstants.Versions.CurrentVersion,
-                            containerUri,
-                            cancellationToken);
+                            apiVersion: HttpConstants.Versions.CurrentVersion,
+                            resourceAddress: containerUri,
+                            forceRefesh: false,
+                            cancellationToken: cancellationToken);
                     }
                 }
                 catch (DocumentClientException ex)

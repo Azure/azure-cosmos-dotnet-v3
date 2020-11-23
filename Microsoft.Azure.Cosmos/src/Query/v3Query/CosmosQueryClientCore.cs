@@ -185,7 +185,8 @@ namespace Microsoft.Azure.Cosmos
         public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
-            string effectivePartitionKeyString)
+            string effectivePartitionKeyString,
+            bool forceRefresh)
         {
             return this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
@@ -193,14 +194,16 @@ namespace Microsoft.Azure.Cosmos
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
-                });
+                },
+                forceRefresh);
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal)
+            FeedRangeInternal feedRangeInternal,
+            bool forceRefresh)
         {
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
             List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
@@ -208,13 +211,15 @@ namespace Microsoft.Azure.Cosmos
             return await this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
                 collectionResourceId,
-                ranges);
+                ranges,
+                forceRefresh);
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges)
+            List<Range<string>> providedRanges,
+            bool forceRefresh)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -230,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
 
             IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, forceRefresh);
             if (ranges == null && PathsHelper.IsNameBased(resourceLink))
             {
                 // Refresh the cache and don't try to re-resolve collection as it is not clear what already
