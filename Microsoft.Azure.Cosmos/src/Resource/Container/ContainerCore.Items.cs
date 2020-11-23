@@ -553,7 +553,9 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRid = await this.GetRIDAsync(cancellationToken);
+            string containerRid = await this.GetCachedRIDAsync(
+                forceRefresh: false, 
+                cancellationToken: cancellationToken);
             IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
                         containerRid,
                         new Documents.Routing.Range<string>(
