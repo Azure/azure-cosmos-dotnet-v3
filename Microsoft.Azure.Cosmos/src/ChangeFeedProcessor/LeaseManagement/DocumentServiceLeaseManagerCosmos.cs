@@ -5,10 +5,13 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -22,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly DocumentServiceLeaseStoreManagerOptions options;
         private readonly RequestOptionsFactory requestOptionsFactory;
+        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
         public DocumentServiceLeaseManagerCosmos(
@@ -36,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.leaseUpdater = leaseUpdater;
             this.options = options;
             this.requestOptionsFactory = requestOptionsFactory;
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
         }
 
         public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
@@ -51,13 +56,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             // This would not happen with new created leases but we need to be back compat
             if (lease.FeedRange == null)
             {
-                if (this.partitionKeyRangeCache == null)
+                if (!this.lazyContainerRid.ValueInitialized)
                 {
+                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(default);
+                    if (!tryInitializeContainerRId.Succeeded)
+                    {
+                        throw tryInitializeContainerRId.Exception.InnerException;
+                    }
+
                     this.partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 }
 
                 PartitionKeyRange partitionKeyRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
-                    await this.monitoredContainer.GetRIDAsync(default), 
+                    this.lazyContainerRid.Result.Result, 
                     lease.CurrentLeaseToken);
 
                 if (partitionKeyRange != null)
@@ -245,6 +256,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private string GetDocumentId(string partitionId)
         {
             return this.options.GetPartitionLeasePrefix() + partitionId;
+        }
+
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                string containerRId = await this.monitoredContainer.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
+                return TryCatch<string>.FromResult(containerRId);
+            }
+            catch (CosmosException cosmosException)
+            {
+                return TryCatch<string>.FromException(cosmosException);
+            }
         }
     }
 }

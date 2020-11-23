@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             try
             {
-                string containerRId = await this.container.GetRIDAsync(cancellationToken);
+                string containerRId = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
                 return TryCatch<string>.FromResult(containerRId);
             }
             catch (CosmosException cosmosException)

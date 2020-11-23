@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-            containerMock.Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>())).ReturnsAsync("test");
+            containerMock.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync("test");
             MockDocumentClient mockDocumentClient = new MockDocumentClient();
             mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);
 

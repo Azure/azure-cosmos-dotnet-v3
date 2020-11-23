@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task InitializeAsync()
         {
-            string containerRid = await this.monitoredContainer.GetRIDAsync(default);
+            string containerRid = await this.monitoredContainer.GetCachedRIDAsync(default);
             string monitoredDatabaseAndContainerRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
             string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredDatabaseAndContainerRid);
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
