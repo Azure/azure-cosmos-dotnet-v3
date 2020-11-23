@@ -168,36 +168,49 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<FeedIterator> InitializeInternalFeedIteratorAsync(QueryDefinition queryDefinition)
         {
-            QueryDefinition newqueryDefinition = queryDefinition;
+            Dictionary<string, string> passedParamaterNameMap = null;
 
             // if paramaterized Query was sent else build one.
             if (queryDefinition.Parameters.Count == 0)
             {
-                newqueryDefinition = this.CreateDefinition(this.queryDefinition.QueryText);
+                queryDefinition = this.CreateDefinition(this.queryDefinition.QueryText);
             }
 
-            QueryDefinition queryWithEncryptedParameters = new QueryDefinition(newqueryDefinition.QueryText);
+            QueryDefinition queryWithEncryptedParameters = new QueryDefinition(queryDefinition.QueryText);
 
             // when passed via QueryDefinition we need to replace with actual Values.
-            string queryTextWithValues = newqueryDefinition.QueryText;
-            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in newqueryDefinition.Parameters)
+            string queryTextWithValues = queryDefinition.QueryText;
+
+            if (SqlQueryParser.TryParse(queryTextWithValues, out SqlQuery sqlQuery)
+                   && (sqlQuery.WhereClause != null)
+                   && (sqlQuery.WhereClause.FilterExpression != null)
+                   && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression exp)
+                   && (queryDefinition.Parameters.Count != 0))
+            {
+                bool supportedQuery = false;
+
+                // this map is required to identify the Parameter name passed against the SQL parameters in WithParameter Option.
+                passedParamaterNameMap = SqlQueryPropertyValueVisitor(exp, ref supportedQuery);
+            }
+
+            foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
             {
                 if (!string.IsNullOrEmpty(parameters.Value.Name) && parameters.Value.Value != null)
                 {
                     queryTextWithValues = queryTextWithValues.Replace((string)parameters.Value.Name, parameters.Value.Value.ToString());
 
-                    // if the query definition had a bunch of encrypted and plain text values
+                    // if the query definition with parameters had a bunch of encrypted and plain text values
                     // lets replace it initially with plain text and the configured encrypted properties get replaced with encrypted values.
                     queryWithEncryptedParameters.WithParameter(parameters.Value.Name, parameters.Value.Value);
                 }
             }
 
-            if (SqlQueryParser.TryParse(queryTextWithValues, out SqlQuery sqlQuery)
+            if (SqlQueryParser.TryParse(queryTextWithValues, out sqlQuery)
                     && (sqlQuery.WhereClause != null)
                     && (sqlQuery.WhereClause.FilterExpression != null)
                     && (sqlQuery.WhereClause.FilterExpression is SqlBinaryScalarExpression expression))
             {
-                bool supportedQuery = true;
+                bool supportedQuery = false;
 
                 // Parse through the sqlQuery and build store of property and its value.Verify if we support the query
                 Dictionary<string, string> queryPropertyKeyValueStore = SqlQueryPropertyValueVisitor(expression, ref supportedQuery);
@@ -216,40 +229,34 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         string passedpropertyName = string.Empty;
                         foreach (string path in paths)
                         {
-                            propertyValue = string.Empty;
                             propertyName = path.Substring(1);
 
-                            for (int index = 0; index < queryPropertyKeyValueStore.Count; index++)
+                            if (queryPropertyKeyValueStore.ContainsKey(propertyName))
                             {
-                                if (queryPropertyKeyValueStore.ElementAt(index).Key.Contains(propertyName))
+                                queryPropertyKeyValueStore.TryGetValue(propertyName, out propertyValue);
+
+                                // get the Data Encryption Key configured for this path set.
+                                encryptionPolicy.TryGetValue(paths, out KeyValuePair<List<string>, PropertyEncryptionSetting> propertyEncryptionSetting);
+
+                                // string to be converted to the required orginal format stored in encryption settings.
+                                dynamic typeConvertedValue = Convert.ChangeType(propertyValue.Trim('"'), propertyEncryptionSetting.Value.PropertyDataType);
+
+                                byte[] plaintext = EncryptionSerializer.GetEncryptionSerializer(
+                                    propertyEncryptionSetting.Value.PropertyDataType,
+                                    propertyEncryptionSetting.Value.IsSqlCompatible).GetSerializer().Serialize(typeConvertedValue);
+
+                                byte[] ciphertext = await this.encryptor.EncryptAsync(
+                                    plaintext,
+                                    propertyEncryptionSetting.Value.DataEncryptionKeyId,
+                                    propertyEncryptionSetting.Value.EncryptionAlgorithm);
+
+                                if (queryDefinition.Parameters.Count == 0)
                                 {
-                                    passedpropertyName = newqueryDefinition.Parameters.ElementAt(index).Key.ToString();
-                                    propertyName = queryPropertyKeyValueStore.ElementAt(index).Key;
-                                    queryPropertyKeyValueStore.TryGetValue(propertyName, out propertyValue);
-
-                                    // get the Data Encryption Key configured for this path set.
-                                    encryptionPolicy.TryGetValue(paths, out KeyValuePair<List<string>, PropertyEncryptionSetting> propertyEncryptionSetting);
-
-                                    dynamic typeConvertedValue = Convert.ChangeType(propertyValue.Trim('"'), propertyEncryptionSetting.Value.PropertyDataType);
-
-                                    byte[] plaintext = EncryptionSerializer.GetEncryptionSerializer(
-                                        propertyEncryptionSetting.Value.PropertyDataType,
-                                        propertyEncryptionSetting.Value.IsSqlCompatible).GetSerializer().Serialize(typeConvertedValue);
-
-                                    byte[] ciphertext = await this.encryptor.EncryptAsync(
-                                        plaintext,
-                                        propertyEncryptionSetting.Value.DataEncryptionKeyId,
-                                        propertyEncryptionSetting.Value.EncryptionAlgorithm);
-
-                                    // replace the parameter values with the encrypted value.
-                                    if (queryDefinition.Parameters.Count == 0)
-                                    {
-                                        queryWithEncryptedParameters.WithParameter("@" + propertyName, ciphertext);
-                                    }
-                                    else if (!string.IsNullOrEmpty(passedpropertyName))
-                                    {
-                                        queryWithEncryptedParameters.WithParameter(passedpropertyName, ciphertext);
-                                    }
+                                    queryWithEncryptedParameters.WithParameter("@" + propertyName, ciphertext);
+                                }
+                                else
+                                {
+                                    queryWithEncryptedParameters.WithParameter(passedParamaterNameMap[propertyName], ciphertext);
                                 }
                             }
                         }
@@ -276,25 +283,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (queryPropertyKeyValueStore == null)
             {
                 queryPropertyKeyValueStore = new Dictionary<string, string>();
+                supportedQuery = true;
             }
 
-            if (query.OperatorKind != SqlBinaryScalarOperatorKind.And && query.OperatorKind != SqlBinaryScalarOperatorKind.Or && query.OperatorKind != SqlBinaryScalarOperatorKind.Equal)
+            if ((query.OperatorKind != SqlBinaryScalarOperatorKind.And && query.OperatorKind != SqlBinaryScalarOperatorKind.Or && query.OperatorKind != SqlBinaryScalarOperatorKind.Equal)
+                || supportedQuery == false)
             {
                 queryPropertyKeyValueStore.Clear();
                 supportedQuery = false;
 
                 // exit.
-                SqlQueryPropertyValueVisitor(null, ref supportedQuery, queryPropertyKeyValueStore);
+                return queryPropertyKeyValueStore;
             }
 
             if ((query.OperatorKind == SqlBinaryScalarOperatorKind.And || query.OperatorKind == SqlBinaryScalarOperatorKind.Or) && supportedQuery == true)
             {
                 // update the existing key value store.
-                supportedQuery = true;
-                SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.LeftExpression,ref supportedQuery, queryPropertyKeyValueStore);
-                SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.RightExpression,ref supportedQuery, queryPropertyKeyValueStore);
+                SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.LeftExpression, ref supportedQuery, queryPropertyKeyValueStore);
+                SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.RightExpression, ref supportedQuery, queryPropertyKeyValueStore);
             }
-            else if (query.OperatorKind == SqlBinaryScalarOperatorKind.Equal && !queryPropertyKeyValueStore.ContainsKey(query.LeftExpression.ToString().Substring(2)))
+            else if (query.OperatorKind == SqlBinaryScalarOperatorKind.Equal && !queryPropertyKeyValueStore.ContainsKey(query.LeftExpression.ToString().Substring(2)) && supportedQuery == true)
             {
                 queryPropertyKeyValueStore.Add(query.LeftExpression.ToString().Substring(2), query.RightExpression.ToString());
             }
