@@ -64,5 +64,7 @@ namespace CosmosBenchmark
         public double? Top99PercentLatencyInMs { get; set; }
 
         public double AverageRps { get; set; }
+
+        public JArray Diagnostics { get; set; }
     }
 }
