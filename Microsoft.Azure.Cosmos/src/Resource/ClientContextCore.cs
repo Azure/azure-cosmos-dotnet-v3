@@ -346,7 +346,6 @@ namespace Microsoft.Azure.Cosmos
                     throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
                 }
             }
-
         }
 
         internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)

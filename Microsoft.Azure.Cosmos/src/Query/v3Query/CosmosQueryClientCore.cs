@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
                     clientQueryCorrelationId: clientQueryCorrelationId,
-                    partitionKeyRangeId: feedRange.ToJsonString(),
+                    partitionKeyRangeId: feedRange is FeedRangePartitionKey feedRangePartitionKey && feedRangePartitionKey.PartitionKey.IsNone ? "None" : feedRange.ToJsonString(),
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
                     diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
