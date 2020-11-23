@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the (optional) range to start from.
         /// </summary>
-        public FeedRange FeedRange { get; }
+        internal FeedRange FeedRange { get; }
 
         internal abstract void Accept(ChangeFeedStartFromVisitor visitor);
 
