@@ -66,8 +66,11 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(requestMessage != null, nameof(requestMessage));
             Headers headers = new Headers(documentServiceResponse.Headers);
 
-            CosmosDiagnosticsTraceDatum clientSideRequestStatisticsTraceDatum = new CosmosDiagnosticsTraceDatum((CosmosClientSideRequestStatistics)documentServiceResponse.RequestStats);
-            trace.AddDatum(nameof(CosmosClientSideRequestStatistics), clientSideRequestStatisticsTraceDatum);
+            if (documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
+            {
+                CosmosDiagnosticsTraceDatum clientSideRequestStatisticsTraceDatum = new CosmosDiagnosticsTraceDatum(cosmosClientSideRequestStatistics);
+                trace.AddDatum(nameof(CosmosClientSideRequestStatistics), clientSideRequestStatisticsTraceDatum);
+            }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
             if (!(documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics clientSideRequestStatistics) ||

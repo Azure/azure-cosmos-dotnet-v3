@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ExceptionlessTests
     {
-        private static Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
+        private static readonly Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
 
         [TestMethod]        
         [ExpectedException(typeof(NotFoundException))]
@@ -40,8 +40,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null))
             {
                 request.UseStatusCodeForFailures = true;
-                StoreResponse mockStoreResponse404 = new StoreResponse();
-                mockStoreResponse404.Headers = new StoreRequestNameValueCollection();
+                StoreResponse mockStoreResponse404 = new StoreResponse
+                {
+                    Headers = new StoreRequestNameValueCollection()
+                };
                 mockStoreResponse404.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
 
@@ -71,8 +73,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null))
             {
                 request.UseStatusCodeForFailures = true;
-                StoreResponse mockStoreResponse4XX = new StoreResponse();
-                mockStoreResponse4XX.Status = statusCode;
+                StoreResponse mockStoreResponse4XX = new StoreResponse
+                {
+                    Status = statusCode
+                };
 
 
                 TransportClient.ThrowServerException(
@@ -97,8 +101,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         null))
             {
                 request.UseStatusCodeFor429 = true;
-                StoreResponse mockStoreResponse429 = new StoreResponse();
-                mockStoreResponse429.Status = (int)StatusCodes.TooManyRequests;
+                StoreResponse mockStoreResponse429 = new StoreResponse
+                {
+                    Status = (int)StatusCodes.TooManyRequests
+                };
 
                 TransportClient.ThrowServerException(
                     string.Empty,
@@ -162,7 +168,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-
         public async Task TransportHandler_DoesNotCatch_For404(bool goThroughGateway)
         {
             MockTransportHandler transportHandler = await TransportHandlerRunScenario((int)HttpStatusCode.NotFound, goThroughGateway);
@@ -173,7 +178,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-
         public async Task TransportHandler_DoesNotCatch_For412(bool goThroughGateway)
         {
             MockTransportHandler transportHandler = await TransportHandlerRunScenario((int)HttpStatusCode.PreconditionFailed, goThroughGateway);
@@ -184,7 +188,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
-
         public async Task TransportHandler_DoesNotCatch_For429(bool goThroughGateway)
         {
             MockTransportHandler transportHandler = await TransportHandlerRunScenario((int)StatusCodes.TooManyRequests, goThroughGateway);
@@ -199,17 +202,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// <param name="goThroughGateway">Whether or not to run the scenario using Gateway. If false, Direct will be used.</param>
         private static async Task<MockTransportHandler> TransportHandlerRunScenario(int responseStatusCode, bool goThroughGateway = true)
         {
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode) {
-                Content = new StringContent("{}"),
-                RequestMessage = httpRequest
-            });
-
-            Func<Uri, DocumentServiceRequest, StoreResponse> sendDirectFunc = (uri, request) => new StoreResponse()
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage httpRequest)
             {
-                ResponseBody = Stream.Null,
-                Status = responseStatusCode,
-                Headers = new StoreRequestNameValueCollection()
-            };
+                return await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode)
+                {
+                    Content = new StringContent("{}"),
+                    RequestMessage = httpRequest
+                });
+            }
+
+            StoreResponse sendDirectFunc(Uri uri, DocumentServiceRequest request)
+            {
+                return new StoreResponse()
+                {
+                    ResponseBody = Stream.Null,
+                    Status = responseStatusCode,
+                    Headers = new StoreRequestNameValueCollection()
+                };
+            }
 
             // This is needed because in order to Mock a TransportClient we previously need an instance of CosmosClient
             using CosmosClient internalClient = MockCosmosUtil.CreateMockCosmosClient();
@@ -221,10 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
-                (builder) => {
-                    builder
-                        .AddCustomHandlers(retryHandler, transportHandler);
-                });
+                (builder) => builder.AddCustomHandlers(retryHandler, transportHandler));
 
             try
             {
@@ -259,8 +266,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             AddressInformation[] addressInformation = GetMockAddressInformation();
             Mock<IAddressResolver> mockAddressCache = GetMockAddressCache(addressInformation);
 
-            ReplicationPolicy replicationPolicy = new ReplicationPolicy();
-            replicationPolicy.MaxReplicaSetSize = 1;
+            ReplicationPolicy replicationPolicy = new ReplicationPolicy
+            {
+                MaxReplicaSetSize = 1
+            };
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -283,7 +292,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             DocumentServiceRequest request, 
             int responseStatusCode)
         {
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode));
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage httpRequest)
+            {
+                return await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode));
+            }
 
             GatewayStoreModel storeModel = MockGatewayStoreModel(sendFunc);
 
@@ -335,13 +347,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation();
-                addressInformation[i].PhysicalUri =
+                addressInformation[i] = new AddressInformation
+                {
+                    PhysicalUri =
                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/";
-                addressInformation[i].IsPrimary = i == 0 ? true : false;
-                addressInformation[i].Protocol = Protocol.Tcp;
-                addressInformation[i].IsPublic = true;
+                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    IsPrimary = i == 0,
+                    Protocol = Protocol.Tcp,
+                    IsPublic = true
+                };
             }
             return addressInformation;
         }
