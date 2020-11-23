@@ -513,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 try
                 {
-                    string resourceIdentifier = await this.container.GetRIDAsync(cancellationToken);
+                    string resourceIdentifier = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken);
                     return TryCatch<string>.FromResult(resourceIdentifier);
                 }
                 catch (Exception ex)

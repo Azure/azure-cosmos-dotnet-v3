@@ -350,6 +350,7 @@ namespace Microsoft.Azure.Cosmos
                             return await collectionCache.ResolveByNameAsync(
                                 HttpConstants.Versions.CurrentVersion,
                                 containerUri,
+                                forceRefesh: false,
                                 cancellationToken);
                         }
                     }
