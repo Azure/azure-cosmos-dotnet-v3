@@ -291,8 +291,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 queryPropertyKeyValueStore.Clear();
                 supportedQuery = false;
-
-                // exit.
                 return queryPropertyKeyValueStore;
             }
 
@@ -302,12 +300,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.LeftExpression, ref supportedQuery, queryPropertyKeyValueStore);
                 SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.RightExpression, ref supportedQuery, queryPropertyKeyValueStore);
             }
-            else if (query.OperatorKind == SqlBinaryScalarOperatorKind.Equal && !queryPropertyKeyValueStore.ContainsKey(query.LeftExpression.ToString().Substring(2)) && supportedQuery == true)
+            else if (query.OperatorKind == SqlBinaryScalarOperatorKind.Equal && supportedQuery == true)
             {
-                queryPropertyKeyValueStore.Add(query.LeftExpression.ToString().Substring(2), query.RightExpression.ToString());
+                queryPropertyKeyValueStore.Add(GetPropertyName(query.LeftExpression), GetPropertyValue(query.RightExpression));
             }
 
             return queryPropertyKeyValueStore;
+        }
+
+        private static string GetPropertyName(SqlScalarExpression sqlBinaryScalarExp)
+        {
+            SqlPropertyRefScalarExpression propertyName = (SqlPropertyRefScalarExpression)sqlBinaryScalarExp;
+            return propertyName.Identifier.ToString();
+        }
+
+        private static string GetPropertyValue(SqlScalarExpression sqlBinaryScalarExp)
+        {
+            string propertyValue = null;
+
+            if (sqlBinaryScalarExp is SqlLiteralScalarExpression sqlLiteralScalarExpression)
+            {
+                propertyValue = sqlLiteralScalarExpression.Literal.ToString();
+            }
+            else if (sqlBinaryScalarExp is SqlParameterRefScalarExpression sqlParameterRefScalarExpression)
+            {
+                propertyValue = sqlParameterRefScalarExpression.Parameter.Name;
+            }
+            else if (sqlBinaryScalarExp is SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
+            {
+                propertyValue = sqlPropertyRefScalarExpression.Identifier.Value;
+            }
+            else
+            {
+                Debug.Fail("Unhandled sqlPropertyRefScalarExpression of type" + sqlBinaryScalarExp.GetType());
+            }
+
+            return propertyValue;
         }
 
         private QueryDefinition CreateDefinition(string queryText)
