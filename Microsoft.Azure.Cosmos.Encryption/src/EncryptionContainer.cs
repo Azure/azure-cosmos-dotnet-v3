@@ -686,23 +686,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // later on in the processing phase with encrypted values.
             if (queryDefinition != null)
             {
-                if (this.propertyEncryptionOptions != null)
+                if (this.clientEncryptionPolicy != null)
                 {
-                    Dictionary<List<string>, KeyValuePair<List<string>, PropertyEncryptionSetting>> encryptionPolicy = this.clientEncryptionPolicy.ClientEncryptionSetting.ToDictionary(kvp => kvp.Key);
-                    foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
-                    {
-                        foreach (List<string> paths in encryptionPolicy.Keys)
-                        {
-                            return new EncryptionFeedIterator(
-                                           queryDefinition,
-                                           this.clientEncryptionPolicy,
-                                           requestOptions,
-                                           this.Encryptor,
-                                           this.container,
-                                           decryptionResultHandler,
-                                           continuationToken);
-                        }
-                    }
+                    return new EncryptionFeedIterator(
+                        queryDefinition,
+                        this.clientEncryptionPolicy,
+                        requestOptions,
+                        this.Encryptor,
+                        this.container,
+                        decryptionResultHandler,
+                        continuationToken);
                 }
             }
 
@@ -732,30 +725,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (queryText != null)
             {
-                if (this.clientEncryptionPolicy != null)
+                if (this.propertyEncryptionOptions != null)
                 {
-                    Dictionary<List<string>, KeyValuePair<List<string>, PropertyEncryptionSetting>> encryptionPolicy = this.clientEncryptionPolicy.ClientEncryptionSetting.ToDictionary(kvp => kvp.Key);
-                    foreach (List<string> paths in encryptionPolicy.Keys)
-                    {
-                        foreach (string path in paths)
-                        {
-                            // first hit,this query contains a path which was encrypted send it out for
-                            // reconstructing it with encrypted values.We handle what parameters to encrypt
-                            // when we recreate the query since the query can contain paths that were not encrypted to begin with.
-                            if (queryText.Contains(path.Substring(1)))
-                            {
-                                QueryDefinition queryDefinition = new QueryDefinition(queryText);
-                                return new EncryptionFeedIterator(
-                                       queryDefinition,
-                                       this.clientEncryptionPolicy,
-                                       requestOptions,
-                                       this.Encryptor,
-                                       this.container,
-                                       decryptionResultHandler,
-                                       continuationToken);
-                            }
-                        }
-                    }
+                    QueryDefinition queryDefinition = new QueryDefinition(queryText);
+                    return new EncryptionFeedIterator(
+                           queryDefinition,
+                           this.clientEncryptionPolicy,
+                           requestOptions,
+                           this.Encryptor,
+                           this.container,
+                           decryptionResultHandler,
+                           continuationToken);
                 }
             }
 

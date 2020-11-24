@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 bool supportedQuery = false;
 
                 // this map is required to identify the Parameter name passed against the SQL parameters in WithParameter Option.
-                passedParamaterNameMap = SqlQueryPropertyValueVisitor(exp, ref supportedQuery);
+                passedParamaterNameMap = SqlBinaryScalarExpVisitor(exp, ref supportedQuery);
             }
 
             foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 bool supportedQuery = false;
 
                 // Parse through the sqlQuery and build store of property and its value.Verify if we support the query
-                Dictionary<string, string> queryPropertyKeyValueStore = SqlQueryPropertyValueVisitor(expression, ref supportedQuery);
+                Dictionary<string, string> queryPropertyKeyValueStore = SqlBinaryScalarExpVisitor(expression, ref supportedQuery);
 
                 if (queryPropertyKeyValueStore.Count != 0 && supportedQuery)
                 {
@@ -224,16 +224,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     foreach (List<string> paths in encryptionPolicy.Keys)
                     {
-                        string propertyValue = string.Empty;
-                        string propertyName = string.Empty;
-                        string passedpropertyName = string.Empty;
                         foreach (string path in paths)
                         {
-                            propertyName = path.Substring(1);
+                            string propertyName = path.Substring(1);
 
                             if (queryPropertyKeyValueStore.ContainsKey(propertyName))
                             {
-                                queryPropertyKeyValueStore.TryGetValue(propertyName, out propertyValue);
+                                queryPropertyKeyValueStore.TryGetValue(propertyName, out string propertyValue);
 
                                 // get the Data Encryption Key configured for this path set.
                                 encryptionPolicy.TryGetValue(paths, out KeyValuePair<List<string>, PropertyEncryptionSetting> propertyEncryptionSetting);
@@ -270,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     this.queryRequestOptions);
         }
 
-        internal static Dictionary<string, string> SqlQueryPropertyValueVisitor(
+        internal static Dictionary<string, string> SqlBinaryScalarExpVisitor(
             SqlBinaryScalarExpression query,
             ref bool supportedQuery,
             Dictionary<string, string> queryPropertyKeyValueStore = null)
@@ -286,7 +283,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 supportedQuery = true;
             }
 
-            if ((query.OperatorKind != SqlBinaryScalarOperatorKind.And && query.OperatorKind != SqlBinaryScalarOperatorKind.Or && query.OperatorKind != SqlBinaryScalarOperatorKind.Equal)
+            if ((query.OperatorKind != SqlBinaryScalarOperatorKind.And
+                && query.OperatorKind != SqlBinaryScalarOperatorKind.Or
+                && query.OperatorKind != SqlBinaryScalarOperatorKind.Equal)
                 || supportedQuery == false)
             {
                 queryPropertyKeyValueStore.Clear();
@@ -294,11 +293,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return queryPropertyKeyValueStore;
             }
 
-            if ((query.OperatorKind == SqlBinaryScalarOperatorKind.And || query.OperatorKind == SqlBinaryScalarOperatorKind.Or) && supportedQuery == true)
+            if ((query.OperatorKind == SqlBinaryScalarOperatorKind.And || query.OperatorKind == SqlBinaryScalarOperatorKind.Or)
+                && supportedQuery == true)
             {
                 // update the existing key value store.
-                SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.LeftExpression, ref supportedQuery, queryPropertyKeyValueStore);
-                SqlQueryPropertyValueVisitor((SqlBinaryScalarExpression)query.RightExpression, ref supportedQuery, queryPropertyKeyValueStore);
+                SqlBinaryScalarExpVisitor((SqlBinaryScalarExpression)query.LeftExpression, ref supportedQuery, queryPropertyKeyValueStore);
+                SqlBinaryScalarExpVisitor((SqlBinaryScalarExpression)query.RightExpression, ref supportedQuery, queryPropertyKeyValueStore);
             }
             else if (query.OperatorKind == SqlBinaryScalarOperatorKind.Equal && supportedQuery == true)
             {
@@ -314,25 +314,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return propertyName.Identifier.ToString();
         }
 
-        private static string GetPropertyValue(SqlScalarExpression sqlBinaryScalarExp)
+        private static string GetPropertyValue(SqlScalarExpression sqlScalarExp)
         {
             string propertyValue = null;
 
-            if (sqlBinaryScalarExp is SqlLiteralScalarExpression sqlLiteralScalarExpression)
+            if (sqlScalarExp is SqlLiteralScalarExpression sqlLiteralScalarExp)
             {
-                propertyValue = sqlLiteralScalarExpression.Literal.ToString();
+                propertyValue = sqlLiteralScalarExp.Literal.ToString();
             }
-            else if (sqlBinaryScalarExp is SqlParameterRefScalarExpression sqlParameterRefScalarExpression)
+            else if (sqlScalarExp is SqlParameterRefScalarExpression sqlParameterRefScalarExp)
             {
-                propertyValue = sqlParameterRefScalarExpression.Parameter.Name;
+                propertyValue = sqlParameterRefScalarExp.Parameter.Name;
             }
-            else if (sqlBinaryScalarExp is SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
+            else if (sqlScalarExp is SqlPropertyRefScalarExpression sqlPropertyRefScalarExp)
             {
-                propertyValue = sqlPropertyRefScalarExpression.Identifier.Value;
+                propertyValue = sqlPropertyRefScalarExp.Identifier.Value;
             }
             else
             {
-                Debug.Fail("Unhandled sqlPropertyRefScalarExpression of type" + sqlBinaryScalarExp.GetType());
+                Debug.Fail("Unhandled SqlScalarExpression of type" + sqlScalarExp.GetType());
             }
 
             return propertyValue;
@@ -351,12 +351,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 Dictionary<List<string>, KeyValuePair<List<string>, PropertyEncryptionSetting>> encryptionPolicy = this.clientEncryptionPolicy.ClientEncryptionSetting.ToDictionary(kvp => kvp.Key);
 
-                bool supportedQuery = true;
+                bool supportedQuery = false;
 
                 // Parse through the sqlQuery and build store of property and its values.Verify if we support the query
-                Dictionary<string, string> queryPropertyKeyValueStore = SqlQueryPropertyValueVisitor(expression, ref supportedQuery);
+                Dictionary<string, string> queryPropertyKeyValueStore = SqlBinaryScalarExpVisitor(expression, ref supportedQuery);
 
-                if (queryPropertyKeyValueStore.Count == 0 && supportedQuery)
+                if (queryPropertyKeyValueStore.Count == 0 || !supportedQuery)
                 {
                     return queryDefinition;
                 }
@@ -365,16 +365,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // the current query and build a new query.
                 foreach (List<string> paths in encryptionPolicy.Keys)
                 {
-                    string propertyValue = null;
-                    string propertyName = null;
                     foreach (string path in paths)
                     {
-                        propertyValue = string.Empty;
-                        propertyName = path.Substring(1);
+                        string propertyName = path.Substring(1);
 
                         if (queryText.Contains(propertyName))
                         {
-                            queryPropertyKeyValueStore.TryGetValue(propertyName, out propertyValue);
+                            queryPropertyKeyValueStore.TryGetValue(propertyName, out string propertyValue);
 
                             if (!string.IsNullOrEmpty(propertyValue))
                             {
