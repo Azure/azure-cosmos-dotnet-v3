@@ -56,5 +56,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
+
+        [TestMethod]
+        public async Task RetriesOnCompletingPartitionMigrationSplits()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingPartitionMigration };
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
+        }
     }
 }
