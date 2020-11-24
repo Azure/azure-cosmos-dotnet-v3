@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
-            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default(CancellationToken));
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
             Assert.IsFalse(shouldRetryResult.ShouldRetry);            
         }
 
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
-            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default(CancellationToken));
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
 
@@ -42,7 +42,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
-            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default(CancellationToken));
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task RetriesOnCompletingSplits()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingSplit };
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
     }
