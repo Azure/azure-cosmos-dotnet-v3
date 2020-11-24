@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
             string resourceIdOrFullName)
         {
             if (statusCode == HttpStatusCode.Gone
-                && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone || subStatusCode == SubStatusCodes.NameCacheIsStale)
+                && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone || subStatusCode == SubStatusCodes.NameCacheIsStale || subStatusCode == SubStatusCodes.CompletingSplit)
                 && this.retriesAttempted < MaxRetries)
             {
                 this.retriesAttempted++;
