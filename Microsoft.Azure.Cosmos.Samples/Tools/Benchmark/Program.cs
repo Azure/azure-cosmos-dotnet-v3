@@ -101,6 +101,21 @@ namespace CosmosBenchmark
                 Container container = containerResponse;
 
                 int? currentContainerThroughput = await container.ReadThroughputAsync();
+
+                // If the container has never had an item inserted then it returns a null for the current throughput
+                if (!currentContainerThroughput.HasValue)
+                {
+                    JObject jObject = new JObject
+                    {
+                        { "id", "test" },
+                        { config.PartitionKeyPath, Guid.NewGuid().ToString() },
+                        {"ttl", 2000 }
+                    };
+
+                    await container.CreateItemAsync<JObject>(jObject);
+                    currentContainerThroughput = await container.ReadThroughputAsync();
+                }
+
                 Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
 
                 int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
