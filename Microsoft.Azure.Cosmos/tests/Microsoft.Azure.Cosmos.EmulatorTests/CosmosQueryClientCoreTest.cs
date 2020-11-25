@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -45,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerQueryProperties containerProperties = await this.queryClientCore.GetCachedContainerQueryPropertiesAsync(
                 containerLink: this.Container.LinkUri,
                 partitionKey: new PartitionKey("Test"),
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default(CancellationToken));
 
             Assert.IsNotNull(containerProperties);
