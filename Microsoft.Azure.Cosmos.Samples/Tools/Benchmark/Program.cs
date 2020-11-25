@@ -108,7 +108,7 @@ namespace CosmosBenchmark
                 {
                     JObject jObject = new JObject
                     {
-                        { "id", "test" },
+                        { "id", Guid.NewGuid().ToString() },
                         { config.PartitionKeyPath, Guid.NewGuid().ToString() },
                         {"ttl", 2000 }
                     };
