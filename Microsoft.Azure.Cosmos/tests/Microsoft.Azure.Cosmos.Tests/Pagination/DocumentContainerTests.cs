@@ -184,17 +184,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             async Task<int> AssertChildPartitionAsync(FeedRangeInternal childRange)
             {
-                ReadFeedPage readFeedPage = await documentContainer.ReadFeedAsync(
-                    feedRange: childRange,
-                    readFeedState: ReadFeedState.Beginning(),
-                    pageSize: 100,
-                    queryRequestOptions: default,
-                    cancellationToken: default);
-
                 List<long> values = new List<long>();
-                foreach (Record record in readFeedPage.GetRecords())
+                ReadFeedState readFeedState = ReadFeedState.Beginning();
+                while (readFeedState != null)
                 {
-                    values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
+                        feedRange: childRange,
+                        readFeedState: readFeedState,
+                        pageSize: 1,
+                        queryRequestOptions: default,
+                        cancellationToken: default);
+                    readFeedState = page.State;
+                    foreach (Record record in page.GetRecords())
+                    {
+                        values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+                    }
                 }
 
                 List<long> sortedValues = values.OrderBy(x => x).ToList();
@@ -260,17 +264,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             async Task<int> AssertChildPartitionAsync(FeedRangeInternal feedRange)
             {
-                ReadFeedPage page = await documentContainer.ReadFeedAsync(
-                    feedRange: feedRange,
-                    readFeedState: ReadFeedState.Beginning(),
-                    pageSize: 100,
-                    queryRequestOptions: default,
-                    cancellationToken: default);
-
                 List<long> values = new List<long>();
-                foreach (Record record in page.GetRecords())
+                ReadFeedState readFeedState = ReadFeedState.Beginning();
+                while (readFeedState != null)
                 {
-                    values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
+                        feedRange: feedRange,
+                        readFeedState: readFeedState,
+                        pageSize: 1,
+                        queryRequestOptions: default,
+                        cancellationToken: default);
+                    readFeedState = page.State;
+                    foreach (Record record in page.GetRecords())
+                    {
+                        values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+                    }
                 }
 
                 List<long> sortedValues = values.OrderBy(x => x).ToList();
@@ -305,27 +313,47 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IReadOnlyList<FeedRangeInternal> mergedRanges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             Assert.AreEqual(1, mergedRanges.Count);
 
-            ReadFeedPage readFeedPage = await documentContainer.ReadFeedAsync(
-                feedRange: mergedRanges[0],
-                readFeedState: ReadFeedState.Beginning(),
-                pageSize: 100,
-                queryRequestOptions: default,
-                cancellationToken: default);
-
-            List<long> values = new List<long>();
-            foreach (Record record in readFeedPage.GetRecords())
+            async Task<int> GetFeedRangeCountAsync(FeedRangeInternal feedRange)
             {
-                values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
+                List<ResourceId> resourceIds = new List<ResourceId>();
+                ReadFeedState readFeedState = ReadFeedState.Beginning();
+                while (readFeedState != null)
+                {
+                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
+                        feedRange: feedRange,
+                        readFeedState: readFeedState,
+                        pageSize: 1,
+                        queryRequestOptions: default,
+                        cancellationToken: default);
+                    readFeedState = page.State;
+                    foreach (Record record in page.GetRecords())
+                    {
+                        resourceIds.Add(record.ResourceIdentifier);
+                    }
+                }
+
+                List<ResourceId> sortedResourceIds = resourceIds
+                    .OrderBy(resourceId => resourceId.Database)
+                    .ThenBy(resourceId => resourceId.Document)
+                    .ToList();
+                Assert.IsTrue(resourceIds.SequenceEqual(sortedResourceIds));
+
+                return resourceIds.Count;
             }
 
-            Assert.AreEqual(numItemsToInsert, values.Count);
+            int mergedCount = await GetFeedRangeCountAsync(mergedRanges[0]);
+            Assert.AreEqual(numItemsToInsert, mergedCount);
+
+            int childCount1 = await GetFeedRangeCountAsync(childRanges[0]);
+            int childCount2 = await GetFeedRangeCountAsync(childRanges[0]);
+            Assert.AreEqual(numItemsToInsert, childCount1 + childCount2);
         }
 
         [TestMethod]
         public async Task TestReadFeedAsync()
         {
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
-            
+
             int numItemsToInsert = 10;
             for (int i = 0; i < numItemsToInsert; i++)
             {
@@ -338,13 +366,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeEpk range = ranges[0];
 
             {
-                ReadFeedPage fullRangePage = await documentContainer.ReadFeedAsync(
-                    readFeedState: ReadFeedState.Beginning(),
-                    range,
-                    new QueryRequestOptions(),
-                    pageSize: 100,
-                    cancellationToken: default);
-                Assert.AreEqual(numItemsToInsert, fullRangePage.GetRecords().Count);
+                int count = 0;
+                ReadFeedState readFeedState = ReadFeedState.Beginning();
+                while (readFeedState != null)
+                {
+                    ReadFeedPage fullRangePage = await documentContainer.ReadFeedAsync(
+                        readFeedState: readFeedState,
+                        range,
+                        new QueryRequestOptions(),
+                        pageSize: 100,
+                        cancellationToken: default);
+
+                    readFeedState = fullRangePage.State;
+                    count += fullRangePage.GetRecords().Count;
+                }
+                
+                Assert.AreEqual(numItemsToInsert, count);
             }
 
             {
