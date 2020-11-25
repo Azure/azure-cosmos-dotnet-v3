@@ -465,7 +465,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 queryPageResults = queryPageResults.Where(c =>
                 {
                     ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
-                    return documentResourceId.Document >= continuationParsedResourceId.Document;
+                    // Perform a composite filter on pkrange id and document index 
+                    bool greaterPKRangeId = documentResourceId.Database > continuationParsedResourceId.Database;
+                    bool samePKRangeIdButGreaterIndex = (documentResourceId.Database == continuationParsedResourceId.Database)
+                    && (documentResourceId.Document > continuationParsedResourceId.Document);
+                    return greaterPKRangeId || samePKRangeIdButGreaterIndex;
                 });
 
                 for (int i = 0; i < continuationSkipCount; i++)
