@@ -18,6 +18,7 @@ namespace CosmosBenchmark
     using System.Net.Http;
     using System.Runtime.CompilerServices;
     using Newtonsoft.Json.Linq;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -113,7 +114,13 @@ namespace CosmosBenchmark
                     };
 
                     await container.CreateItemAsync<JObject>(jObject);
-                    currentContainerThroughput = await container.ReadThroughputAsync();
+                    ThroughputResponse throughputResponse = await container.ReadThroughputAsync(requestOptions: null);
+                    currentContainerThroughput = throughputResponse.Resource.Throughput;
+
+                    if (!throughputResponse.Resource.Throughput.HasValue)
+                    {
+                        Console.WriteLine($"Using container {config.Container} with {JsonConvert.SerializeObject(throughputResponse.Resource.Throughput)} RU/s");
+                    }
                 }
 
                 Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
