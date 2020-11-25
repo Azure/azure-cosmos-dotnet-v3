@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
-        private FeedIterator feedIterator;
         private readonly Encryptor encryptor;
         private readonly Action<DecryptionResult> decryptionResultHandler;
         private readonly Container container;
@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly string continuationToken;
         private readonly QueryDefinition queryDefinition;
+        private FeedIterator feedIterator;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
@@ -190,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 bool supportedQuery = false;
 
                 // this map is required to identify the Parameter name passed against the SQL parameters in WithParameter Option.
-                passedParamaterNameMap = SqlBinaryScalarExpVisitor(exp, ref supportedQuery);
+                passedParamaterNameMap = SqlBinaryScalarExpParser(exp, ref supportedQuery);
             }
 
             foreach (KeyValuePair<string, Query.Core.SqlParameter> parameters in queryDefinition.Parameters)
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 bool supportedQuery = false;
 
                 // Parse through the sqlQuery and build store of property and its value.Verify if we support the query
-                Dictionary<string, string> queryPropertyKeyValueStore = SqlBinaryScalarExpVisitor(expression, ref supportedQuery);
+                Dictionary<string, string> queryPropertyKeyValueStore = SqlBinaryScalarExpParser(expression, ref supportedQuery);
 
                 if (queryPropertyKeyValueStore.Count != 0 && supportedQuery)
                 {
@@ -274,6 +275,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (query == null)
             {
+                supportedQuery = false;
                 return queryPropertyKeyValueStore;
             }
 
@@ -306,6 +308,110 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return queryPropertyKeyValueStore;
+        }
+
+        internal static Dictionary<string, string> SqlBinaryScalarExpParser(
+           SqlBinaryScalarExpression query,
+           ref bool supportedQuery)
+        {
+            Dictionary<string, string> queryPropertyKeyValueStore = new Dictionary<string, string>();
+
+            if (query == null)
+            {
+                supportedQuery = false;
+                return queryPropertyKeyValueStore;
+            }
+
+            Stack<SqlBinaryScalarExpression> expressionStack = new Stack<SqlBinaryScalarExpression>();
+            supportedQuery = true;
+
+            expressionStack.Push(query);
+            SqlBinaryScalarExpression prevVisitedExp = null;
+            while (expressionStack.Count > 0)
+            {
+                SqlBinaryScalarExpression currentVisitingExp = expressionStack.Peek();
+                if (prevVisitedExp == null
+                    || prevVisitedExp.LeftExpression == currentVisitingExp
+                    || prevVisitedExp.RightExpression == currentVisitingExp)
+                {
+                    if (currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.And || currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.Or)
+                    {
+                        // verify if we have valid Left or Right Expression.
+                        if (!(supportedQuery = VerifyIfSupportedQuery((SqlBinaryScalarExpression)currentVisitingExp.LeftExpression)))
+                        {
+                            break;
+                        }
+
+                        expressionStack.Push((SqlBinaryScalarExpression)currentVisitingExp.LeftExpression);
+                    }
+                    else if (currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.And || currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.Or)
+                    {
+                        if (!(supportedQuery = VerifyIfSupportedQuery((SqlBinaryScalarExpression)currentVisitingExp.RightExpression)))
+                        {
+                            break;
+                        }
+
+                        expressionStack.Push((SqlBinaryScalarExpression)currentVisitingExp.RightExpression);
+                    }
+                    else
+                    {
+                        expressionStack.Pop();
+                        if (currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.Equal)
+                        {
+                            queryPropertyKeyValueStore.Add(GetPropertyName(currentVisitingExp.LeftExpression), GetPropertyValue(currentVisitingExp.RightExpression));
+                        }
+                    }
+                }
+                else if (currentVisitingExp.LeftExpression == prevVisitedExp)
+                {
+                    if (currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.And || currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.Or)
+                    {
+                        if (!(supportedQuery = VerifyIfSupportedQuery((SqlBinaryScalarExpression)currentVisitingExp.RightExpression)))
+                        {
+                            break;
+                        }
+
+                        expressionStack.Push((SqlBinaryScalarExpression)currentVisitingExp.RightExpression);
+                    }
+                    else
+                    {
+                        expressionStack.Pop();
+                        if (currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.Equal)
+                        {
+                            queryPropertyKeyValueStore.Add(GetPropertyName(currentVisitingExp.LeftExpression), GetPropertyValue(currentVisitingExp.RightExpression));
+                        }
+                    }
+                }
+                else if (currentVisitingExp.RightExpression == prevVisitedExp)
+                {
+                    expressionStack.Pop();
+                    if (currentVisitingExp.OperatorKind == SqlBinaryScalarOperatorKind.Equal)
+                    {
+                        queryPropertyKeyValueStore.Add(GetPropertyName(currentVisitingExp.LeftExpression), GetPropertyValue(currentVisitingExp.RightExpression));
+                    }
+                }
+
+                prevVisitedExp = currentVisitingExp;
+            }
+
+            if (!supportedQuery)
+            {
+                queryPropertyKeyValueStore.Clear();
+            }
+
+            return queryPropertyKeyValueStore;
+        }
+
+        private static bool VerifyIfSupportedQuery(SqlBinaryScalarExpression query)
+        {
+            if (query.OperatorKind != SqlBinaryScalarOperatorKind.And
+                && query.OperatorKind != SqlBinaryScalarOperatorKind.Or
+                && query.OperatorKind != SqlBinaryScalarOperatorKind.Equal)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static string GetPropertyName(SqlScalarExpression sqlBinaryScalarExp)
@@ -354,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 bool supportedQuery = false;
 
                 // Parse through the sqlQuery and build store of property and its values.Verify if we support the query
-                Dictionary<string, string> queryPropertyKeyValueStore = SqlBinaryScalarExpVisitor(expression, ref supportedQuery);
+                Dictionary<string, string> queryPropertyKeyValueStore = SqlBinaryScalarExpParser(expression, ref supportedQuery);
 
                 if (queryPropertyKeyValueStore.Count == 0 || !supportedQuery)
                 {
@@ -391,6 +497,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     queryDefinition.WithParameter("@" + entry.Key, entry.Value);
                 }
             }
+
             return queryDefinition;
         }
     }
