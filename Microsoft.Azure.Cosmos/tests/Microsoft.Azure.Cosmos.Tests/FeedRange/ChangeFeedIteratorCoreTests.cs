@@ -158,7 +158,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
-            Random random = new Random();
+            int seed = new Random().Next();
+            Random random = new Random(seed);
 
             int count = 0;
             while (changeFeedIteratorCore.HasMoreResults)
@@ -176,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 await documentContainer.SplitAsync(randomRange, cancellationToken: default);
             }
 
-            Assert.AreEqual(numItems, count);
+            Assert.AreEqual(numItems, count, seed);
         }
 
         private static CosmosArray GetChanges(Stream stream)

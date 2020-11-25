@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -161,12 +162,155 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
-        public async Task TestSplitAsync()
+        public async Task TestSplit_ReadFeedAsync()
         {
+            static async Task<(int, ReadFeedState)> drainOnePageAsync(
+                IDocumentContainer documentContainer,
+                FeedRangeInternal feedrange)
+            {
+                ReadFeedPage page = await documentContainer.ReadFeedAsync(
+                    feedRange: feedrange,
+                    readFeedState: ReadFeedState.Beginning(),
+                    pageSize: 1,
+                    queryRequestOptions: default,
+                    cancellationToken: default);
+                return (page.GetRecords().Count, page.State);
+            }
+
+            static async Task<int> drainAllPagesAsync(
+                IDocumentContainer documentContainer,
+                ReadFeedState resumeState,
+                FeedRangeInternal feedRange)
+            {
+                int count = 0;
+                while (resumeState != null)
+                {
+                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
+                        feedRange: feedRange,
+                        readFeedState: resumeState,
+                        pageSize: 1,
+                        queryRequestOptions: default,
+                        cancellationToken: default);
+                    resumeState = page.State;
+                    count += page.GetRecords().Count;
+                }
+
+                return count;
+            }
+
+            await this.TestSplitAsyncImplementation(drainOnePageAsync, drainAllPagesAsync);
+        }
+
+        [TestMethod]
+        public async Task TestSplit_ChangeFeedAsync()
+        {
+            static async Task<(int, ChangeFeedState)> drainOnePageAsync(
+                IDocumentContainer documentContainer,
+                FeedRangeInternal feedrange)
+            {
+                ChangeFeedPage page = await documentContainer.ChangeFeedAsync(
+                    feedRange: feedrange,
+                    state: ChangeFeedState.Beginning(),
+                    pageSize: 1,
+                    cancellationToken: default);
+
+                if (!(page is ChangeFeedSuccessPage successPage))
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return (successPage.GetRecords().Count, page.State);
+            }
+
+            static async Task<int> drainAllPagesAsync(
+                IDocumentContainer documentContainer,
+                ChangeFeedState resumeState,
+                FeedRangeInternal feedRange)
+            {
+                int count = 0;
+                while (true)
+                {
+                    ChangeFeedPage page = await documentContainer.ChangeFeedAsync(
+                        feedRange: feedRange,
+                        state: resumeState,
+                        pageSize: 1,
+                        cancellationToken: default);
+                    resumeState = page.State;
+
+                    if (page is ChangeFeedNotModifiedPage notModifiedPage)
+                    {
+                        break;
+                    }
+
+                    if (!(page is ChangeFeedSuccessPage changeFeedSuccessPage))
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    count += changeFeedSuccessPage.GetRecords().Count;
+                }
+
+                return count;
+            }
+
+            await this.TestSplitAsyncImplementation(drainOnePageAsync, drainAllPagesAsync);
+        }
+
+        [TestMethod]
+        public async Task TestSplit_QueryAsync()
+        {
+            static async Task<(int, QueryState)> drainOnePageAsync(
+                IDocumentContainer documentContainer,
+                FeedRangeInternal feedrange)
+            {
+                QueryPage page = await documentContainer.QueryAsync(
+                    sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                    continuationToken: null,
+                    feedRange: feedrange,
+                    pageSize: 1,
+                    cancellationToken: default);
+
+                string continuationToken = (page.State?.Value as CosmosString)?.Value;
+
+                return (page.Documents.Count, new QueryState(CosmosString.Create(continuationToken)));
+            }
+
+            static async Task<int> drainAllPagesAsync(
+                IDocumentContainer documentContainer,
+                QueryState resumeState,
+                FeedRangeInternal feedRange)
+            {
+                int count = 0;
+                string continuationToken = (resumeState.Value as CosmosString).Value;
+                do
+                {
+                    QueryPage page = await documentContainer.QueryAsync(
+                        sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
+                        continuationToken: continuationToken,
+                        feedRange: feedRange,
+                        pageSize: 1,
+                        cancellationToken: default);
+
+                    continuationToken = (page.State?.Value as CosmosString)?.Value;
+
+                    count += page.Documents.Count;
+                }
+                while (continuationToken != null);
+
+                return count;
+            }
+
+            await this.TestSplitAsyncImplementation(drainOnePageAsync, drainAllPagesAsync);
+        }
+
+        private async Task TestSplitAsyncImplementation<TState>(
+            Func<IDocumentContainer, FeedRangeInternal, Task<(int, TState)>> drainOnePageAsync,
+            Func<IDocumentContainer, TState, FeedRangeInternal, Task<int>> drainAllPagesAsync)
+        {
+            // Container setup
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
-
             Assert.AreEqual(1, ranges.Count);
 
             int numItemsToInsert = 10;
@@ -177,38 +321,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await documentContainer.CreateItemAsync(item, cancellationToken: default);
             }
 
-            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            (int firstPageCount, TState resumeState) = await drainOnePageAsync(documentContainer, ranges[0]);
 
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
             IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
             Assert.AreEqual(2, childRanges.Count);
 
-            async Task<int> AssertChildPartitionAsync(FeedRangeInternal childRange)
-            {
-                List<long> values = new List<long>();
-                ReadFeedState readFeedState = ReadFeedState.Beginning();
-                while (readFeedState != null)
-                {
-                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
-                        feedRange: childRange,
-                        readFeedState: readFeedState,
-                        pageSize: 1,
-                        queryRequestOptions: default,
-                        cancellationToken: default);
-                    readFeedState = page.State;
-                    foreach (Record record in page.GetRecords())
-                    {
-                        values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
-                    }
-                }
+            int childOneCount = await drainAllPagesAsync(documentContainer, resumeState, childRanges[0]);
+            int childTwoCount = await drainAllPagesAsync(documentContainer, resumeState, childRanges[1]);
 
-                List<long> sortedValues = values.OrderBy(x => x).ToList();
-                Assert.IsTrue(values.SequenceEqual(sortedValues));
-
-                return values.Count;
-            }
-
-            int count = await AssertChildPartitionAsync(childRanges[0]) + await AssertChildPartitionAsync(childRanges[1]);
-            Assert.AreEqual(numItemsToInsert, count);
+            Assert.AreEqual(numItemsToInsert, firstPageCount + childOneCount, childTwoCount);
         }
 
         [TestMethod]
@@ -380,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     readFeedState = fullRangePage.State;
                     count += fullRangePage.GetRecords().Count;
                 }
-                
+
                 Assert.AreEqual(numItemsToInsert, count);
             }
 

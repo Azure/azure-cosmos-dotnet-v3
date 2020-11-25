@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 this.partitionedChanges[partitionKeyHash] = changes;
             }
 
-            changes.Add(new Change(new DateTime(recordAdded.Timestamp), recordAdded));
+            changes.Add(new Change(new DateTime(recordAdded.Timestamp, DateTimeKind.Utc), recordAdded));
 
             return Task.FromResult(TryCatch<Record>.FromResult(recordAdded));
         }
@@ -1246,6 +1246,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             public Change(DateTime time, Record record)
             {
+                if (time.Kind != DateTimeKind.Utc)
+                {
+                    throw new ArgumentOutOfRangeException("expected utc time");
+                }
+
                 this.Time = time;
                 this.Record = record ?? throw new ArgumentNullException(nameof(record));
             }
