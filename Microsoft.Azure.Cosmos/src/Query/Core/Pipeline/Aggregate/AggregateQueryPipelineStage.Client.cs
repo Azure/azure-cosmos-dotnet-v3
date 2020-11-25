@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
@@ -66,9 +67,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync()
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (trace == null)
+                {
+                    throw new ArgumentNullException(nameof(trace));
+                }
 
                 if (this.returnedFinalPage)
                 {
@@ -81,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
-                while (await this.inputStage.MoveNextAsync())
+                while (await this.inputStage.MoveNextAsync(trace))
                 {
                     TryCatch<QueryPage> tryGetPageFromSource = this.inputStage.Current;
                     if (tryGetPageFromSource.Failed)

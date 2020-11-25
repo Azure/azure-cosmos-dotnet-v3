@@ -8,55 +8,68 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class ParallelPrefetch
     {
-        public static async Task PrefetchInParallelAsync(IEnumerable<IPrefetcher> prefetchers, int maxConcurrency, CancellationToken cancellationToken)
+        public static async Task PrefetchInParallelAsync(
+            IEnumerable<IPrefetcher> prefetchers,
+            int maxConcurrency,
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             if (prefetchers == null)
             {
                 throw new ArgumentNullException(nameof(prefetchers));
             }
 
-            HashSet<Task> tasks = new HashSet<Task>();
-            IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
-            for (int i = 0; i < maxConcurrency; i++)
+            if (trace == null)
             {
-                if (!prefetchersEnumerator.MoveNext())
-                {
-                    break;
-                }
-
-                IPrefetcher prefetcher = prefetchersEnumerator.Current;
-                tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(cancellationToken)));
+                throw new ArgumentNullException(nameof(trace));
             }
 
-            while (tasks.Count != 0)
+            using (ITrace prefetchTrace = trace.StartChild(name: "Prefetching", TraceComponent.Pagination, TraceLevel.Info))
             {
-                Task completedTask = await Task.WhenAny(tasks);
-                tasks.Remove(completedTask);
-                try
+                HashSet<Task> tasks = new HashSet<Task>();
+                IEnumerator<IPrefetcher> prefetchersEnumerator = prefetchers.GetEnumerator();
+                for (int i = 0; i < maxConcurrency; i++)
                 {
-                    await completedTask;
+                    if (!prefetchersEnumerator.MoveNext())
+                    {
+                        break;
+                    }
+
+                    IPrefetcher prefetcher = prefetchersEnumerator.Current;
+                    tasks.Add(Task.Run(async () => await prefetcher.PrefetchAsync(prefetchTrace, cancellationToken)));
                 }
-                catch
+
+                while (tasks.Count != 0)
                 {
-                    // Observe the remaining tasks
+                    Task completedTask = await Task.WhenAny(tasks);
+                    tasks.Remove(completedTask);
                     try
                     {
-                        await Task.WhenAll(tasks);
+                        await completedTask;
                     }
                     catch
                     {
+                        // Observe the remaining tasks
+                        try
+                        {
+                            await Task.WhenAll(tasks);
+                        }
+                        catch
+                        {
+                        }
+
+                        throw;
                     }
 
-                    throw;
-                }
-
-                if (prefetchersEnumerator.MoveNext())
-                {
-                    IPrefetcher bufferable = prefetchersEnumerator.Current;
-                    tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(cancellationToken)));
+                    if (prefetchersEnumerator.MoveNext())
+                    {
+                        IPrefetcher bufferable = prefetchersEnumerator.Current;
+                        tasks.Add(Task.Run(async () => await bufferable.PrefetchAsync(prefetchTrace, cancellationToken)));
+                    }
                 }
             }
         }

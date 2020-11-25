@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IPrefetcher
     {
@@ -52,14 +53,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
             this.StartOfPageState = this.State;
-            await this.bufferedEnumerator.MoveNextAsync();
+            await this.bufferedEnumerator.MoveNextAsync(trace);
             return this.bufferedEnumerator.Current;
         }
 
-        public ValueTask PrefetchAsync(CancellationToken cancellationToken) => this.bufferedEnumerator.PrefetchAsync(cancellationToken);
+        public ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken) => this.bufferedEnumerator.PrefetchAsync(trace, cancellationToken);
 
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
@@ -93,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public override ValueTask DisposeAsync() => default;
 
-            protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+            protected override Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 // Unfortunately we need to keep both the epk range and partition key for queries
                 // Since the continuation token format uses epk range even though we only need the partition key to route the request.
@@ -105,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
                         feedRange: feedRange,
                         pageSize: this.PageSize,
+                        trace: trace,
                         cancellationToken)
                     .ContinueWith<TryCatch<OrderByQueryPage>>(antecedent =>
                     {

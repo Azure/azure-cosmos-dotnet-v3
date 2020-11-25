@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -72,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
             CosmosDiagnosticsContext diagnosticsScope,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (responseCreator == null)
@@ -89,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 diagnosticsContext: diagnosticsScope,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return responseCreator(responseMessage);
@@ -104,11 +107,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (resourceUriString == null)
             {
                 throw new ArgumentNullException(nameof(resourceUriString));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
             }
 
             // DEVNOTE: Non-Item operations need to be refactored to always pass
@@ -132,9 +141,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
                 RequestMessage request = new RequestMessage(
-                        method,
-                        resourceUriString,
-                        diagnosticsContext)
+                    method,
+                    resourceUriString,
+                    diagnosticsContext,
+                    trace)
                 {
                     OperationType = operationType,
                     ResourceType = resourceType,
@@ -199,7 +209,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         internal static HttpMethod GetHttpMethod(
             OperationType operationType)
         {
-            HttpMethod httpMethod = HttpMethod.Head;
             if (operationType == OperationType.Create ||
                 operationType == OperationType.Upsert ||
                 operationType == OperationType.Query ||
