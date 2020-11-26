@@ -42,16 +42,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             {
+                // Start off with one range.
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default);
                 Assert.AreEqual(expected: 1, ranges.Count);
+
+                await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
             }
 
-            await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+            {
+                // Still have one range, since we have let to refresh.
+                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+                Assert.AreEqual(expected: 1, ranges.Count);
+            }
+
             await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             {
+                // Now we should have two ranges after a refresh.
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default);

@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 FeedRangeEpk CreateRangeFromId(int id)
                 {
-                    PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
+                    PartitionKeyHashRange hashRange = this.cachedPartitionKeyRangeIdToHashRange[id];
                     return new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
                             min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.Value.ToString() : string.Empty,
