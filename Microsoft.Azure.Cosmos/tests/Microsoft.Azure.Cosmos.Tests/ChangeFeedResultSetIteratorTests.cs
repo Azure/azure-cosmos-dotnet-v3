@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class ChangeFeedResultSetIteratorTests
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
@@ -80,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -112,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse));
@@ -136,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
@@ -170,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
                 .Returns(Task.FromResult(secondResponse))
@@ -196,6 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
 
@@ -226,6 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
 
@@ -248,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 

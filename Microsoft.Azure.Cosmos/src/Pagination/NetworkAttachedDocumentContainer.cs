@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
@@ -87,23 +88,27 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, cancellationToken);
+            ITrace trace,
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, trace, cancellationToken);
 
         public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             try
             {
                 ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
                     this.container.LinkUri,
+                    trace,
                     cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
                     await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                     containerProperties.PartitionKey,
                     feedRange,
-                    forceRefresh: false);
+                    forceRefresh: false,
+                    trace);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -118,23 +123,28 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
         }
 
-        public async Task<TryCatch> MonadicRefreshProviderAsync(CancellationToken cancellationToken)
+        public async Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            try
+            using (ITrace refreshTrace = trace.StartChild("Refresh FeedRangeProvider", TraceComponent.Routing, TraceLevel.Info))
             {
-                // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
-                _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
-                    this.container.LinkUri,
-                    FeedRangeEpk.FullRange.Range,
-                    forceRefresh: true);
+                try
+                {
+                    // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
+                    _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
+                        this.container.LinkUri,
+                        FeedRangeEpk.FullRange.Range,
+                        forceRefresh: true);
 
-                return TryCatch.FromResult();
-            }
-            catch (Exception ex)
-            {
-                return TryCatch.FromException(ex);
+                    return TryCatch.FromResult();
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch.FromException(ex);
+                }
             }
         }
 
@@ -143,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -171,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    feedRange: feedRange,
                    streamPayload: default,
                    diagnosticsContext: cosmosDiagnosticsContext,
+                   trace: trace,
                    cancellationToken: cancellationToken);
 
                 TryCatch<ReadFeedPage> monadicReadFeedPage;
@@ -213,8 +225,26 @@ namespace Microsoft.Azure.Cosmos.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (feedRange == null)
+            {
+                throw new ArgumentNullException(nameof(feedRange));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions.Clone();
             TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
                 this.resourceLink,
@@ -228,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 continuationToken,
                 isContinuationExpected: false,
                 pageSize,
+                trace,
                 cancellationToken);
 
             return monadicQueryPage;
@@ -237,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -259,6 +291,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 feedRange: feedRange,
                 streamPayload: default,
                 diagnosticsContext: this.diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
@@ -302,16 +335,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
         }
 
-        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken)
+        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            try
+            using (ITrace getRidTrace = trace.StartChild("Get Container RID", TraceComponent.Routing, TraceLevel.Info))
             {
-                string resourceIdentifier = await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken);
-                return TryCatch<string>.FromResult(resourceIdentifier);
-            }
-            catch (Exception ex)
-            {
-                return TryCatch<string>.FromException(ex);
+                try
+                {
+                    string resourceIdentifier = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken);
+                    return TryCatch<string>.FromResult(resourceIdentifier);
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch<string>.FromException(ex);
+                }
             }
         }
 
