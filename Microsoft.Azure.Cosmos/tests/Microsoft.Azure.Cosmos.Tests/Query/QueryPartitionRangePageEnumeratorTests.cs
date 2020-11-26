@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -85,8 +86,10 @@
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
 
-                await documentContainer.RefreshProviderAsync(cancellationToken: default);
-                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default);
                 foreach (FeedRangeEpk range in ranges)
                 {
                     IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
@@ -128,7 +131,9 @@
                 IDocumentContainer documentContainer,
                 QueryState state = null)
             {
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
                     range: ranges[0],
@@ -147,7 +152,9 @@
                 IDocumentContainer documentContainer,
                 QueryState state = default)
             {
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new QueryPartitionRangePageAsyncEnumerator(
                     queryDataSource: documentContainer,

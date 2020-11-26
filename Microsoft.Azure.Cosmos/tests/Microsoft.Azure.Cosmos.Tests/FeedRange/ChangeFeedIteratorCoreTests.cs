@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -171,8 +172,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
                 count += GetChanges(responseMessage.Content).Count;
 
-                await documentContainer.RefreshProviderAsync(cancellationToken: default);
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                 await documentContainer.SplitAsync(randomRange, cancellationToken: default);
             }
@@ -219,13 +220,13 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             for (int i = 0; i < 3; i++)
             {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
 
-                await documentContainer.RefreshProviderAsync(cancellationToken: default);
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)
