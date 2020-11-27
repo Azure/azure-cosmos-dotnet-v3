@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -356,6 +357,263 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(0, databaseIds.Count);
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateReplaceCek()
+        {
+            DatabaseResponse response = await this.CreateDatabaseHelper();
+
+            string cekId = "anotherCek";
+            ClientEncryptionKeyProperties cekProperties = await CosmosDatabaseTests.CreateCekAsync((DatabaseInlineCore)response.Database, cekId);
+
+            Assert.IsNotNull(cekProperties);
+            Assert.IsNotNull(cekProperties.CreatedTime);
+            Assert.IsNotNull(cekProperties.LastModified);
+            Assert.IsNotNull(cekProperties.SelfLink);
+            Assert.IsNotNull(cekProperties.ResourceId);
+
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata("metadata"),
+                cekProperties.EncryptionKeyWrapMetadata);
+
+            // Use a different client instance to avoid (unintentional) cache impact
+            ClientEncryptionKeyProperties readProperties = await ((DatabaseCore)(DatabaseInlineCore)this.cosmosClient.GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
+            Assert.AreEqual(cekProperties, readProperties);
+
+            // Replace
+            cekProperties = await CosmosDatabaseTests.ReplaceCekAsync((DatabaseInlineCore)response.Database, cekId);
+
+            Assert.IsNotNull(cekProperties);
+            Assert.IsNotNull(cekProperties.CreatedTime);
+            Assert.IsNotNull(cekProperties.LastModified);
+            Assert.IsNotNull(cekProperties.SelfLink);
+            Assert.IsNotNull(cekProperties.ResourceId);
+
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata("updatedMetadata"),
+                cekProperties.EncryptionKeyWrapMetadata);
+
+            // Use a different client instance to avoid (unintentional) cache impact
+            readProperties =
+                await ((DatabaseCore)(DatabaseInlineCore)this.cosmosClient.GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
+            Assert.AreEqual(cekProperties, readProperties);
+        }
+
+        //[TestMethod]
+        //public async Task EncryptionDekReadFeed()
+        //{
+        //    DatabaseResponse response = await this.CreateDatabaseHelper();
+        //    DatabaseCore databaseCore = (DatabaseInlineCore)response.Database;
+
+        //    try
+        //    {
+        //        string contosoV1 = "Contoso_v001";
+        //        string contosoV2 = "Contoso_v002";
+        //        string fabrikamV1 = "Fabrikam_v001";
+        //        string fabrikamV2 = "Fabrikam_v002";
+
+        //        await CosmosDatabaseTests.CreateDekAsync(databaseCore, contosoV1);
+        //        await CosmosDatabaseTests.CreateDekAsync(databaseCore, contosoV2);
+        //        await CosmosDatabaseTests.CreateDekAsync(databaseCore, fabrikamV1);
+        //        await CosmosDatabaseTests.CreateDekAsync(databaseCore, fabrikamV2);
+
+        //        // Test getting all keys
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+        //            isExpectedDeksCompleteSetForRequest: true,
+        //            isResultOrderExpected: false);
+
+        //        // Test getting specific subset of keys
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV2 },
+        //            isExpectedDeksCompleteSetForRequest: false,
+        //            isResultOrderExpected: true,
+        //            startId: "Contoso_v000",
+        //            endId: "Contoso_v999",
+        //            isDescending: true,
+        //            itemCountInPage: 1);
+
+        //        // Ensure only required results are returned (ascending)
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV1, contosoV2 },
+        //            isExpectedDeksCompleteSetForRequest: true,
+        //            isResultOrderExpected: true,
+        //            startId: "Contoso_v000",
+        //            endId: "Contoso_v999",
+        //            isDescending: false);
+
+        //        // Test startId inclusive and endId inclusive (ascending)
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV1, contosoV2 },
+        //            isExpectedDeksCompleteSetForRequest: true,
+        //            isResultOrderExpected: true,
+        //            startId: "Contoso_v001",
+        //            endId: "Contoso_v002",
+        //            isDescending: false);
+
+        //        // Ensure only required results are returned (descending)
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV2, contosoV1 },
+        //            isExpectedDeksCompleteSetForRequest: true,
+        //            isResultOrderExpected: true,
+        //            startId: "Contoso_v000",
+        //            endId: "Contoso_v999",
+        //            isDescending: true);
+
+        //        // Test startId inclusive and endId inclusive (descending)
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV2, contosoV1 },
+        //            isExpectedDeksCompleteSetForRequest: true,
+        //            isResultOrderExpected: true,
+        //            startId: "Contoso_v001",
+        //            endId: "Contoso_v002",
+        //            isDescending: true);
+
+        //        // Test pagination
+        //        await CosmosDatabaseTests.IterateDekFeedAsync(
+        //            databaseCore,
+        //            new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
+        //            isExpectedDeksCompleteSetForRequest: true,
+        //            isResultOrderExpected: false,
+        //            itemCountInPage: 3);
+        //    }
+        //    finally
+        //    {
+        //        if (databaseCore != null)
+        //        {
+        //            await databaseCore.DeleteStreamAsync();
+        //        }
+        //    }
+        //}
+
+        //private static async Task IterateDekFeedAsync(
+        //    DatabaseCore databaseCore,
+        //    List<string> expectedDekIds,
+        //    bool isExpectedDeksCompleteSetForRequest,
+        //    bool isResultOrderExpected,
+        //    string startId = null,
+        //    string endId = null,
+        //    bool isDescending = false,
+        //    int? itemCountInPage = null)
+        //{
+        //    int remainingItemCount = expectedDekIds.Count;
+        //    QueryRequestOptions options = null;
+        //    if (itemCountInPage.HasValue)
+        //    {
+        //        options = new QueryRequestOptions()
+        //        {
+        //            MaxItemCount = itemCountInPage
+        //        };
+        //    }
+
+        //    FeedIterator<ClientEncryptionKeyProperties> dekIterator = databaseCore.GetClientEncryptionKeyIterator(
+        //        startId, endId, isDescending, requestOptions: options);
+
+        //    Assert.IsTrue(dekIterator.HasMoreResults);
+
+        //    List<string> readDekIds = new List<string>();
+        //    while (remainingItemCount > 0)
+        //    {
+        //        FeedResponse<ClientEncryptionKeyProperties> page = await dekIterator.ReadNextAsync();
+        //        if (itemCountInPage.HasValue)
+        //        {
+        //            // last page
+        //            if (remainingItemCount < itemCountInPage.Value)
+        //            {
+        //                Assert.AreEqual(remainingItemCount, page.Count);
+        //            }
+        //            else
+        //            {
+        //                Assert.AreEqual(itemCountInPage.Value, page.Count);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            Assert.AreEqual(expectedDekIds.Count, page.Count);
+        //        }
+
+        //        remainingItemCount -= page.Count;
+        //        if (isExpectedDeksCompleteSetForRequest)
+        //        {
+        //            Assert.AreEqual(remainingItemCount > 0, dekIterator.HasMoreResults);
+        //        }
+
+        //        foreach (ClientEncryptionKeyProperties dek in page.Resource)
+        //        {
+        //            readDekIds.Add(dek.Id);
+        //        }
+        //    }
+
+        //    if (isResultOrderExpected)
+        //    {
+        //        Assert.IsTrue(expectedDekIds.SequenceEqual(readDekIds));
+        //    }
+        //    else
+        //    {
+        //        Assert.IsTrue(expectedDekIds.ToHashSet().SetEquals(readDekIds));
+        //    }
+        //}
+
+        private static async Task<ClientEncryptionKeyProperties> CreateCekAsync(DatabaseCore databaseCore, string cekId)
+        {
+            ClientEncryptionKeyCore newCek = (ClientEncryptionKeyInlineCore)databaseCore.GetClientEncryptionKey(cekId);
+
+            byte[] rawCek = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek);
+            }
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAes256CbcHmacSha256Randomized", rawCek, new EncryptionKeyWrapMetadata("metadata"));
+            
+            ClientEncryptionKeyResponse cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(
+                newCek,
+                cekProperties);
+
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+            Assert.IsTrue(cekResponse.RequestCharge > 0);
+            Assert.IsNotNull(cekResponse.ETag);
+
+            ClientEncryptionKeyProperties retrievedCekProperties = cekResponse.Resource;
+            Assert.IsTrue(cekProperties.Equals(retrievedCekProperties));
+            //Assert.AreEqual(cekResponse.ETag, retrievedCekProperties.ETag);
+            //Assert.AreEqual(cekId, retrievedCekProperties.Id);
+            //Assert.AreEqual("AEAes256CbcHmacSha256Randomized", retrievedCekProperties.EncryptionAlgorithmId);
+            return retrievedCekProperties;
+        }
+
+        private static async Task<ClientEncryptionKeyProperties> ReplaceCekAsync(DatabaseCore databaseCore, string cekId)
+        {
+            ClientEncryptionKeyCore cek = (ClientEncryptionKeyInlineCore)databaseCore.GetClientEncryptionKey(cekId);
+
+            byte[] rawCek = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek);
+            }
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAes256CbcHmacSha256Deterministic", rawCek, new EncryptionKeyWrapMetadata("updatedMetadata"));
+
+            ClientEncryptionKeyResponse cekResponse = await databaseCore.ReplaceClientEncryptionKeyAsync(
+                cek,
+                cekProperties);
+
+            Assert.AreEqual(HttpStatusCode.OK, cekResponse.StatusCode);
+            Assert.IsTrue(cekResponse.RequestCharge > 0);
+            Assert.IsNotNull(cekResponse.ETag);
+
+            ClientEncryptionKeyProperties retrievedCekProperties = cekResponse.Resource;
+            Assert.IsTrue(cekProperties.Equals(retrievedCekProperties));
+            return retrievedCekProperties;
         }
 
         [TestMethod]
