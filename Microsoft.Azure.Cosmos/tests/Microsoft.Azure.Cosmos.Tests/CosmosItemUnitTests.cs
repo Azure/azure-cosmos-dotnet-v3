@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -656,16 +657,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+                It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+                It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -678,8 +679,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
-                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, CancellationToken>(
-                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, cancellationToken) =>
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, ITrace, CancellationToken>(
+                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, trace, cancellationToken) =>
                  context.ProcessResourceOperationStreamAsync(
                      uri,
                      resourceType,
@@ -691,6 +693,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                      stream,
                      requestEnricher,
                      diagnostics,
+                     trace,
                      cancellationToken));
 
             Mock<BatchAsyncContainerExecutor> mockedExecutor = this.GetMockedBatchExcecutor();
@@ -755,8 +758,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
-                response.Content = request.Content;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 

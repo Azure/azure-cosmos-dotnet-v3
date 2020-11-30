@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         private static void WriteTraceDatum(IJsonWriter writer, object value)
         {
-            if (value is ITraceDatum traceDatum)
+            if (value is TraceDatum traceDatum)
             {
                 TraceDatumJsonWriter traceJsonWriter = new TraceDatumJsonWriter(writer);
                 traceDatum.Accept(traceJsonWriter);
