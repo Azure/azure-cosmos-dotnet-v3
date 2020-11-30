@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch> MonadicRefreshProviderAsync(
-            ITrace trace, 
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             using (ITrace refreshProviderTrace = trace.StartChild("Refreshing FeedRangeProvider", TraceComponent.Routing, TraceLevel.Info))
@@ -344,36 +344,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     throw new InvalidOperationException("failed to find the range.");
                 }
 
-            (ulong pkrangeId, ulong documentIndex) rangeIdAndIndex;
-            if (readFeedState is ReadFeedBeginningState)
-            {
-                rangeIdAndIndex = (0, 0);
-            }
-            else if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
-            {
-                ResourceIdentifier resourceIdentifier = ResourceIdentifier.Parse(((CosmosString)readFeedContinuationState.ContinuationToken).Value);
-                rangeIdAndIndex = (resourceIdentifier.Database, resourceIdentifier.Document);
-            }
-            else
-            {
-                throw new InvalidOperationException("Unknown read feed state");
-            }
-
-            List<Record> page = records
-                .Where((record) =>
+                (ulong pkrangeId, ulong documentIndex) rangeIdAndIndex;
+                if (readFeedState is ReadFeedBeginningState)
                 {
-                    bool recordIsWithinFeedRange = IsRecordWithinFeedRange(record, feedRange, this.partitionKeyDefinition);
+                    rangeIdAndIndex = (0, 0);
+                }
+                else if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
+                {
+                    ResourceIdentifier resourceIdentifier = ResourceIdentifier.Parse(((CosmosString)readFeedContinuationState.ContinuationToken).Value);
+                    rangeIdAndIndex = (resourceIdentifier.Database, resourceIdentifier.Document);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Unknown read feed state");
+                }
 
-                    // We do a filter on a composite index here 
-                    bool recordHasHigherPKRangeId = record.ResourceIdentifier.Database > rangeIdAndIndex.pkrangeId;
-                    bool recordHasSamePkRangeIdButHigherIndex = (record.ResourceIdentifier.Database == rangeIdAndIndex.pkrangeId) &&
-                    (record.ResourceIdentifier.Document > rangeIdAndIndex.documentIndex);
-                    bool recordHasHigherRid = recordHasHigherPKRangeId || recordHasSamePkRangeIdButHigherIndex;
+                List<Record> page = records
+                    .Where((record) =>
+                    {
+                        bool recordIsWithinFeedRange = IsRecordWithinFeedRange(record, feedRange, this.partitionKeyDefinition);
 
-                    return recordIsWithinFeedRange && recordHasHigherRid;
-                })
-                .Take(pageSize)
-                .ToList();
+                        // We do a filter on a composite index here 
+                        bool recordHasHigherPKRangeId = record.ResourceIdentifier.Database > rangeIdAndIndex.pkrangeId;
+                        bool recordHasSamePkRangeIdButHigherIndex = (record.ResourceIdentifier.Database == rangeIdAndIndex.pkrangeId) &&
+                        (record.ResourceIdentifier.Document > rangeIdAndIndex.documentIndex);
+                        bool recordHasHigherRid = recordHasHigherPKRangeId || recordHasSamePkRangeIdButHigherIndex;
+
+                        return recordIsWithinFeedRange && recordHasHigherRid;
+                    })
+                    .Take(pageSize)
+                    .ToList();
 
                 List<CosmosObject> documents = new List<CosmosObject>();
                 foreach (Record record in page)
@@ -382,21 +382,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     documents.Add(CosmosObject.Create(document));
                 }
 
-            ReadFeedState continuationState;
-            if (documents.Count == 0)
-            {
-                continuationState = null;
-            }
-            else
-            {
-                ResourceId resourceIdentifier = page.Last().ResourceIdentifier;
-                CosmosString continuationToken = CosmosString.Create(resourceIdentifier.ToString());
-                continuationState = ReadFeedState.Continuation(continuationToken);
-            }
+                ReadFeedState continuationState;
+                if (documents.Count == 0)
+                {
+                    continuationState = null;
+                }
+                else
+                {
+                    ResourceId resourceIdentifier = page.Last().ResourceIdentifier;
+                    CosmosString continuationToken = CosmosString.Create(resourceIdentifier.ToString());
+                    continuationState = ReadFeedState.Continuation(continuationToken);
+                }
 
-            CosmosArray cosmosDocuments = CosmosArray.Create(documents);
-            CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
-            CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
+                CosmosArray cosmosDocuments = CosmosArray.Create(documents);
+                CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
+                CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
 
                 Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
                 {
@@ -410,12 +410,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 byte[] result = jsonWriter.GetResult().ToArray();
                 MemoryStream responseStream = new MemoryStream(result);
 
-            ReadFeedPage readFeedPage = new ReadFeedPage(
-                responseStream,
-                requestCharge: 42,
-                activityId: Guid.NewGuid().ToString(),
-                CosmosDiagnosticsContext.Create(default),
-                continuationState);
+                ReadFeedPage readFeedPage = new ReadFeedPage(
+                    responseStream,
+                    requestCharge: 42,
+                    activityId: Guid.NewGuid().ToString(),
+                    CosmosDiagnosticsContext.Create(default),
+                    continuationState);
 
                 return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
             }
@@ -463,18 +463,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     throw new InvalidOperationException("failed to find the range.");
                 }
 
-            List<CosmosObject> documents = new List<CosmosObject>();
-            foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRange, this.partitionKeyDefinition)))
-            {
-                CosmosObject document = ConvertRecordToCosmosElement(record);
-                documents.Add(CosmosObject.Create(document));
-            }
+                List<CosmosObject> documents = new List<CosmosObject>();
+                foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRange, this.partitionKeyDefinition)))
+                {
+                    CosmosObject document = ConvertRecordToCosmosElement(record);
+                    documents.Add(CosmosObject.Create(document));
+                }
 
-            TryCatch<SqlQuery> monadicParse = SqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
-            if (monadicParse.Failed)
-            {
-                return Task.FromResult(TryCatch<QueryPage>.FromException(monadicParse.Exception));
-            }
+                TryCatch<SqlQuery> monadicParse = SqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText);
+                if (monadicParse.Failed)
+                {
+                    return Task.FromResult(TryCatch<QueryPage>.FromException(monadicParse.Exception));
+                }
 
                 SqlQuery sqlQuery = monadicParse.Result;
                 IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
@@ -490,16 +490,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
                     continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
 
-                ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
-                queryPageResults = queryPageResults.Where(c =>
-                {
-                    ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
-                    // Perform a composite filter on pkrange id and document index 
-                    bool greaterPKRangeId = documentResourceId.Database > continuationParsedResourceId.Database;
-                    bool samePKRangeIdButGreaterIndex = (documentResourceId.Database == continuationParsedResourceId.Database)
-                    && (documentResourceId.Document > continuationParsedResourceId.Document);
-                    return greaterPKRangeId || samePKRangeIdButGreaterIndex;
-                });
+                    ResourceIdentifier continuationParsedResourceId = ResourceIdentifier.Parse(continuationResourceId);
+                    queryPageResults = queryPageResults.Where(c =>
+                    {
+                        ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
+                        // Perform a composite filter on pkrange id and document index 
+                        bool greaterPKRangeId = documentResourceId.Database > continuationParsedResourceId.Database;
+                        bool samePKRangeIdButGreaterIndex = documentResourceId.Database == continuationParsedResourceId.Database;
+
+                        // If we have a skip count, then we can't skip over the rid we last saw, since
+                        // there are documents with the same rid that we need to skip over.
+                        if (continuationSkipCount == 0)
+                        {
+                            samePKRangeIdButGreaterIndex &= documentResourceId.Document > continuationParsedResourceId.Document;
+                        }
+                        else
+                        {
+                            samePKRangeIdButGreaterIndex &= documentResourceId.Document >= continuationParsedResourceId.Document;
+                        }
+
+                        return greaterPKRangeId || samePKRangeIdButGreaterIndex;
+                    });
 
                     for (int i = 0; i < continuationSkipCount; i++)
                     {
@@ -534,10 +545,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     }
 
                     CosmosObject queryStateValue = CosmosObject.Create(new Dictionary<string, CosmosElement>()
-                {
-                    { "resourceId", CosmosString.Create(currentResourceId) },
-                    { "skipCount", CosmosNumber64.Create(currentSkipCount) },
-                });
+                    {
+                        { "resourceId", CosmosString.Create(currentResourceId) },
+                        { "skipCount", CosmosNumber64.Create(currentSkipCount) },
+                    });
 
                     queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
                 }
@@ -611,11 +622,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     throw new InvalidOperationException("failed to find the range.");
                 }
 
-            List<Change> filteredChanges = changes
-                .Where(change => IsRecordWithinFeedRange(change.Record, feedRange, this.partitionKeyDefinition))
-                .Where(change => state.Accept(ChangeFeedPredicate.Singleton, change))
-                .Take(pageSize)
-                .ToList();
+                List<Change> filteredChanges = changes
+                    .Where(change => IsRecordWithinFeedRange(change.Record, feedRange, this.partitionKeyDefinition))
+                    .Where(change => state.Accept(ChangeFeedPredicate.Singleton, change))
+                    .Take(pageSize)
+                    .ToList();
 
                 if (filteredChanges.Count == 0)
                 {
@@ -637,9 +648,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     documents.Add(CosmosObject.Create(document));
                 }
 
-            CosmosArray cosmosDocuments = CosmosArray.Create(documents);
-            CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
-            CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
+                CosmosArray cosmosDocuments = CosmosArray.Create(documents);
+                CosmosNumber cosmosCount = CosmosNumber64.Create(cosmosDocuments.Count);
+                CosmosString cosmosRid = CosmosString.Create("AYIMAMmFOw8YAAAAAAAAAA==");
 
                 Dictionary<string, CosmosElement> responseDictionary = new Dictionary<string, CosmosElement>()
                 {
