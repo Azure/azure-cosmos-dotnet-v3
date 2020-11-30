@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Guid result = await clientContext.OperationHelperAsync<Guid>(
                 nameof(ValidateActivityId),
                 new RequestOptions(),
-                (diagnostics) =>
+                (diagnostics, trace) =>
                 {
                     return this.ValidateActivityIdHelper();
                 });
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Guid result = await clientContext.OperationHelperAsync<Guid>(
                     nameof(ValidateActivityIdWithSynchronizationContext),
                     new RequestOptions(),
-                    (diagnostics) =>
+                    (diagnostics, trace) =>
                     {
                         return this.ValidateActivityIdHelper();
                     });

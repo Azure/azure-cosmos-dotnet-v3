@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -213,7 +214,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     FROM c
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
-                targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                targetRanges: await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default),
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -256,7 +259,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     FROM c
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
-                targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                targetRanges: await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default),
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -304,7 +309,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c._ts"),
-                    targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton, 
+                        cancellationToken: default),
                     partitionKey: null,
                     orderByColumns: new List<OrderByColumn>()
                     {
@@ -352,7 +359,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     FROM c
                     WHERE {documentdb-formattableorderbyquery-filter}
                     ORDER BY c._ts"),
-                targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                targetRanges: await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default),
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -381,7 +390,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                    List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton, 
+                        cancellationToken: default).Result;
                     FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                     await documentContainer.SplitAsync(randomRange, cancellationToken: default);
                 }
@@ -411,7 +422,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
                         ORDER BY c._ts"),
-                    targetRanges: await documentContainer.GetFeedRangesAsync(cancellationToken: default),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton, 
+                        cancellationToken: default),
                     partitionKey: null,
                     orderByColumns: new List<OrderByColumn>()
                     {
@@ -446,7 +459,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 } while ((queryPage.Documents.Count == 0) && (queryState != null));
 
                 // Split
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default).Result;
                 FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                 await documentContainer.SplitAsync(randomRange, cancellationToken: default);
             } while (queryState != null);
@@ -479,7 +494,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             for (int i = 0; i < 3; i++)
             {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
