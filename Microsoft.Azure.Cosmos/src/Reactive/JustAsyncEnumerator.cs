@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Reactive
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Emits a particular item (or series of items).
@@ -27,5 +28,7 @@ namespace Microsoft.Azure.Cosmos.Reactive
         public ValueTask DisposeAsync() => default;
 
         public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(this.enumerator.MoveNext());
+
+        public ValueTask<bool> MoveNextAsync(ITrace trace) => new ValueTask<bool>(this.enumerator.MoveNext());
     }
 }

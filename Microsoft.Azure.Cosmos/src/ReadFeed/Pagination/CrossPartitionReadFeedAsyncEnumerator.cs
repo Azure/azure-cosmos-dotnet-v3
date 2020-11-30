@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class CrossPartitionReadFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>>
@@ -28,26 +29,39 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
         public TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> Current { get; set; }
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            if (!await this.crossPartitionEnumerator.MoveNextAsync())
+            using (ITrace moveNextAsyncTrace = trace.StartChild(name: nameof(MoveNextAsync), component: TraceComponent.ReadFeed, level: TraceLevel.Info))
             {
-                this.Current = default;
-                return false;
-            }
+                if (!await this.crossPartitionEnumerator.MoveNextAsync(moveNextAsyncTrace))
+                {
+                    this.Current = default;
+                    return false;
+                }
 
-            TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
-            if (monadicCrossPartitionPage.Failed)
-            {
-                this.Current = TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+                if (monadicCrossPartitionPage.Failed)
+                {
+                    this.Current = TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                    return true;
+                }
+
+                CrossFeedRangePage<ReadFeedPage, ReadFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
+                this.Current = TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>.FromResult(crossPartitionPage);
                 return true;
             }
-
-            CrossFeedRangePage<ReadFeedPage, ReadFeedState> crossPartitionPage = monadicCrossPartitionPage.Result;
-            this.Current = TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>.FromResult(crossPartitionPage);
-            return true;
         }
 
         public ValueTask DisposeAsync() => this.crossPartitionEnumerator.DisposeAsync();

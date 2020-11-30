@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class CatchAllQueryPipelineStage : QueryPipelineStageBase
     {
@@ -16,13 +17,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         {
         }
 
-        public override async ValueTask<bool> MoveNextAsync()
+        public override async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             try
             {
-                if (!await this.inputStage.MoveNextAsync())
+                if (!await this.inputStage.MoveNextAsync(trace))
                 {
                     this.Current = default;
                     return false;

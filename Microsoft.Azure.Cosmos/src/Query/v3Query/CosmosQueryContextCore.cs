@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class CosmosQueryContextCore : CosmosQueryContext
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.QueryClient.ExecuteItemQueryAsync(
@@ -81,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 queryPageDiagnostics: this.AddQueryPageDiagnostic,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -91,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.QueryClient.ExecuteQueryPlanRequestAsync(
@@ -101,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKey,
                 supportedQueryFeatures,
                 this.diagnosticsContext,
+                trace,
                 cancellationToken);
         }
 
