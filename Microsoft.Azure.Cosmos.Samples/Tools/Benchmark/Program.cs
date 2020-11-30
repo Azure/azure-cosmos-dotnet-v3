@@ -5,20 +5,18 @@
 namespace CosmosBenchmark
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
-    using System.Net;
     using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Diagnostics;
-    using System.Net.Http;
-    using System.Runtime.CompilerServices;
     using Newtonsoft.Json.Linq;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
