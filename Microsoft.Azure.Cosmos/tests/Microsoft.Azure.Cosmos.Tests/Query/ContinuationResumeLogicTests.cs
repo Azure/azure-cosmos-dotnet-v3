@@ -397,6 +397,50 @@
                 new IPartitionedToken[] { token });
         }
 
+        [TestMethod]
+        public void TestTryGetInitializationInfo_ResumeLogicalParition()
+        {
+            // Suppose the partition spans epk range A to E
+            // And the user send a query with partition key that hashes to C
+            // The the token will look like:
+            ParallelContinuationToken token = new ParallelContinuationToken(
+                token: "asdf",
+                range: new Documents.Routing.Range<string>(
+                    min: "A",
+                    max: "E",
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
+
+            // Now suppose there is a split that creates two partitions A to B and B to E
+            // Now C will map to the partition that goes from B to E
+            FeedRangeEpk pkRange = new FeedRangeEpk(
+                new Documents.Routing.Range<string>(
+                    min: "B",
+                    max: "E",
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
+
+            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
+            {
+            };
+
+            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
+            {
+                { pkRange, token},
+            };
+
+            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
+            {
+            };
+
+            RunTryGetInitializationInfo(
+                expectedMappingLeftPartitions,
+                expectedMappingTargetPartition,
+                expectedMappingRightPartitions,
+                new FeedRangeEpk[] { pkRange },
+                new IPartitionedToken[] { token });
+        }
+
         private static void RunMatchRangesToContinuationTokens(
             IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMapping,
             IEnumerable<FeedRangeEpk> partitionKeyRanges,

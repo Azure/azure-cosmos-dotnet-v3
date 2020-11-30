@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class ClientContextCore : CosmosClientContext
@@ -188,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+            Func<CosmosDiagnosticsContext, ITrace, Task<TResult>> task)
         {
             CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
                operationName,
@@ -198,12 +200,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.RunWithDiagnosticsHelperAsync(
                     diagnosticsContext,
+                    NoOpTrace.Singleton,
                     task);
             }
 
             return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
-                    diagnosticsContext,
-                    task);
+                diagnosticsContext,
+                NoOpTrace.Singleton,
+                task);
         }
 
         internal override CosmosDiagnosticsContext CreateDiagnosticContext(
@@ -227,6 +231,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
@@ -263,6 +268,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -276,6 +282,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
@@ -289,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -303,6 +311,7 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
             CosmosDiagnosticsContext diagnosticsScope,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
@@ -318,34 +327,39 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
                 diagnosticsScope: diagnosticsScope,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            this.ThrowIfDisposed();
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
-            using (diagnosticsContext.GetOverallScope())
+            using (ITrace childTrace = trace.StartChild("Get Container Properties", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
-                ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
-                try
+                this.ThrowIfDisposed();
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
+                using (diagnosticsContext.GetOverallScope())
                 {
-                    using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                    ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+                    try
                     {
-                        return await collectionCache.ResolveByNameAsync(
-                            HttpConstants.Versions.CurrentVersion,
-                            containerUri,
-                            cancellationToken);
+                        using (diagnosticsContext.CreateScope("ContainerCache.ResolveByNameAsync"))
+                        {
+                            return await collectionCache.ResolveByNameAsync(
+                                HttpConstants.Versions.CurrentVersion,
+                                containerUri,
+                                forceRefesh: false,
+                                cancellationToken);
+                        }
+                    }
+                    catch (DocumentClientException ex)
+                    {
+                        throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
                     }
                 }
-                catch (DocumentClientException ex)
-                {
-                    throw CosmosExceptionFactory.Create(ex, diagnosticsContext);
-                }
             }
-
         }
 
         internal override BatchAsyncContainerExecutor GetExecutorForContainer(ContainerInternal container)
@@ -385,7 +399,8 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<TResult> RunWithSynchronizationContextAndDiagnosticsHelperAsync<TResult>(
             CosmosDiagnosticsContext diagnosticsContext,
-            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+            ITrace trace,
+            Func<CosmosDiagnosticsContext, ITrace, Task<TResult>> task)
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
@@ -400,6 +415,7 @@ namespace Microsoft.Azure.Cosmos
                     synchronizationContextScope.Dispose();
                     return this.RunWithDiagnosticsHelperAsync<TResult>(
                         diagnosticsContext,
+                        trace,
                         task);
                 }
             });
@@ -407,7 +423,8 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
             CosmosDiagnosticsContext diagnosticsContext,
-            Func<CosmosDiagnosticsContext, Task<TResult>> task)
+            ITrace trace,
+            Func<CosmosDiagnosticsContext, ITrace, Task<TResult>> task)
         {
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -415,7 +432,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (diagnosticsContext.GetOverallScope())
                     {
-                        return await task(diagnosticsContext).ConfigureAwait(false);
+                        return await task(diagnosticsContext, trace)
+                            .ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))

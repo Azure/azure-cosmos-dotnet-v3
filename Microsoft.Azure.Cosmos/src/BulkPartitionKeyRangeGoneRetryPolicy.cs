@@ -36,8 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 clientException?.StatusCode,
-                clientException?.GetSubStatus(),
-                clientException?.ResourceAddress);
+                clientException?.GetSubStatus());
 
             if (shouldRetryResult != null)
             {
@@ -57,8 +56,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(cosmosResponseMessage?.StatusCode,
-                cosmosResponseMessage?.Headers.SubStatusCode,
-                cosmosResponseMessage?.GetResourceAddress());
+                cosmosResponseMessage?.Headers.SubStatusCode);
             if (shouldRetryResult != null)
             {
                 return Task.FromResult(shouldRetryResult);
@@ -79,11 +77,13 @@ namespace Microsoft.Azure.Cosmos
 
         private ShouldRetryResult ShouldRetryInternal(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode,
-            string resourceIdOrFullName)
+            SubStatusCodes? subStatusCode)
         {
             if (statusCode == HttpStatusCode.Gone
-                && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone || subStatusCode == SubStatusCodes.NameCacheIsStale)
+                && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone 
+                || subStatusCode == SubStatusCodes.NameCacheIsStale 
+                || subStatusCode == SubStatusCodes.CompletingSplit
+                || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
                 && this.retriesAttempted < MaxRetries)
             {
                 this.retriesAttempted++;

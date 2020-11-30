@@ -10,9 +10,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
-    internal interface IMonadicDocumentContainer : IMonadicFeedRangeProvider, IMonadicQueryDataSource, IMonadicChangeFeedDataSource
+    internal interface IMonadicDocumentContainer : IMonadicFeedRangeProvider, IMonadicQueryDataSource, IMonadicReadFeedDataSource, IMonadicChangeFeedDataSource
     {
         Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
@@ -23,16 +24,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
             string identifer,
             CancellationToken cancellationToken);
 
-        Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
-            FeedRangeInternal feedRange,
-            ResourceId resourceIdentifer,
-            int pageSize,
-            CancellationToken cancellationToken);
-
         Task<TryCatch> MonadicSplitAsync(
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
 
-        Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken);
+        Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+            ITrace trace,
+            CancellationToken cancellationToken);
     }
 }

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
     /// <summary>
@@ -45,26 +44,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         // 1) We fully drain from the left most partition before moving on to the next partition
         // 2) We drain only full pages from the document producer so we aren't left with a partial page
         //  otherwise we would need to add to the continuation token how many items to skip over on that page.
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            if (!await this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync())
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            if (!await this.crossPartitionRangePageAsyncEnumerator.MoveNextAsync(trace))
             {
                 this.Current = default;
                 return false;
             }
 
-            TryCatch<CrossPartitionPage<QueryPage, QueryState>> currentCrossPartitionPage = this.crossPartitionRangePageAsyncEnumerator.Current;
+            TryCatch<CrossFeedRangePage<QueryPage, QueryState>> currentCrossPartitionPage = this.crossPartitionRangePageAsyncEnumerator.Current;
             if (currentCrossPartitionPage.Failed)
             {
                 this.Current = TryCatch<QueryPage>.FromException(currentCrossPartitionPage.Exception);
                 return true;
             }
 
-            CrossPartitionPage<QueryPage, QueryState> crossPartitionPageResult = currentCrossPartitionPage.Result;
+            CrossFeedRangePage<QueryPage, QueryState> crossPartitionPageResult = currentCrossPartitionPage.Result;
             QueryPage backendQueryPage = crossPartitionPageResult.Page;
-            CrossPartitionState<QueryState> crossPartitionState = crossPartitionPageResult.State;
+            CrossFeedRangeState<QueryState> crossPartitionState = crossPartitionPageResult.State;
 
             QueryState queryState;
             if (crossPartitionState == null)
@@ -74,21 +83,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             else
             {
                 // left most and any non null continuations
-                List<(FeedRangeInternal, QueryState)> rangesAndStates = crossPartitionState
+                List<FeedRangeState<QueryState>> feedRangeStates = crossPartitionState
                     .Value
-                    .OrderBy(tuple => (FeedRangeEpk)tuple.Item1, EpkRangeComparer.Singleton)
+                    .ToArray()
+                    .OrderBy(tuple => (FeedRangeEpk)tuple.FeedRange, EpkRangeComparer.Singleton)
                     .ToList();
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
-                for (int i = 0; i < rangesAndStates.Count; i++)
+                for (int i = 0; i < feedRangeStates.Count; i++)
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
 
-                    (FeedRangeInternal range, QueryState state) = rangesAndStates[i];
-                    if ((i == 0) || (state != null))
+                    FeedRangeState<QueryState> feedRangeState = feedRangeStates[i];
+                    if ((i == 0) || (feedRangeState.State != null))
                     {
                         ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                            token: state != null ? ((CosmosString)state.Value).Value : null,
-                            range: ((FeedRangeEpk)range).Range);
+                            token: feedRangeState.State != null ? ((CosmosString)feedRangeState.State.Value).Value : null,
+                            range: ((FeedRangeEpk)feedRangeState.FeedRange).Range);
 
                         activeParallelContinuationTokens.Add(parallelContinuationToken);
                     }
@@ -139,13 +149,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentOutOfRangeException(nameof(pageSize));
             }
 
-            TryCatch<CrossPartitionState<QueryState>> monadicExtractState = MonadicExtractState(continuationToken, targetRanges);
+            TryCatch<CrossFeedRangeState<QueryState>> monadicExtractState = MonadicExtractState(continuationToken, targetRanges);
             if (monadicExtractState.Failed)
             {
                 return TryCatch<IQueryPipelineStage>.FromException(monadicExtractState.Exception);
             }
 
-            CrossPartitionState<QueryState> state = monadicExtractState.Result;
+            CrossFeedRangeState<QueryState> state = monadicExtractState.Result;
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
@@ -159,27 +169,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }
 
-        private static TryCatch<CrossPartitionState<QueryState>> MonadicExtractState(
+        private static TryCatch<CrossFeedRangeState<QueryState>> MonadicExtractState(
             CosmosElement continuationToken,
             IReadOnlyList<FeedRangeEpk> ranges)
         {
             if (continuationToken == null)
             {
                 // Full fan out to the ranges with null continuations
-                CrossPartitionState<QueryState> fullFanOutState = new CrossPartitionState<QueryState>(ranges.Select(range => ((FeedRangeInternal)range, (QueryState)null)).ToArray());
-                return TryCatch<CrossPartitionState<QueryState>>.FromResult(fullFanOutState);
+                CrossFeedRangeState<QueryState> fullFanOutState = new CrossFeedRangeState<QueryState>(ranges.Select(range => new FeedRangeState<QueryState>(range, (QueryState)null)).ToArray());
+                return TryCatch<CrossFeedRangeState<QueryState>>.FromResult(fullFanOutState);
             }
 
             if (!(continuationToken is CosmosArray parallelContinuationTokenListRaw))
             {
-                return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                return TryCatch<CrossFeedRangeState<QueryState>>.FromException(
                     new MalformedContinuationTokenException(
                         $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
             }
 
             if (parallelContinuationTokenListRaw.Count == 0)
             {
-                return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                return TryCatch<CrossFeedRangeState<QueryState>>.FromException(
                     new MalformedContinuationTokenException(
                         $"Invalid format for continuation token {continuationToken} for {nameof(ParallelCrossPartitionQueryPipelineStage)}"));
             }
@@ -190,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 TryCatch<ParallelContinuationToken> tryCreateParallelContinuationToken = ParallelContinuationToken.TryCreateFromCosmosElement(parallelContinuationTokenRaw);
                 if (tryCreateParallelContinuationToken.Failed)
                 {
-                    return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                    return TryCatch<CrossFeedRangeState<QueryState>>.FromException(
                         tryCreateParallelContinuationToken.Exception);
                 }
 
@@ -202,12 +212,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 parallelContinuationTokens);
             if (partitionMappingMonad.Failed)
             {
-                return TryCatch<CrossPartitionState<QueryState>>.FromException(
+                return TryCatch<CrossFeedRangeState<QueryState>>.FromException(
                     partitionMappingMonad.Exception);
             }
 
             PartitionMapping<ParallelContinuationToken> partitionMapping = partitionMappingMonad.Result;
-            List<(FeedRangeInternal, QueryState)> rangesAndStates = new List<(FeedRangeInternal, QueryState)>();
+            List<FeedRangeState<QueryState>> feedRangeStates = new List<FeedRangeState<QueryState>>();
 
             List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>>()
             {
@@ -220,14 +230,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             {
                 foreach (KeyValuePair<FeedRangeEpk, ParallelContinuationToken> kvp in rangeToInitalize)
                 {
-                    (FeedRangeInternal, QueryState) rangeAndState = (kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token)) : null);
-                    rangesAndStates.Add(rangeAndState);
+                    FeedRangeState<QueryState> feedRangeState = new FeedRangeState<QueryState>(kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token)) : null);
+                    feedRangeStates.Add(feedRangeState);
                 }
             }
 
-            CrossPartitionState<QueryState> crossPartitionState = new CrossPartitionState<QueryState>(rangesAndStates);
+            CrossFeedRangeState<QueryState> crossPartitionState = new CrossFeedRangeState<QueryState>(feedRangeStates.ToArray());
 
-            return TryCatch<CrossPartitionState<QueryState>>.FromResult(crossPartitionState);
+            return TryCatch<CrossFeedRangeState<QueryState>>.FromResult(crossPartitionState);
         }
 
         private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(

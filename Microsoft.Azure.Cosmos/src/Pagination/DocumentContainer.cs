@@ -13,7 +13,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Composes a <see cref="IMonadicDocumentContainer"/> and creates an <see cref="IDocumentContainer"/>.
@@ -29,27 +30,43 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetChildRangeAsync(
                 feedRange,
+                trace,
                 cancellationToken);
 
         public Task<List<FeedRangeEpk>> GetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken) => TryCatch<List<FeedRangeInternal>>.UnsafeGetResultAsync(
                 this.MonadicGetChildRangeAsync(
                     feedRange,
+                    trace,
                     cancellationToken),
                 cancellationToken);
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetFeedRangesAsync(
+                trace,
                 cancellationToken);
 
         public Task<List<FeedRangeEpk>> GetFeedRangesAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => TryCatch<List<FeedRangeEpk>>.UnsafeGetResultAsync(
                 this.MonadicGetFeedRangesAsync(
+                    trace,
                     cancellationToken),
                 cancellationToken);
+
+        public Task RefreshProviderAsync(ITrace trace, CancellationToken cancellationToken) => TryCatch.UnsafeWaitAsync(
+            this.MonadicRefreshProviderAsync(trace, cancellationToken),
+            cancellationToken);
+
+        public Task<TryCatch> MonadicRefreshProviderAsync(ITrace trace, CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicRefreshProviderAsync(
+            trace,
+            cancellationToken);
 
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
@@ -83,25 +100,33 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
-        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
+        public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifer,
+            QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicReadFeedAsync(
+                readFeedState,
                 feedRange,
-                resourceIdentifer,
+                queryRequestOptions,
                 pageSize,
+                trace,
                 cancellationToken);
 
-        public Task<DocumentContainerPage> ReadFeedAsync(
+        public Task<ReadFeedPage> ReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifier,
+            QueryRequestOptions queryRequestOptions,
             int pageSize,
-            CancellationToken cancellationToken) => TryCatch<DocumentContainerPage>.UnsafeGetResultAsync(
+            ITrace trace,
+            CancellationToken cancellationToken) => TryCatch<ReadFeedPage>.UnsafeGetResultAsync(
                 this.MonadicReadFeedAsync(
+                    readFeedState,
                     feedRange,
-                    resourceIdentifier,
+                    queryRequestOptions,
                     pageSize,
+                    trace,
                     cancellationToken),
                 cancellationToken);
 
@@ -110,11 +135,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
                 sqlQuerySpec,
                 continuationToken,
                 feedRange,
                 pageSize,
+                trace,
                 cancellationToken);
 
         public Task<QueryPage> QueryAsync(
@@ -122,12 +149,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken) => TryCatch<QueryPage>.UnsafeGetResultAsync(
                 this.MonadicQueryAsync(
                     sqlQuerySpec,
                     continuationToken,
                     feedRange,
                     pageSize,
+                    trace,
                     cancellationToken),
                 cancellationToken);
 
@@ -149,11 +178,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
                 this.MonadicChangeFeedAsync(
                     state,
                     feedRange,
                     pageSize,
+                    trace,
                     cancellationToken), 
                 cancellationToken);
 
@@ -161,18 +192,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
                 state,
                 feedRange,
                 pageSize,
+                trace,
                 cancellationToken);
 
         public Task<string> GetResourceIdentifierAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => TryCatch<string>.UnsafeGetResultAsync(
-                this.MonadicGetResourceIdentifierAsync(cancellationToken),
+                this.MonadicGetResourceIdentifierAsync(trace, cancellationToken),
                 cancellationToken);
 
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
-            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
+            ITrace trace, 
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
     }
 }
