@@ -104,6 +104,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 }
             }
 
+            Console.WriteLine("Current benchmark results: " + currentBenchmarkResults);
+
             return 0;
         }
     }

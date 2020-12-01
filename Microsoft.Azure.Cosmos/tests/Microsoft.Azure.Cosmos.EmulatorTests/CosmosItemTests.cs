@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -329,12 +330,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (e.DocumentServiceRequest != null)
                     {
-                        Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
+                        System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
                     }
 
                     if (e.HttpRequest != null)
                     {
-                        Trace.TraceInformation($"{e.HttpRequest.ToString()}");
+                        System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest.ToString()}");
                     }
 
                     if (e.IsHttpRequest()
@@ -378,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                await testContainer.GetNonePartitionKeyValueAsync(default);
             }
 
             // expected once post create 
@@ -388,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRIDAsync(default(CancellationToken));
+                await testContainer.GetCachedRIDAsync(cancellationToken: default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -399,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRoutingMapAsync(default(CancellationToken));
+                await testContainer.GetRoutingMapAsync(default);
                 expected = count;
             }
 
@@ -770,7 +771,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 lastContinuationToken = response.Headers.ContinuationToken;
                 Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
 
-                Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
+                System.Diagnostics.Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
                 using (StreamReader sr = new StreamReader(response.Content))
@@ -789,8 +790,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     totalReadItem += expectedTodoActivities.Length;
                     string expectedSerialized = JsonConvert.SerializeObject(expectedTodoActivities);
                     string readSerialized = JsonConvert.SerializeObject(readTodoActivities);
-                    Trace.TraceInformation($"Expected: {Environment.NewLine} {expectedSerialized}");
-                    Trace.TraceInformation($"Read: {Environment.NewLine} {readSerialized}");
+                    System.Diagnostics.Trace.TraceInformation($"Expected: {Environment.NewLine} {expectedSerialized}");
+                    System.Diagnostics.Trace.TraceInformation($"Read: {Environment.NewLine} {readSerialized}");
 
                     int count = results.Length;
                     Assert.AreEqual(maxItemCount, count);
@@ -1079,7 +1080,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         {"x-ms-effective-partition-key-string", "AA" }
                     },
-                    feedRangeInternal: null);
+                    feedRangeInternal: null,
+                    trace: NoOpTrace.Singleton);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
