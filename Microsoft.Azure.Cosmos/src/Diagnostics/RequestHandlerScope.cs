@@ -9,7 +9,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class RequestHandlerScope : CosmosDiagnosticsInternal, IDisposable
     {
-        private readonly Stopwatch ElapsedTimeStopWatch;
+        private static readonly Stopwatch SingletonTimer = Stopwatch.StartNew();
+        private readonly TimeSpan startTimeSpan = RequestHandlerScope.SingletonTimer.Elapsed;
+        private TimeSpan? elapsedTimeSpan = null;
+
         private bool isDisposed = false;
 
         public RequestHandlerScope(RequestHandler handler)
@@ -19,31 +22,30 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            this.Id = handler.GetType().FullName;
-            this.ElapsedTimeStopWatch = Stopwatch.StartNew();
+            this.Id = handler.FullHandlerName;
         }
 
         public string Id { get; }
 
         public bool TryGetTotalElapsedTime(out TimeSpan elapsedTime)
         {
-            if (!this.isDisposed)
+            if (!this.isDisposed || !this.elapsedTimeSpan.HasValue)
             {
                 return false;
             }
 
-            elapsedTime = this.ElapsedTimeStopWatch.Elapsed;
+            elapsedTime = this.elapsedTimeSpan.Value;
             return true;
         }
 
         internal TimeSpan GetCurrentElapsedTime()
         {
-            return this.ElapsedTimeStopWatch.Elapsed;
+            return RequestHandlerScope.SingletonTimer.Elapsed - this.startTimeSpan;
         }
 
         internal bool IsComplete()
         {
-            return !this.ElapsedTimeStopWatch.IsRunning;
+            return this.elapsedTimeSpan.HasValue;
         }
 
         public void Dispose()
@@ -53,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return;
             }
 
-            this.ElapsedTimeStopWatch.Stop();
+            this.elapsedTimeSpan = RequestHandlerScope.SingletonTimer.Elapsed - this.startTimeSpan;
             this.isDisposed = true;
         }
 

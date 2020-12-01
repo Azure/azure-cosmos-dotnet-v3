@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryIterator : FeedIteratorInternal
     {
@@ -81,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.Query
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
-                clientContext,
                 queryPipelineCreationDiagnostics,
                 queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
@@ -139,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             return new QueryIterator(
                 cosmosQueryContext,
-                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters),
+                CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters, NoOpTrace.Singleton),
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
                 clientContext);
@@ -147,8 +146,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnostics.GetOverallScope())
             {
@@ -157,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     // This catches exception thrown by the pipeline and converts it to QueryResponse
                     this.queryPipelineStage.SetCancellationToken(cancellationToken);
-                    if (!await this.queryPipelineStage.MoveNextAsync())
+                    if (!await this.queryPipelineStage.MoveNextAsync(trace))
                     {
                         this.hasMoreResults = false;
                         return QueryResponse.CreateSuccess(

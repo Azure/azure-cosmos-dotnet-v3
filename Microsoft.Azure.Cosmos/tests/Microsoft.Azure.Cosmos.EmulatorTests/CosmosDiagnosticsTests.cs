@@ -5,19 +5,12 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.EmulatorTests.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
@@ -747,8 +740,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Verify the typed query iterator
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                    sql,
-                    requestOptions: requestOptions);
+                sql,
+                requestOptions: requestOptions);
 
             List<ToDoActivity> results = new List<ToDoActivity>();
             long totalOutDocumentCount = 0;

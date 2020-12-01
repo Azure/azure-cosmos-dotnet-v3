@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Linq.Expressions;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
@@ -23,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     abstract partial class JsonWriter : IJsonWriter
     {
+        internal static bool EnableEncodedStrings = false;
+
         /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.
         /// </summary>
@@ -718,8 +718,6 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 this.binaryWriter.EnsureRemainingBufferSpace(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + utf8Span.Length);
 
-                // String dictionary encoding is currently performed only for field names. 
-                // This would be changed later, so that the writer can control which strings need to be encoded.
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
                 if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
                     utf8Span,
@@ -740,20 +738,23 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new InvalidOperationException($"Unable to serialize a {nameof(JsonBinaryEncoding.MultiByteTypeMarker)} of length: {multiByteTypeMarker.Length}");
                     }
                 }
-                else if (isFieldName
+                else if (EnableEncodedStrings 
+                    && isFieldName
                     && (utf8Span.Length >= MinReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
                 {
                     // Work is done in the check
                 }
-                else if (!isFieldName
+                else if (EnableEncodedStrings
+                    && !isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidLength)
                     && JsonBinaryEncoding.TryEncodeGuidString(utf8Span.Span, this.binaryWriter.Cursor))
                 {
                     // Encoded value as guid string
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
                 }
-                else if (!isFieldName
+                else if (EnableEncodedStrings
+                    && !isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidWithQuotesLength)
                     && (utf8Span.Span[0] == '"')
                     && (utf8Span.Span[JsonBinaryEncoding.GuidWithQuotesLength - 1] == '"')
@@ -764,13 +765,16 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Cursor[0] = JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString;
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
                 }
-                else if (!isFieldName
+                else if (EnableEncodedStrings
+                    && !isFieldName
                     && JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, out int bytesWritten))
                 {
                     // Encoded value as a compressed string
                     this.binaryWriter.Position += bytesWritten;
                 }
-                else if (!isFieldName
+                else if (
+                    EnableEncodedStrings 
+                    && !isFieldName
                     && (utf8Span.Length >= MinReferenceStringLength)
                     && (utf8Span.Length <= MaxReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
