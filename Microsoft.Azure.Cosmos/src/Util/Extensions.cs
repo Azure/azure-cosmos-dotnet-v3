@@ -61,7 +61,11 @@ namespace Microsoft.Azure.Cosmos
             return (T)(object)value;
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage, ITrace trace)
+        internal static ResponseMessage ToCosmosResponseMessage(
+            this DocumentServiceResponse documentServiceResponse, 
+            RequestMessage requestMessage,
+            RequestChargeTracker requestChargeTracker,
+            ITrace trace)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
             Headers headers = new Headers(documentServiceResponse.Headers);
@@ -70,6 +74,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDiagnosticsTraceDatum clientSideRequestStatisticsTraceDatum = new CosmosDiagnosticsTraceDatum(cosmosClientSideRequestStatistics);
                 trace.AddDatum(nameof(CosmosClientSideRequestStatistics), clientSideRequestStatisticsTraceDatum);
+            }
+
+            if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)
+            {
+                headers.RequestCharge = requestChargeTracker.TotalRequestCharge;
+                DefaultTrace.TraceWarning(
+                        "Header RequestCharge {0} does not match RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
+                        headers.RequestCharge,
+                        requestChargeTracker.TotalRequestCharge,
+                        requestMessage?.RequestUriString,
+                        requestMessage?.OperationType);
             }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
