@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         public enum TimeoutPolicy
         {
             Standard,
-            ControlPlane,
+            ControlPlaneGet,
             ControlPlaneHotPath,
         }
 

@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<TimeSpan> timeouts = timeoutPolicy switch
             {
                 TimeoutPolicy.Standard => CosmosHttpClientCore.StandardTimeouts,
-                TimeoutPolicy.ControlPlane => CosmosHttpClientCore.ControlPlaneTimeouts,
+                TimeoutPolicy.ControlPlaneGet => CosmosHttpClientCore.ControlPlaneTimeouts,
                 TimeoutPolicy.ControlPlaneHotPath => CosmosHttpClientCore.ControlPlaneHotPathTimeouts,
                 _ => throw new ArgumentOutOfRangeException($"The {nameof(TimeoutPolicy)} value {timeoutPolicy} is not supported"),
             };
@@ -306,9 +306,8 @@ namespace Microsoft.Azure.Cosmos
                                   requestSessionToken: null,
                                   responseSessionToken: null));
 
-                        timeoutPosition++;
                         bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > TimeSpan.FromSeconds(30) || // Maximum of 30 seconds for all retries
-                            timeoutPosition >= timeouts.Count; // No more retries are configured
+                            timeoutPosition + 1 >= timeouts.Count; // No more retries are configured
 
                         switch (e)
                         {
@@ -353,6 +352,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                timeoutPosition++;
                 // No delay on first retry
                 if (timeoutPosition == 1)
                 {

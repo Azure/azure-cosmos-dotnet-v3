@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneHotPath)]
-        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlane)]
+        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneGet)]
         public async Task RetryTransientIssuesTestAsync(int timeoutPolicyIntValue)
         {
             CosmosHttpClient.TimeoutPolicy timeoutPolicy = (CosmosHttpClient.TimeoutPolicy)timeoutPolicyIntValue;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1)
                 },
-                CosmosHttpClient.TimeoutPolicy.ControlPlane => new List<TimeSpan>()
+                CosmosHttpClient.TimeoutPolicy.ControlPlaneGet => new List<TimeSpan>()
                 {
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1),
