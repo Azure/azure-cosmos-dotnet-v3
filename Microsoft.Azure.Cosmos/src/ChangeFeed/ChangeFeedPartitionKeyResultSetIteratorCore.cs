@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.partitionKeyRangeCache = partitionKeyRangeCache;
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
-            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (trace, innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
-                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(cancellationToken);
+                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(trace, cancellationToken);
                     if (!tryInitializeContainerRId.Succeeded)
                     {
                         CosmosException cosmosException = tryInitializeContainerRId.Exception.InnerException as CosmosException;

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.leaseUpdater = leaseUpdater;
             this.options = options;
             this.requestOptionsFactory = requestOptionsFactory;
-            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (trace, innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
         }
 
         public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 if (!this.lazyContainerRid.ValueInitialized)
                 {
-                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(default);
+                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(NoOpTrace.Singleton, default);
                     if (!tryInitializeContainerRId.Succeeded)
                     {
                         throw tryInitializeContainerRId.Exception.InnerException;

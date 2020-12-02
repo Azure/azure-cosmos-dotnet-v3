@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(responseMessage);
@@ -107,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
             )
@@ -164,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
@@ -191,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }
@@ -224,6 +229,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
@@ -254,6 +260,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Never);
         }
@@ -297,6 +304,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
@@ -326,6 +334,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }
