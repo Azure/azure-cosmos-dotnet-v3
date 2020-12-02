@@ -333,14 +333,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException))
+                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (requestMessage.Method != HttpMethod.Get)
+                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
                                 {
                                     throw;
                                 }
