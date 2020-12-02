@@ -282,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 cancellationToken: default)).GetRecords().Count;
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], trace: NoOpTrace.Singleton, cancellationToken: default);
 
@@ -341,6 +342,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)
