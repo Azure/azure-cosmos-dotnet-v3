@@ -352,9 +352,8 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                timeoutPosition++;
                 // No delay on first retry
-                if (timeoutPosition == 1)
+                if (timeoutPosition == 0)
                 {
                     using (diagnosticsContext.CreateScope($"HttpRetryDelay; Delay:{backoffSeconds} seconds; Count {timeoutPosition}; TimeoutPolicy: {timeoutPolicy}"))
                     {
@@ -362,6 +361,8 @@ namespace Microsoft.Azure.Cosmos
                         backoffSeconds *= 2;
                     }
                 }
+
+                timeoutPosition++;
             }
         }
 
