@@ -276,6 +276,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)

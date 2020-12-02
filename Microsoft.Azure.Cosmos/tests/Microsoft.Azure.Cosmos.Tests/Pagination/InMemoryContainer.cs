@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private PartitionKeyHashRangeDictionary<List<Change>> partitionedChanges;
         private Dictionary<int, PartitionKeyHashRange> partitionKeyRangeIdToHashRange;
+        private Dictionary<int, PartitionKeyHashRange> cachedPartitionKeyRangeIdToHashRange;
 
         public InMemoryContainer(
             PartitionKeyDefinition partitionKeyDefinition)
@@ -52,6 +53,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             this.partitionedChanges = new PartitionKeyHashRangeDictionary<List<Change>>(partitionKeyHashRanges);
             this.partitionedChanges[fullRange] = new List<Change>();
             this.partitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
+            {
+                { 0, fullRange }
+            };
+            this.cachedPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>()
             {
                 { 0, fullRange }
             };
@@ -86,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 FeedRangeEpk CreateRangeFromId(int id)
                 {
-                    PartitionKeyHashRange hashRange = this.partitionKeyRangeIdToHashRange[id];
+                    PartitionKeyHashRange hashRange = this.cachedPartitionKeyRangeIdToHashRange[id];
                     return new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
                             min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.Value.ToString() : string.Empty,
@@ -100,33 +105,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     throw new ArgumentException("Can not get the child of a logical partition key");
                 }
 
-                if (feedRange.Equals(FeedRangeEpk.FullRange))
+            if (feedRange.Equals(FeedRangeEpk.FullRange))
+            {
+                List<FeedRangeEpk> ranges = new List<FeedRangeEpk>();
+                foreach (int id in this.cachedPartitionKeyRangeIdToHashRange.Keys)
                 {
-                    List<FeedRangeEpk> ranges = new List<FeedRangeEpk>();
-                    foreach (int id in this.partitionKeyRangeIdToHashRange.Keys)
-                    {
-                        ranges.Add(CreateRangeFromId(id));
-                    }
+                    ranges.Add(CreateRangeFromId(id));
+                }
 
                     return TryCatch<List<FeedRangeEpk>>.FromResult(ranges);
                 }
 
-                if (feedRange is FeedRangeEpk feedRangeEpk)
+            if (feedRange is FeedRangeEpk feedRangeEpk)
+            {
+                // look for overlapping epk ranges.
+                List<FeedRangeEpk> overlappedIds;
+                if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
                 {
-                    // look for overlapping epk ranges.
-                    List<FeedRangeEpk> overlappedIds;
-                    if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
-                    {
-                        overlappedIds = this.partitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
-                    }
-                    else
-                    {
-                        PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
-                        overlappedIds = this.partitionKeyRangeIdToHashRange
-                            .Where(kvp => hashRange.Contains(kvp.Value))
-                            .Select(kvp => CreateRangeFromId(kvp.Key))
-                            .ToList();
-                    }
+                    overlappedIds = this.cachedPartitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                }
+                else
+                {
+                    PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
+                    overlappedIds = this.cachedPartitionKeyRangeIdToHashRange
+                        .Where(kvp => hashRange.Contains(kvp.Value))
+                        .Select(kvp => CreateRangeFromId(kvp.Key))
+                        .ToList();
+                }
 
                     if (overlappedIds.Count == 0)
                     {
@@ -150,15 +155,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             $"PartitionKeyRangeId: {feedRangePartitionKeyRange.PartitionKeyRangeId} is not an integer."));
                 }
 
-                if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
+            if (!this.parentToChildMapping.TryGetValue(partitionKeyRangeId, out (int left, int right) children))
+            {
+                // This range has no children (base case)
+                if (!this.cachedPartitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
                 {
-                    // This range has no children (base case)
-                    if (!this.partitionKeyRangeIdToHashRange.TryGetValue(partitionKeyRangeId, out PartitionKeyHashRange hashRange))
-                    {
-                        return TryCatch<List<FeedRangeEpk>>.FromException(
-                            new KeyNotFoundException(
-                                $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist."));
-                    }
+                    return TryCatch<List<FeedRangeEpk>>.FromException(
+                        new KeyNotFoundException(
+                            $"PartitionKeyRangeId: {partitionKeyRangeId} does not exist."));
+                }
 
                     List<FeedRangeEpk> singleRange = new List<FeedRangeEpk>()
                 {
@@ -195,8 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             using (ITrace refreshProviderTrace = trace.StartChild("Refreshing FeedRangeProvider", TraceComponent.Routing, TraceLevel.Info))
             {
-                // The feedrangeprovider is always insync in memory
-                // so we can no op for this one
+                this.cachedPartitionKeyRangeIdToHashRange = new Dictionary<int, PartitionKeyHashRange>(this.partitionKeyRangeIdToHashRange);
                 return Task.FromResult(TryCatch.FromResult());
             }
         }
