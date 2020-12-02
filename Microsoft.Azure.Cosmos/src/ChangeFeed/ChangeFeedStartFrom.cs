@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         internal ChangeFeedStartFrom(FeedRange feedRange)
         {
             // Internal so people can't derive from this type.
-            this.FeedRange = feedRange ?? feedRange;
+            this.FeedRange = feedRange;
         }
 
         /// <summary>
