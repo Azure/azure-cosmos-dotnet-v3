@@ -20,14 +20,14 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
         private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
-        private static readonly IReadOnlyList<TimeSpan> ControlPlaneHotPathTimeouts = new List<TimeSpan>()
+        private static readonly IReadOnlyList<TimeSpan> ControlPlaneReadHotPathTimeouts = new List<TimeSpan>()
         {
             TimeSpan.FromSeconds(.5),
             TimeSpan.FromSeconds(5),
             TimeSpan.FromSeconds(10)
         };
 
-        private static readonly IReadOnlyList<TimeSpan> ControlPlaneTimeouts = new List<TimeSpan>()
+        private static readonly IReadOnlyList<TimeSpan> ControlPlaneReadTimeouts = new List<TimeSpan>()
         {
             TimeSpan.FromSeconds(5),
             TimeSpan.FromSeconds(10),
@@ -255,8 +255,8 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<TimeSpan> timeouts = timeoutPolicy switch
             {
                 TimeoutPolicy.Standard => CosmosHttpClientCore.StandardTimeouts,
-                TimeoutPolicy.ControlPlaneGet => CosmosHttpClientCore.ControlPlaneTimeouts,
-                TimeoutPolicy.ControlPlaneHotPath => CosmosHttpClientCore.ControlPlaneHotPathTimeouts,
+                TimeoutPolicy.ControlPlaneRead => CosmosHttpClientCore.ControlPlaneReadTimeouts,
+                TimeoutPolicy.ControlPlaneReadHotPath => CosmosHttpClientCore.ControlPlaneReadHotPathTimeouts,
                 _ => throw new ArgumentOutOfRangeException($"The {nameof(TimeoutPolicy)} value {timeoutPolicy} is not supported"),
             };
 
@@ -356,8 +356,11 @@ namespace Microsoft.Azure.Cosmos
                 // No delay on first retry
                 if (timeoutPosition == 1)
                 {
-                    await Task.Delay(backoffSeconds);
-                    backoffSeconds *= 2;
+                    using (diagnosticsContext.CreateScope($"HttpRetryDelay; Delay:{backoffSeconds} seconds; Count {timeoutPosition}; TimeoutPolicy: {timeoutPolicy}"))
+                    {
+                        await Task.Delay(backoffSeconds);
+                        backoffSeconds *= 2;
+                    }
                 }
             }
         }

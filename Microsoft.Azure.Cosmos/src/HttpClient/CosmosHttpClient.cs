@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos
         public enum TimeoutPolicy
         {
             Standard,
-            ControlPlaneGet,
-            ControlPlaneHotPath,
+            ControlPlaneRead,
+            ControlPlaneReadHotPath,
         }
 
         public static TimeoutPolicy GetTimeoutPolicy(
@@ -27,12 +27,12 @@ namespace Microsoft.Azure.Cosmos
             if (documentServiceRequest.ResourceType == ResourceType.Document
                 && documentServiceRequest.OperationType == OperationType.QueryPlan)
             {
-                return TimeoutPolicy.ControlPlaneHotPath;
+                return TimeoutPolicy.ControlPlaneReadHotPath;
             }
 
             if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
             {
-                return TimeoutPolicy.ControlPlaneHotPath;
+                return TimeoutPolicy.ControlPlaneReadHotPath;
             }
 
             return TimeoutPolicy.Standard;

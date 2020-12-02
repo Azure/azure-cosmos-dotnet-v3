@@ -46,20 +46,20 @@ namespace Microsoft.Azure.Cosmos.Tests
 
 
         [TestMethod]
-        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneHotPath)]
-        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneGet)]
+        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneReadHotPath)]
+        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneRead)]
         public async Task RetryTransientIssuesTestAsync(int timeoutPolicyIntValue)
         {
             CosmosHttpClient.TimeoutPolicy timeoutPolicy = (CosmosHttpClient.TimeoutPolicy)timeoutPolicyIntValue;
             IReadOnlyList<TimeSpan> timeouts = timeoutPolicy switch
             {
-                CosmosHttpClient.TimeoutPolicy.ControlPlaneHotPath => new List<TimeSpan>()
+                CosmosHttpClient.TimeoutPolicy.ControlPlaneReadHotPath => new List<TimeSpan>()
                 {
                     TimeSpan.FromSeconds(.6),
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1)
                 },
-                CosmosHttpClient.TimeoutPolicy.ControlPlaneGet => new List<TimeSpan>()
+                CosmosHttpClient.TimeoutPolicy.ControlPlaneRead => new List<TimeSpan>()
                 {
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1),
