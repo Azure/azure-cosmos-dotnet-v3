@@ -162,15 +162,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
 
             {
+                // Start off with one range.
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default);
                 Assert.AreEqual(expected: 1, ranges.Count);
+
+                await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
             }
 
-            await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+            {
+                // Still have one range, since we have let to refresh.
+                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+                Assert.AreEqual(expected: 1, ranges.Count);
+            }
+
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             {
+                // Now we should have two ranges after a refresh.
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default);
@@ -193,6 +205,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             // Check the leaves
             foreach (int i in new int[] { 1, 2 })
@@ -331,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             (int firstPageCount, TState resumeState) = await drainFunctions.DrainOnePageAsync(documentContainer, ranges[0]);
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(
                 trace: NoOpTrace.Singleton, 
                 cancellationToken: default);
@@ -371,6 +385,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.AreEqual(1, ranges.Count);
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetChildRangeAsync(
                 ranges[0],
@@ -382,6 +397,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 await documentContainer.SplitAsync(childRange, cancellationToken: default);
             }
+
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             int count = 0;
             foreach (FeedRangeInternal childRange in childRanges)
@@ -512,6 +529,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
             Assert.AreEqual(1, ranges.Count);
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
             Assert.AreEqual(2, childRanges.Count);
 
@@ -530,6 +548,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             int countBeforeMerge = await drainFunctions.DrainAllPagesAsync(documentContainer, resumeState, childRanges[0]);
 
             await documentContainer.MergeAsync(childRanges[0], childRanges[1], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             IReadOnlyList<FeedRangeInternal> mergedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
             Assert.AreEqual(1, mergedRanges.Count);
 
