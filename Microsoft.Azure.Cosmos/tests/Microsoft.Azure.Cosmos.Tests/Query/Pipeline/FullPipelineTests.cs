@@ -301,6 +301,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             foreach (CosmosObject document in documents)
