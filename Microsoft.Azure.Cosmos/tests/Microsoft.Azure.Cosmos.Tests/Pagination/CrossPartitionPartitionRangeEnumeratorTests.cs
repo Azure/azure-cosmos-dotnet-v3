@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     if (random.Next() % 2 == 0)
                     {
+                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                         List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
                             trace: NoOpTrace.Singleton, 
                             cancellationToken: default);
