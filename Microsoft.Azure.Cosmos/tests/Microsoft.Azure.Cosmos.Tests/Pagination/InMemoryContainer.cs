@@ -372,15 +372,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<Record> page = records
                     .Where((record) =>
                     {
-                        bool recordIsWithinFeedRange = IsRecordWithinFeedRange(record, feedRange, this.partitionKeyDefinition);
+                        if (!IsRecordWithinFeedRange(record, feedRange, this.partitionKeyDefinition))
+                        {
+                            return false;
+                        }
 
                         // We do a filter on a composite index here 
-                        bool recordHasHigherPKRangeId = record.ResourceIdentifier.Database > rangeIdAndIndex.pkrangeId;
-                        bool recordHasSamePkRangeIdButHigherIndex = (record.ResourceIdentifier.Database == rangeIdAndIndex.pkrangeId) &&
-                        (record.ResourceIdentifier.Document > rangeIdAndIndex.documentIndex);
-                        bool recordHasHigherRid = recordHasHigherPKRangeId || recordHasSamePkRangeIdButHigherIndex;
-
-                        return recordIsWithinFeedRange && recordHasHigherRid;
+                        int pkRangeIdCompare = record.ResourceIdentifier.Database.CompareTo((uint)rangeIdAndIndex.pkrangeId);
+                        if (pkRangeIdCompare < 0)
+                        {
+                            return false;
+                        }
+                        else if (pkRangeIdCompare > 0)
+                        {
+                            return true;
+                        }
+                        else // pkRangeIdCompare == 0
+                        {
+                            return record.ResourceIdentifier.Document > rangeIdAndIndex.documentIndex;
+                        }
                     })
                     .Take(pageSize)
                     .ToList();
@@ -505,21 +515,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     {
                         ResourceId documentResourceId = ResourceId.Parse(((CosmosString)((CosmosObject)c)["_rid"]).Value);
                         // Perform a composite filter on pkrange id and document index 
-                        bool greaterPKRangeId = documentResourceId.Database > continuationParsedResourceId.Database;
-                        bool samePKRangeIdButGreaterIndex = documentResourceId.Database == continuationParsedResourceId.Database;
-
-                        // If we have a skip count, then we can't skip over the rid we last saw, since
-                        // there are documents with the same rid that we need to skip over.
-                        if (continuationSkipCount == 0)
+                        int pkRangeIdCompare = documentResourceId.Database.CompareTo(continuationParsedResourceId.Database);
+                        if (pkRangeIdCompare < 0)
                         {
-                            samePKRangeIdButGreaterIndex &= documentResourceId.Document > continuationParsedResourceId.Document;
+                            return false;
                         }
-                        else
+                        else if (pkRangeIdCompare > 0)
                         {
-                            samePKRangeIdButGreaterIndex &= documentResourceId.Document >= continuationParsedResourceId.Document;
+                            return true;
                         }
+                        else // pkRangeIdCompare == 0
+                        {
+                            int documentCompare = documentResourceId.Document.CompareTo(continuationParsedResourceId.Document);
 
-                        return greaterPKRangeId || samePKRangeIdButGreaterIndex;
+                            // If we have a skip count, then we can't skip over the rid we last saw, since
+                            // there are documents with the same rid that we need to skip over.
+                            return continuationSkipCount == 0 ? documentCompare > 0 : documentCompare >= 0;
+                        }
                     });
 
                     for (int i = 0; i < continuationSkipCount; i++)
@@ -1356,17 +1368,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 ulong lsn = (ulong)Number64.ToLong(lsnCosmosElement.Value);
 
-                if (input.PartitionKeyRangeId > pkRangeId)
+                int pkRangeIdCompare = input.PartitionKeyRangeId.CompareTo(pkRangeId);
+                if (pkRangeIdCompare < 0)
+                {
+                    return false;
+                }
+                else if (pkRangeIdCompare > 0)
                 {
                     return true;
                 }
-
-                if ((input.PartitionKeyRangeId == pkRangeId) && (input.LogicalSequenceNumber > lsn))
+                else
                 {
-                    return true;
+                    return input.LogicalSequenceNumber > lsn;
                 }
-
-                return false;
             }
 
             public bool Visit(ChangeFeedStateNow changeFeedStateNow, Change input)
