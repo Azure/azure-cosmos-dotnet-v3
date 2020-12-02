@@ -188,6 +188,8 @@
                     {
                         await documentContainer.SplitAsync(range, cancellationToken: default);
                     }
+
+                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                 }
             }
 
