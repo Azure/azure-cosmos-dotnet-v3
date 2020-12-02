@@ -266,6 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
+                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                     List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
                         trace: NoOpTrace.Singleton, 
                         cancellationToken: default).Result;
@@ -313,6 +314,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 if (random.Next() % 4 == 0)
                 {
                     // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
+                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                     List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
                         trace: NoOpTrace.Singleton, 
                         cancellationToken: default).Result;
@@ -355,6 +357,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)
