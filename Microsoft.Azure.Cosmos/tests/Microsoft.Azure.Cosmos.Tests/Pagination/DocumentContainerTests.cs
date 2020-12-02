@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             int childOneCount = await drainFunctions.DrainAllPagesAsync(documentContainer, resumeState, childRanges[0]);
             int childTwoCount = await drainFunctions.DrainAllPagesAsync(documentContainer, resumeState, childRanges[1]);
 
-            Assert.AreEqual(numItemsToInsert, firstPageCount + childOneCount, childTwoCount);
+            Assert.AreEqual(numItemsToInsert, firstPageCount + childOneCount + childTwoCount);
         }
 
         [TestMethod]
@@ -441,66 +441,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             Assert.AreEqual(numItemsToInsert, count);
-        }
-
-        [TestMethod]
-        public async Task TestMergeAsync()
-        {
-            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
-
-            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
-            Assert.AreEqual(1, ranges.Count);
-            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
-            IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
-            Assert.AreEqual(2, childRanges.Count);
-
-            int numItemsToInsert = 10;
-            for (int i = 0; i < numItemsToInsert; i++)
-            {
-                // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                await documentContainer.CreateItemAsync(item, cancellationToken: default);
-            }
-
-            await documentContainer.MergeAsync(childRanges[0], childRanges[1], cancellationToken: default);
-            IReadOnlyList<FeedRangeInternal> mergedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
-            Assert.AreEqual(1, mergedRanges.Count);
-
-            async Task<int> GetFeedRangeCountAsync(FeedRangeInternal feedRange)
-            {
-                List<ResourceId> resourceIds = new List<ResourceId>();
-                ReadFeedState readFeedState = ReadFeedState.Beginning();
-                while (readFeedState != null)
-                {
-                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
-                        feedRange: feedRange,
-                        readFeedState: readFeedState,
-                        pageSize: 1,
-                        queryRequestOptions: default,
-                        trace: NoOpTrace.Singleton,
-                        cancellationToken: default);
-                    readFeedState = page.State;
-                    foreach (Record record in page.GetRecords())
-                    {
-                        resourceIds.Add(record.ResourceIdentifier);
-                    }
-                }
-
-                List<ResourceId> sortedResourceIds = resourceIds
-                    .OrderBy(resourceId => resourceId.Database)
-                    .ThenBy(resourceId => resourceId.Document)
-                    .ToList();
-                Assert.IsTrue(resourceIds.SequenceEqual(sortedResourceIds));
-
-                return resourceIds.Count;
-            }
-
-            int mergedCount = await GetFeedRangeCountAsync(mergedRanges[0]);
-            Assert.AreEqual(numItemsToInsert, mergedCount);
-
-            int childCount1 = await GetFeedRangeCountAsync(childRanges[0]);
-            int childCount2 = await GetFeedRangeCountAsync(childRanges[0]);
-            Assert.AreEqual(numItemsToInsert, childCount1 + childCount2);
         }
 
         [TestMethod]
