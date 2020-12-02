@@ -214,8 +214,6 @@ namespace Microsoft.Azure.Cosmos
                     ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                         container,
                         readResponse);
-                    totalRequestCharge += retrivedContainerResponse.Headers.RequestCharge;
-                    retrivedContainerResponse.Headers.RequestCharge = totalRequestCharge;
 
                     if (containerProperties.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                     {

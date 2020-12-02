@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 headers.RequestCharge = requestChargeTracker.TotalRequestCharge;
                 DefaultTrace.TraceWarning(
-                        "Header RequestCharge {0} does not match RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
+                        "Header RequestCharge {0} is less than the RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
                         headers.RequestCharge,
                         requestChargeTracker.TotalRequestCharge,
                         requestMessage?.RequestUriString,

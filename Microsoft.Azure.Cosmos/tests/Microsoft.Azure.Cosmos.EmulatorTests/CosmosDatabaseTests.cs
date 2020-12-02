@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosDatabaseTests
     {
+        private readonly RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
         protected CosmosClient cosmosClient = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
 
-            this.cosmosClient = TestCommon.CreateCosmosClient();
+            this.cosmosClient = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(this.requestChargeHandler));
         }
 
         [TestCleanup]
@@ -212,15 +213,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateIfNotExists()
         {
+            this.requestChargeHandler.TotalRequestCharges = 0;
             DatabaseResponse createResponse = await this.CreateDatabaseHelper();
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, createResponse.RequestCharge);
 
-            createResponse = await this.CreateDatabaseHelper(createResponse.Resource.Id, databaseExists: true);
-            Assert.AreEqual(HttpStatusCode.OK, createResponse.StatusCode);
-            Assert.IsNotNull(createResponse.Diagnostics);
-            string diagnostics = createResponse.Diagnostics.ToString();
+            this.requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createExistingResponse = await this.CreateDatabaseHelper(createResponse.Resource.Id, databaseExists: true);
+            Assert.AreEqual(HttpStatusCode.OK, createExistingResponse.StatusCode);
+            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, createExistingResponse.RequestCharge);
+            Assert.IsNotNull(createExistingResponse.Diagnostics);
+            string diagnostics = createExistingResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StartUtc"));
+
+            // Create a new database
+            this.requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createIfNotExistResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, createIfNotExistResponse.RequestCharge);
+
+            await createResponse.Database.DeleteAsync();
+            await createIfNotExistResponse.Database.DeleteAsync();
         }
 
         [TestMethod]

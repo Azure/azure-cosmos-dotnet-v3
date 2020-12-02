@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosContainerTests
     {
+        private readonly RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
         private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInit()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient();
+            this.cosmosClient = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(this.requestChargeHandler));
 
             string databaseName = Guid.NewGuid().ToString();
             DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
@@ -556,14 +557,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath1 = "/users";
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
+            this.requestChargeHandler.TotalRequestCharges = 0;
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, containerResponse.RequestCharge);
 
+            Assert.IsTrue(containerResponse.RequestCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath1, containerResponse.Resource.PartitionKey.Paths.First());
 
             //Creating container with same partition key path
+            this.requestChargeHandler.TotalRequestCharges = 0;
             containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, containerResponse.RequestCharge);
 
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);

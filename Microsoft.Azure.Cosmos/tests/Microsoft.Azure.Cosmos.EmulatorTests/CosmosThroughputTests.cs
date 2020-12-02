@@ -13,12 +13,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosThroughputTests
     {
+        private readonly RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
         private CosmosClient cosmosClient = null;
-
+        
         [TestInitialize]
         public void TestInit()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient();
+            this.cosmosClient = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(this.requestChargeHandler));
         }
 
         [TestCleanup]
@@ -100,10 +101,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 400);
             await container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity());
 
+            this.requestChargeHandler.TotalRequestCharges = 0;
             ThroughputResponse offer = await container.ReadThroughputAsync(requestOptions: null);
+            Assert.AreEqual(offer.RequestCharge, this.requestChargeHandler.TotalRequestCharges);
             Assert.AreEqual(400, offer.Resource.Throughput);
-            ThroughputProperties replaceOffer = await container.ReplaceThroughputAsync(2000);
-            Assert.AreEqual(2000, replaceOffer.Throughput);
+
+            this.requestChargeHandler.TotalRequestCharges = 0;
+            ThroughputResponse replaceOffer = await container.ReplaceThroughputAsync(2000);
+            Assert.AreEqual(replaceOffer.RequestCharge, this.requestChargeHandler.TotalRequestCharges);
+            Assert.AreEqual(2000, replaceOffer.Resource.Throughput);
 
             {
                 // Recreate the container with the same name using a different client
