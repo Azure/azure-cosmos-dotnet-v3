@@ -6,6 +6,7 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -180,11 +181,15 @@
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                    IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton, 
+                        cancellationToken: default);
                     foreach (FeedRangeInternal range in ranges)
                     {
                         await documentContainer.SplitAsync(range, cancellationToken: default);
                     }
+
+                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                 }
             }
 
