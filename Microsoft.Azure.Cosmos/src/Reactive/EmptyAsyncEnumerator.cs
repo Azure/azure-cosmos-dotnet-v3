@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Reactive
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Emits no items but terminates normally.
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Reactive
 
         public ValueTask DisposeAsync() => default;
 
-        public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(false);
+        public ValueTask<bool> MoveNextAsync() => this.MoveNextAsync(NoOpTrace.Singleton);
+
+        public ValueTask<bool> MoveNextAsync(ITrace trace) => new ValueTask<bool>(false);
     }
 }

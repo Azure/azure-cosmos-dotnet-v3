@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -198,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             string exceptionMessage = "Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query";
             client
-                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken))
+                .Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), NoOpTrace.Singleton, cancellationtoken))
                 .ReturnsAsync(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition));
             client
                 .Setup(x => x.ByPassQueryParsing())
@@ -245,7 +246,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             IQueryPipelineStage pipelineStage = CosmosQueryExecutionContextFactory.Create(
                 documentContainer: null,
                 cosmosQueryContext,
-                inputParameters);
+                inputParameters, 
+                trace: NoOpTrace.Singleton);
 
             Assert.IsTrue(await pipelineStage.MoveNextAsync());
             TryCatch<QueryPage> tryGetPage = pipelineStage.Current;

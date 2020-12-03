@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAsync),
                 requestOptions,
-                (diagnostics) => base.ReadAsync(diagnostics, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.ReadAsync(diagnostics, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceAsync),
                 requestOptions,
-                (diagnostics) => base.ReplaceAsync(diagnostics, userProperties, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.ReplaceAsync(diagnostics, userProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserResponse> DeleteAsync(
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAsync),
                 requestOptions,
-                (diagnostics) => base.DeleteAsync(diagnostics, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.DeleteAsync(diagnostics, requestOptions, trace, cancellationToken));
         }
 
         public override Permission GetPermission(string id)
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreatePermissionAsync),
                 requestOptions,
-                (diagnostics) => base.CreatePermissionAsync(diagnostics, permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.CreatePermissionAsync(diagnostics, permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(UpsertPermissionAsync),
                 requestOptions,
-                (diagnostics) => base.UpsertPermissionAsync(diagnostics, permissionProperties, tokenExpiryInSeconds, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.UpsertPermissionAsync(diagnostics, permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(

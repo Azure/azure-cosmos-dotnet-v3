@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
@@ -232,11 +231,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
-
-            if (this.FeedRange != null)
-            {
-                ((FeedRangeInternal)this.FeedRange).Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
-            }
 
             base.PopulateRequestOptions(request);
         }

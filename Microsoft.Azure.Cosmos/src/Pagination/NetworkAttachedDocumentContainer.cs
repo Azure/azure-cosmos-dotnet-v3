@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
@@ -50,6 +51,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => Task.FromResult(TryCatch.FromException(new NotSupportedException()));
 
+        public Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken) => Task.FromResult(TryCatch.FromException(new NotSupportedException()));
+
         public async Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken)
@@ -71,9 +77,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CosmosObject insertedDocument = tryInsertDocument.Resource;
             string identifier = ((CosmosString)insertedDocument["id"]).Value;
             ResourceId resourceIdentifier = ResourceId.Parse(((CosmosString)insertedDocument["_rid"]).Value);
-            long timestamp = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
+            long ticks = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
 
-            Record record = new Record(resourceIdentifier, timestamp, identifier, insertedDocument);
+            Record record = new Record(
+                resourceIdentifier, 
+                new DateTime(ticks: ticks, DateTimeKind.Utc),
+                identifier, 
+                insertedDocument);
 
             return TryCatch<Record>.FromResult(record);
         }
@@ -87,22 +97,27 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, cancellationToken);
+            ITrace trace,
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, trace, cancellationToken);
 
         public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             try
             {
                 ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
                     this.container.LinkUri,
+                    trace,
                     cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
-                    await this.container.GetRIDAsync(cancellationToken),
+                    await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                     containerProperties.PartitionKey,
-                    feedRange);
+                    feedRange,
+                    forceRefresh: false,
+                    trace);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -117,11 +132,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
         }
 
+        public async Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            using (ITrace refreshTrace = trace.StartChild("Refresh FeedRangeProvider", TraceComponent.Routing, TraceLevel.Info))
+            {
+                try
+                {
+                    // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
+                    _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
+                        this.container.LinkUri,
+                        FeedRangeEpk.FullRange.Range,
+                        forceRefresh: true);
+
+                    return TryCatch.FromResult();
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch.FromException(ex);
+                }
+            }
+        }
+
         public async Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
             QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -129,31 +170,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CosmosDiagnosticsContext cosmosDiagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
             using (cosmosDiagnosticsContext.GetOverallScope())
             {
-                if (feedRange is FeedRangeEpk feedRangeEpk)
-                {
-                    ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                        this.container.LinkUri,
-                        cancellationToken);
-                    List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                        this.container.LinkUri,
-                        await this.container.GetRIDAsync(cancellationToken),
-                        containerProperties.PartitionKey,
-                        feedRange);
-
-                    if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
-                    {
-                        // Simulate a split exception, since we don't have a partition key range id to route to.
-                        CosmosException goneException = new CosmosException(
-                            message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                            statusCode: System.Net.HttpStatusCode.Gone,
-                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                            activityId: Guid.NewGuid().ToString(),
-                            requestCharge: default);
-
-                        return TryCatch<ReadFeedPage>.FromException(goneException);
-                    }
-                }
-
                 if (queryRequestOptions != null)
                 {
                     queryRequestOptions.MaxItemCount = pageSize;
@@ -167,16 +183,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    cosmosContainerCore: this.container,
                    requestEnricher: request =>
                    {
-                       if (!(readFeedState.ContinuationToken is CosmosNull))
+                       if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
                        {
-                           request.Headers.ContinuationToken = (readFeedState.ContinuationToken as CosmosString).Value;
+                           request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                        }
-
-                       feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
                    },
-                   partitionKey: queryRequestOptions?.PartitionKey,
+                   feedRange: feedRange,
                    streamPayload: default,
                    diagnosticsContext: cosmosDiagnosticsContext,
+                   trace: trace,
                    cancellationToken: cancellationToken);
 
                 TryCatch<ReadFeedPage> monadicReadFeedPage;
@@ -187,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.ActivityId,
                         responseMessage.DiagnosticsContext,
-                        responseMessage.Headers.ContinuationToken != null ? new ReadFeedState(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
+                        responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
 
                     monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
                 }
@@ -219,124 +234,41 @@ namespace Microsoft.Azure.Cosmos.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions.Clone();
-            TryCatch<QueryPage> monadicQueryPage;
-            switch (feedRange)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (sqlQuerySpec == null)
             {
-                case FeedRangePartitionKey feedRangePartitionKey:
-                    {
-                        ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                            this.container.LinkUri,
-                            cancellationToken);
-                        PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
-
-                        List<PartitionKeyRange> overlappingRanges;
-                        if (feedRangePartitionKey.PartitionKey.IsNone)
-                        {
-                            overlappingRanges = new List<PartitionKeyRange>()
-                            {
-                                new PartitionKeyRange()
-                                {
-                                    Id = "0",
-                                }
-                            };
-                        }
-                        else
-                        {
-                            overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                                this.container.LinkUri,
-                                await this.container.GetRIDAsync(cancellationToken),
-                                containerProperties.PartitionKey,
-                                feedRange);
-                        }
-
-                        queryRequestOptions.PartitionKey = feedRangePartitionKey.PartitionKey;
-
-                        monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                            this.resourceLink,
-                            this.resourceType,
-                            Documents.OperationType.Query,
-                            Guid.NewGuid(),
-                            queryRequestOptions,
-                            queryPageDiagnostics: this.AddQueryPageDiagnostic,
-                            sqlQuerySpec,
-                            continuationToken,
-                            partitionKeyRange: new PartitionKeyRangeIdentity(
-                                await this.container.GetRIDAsync(cancellationToken),
-                                overlappingRanges[0].Id),
-                            isContinuationExpected: false,
-                            pageSize,
-                            cancellationToken);
-                    }
-                    break;
-
-                case FeedRangePartitionKeyRange feedRangePartitionKeyRange:
-                    {
-                        monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                            this.resourceLink,
-                            this.resourceType,
-                            Documents.OperationType.Query,
-                            Guid.NewGuid(),
-                            requestOptions: queryRequestOptions,
-                            queryPageDiagnostics: this.AddQueryPageDiagnostic,
-                            sqlQuerySpec,
-                            continuationToken,
-                            partitionKeyRange: new PartitionKeyRangeIdentity(
-                                await this.container.GetRIDAsync(cancellationToken),
-                                feedRangePartitionKeyRange.PartitionKeyRangeId),
-                            isContinuationExpected: false,
-                            pageSize,
-                            cancellationToken);
-                    }
-                    break;
-
-                case FeedRangeEpk feedRangeEpk:
-                    {
-                        ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                            this.container.LinkUri,
-                            cancellationToken);
-                        List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                            this.container.LinkUri,
-                            await this.container.GetRIDAsync(cancellationToken),
-                            containerProperties.PartitionKey,
-                            feedRange);
-
-                        if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
-                        {
-                            // Simulate a split exception, since we don't have a partition key range id to route to.
-                            CosmosException goneException = new CosmosException(
-                                message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                                statusCode: System.Net.HttpStatusCode.Gone,
-                                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                                activityId: Guid.NewGuid().ToString(),
-                                requestCharge: default);
-
-                            return TryCatch<QueryPage>.FromException(goneException);
-                        }
-
-                        monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
-                            this.resourceLink,
-                            this.resourceType,
-                            Documents.OperationType.Query,
-                            Guid.NewGuid(),
-                            requestOptions: queryRequestOptions,
-                            queryPageDiagnostics: this.AddQueryPageDiagnostic,
-                            sqlQuerySpec,
-                            continuationToken,
-                            partitionKeyRange: new PartitionKeyRangeIdentity(
-                                await this.container.GetRIDAsync(cancellationToken),
-                                overlappingRanges[0].Id),
-                            isContinuationExpected: false,
-                            pageSize,
-                            cancellationToken);
-                    }
-                    break;
-
-                default:
-                    throw new InvalidOperationException();
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
+
+            if (feedRange == null)
+            {
+                throw new ArgumentNullException(nameof(feedRange));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions.Clone();
+            TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
+                this.resourceLink,
+                this.resourceType,
+                Documents.OperationType.Query,
+                Guid.NewGuid(),
+                feedRange,
+                queryRequestOptions,
+                queryPageDiagnostics: this.AddQueryPageDiagnostic,
+                sqlQuerySpec,
+                continuationToken,
+                isContinuationExpected: false,
+                pageSize,
+                trace,
+                cancellationToken);
 
             return monadicQueryPage;
         }
@@ -345,37 +277,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (feedRange is FeedRangeEpk feedRangeEpk)
-            {
-                // convert into physical range or throw a split exception
-                ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                            this.container.LinkUri,
-                            cancellationToken);
-                List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                    this.container.LinkUri,
-                    await this.container.GetRIDAsync(cancellationToken),
-                    containerProperties.PartitionKey,
-                    feedRange);
-
-                if ((overlappingRanges == null) || (overlappingRanges.Count != 1))
-                {
-                    // Simulate a split exception, since we don't have a partition key range id to route to.
-                    CosmosException goneException = new CosmosException(
-                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: default);
-
-                    return TryCatch<ChangeFeedPage>.FromException(goneException);
-                }
-
-                feedRange = new FeedRangePartitionKeyRange(overlappingRanges[0].Id);
-            }
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
@@ -386,16 +291,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 requestEnricher: (request) =>
                 {
                     state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
-                    feedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
 
                     request.Headers.PageSize = pageSize.ToString();
                     request.Headers.Add(
                         HttpConstants.HttpHeaders.A_IM,
                         HttpConstants.A_IMHeaderValues.IncrementalFeed);
                 },
-                partitionKey: default,
+                feedRange: feedRange,
                 streamPayload: default,
                 diagnosticsContext: this.diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
@@ -439,16 +344,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
         }
 
-        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken)
+        public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            try
+            using (ITrace getRidTrace = trace.StartChild("Get Container RID", TraceComponent.Routing, TraceLevel.Info))
             {
-                string resourceIdentifier = await this.container.GetRIDAsync(cancellationToken);
-                return TryCatch<string>.FromResult(resourceIdentifier);
-            }
-            catch (Exception ex)
-            {
-                return TryCatch<string>.FromException(ex);
+                try
+                {
+                    string resourceIdentifier = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken);
+                    return TryCatch<string>.FromResult(resourceIdentifier);
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch<string>.FromException(ex);
+                }
             }
         }
 

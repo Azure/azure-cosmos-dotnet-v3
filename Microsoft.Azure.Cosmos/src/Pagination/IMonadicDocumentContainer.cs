@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal interface IMonadicDocumentContainer : IMonadicFeedRangeProvider, IMonadicQueryDataSource, IMonadicReadFeedDataSource, IMonadicChangeFeedDataSource
     {
@@ -27,6 +28,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
 
-        Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(CancellationToken cancellationToken);
+        Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken);
+
+        Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+            ITrace trace,
+            CancellationToken cancellationToken);
     }
 }

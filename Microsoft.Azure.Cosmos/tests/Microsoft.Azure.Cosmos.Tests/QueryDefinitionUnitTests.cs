@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             sqlParameters.Add(new SqlParameter("@account", "12345"));
             sqlParameters.Add(new SqlParameter("@name", "ABC"));
             sqlQuerySpec = new SqlQuerySpec(query, sqlParameters);
-            sqlQueryDefinition = new QueryDefinition(sqlQuerySpec);
+            sqlQueryDefinition = QueryDefinition.CreateFromQuerySpec(sqlQuerySpec);
             Assert.AreEqual(sqlQueryDefinition.QueryText, sqlQuerySpec.QueryText);
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().QueryText, sqlQueryDefinition.QueryText);
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().Parameters.Count(), sqlQuerySpec.Parameters.Count());
