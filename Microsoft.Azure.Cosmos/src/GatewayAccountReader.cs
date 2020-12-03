@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 uri: serviceEndpoint,
                 additionalHeaders: headers,
                 resourceType: ResourceType.DatabaseAccount,
-                timeoutPolicy: CosmosHttpClient.TimeoutPolicy.ControlPlaneRead,
+                timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
                 diagnosticsContext: null,
                 cancellationToken: default))
             {

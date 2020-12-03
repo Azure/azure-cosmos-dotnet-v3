@@ -39,78 +39,80 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"));
 
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(httpRequestMessage), ResourceType.Collection, timeoutPolicy: CosmosHttpClient.TimeoutPolicy.Standard, null, default);
+            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() => 
+                new ValueTask<HttpRequestMessage>(httpRequestMessage), 
+                ResourceType.Collection, 
+                timeoutPolicy: HttpTimeoutPolicyDefault.Instance, 
+                null, 
+                default);
 
             Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
         }
 
-
         [TestMethod]
-        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneReadHotPath)]
-        [DataRow(CosmosHttpClient.TimeoutPolicy.ControlPlaneRead)]
-        public async Task RetryTransientIssuesTestAsync(int timeoutPolicyIntValue)
+        public async Task RetryTransientIssuesTestAsync()
         {
-            CosmosHttpClient.TimeoutPolicy timeoutPolicy = (CosmosHttpClient.TimeoutPolicy)timeoutPolicyIntValue;
-            IReadOnlyList<TimeSpan> timeouts = timeoutPolicy switch
+            IReadOnlyDictionary<HttpTimeoutPolicy, IReadOnlyList<TimeSpan>> timeoutMap = new Dictionary<HttpTimeoutPolicy, IReadOnlyList<TimeSpan>>()
             {
-                CosmosHttpClient.TimeoutPolicy.ControlPlaneReadHotPath => new List<TimeSpan>()
-                {
-                    TimeSpan.FromSeconds(.6),
-                    TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(10.1)
-                },
-                CosmosHttpClient.TimeoutPolicy.ControlPlaneRead => new List<TimeSpan>()
+                {HttpTimeoutPolicyControlPlaneRead.Instance,  new List<TimeSpan>()
                 {
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1),
                     TimeSpan.FromSeconds(20.1)
-                },
-                _ => throw new ArgumentOutOfRangeException($"The {nameof(CosmosHttpClient.TimeoutPolicy)} value {timeoutPolicy} is not supported"),
+                }},
+                {HttpTimeoutPolicyControlPlaneHotPath.Instance,  new List<TimeSpan>()
+                {
+                    TimeSpan.FromSeconds(.6),
+                    TimeSpan.FromSeconds(5.1),
+                    TimeSpan.FromSeconds(10.1)
+                }},
             };
 
-            int count = 0;
-
-            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            foreach(KeyValuePair<HttpTimeoutPolicy, IReadOnlyList<TimeSpan>> currentTimeoutPolicy in timeoutMap)
             {
-                count++;
-
-                if (count == 1)
+                int count = 0;
+                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
                 {
-                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                    await Task.Delay(timeouts[0]);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    Assert.Fail("Cancellation token should be canceled");
+                    count++;
+
+                    if (count == 1)
+                    {
+                        Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                        await Task.Delay(currentTimeoutPolicy.Value[0]);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        Assert.Fail("Cancellation token should be canceled");
+                    }
+
+                    if (count == 2)
+                    {
+                        Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                        await Task.Delay(currentTimeoutPolicy.Value[1]);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        Assert.Fail("Cancellation token should be canceled");
+                    }
+
+                    if (count == 3)
+                    {
+                        return new HttpResponseMessage(HttpStatusCode.OK);
+                    }
+
+                    throw new Exception("Should not return after the success");
                 }
 
-                if (count == 2)
-                {
-                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                    await Task.Delay(timeouts[1]);
-                    cancellationToken.ThrowIfCancellationRequested();
-                    Assert.Fail("Cancellation token should be canceled");
-                }
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-                if (count == 3)
-                {
-                    return new HttpResponseMessage(HttpStatusCode.OK);
-                }
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: currentTimeoutPolicy.Key,
+                        diagnosticsContext: null,
+                        cancellationToken: default);
 
-                throw new Exception("Should not return after the success");
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
             }
-
-            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
-            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
-
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
-                new ValueTask<HttpRequestMessage>(
-                    result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
-                    resourceType: ResourceType.Collection,
-                    timeoutPolicy: timeoutPolicy,
-                    diagnosticsContext: null,
-                    cancellationToken: default);
-
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
         }
 
         private class MockMessageHandler : HttpMessageHandler

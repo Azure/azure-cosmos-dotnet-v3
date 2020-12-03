@@ -20,26 +20,6 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
         private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
-        private static readonly IReadOnlyList<TimeSpan> ControlPlaneReadHotPathTimeouts = new List<TimeSpan>()
-        {
-            TimeSpan.FromSeconds(.5),
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(10)
-        };
-
-        private static readonly IReadOnlyList<TimeSpan> ControlPlaneReadTimeouts = new List<TimeSpan>()
-        {
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(10),
-            TimeSpan.FromSeconds(20)
-        };
-
-        private static readonly IReadOnlyList<TimeSpan> StandardTimeouts = new List<TimeSpan>()
-        {
-            TimeSpan.FromSeconds(65),
-            TimeSpan.FromSeconds(65),
-            TimeSpan.FromSeconds(65)
-        };
 
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
@@ -189,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             Uri uri,
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
-            TimeoutPolicy timeoutPolicy,
+            HttpTimeoutPolicy timeoutPolicy,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -228,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
-            TimeoutPolicy timeoutPolicy,
+            HttpTimeoutPolicy timeoutPolicy,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -249,24 +229,16 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             CosmosDiagnosticsContext diagnosticsContext,
-            TimeoutPolicy timeoutPolicy,
+            HttpTimeoutPolicy timeoutPolicy,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<TimeSpan> timeouts = timeoutPolicy switch
-            {
-                TimeoutPolicy.Standard => CosmosHttpClientCore.StandardTimeouts,
-                TimeoutPolicy.ControlPlaneRead => CosmosHttpClientCore.ControlPlaneReadTimeouts,
-                TimeoutPolicy.ControlPlaneReadHotPath => CosmosHttpClientCore.ControlPlaneReadHotPathTimeouts,
-                _ => throw new ArgumentOutOfRangeException($"The {nameof(TimeoutPolicy)} value {timeoutPolicy} is not supported"),
-            };
-
-            int backoffSeconds = 1;
-            int timeoutPosition = 0;
-
             bool isDefaultCancellationToken = cancellationToken == default;
             DateTime startDateTimeUtc = DateTime.UtcNow;
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.TimeoutEnumerator;
+            timeoutEnumerator.MoveNext();
             while (true)
             {
+                (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
                     // If the default cancellation token is passed then use the timeout policy
@@ -274,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
                     if (isDefaultCancellationToken)
                     {
                         cancellationTokenSource = new CancellationTokenSource();
-                        cancellationTokenSource.CancelAfter(timeouts[timeoutPosition]);
+                        cancellationTokenSource.CancelAfter(requestTimeout);
                         cancellationToken = cancellationTokenSource.Token;
                     }
 
@@ -306,8 +278,8 @@ namespace Microsoft.Azure.Cosmos
                                   requestSessionToken: null,
                                   responseSessionToken: null));
 
-                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > TimeSpan.FromSeconds(30) || // Maximum of 30 seconds for all retries
-                            timeoutPosition + 1 >= timeouts.Count; // No more retries are configured
+                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+                            !timeoutEnumerator.MoveNext(); // No more retries are configured
 
                         switch (e)
                         {
@@ -324,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
                                 {
                                     // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
                                     string message =
-                                        $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Http Client Timeout:{timeouts[timeoutPosition].TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId};";
+                                        $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId};";
                                     throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                         message,
                                         innerException: operationCanceledException,
@@ -333,7 +305,7 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException))
+                                if (isOutOfRetries || (requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
@@ -352,17 +324,13 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                // No delay on first retry
-                if (timeoutPosition == 0)
+                if (delayForNextRequest != TimeSpan.Zero)
                 {
-                    using (diagnosticsContext.CreateScope($"HttpRetryDelay; Delay:{backoffSeconds} seconds; Count {timeoutPosition}; TimeoutPolicy: {timeoutPolicy}"))
+                    using (diagnosticsContext.CreateScope($"HttpRetryDelay; Delay:{delayForNextRequest} seconds; Current request timeout {requestTimeout}; TimeoutPolicy: {timeoutPolicy.TimeoutPolicyName}"))
                     {
-                        await Task.Delay(backoffSeconds);
-                        backoffSeconds *= 2;
+                        await Task.Delay(delayForNextRequest);
                     }
                 }
-
-                timeoutPosition++;
             }
         }
 
