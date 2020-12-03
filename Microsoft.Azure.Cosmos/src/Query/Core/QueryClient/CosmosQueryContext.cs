@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec querySpecForInit,
             QueryRequestOptions queryRequestOptions,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
+            FeedRange feedRange,
             bool isContinuationExpected,
             int pageSize,
             ITrace trace,

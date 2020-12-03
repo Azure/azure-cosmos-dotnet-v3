@@ -23,11 +23,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override void Visit(ChangeFeedStartFromNow startFromNow)
         {
             this.requestMessage.Headers.IfNoneMatch = ChangeFeedStartFromRequestOptionPopulator.IfNoneMatchAllHeaderValue;
-
-            if (startFromNow.FeedRange != null)
-            {
-                startFromNow.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
-            }
         }
 
         public override void Visit(ChangeFeedStartFromTime startFromTime)
@@ -43,8 +38,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     HttpConstants.HttpHeaders.IfModifiedSince,
                     startFromTime.StartTime.ToString("o", CultureInfo.InvariantCulture));
             }
-
-            startFromTime.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
         }
 
         public override void Visit(ChangeFeedStartFromContinuation startFromContinuation)
@@ -56,9 +49,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override void Visit(ChangeFeedStartFromBeginning startFromBeginning)
         {
             // We don't need to set any headers to start from the beginning
-
-            // Except for the feed range.
-            startFromBeginning.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
         }
 
         public override void Visit(ChangeFeedStartFromContinuationAndFeedRange startFromContinuationAndFeedRange)
@@ -68,8 +58,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 this.requestMessage.Headers.IfNoneMatch = startFromContinuationAndFeedRange.Etag;
             }
-
-            startFromContinuationAndFeedRange.FeedRange.Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, this.requestMessage);
         }
     }
 }
