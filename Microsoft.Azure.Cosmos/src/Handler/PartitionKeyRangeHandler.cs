@@ -28,13 +28,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private readonly CosmosClient client;
         private readonly PartitionRoutingHelper partitionRoutingHelper;
+
         public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
