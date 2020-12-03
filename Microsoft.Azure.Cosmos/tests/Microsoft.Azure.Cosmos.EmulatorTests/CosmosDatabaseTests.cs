@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -20,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosDatabaseTests
     {
-        private readonly RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
         protected CosmosClient cosmosClient = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
 
-            this.cosmosClient = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(this.requestChargeHandler));
+            this.cosmosClient = TestCommon.CreateCosmosClient();
         }
 
         [TestCleanup]
@@ -213,27 +213,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateIfNotExists()
         {
-            this.requestChargeHandler.TotalRequestCharges = 0;
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper();
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, createResponse.RequestCharge);
+            RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
+            RequestHandlerHelper requestHandlerHelper = new RequestHandlerHelper();
 
-            this.requestChargeHandler.TotalRequestCharges = 0;
-            DatabaseResponse createExistingResponse = await this.CreateDatabaseHelper(createResponse.Resource.Id, databaseExists: true);
+            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestChargeHandler, requestHandlerHelper));
+
+            // Create a new database
+            requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createResponse.RequestCharge);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createExistingResponse = await client.CreateDatabaseIfNotExistsAsync(createResponse.Resource.Id);
             Assert.AreEqual(HttpStatusCode.OK, createExistingResponse.StatusCode);
-            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, createExistingResponse.RequestCharge);
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createExistingResponse.RequestCharge);
             Assert.IsNotNull(createExistingResponse.Diagnostics);
             string diagnostics = createExistingResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StartUtc"));
 
-            // Create a new database
-            this.requestChargeHandler.TotalRequestCharges = 0;
-            DatabaseResponse createIfNotExistResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
-            Assert.AreEqual(this.requestChargeHandler.TotalRequestCharges, createIfNotExistResponse.RequestCharge);
+            bool conflictReturned = false;
+            requestHandlerHelper.CallBackOnResponse = (request, response) =>
+            {
+                if(request.OperationType == Documents.OperationType.Create &&
+                    request.ResourceType == Documents.ResourceType.Database)
+                {
+                    conflictReturned = true;
+                    // Simulate a race condition which results in a 409
+                    return CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.Conflict,
+                        subStatusCode: default,
+                        message: "Fake 409 conflict",
+                        stackTrace: string.Empty,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: response.Headers.RequestCharge,
+                        retryAfter: default,
+                        headers: response.Headers,
+                        diagnosticsContext: response.DiagnosticsContext,
+                        error: default,
+                        innerException: default).ToCosmosResponseMessage(request);
+                }
+
+                return response;
+            };
+
+            requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createWithConflictResponse = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createWithConflictResponse.RequestCharge);
+            Assert.AreEqual(HttpStatusCode.OK, createWithConflictResponse.StatusCode);
+            Assert.IsTrue(conflictReturned);
 
             await createResponse.Database.DeleteAsync();
-            await createIfNotExistResponse.Database.DeleteAsync();
+            await createWithConflictResponse.Database.DeleteAsync();
         }
 
         [TestMethod]
