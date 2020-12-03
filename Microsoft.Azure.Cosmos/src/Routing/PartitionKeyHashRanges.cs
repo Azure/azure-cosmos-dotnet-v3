@@ -164,21 +164,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             UInt128 rangeCoverage = maxEnd - minStart;
+            CreateOutcome createOutcome;
             if ((rangeCoverage < sumOfWidth) || overflowed)
             {
                 partitionedSortedEffectiveRanges = default;
-                return CreateOutcome.RangesOverlap;
+                createOutcome = CreateOutcome.RangesOverlap;
             }
             else if (rangeCoverage > sumOfWidth)
             {
                 partitionedSortedEffectiveRanges = default;
-                return CreateOutcome.RangesAreNotContiguous;
+                createOutcome = CreateOutcome.RangesAreNotContiguous;
             }
             else
             {
                 partitionedSortedEffectiveRanges = new PartitionKeyHashRanges(sortedSet);
-                return CreateOutcome.Success;
+                createOutcome = CreateOutcome.Success;
             }
+
+            return createOutcome;
         }
 
         public static class Monadic
