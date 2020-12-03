@@ -15,11 +15,6 @@ namespace Microsoft.Azure.Cosmos
         enum ClientEncryptionDataType
     {
         /// <summary>
-        /// MDE String serializer will be used
-        /// </summary>
-        String,
-
-        /// <summary>
         /// MDE Bool serializer will be used
         /// </summary>
         Bool,
@@ -32,6 +27,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// MDE Long serializer will be used
         /// </summary>
-        Long
+        Long,
+        
+        /// <summary>
+        /// MDE String serializer will be used
+        /// </summary>
+        String
     }
 }

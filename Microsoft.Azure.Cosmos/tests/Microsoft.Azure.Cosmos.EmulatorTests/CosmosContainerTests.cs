@@ -1253,10 +1253,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         new ClientEncryptionIncludedPath()
                         {
-                            Path = "/path",
-                            ClientEncryptionKeyId = "dekId",
-                            EncryptionAlgorithm = "AEAes256CbcHmacSha256Randomized",
+                            Path = "/path1",
+                            ClientEncryptionKeyId = "dekId1",
+                            EncryptionAlgorithm = "MdeAeadAes256CbcHmac256",
                             EncryptionType = "Randomized"
+                        },
+
+                        new ClientEncryptionIncludedPath()
+                        {
+                            Path = "/path2",
+                            ClientEncryptionKeyId = "dekId2",
+                            EncryptionAlgorithm = "MdeAeadAes256CbcHmac256",
+                            EncryptionType = "Deterministic"
                         }
                     }
                 }
@@ -1267,16 +1275,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = containerResponse;
             ContainerProperties responseSettings = containerResponse;
 
-            Assert.AreEqual(1, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count);
-            ClientEncryptionIncludedPath includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.First();
-            Assert.AreEqual("/path", includedPath.Path);
-            Assert.AreEqual("dekId", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("AEAes256CbcHmacSha256Randomized", includedPath.EncryptionAlgorithm);
+            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count);
+            ClientEncryptionIncludedPath includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
+            Assert.AreEqual("/path1", includedPath.Path);
+            Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
+            Assert.AreEqual("MdeAeadAes256CbcHmac256", includedPath.EncryptionAlgorithm);
             Assert.AreEqual("Randomized", includedPath.EncryptionType);
+
+            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(1);
+            Assert.AreEqual("/path2", includedPath.Path);
+            Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
+            Assert.AreEqual("MdeAeadAes256CbcHmac256", includedPath.EncryptionAlgorithm);
+            Assert.AreEqual("Deterministic", includedPath.EncryptionType);
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+        }
+
+        [TestMethod]
+        public void ClientEncryptionPolicyFailureTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+
+            try
+            {
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy()
+                    {
+                        IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
+                    {
+                        new ClientEncryptionIncludedPath()
+                        {
+                            Path = "/path1",
+                            ClientEncryptionKeyId = "dekId1",
+                            EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256",
+                            EncryptionType = "Randomized"
+                        },
+                    }
+                    }
+                };
+
+                Assert.Fail("Creating ContainerProperties should have failed.");
+            }            
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'MdeAeadAes256CbcHmac256'."));
+            }
         }
 
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)

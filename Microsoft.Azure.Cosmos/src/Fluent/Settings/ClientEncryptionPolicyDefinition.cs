@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>An instance of the current <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
         public ClientEncryptionPolicyDefinition WithIncludedPath(ClientEncryptionIncludedPath path)
         {
-            this.ValidateClientEncryptionIncludedPath(path);
             this.clientEncryptionIncludedPaths.Add(path);
             return this;
         }
@@ -53,45 +52,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
             });
 
             return this.parent;
-        }
-
-        private void ValidateClientEncryptionIncludedPath(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
-        {
-            if (clientEncryptionIncludedPath == null)
-            {
-                throw new ArgumentNullException(nameof(clientEncryptionIncludedPath));
-            }
-
-            if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.Path))
-            {
-                throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.Path));
-            }
-
-            if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.ClientEncryptionKeyId))
-            {
-                throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.ClientEncryptionKeyId));
-            }
-
-            if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.EncryptionType))
-            {
-                throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.EncryptionType));
-            }
-
-            if (!string.Equals(clientEncryptionIncludedPath.EncryptionType, "Deterministic") &&
-                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized"))
-            {
-                throw new ArgumentException("EncryptionType should be either 'Deterministic' or 'Randomized'.", nameof(clientEncryptionIncludedPath));
-            }
-
-            if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.EncryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.EncryptionAlgorithm));
-            }
-
-            if (!string.Equals(clientEncryptionIncludedPath.EncryptionAlgorithm, "MdeAeadAes256CbcHmac256Randomized"))
-            {
-                throw new ArgumentException("EncryptionAlgorithm should be 'MdeAeadAes256CbcHmac256Randomized'.", nameof(clientEncryptionIncludedPath));
-            }
         }
     }
 }

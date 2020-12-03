@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Path = "/path",
                 ClientEncryptionKeyId = "dekId",
-                EncryptionAlgorithm = "AEAes256CbcHmacSha256Randomized",
+                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256",
                 EncryptionType = "Randomized"
             };
 
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Path = "/path1",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = "Randomized",
-                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256Randomized"
+                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256"
             };
 
             ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Path = "/path2",
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = "Randomized",
-                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256Randomized",
+                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256",
                 ClientEncryptionDataType = ClientEncryptionDataType.String
             };
             
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = "random",
-                EncryptionAlgorithm = "MdeAeadAes256CbcHmac256Randomized"
+                EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256"
             };
             
             // Null value for Path
@@ -649,6 +649,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'."));
+            }
+
+            path1.EncryptionType = "Deterministic";
+
+            // Invalid EncryptionAlgorithm
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'MdeAeadAes256CbcHmac256'."));
             }
         }
 
