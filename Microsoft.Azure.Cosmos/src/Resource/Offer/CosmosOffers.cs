@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,
-              partitionKey: null,
+              feedRange: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,

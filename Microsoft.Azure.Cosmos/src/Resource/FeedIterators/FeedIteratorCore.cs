@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                operationType: operation,
                requestOptions: this.requestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
+               feedRange: this.requestOptions?.PartitionKey.HasValue ?? false ? new FeedRangePartitionKey(this.requestOptions.PartitionKey.Value) : null,
                streamPayload: stream,
                requestEnricher: request =>
                {
