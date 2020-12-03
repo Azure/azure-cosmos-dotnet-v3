@@ -172,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
                 count += GetChanges(responseMessage.Content).Count;
 
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                 await documentContainer.SplitAsync(randomRange, cancellationToken: default);
@@ -224,6 +225,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)
