@@ -27,6 +27,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken);
 
+        Task MergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken);
+
         Task<string> GetResourceIdentifierAsync(
             ITrace trace,
             CancellationToken cancellationToken);
