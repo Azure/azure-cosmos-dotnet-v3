@@ -307,6 +307,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Timeout(30000)]
         public async Task TestTokenCredentialBackgroundRefreshAsync()
         {
             // When token is within tokenCredentialRefreshBuffer of expiry, start background task to refresh token,
@@ -325,8 +326,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 else
                 {
-                    Task.Delay(TimeSpan.FromSeconds(.5)).Wait();
-
                     return new ValueTask<AccessToken>(new AccessToken(token2, DateTimeOffset.MaxValue));
                 }
             });
@@ -339,12 +338,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
+
                 string t2 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token1, t2);
 
-                // After waiting for another 4 seconds (5 seconds for background refresh with .5 second delay), token1 is still valid,
-                // but cached token has been refreshed to token2 by the background task started before.
-                await Task.Delay(TimeSpan.FromSeconds(4));
+                // Wait until the background refresh occurs.
+                while (testTokenCredential.NumTimesInvoked == 1)
+                {
+                    await Task.Delay(500);
+                }
+
                 string t3 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token2, t3);
 
