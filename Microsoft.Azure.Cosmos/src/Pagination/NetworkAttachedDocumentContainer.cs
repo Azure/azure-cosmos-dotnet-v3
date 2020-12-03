@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             CancellationToken cancellationToken) => Task.FromResult(TryCatch.FromException(new NotSupportedException()));
 
+        public Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken) => Task.FromResult(TryCatch.FromException(new NotSupportedException()));
+
         public async Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
             CancellationToken cancellationToken)
@@ -72,9 +77,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CosmosObject insertedDocument = tryInsertDocument.Resource;
             string identifier = ((CosmosString)insertedDocument["id"]).Value;
             ResourceId resourceIdentifier = ResourceId.Parse(((CosmosString)insertedDocument["_rid"]).Value);
-            long timestamp = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
+            long ticks = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
 
-            Record record = new Record(resourceIdentifier, timestamp, identifier, insertedDocument);
+            Record record = new Record(
+                resourceIdentifier, 
+                new DateTime(ticks: ticks, DateTimeKind.Utc),
+                identifier, 
+                insertedDocument);
 
             return TryCatch<Record>.FromResult(record);
         }

@@ -118,10 +118,10 @@
                 {
                     CosmosObject document = (CosmosObject)element;
                     ResourceId resourceIdentifier = ResourceId.Parse(((CosmosString)document["_rid"]).Value);
-                    long timestamp = Number64.ToLong(((CosmosNumber)document["_ts"]).Value);
+                    long ticks = Number64.ToLong(((CosmosNumber)document["_ts"]).Value);
                     string identifer = ((CosmosString)document["id"]).Value;
 
-                    records.Add(new Record(resourceIdentifier, timestamp, identifer, document));
+                    records.Add(new Record(resourceIdentifier, new DateTime(ticks: ticks, DateTimeKind.Utc), identifer, document));
                 }
 
                 return records;
