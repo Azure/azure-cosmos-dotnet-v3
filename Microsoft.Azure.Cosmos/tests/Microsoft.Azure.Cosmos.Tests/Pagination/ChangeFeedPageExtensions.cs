@@ -7,14 +7,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Documents;
 
-    internal static class ReadFeedPageExtensions
+    internal static class ChangeFeedPageExtensions
     {
-        public static IReadOnlyList<Record> GetRecords(this ReadFeedPage page)
+        public static IReadOnlyList<Record> GetRecords(this ChangeFeedSuccessPage page)
         {
             using (MemoryStream memoryStream = new MemoryStream())
             {

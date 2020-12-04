@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
                     this.changeFeedStartFrom.Accept(visitor);
                 },
-                partitionKey: default,
+                feedRange: this.changeFeedStartFrom.FeedRange,
                 streamPayload: default,
                 diagnosticsContext: default,
                 trace: trace,
@@ -73,15 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
             responseMessage.Headers.ContinuationToken = etag;
-            FeedRangeInternal feedRange = this.changeFeedStartFrom switch
-            {
-                ChangeFeedStartFromNow now => now.FeedRange,
-                ChangeFeedStartFromTime time => time.FeedRange,
-                ChangeFeedStartFromContinuation continuation => throw new NotSupportedException(),
-                ChangeFeedStartFromBeginning beginning => beginning.FeedRange,
-                ChangeFeedStartFromContinuationAndFeedRange continuationAndFeedRange => continuationAndFeedRange.FeedRange,
-                _ => throw new InvalidOperationException(),
-            };
+            FeedRangeInternal feedRange = (FeedRangeInternal)this.changeFeedStartFrom.FeedRange;
             this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, feedRange);
 
             return responseMessage;
