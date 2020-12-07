@@ -542,6 +542,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 async (diagnostics, trace) =>
             {
+                double totalRequestCharge = 0;
                 // Doing a Read before Create will give us better latency for existing databases
                 DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                 DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
@@ -551,6 +552,7 @@ namespace Microsoft.Azure.Cosmos
                     trace: trace,
                     cancellationToken: cancellationToken))
                 {
+                    totalRequestCharge = readResponse.Headers.RequestCharge;
                     if (readResponse.StatusCode != HttpStatusCode.NotFound)
                     {
                         return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
@@ -565,6 +567,9 @@ namespace Microsoft.Azure.Cosmos
                     trace,
                     cancellationToken))
                 {
+                    totalRequestCharge += createResponse.Headers.RequestCharge;
+                    createResponse.Headers.RequestCharge = totalRequestCharge;
+
                     if (createResponse.StatusCode != HttpStatusCode.Conflict)
                     {
                         return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
@@ -573,13 +578,17 @@ namespace Microsoft.Azure.Cosmos
 
                 // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
                 // so for the remaining ones we should do a Read instead of throwing Conflict exception
-                ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
+                using (ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
                     diagnosticsContext: diagnostics,
                     requestOptions: requestOptions,
                     trace: trace,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken))
+                {
+                    totalRequestCharge += readResponseAfterConflict.Headers.RequestCharge;
+                    readResponseAfterConflict.Headers.RequestCharge = totalRequestCharge;
 
-                return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
+                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
+                }
             });
         }
 
@@ -966,7 +975,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 cosmosContainerCore: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 diagnosticsContext: diagnosticsContext,
@@ -990,7 +999,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 containerInternal: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 responseCreator: (response) => response,

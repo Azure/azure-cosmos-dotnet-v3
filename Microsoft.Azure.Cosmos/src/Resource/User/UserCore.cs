@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Permission,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
-               partitionKey: null,
+               feedRange: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (requestMessage) =>
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Permission,
                operationType: OperationType.Upsert,
                cosmosContainerCore: null,
-               partitionKey: null,
+               feedRange: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (requestMessage) =>
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,
-              partitionKey: null,
+              feedRange: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,

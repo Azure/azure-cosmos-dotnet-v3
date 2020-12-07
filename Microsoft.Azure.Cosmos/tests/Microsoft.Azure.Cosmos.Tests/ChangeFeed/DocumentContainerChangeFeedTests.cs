@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -259,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             long numRecords = (await documentContainer.ReadFeedAsync(
                 feedRange: range,
-                readFeedState: default,
+                readFeedState: ReadFeedState.Beginning(),
                 pageSize: int.MaxValue,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default,
@@ -275,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
                 feedRange: ranges[0],
-                readFeedState: default,
+                readFeedState: ReadFeedState.Beginning(),
                 pageSize: int.MaxValue,
                 queryRequestOptions: default,
                 trace: NoOpTrace.Singleton,

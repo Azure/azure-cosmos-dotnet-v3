@@ -174,6 +174,24 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
+        public Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicMergeAsync(
+                feedRange1,
+                feedRange2,
+                cancellationToken);
+
+        public Task MergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken) => TryCatch.UnsafeWaitAsync(
+                this.MonadicMergeAsync(
+                    feedRange1,
+                    feedRange2,
+                    cancellationToken),
+                cancellationToken);
+
         public Task<ChangeFeedPage> ChangeFeedAsync(
             ChangeFeedState state,
             FeedRangeInternal feedRange,
