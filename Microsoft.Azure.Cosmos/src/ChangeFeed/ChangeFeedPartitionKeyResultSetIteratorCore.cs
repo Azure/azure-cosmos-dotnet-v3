@@ -142,6 +142,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 targetPartitionKeyRange = overlappingRanges[0];
                 targetEPKRange = feedRangeEpk.Range;
             }
+            else {
+                targetPartitionKeyRange = ((FeedRangePartitionKeyRange)this.feedRangeInternal).PartitionKeyRangeId;
+            }
 
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 cosmosContainerCore: this.container,
@@ -181,14 +184,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionKeyRange targetPartitionKeyRange,
             Documents.Routing.Range<string> targetRange)
         {
-            if (targetPartitionKeyRange == null
-                || targetRange == null)
+            requestMessage.PartitionKeyRangeId = new PartitionKeyRangeIdentity(targetPartitionKeyRange.Id);
+            if (targetRange == null)
             {
                 // No specific routing was set
                 return;
             }
 
-            requestMessage.PartitionKeyRangeId = new PartitionKeyRangeIdentity(targetPartitionKeyRange.Id);
             requestMessage.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
             requestMessage.Headers[HttpConstants.HttpHeaders.StartEpk] = targetRange.Min;
             requestMessage.Headers[HttpConstants.HttpHeaders.EndEpk] = targetRange.Max;
