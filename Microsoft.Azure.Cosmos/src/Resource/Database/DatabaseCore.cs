@@ -199,6 +199,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
+            double totalRequestCharge = 0;
             ContainerCore container = (ContainerCore)this.GetContainer(containerProperties.Id);
             using (ResponseMessage readResponse = await container.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
@@ -206,11 +207,14 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
+                totalRequestCharge = readResponse.Headers.RequestCharge;
+
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
                 {
                     ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                         container,
                         readResponse);
+
                     if (containerProperties.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                     {
                         if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
@@ -255,6 +259,9 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken))
             {
+                totalRequestCharge += createResponse.Headers.RequestCharge;
+                createResponse.Headers.RequestCharge = totalRequestCharge;
+
                 if (createResponse.StatusCode != HttpStatusCode.Conflict)
                 {
                     return this.ClientContext.ResponseFactory.CreateContainerResponse(container, createResponse);
@@ -269,6 +276,9 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
+                totalRequestCharge += readResponseAfterCreate.Headers.RequestCharge;
+                readResponseAfterCreate.Headers.RequestCharge = totalRequestCharge;
+
                 return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
             }
         }
