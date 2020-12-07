@@ -151,8 +151,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 RequestMessage requestMessage = new RequestMessage();
                 enricher(requestMessage);
                 return requestMessage.PartitionKeyRangeId != null
-                    && !requestMessage.Properties.ContainsKey(HandlerConstants.StartEpkString)
-                    && !requestMessage.Properties.ContainsKey(HandlerConstants.EndEpkString);
+                    && requestMessage.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] != null
+                    && requestMessage.Headers[HttpConstants.HttpHeaders.StartEpk] != null;
             };
 
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
