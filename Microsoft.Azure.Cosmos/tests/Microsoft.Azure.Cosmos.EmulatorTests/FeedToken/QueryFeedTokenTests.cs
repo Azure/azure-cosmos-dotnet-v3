@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -68,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         partitionedQueryExecutionInfo: null,
                         containerQueryProperties: containerQueryProperties,
                         properties: null,
-                        feedRangeInternal: feedToken as FeedRangeInternal);
+                        feedRangeInternal: feedToken as FeedRangeInternal,
+                        NoOpTrace.Singleton);
 
                     Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the FeedRange represents a single range.");
                 }

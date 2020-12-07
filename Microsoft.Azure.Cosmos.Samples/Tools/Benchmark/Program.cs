@@ -5,18 +5,17 @@
 namespace CosmosBenchmark
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
-    using System.Net;
     using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Diagnostics;
-    using System.Net.Http;
-    using System.Runtime.CompilerServices;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -91,9 +90,9 @@ namespace CosmosBenchmark
         {
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
             {
+                Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                 if (config.CleanupOnStart)
                 {
-                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                     await database.DeleteStreamAsync();
                 }
 
@@ -101,8 +100,16 @@ namespace CosmosBenchmark
                 Container container = containerResponse;
 
                 int? currentContainerThroughput = await container.ReadThroughputAsync();
-                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
 
+                if (!currentContainerThroughput.HasValue)
+                {
+                    // Container throughput is not configured. It is shared database throughput
+                    ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
+                    throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
+                        $"Container {config.Container} must have a configured throughput.");
+                }
+
+                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
                 int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
 
                 Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
@@ -134,12 +141,11 @@ namespace CosmosBenchmark
                 if (config.CleanupOnFinish)
                 {
                     Console.WriteLine($"Deleting Database {config.Database}");
-                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                     await database.DeleteStreamAsync();
                 }
 
                 runSummary.WorkloadType = config.WorkloadType;
-                runSummary.id = $"{DateTime.UtcNow.ToString("yyyy-MM-dd:HH-mm")}-{config.CommitId}";
+                runSummary.id = $"{DateTime.UtcNow:yyyy-MM-dd:HH-mm}-{config.CommitId}";
                 runSummary.Commit = config.CommitId;
                 runSummary.CommitDate = config.CommitDate;
                 runSummary.CommitTime = config.CommitTime;
