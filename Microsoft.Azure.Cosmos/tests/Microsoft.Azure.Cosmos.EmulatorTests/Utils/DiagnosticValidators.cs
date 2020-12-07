@@ -62,6 +62,8 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
+            string operation = summary["Operation"].ToString();
+            Assert.IsNotNull(operation);
             Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTimeInMs"].ToString());
