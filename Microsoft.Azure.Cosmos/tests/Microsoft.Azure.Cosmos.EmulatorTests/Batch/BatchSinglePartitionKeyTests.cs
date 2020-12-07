@@ -487,8 +487,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .ReadItem(this.TestDocPk1ExistingA.Id)
                     .ExecuteAsync(new TransactionalBatchRequestOptions() { SessionToken = invalidSessionToken });
 
-                Assert.IsTrue(batchResponse.ErrorMessage.Contains("session is not available."), batchResponse.ErrorMessage);
-
                 Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
 
                 foreach (TransactionalBatchOperationResult batchOperationResult in batchResponse)
