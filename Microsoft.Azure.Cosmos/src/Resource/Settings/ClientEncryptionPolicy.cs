@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(clientEncryptionIncludedPath.EncryptionAlgorithm));
             }
 
-            if (!string.Equals(clientEncryptionIncludedPath.EncryptionAlgorithm, "MdeAeadAes256CbcHmac256"))
+            if (!string.Equals(clientEncryptionIncludedPath.EncryptionAlgorithm, "AEAD_AES_256_CBC_HMAC_SHA256"))
             {
-                throw new ArgumentException("EncryptionAlgorithm should be 'MdeAeadAes256CbcHmac256'.", nameof(clientEncryptionIncludedPath));
+                throw new ArgumentException("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'.", nameof(clientEncryptionIncludedPath));
             }
         }
     }

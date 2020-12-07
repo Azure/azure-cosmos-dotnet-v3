@@ -1255,7 +1255,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             Path = "/path1",
                             ClientEncryptionKeyId = "dekId1",
-                            EncryptionAlgorithm = "MdeAeadAes256CbcHmac256",
+                            EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                             EncryptionType = "Randomized"
                         },
 
@@ -1263,7 +1263,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             Path = "/path2",
                             ClientEncryptionKeyId = "dekId2",
-                            EncryptionAlgorithm = "MdeAeadAes256CbcHmac256",
+                            EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                             EncryptionType = "Deterministic"
                         }
                     }
@@ -1279,13 +1279,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientEncryptionIncludedPath includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
             Assert.AreEqual("/path1", includedPath.Path);
             Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("MdeAeadAes256CbcHmac256", includedPath.EncryptionAlgorithm);
+            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
             Assert.AreEqual("Randomized", includedPath.EncryptionType);
 
             includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(1);
             Assert.AreEqual("/path2", includedPath.Path);
             Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
-            Assert.AreEqual("MdeAeadAes256CbcHmac256", includedPath.EncryptionAlgorithm);
+            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
             Assert.AreEqual("Deterministic", includedPath.EncryptionType);
 
             ContainerResponse readResponse = await container.ReadContainerAsync();
@@ -1324,7 +1324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }            
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'MdeAeadAes256CbcHmac256'."));
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."));
             }
         }
 
