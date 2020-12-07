@@ -80,5 +80,24 @@ namespace Microsoft.Azure.Cosmos
         {
             return transformer.Visit(this);
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FeedRangeEpk objAsFeedRangeEpk && this.Equals(objAsFeedRangeEpk);
+        }
+
+        public bool Equals(FeedRangeEpk other)
+        {
+            return (other != null)
+                && this.Range.Min.Equals(other.Range.Min)
+                && this.Range.Max.Equals(other.Range.Max)
+                && this.Range.IsMinInclusive.Equals(other.Range.IsMinInclusive)
+                && this.Range.IsMaxInclusive.Equals(other.Range.IsMaxInclusive);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Range.Min.GetHashCode() ^ this.Range.Max.GetHashCode();
+        }
     }
 }

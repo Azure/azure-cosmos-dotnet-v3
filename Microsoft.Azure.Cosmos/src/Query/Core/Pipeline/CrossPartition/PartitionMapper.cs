@@ -14,44 +14,138 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
     internal static class PartitionMapper
     {
         public static TryCatch<PartitionMapping<PartitionedToken>> MonadicGetPartitionMapping<PartitionedToken>(
-            IReadOnlyList<FeedRangeEpk> partitionKeyRanges,
-            IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
+            IReadOnlyList<FeedRangeEpk> feedRanges,
+            IReadOnlyList<PartitionedToken> tokens)
             where PartitionedToken : IPartitionedToken
         {
-            if (partitionKeyRanges == null)
+            if (feedRanges == null)
             {
-                throw new ArgumentNullException(nameof(partitionKeyRanges));
+                throw new ArgumentNullException(nameof(feedRanges));
             }
 
-            if (partitionedContinuationTokens == null)
+            if (tokens == null)
             {
-                throw new ArgumentNullException(nameof(partitionedContinuationTokens));
+                throw new ArgumentNullException(nameof(tokens));
             }
 
-            if (partitionKeyRanges.Count < 1)
+            if (feedRanges.Count < 1)
             {
-                throw new ArgumentException(nameof(partitionKeyRanges));
+                throw new ArgumentException(nameof(feedRanges));
             }
 
-            if (partitionedContinuationTokens.Count < 1)
+            if (tokens.Count < 1)
             {
-                throw new ArgumentException(nameof(partitionKeyRanges));
+                throw new ArgumentException(nameof(feedRanges));
             }
 
-            if (partitionedContinuationTokens.Count > partitionKeyRanges.Count)
+            if (tokens.Count > feedRanges.Count)
             {
-                throw new ArgumentException($"{nameof(partitionedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
+                throw new ArgumentException($"{nameof(tokens)} can not have more elements than {nameof(feedRanges)}.");
             }
 
-            // Find the continuation token for the partition we left off on:
-            PartitionedToken firstContinuationToken = partitionedContinuationTokens
-                .OrderBy((partitionedToken) => partitionedToken.Range.Min)
-                .First();
+            // Merge all the tokens that can be merged as much as possible.
+            Stack<(string min, string max)> mergedRanges = new Stack<(string min, string max)>(feedRanges.Count);
+            foreach (FeedRangeEpk feedRange in feedRanges.OrderBy(feedRange => feedRange.Range.Min))
+            {
+                if (mergedRanges.Count == 0)
+                {
+                    // If the stack is empty, then just add the range to get things started.
+                    mergedRanges.Push((feedRange.Range.Min, feedRange.Range.Max));
+                }
+                else
+                {
+                    (string min, string max) = mergedRanges.Pop();
+                    if (max == feedRange.Range.Min)
+                    {
+                        // This means that the ranges are consequtive and can be merged.
+                        mergedRanges.Push((min, feedRange.Range.Max));
+                    }
+                    else
+                    {
+                        // Just push the ranges on seperately 
+                        mergedRanges.Push((min, max));
+                        mergedRanges.Push((feedRange.Range.Min, feedRange.Range.Max));
+                    }
+                }
+            }
+
+            List<FeedRangeEpk> mergedFeedRanges = mergedRanges
+                .Select(range => new FeedRangeEpk(
+                    new Documents.Routing.Range<string>(
+                        range.min, range.max, isMinInclusive: true, isMaxInclusive: false)))
+                .ToList();
+
+            // Split the ranges based off the continuation tokens
+            HashSet<FeedRangeEpk> remainingRanges = new HashSet<FeedRangeEpk>(mergedFeedRanges);
+            List<(FeedRangeEpk, PartitionedToken)> rangeAndTokens = new List<(FeedRangeEpk, PartitionedToken)>();
+            foreach (PartitionedToken partitionedToken in tokens)
+            {
+                foreach (FeedRangeEpk feedRange in remainingRanges)
+                {
+                    bool rightOfStart = (feedRange.Range.Min == string.Empty)
+                        || ((partitionedToken.Range.Min != string.Empty) && (partitionedToken.Range.Min.CompareTo(feedRange.Range.Min) >= 0));
+                    bool leftOfEnd = (feedRange.Range.Max == string.Empty)
+                        || ((partitionedToken.Range.Max != string.Empty) && (partitionedToken.Range.Max.CompareTo(feedRange.Range.Max) <= 0));
+
+                    bool rangeOverlapsToken = rightOfStart && leftOfEnd;
+                    if (rangeOverlapsToken)
+                    {
+                        // Remove the range and split it into 3 sections:
+                        remainingRanges.Remove(feedRange);
+
+                        // 1) Left of Token Range
+                        if (feedRange.Range.Min != partitionedToken.Range.Min)
+                        {
+                            FeedRangeEpk leftOfOverlap = new FeedRangeEpk(
+                                new Documents.Routing.Range<string>(
+                                    min: feedRange.Range.Min,
+                                    max: partitionedToken.Range.Min,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false));
+                            remainingRanges.Add(leftOfOverlap);
+                        }
+
+                        // 2) Token Range
+                        FeedRangeEpk overlappingSection = new FeedRangeEpk(
+                            new Documents.Routing.Range<string>(
+                                min: partitionedToken.Range.Min,
+                                max: partitionedToken.Range.Max,
+                                isMinInclusive: true,
+                                isMaxInclusive: false));
+                        rangeAndTokens.Add((overlappingSection, partitionedToken));
+
+                        // 3) Right of Token Range
+                        if (partitionedToken.Range.Max != feedRange.Range.Max)
+                        {
+                            FeedRangeEpk rightOfOverlap = new FeedRangeEpk(
+                                new Documents.Routing.Range<string>(
+                                    min: partitionedToken.Range.Max,
+                                    max: feedRange.Range.Max,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false));
+                            remainingRanges.Add(rightOfOverlap);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            foreach (FeedRangeEpk remainingRange in remainingRanges)
+            {
+                // Unmatched ranges just match to null tokens
+                rangeAndTokens.Add((remainingRange, default));
+            }
 
             // Segment the ranges based off that:
-            ReadOnlyMemory<FeedRangeEpk> sortedRanges = partitionKeyRanges
-                .OrderBy((partitionKeyRange) => partitionKeyRange.Range.Min)
+            ReadOnlyMemory<(FeedRangeEpk range, PartitionedToken token)> sortedRanges = rangeAndTokens
+                .OrderBy((rangeAndToken) => rangeAndToken.Item1.Range.Min)
                 .ToArray();
+
+            // Find the continuation token for the partition we left off on:
+            PartitionedToken firstContinuationToken = tokens
+                .OrderBy((partitionedToken) => partitionedToken.Range.Min)
+                .First();
 
             FeedRangeEpk firstContinuationRange = new FeedRangeEpk(
                 new Documents.Routing.Range<string>(
@@ -60,12 +154,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                     isMinInclusive: true,
                     isMaxInclusive: false));
 
-            int matchedIndex = sortedRanges.Span.BinarySearch(
-                firstContinuationRange,
-                Comparer<FeedRangeEpk>.Create((range1, range2) => string.CompareOrdinal(range1.Range.Min, range2.Range.Min)));
-            if (matchedIndex < 0)
+            // Segment based on the target partition
+            int? matchedIndex = null;
+            for (int i = 0; (i < sortedRanges.Length) && !matchedIndex.HasValue; i++)
             {
-                if (partitionKeyRanges.Count != 1)
+                (FeedRangeEpk range, PartitionedToken token) = sortedRanges.Span[i];
+                if (range.Equals(firstContinuationRange))
+                {
+                    matchedIndex = i;
+                }
+            }
+
+            if (!matchedIndex.HasValue)
+            {
+                if (feedRanges.Count != 1)
                 {
                     return TryCatch<PartitionMapping<PartitionedToken>>.FromException(
                     new MalformedContinuationTokenException(
@@ -73,77 +175,53 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 }
 
                 // The user is doing a partition key query that got split, so it no longer aligns with our continuation token.
+                sortedRanges = new (FeedRangeEpk, PartitionedToken)[] { (sortedRanges.Span[0].range, tokens[0]) };
                 matchedIndex = 0;
             }
 
-            ReadOnlyMemory<FeedRangeEpk> partitionsLeftOfTarget = matchedIndex == 0 ? ReadOnlyMemory<FeedRangeEpk>.Empty : sortedRanges.Slice(start: 0, length: matchedIndex);
-            ReadOnlyMemory<FeedRangeEpk> targetPartition = sortedRanges.Slice(start: matchedIndex, length: 1);
-            ReadOnlyMemory<FeedRangeEpk> partitionsRightOfTarget = matchedIndex == sortedRanges.Length - 1 ? ReadOnlyMemory<FeedRangeEpk>.Empty : sortedRanges.Slice(start: matchedIndex + 1);
+            ReadOnlyMemory<(FeedRangeEpk, PartitionedToken)> partitionsLeftOfTarget;
+            if (matchedIndex.Value == 0)
+            {
+                partitionsLeftOfTarget = ReadOnlyMemory<(FeedRangeEpk, PartitionedToken)>.Empty;
+            }
+            else
+            {
+                partitionsLeftOfTarget = sortedRanges.Slice(start: 0, length: matchedIndex.Value);
+            }
+
+            ReadOnlyMemory<(FeedRangeEpk, PartitionedToken)> targetPartition = sortedRanges.Slice(start: matchedIndex.Value, length: 1);
+
+            ReadOnlyMemory<(FeedRangeEpk, PartitionedToken)> partitionsRightOfTarget;
+            if (matchedIndex.Value == sortedRanges.Length - 1)
+            {
+                partitionsRightOfTarget = ReadOnlyMemory<(FeedRangeEpk, PartitionedToken)>.Empty;
+            }
+            else
+            {
+                partitionsRightOfTarget = sortedRanges.Slice(start: matchedIndex.Value + 1);
+            }
+
+            static Dictionary<FeedRangeEpk, PartitionedToken> CreateMappingFromTuples(ReadOnlySpan<(FeedRangeEpk, PartitionedToken)> rangeAndTokens)
+            {
+                Dictionary<FeedRangeEpk, PartitionedToken> mappingForPartitions = new Dictionary<FeedRangeEpk, PartitionedToken>();
+                foreach ((FeedRangeEpk range, PartitionedToken token) in rangeAndTokens)
+                {
+                    mappingForPartitions[range] = token;
+                }
+
+                return mappingForPartitions;
+            }
 
             // Create the continuation token mapping for each region.
-            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForPartitionsLeftOfTarget = MatchRangesToContinuationTokens(
-                partitionsLeftOfTarget,
-                partitionedContinuationTokens);
-            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForTargetPartition = MatchRangesToContinuationTokens(
-                targetPartition,
-                partitionedContinuationTokens);
-            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForPartitionsRightOfTarget = MatchRangesToContinuationTokens(
-                partitionsRightOfTarget,
-                partitionedContinuationTokens);
+            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForPartitionsLeftOfTarget = CreateMappingFromTuples(partitionsLeftOfTarget.Span);
+            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForTargetPartition = CreateMappingFromTuples(targetPartition.Span);
+            IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> mappingForPartitionsRightOfTarget = CreateMappingFromTuples(partitionsRightOfTarget.Span);
 
             return TryCatch<PartitionMapping<PartitionedToken>>.FromResult(
                 new PartitionMapping<PartitionedToken>(
                     partitionsLeftOfTarget: mappingForPartitionsLeftOfTarget,
                     targetPartition: mappingForTargetPartition,
                     partitionsRightOfTarget: mappingForPartitionsRightOfTarget));
-        }
-
-        /// <summary>
-        /// Matches ranges to their corresponding continuation token.
-        /// Note that most ranges don't have a corresponding continuation token, so their value will be set to null.
-        /// Also note that in the event of a split two or more ranges will match to the same continuation token.
-        /// </summary>
-        /// <typeparam name="PartitionedToken">The type of token we are matching with.</typeparam>
-        /// <param name="partitionKeyRanges">The partition key ranges to match.</param>
-        /// <param name="partitionedContinuationTokens">The continuation tokens to match with.</param>
-        /// <returns>A dictionary of ranges matched with their continuation tokens.</returns>
-        public static IReadOnlyDictionary<FeedRangeEpk, PartitionedToken> MatchRangesToContinuationTokens<PartitionedToken>(
-            ReadOnlyMemory<FeedRangeEpk> partitionKeyRanges,
-            IReadOnlyList<PartitionedToken> partitionedContinuationTokens)
-            where PartitionedToken : IPartitionedToken
-        {
-            if (partitionedContinuationTokens == null)
-            {
-                throw new ArgumentNullException(nameof(partitionedContinuationTokens));
-            }
-
-            Dictionary<FeedRangeEpk, PartitionedToken> partitionKeyRangeToToken = new Dictionary<FeedRangeEpk, PartitionedToken>();
-            ReadOnlySpan<FeedRangeEpk> partitionKeyRangeSpan = partitionKeyRanges.Span;
-            for (int i = 0; i < partitionKeyRangeSpan.Length; i++)
-            {
-                FeedRangeEpk feedRange = partitionKeyRangeSpan[i];
-                foreach (PartitionedToken partitionedToken in partitionedContinuationTokens)
-                {
-                    bool rightOfStart = (partitionedToken.Range.Min == string.Empty)
-                        || ((feedRange.Range.Min != string.Empty) && (feedRange.Range.Min.CompareTo(partitionedToken.Range.Min) >= 0));
-                    bool leftOfEnd = (partitionedToken.Range.Max == string.Empty)
-                        || ((feedRange.Range.Max != string.Empty) && (feedRange.Range.Max.CompareTo(partitionedToken.Range.Max) <= 0));
-                    // See if continuation token includes the range
-                    if (rightOfStart && leftOfEnd)
-                    {
-                        partitionKeyRangeToToken[feedRange] = partitionedToken;
-                        break;
-                    }
-                }
-
-                if (!partitionKeyRangeToToken.ContainsKey(feedRange))
-                {
-                    // Could not find a matching token so just set it to null
-                    partitionKeyRangeToToken[feedRange] = default;
-                }
-            }
-
-            return partitionKeyRangeToToken;
         }
 
         public readonly struct PartitionMapping<T>
