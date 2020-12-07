@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using OperationType = Documents.OperationType;
     using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
     using ResourceType = Documents.ResourceType;
@@ -57,9 +58,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec querySpecForInit,
             QueryRequestOptions queryRequestOptions,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
+            FeedRange feedRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            ITrace trace,
             CancellationToken cancellationToken);
     }
 }

@@ -18,15 +18,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="feedRange">The (optional) feed range to start from.</param>
         public ChangeFeedStartFromNow(FeedRangeInternal feedRange)
-            : base()
+            : base(feedRange)
         {
-            this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
-
-        /// <summary>
-        /// Gets the (optional) range to start from.
-        /// </summary>
-        public FeedRangeInternal FeedRange { get; }
 
         internal override void Accept(ChangeFeedStartFromVisitor visitor)
         {

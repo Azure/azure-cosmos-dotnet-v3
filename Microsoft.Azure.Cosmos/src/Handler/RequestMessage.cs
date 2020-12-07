@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -53,14 +54,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="method">The http method</param>
         /// <param name="requestUriString">The requested URI</param>
         /// <param name="diagnosticsContext">The diagnostics object used to track the request</param>
+        /// /// <param name="trace">The trace node to append traces to.</param>
         internal RequestMessage(
             HttpMethod method,
             string requestUriString,
-            CosmosDiagnosticsContext diagnosticsContext)
+            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace)
         {
             this.Method = method;
             this.RequestUriString = requestUriString;
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         /// <summary>
@@ -107,6 +111,8 @@ namespace Microsoft.Azure.Cosmos
         internal Uri InternalRequestUri { get; private set; }
 
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
+
+        internal ITrace Trace { get; }
 
         internal RequestOptions RequestOptions { get; set; }
 

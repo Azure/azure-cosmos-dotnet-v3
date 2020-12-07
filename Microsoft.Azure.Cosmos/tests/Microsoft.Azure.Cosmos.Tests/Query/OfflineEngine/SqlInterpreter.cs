@@ -282,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             // Break all final ties within partition by document id
             orderedDataSource = orderedDataSource
+                .ThenBy(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Database)
                 .ThenBy(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document);
 
             return orderedDataSource;

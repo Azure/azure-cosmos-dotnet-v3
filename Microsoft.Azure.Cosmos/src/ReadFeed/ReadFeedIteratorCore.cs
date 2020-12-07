@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
@@ -169,8 +170,20 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override async Task<ResponseMessage> ReadNextAsync(
+            ITrace trace,
+            CancellationToken cancellationToken = default)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             if (!this.hasMoreResults)
@@ -195,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>> monadicPage;
             try
             {
-                if (!await enumerator.MoveNextAsync())
+                if (!await enumerator.MoveNextAsync(trace))
                 {
                     throw new InvalidOperationException("Should not be calling enumerator that does not have any more results");
                 }

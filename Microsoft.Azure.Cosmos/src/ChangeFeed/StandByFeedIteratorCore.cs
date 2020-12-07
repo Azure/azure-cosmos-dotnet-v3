@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -58,15 +59,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             string firstNotModifiedKeyRangeId = null;
             string currentKeyRangeId;
             string nextKeyRangeId;
             ResponseMessage response;
             do
             {
-                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
+                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(trace, cancellationToken);
                 // Read only one range at a time - Breath first
                 this.compositeContinuationToken.MoveToNextToken();
                 (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
@@ -90,9 +103,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return response;
         }
 
-        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(ITrace trace, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
 
             if (this.compositeContinuationToken == null)
             {
@@ -104,10 +122,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, trace, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                return await this.ReadNextInternalAsync(cancellationToken);
+                return await this.ReadNextInternalAsync(trace, cancellationToken);
             }
 
             if (response.IsSuccessStatusCode
@@ -149,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string partitionKeyRangeId,
             int? maxItemCount,
             StandByFeedIteratorRequestOptions options,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             string resourceUri = this.container.LinkUri;
@@ -177,9 +196,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     }
                 },
                 responseCreator: response => response,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: null,
                 diagnosticsContext: null,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 

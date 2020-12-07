@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -35,10 +36,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.GenerateSplitResponseAsync(itemBatchOperation))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
@@ -69,10 +71,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.DiagnosticsContext);
@@ -95,10 +98,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.GenerateCacheStaleResponseAsync(itemBatchOperation))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
@@ -129,10 +133,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.DiagnosticsContext);
@@ -155,10 +160,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.Generate429ResponseAsync(itemBatchOperation))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
@@ -189,10 +195,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.DiagnosticsContext);
@@ -215,10 +222,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
@@ -248,10 +256,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Once);
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
         }
@@ -271,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
@@ -313,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
@@ -354,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
@@ -394,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
