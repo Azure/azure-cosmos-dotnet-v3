@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             targetPartitionKeyRange,
                             targetEPKRange);
                 },
-                feedRange: this.changeFeedStartFrom.FeedRange,
+                feedRange: null,
                 streamPayload: default,
                 diagnosticsContext: default,
                 trace: trace,
