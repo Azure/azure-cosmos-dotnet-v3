@@ -12,6 +12,9 @@ jobs:
       with:
         title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors) .{3}.+'
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        on-failed-regex-fail-action: false
+        on-failed-regex-request-changes: true
+        on-failed-regex-create-review: true
         on-failed-regex-comment: >
          Please follow the required format: \"[Internal] Category: (Adds|Fixes|Refactors) Description\"<br /><br />
          Examples:<br />
