@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.getResultCallback = getResultCallback ?? throw new ArgumentNullException(nameof(getResultCallback));
         }
 
-        public override long CurrentLength => throw new NotImplementedException();
+        public override int CurrentLength => throw new NotImplementedException();
 
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
@@ -70,6 +70,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteFloat64Value(double value)
         {
             this.writer.WriteValue(value);
+        }
+
+        /// <inheritdoc />
+        public override void WriteDouble(double value)
+        {
+            throw new NotImplementedException();
         }
 
         public override void WriteGuidValue(Guid value)
@@ -132,6 +138,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteUInt32Value(uint value)
         {
             this.writer.WriteValue(value);
+        }
+
+        /// <inheritdoc />
+        public override void WriteVariableSizeIntegerValue(long value)
+        {
+            throw new NotImplementedException();
         }
 
         public static NewtonsoftToCosmosDBWriter CreateTextWriter()

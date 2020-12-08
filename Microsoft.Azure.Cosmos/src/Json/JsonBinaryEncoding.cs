@@ -243,6 +243,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetFixedSizedValue<TFixedType>(Span<byte> buffer, TFixedType value)
             where TFixedType : struct
         {
@@ -250,6 +251,7 @@ namespace Microsoft.Azure.Cosmos.Json
             bufferAsFixedType[0] = value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TFixedType GetFixedSizedValue<TFixedType>(ReadOnlySpan<byte> buffer)
             where TFixedType : struct
         {
@@ -287,9 +289,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.Byte3 = byte3;
             }
 
-            public byte Byte1 { get; }
-            public byte Byte2 { get; }
-            public byte Byte3 { get; }
+            public readonly byte Byte1;
+            public readonly byte Byte2;
+            public readonly byte Byte3;
 
             public static implicit operator int(UInt24 value) => (value.Byte3 << 16) | (value.Byte2 << 8) | (value.Byte1 << 0);
             public static explicit operator UInt24(int value)

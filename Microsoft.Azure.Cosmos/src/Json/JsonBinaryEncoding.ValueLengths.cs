@@ -178,75 +178,88 @@ namespace Microsoft.Azure.Cosmos.Json
                 0,      // Invalid
             }.ToImmutableArray();
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static long GetValueLength(ReadOnlySpan<byte> buffer)
             {
                 long length = ValueLengths.Lookup[buffer[0]];
-                if (length < 0)
+                return length >= 0 ? length : ValueLengths.GetValueLengthSlow(buffer, length);
+            }
+
+            private static long GetValueLengthSlow(ReadOnlySpan<byte> buffer, long length)
+            {
+                // Length was negative meaning we need to look into the buffer to find the length
+                switch (length)
                 {
-                    // Length was negative meaning we need to look into the buffer to find the length
-                    switch (length)
-                    {
-                        case L1:
-                            length = TypeMarkerLength + OneByteLength + buffer[1];
-                            break;
-                        case L2:
-                            length = TypeMarkerLength + TwoByteLength + MemoryMarshal.Read<ushort>(buffer.Slice(1));
-                            break;
-                        case L4:
-                            length = TypeMarkerLength + FourByteLength + MemoryMarshal.Read<uint>(buffer.Slice(1));
-                            break;
+                    case ValueLengths.L1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + buffer[1];
+                        break;
+                    case ValueLengths.L2:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength + MemoryMarshal.Read<ushort>(buffer.Slice(1));
+                        break;
+                    case ValueLengths.L4:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + MemoryMarshal.Read<uint>(buffer.Slice(1));
+                        break;
 
-                        case LC1:
-                            length = TypeMarkerLength + OneByteLength + OneByteCount + buffer[1];
-                            break;
-                        case LC2:
-                            length = TypeMarkerLength + TwoByteLength + TwoByteCount + MemoryMarshal.Read<ushort>(buffer.Slice(1));
-                            break;
-                        case LC4:
-                            length = TypeMarkerLength + FourByteLength + FourByteCount + MemoryMarshal.Read<uint>(buffer.Slice(1));
-                            break;
+                    case ValueLengths.LC1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + JsonBinaryEncoding.OneByteCount + buffer[1];
+                        break;
+                    case ValueLengths.LC2:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength + JsonBinaryEncoding.TwoByteCount +
+                            MemoryMarshal.Read<ushort>(buffer.Slice(1));
+                        break;
+                    case ValueLengths.LC4:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + JsonBinaryEncoding.FourByteCount +
+                            MemoryMarshal.Read<uint>(buffer.Slice(1));
+                        break;
 
-                        case Arr1:
-                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1));
-                            length = arrayOneItemLength == 0 ? 0 : 1 + arrayOneItemLength;
-                            break;
+                    case ValueLengths.Arr1:
+                        long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1));
+                        length = arrayOneItemLength == 0 ? 0 : 1 + arrayOneItemLength;
+                        break;
 
-                        case Obj1:
-                            long nameLength = ValueLengths.GetValueLength(buffer.Slice(1));
-                            if (nameLength == 0)
-                            {
-                                length = 0;
-                            }
-                            else
-                            {
-                                long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength));
-                                length = TypeMarkerLength + nameLength + valueLength;
-                            }
-                            break;
+                    case ValueLengths.Obj1:
+                        long nameLength = ValueLengths.GetValueLength(buffer.Slice(1));
+                        if (nameLength == 0)
+                        {
+                            length = 0;
+                        }
+                        else
+                        {
+                            long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength));
+                            length = JsonBinaryEncoding.TypeMarkerLength + nameLength + valueLength;
+                        }
 
-                        case CS4L1:
-                            length = TypeMarkerLength + OneByteLength + GetCompressedStringLength(buffer[1], numberOfBits: 4);
-                            break;
-                        case CS7L1:
-                            length = TypeMarkerLength + OneByteLength + GetCompressedStringLength(buffer[1], numberOfBits: 7);
-                            break;
-                        case CS7L2:
-                            length = TypeMarkerLength + TwoByteLength + GetCompressedStringLength(GetFixedSizedValue<ushort>(buffer.Slice(start: 1)), numberOfBits: 7);
-                            break;
+                        break;
 
-                        case CS4BL1:
-                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 4);
-                            break;
-                        case CS5BL1:
-                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 5);
-                            break;
-                        case CS6BL1:
-                            length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 6);
-                            break;
+                    case ValueLengths.CS4L1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength +
+                            ValueLengths.GetCompressedStringLength(buffer[1], numberOfBits: 4);
+                        break;
+                    case ValueLengths.CS7L1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength +
+                            ValueLengths.GetCompressedStringLength(buffer[1], numberOfBits: 7);
+                        break;
+                    case ValueLengths.CS7L2:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength + ValueLengths.GetCompressedStringLength(
+                            JsonBinaryEncoding.GetFixedSizedValue<ushort>(buffer.Slice(start: 1)),
+                            numberOfBits: 7);
+                        break;
 
-                        default:
-                            throw new ArgumentException($"Invalid variable length type marker length: {length}");
-                    }
+                    case ValueLengths.CS4BL1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + JsonBinaryEncoding.OneByteBaseChar +
+                            ValueLengths.GetCompressedStringLength(buffer[1], numberOfBits: 4);
+                        break;
+                    case ValueLengths.CS5BL1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + JsonBinaryEncoding.OneByteBaseChar +
+                            ValueLengths.GetCompressedStringLength(buffer[1], numberOfBits: 5);
+                        break;
+                    case ValueLengths.CS6BL1:
+                        length = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + JsonBinaryEncoding.OneByteBaseChar +
+                            ValueLengths.GetCompressedStringLength(buffer[1], numberOfBits: 6);
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Invalid variable length type marker length: {length}");
                 }
 
                 return length;

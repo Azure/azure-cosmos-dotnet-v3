@@ -39,23 +39,24 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract JsonSerializationFormat SerializationFormat { get; }
 
         /// <inheritdoc />
-        public abstract long CurrentLength { get; }
+        public abstract int CurrentLength { get; }
 
         /// <summary>
         /// Creates a JsonWriter that can write in a particular JsonSerializationFormat (utf8 if text)
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
         /// <param name="initalCapacity">Initial capacity to help avoid intermeidary allocations.</param>
+        /// <param name="enableEncodedStrings">Enable encoded strings.</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
-            int initalCapacity = 256)
+            int initalCapacity = 256,
+            bool enableEncodedStrings = false)
         {
             return jsonSerializationFormat switch
             {
                 JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
-                JsonSerializationFormat.Binary => new JsonBinaryWriter(
-                    serializeCount: false),
+                JsonSerializationFormat.Binary => new JsonBinaryWriter(enableEncodedStrings, initalCapacity, serializeCount: false),
                 _ => throw new ArgumentException(
                         string.Format(
                             CultureInfo.CurrentCulture,
@@ -133,6 +134,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
         /// <inheritdoc />
         public abstract void WriteUInt32Value(uint value);
+
+        /// <inheritdoc />
+        public abstract void WriteVariableSizeIntegerValue(long value);
+
+        /// <inheritdoc />
+        public abstract void WriteDouble(double value);
 
         /// <inheritdoc />
         public abstract void WriteGuidValue(Guid value);

@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
             /// <inheritdoc />
-            public override long CurrentLength => this.jsonTextMemoryWriter.Position;
+            public override int CurrentLength => this.jsonTextMemoryWriter.Position;
 
             /// <inheritdoc />
             public override void WriteObjectStart()
@@ -275,6 +275,18 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.jsonTextMemoryWriter.Write(UnsignedTokenPrefix);
                 this.jsonTextMemoryWriter.Write(Int32TokenPrefix);
                 this.jsonTextMemoryWriter.Write(value);
+            }
+
+            /// <inheritdoc />
+            public override void WriteVariableSizeIntegerValue(long value)
+            {
+                this.WriteIntegerInternal(value);
+            }
+
+            /// <inheritdoc />
+            public override void WriteDouble(double value)
+            {
+                this.WriteDoubleInternal(value);
             }
 
             /// <inheritdoc />

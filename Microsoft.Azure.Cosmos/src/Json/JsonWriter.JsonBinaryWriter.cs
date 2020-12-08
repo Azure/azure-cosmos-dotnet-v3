@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -8,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -21,12 +24,10 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     abstract partial class JsonWriter : IJsonWriter
     {
-        internal static bool EnableEncodedStrings = false;
-
         /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.
         /// </summary>
-        private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions
+        private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions, ITypedBinaryJsonWriter
         {
             private enum RawValueType : byte
             {
@@ -226,11 +227,28 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly ReferenceStringDictionary sharedStringIndexes;
 
             /// <summary>
+            /// Offsets at which string references offsets are stored.
+            /// </summary>
+            private readonly List<int> stringReferenceOffsets;
+
+            /// <summary>
+            /// Write encoded strings ?
+            /// </summary>
+            private readonly bool enableEncodedStrings;
+
+            /// <summary>
+            /// Stores the currently used context frame.
+            /// </summary>
+            private ArrayAndObjectInfo currentContext;
+
+            /// <summary>
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
+            /// <param name="enableEncodedStrings">Whether to serialize strings in encoded format.</param>
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
             public JsonBinaryWriter(
+                bool enableEncodedStrings,
                 int initialCapacity = 256,
                 bool serializeCount = false)
             {
@@ -240,20 +258,22 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
                 this.sharedStrings = new List<SharedStringValue>();
                 this.sharedStringIndexes = new ReferenceStringDictionary();
+                this.stringReferenceOffsets = new List<int>();
+                this.enableEncodedStrings = enableEncodedStrings;
 
                 // Write the serialization format as the very first byte
                 byte binaryTypeMarker = (byte)JsonSerializationFormat.Binary;
                 this.binaryWriter.Write(binaryTypeMarker);
 
                 // Push on the outermost context
-                this.bufferedContexts.Push(new ArrayAndObjectInfo(this.CurrentLength));
+                this.currentContext = new ArrayAndObjectInfo(this.binaryWriter.Position);
             }
 
             /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
             /// <inheritdoc />
-            public override long CurrentLength => this.binaryWriter.Position;
+            public override int CurrentLength => this.binaryWriter.Position;
 
             /// <inheritdoc />
             public override void WriteObjectStart() => this.WriterArrayOrObjectStart(isArray: false);
@@ -268,24 +288,43 @@ namespace Microsoft.Azure.Cosmos.Json
             public override void WriteArrayEnd() => this.WriteArrayOrObjectEnd(isArray: true);
 
             /// <inheritdoc />
-            public override void WriteFieldName(Utf8Span fieldName) => this.WriteFieldNameOrString(isFieldName: true, fieldName);
+            public override void WriteFieldName(Utf8Span fieldName)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.FieldName);
+                this.binaryWriter.EnsureRemainingBufferSpace(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + fieldName.Length);
+
+                if (!this.TryWriteSystemString(fieldName)
+                    && (!this.enableEncodedStrings || !this.TryWriteEncodedFieldName(fieldName)))
+                {
+                    this.WriteStringCommon(fieldName);
+                }
+            }
 
             /// <inheritdoc />
-            public override void WriteStringValue(Utf8Span value) => this.WriteFieldNameOrString(isFieldName: false, value);
+            public override void WriteStringValue(Utf8Span value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.String);
+                this.binaryWriter.EnsureRemainingBufferSpace(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + value.Length);
+
+                if (!this.TryWriteSystemString(value) && (!this.enableEncodedStrings || !this.TryWriteEncodedValueString(value)))
+                {
+                    this.WriteStringCommon(value);
+                }
+
+                this.currentContext.Count++;
+            }
 
             /// <inheritdoc />
             public override void WriteNumber64Value(Number64 value)
             {
                 if (value.IsInteger)
                 {
-                    this.WriteIntegerInternal(Number64.ToLong(value));
+                    this.WriteVariableSizeIntegerValue(value.LongValue.Value);
                 }
                 else
                 {
-                    this.WriteDoubleInternal(Number64.ToDouble(value));
+                    this.WriteDouble(value.DoubleValue.Value);
                 }
-
-                this.bufferedContexts.Peek().Count++;
             }
 
             /// <inheritdoc />
@@ -293,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 this.JsonObjectState.RegisterToken(value ? JsonTokenType.True : JsonTokenType.False);
                 this.binaryWriter.Write(value ? JsonBinaryEncoding.TypeMarker.True : JsonBinaryEncoding.TypeMarker.False);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -301,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Null);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Null);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -310,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int8);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -319,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int16);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -328,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int32);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -337,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int64);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -346,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Float32);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -355,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Float64);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -364,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.UInt32);
                 this.binaryWriter.Write(value);
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -373,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Guid);
                 this.binaryWriter.Write(value.ToByteArray());
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
@@ -404,13 +443,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.binaryWriter.Write(value);
 
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext.Count++;
             }
 
             /// <inheritdoc />
             public override ReadOnlyMemory<byte> GetResult()
             {
-                if (this.bufferedContexts.Count > 1)
+                if (this.currentContext.Offset != 1)
                 {
                     throw new JsonNotCompleteException();
                 }
@@ -426,50 +465,71 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Position);
             }
 
-            private void WriterArrayOrObjectStart(bool isArray)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void RegisterArrayOrObjectStart(bool isArray, int scopeStartPosition, int valueCount)
             {
-                this.JsonObjectState.RegisterToken(isArray ? JsonTokenType.BeginArray : JsonTokenType.BeginObject);
+                if (isArray)
+                {
+                    this.JsonObjectState.RegisterBeginArray();
+                }
+                else
+                {
+                    this.JsonObjectState.RegisterBeginObject();
+                }
 
                 // Save the start index
-                ArrayAndObjectInfo info = new ArrayAndObjectInfo(this.CurrentLength)
+                this.bufferedContexts.Push(this.currentContext);
+                this.currentContext = new ArrayAndObjectInfo(scopeStartPosition)
                 {
-                    StringStartIndex = this.sharedStrings.Count
+                    StringStartIndex = this.sharedStrings.Count,
+                    Count = valueCount,
+                    StringReferenceStartIndex = this.stringReferenceOffsets.Count
                 };
-                this.bufferedContexts.Push(info);
+            }
+
+            private void WriterArrayOrObjectStart(bool isArray)
+            {
+                this.RegisterArrayOrObjectStart(isArray, this.binaryWriter.Position, valueCount: 0);
 
                 // Assume 1-byte value length; as such, we need to reserve up 3 bytes (1 byte type marker, 1 byte length, 1 byte count).
                 // We'll adjust this as needed when writing the end of the array/object.
-                this.binaryWriter.Write((byte)0);
-                this.binaryWriter.Write((byte)0);
                 if (this.serializeCount)
                 {
-                    this.binaryWriter.Write((byte)0);
+                    this.binaryWriter.EnsureRemainingBufferSpace(3);
+                    Span<byte> binaryWriterCursor = this.binaryWriter.Cursor;
+                    binaryWriterCursor[0] = 0;
+                    binaryWriterCursor[1] = 0;
+                    binaryWriterCursor[2] = 0;
+                    this.binaryWriter.Position += 3;
+                }
+                else
+                {
+                    this.binaryWriter.EnsureRemainingBufferSpace(2);
+                    Span<byte> binaryWriterCursor = this.binaryWriter.Cursor;
+                    binaryWriterCursor[0] = 0;
+                    binaryWriterCursor[1] = 0;
+                    this.binaryWriter.Position += 2;
                 }
             }
 
             private void WriteArrayOrObjectEnd(bool isArray)
             {
                 this.JsonObjectState.RegisterToken(isArray ? JsonTokenType.EndArray : JsonTokenType.EndObject);
-                ArrayAndObjectInfo nestedContext = this.bufferedContexts.Pop();
 
                 // Do some math
-                int typeMarkerIndex = (int)nestedContext.Offset;
+                int typeMarkerIndex = (int)this.currentContext.Offset;
                 int payloadIndex = typeMarkerIndex + this.reservationSize;
                 int originalCursor = (int)this.CurrentLength;
                 int payloadLength = originalCursor - payloadIndex;
-                int count = (int)nestedContext.Count;
-                int stringStartIndex = (int)nestedContext.StringStartIndex;
+                int count = (int)this.currentContext.Count;
+                int stringStartIndex = (int)this.currentContext.StringStartIndex;
 
                 // Figure out what the typemarker and length should be and do any corrections needed
                 if (count == 0)
                 {
-                    // Empty object
-
-                    // Move the cursor back
-                    this.binaryWriter.Position = typeMarkerIndex;
-
-                    // Write the type marker
-                    this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.EmptyArray : JsonBinaryEncoding.TypeMarker.EmptyObject);
+                    this.binaryWriter.BufferAsSpan[typeMarkerIndex] =
+                        isArray ? JsonBinaryEncoding.TypeMarker.EmptyArray : JsonBinaryEncoding.TypeMarker.EmptyObject;
+                    this.binaryWriter.Position = typeMarkerIndex + 1;
                 }
                 else if (count == 1)
                 {
@@ -477,16 +537,18 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     // Move the buffer back but leave one byte for the typemarker
                     Span<byte> buffer = this.binaryWriter.BufferAsSpan;
-                    int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength;
-                    this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex);
+                    const int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength;
+                    this.MoveBuffer(
+                        buffer,
+                        payloadIndex,
+                        payloadLength,
+                        typeMarkerIndex,
+                        bytesToWrite,
+                        stringStartIndex,
+                        this.currentContext.StringReferenceStartIndex);
 
-                    // Move the cursor back
-                    this.binaryWriter.Position = typeMarkerIndex;
-
-                    // Write the type marker
-                    this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.SingleItemArray : JsonBinaryEncoding.TypeMarker.SinglePropertyObject);
-
-                    // Move the cursor forward
+                    this.binaryWriter.BufferAsSpan[typeMarkerIndex] =
+                        isArray ? JsonBinaryEncoding.TypeMarker.SingleItemArray : JsonBinaryEncoding.TypeMarker.SinglePropertyObject;
                     this.binaryWriter.Position = typeMarkerIndex + JsonBinaryEncoding.TypeMarkerLength + payloadLength;
                 }
                 else
@@ -499,20 +561,20 @@ namespace Microsoft.Azure.Cosmos.Json
                             + JsonBinaryEncoding.OneByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
 
-                        // Move the cursor back
-                        this.binaryWriter.Position = typeMarkerIndex;
-
+                        Span<byte> slice = this.binaryWriter.BufferAsSpan.Slice(typeMarkerIndex);
                         // Write the type marker
                         if (this.serializeCount)
                         {
-                            this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount);
-                            this.binaryWriter.Write((byte)payloadLength);
-                            this.binaryWriter.Write((byte)count);
+                            slice[0] = isArray
+                                ? JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount
+                                : JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount;
+                            slice[1] = (byte)payloadLength;
+                            slice[2] = (byte)count;
                         }
                         else
                         {
-                            this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLength : JsonBinaryEncoding.TypeMarker.Object1ByteLength);
-                            this.binaryWriter.Write((byte)payloadLength);
+                            slice[0] = isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLength : JsonBinaryEncoding.TypeMarker.Object1ByteLength;
+                            slice[1] = (byte)payloadLength;
                         }
 
                         // Move the cursor forward
@@ -521,10 +583,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     else if (payloadLength <= ushort.MaxValue)
                     {
                         // 2 byte length - make space for the extra byte length (and extra byte count)
-                        this.binaryWriter.Write((byte)0);
                         if (this.serializeCount)
                         {
-                            this.binaryWriter.Write((byte)0);
+                            this.binaryWriter.EnsureRemainingBufferSpace(2);
+                        }
+                        else
+                        {
+                            this.binaryWriter.EnsureRemainingBufferSpace(1);
                         }
 
                         // Move the buffer forward
@@ -532,22 +597,31 @@ namespace Microsoft.Azure.Cosmos.Json
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.TwoByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
-                        this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex);
+                        this.MoveBuffer(
+                            buffer,
+                            payloadIndex,
+                            payloadLength,
+                            typeMarkerIndex,
+                            bytesToWrite,
+                            stringStartIndex,
+                            this.currentContext.StringReferenceStartIndex);
 
                         // Move the cursor back
-                        this.binaryWriter.Position = typeMarkerIndex;
+                        Span<byte> slice = this.binaryWriter.BufferAsSpan.Slice(typeMarkerIndex);
 
                         // Write the type marker
                         if (this.serializeCount)
                         {
-                            this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount);
-                            this.binaryWriter.Write((ushort)payloadLength);
-                            this.binaryWriter.Write((ushort)count);
+                            slice[0] = isArray
+                                ? JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount
+                                : JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount;
+                            BinaryPrimitives.WriteUInt16LittleEndian(slice.Slice(1), (ushort)payloadLength);
+                            BinaryPrimitives.WriteUInt16LittleEndian(slice.Slice(3), (ushort)count);
                         }
                         else
                         {
-                            this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array2ByteLength : JsonBinaryEncoding.TypeMarker.Object2ByteLength);
-                            this.binaryWriter.Write((ushort)payloadLength);
+                            slice[0] = isArray ? JsonBinaryEncoding.TypeMarker.Array2ByteLength : JsonBinaryEncoding.TypeMarker.Object2ByteLength;
+                            BinaryPrimitives.WriteUInt16LittleEndian(slice.Slice(1), (ushort)payloadLength);
                         }
 
                         // Move the cursor forward
@@ -558,12 +632,13 @@ namespace Microsoft.Azure.Cosmos.Json
                         // (payloadLength <= uint.MaxValue)
 
                         // 4 byte length - make space for an extra 3 byte length (and 3 byte count)
-                        this.binaryWriter.Write((byte)0);
-                        this.binaryWriter.Write((ushort)0);
                         if (this.serializeCount)
                         {
-                            this.binaryWriter.Write((byte)0);
-                            this.binaryWriter.Write((ushort)0);
+                            this.binaryWriter.EnsureRemainingBufferSpace(6);
+                        }
+                        else
+                        {
+                            this.binaryWriter.EnsureRemainingBufferSpace(3);
                         }
 
                         // Move the buffer forward
@@ -571,22 +646,31 @@ namespace Microsoft.Azure.Cosmos.Json
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.FourByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.FourByteCount : 0);
-                        this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex);
+                        this.MoveBuffer(
+                            buffer,
+                            payloadIndex,
+                            payloadLength,
+                            typeMarkerIndex,
+                            bytesToWrite,
+                            stringStartIndex,
+                            this.currentContext.StringReferenceStartIndex);
 
                         // Move the cursor back
-                        this.binaryWriter.Position = typeMarkerIndex;
+                        Span<byte> slice = this.binaryWriter.BufferAsSpan.Slice(typeMarkerIndex);
 
                         // Write the type marker
                         if (this.serializeCount)
                         {
-                            this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount);
-                            this.binaryWriter.Write((uint)payloadLength);
-                            this.binaryWriter.Write((uint)count);
+                            slice[0] = isArray
+                                ? JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount
+                                : JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount;
+                            BinaryPrimitives.WriteUInt32LittleEndian(slice.Slice(1), (uint)payloadLength);
+                            BinaryPrimitives.WriteUInt32LittleEndian(slice.Slice(5), (uint)count);
                         }
                         else
                         {
-                            this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array4ByteLength : JsonBinaryEncoding.TypeMarker.Object4ByteLength);
-                            this.binaryWriter.Write((uint)payloadLength);
+                            slice[0] = isArray ? JsonBinaryEncoding.TypeMarker.Array4ByteLength : JsonBinaryEncoding.TypeMarker.Object4ByteLength;
+                            BinaryPrimitives.WriteUInt32LittleEndian(slice.Slice(1), (uint)payloadLength);
                         }
 
                         // Move the cursor forward
@@ -594,16 +678,25 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                 }
 
-                this.bufferedContexts.Peek().Count++;
+                this.currentContext = this.bufferedContexts.Pop();
+                this.currentContext.Count++;
 
                 // If we are closing the outermost array / object, we need to fix up reference string offsets
-                if (typeMarkerIndex == 1)
+                if (typeMarkerIndex == 1 && this.sharedStrings.Count > 0)
                 {
-                    this.FixReferenceStringOffsets(this.binaryWriter.RawBuffer.Slice(start: 1));
+                    this.FixReferenceStringOffsets(this.binaryWriter.BufferAsSpan);
                 }
             }
 
-            private void MoveBuffer(Span<byte> buffer, int payloadIndex, int payloadLength, int typeMarkerIndex, int bytesToWrite, int stringStartIndex)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void MoveBuffer(
+                Span<byte> buffer,
+                int payloadIndex,
+                int payloadLength,
+                int typeMarkerIndex,
+                int bytesToWrite,
+                int stringStartIndex,
+                int stringReferenceOffsetLow)
             {
                 Span<byte> payload = buffer.Slice(payloadIndex, payloadLength);
                 int newPayloadIndex = typeMarkerIndex + bytesToWrite;
@@ -613,149 +706,124 @@ namespace Microsoft.Azure.Cosmos.Json
                 int delta = newPayloadIndex - payloadIndex;
                 for (int index = stringStartIndex; index < this.sharedStrings.Count; index++)
                 {
-                    SharedStringValue sharedStringValue = this.sharedStrings[index];
-                    this.sharedStrings[index] = new SharedStringValue(offset: sharedStringValue.Offset + delta, maxOffset: sharedStringValue.MaxOffset);
+                    this.sharedStrings[index].Offset += delta;
+                }
+
+                for (int i = stringReferenceOffsetLow; i < this.stringReferenceOffsets.Count; ++i)
+                {
+                    this.stringReferenceOffsets[i] += delta;
                 }
             }
 
-            private void FixReferenceStringOffsets(Memory<byte> buffer)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void FixReferenceStringOffsets(Span<byte> binaryWriterRawBuffer)
             {
-                if (this.sharedStrings.Count == 0)
+                foreach (int stringReferenceOffset in this.stringReferenceOffsets)
                 {
-                    return;
-                }
+                    byte typeMarker = binaryWriterRawBuffer[stringReferenceOffset];
 
-                byte typeMarker = buffer.Span[0];
-
-                JsonNodeType nodeType = JsonBinaryEncoding.NodeTypes.Lookup[typeMarker];
-                switch (nodeType)
-                {
-                    case JsonNodeType.Null:
-                    case JsonNodeType.False:
-                    case JsonNodeType.True:
-                    case JsonNodeType.Number64:
-                    case JsonNodeType.Int8:
-                    case JsonNodeType.Int16:
-                    case JsonNodeType.Int32:
-                    case JsonNodeType.Int64:
-                    case JsonNodeType.UInt32:
-                    case JsonNodeType.Float32:
-                    case JsonNodeType.Float64:
-                    case JsonNodeType.Binary:
-                    case JsonNodeType.Guid:
-                        // Do Nothing
-                        break;
-
-                    case JsonNodeType.String:
-                    case JsonNodeType.FieldName:
+                    JsonNodeType nodeType = JsonBinaryEncoding.NodeTypes.Lookup[typeMarker];
+                    switch (nodeType)
+                    {
+                        case JsonNodeType.String:
+                        case JsonNodeType.FieldName:
                         {
-                            Memory<byte> offsetBuffer = buffer.Slice(start: 1);
+                            Span<byte> offsetBuffer = binaryWriterRawBuffer.Slice(stringReferenceOffset + 1);
                             switch (typeMarker)
                             {
                                 case JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset:
-                                    {
-                                        byte stringIndex = JsonBinaryEncoding.GetFixedSizedValue<byte>(offsetBuffer.Span);
-                                        SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                        JsonBinaryEncoding.SetFixedSizedValue<byte>(offsetBuffer.Span, (byte)sharedStringValue.Offset);
-                                    }
+                                {
+                                    byte stringIndex = offsetBuffer[0];
+                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                    JsonBinaryEncoding.SetFixedSizedValue<byte>(offsetBuffer, (byte)sharedStringValue.Offset);
                                     break;
+                                }
 
                                 case JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset:
-                                    {
-                                        ushort stringIndex = JsonBinaryEncoding.GetFixedSizedValue<ushort>(offsetBuffer.Span);
-                                        SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                        JsonBinaryEncoding.SetFixedSizedValue<ushort>(offsetBuffer.Span, (ushort)sharedStringValue.Offset);
-                                    }
+                                {
+                                    ushort stringIndex = JsonBinaryEncoding.GetFixedSizedValue<ushort>(offsetBuffer);
+                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                    JsonBinaryEncoding.SetFixedSizedValue<ushort>(offsetBuffer, (ushort)sharedStringValue.Offset);
                                     break;
+                                }
 
                                 case JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset:
-                                    {
-                                        JsonBinaryEncoding.UInt24 stringIndex = JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(offsetBuffer.Span);
-                                        SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                        JsonBinaryEncoding.SetFixedSizedValue<JsonBinaryEncoding.UInt24>(offsetBuffer.Span, (JsonBinaryEncoding.UInt24)sharedStringValue.Offset);
-                                    }
+                                {
+                                    JsonBinaryEncoding.UInt24 stringIndex =
+                                        JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(offsetBuffer);
+                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                    JsonBinaryEncoding.SetFixedSizedValue<JsonBinaryEncoding.UInt24>(
+                                        offsetBuffer,
+                                        (JsonBinaryEncoding.UInt24)sharedStringValue.Offset);
                                     break;
+                                }
 
                                 case JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset:
-                                    {
-                                        int stringIndex = JsonBinaryEncoding.GetFixedSizedValue<int>(offsetBuffer.Span);
-                                        SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                        JsonBinaryEncoding.SetFixedSizedValue<int>(offsetBuffer.Span, (int)sharedStringValue.Offset);
-                                    }
+                                {
+                                    int stringIndex = JsonBinaryEncoding.GetFixedSizedValue<int>(offsetBuffer);
+                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                    JsonBinaryEncoding.SetFixedSizedValue<int>(offsetBuffer, (int)sharedStringValue.Offset);
                                     break;
-
-                                default:
-                                    // Do Nothing
-                                    break;
+                                }
                             }
+
+                            break;
                         }
-                        break;
-
-                    case JsonNodeType.Array:
-                        foreach (Memory<byte> arrayItem in JsonBinaryEncoding.Enumerator.GetMutableArrayItems(buffer))
-                        {
-                            this.FixReferenceStringOffsets(arrayItem);
-                        }
-
-                        break;
-
-                    case JsonNodeType.Object:
-                        foreach (JsonBinaryEncoding.Enumerator.MutableObjectProperty mutableObjectProperty in JsonBinaryEncoding.Enumerator.GetMutableObjectProperties(buffer))
-                        {
-                            this.FixReferenceStringOffsets(mutableObjectProperty.Name);
-                            this.FixReferenceStringOffsets(mutableObjectProperty.Value);
-                        }
-
-                        break;
-
-                    case JsonNodeType.Unknown:
-                    default:
-                        throw new InvalidOperationException($"Unknown {nameof(nodeType)}: {nodeType}.");
+                        default:
+                            throw new InvalidOperationException($"Unknown {nameof(nodeType)}: {nodeType}.");
+                    }
                 }
             }
 
-            private void WriteFieldNameOrString(bool isFieldName, Utf8Span utf8Span)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool TryWriteSystemString(Utf8Span utf8Span)
             {
-                this.binaryWriter.EnsureRemainingBufferSpace(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + utf8Span.Length);
-
-                this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
-                if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
-                    utf8Span,
-                    out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
+                if (!JsonBinaryEncoding.TryGetEncodedStringTypeMarker(utf8Span, out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
-                    switch (multiByteTypeMarker.Length)
-                    {
-                        case 1:
-                            this.binaryWriter.Write(multiByteTypeMarker.One);
-                            break;
-
-                        case 2:
-                            this.binaryWriter.Write(multiByteTypeMarker.One);
-                            this.binaryWriter.Write(multiByteTypeMarker.Two);
-                            break;
-
-                        default:
-                            throw new InvalidOperationException($"Unable to serialize a {nameof(JsonBinaryEncoding.MultiByteTypeMarker)} of length: {multiByteTypeMarker.Length}");
-                    }
+                    return false;
                 }
-                else if (EnableEncodedStrings 
-                    && isFieldName
-                    && (utf8Span.Length >= MinReferenceStringLength)
-                    && this.TryRegisterStringValue(utf8Span))
+
+                switch (multiByteTypeMarker.Length)
                 {
-                    // Work is done in the check
+                    case 1:
+                        this.binaryWriter.Write(multiByteTypeMarker.One);
+                        break;
+
+                    case 2:
+                        this.binaryWriter.Write(stackalloc byte[2]
+                        {
+                            multiByteTypeMarker.One,
+                            multiByteTypeMarker.Two
+                        });
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Unable to serialize a {nameof(JsonBinaryEncoding.MultiByteTypeMarker)} of length: {multiByteTypeMarker.Length}");
                 }
-                else if (EnableEncodedStrings
-                    && !isFieldName
-                    && (utf8Span.Length == JsonBinaryEncoding.GuidLength)
+
+                return true;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool TryWriteEncodedFieldName(Utf8Span utf8Span)
+            {
+                // Register all field names (they are typically common) or string up to certain length
+                return (utf8Span.Length >= JsonBinaryWriter.MinReferenceStringLength)
+                    && this.TryRegisterStringValue(utf8Span);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool TryWriteEncodedValueString(Utf8Span utf8Span)
+            {
+                if ((utf8Span.Length == JsonBinaryEncoding.GuidLength)
                     && JsonBinaryEncoding.TryEncodeGuidString(utf8Span.Span, this.binaryWriter.Cursor))
                 {
                     // Encoded value as guid string
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
+                    return true;
                 }
-                else if (EnableEncodedStrings
-                    && !isFieldName
-                    && (utf8Span.Length == JsonBinaryEncoding.GuidWithQuotesLength)
+
+                if ((utf8Span.Length == JsonBinaryEncoding.GuidWithQuotesLength)
                     && (utf8Span.Span[0] == '"')
                     && (utf8Span.Span[JsonBinaryEncoding.GuidWithQuotesLength - 1] == '"')
                     && JsonBinaryEncoding.TryEncodeGuidString(utf8Span.Span.Slice(start: 1), this.binaryWriter.Cursor)
@@ -764,57 +832,75 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Encoded value as lowercase double quote guid
                     this.binaryWriter.Cursor[0] = JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString;
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
+                    return true;
                 }
-                else if (EnableEncodedStrings
-                    && !isFieldName
-                    && JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, out int bytesWritten))
+
+                if (JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, out int bytesWritten))
                 {
                     // Encoded value as a compressed string
                     this.binaryWriter.Position += bytesWritten;
+                    return true;
                 }
-                else if (
-                    EnableEncodedStrings 
-                    && !isFieldName
-                    && (utf8Span.Length >= MinReferenceStringLength)
-                    && (utf8Span.Length <= MaxReferenceStringLength)
+
+                if ((utf8Span.Length >= JsonBinaryWriter.MinReferenceStringLength)
+                    // Register all field names (they are typically common) or string up to certain length
+                    && (utf8Span.Length <= JsonBinaryWriter.MaxReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
                 {
                     // Work is done in the check
+                    return true;
                 }
-                else if (JsonBinaryEncoding.TypeMarker.TryGetEncodedStringLengthTypeMarker(utf8Span.Length, out byte typeMarker))
+
+                return false;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void WriteStringCommon(Utf8Span utf8Span)
+            {
+                if (JsonBinaryEncoding.TypeMarker.TryGetEncodedStringLengthTypeMarker(utf8Span.Length, out byte typeMarker))
                 {
                     // Write with type marker that encodes the length
-                    this.binaryWriter.Write(typeMarker);
-                    this.binaryWriter.Write(utf8Span.Span);
+                    int totalSize = 1 + utf8Span.Length;
+                    this.binaryWriter.EnsureRemainingBufferSpace(totalSize);
+                    Span<byte> binaryWriterCursor = this.binaryWriter.Cursor;
+                    binaryWriterCursor[0] = typeMarker;
+                    utf8Span.Span.CopyTo(binaryWriterCursor.Slice(1));
+                    this.binaryWriter.Position += totalSize;
                 }
                 // Just write it out as a regular string with type marker and length prefix
                 else if (utf8Span.Length < byte.MaxValue)
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String1ByteLength);
-                    this.binaryWriter.Write((byte)utf8Span.Length);
-                    this.binaryWriter.Write(utf8Span.Span);
+                    int totalSize = 2 + utf8Span.Length;
+                    this.binaryWriter.EnsureRemainingBufferSpace(totalSize);
+                    Span<byte> binaryWriterCursor = this.binaryWriter.Cursor;
+                    binaryWriterCursor[0] = JsonBinaryEncoding.TypeMarker.String1ByteLength;
+                    binaryWriterCursor[1] = (byte)utf8Span.Length;
+                    utf8Span.Span.CopyTo(binaryWriterCursor.Slice(2));
+                    this.binaryWriter.Position += totalSize;
                 }
                 else if (utf8Span.Length < ushort.MaxValue)
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String2ByteLength);
-                    this.binaryWriter.Write((ushort)utf8Span.Length);
-                    this.binaryWriter.Write(utf8Span.Span);
+                    int totalSize = 1 + sizeof(ushort) + utf8Span.Length;
+                    this.binaryWriter.EnsureRemainingBufferSpace(totalSize);
+                    Span<byte> binaryWriterCursor = this.binaryWriter.Cursor;
+                    binaryWriterCursor[0] = JsonBinaryEncoding.TypeMarker.String2ByteLength;
+                    BinaryPrimitives.WriteUInt16LittleEndian(binaryWriterCursor.Slice(1), (ushort)utf8Span.Length);
+                    utf8Span.Span.CopyTo(binaryWriterCursor.Slice(1 + sizeof(ushort)));
+                    this.binaryWriter.Position += totalSize;
                 }
                 else
                 {
-                    // (utf8String.Length < uint.MaxValue)
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String4ByteLength);
-                    this.binaryWriter.Write((uint)utf8Span.Length);
-                    this.binaryWriter.Write(utf8Span.Span);
-                }
-
-                if (!isFieldName)
-                {
-                    // If we just wrote a string then increment the count (we don't increment for field names, since we need to wait for the corresponding property value).
-                    this.bufferedContexts.Peek().Count++;
+                    int totalSize = 1 + sizeof(uint) + utf8Span.Length;
+                    this.binaryWriter.EnsureRemainingBufferSpace(totalSize);
+                    Span<byte> binaryWriterCursor = this.binaryWriter.Cursor;
+                    binaryWriterCursor[0] = JsonBinaryEncoding.TypeMarker.String4ByteLength;
+                    BinaryPrimitives.WriteUInt32LittleEndian(binaryWriterCursor.Slice(1), (uint)utf8Span.Length);
+                    utf8Span.Span.CopyTo(binaryWriterCursor.Slice(1 + sizeof(uint)));
+                    this.binaryWriter.Position += totalSize;
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool TryRegisterStringValue(Utf8Span utf8Span)
             {
                 if (!this.sharedStringIndexes.TryGetValue(utf8Span.Span, out (UInt128 hash, ulong index) hashAndIndex))
@@ -835,6 +921,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         this.sharedStrings.Add(new SharedStringValue(offset: (int)this.CurrentLength, maxOffset: maxOffset));
                         this.sharedStringIndexes.Add(utf8Span.Length, hashAndIndex.hash, (ulong)(this.sharedStrings.Count - 1));
+
+                        return false;
                     }
 
                     return false;
@@ -842,31 +930,47 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 SharedStringValue sharedString = this.sharedStrings[(int)hashAndIndex.index];
 
+                this.stringReferenceOffsets.Add(this.binaryWriter.Position);
+
                 if (sharedString.MaxOffset <= byte.MaxValue)
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset);
-                    this.binaryWriter.Write((byte)hashAndIndex.index);
+                    this.binaryWriter.EnsureRemainingBufferSpace(2);
+                    Span<byte> span = this.binaryWriter.Cursor;
+                    span[0] = JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset;
+                    span[1] = (byte)hashAndIndex.index;
+                    this.binaryWriter.Position += 2;
                 }
                 else if (sharedString.MaxOffset <= ushort.MaxValue)
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset);
-                    this.binaryWriter.Write((ushort)hashAndIndex.index);
+                    this.binaryWriter.EnsureRemainingBufferSpace(3);
+                    Span<byte> span = this.binaryWriter.Cursor;
+                    span[0] = JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset;
+                    BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(1), (ushort)hashAndIndex.index);
+                    this.binaryWriter.Position += 3;
                 }
                 else if (sharedString.MaxOffset <= JsonBinaryEncoding.UInt24.MaxValue)
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset);
-                    this.binaryWriter.Write((JsonBinaryEncoding.UInt24)(int)hashAndIndex.index);
+                    this.binaryWriter.EnsureRemainingBufferSpace(4);
+                    Span<byte> span = this.binaryWriter.Cursor;
+                    span[0] = JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset;
+                    span[1] = (byte)((hashAndIndex.index & 0x000000FF) >> 0);
+                    span[2] = (byte)((hashAndIndex.index & 0x0000FF00) >> 8);
+                    span[3] = (byte)((hashAndIndex.index & 0x00FF0000) >> 16);
+                    this.binaryWriter.Position += 4;
                 }
                 else
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset);
-                    this.binaryWriter.Write(hashAndIndex.index);
+                    this.binaryWriter.EnsureRemainingBufferSpace(5);
+                    Span<byte> span = this.binaryWriter.Cursor;
+                    span[0] = JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset;
+                    BinaryPrimitives.WriteUInt32LittleEndian(span.Slice(1), (uint)hashAndIndex.index);
+                    this.binaryWriter.Position += 5;
                 }
 
                 return true;
             }
 
-            private void WriteIntegerInternal(long value)
+            public override void WriteVariableSizeIntegerValue(long value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                 if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(value))
@@ -880,23 +984,35 @@ namespace Microsoft.Azure.Cosmos.Json
                         // Non-negative Number
                         if (value <= byte.MaxValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberUInt8);
-                            this.binaryWriter.Write((byte)value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(2);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberUInt8;
+                            span[1] = (byte)value;
+                            this.binaryWriter.Position += 2;
                         }
                         else if (value <= short.MaxValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt16);
-                            this.binaryWriter.Write((short)value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(3);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberInt16;
+                            BinaryPrimitives.WriteInt16LittleEndian(span.Slice(1), (short)value);
+                            this.binaryWriter.Position += 3;
                         }
                         else if (value <= int.MaxValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt32);
-                            this.binaryWriter.Write((int)value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(5);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberInt32;
+                            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(1), (int)value);
+                            this.binaryWriter.Position += 5;
                         }
                         else
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
-                            this.binaryWriter.Write(value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(9);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberInt64;
+                            BinaryPrimitives.WriteInt64LittleEndian(span.Slice(1), value);
+                            this.binaryWriter.Position += 9;
                         }
                     }
                     else
@@ -904,28 +1020,43 @@ namespace Microsoft.Azure.Cosmos.Json
                         // Negative Number
                         if (value < int.MinValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
-                            this.binaryWriter.Write(value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(9);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberInt64;
+                            BinaryPrimitives.WriteInt64LittleEndian(span.Slice(1), value);
+                            this.binaryWriter.Position += 9;
                         }
                         else if (value < short.MinValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt32);
-                            this.binaryWriter.Write((int)value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(5);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberInt32;
+                            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(1), (int)value);
+                            this.binaryWriter.Position += 5;
                         }
                         else
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt16);
-                            this.binaryWriter.Write((short)value);
+                            this.binaryWriter.EnsureRemainingBufferSpace(3);
+                            Span<byte> span = this.binaryWriter.Cursor;
+                            span[0] = JsonBinaryEncoding.TypeMarker.NumberInt16;
+                            BinaryPrimitives.WriteInt16LittleEndian(span.Slice(1), (short)value);
+                            this.binaryWriter.Position += 3;
                         }
                     }
                 }
+
+                this.currentContext.Count++;
             }
 
-            private void WriteDoubleInternal(double value)
+            public override void WriteDouble(double value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberDouble);
-                this.binaryWriter.Write(value);
+                this.binaryWriter.EnsureRemainingBufferSpace(9);
+                Span<byte> span = this.binaryWriter.Cursor;
+                span[0] = JsonBinaryEncoding.TypeMarker.NumberDouble;
+                MemoryMarshal.Write(span.Slice(1), ref value);
+                this.binaryWriter.Position += 9;
+                this.currentContext.Count++;
             }
 
             public void WriteRawJsonValue(
@@ -941,7 +1072,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Write(rawJsonValue.Span);
                     if (!isFieldName)
                     {
-                        this.bufferedContexts.Peek().Count++;
+                        this.currentContext.Count++;
                     }
                 }
                 else
@@ -972,7 +1103,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                             if (!isFieldName)
                             {
-                                this.bufferedContexts.Peek().Count++;
+                                this.currentContext.Count++;
                             }
                         }
                         break;
@@ -1120,23 +1251,42 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException($"Unknown {nameof(rawValueType)}: {rawValueType}.");
                 }
 
-                this.WriteFieldNameOrString(isFieldName, rawStringValue);
+                this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
+                this.binaryWriter.EnsureRemainingBufferSpace(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength + rawStringValue.Length);
+
+                if (!this.TryWriteSystemString(rawStringValue)
+                    && (!this.enableEncodedStrings
+                        || (isFieldName
+                            ? this.TryWriteEncodedFieldName(rawStringValue)
+                            : this.TryWriteEncodedValueString(rawStringValue))))
+                {
+                    this.WriteStringCommon(rawStringValue);
+                }
+
+                if (!isFieldName)
+                {
+                    // If we just wrote a string then increment the count (we don't increment for field names, since we need to wait for the corresponding property value).
+                    this.currentContext.Count++;
+                }
             }
 
-            private sealed class ArrayAndObjectInfo
+            private struct ArrayAndObjectInfo
             {
-                public ArrayAndObjectInfo(long offset)
+                public ArrayAndObjectInfo(int offset)
                 {
                     this.Offset = offset;
                     this.Count = 0;
                     this.StringStartIndex = 0;
+                    this.StringReferenceStartIndex = 0;
                 }
 
-                public long Offset { get; }
+                public readonly int Offset;
 
-                public long Count { get; set; }
+                public int Count;
 
-                public long StringStartIndex { get; set; }
+                public int StringStartIndex;
+
+                public int StringReferenceStartIndex;
             }
 
             private sealed class JsonBinaryMemoryWriter : JsonMemoryWriter
@@ -1283,7 +1433,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private readonly struct SharedStringValue
+            private class SharedStringValue
             {
                 public SharedStringValue(int offset, int maxOffset)
                 {
@@ -1291,8 +1441,92 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.MaxOffset = maxOffset;
                 }
 
-                public int Offset { get; }
-                public int MaxOffset { get; }
+                public readonly int MaxOffset;
+                public int Offset;
+            }
+
+            private static readonly byte DollarT =
+                (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin
+                + JsonBinaryEncoding.SystemStrings.GetSystemStringId(Utf8Span.TranscodeUtf16("$t")).Value);
+
+            private static readonly byte DollarV = 
+                (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin
+                + JsonBinaryEncoding.SystemStrings.GetSystemStringId(Utf8Span.TranscodeUtf16("$v")).Value);
+
+            /// <inheritdoc />
+            public void Write_DollarT_BsonType_DollarV(byte cosmosBsonTypeByte)
+            {
+                this.binaryWriter.EnsureRemainingBufferSpace(5);
+                this.RegisterArrayOrObjectStart(false, this.binaryWriter.Position, 1);
+                this.JsonObjectState.RegisterValueUnsafe(JsonTokenType.FieldName);
+                Span<byte> binaryWriterCursor = this.binaryWriter.Cursor.Slice(2);
+                binaryWriterCursor[0] = JsonBinaryWriter.DollarT;
+                binaryWriterCursor[1] = cosmosBsonTypeByte;
+                binaryWriterCursor[2] = JsonBinaryWriter.DollarV;
+                this.binaryWriter.Position += 5;
+            }
+
+            /// <inheritdoc />
+            public void Write_DollarT_BsonType_DollarV_NestedScope(bool isNestedArray, byte cosmosBsonTypeByte)
+            {
+                this.binaryWriter.EnsureRemainingBufferSpace(7);
+                this.RegisterArrayOrObjectStart(false, this.binaryWriter.Position, 1);
+                this.JsonObjectState.RegisterValueUnsafe(JsonTokenType.FieldName);
+                this.RegisterArrayOrObjectStart(isNestedArray, this.binaryWriter.Position + 5, 0);
+
+                Span<byte> binaryWriterCursor = this.binaryWriter.Cursor.Slice(2);
+                binaryWriterCursor[0] = JsonBinaryWriter.DollarT;
+                binaryWriterCursor[1] = cosmosBsonTypeByte;
+                binaryWriterCursor[2] = JsonBinaryWriter.DollarV;
+                this.binaryWriter.Position += 7;
+            }
+
+            /// <inheritdoc />
+            public void Write(PreblittedBinaryJsonScope scope)
+            {
+                this.binaryWriter.Write(scope.Bytes);
+                // Dummy register token
+                this.JsonObjectState.RegisterValue(JsonTokenType.Null);
+                this.currentContext.Count++;
+            }
+        }
+
+        /// <summary>
+        /// Holds a blitted binary JSON blob.
+        /// </summary>
+        public class PreblittedBinaryJsonScope
+        {
+            /// <summary>
+            /// Blitted bytes.
+            /// </summary>
+            public readonly byte[] Bytes;
+
+            private PreblittedBinaryJsonScope(byte[] bytes)
+            {
+                this.Bytes = bytes;
+            }
+
+            /// <summary>
+            /// Executes the provided lambda and captures a copy of the written bytes for reuse.
+            /// The lambda is executed at a field name, and should leave the reader in a state where
+            /// it is valid to end the scope.
+            /// </summary>
+            /// <param name="scopeWriter">Writes the contents of the scope.</param>
+            /// <returns>Blitted bytes.</returns>
+            public static PreblittedBinaryJsonScope Capture(Action<ITypedBinaryJsonWriter> scopeWriter)
+            {
+                JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(enableEncodedStrings: false);
+                Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
+                Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
+                Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
+
+                jsonBinaryWriter.WriteObjectStart();
+                jsonBinaryWriter.WriteFieldName("someFieldName");
+                int startPosition = jsonBinaryWriter.CurrentLength;
+                scopeWriter(jsonBinaryWriter);
+
+                ReadOnlyMemory<byte> slice = jsonBinaryWriter.GetResult().Slice(startPosition);
+                return new PreblittedBinaryJsonScope(slice.ToArray());
             }
         }
     }

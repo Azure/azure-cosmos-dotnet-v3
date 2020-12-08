@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Newtonsoft.Json;
     using BitUtils = Documents.BitUtils;
@@ -35,30 +36,30 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The double if the value is a double.
         /// </summary>
-        private readonly double? doubleValue;
+        public readonly double? DoubleValue;
 
         /// <summary>
         /// The long if the value is a long.
         /// </summary>
-        private readonly long? longValue;
+        public readonly long? LongValue;
 
         private Number64(double value)
         {
-            this.doubleValue = value;
-            this.longValue = null;
+            this.DoubleValue = value;
+            this.LongValue = null;
         }
 
         private Number64(long value)
         {
-            this.longValue = value;
-            this.doubleValue = null;
+            this.LongValue = value;
+            this.DoubleValue = null;
         }
 
         public bool IsInteger
         {
             get
             {
-                return this.longValue.HasValue;
+                return this.LongValue.HasValue;
             }
         }
 
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.doubleValue.HasValue;
+                return this.DoubleValue.HasValue;
             }
         }
 
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return !this.IsInteger && double.IsInfinity(this.doubleValue.Value);
+                return !this.IsInteger && double.IsInfinity(this.DoubleValue.Value);
             }
         }
 
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return !this.IsInteger && double.IsNaN(this.doubleValue.Value);
+                return !this.IsInteger && double.IsNaN(this.DoubleValue.Value);
             }
         }
 
@@ -209,11 +210,11 @@ namespace Microsoft.Azure.Cosmos
             long value;
             if (number64.IsInteger)
             {
-                value = number64.longValue.Value;
+                value = number64.LongValue.Value;
             }
             else
             {
-                value = (long)number64.doubleValue.Value;
+                value = (long)number64.DoubleValue.Value;
             }
 
             return value;
@@ -224,11 +225,11 @@ namespace Microsoft.Azure.Cosmos
             double value;
             if (number64.IsDouble)
             {
-                value = number64.doubleValue.Value;
+                value = number64.DoubleValue.Value;
             }
             else
             {
-                value = (double)number64.longValue.Value;
+                value = (double)number64.LongValue.Value;
             }
 
             return value;
@@ -239,11 +240,11 @@ namespace Microsoft.Azure.Cosmos
             DoubleEx doubleEx;
             if (number64.IsDouble)
             {
-                doubleEx = number64.doubleValue.Value;
+                doubleEx = number64.DoubleValue.Value;
             }
             else
             {
-                doubleEx = number64.longValue.Value;
+                doubleEx = number64.LongValue.Value;
             }
 
             return doubleEx;
@@ -283,17 +284,17 @@ namespace Microsoft.Azure.Cosmos
             int comparison;
             if (this.IsInteger && other.IsInteger)
             {
-                comparison = this.longValue.Value.CompareTo(other.longValue.Value);
+                comparison = this.LongValue.Value.CompareTo(other.LongValue.Value);
             }
             else if (this.IsDouble && other.IsDouble)
             {
-                comparison = this.doubleValue.Value.CompareTo(other.doubleValue.Value);
+                comparison = this.DoubleValue.Value.CompareTo(other.DoubleValue.Value);
             }
             else
             {
                 // Convert both to doubleEx and compare
-                DoubleEx first = this.IsDouble ? this.doubleValue.Value : this.longValue.Value;
-                DoubleEx second = other.IsDouble ? other.doubleValue.Value : other.longValue.Value;
+                DoubleEx first = this.IsDouble ? this.DoubleValue.Value : this.LongValue.Value;
+                DoubleEx second = other.IsDouble ? other.DoubleValue.Value : other.LongValue.Value;
                 comparison = first.CompareTo(second);
             }
 
@@ -606,11 +607,11 @@ namespace Microsoft.Azure.Cosmos
                 Number64 number64 = (Number64)value;
                 if (number64.IsDouble)
                 {
-                    writer.WriteValue(Number64.ToDouble(number64));
+                    writer.WriteValue(number64.DoubleValue);
                 }
                 else
                 {
-                    writer.WriteValue(Number64.ToLong(number64));
+                    writer.WriteValue(number64.LongValue);
                 }
             }
 

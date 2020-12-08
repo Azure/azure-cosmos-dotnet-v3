@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the current length of the internal buffer.
         /// </summary>
-        long CurrentLength { get; }
+        int CurrentLength { get; }
 
         /// <summary>
         /// Writes the object start symbol to internal buffer.
@@ -128,6 +128,18 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="value">The value of the integer to write.</param>
         void WriteUInt32Value(uint value);
+
+        /// <summary>
+        /// Writes a long value in the 1/2/3/4/8 bytes.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteVariableSizeIntegerValue(long value);
+
+        /// <summary>
+        /// Writes a double.
+        /// </summary>
+        /// <param name="value">The value of the double to write.</param>
+        void WriteDouble(double value);
 
         /// <summary>
         /// Writes a Guid value into the internal buffer.
