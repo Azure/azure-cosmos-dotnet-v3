@@ -6,19 +6,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Query;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
@@ -43,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection headers = new DictionaryNameValueCollection();
+                INameValueCollection headers = new StoreRequestNameValueCollection();
                 headers[HttpConstants.HttpHeaders.Continuation] = continuationToken;
                 return headers;
             };
@@ -152,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection localHeaders = new DictionaryNameValueCollection();
+                INameValueCollection localHeaders = new StoreRequestNameValueCollection();
                 if (continuationToken != null)
                 {
                     localHeaders[HttpConstants.HttpHeaders.Continuation] = continuationToken;
@@ -237,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
                             PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
-                            INameValueCollection headers = new DictionaryNameValueCollection();
+                            INameValueCollection headers = new StoreRequestNameValueCollection();
 
                             await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo);
 

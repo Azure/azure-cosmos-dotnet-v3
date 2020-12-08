@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq.Expressions;
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
                     }
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONCAT", arguments);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Concat, arguments.ToImmutableArray());
                 }
 
                 return null;
@@ -55,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                     false,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(string)}
+                        new Type[]{typeof(string)},
+                        new Type[]{typeof(char)}
                     })
             {
             }
@@ -64,10 +66,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (methodCallExpression.Arguments.Count == 2)
                 {
-                    SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                    SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("CONTAINS", haystack, needle);
-
+                    SqlScalarExpression haystack = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    SqlScalarExpression needle = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
+                    SqlScalarExpression caseSensitivity = SqlStringWithComparisonVisitor.GetCaseSensitivityExpression(methodCallExpression.Arguments[1]);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Contains, haystack, needle, caseSensitivity);
                 }
 
                 return null;
@@ -88,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (methodCallExpression.Arguments.Count == 1)
                 {
                     SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("LENGTH", str);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Length, str);
                 }
 
                 return null;
@@ -127,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (validInNet || validInNetCore)
                 {
                     SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Ltrim, str);
                 }
 
                 return null;
@@ -148,9 +150,78 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (methodCallExpression.Arguments.Count == 1)
                 {
                     SqlScalarExpression str = ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("REVERSE", str);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Reverse, str);
                 }
 
+                return null;
+            }
+        }
+
+        private sealed class SqlStringWithComparisonVisitor : BuiltinFunctionVisitor
+        {
+            private static readonly IImmutableSet<StringComparison> SensitiveCaseComparisons = ImmutableHashSet.Create<StringComparison>(new[]
+            {
+                StringComparison.CurrentCulture,
+                StringComparison.InvariantCulture,
+                StringComparison.Ordinal
+            });
+
+            private static readonly IImmutableSet<StringComparison> IgnoreCaseComparisons = ImmutableHashSet.Create<StringComparison>(new[]
+            {
+                StringComparison.CurrentCultureIgnoreCase,
+                StringComparison.InvariantCultureIgnoreCase,
+                StringComparison.OrdinalIgnoreCase
+            });
+
+            public string SqlName { get; }
+
+            public SqlStringWithComparisonVisitor(string sqlName)
+            {
+                this.SqlName = sqlName ?? throw new ArgumentNullException(nameof(sqlName));
+            }
+
+            public static SqlScalarExpression GetCaseSensitivityExpression(Expression expression)
+            {
+                if (expression is ConstantExpression inputExpression
+                    && inputExpression.Value is StringComparison comparisonValue)
+                {
+                    if (SensitiveCaseComparisons.Contains(comparisonValue))
+                    {
+                        return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(false));
+                    }
+                    else if (IgnoreCaseComparisons.Contains(comparisonValue))
+                    {
+                        return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true));
+                    }
+                }
+
+                return null;
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                int argumentCount = methodCallExpression.Arguments.Count;
+                if (argumentCount == 0 || argumentCount > 2)
+                {
+                    return null;
+                }
+
+                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                {
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                };
+
+                if (argumentCount > 1)
+                {
+                    arguments.Add(GetCaseSensitivityExpression(methodCallExpression.Arguments[1]));
+                }
+
+                return SqlFunctionCallScalarExpression.CreateBuiltin(this.SqlName, arguments.ToArray());
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
                 return null;
             }
         }
@@ -188,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (validInNet || validInNetCore)
                 {
                     SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Rtrim, str);
                 }
 
                 return null;
@@ -210,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         ExpressionToSql.VisitScalarExpression(Expression.Constant(1), context)
                     };
 
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("SUBSTRING", arguments);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Substring, arguments);
                 }
 
                 return null;
@@ -232,6 +303,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression right = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
 
                     return SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Equal, left, right);
+                }
+
+                if (methodCallExpression.Arguments.Count == 2)
+                {
+                    SqlScalarExpression left = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    SqlScalarExpression right = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
+                    SqlScalarExpression caseSensitivity = SqlStringWithComparisonVisitor.GetCaseSensitivityExpression(methodCallExpression.Arguments[1]);
+
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(
+                        SqlFunctionCallScalarExpression.Names.StringEquals,
+                        left,
+                        right,
+                        caseSensitivity);
                 }
 
                 return null;
@@ -257,16 +341,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 },
                 {
                     "EndsWith",
-                    new SqlBuiltinFunctionVisitor("ENDSWITH",
-                    false,
-                    new List<Type[]>
-                    {
-                        new Type[]{typeof(string)}
-                    })
+                    new SqlStringWithComparisonVisitor(SqlFunctionCallScalarExpression.Names.Endswith)
                 },
                 {
                     "IndexOf",
-                    new SqlBuiltinFunctionVisitor("INDEX_OF",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.IndexOf,
                     false,
                     new List<Type[]>()
                     {
@@ -282,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 },
                 {
                     "ToLower",
-                    new SqlBuiltinFunctionVisitor("LOWER",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.Lower,
                     false,
                     new List<Type[]>()
                     {
@@ -295,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 },
                 {
                     "Replace",
-                    new SqlBuiltinFunctionVisitor("REPLACE",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.Replace,
                     false,
                     new List<Type[]>()
                     {
@@ -313,16 +392,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 },
                 {
                     "StartsWith",
-                    new SqlBuiltinFunctionVisitor("STARTSWITH",
-                    false,
-                    new List<Type[]>
-                    {
-                        new Type[]{typeof(string)}
-                    })
+                    new SqlStringWithComparisonVisitor(SqlFunctionCallScalarExpression.Names.Startswith)
                 },
                 {
                     "Substring",
-                    new SqlBuiltinFunctionVisitor("SUBSTRING",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.Substring,
                     false,
                     new List<Type[]>()
                     {
@@ -331,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 },
                 {
                     "ToUpper",
-                    new SqlBuiltinFunctionVisitor("UPPER",
+                    new SqlBuiltinFunctionVisitor(SqlFunctionCallScalarExpression.Names.Upper,
                     false,
                     new List<Type[]>()
                     {

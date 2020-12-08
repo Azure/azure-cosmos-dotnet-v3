@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
 
@@ -43,18 +43,18 @@ namespace CosmosBenchmark
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
 
-                double ruCharges = itemResponse.Headers.RequestCharge;
                 return new OperationResult()
                 {
                     DatabseName = databsaeName,
                     ContainerName = containerName,
-                    RuCharges = ruCharges,
-                    lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                    RuCharges = itemResponse.Headers.RequestCharge,
+                    CosmosDiagnostics = itemResponse.Diagnostics,
+                    LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
                 };
             }
         }
 
-        public Task Prepare()
+        public Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))

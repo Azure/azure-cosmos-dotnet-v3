@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -14,14 +15,18 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -43,8 +48,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             PartitionKey partitionKey,
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -53,15 +59,17 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> CreateItemAsync<T>(
             CosmosDiagnosticsContext diagnosticsContext,
             T item,
+            ITrace trace,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (item == null)
             {
@@ -75,6 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -84,8 +93,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             string id,
             PartitionKey partitionKey,
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -94,6 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -101,8 +112,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             string id,
             PartitionKey partitionKey,
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ResponseMessage response = await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -111,6 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -120,8 +133,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             PartitionKey partitionKey,
+            ITrace trace, 
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -130,15 +144,17 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> UpsertItemAsync<T>(
             CosmosDiagnosticsContext diagnosticsContext,
             T item,
+            ITrace trace,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (item == null)
             {
@@ -152,6 +168,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -162,8 +179,9 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             string id,
             PartitionKey partitionKey,
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -172,6 +190,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -179,9 +198,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             T item,
             string id,
+            ITrace trace,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (id == null)
             {
@@ -200,6 +220,7 @@ namespace Microsoft.Azure.Cosmos
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
                diagnosticsContext: diagnosticsContext,
+               trace: trace,
                cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -209,8 +230,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             string id,
             PartitionKey partitionKey,
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             return await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -219,6 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -226,8 +249,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             string id,
             PartitionKey partitionKey,
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             ResponseMessage response = await this.ProcessItemStreamAsync(
                 partitionKey: partitionKey,
@@ -236,6 +260,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -280,7 +305,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (queryDefinition == null)
             {
@@ -297,6 +322,7 @@ namespace Microsoft.Azure.Cosmos
                 // The user has scoped down to a physical partition or logical partition.
                 // In either case let the query execute as a passthrough.
                 QueryIterator passthroughQueryIterator = QueryIterator.Create(
+                    containerCore: this,
                     client: this.queryClient,
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
@@ -318,22 +344,21 @@ namespace Microsoft.Azure.Cosmos
             if (requestOptions.Properties != null
                 && requestOptions.Properties.TryGetValue("x-ms-query-partitionkey-definition", out object partitionKeyDefinitionObject))
             {
-                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
-                {
-                    partitionKeyDefinition = definition;
-                }
-                else
+                if (!(partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition))
                 {
                     throw new ArgumentException(
                         "partitionkeydefinition has invalid type",
                         nameof(partitionKeyDefinitionObject));
                 }
+
+                partitionKeyDefinition = definition;
             }
             else
             {
                 ContainerQueryProperties containerQueryProperties = await this.queryClient.GetCachedContainerQueryPropertiesAsync(
                     this.LinkUri,
                     requestOptions.PartitionKey,
+                    NoOpTrace.Singleton,
                     cancellationToken);
                 partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
             }
@@ -357,6 +382,7 @@ namespace Microsoft.Azure.Cosmos
             if (supported)
             {
                 QueryIterator queryIterator = QueryIterator.Create(
+                    containerCore: this,
                     client: this.queryClient,
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
@@ -401,7 +427,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
@@ -426,7 +452,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             return new CosmosLinqQuery<T>(
                 this,
@@ -444,7 +470,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             if (!(this.GetItemQueryStreamIterator(
                 feedRange,
@@ -513,7 +539,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(estimationDelegate));
             }
 
-            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            ChangeFeedEstimatorRunner changeFeedEstimatorCore = new ChangeFeedEstimatorRunner(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,
@@ -521,15 +547,37 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
+        public override ChangeFeedEstimator GetChangeFeedEstimator(
+            string processorName,
+            Container leaseContainer)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            return new ChangeFeedEstimatorCore(
+                processorName: processorName,
+                monitoredContainer: this,
+                leaseContainer: (ContainerInternal)leaseContainer);
+        }
+
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)
         {
             return new BatchCore(this, partitionKey);
         }
 
-        public override async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-            string containerRid = await this.GetRIDAsync(cancellationToken);
+            string containerRid = await this.GetCachedRIDAsync(
+                forceRefresh: false, 
+                cancellationToken: cancellationToken);
             IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
                         containerRid,
                         new Documents.Routing.Range<string>(
@@ -542,13 +590,33 @@ namespace Microsoft.Azure.Cosmos
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
-        internal override FeedIterator GetStandByFeedIterator(
-            ChangeFeedRequestOptions requestOptions = null)
+        public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+            ChangeFeedCrossFeedRangeState state,
+            ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
-            ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new ChangeFeedCrossFeedRangeAsyncEnumerable(
+                documentContainer,
+                changeFeedRequestOptions,
+                state);
+        }
+
+        public override FeedIterator GetStandByFeedIterator(
+            string continuationToken = null,
+            int? maxItemCount = null,
+            StandByFeedIteratorRequestOptions requestOptions = null)
+        {
+            StandByFeedIteratorRequestOptions cosmosQueryRequestOptions = requestOptions ?? new StandByFeedIteratorRequestOptions();
 
             return new StandByFeedIteratorCore(
                 clientContext: this.ClientContext,
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
                 container: this,
                 options: cosmosQueryRequestOptions);
         }
@@ -565,7 +633,7 @@ namespace Microsoft.Azure.Cosmos
             FeedRangeInternal feedRange,
             QueryRequestOptions requestOptions)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
+            requestOptions ??= new QueryRequestOptions();
 
             if (requestOptions.IsEffectivePartitionKeyRouting)
             {
@@ -579,14 +647,24 @@ namespace Microsoft.Azure.Cosmos
 
             if (sqlQuerySpec == null)
             {
-                return FeedRangeIteratorCore.Create(
-                    containerCore: this,
-                    continuation: continuationToken,
-                    feedRangeInternal: feedRange,
-                    options: requestOptions);
+                NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                    this,
+                    this.queryClient,
+                    diagnosticsContext: null,
+                    requestOptions);
+
+                DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+                return new ReadFeedIteratorCore(
+                    documentContainer: documentContainer,
+                    queryRequestOptions: requestOptions,
+                    continuationToken: continuationToken,
+                    pageSize: requestOptions.MaxItemCount ?? int.MaxValue,
+                    cancellationToken: default);
             }
 
             return QueryIterator.Create(
+                containerCore: this,
                 client: this.queryClient,
                 clientContext: this.ClientContext,
                 sqlQuerySpec: sqlQuerySpec,
@@ -600,6 +678,70 @@ namespace Microsoft.Azure.Cosmos
                 partitionedQueryExecutionInfo: null);
         }
 
+        public override FeedIteratorInternal GetReadFeedIterator(
+            QueryDefinition queryDefinition,
+            QueryRequestOptions queryRequestOptions,
+            string resourceLink,
+            ResourceType resourceType,
+            string continuationToken,
+            int pageSize)
+        {
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                CosmosDiagnosticsContext.Create(queryRequestOptions),
+                queryRequestOptions,
+                resourceLink: resourceLink,
+                resourceType: resourceType);
+
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            FeedIteratorInternal feedIterator;
+            if (queryDefinition != null)
+            {
+                feedIterator = QueryIterator.Create(
+                    containerCore: this,
+                    client: this.queryClient,
+                    clientContext: this.ClientContext,
+                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+                    continuationToken: continuationToken,
+                    feedRangeInternal: FeedRangeEpk.FullRange,
+                    queryRequestOptions: queryRequestOptions,
+                    resourceLink: resourceLink,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    forcePassthrough: false,
+                    partitionedQueryExecutionInfo: null);
+            }
+            else
+            {
+                feedIterator = new ReadFeedIteratorCore(
+                    documentContainer: documentContainer,
+                    queryRequestOptions: queryRequestOptions,
+                    continuationToken: continuationToken,
+                    pageSize: queryRequestOptions?.MaxItemCount ?? int.MaxValue,
+                    cancellationToken: default);
+            }
+
+            return feedIterator;
+        }
+
+        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+            ReadFeedCrossFeedRangeState state,
+            QueryRequestOptions queryRequestOptions = default)
+        {
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                this,
+                this.queryClient,
+                new CosmosDiagnosticsContextCore());
+            DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
+
+            return new ReadFeedCrossFeedRangeAsyncEnumerable(
+                documentContainer,
+                queryRequestOptions,
+                state);
+        }
+
         // Extracted partition key might be invalid as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
@@ -610,6 +752,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (diagnosticsContext == null)
@@ -626,6 +769,12 @@ namespace Microsoft.Azure.Cosmos
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
             {
+                PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                if (partitionKey.HasValue && partitionKey.Value != PartitionKey.None && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
+                {
+                    throw new ArgumentException(RMResources.MissingPartitionKeyValue);
+                }
+
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,
@@ -633,6 +782,7 @@ namespace Microsoft.Azure.Cosmos
                         operationType,
                         requestOptions,
                         diagnosticsContext: diagnosticsContext,
+                        trace: trace,
                         cancellationToken: cancellationToken);
             }
 
@@ -651,6 +801,7 @@ namespace Microsoft.Azure.Cosmos
                     operationType,
                     requestOptions,
                     diagnosticsContext: diagnosticsContext,
+                    trace: trace,
                     cancellationToken: cancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
@@ -678,6 +829,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (diagnosticsContext == null)
@@ -691,7 +843,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerInternal.ValidatePartitionKey(partitionKey, requestOptions);
-            Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
+            string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -704,6 +856,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: null,
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return responseMessage;
@@ -711,7 +864,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             if (!stream.CanSeek)
             {
@@ -733,21 +886,22 @@ namespace Microsoft.Azure.Cosmos
                 IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                 CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-                string[] tokens = await this.GetPartitionKeyPathTokensAsync(cancellation);
-                for (int i = 0; i < tokens.Length - 1; i++)
+                IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                List<CosmosElement> cosmosElementList = new List<CosmosElement>(tokenslist.Count);
+
+                foreach (IReadOnlyList<string> tokenList in tokenslist)
                 {
-                    if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                    if (ContainerCore.TryParseTokenListForElement(pathTraversal, tokenList, out CosmosElement element))
                     {
-                        return PartitionKey.None;
+                        cosmosElementList.Add(element);
+                    }
+                    else
+                    {
+                        cosmosElementList.Add(null);
                     }
                 }
 
-                if (!pathTraversal.TryGetValue(tokens[tokens.Length - 1], out CosmosElement partitionKeyValue))
-                {
-                    return PartitionKey.None;
-                }
-
-                return this.CosmosElementToPartitionKeyObject(partitionKeyValue);
+                return ContainerCore.CosmosElementToPartitionKeyObject(cosmosElementList);
             }
             finally
             {
@@ -788,38 +942,60 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
+        private static bool TryParseTokenListForElement(CosmosObject pathTraversal, IReadOnlyList<string> tokens, out CosmosElement result)
         {
-            // TODO: Leverage original serialization and avoid re-serialization (bug)
-            switch (cosmosElement.Type)
+            result = null;
+            for (int i = 0; i < tokens.Count - 1; i++)
             {
-                case CosmosElementType.String:
-                    CosmosString cosmosString = cosmosElement as CosmosString;
-                    return new PartitionKey(cosmosString.Value);
-
-                case CosmosElementType.Number:
-                    CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    double value = Number64.ToDouble(cosmosNumber.Value);
-                    return new PartitionKey(value);
-
-                case CosmosElementType.Boolean:
-                    CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                    return new PartitionKey(cosmosBool.Value);
-
-                case CosmosElementType.Null:
-                    return PartitionKey.Null;
-
-                default:
-                    throw new ArgumentException(
-                        string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
+                if (!pathTraversal.TryGetValue(tokens[i], out pathTraversal))
+                {
+                    return false;
+                }
             }
+
+            if (!pathTraversal.TryGetValue(tokens[tokens.Count - 1], out result))
+            {
+                return false;
+            }
+
+            return true;
         }
 
-        private Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
+        private static PartitionKey CosmosElementToPartitionKeyObject(IReadOnlyList<CosmosElement> cosmosElementList)
+        {
+            PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
+
+            foreach (CosmosElement cosmosElement in cosmosElementList)
+            {
+                if (cosmosElement == null)
+                {
+                    partitionKeyBuilder.AddNoneType();
+                }
+                else
+                {
+                    _ = cosmosElement switch
+                    {
+                        CosmosString cosmosString => partitionKeyBuilder.Add(cosmosString.Value),
+                        CosmosNumber cosmosNumber => partitionKeyBuilder.Add(Number64.ToDouble(cosmosNumber.Value)),
+                        CosmosBoolean cosmosBoolean => partitionKeyBuilder.Add(cosmosBoolean.Value),
+                        CosmosNull _ => partitionKeyBuilder.AddNullValue(),
+                        _ => throw new ArgumentException(
+                               string.Format(
+                                   CultureInfo.InvariantCulture,
+                                   RMResources.UnsupportedPartitionKeyComponentValue,
+                                   cosmosElement)),
+                    };
+                }
+            }
+
+            return partitionKeyBuilder.Build();
+        }
+
+        private string GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
-                return resourceUri;
+                return resourceUri.OriginalString;
             }
 
             switch (operationType)
@@ -840,9 +1016,9 @@ namespace Microsoft.Azure.Cosmos
         private string GetResourceSegmentUriWithoutId()
         {
             // StringBuilder is roughly 2x faster than string.Format
-            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.OriginalString.Length +
+            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.Length +
                                                             Paths.DocumentsPathSegment.Length + 2);
-            stringBuilder.Append(this.LinkUri.OriginalString);
+            stringBuilder.Append(this.LinkUri);
             stringBuilder.Append("/");
             stringBuilder.Append(Paths.DocumentsPathSegment);
             stringBuilder.Append("/");
@@ -858,9 +1034,90 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting a item in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
-        private Uri ContcatCachedUriWithId(string resourceId)
+        private string ContcatCachedUriWithId(string resourceId)
         {
-            return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+            Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
+            return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
+        }
+
+        public async Task<ItemResponse<T>> PatchItemAsync<T>(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ITrace trace,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                diagnosticsContext,
+                id,
+                partitionKey,
+                patchOperations,
+                trace,
+                requestOptions,
+                cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
+        public Task<ResponseMessage> PatchItemStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            ITrace trace,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (diagnosticsContext == null)
+            {
+                throw new ArgumentNullException(nameof(diagnosticsContext));
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            Stream patchOperationsStream;
+            using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
+            {
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.GetResourceUri(
+                    requestOptions,
+                    OperationType.Patch,
+                    id),
+                resourceType: ResourceType.Document,
+                operationType: OperationType.Patch,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                itemId: id,
+                streamPayload: patchOperationsStream,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                trace: trace,
+                cancellationToken: cancellationToken);
         }
     }
 }

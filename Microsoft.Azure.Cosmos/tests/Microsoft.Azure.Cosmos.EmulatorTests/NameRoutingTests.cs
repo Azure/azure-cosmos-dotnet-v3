@@ -621,12 +621,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 #endif
         [TestMethod]
-        public void VerifyGatewayNameIdCacheRefreshDirectGateway()
+        public async Task VerifyGatewayNameIdCacheRefreshDirectGateway()
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
             // Ignoring it until this is fixed
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
-            this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client).Wait();
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            await this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client);
         }
 
         enum FabircServiceReuseType
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (database != null)
                 {
-                    await database.DeleteAsync();
+                    using ResponseMessage message = await database.DeleteStreamAsync();
                 }
             }
         }
@@ -1917,7 +1917,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 document,
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
-                new DictionaryNameValueCollection(),
+                new StoreRequestNameValueCollection(),
                 SerializationFormattingPolicy.None))
             {
                 request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();

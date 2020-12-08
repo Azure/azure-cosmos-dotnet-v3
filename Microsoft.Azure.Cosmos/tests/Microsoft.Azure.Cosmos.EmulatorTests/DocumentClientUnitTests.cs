@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Net.Http;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -77,6 +79,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             mockStoreModel.Verify(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)), Times.Exactly(expectedExecutionTimes));
             Assert.IsTrue(throttled);
+        }
+
+        [TestMethod]
+        public async Task QueryPartitionProviderSingletonTestAsync()
+        {
+            DocumentClient client = new DocumentClient(
+                new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
+                ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
+                new ConnectionPolicy());
+
+            Task<QueryPartitionProvider> queryPartitionProviderTaskOne = client.QueryPartitionProvider;
+            Task<QueryPartitionProvider> queryPartitionProviderTaskTwo = client.QueryPartitionProvider;
+            Assert.AreSame(queryPartitionProviderTaskOne, queryPartitionProviderTaskTwo, "QueryPartitionProvider property is not a singleton");
+            Assert.AreSame(await queryPartitionProviderTaskOne, await queryPartitionProviderTaskTwo, "QueryPartitionProvider property is not a singleton");
         }
 
         private void TestRetryOnThrottled(int? numberOfRetries)

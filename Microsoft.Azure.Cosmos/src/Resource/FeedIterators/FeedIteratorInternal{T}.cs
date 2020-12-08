@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Internal API for FeedIterator<typeparamref name="T"/> for inheritance and mocking purposes.
@@ -19,6 +21,13 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal<T> : FeedIterator<T>
     {
+        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public abstract Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken);
+
         public abstract CosmosElement GetCosmosElementContinuationToken();
     }
 }

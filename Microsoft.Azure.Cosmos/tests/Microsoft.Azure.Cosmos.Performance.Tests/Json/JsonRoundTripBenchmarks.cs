@@ -1,5 +1,4 @@
-﻿
-namespace Microsoft.Azure.Cosmos.Json
+﻿namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
@@ -45,9 +44,6 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 SerializationFormat.Text => JsonReader.Create(payload.Text),
                 SerializationFormat.Binary => JsonReader.Create(payload.Binary),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonReader.Create(
-                    payload.BinaryWithDictionaryEncoding.binary,
-                    payload.BinaryWithDictionaryEncoding.dictionary),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBReader.CreateFromBuffer(payload.Text),
                 _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
             };
@@ -56,9 +52,6 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
-                    JsonSerializationFormat.Binary,
-                    new JsonStringDictionary(capacity: 128)),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
@@ -77,9 +70,6 @@ namespace Microsoft.Azure.Cosmos.Json
             IJsonNavigator navigator = sourceFormat switch
             {
                 SerializationFormat.Text => JsonNavigator.Create(payload.Text),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonNavigator.Create(
-                    payload.BinaryWithDictionaryEncoding.binary,
-                    payload.BinaryWithDictionaryEncoding.dictionary),
                 SerializationFormat.Binary => JsonNavigator.Create(payload.Binary),
                 _ => throw new ArgumentException($"Unexpected {nameof(sourceFormat)} of type: '{sourceFormat}'"),
             };
@@ -88,14 +78,11 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 SerializationFormat.Text => JsonWriter.Create(JsonSerializationFormat.Text),
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
-                SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
-                    JsonSerializationFormat.Binary,
-                    new JsonStringDictionary(capacity: 128)),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
 
-            navigator.WriteTo(navigator.GetRootNode(), writer);
+            navigator.WriteNode(navigator.GetRootNode(), writer);
         }
 
         public enum SerializationFormat
@@ -111,19 +98,16 @@ namespace Microsoft.Azure.Cosmos.Json
             private CurratedDocsPayload(
                 string name,
                 ReadOnlyMemory<byte> text,
-                ReadOnlyMemory<byte> binary,
-                (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) binaryWithDictionaryEncoding)
+                ReadOnlyMemory<byte> binary)
             {
                 this.Name = name;
                 this.Text = text;
                 this.Binary = binary;
-                this.BinaryWithDictionaryEncoding = binaryWithDictionaryEncoding;
             }
 
             public string Name { get; }
             public ReadOnlyMemory<byte> Text { get; }
             public ReadOnlyMemory<byte> Binary { get; }
-            internal (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
 
             public static CurratedDocsPayload CreateFromCurratedDocs(string name)
             {
@@ -132,20 +116,25 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException(nameof(name));
                 }
 
-                string path = $"TestJsons/{name}.json";
-                string json = TextFileConcatenation.ReadMultipartFile(path);
-                json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
+                try
+                {
+                    string path = $"TestJsons/{name}.json";
+                    string json = TextFileConcatenation.ReadMultipartFile(path);
+                    json = JsonTestUtils.RandomSampleJson(json, seed: 42, maxNumberOfItems: 100);
 
-                ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
-                ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
-                ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
+                    ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
+                    ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
 
-                return new CurratedDocsPayload(
-                    name: name,
-                    text: text,
-                    binary: binary,
-                    binaryWithDictionaryEncoding: (dictionaryEncodedBinary, jsonStringDictionary));
+                    return new CurratedDocsPayload(
+                        name: name,
+                        text: text,
+                        binary: binary);
+                }
+                catch (Exception)
+                {
+                    // initializer can not throw exception:
+                    return default;
+                }
             }
 
             public override string ToString()

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Cosmos
         public RequestMessage(HttpMethod method, Uri requestUri)
         {
             this.Method = method;
-            this.RequestUri = requestUri;
+            this.RequestUriString = requestUri?.OriginalString;
+            this.InternalRequestUri = requestUri;
             this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
@@ -50,16 +52,19 @@ namespace Microsoft.Azure.Cosmos
         /// Create a <see cref="RequestMessage"/>
         /// </summary>
         /// <param name="method">The http method</param>
-        /// <param name="requestUri">The requested URI</param>
+        /// <param name="requestUriString">The requested URI</param>
         /// <param name="diagnosticsContext">The diagnostics object used to track the request</param>
+        /// /// <param name="trace">The trace node to append traces to.</param>
         internal RequestMessage(
             HttpMethod method,
-            Uri requestUri,
-            CosmosDiagnosticsContext diagnosticsContext)
+            string requestUriString,
+            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace)
         {
             this.Method = method;
-            this.RequestUri = requestUri;
+            this.RequestUriString = requestUriString;
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         /// <summary>
@@ -70,7 +75,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the <see cref="Uri"/> for the current request.
         /// </summary>
-        public virtual Uri RequestUri { get; private set; }
+        public virtual Uri RequestUri
+        {
+            get
+            {
+                if (this.InternalRequestUri == null)
+                {
+                    this.InternalRequestUri = new Uri(this.RequestUriString, UriKind.Relative);
+                }
+
+                return this.InternalRequestUri;
+            }
+        }
 
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
@@ -90,7 +106,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal string RequestUriString { get; }
+
+        internal Uri InternalRequestUri { get; private set; }
+
         internal CosmosDiagnosticsContext DiagnosticsContext { get; }
+
+        internal ITrace Trace { get; }
 
         internal RequestOptions RequestOptions { get; set; }
 
@@ -117,8 +139,8 @@ namespace Microsoft.Azure.Cosmos
         /// where the partition key range needs to be computed. 
         /// </summary>
         internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
-            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) &&
-            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
+            this.ResourceType.IsPartitioned() && this.PartitionKeyRangeId == null &&
+            this.Headers.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -237,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)

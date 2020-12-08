@@ -8,24 +8,24 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
-        private readonly QueryRequestOptions queryRequestOptions;
         private readonly object diagnosticLock = new object();
         private CosmosDiagnosticsContext diagnosticsContext;
 
         public CosmosQueryContextCore(
             CosmosQueryClient client,
-            QueryRequestOptions queryRequestOptions,
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
-            Uri resourceLink,
+            string resourceLink,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -42,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery,
                 containerResourceId)
         {
-            this.queryRequestOptions = queryRequestOptions;
             this.diagnosticsContext = diagnosticsContext;
         }
 
@@ -57,47 +56,45 @@ namespace Microsoft.Azure.Cosmos.Query
             lock (this.diagnosticLock)
             {
                 CosmosDiagnosticsContext current = this.diagnosticsContext;
-                this.diagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+                this.diagnosticsContext = CosmosDiagnosticsContext.Create(new RequestOptions());
                 return current;
             }
         }
 
-        internal override Task<QueryResponseCore> ExecuteQueryAsync(
+        internal override Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
+            QueryRequestOptions queryRequestOptions,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
+            FeedRange feedRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            QueryRequestOptions requestOptions = null;
-            if (this.queryRequestOptions != null)
-            {
-                requestOptions = this.queryRequestOptions.Clone();
-            }    
-
             return this.QueryClient.ExecuteItemQueryAsync(
                 resourceUri: this.ResourceLink,
                 resourceType: this.ResourceTypeEnum,
                 operationType: this.OperationTypeEnum,
                 clientQueryCorrelationId: this.CorrelatedActivityId,
-                requestOptions: requestOptions,
+                requestOptions: queryRequestOptions,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
-                partitionKeyRange: partitionKeyRange,
+                feedRange: feedRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 queryPageDiagnostics: this.AddQueryPageDiagnostic,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
-            Uri resourceUri,
+            string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.QueryClient.ExecuteQueryPlanRequestAsync(
@@ -108,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKey,
                 supportedQueryFeatures,
                 this.diagnosticsContext,
+                trace,
                 cancellationToken);
         }
 

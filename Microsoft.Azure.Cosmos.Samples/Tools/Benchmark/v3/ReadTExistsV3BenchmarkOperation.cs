@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
-    internal class ReadTExistsV3BenchmarkOperation : IBenchmarkOperatrion
+    internal class ReadTExistsV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -50,17 +50,17 @@ namespace CosmosBenchmark
                 throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
             }
 
-            double ruCharges = itemResponse.Headers.RequestCharge;
             return new OperationResult()
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
-                RuCharges = ruCharges,
-                lazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                RuCharges = itemResponse.Headers.RequestCharge,
+                CosmosDiagnostics = itemResponse.Diagnostics,
+                LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
             };
         }
 
-        public async Task Prepare()
+        public async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
@@ -71,11 +71,14 @@ namespace CosmosBenchmark
                 this.sampleJObject["id"] = this.nextExecutionItemId;
                 this.sampleJObject[this.partitionKeyPath] = this.nextExecutionItemPartitionKey;
 
-                using (Stream inputStream = JsonHelper.ToStream(this.sampleJObject))
+                using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
                     ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                             inputStream,
                             new Microsoft.Azure.Cosmos.PartitionKey(this.nextExecutionItemPartitionKey));
+
+                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
                         throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");

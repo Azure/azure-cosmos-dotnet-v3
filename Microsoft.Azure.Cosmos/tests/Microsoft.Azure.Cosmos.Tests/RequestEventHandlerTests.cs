@@ -81,9 +81,8 @@ namespace Microsoft.Azure.Cosmos
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
             TransportClient mockTransportClient = this.GetMockTransportClient();
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
-            var connectionStateListener = new ConnectionStateListener(null);
 
-            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer, connectionStateListener);
+            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
@@ -112,12 +111,11 @@ namespace Microsoft.Azure.Cosmos
 
             // setup mock to return respone
             StoreResponse mockStoreResponse = new StoreResponse();
-            mockStoreResponse.Headers = new DictionaryNameValueCollection(
-                new NameValueCollection()
+            mockStoreResponse.Headers = new StoreRequestNameValueCollection
                 {
                     { WFConstants.BackendHeaders.LSN, "110" },
                     { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
-                });
+                };
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<Uri>(),
@@ -149,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<DocumentServiceRequest>(),
                     It.IsAny<bool>(),
                     new CancellationToken()))
-                    .ReturnsAsync(new PartitionAddressInformation(addressInformation, null, null));
+                    .ReturnsAsync(new PartitionAddressInformation(addressInformation));
 
             return mockAddressCache;
         }

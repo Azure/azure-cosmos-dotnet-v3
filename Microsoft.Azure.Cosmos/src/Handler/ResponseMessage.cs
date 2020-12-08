@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Documents;
 
@@ -163,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal string GetResourceAddress()
         {
-            string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
+            string resourceLink = this.RequestMessage?.RequestUriString;
             if (PathsHelper.TryParsePathSegments(
                 resourceLink,
                 out bool isFeed,

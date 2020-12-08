@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos permission response

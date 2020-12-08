@@ -3,8 +3,11 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -15,76 +18,36 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>, IEquatable<CosmosObject>, IComparable<CosmosObject>
     {
         private sealed class EagerCosmosObject : CosmosObject
         {
-            private readonly List<KeyValuePair<string, CosmosElement>> properties;
+            private readonly Dictionary<string, CosmosElement> dictionary;
 
-            public EagerCosmosObject(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
+            public EagerCosmosObject(IReadOnlyDictionary<string, CosmosElement> dictionary)
             {
-                if (properties == null)
-                {
-                    throw new ArgumentNullException(nameof(properties));
-                }
-
-                this.properties = new List<KeyValuePair<string, CosmosElement>>(properties);
+                this.dictionary = new Dictionary<string, CosmosElement>(dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
             }
 
-            public override CosmosElement this[string key]
-            {
-                get
-                {
-                    if (!this.TryGetValue(key, out CosmosElement value))
-                    {
-                        throw new KeyNotFoundException($"Failed to find key: {key}");
-                    }
+            public override CosmosElement this[string key] => this.dictionary[key];
 
-                    return value;
-                }
-            }
+            public override int Count => this.dictionary.Count;
 
-            public override IEnumerable<string> Keys => this.properties.Select(kvp => kvp.Key);
+            public override KeyCollection Keys => new KeyCollection(this.dictionary.Keys);
 
-            public override IEnumerable<CosmosElement> Values => this.properties.Select(kvp => kvp.Value);
+            public override ValueCollection Values => new ValueCollection(this.dictionary.Values);
 
-            public override int Count => this.properties.Count;
+            public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
 
-            public override bool ContainsKey(string key)
-            {
-                return this.TryGetValue(key, out CosmosElement unused);
-            }
+            public override Enumerator GetEnumerator() => new Enumerator(this.dictionary.GetEnumerator());
 
-            public override IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator()
-            {
-                return this.properties.GetEnumerator();
-            }
-
-            public override bool TryGetValue(string key, out CosmosElement value)
-            {
-                foreach (KeyValuePair<string, CosmosElement> property in this.properties)
-                {
-                    if (property.Key == key)
-                    {
-                        value = property.Value;
-                        return true;
-                    }
-                }
-
-                value = null;
-                return false;
-            }
+            public override bool TryGetValue(string key, out CosmosElement value) => this.dictionary.TryGetValue(key, out value);
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
-
                 jsonWriter.WriteObjectStart();
 
-                foreach (KeyValuePair<string, CosmosElement> kvp in this.properties)
+                foreach (KeyValuePair<string, CosmosElement> kvp in this.dictionary)
                 {
                     jsonWriter.WriteFieldName(kvp.Key);
                     kvp.Value.WriteTo(jsonWriter);

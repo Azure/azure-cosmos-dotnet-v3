@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
@@ -376,6 +375,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         [TestMethod]
         [Owner("brchon")]
+        [Ignore] // This test takes too long
         public void CountriesTest()
         {
             JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("countries", false);
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             path = string.Format("TestJsons/{0}", path);
             string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
-            json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 1);
+            json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 10);
 #endif
 
             JsonNavigatorTests.VerifyNavigator(json, performExtraChecks);
@@ -519,22 +519,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     byte[] binaryInput = JsonTestUtils.ConvertTextToBinary(input);
                     IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
 
-                    // Test binary + user string encoding
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
-                    byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
-                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out _))
-                    {
-                        Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
-                    }
-
-                    IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
-
                     // Test
-                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator, binaryNavigatorWithUserStringEncoding })
+                    foreach (IJsonNavigator jsonNavigator in new IJsonNavigator[] { textNavigator, binaryNavigator })
                     {
                         IJsonNavigatorNode rootNode = jsonNavigator.GetRootNode();
                         JsonToken[] tokensFromNavigator = JsonNavigatorTests.GetTokensFromNode(rootNode, jsonNavigator, performExtraChecks);
-                        Assert.IsTrue(tokensFromNavigator.SequenceEqual(tokensFromReader));
+                        Assert.AreEqual(tokensFromNavigator.Length, tokensFromReader.Length);
+                        IEnumerable<(JsonToken, JsonToken)> zippedTokens = tokensFromNavigator.Zip(tokensFromReader, (first, second) => (first, second));
+                        foreach ((JsonToken tokenFromNavigator, JsonToken tokenFromReader) in zippedTokens)
+                        {
+                            if (!tokenFromNavigator.Equals(tokenFromReader))
+                            {
+                                Assert.Fail();
+                            }
+                        }
 
                         // Test materialize
                         JToken materializedToken = CosmosElement.Dispatch(jsonNavigator, rootNode).Materialize<JToken>();

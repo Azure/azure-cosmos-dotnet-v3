@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
             return await feedRange.GetEffectiveRangesAsync(
                 partitionKeyRangeCache,
-                await this.container.GetRIDAsync(cancellationToken),
+                await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                 partitionKeyDefinition);
         }
 
@@ -36,15 +36,15 @@ namespace Microsoft.Azure.Cosmos
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             return await feedRange.GetEffectiveRangesAsync(
                 routingMapProvider: partitionKeyRangeCache,
-                containerRid: await this.container.GetRIDAsync(cancellationToken),
+                containerRid: await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                 partitionKeyDefinition: null);
         }
 
-        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEPK feedRange, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEpk feedRange, CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collectionRid: await this.container.GetRIDAsync(cancellationToken),
+                collectionRid: await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
                 range: feedRange.Range,
                 forceRefresh: false);
             return pkRanges.Select(pkRange => pkRange.ToRange()).ToList();

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
@@ -61,14 +62,32 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.Equals(effectivePartitionKey);
         }
 
-        public bool Equals(PartitionKeyHash other)
+        public bool Equals(PartitionKeyHash other) => this.Value.Equals(other.Value);
+
+        public override int GetHashCode() => this.Value.GetHashCode();
+
+        public override string ToString() => this.Value.ToString();
+
+        public static bool TryParse(string value, out PartitionKeyHash parsedValue)
         {
-            return this.Value.Equals(other.Value);
+            if (!UInt128.TryParse(value, out UInt128 uInt128))
+            {
+                parsedValue = default;
+                return false;
+            }
+
+            parsedValue = new PartitionKeyHash(uInt128);
+            return true;
         }
 
-        public override int GetHashCode()
+        public static PartitionKeyHash Parse(string value)
         {
-            return this.Value.GetHashCode();
+            if (!PartitionKeyHash.TryParse(value, out PartitionKeyHash parsedValue))
+            {
+                throw new FormatException();
+            }
+
+            return parsedValue;
         }
 
         public static class V1
@@ -198,5 +217,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return new PartitionKeyHash(hash);
             }
         }
+
+        public static bool operator ==(PartitionKeyHash left, PartitionKeyHash right) => left.Equals(right);
+
+        public static bool operator !=(PartitionKeyHash left, PartitionKeyHash right) => !(left == right);
+
+        public static bool operator <(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) < 0;
+
+        public static bool operator <=(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) <= 0;
+
+        public static bool operator >(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) > 0;
+
+        public static bool operator >=(PartitionKeyHash left, PartitionKeyHash right) => left.CompareTo(right) >= 0;
     }
 }

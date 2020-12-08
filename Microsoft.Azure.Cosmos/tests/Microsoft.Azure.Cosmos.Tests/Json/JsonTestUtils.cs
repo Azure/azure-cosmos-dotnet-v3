@@ -8,19 +8,19 @@
 
     internal static class JsonTestUtils
     {
-        public static byte[] ConvertTextToBinary(string text, JsonStringDictionary jsonStringDictionary = null)
+        public static byte[] ConvertTextToBinary(string text)
         {
-            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
+            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
-            binaryWriter.WriteAll(textReader);
+            textReader.WriteAll(binaryWriter);
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, JsonStringDictionary jsonStringDictionary = null)
+        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary)
         {
-            IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
+            IJsonReader binaryReader = JsonReader.Create(binary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            textWriter.WriteAll(binaryReader);
+            binaryReader.WriteAll(textWriter);
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 

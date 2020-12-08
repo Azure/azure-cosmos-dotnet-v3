@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class InsertV2BenchmarkOperation : IBenchmarkOperatrion
+    internal class InsertV2BenchmarkOperation : IBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly Uri containerUri;
@@ -54,11 +54,11 @@ namespace CosmosBenchmark
                 DatabseName = databsaeName,
                 ContainerName = containerName,
                 RuCharges = ruCharges,
-                lazyDiagnostics = () => itemResponse.RequestDiagnosticsString,
+                LazyDiagnostics = () => itemResponse.RequestDiagnosticsString,
             };
         }
 
-        public Task Prepare()
+        public Task PrepareAsync()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
 

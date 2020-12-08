@@ -2,10 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 33
+// This is auto-generated code. Modify: CosmosNumberCodeGenerator.tt: 45
 
 namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 {
+#nullable enable
+
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -17,10 +19,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #else
     internal
 #endif
-    abstract partial class CosmosUInt32 : CosmosNumber
+    abstract partial class CosmosUInt32 : CosmosNumber, IEquatable<CosmosUInt32>, IComparable<CosmosUInt32>
     {
         protected CosmosUInt32()
-            : base(CosmosNumberType.UInt32)
+            : base()
         {
         }
 
@@ -30,31 +32,41 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override void Accept(ICosmosNumberVisitor cosmosNumberVisitor)
         {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
-
             cosmosNumberVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(ICosmosNumberVisitor<TResult> cosmosNumberVisitor)
+        {
+            return cosmosNumberVisitor.Visit(this);
         }
 
         public override TOutput Accept<TArg, TOutput>(ICosmosNumberVisitor<TArg, TOutput> cosmosNumberVisitor, TArg input)
         {
-            if (cosmosNumberVisitor == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosNumberVisitor));
-            }
-
             return cosmosNumberVisitor.Visit(this, input);
+        }
+
+        public override bool Equals(CosmosNumber cosmosNumber)
+        {
+            return cosmosNumber is CosmosUInt32 cosmosUInt32 && this.Equals(cosmosUInt32);
+        }
+
+        public bool Equals(CosmosUInt32 cosmosUInt32)
+        {
+            return this.GetValue() == cosmosUInt32.GetValue();
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)MurmurHash3.Hash32(this.GetValue(), 3771427877);
+        }
+
+        public int CompareTo(CosmosUInt32 cosmosUInt32)
+        {
+            return this.GetValue().CompareTo(cosmosUInt32.GetValue());
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
         {
-            if (jsonWriter == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonWriter)}");
-            }
-
             jsonWriter.WriteUInt32Value(this.GetValue());
         }
 

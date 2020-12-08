@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos
     public class TransactionalBatchResponse : IReadOnlyList<TransactionalBatchOperationResult>, IDisposable
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
-        private bool isDisposed;
-
         private List<TransactionalBatchOperationResult> results;
 
         /// <summary>
@@ -44,9 +42,7 @@ namespace Microsoft.Azure.Cosmos
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
-                  requestCharge: 0,
-                  retryAfter: null,
-                  activityId: Guid.Empty.ToString(),
+                  new Headers(),
                   diagnosticsContext: diagnosticsContext,
                   operations: operations,
                   serializer: null)
@@ -65,9 +61,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
-            double requestCharge,
-            TimeSpan? retryAfter,
-            string activityId,
+            Headers headers,
             CosmosDiagnosticsContext diagnosticsContext,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializerCore serializer)
@@ -77,17 +71,20 @@ namespace Microsoft.Azure.Cosmos
             this.ErrorMessage = errorMessage;
             this.Operations = operations;
             this.SerializerCore = serializer;
-            this.RequestCharge = requestCharge;
-            this.RetryAfter = retryAfter;
-            this.ActivityId = activityId;
+            this.Headers = headers;
             this.Diagnostics = diagnosticsContext.Diagnostics;
             this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
         /// <summary>
+        /// Gets the current HTTP headers.
+        /// </summary>
+        public virtual Headers Headers { get; internal set; }
+
+        /// <summary>
         /// Gets the ActivityId that identifies the server request made to execute the batch.
         /// </summary>
-        public virtual string ActivityId { get; }
+        public virtual string ActivityId => this.Headers?.ActivityId;
 
         /// <summary>
         /// Gets the request charge for the batch request.
@@ -95,12 +92,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; internal set; }
+        public virtual double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <summary>
         /// Gets the amount of time to wait before retrying this or any other request within Cosmos container or collection due to throttling.
         /// </summary>
-        public virtual TimeSpan? RetryAfter { get; }
+        public virtual TimeSpan? RetryAfter => this.Headers?.RetryAfter;
 
         /// <summary>
         /// Gets the completion status code of the batch request.
@@ -149,13 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="index">0-based index of the operation in the batch whose result needs to be returned.</param>
         /// <returns>Result of operation at the provided index in the batch.</returns>
-        public virtual TransactionalBatchOperationResult this[int index]
-        {
-            get
-            {
-                return this.results[index];
-            }
-        }
+        public virtual TransactionalBatchOperationResult this[int index] => this.results[index];
 
         /// <summary>
         /// Gets the result of the operation at the provided index in the batch - the returned result has a Resource of provided type.
@@ -167,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
         {
             TransactionalBatchOperationResult result = this.results[index];
 
-            T resource = default(T);
+            T resource = default;
             if (result.ResourceStream != null)
             {
                 resource = this.SerializerCore.FromStream<T>(result.ResourceStream);
@@ -205,7 +196,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc />
@@ -252,9 +242,7 @@ namespace Microsoft.Azure.Cosmos
                                 HttpStatusCode.InternalServerError,
                                 SubStatusCodes.Unknown,
                                 ClientResources.ServerResponseDeserializationFailure,
-                                responseMessage.Headers.RequestCharge,
-                                responseMessage.Headers.RetryAfter,
-                                responseMessage.Headers.ActivityId,
+                                responseMessage.Headers,
                                 responseMessage.DiagnosticsContext,
                                 serverRequest.Operations,
                                 serializer);
@@ -268,9 +256,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.StatusCode,
                         responseMessage.Headers.SubStatusCode,
                         responseMessage.ErrorMessage,
-                        responseMessage.Headers.RequestCharge,
-                        responseMessage.Headers.RetryAfter,
-                        responseMessage.Headers.ActivityId,
+                        responseMessage.Headers,
                         responseMessage.DiagnosticsContext,
                         serverRequest.Operations,
                         serializer);
@@ -286,9 +272,7 @@ namespace Microsoft.Azure.Cosmos
                             HttpStatusCode.InternalServerError,
                             SubStatusCodes.Unknown,
                             ClientResources.InvalidServerResponse,
-                            responseMessage.Headers.RequestCharge,
-                            responseMessage.Headers.RetryAfter,
-                            responseMessage.Headers.ActivityId,
+                            responseMessage.Headers,
                             responseMessage.DiagnosticsContext,
                             serverRequest.Operations,
                             serializer);
@@ -341,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
             int resizerInitialCapacity = (int)content.Length;
 
             Result res = await content.ReadRecordIOAsync(
-                record =>
+                (Func<ReadOnlyMemory<byte>, Result>)(record =>
                 {
                     Result r = TransactionalBatchOperationResult.ReadOperationResult(record, out TransactionalBatchOperationResult operationResult);
                     if (r != Result.Success)
@@ -351,7 +335,7 @@ namespace Microsoft.Azure.Cosmos
 
                     results.Add(operationResult);
                     return r;
-                },
+                }),
                 resizer: new MemorySpanResizer<byte>(resizerInitialCapacity));
 
             if (res != Result.Success)
@@ -382,14 +366,13 @@ namespace Microsoft.Azure.Cosmos
                 responseStatusCode,
                 responseSubStatusCode,
                 responseMessage.ErrorMessage,
-                responseMessage.Headers.RequestCharge,
-                responseMessage.Headers.RetryAfter,
-                responseMessage.Headers.ActivityId,
+                responseMessage.Headers,
                 responseMessage.DiagnosticsContext,
                 serverRequest.Operations,
-                serializer);
-
-            response.results = results;
+                serializer)
+            {
+                results = results
+            };
             return response;
         }
 
@@ -399,9 +382,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">Indicates whether to dispose managed resources or not.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !this.isDisposed)
+            if (disposing)
             {
-                this.isDisposed = true;
                 if (this.Operations != null)
                 {
                     foreach (ItemBatchOperation operation in this.Operations)

@@ -11,12 +11,12 @@ namespace CosmosBenchmark
     {
         public static IExecutionStrategy StartNew(
             BenchmarkConfig config,
-            Func<IBenchmarkOperatrion> benchmarkOperation)
+            Func<IBenchmarkOperation> benchmarkOperation)
         {
             return new ParallelExecutionStrategy(benchmarkOperation);
         }
 
-        public Task ExecuteAsync(
+        public Task<RunSummary> ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFalures,

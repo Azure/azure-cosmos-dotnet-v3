@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
     using System.Net.Sockets;
     using System.Threading;
@@ -13,6 +15,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -25,16 +29,69 @@ namespace Microsoft.Azure.Cosmos
             return ((int)httpStatusCode >= 200) && ((int)httpStatusCode <= 299);
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
+        public static void Add(this INameValueCollection nameValueCollection, string headerName, IEnumerable<string> values)
+        {
+            if (headerName == null)
+            {
+                throw new ArgumentNullException(nameof(headerName));
+            }
+
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            nameValueCollection.Add(headerName, string.Join(",", values));
+        }
+
+        public static T GetHeaderValue<T>(this INameValueCollection nameValueCollection, string key)
+        {
+            string value = nameValueCollection[key];
+
+            if (string.IsNullOrEmpty(value))
+            {
+                return default;
+            }
+
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.Parse(value, CultureInfo.InvariantCulture);
+            }
+
+            return (T)(object)value;
+        }
+
+        internal static ResponseMessage ToCosmosResponseMessage(
+            this DocumentServiceResponse documentServiceResponse, 
+            RequestMessage requestMessage,
+            RequestChargeTracker requestChargeTracker,
+            ITrace trace)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
-            Headers headers = documentServiceResponse.Headers.ToCosmosHeaders();
+            Headers headers = new Headers(documentServiceResponse.Headers);
+
+            if (documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
+            {
+                CosmosDiagnosticsTraceDatum clientSideRequestStatisticsTraceDatum = new CosmosDiagnosticsTraceDatum(cosmosClientSideRequestStatistics);
+                trace.AddDatum(nameof(CosmosClientSideRequestStatistics), clientSideRequestStatisticsTraceDatum);
+            }
+
+            if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)
+            {
+                headers.RequestCharge = requestChargeTracker.TotalRequestCharge;
+                DefaultTrace.TraceWarning(
+                        "Header RequestCharge {0} is less than the RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
+                        headers.RequestCharge,
+                        requestChargeTracker.TotalRequestCharge,
+                        requestMessage?.RequestUriString,
+                        requestMessage?.OperationType);
+            }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
             if (!(documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics clientSideRequestStatistics) ||
                 (clientSideRequestStatistics.ContactedReplicas.Count == 0 && clientSideRequestStatistics.FailedReplicas.Count == 0))
             {
-                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                     activityId: headers.ActivityId,
                     responseTimeUtc: DateTime.UtcNow,
                     statusCode: documentServiceResponse.StatusCode,
@@ -42,9 +99,13 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge: headers.RequestCharge,
                     errorMessage: null,
                     method: requestMessage?.Method,
-                    requestUri: requestMessage?.RequestUri,
+                    requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
-                    responseSessionToken: headers.Session));
+                    responseSessionToken: headers.Session);
+
+                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+
+                trace.AddDatum(nameof(PointOperationStatistics), new CosmosDiagnosticsTraceDatum(pointOperationStatistics));
             }
 
             // If it's considered a failure create the corresponding CosmosException
@@ -100,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
                 requestCharge: cosmosException.Headers.RequestCharge,
                 errorMessage: documentClientException.ToString(),
                 method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUri,
+                requestUri: requestMessage?.RequestUriString,
                 requestSessionToken: requestMessage?.Headers?.Session,
                 responseSessionToken: cosmosException.Headers.Session);
 
@@ -122,17 +183,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return responseMessage;
-        }
-
-        internal static Headers ToCosmosHeaders(this INameValueCollection nameValueCollection)
-        {
-            Headers headers = new Headers();
-            foreach (string key in nameValueCollection)
-            {
-                headers.Add(key, nameValueCollection[key]);
-            }
-
-            return headers;
         }
 
         internal static void TraceException(Exception exception)

@@ -137,7 +137,11 @@ namespace Microsoft.Azure.Cosmos.Common
                 if (request.RequestContext.ResolvedCollectionRid == null)
                 {
                     collectionInfo =
-                        await this.ResolveByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellationToken);
+                        await this.ResolveByNameAsync(
+                            apiVersion: request.Headers[HttpConstants.HttpHeaders.Version],
+                            resourceAddress: request.ResourceAddress,
+                            forceRefesh: false,
+                            cancellationToken: cancellationToken);
 
                     if (collectionInfo != null)
                     {
@@ -238,12 +242,19 @@ namespace Microsoft.Azure.Cosmos.Common
         internal virtual async Task<ContainerProperties> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,
+            bool forceRefesh,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
             InternalCache cache = this.GetCache(apiVersion);
+
+            if (forceRefesh)
+            {
+                cache.collectionInfoByName.TryRemoveIfCompleted(resourceFullName);
+            }
+
             return await cache.collectionInfoByName.GetAsync(
                 resourceFullName,
                 null,
@@ -302,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Common
         protected InternalCache GetCache(string apiVersion)
         {
             // Non Partitioned Migration Version. Need this to flight V3 SDK till we make this the Current Version
-            if (string.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.Versions.v2018_12_31))
+            if (string.IsNullOrEmpty(apiVersion) || VersionUtility.IsLaterThan(apiVersion, HttpConstants.VersionDates.v2018_12_31))
             {
                 return this.cacheByApiList[1];
             }

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -21,14 +22,14 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FeedIteratorCore : FeedIteratorInternal
     {
         private readonly CosmosClientContext clientContext;
-        private readonly Uri resourceLink;
+        private readonly string resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
 
         public FeedIteratorCore(
             CosmosClientContext clientContext,
-            Uri resourceLink,
+            string resourceLink,
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
@@ -60,20 +61,31 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            return this.ReadNextAsync(NoOpTrace.Singleton);
+        }
+
+        public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
             using (diagnosticsContext.GetOverallScope())
             {
-                return await this.ReadNextInternalAsync(diagnosticsContext, cancellationToken);
+                return await this.ReadNextInternalAsync(trace, diagnosticsContext, cancellationToken);
             }
         }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
+            ITrace trace,
             CosmosDiagnosticsContext diagnostics,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
 
             Stream stream = null;
             OperationType operation = OperationType.ReadFeed;
@@ -89,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                operationType: operation,
                requestOptions: this.requestOptions,
                cosmosContainerCore: null,
-               partitionKey: this.requestOptions?.PartitionKey,
+               feedRange: this.requestOptions?.PartitionKey.HasValue ?? false ? new FeedRangePartitionKey(this.requestOptions.PartitionKey.Value) : null,
                streamPayload: stream,
                requestEnricher: request =>
                {
@@ -101,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
                    }
                },
                diagnosticsContext: diagnostics,
+               trace: trace,
                cancellationToken: cancellationToken);
 
             this.ContinuationToken = responseMessage.Headers.ContinuationToken;
@@ -110,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 await CosmosElementSerializer.RewriteStreamAsTextAsync(responseMessage, this.requestOptions);
             }
-            
+
             return responseMessage;
         }
 
@@ -149,11 +162,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override async Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
             return this.responseCreator(response);
         }
 

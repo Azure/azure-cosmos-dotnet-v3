@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int DefaultDispatchTimerInSeconds = 1;
         private const int TimerWheelBucketCount = 20;
-        private readonly static TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
+        private static readonly TimeSpan TimerWheelResolution = TimeSpan.FromMilliseconds(50);
 
         private readonly ContainerInternal cosmosContainer;
         private readonly CosmosClientContext cosmosClientContext;
@@ -78,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (operation == null)
             {
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual async Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             if (itemRequestOptions != null)
             {
@@ -232,10 +233,11 @@ namespace Microsoft.Azure.Cosmos
                         OperationType.Batch,
                         new RequestOptions(),
                         cosmosContainerCore: this.cosmosContainer,
-                        partitionKey: null,
+                        feedRange: null,
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         diagnosticsContext: diagnosticsContext,
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: cancellationToken).ConfigureAwait(false);
 
                     using (diagnosticsContext.CreateScope("BatchAsyncContainerExecutor.ToResponse"))

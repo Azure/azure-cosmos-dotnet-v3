@@ -13,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
+        // Used to detect if the user is migrating from a V2 CFP schema
+        private bool isMigratingFromV2 = false;
+
         public DocumentServiceLeaseCore()
         {
         }
@@ -41,12 +44,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonProperty("LeaseToken")]
         public string LeaseToken { get; set; }
 
-        [JsonProperty("PartitionId")]
+        [JsonProperty("PartitionId", NullValueHandling = NullValueHandling.Ignore)]
         private string PartitionId
         {
+            get
+            {
+                if (this.isMigratingFromV2)
+                {
+                    // If the user migrated the lease from V2 schema, we maintain the PartitionId property for backward compatibility
+                    return this.LeaseToken;
+                }
+
+                return null;
+            }
             set
             {
                 this.LeaseToken = value;
+                this.isMigratingFromV2 = true;
             }
         }
 

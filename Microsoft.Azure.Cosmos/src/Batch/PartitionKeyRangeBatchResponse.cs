@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             itemBatchOperations.AddRange(serverResponse.Operations);
-            this.RequestCharge += serverResponse.RequestCharge;
+            this.Headers = serverResponse.Headers;
 
             if (!string.IsNullOrEmpty(serverResponse.ErrorMessage))
             {
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
 
             TransactionalBatchOperationResult result = this.resultsByOperationIndex[index];
 
-            T resource = default(T);
+            T resource = default;
             if (result.ResourceStream != null)
             {
                 resource = this.SerializerCore.FromStream<T>(result.ResourceStream);

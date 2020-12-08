@@ -91,6 +91,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        public int PreferredLocationCount
+        {
+            get
+            {
+                return this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
+            }
+        }
+
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint, IList<string> locations, Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
         {

@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  ""resourceType"": ""trigger""
                 }]}";
 
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             Container container = mockClient.GetContainer("database", "container");
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
+                Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
                 Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
                 ResponseMessage handlerResponse = TestHandler.ReturnSuccess().Result;
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }]}";
 
             JObject jObject = JObject.Parse(conflictResponsePayload);
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
+            using CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             Container container = mockClient.GetContainer("database", "container");

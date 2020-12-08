@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using System.Globalization;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -19,20 +20,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
+    using System.IO;
 
-    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
+    internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+        private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+        {
+            Kind = PartitionKind.Hash,
+            Paths = new Collection<string>()
+            {
+                "/id"
+            }
+        };
+
         string[] dummyHeaderNames;
+        private IComputeHash authKeyHashFunction;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
             cosmosClientBuilder.WithConnectionModeDirect();
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
@@ -61,6 +73,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
+            this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
+
             this.Init();
         }
 
@@ -70,6 +84,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
+
+        public static string GenerateRandomKey()
+        {
+            int keyLength = 64;
+            byte[] randomEntries = new byte[keyLength];
+
+            Random r = new Random((int)DateTime.Now.Ticks);
+            r.NextBytes(randomEntries);
+
+            return Convert.ToBase64String(randomEntries);
+        }
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
@@ -83,28 +108,51 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
-        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+        ValueTask<string> ICosmosAuthorizationTokenProvider.GetUserAuthorizationTokenAsync(
             string resourceAddress,
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            out string payload) /* unused, use token based upon what is passed in constructor */
+            CosmosDiagnosticsContext diagnosticsContext) // unused, use token based upon what is passed in constructor 
         {
-            payload = null;
-            return null;
+            // this is masterkey authZ
+            headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
+            string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
+                    verb: requestVerb,
+                    resourceId: resourceAddress,
+                    resourceType: resourceType,
+                    headers: headers,
+                    stringHMACSHA256Helper: this.authKeyHashFunction,
+                    payload: out AuthorizationHelper.ArrayOwner payload);
+
+            using (payload)
+            {
+                return new ValueTask<string>(authorization);
+            }
         }
 
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null);
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
+            containerProperties.PartitionKey = partitionKeyDefinition;
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(ContainerProperties.CreateWithResourceId("test")));
+                ).Returns(Task.FromResult(containerProperties));
+
+            this.collectionCache.Setup(x =>
+                x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerProperties));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

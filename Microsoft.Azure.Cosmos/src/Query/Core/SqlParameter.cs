@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
     /// <summary>
     /// Represents a parameter associated with <see cref="SqlQuerySpec"/> in the Azure Cosmos DB service.
-    /// </summary> 
+    /// </summary>
     /// <remarks>
-    /// Azure Cosmos DB SQL parameters are name-value pairs referenced in parameterized queries. 
+    /// Azure Cosmos DB SQL parameters are name-value pairs referenced in parameterized queries.
     /// Unlike in relation SQL databases, they don't have types associated with them.
     /// </remarks>
     [DataContract]

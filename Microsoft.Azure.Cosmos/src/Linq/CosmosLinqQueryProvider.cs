@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public Task<Response<TResult>> ExecuteAggregateAsync<TResult>(
             Expression expression,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
             Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             CosmosLinqQuery<TResult> cosmosLINQQuery = (CosmosLinqQuery<TResult>)Activator.CreateInstance(
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 expression,
                 this.allowSynchronousQueryExecution,
                 this.serializationOptions);
-            return TaskHelper.RunInlineIfNeededAsync(() => cosmosLINQQuery.AggregateResultAsync());
+            return TaskHelper.RunInlineIfNeededAsync(() => cosmosLINQQuery.AggregateResultAsync(cancellationToken));
         }
     }
 }

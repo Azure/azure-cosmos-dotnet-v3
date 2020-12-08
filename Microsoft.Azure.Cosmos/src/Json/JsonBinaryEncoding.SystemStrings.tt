@@ -1,0 +1,151 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<#
+string[] systemStrings = new string[]
+{
+    "$s",
+    "$t",
+    "$v",
+    "_attachments",
+    "_etag",
+    "_rid",
+    "_self",
+    "_ts",
+    "attachments/",
+    "coordinates",
+    "geometry",
+    "GeometryCollection",
+    "id",
+    "url",
+    "Value",
+    "label",
+    "LineString",
+    "link",
+    "MultiLineString",
+    "MultiPoint",
+    "MultiPolygon",
+    "name",
+    "Name",
+    "Type",
+    "Point",
+    "Polygon",
+    "properties",
+    "type",
+    "value",
+    "Feature",
+    "FeatureCollection",
+    "_id",
+};
+
+int[] distinctStringLengths = systemStrings.Select(x => x.Length).Distinct().OrderBy(x => x).ToArray();
+#>
+// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
+// <#= ModificationInstructions() #>
+
+namespace Microsoft.Azure.Cosmos.Json
+{
+    using System;
+    using System.Collections.Immutable;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
+
+    internal static partial class JsonBinaryEncoding
+    {
+        public static class SystemStrings
+        {
+            /// <summary>
+            /// List of system strings
+            /// </summary>
+            public static readonly ImmutableArray<UtfAllString> Strings = new UtfAllString[]
+            {
+<# foreach (string systemString in systemStrings) { #>
+                UtfAllString.Create("<#= systemString #>"),
+<# } #>
+            }.ToImmutableArray();
+
+            public static int? GetSystemStringId(Utf8Span buffer)
+            {
+                return buffer.Length switch
+                {
+<# foreach (int systemStringLength in distinctStringLengths) { #>
+                    <#= systemStringLength #> => GetSystemStringIdLength<#= systemStringLength #>(buffer.Span),
+<# } #>
+                    _ => null,
+                };
+            }
+
+<# foreach (int systemStringLength in distinctStringLengths) 
+{
+    List<int> indexes = new List<int>();
+    for(int i = 0; i < systemStrings.Length; i++)
+    {
+        if(systemStrings[i].Length == systemStringLength)
+        {
+            indexes.Add(i);
+        }
+    }
+#>
+            private static int? GetSystemStringIdLength<#= systemStringLength #>(ReadOnlySpan<byte> buffer)
+            {
+<# foreach (int index in indexes) { #>
+                if (buffer.SequenceEqual(Strings[<#= index #>].Utf8String.Span.Span))
+                {
+                    return <#= index #>;
+                }
+
+<# } #>
+                return null;
+            }
+<# } #>
+            
+            /// <summary>
+            /// Gets the SystemStringId for a particular system string.
+            /// </summary>
+            /// <param name="utf8Span">The system string to get the enum id for.</param>
+            /// <param name="systemStringId">The id of the system string if found.</param>
+            /// <returns>The SystemStringId for a particular system string.</returns>
+            public static bool TryGetSystemStringId(Utf8Span utf8Span, out int systemStringId)
+            {
+                int? id = SystemStrings.GetSystemStringId(utf8Span);
+                if (!id.HasValue)
+                {
+                    systemStringId = default;
+                    return false;
+                }
+
+                systemStringId = id.Value;
+                return true;
+            }
+
+            public static bool TryGetSystemStringById(int id, out UtfAllString systemString)
+            {
+                if (id >= SystemStrings.Strings.Length)
+                {
+                    systemString = default;
+                    return false;
+                }
+
+                systemString = SystemStrings.Strings[id];
+                return true;
+            }
+        }
+    }
+}
+<#+
+private static string ModificationInstructions(
+                        [CallerFilePath] string file = "",
+                        [CallerLineNumber] int line = 0)
+{
+    return $"This is auto-generated code. Modify: {Path.GetFileName(file)}: {line}";
+}
+#>

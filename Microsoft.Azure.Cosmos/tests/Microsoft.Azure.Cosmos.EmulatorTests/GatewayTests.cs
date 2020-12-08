@@ -1062,7 +1062,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // failure test - trigger on non-CRUD operation
-            INameValueCollection headers = new DictionaryNameValueCollection
+            INameValueCollection headers = new StoreRequestNameValueCollection
             {
                 { "x-ms-pre-trigger-include", "t1" }
             };
@@ -3366,12 +3366,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 document, requestOptions:
                 new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
-            Logger.LogLine("Querying Document to ensure if document is not indexed");
+            Logger.LogLine("Querying Document to ensure that document is indexed");
             FeedIterator<Document> queriedDocuments = collection.GetItemQueryIterator<Document>(
                 queryText: @"select * from root r where r.StringField=""222""",
                 requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
 
-            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(1, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Include });
@@ -3386,16 +3386,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Replace document to not include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
-            Logger.LogLine("Querying Document to ensure if document is not indexed");
+            Logger.LogLine("Querying Document to ensure that document is indexed");
             queriedDocuments = collection.GetItemQueryIterator<Document>(queryText: @"select * from root r where r.StringField=""222""", requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
-            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(1, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
-            Logger.LogLine("Querying Document to ensure if document is not indexed");
+            Logger.LogLine("Querying Document to ensure that document is indexed");
             queriedDocuments = collection.GetItemQueryIterator<Document>(queryText: @"select * from root r where r.StringField=""222""", requestOptions: new QueryRequestOptions { MaxConcurrency = 1 });
-            Assert.AreEqual(0, await this.GetCountFromIterator(queriedDocuments));
+            Assert.AreEqual(1, await this.GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Delete document");
             await collection.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(documentName), id: documentName);

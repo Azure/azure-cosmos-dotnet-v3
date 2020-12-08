@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(expression, context);
-                return SqlInScalarExpression.Create(scalarExpression, false, items);
+                return SqlInScalarExpression.Create(scalarExpression, false, items.ToImmutableArray());
             }
         }
 
@@ -104,7 +105,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 if (methodCallExpression.Arguments.Count == 1)
                 {
-                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
                     SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_LENGTH", array);
@@ -139,12 +139,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                if (methodCallExpression.Arguments.Count == 1)
-                {
-                    return ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                }
-
-                return null;
+                return methodCallExpression.Arguments.Count == 1
+                    ? ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context)
+                    : null;
             }
 
             protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
@@ -155,36 +152,40 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         static ArrayBuiltinFunctions()
         {
-            ArrayBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>();
-
-            ArrayBuiltinFunctionDefinitions.Add("Concat",
-                new ArrayConcatVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("Contains",
-                new ArrayContainsVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("Count",
-                new ArrayCountVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("get_Item",
-                new ArrayGetItemVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("ToArray",
-                new ArrayToArrayVisitor());
-
-            ArrayBuiltinFunctionDefinitions.Add("ToList",
-                new ArrayToArrayVisitor());
+            ArrayBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
+            {
+                {
+                    "Concat",
+                    new ArrayConcatVisitor()
+                },
+                {
+                    "Contains",
+                    new ArrayContainsVisitor()
+                },
+                {
+                    "Count",
+                    new ArrayCountVisitor()
+                },
+                {
+                    "get_Item",
+                    new ArrayGetItemVisitor()
+                },
+                {
+                    "ToArray",
+                    new ArrayToArrayVisitor()
+                },
+                {
+                    "ToList",
+                    new ArrayToArrayVisitor()
+                }
+            };
         }
 
         public static SqlScalarExpression Visit(MethodCallExpression methodCallExpression, TranslationContext context)
         {
-            BuiltinFunctionVisitor visitor = null;
-            if (ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out visitor))
-            {
-                return visitor.Visit(methodCallExpression, context);
-            }
-
-            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+            return ArrayBuiltinFunctionDefinitions.TryGetValue(methodCallExpression.Method.Name, out BuiltinFunctionVisitor visitor)
+                ? visitor.Visit(methodCallExpression, context)
+                : throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
         }
     }
 }

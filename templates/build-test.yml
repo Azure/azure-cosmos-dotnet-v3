@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: Tests ${{ parameters.BuildConfiguration }}
+  displayName: Tests Debug
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -22,7 +22,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CopyLocalLockFileAssemblies=true /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.Arguments }} --configuration Debug /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CopyLocalLockFileAssemblies=true /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
@@ -50,9 +50,9 @@ jobs:
     displayName: Microsoft.Azure.Cosmos.PerformanceTests
     condition: succeeded()
     inputs:
-      command: build
+      command: run
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/*.csproj'
-      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -c Release --framework netcoreapp3.1 --allCategories=GateBenchmark -- -j Medium  -m  --BaselineValidation
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.PerformanceTests

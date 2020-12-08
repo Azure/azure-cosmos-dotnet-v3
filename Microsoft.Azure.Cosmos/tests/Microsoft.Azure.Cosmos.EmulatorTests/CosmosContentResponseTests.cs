@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient cosmosClient;
         private Database database;
         private Container container;
+        private ContainerInternal containerInternal;
 
         [TestInitialize]
         public async Task TestInit()
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.container = await this.database.CreateContainerAsync(
                      id: "ItemNoResponseTest",
                      partitionKeyPath: "/status");
+            this.containerInternal = (ContainerInternal)this.container;
         }
 
         [TestCleanup]
@@ -97,6 +99,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 item,
                 item.id,
                 new PartitionKey(item.status),
+                requestOptions: requestOptions);
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            ValidateWrite(itemResponse);
+
+            item.cost = 1000;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/cost", item.cost)
+            };
+            itemResponse = await this.containerInternal.PatchItemAsync<ToDoActivity>(
+                item.id,
+                new PartitionKey(item.status),
+                patchOperations: patch,
                 requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
             ValidateWrite(itemResponse);
@@ -182,6 +197,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ValidateWrite(responseMessage);
             }
 
+            item.cost = 1000;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/cost", item.cost)
+            };
+            using (ResponseMessage responseMessage = await this.containerInternal.PatchItemStreamAsync(
+                item.id,
+                new PartitionKey(item.status),
+                patchOperations: patch,
+                requestOptions: requestOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                ValidateWrite(responseMessage);
+            }
+
             using (ResponseMessage responseMessage = await this.container.DeleteItemStreamAsync(
                 item.id,
                 new PartitionKey(item.status),
@@ -216,6 +246,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             pkId = "TestBatchId2";
             batch = this.container.CreateTransactionalBatch(new PartitionKey(pkId));
+            BatchCore batchCore = (BatchCore)batch;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Remove("/cost")
+            };
 
             noResponseItemCount = 0;
             for (int i = 0; i < 10; i++)
@@ -227,6 +262,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 item2.id = item.id;
                 batch.ReplaceItem<ToDoActivity>(item2.id, item2, requestOptions);
                 noResponseItemCount++;
+                batchCore.PatchItem(item2.id, patch, requestOptions);
+                noResponseItemCount++;
             }
 
             int withBodyCount = 0;
@@ -236,6 +273,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch.CreateItem<ToDoActivity>(item);
                 withBodyCount++;
                 batch.ReadItem(item.id);
+                withBodyCount++;
+                batchCore.PatchItem(item.id, patch);
                 withBodyCount++;
             }
 
@@ -254,19 +293,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosClient bulkClient = TestCommon.CreateCosmosClient((builder) => builder.WithBulkExecution(true));
             Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.container.Id);
-
+            ContainerInternal bulkContainerInternal = (ContainerInternal)bulkContainer;
             string pkId = "TestBulkId";
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Remove("/cost")
+            };
 
             List<Task<ItemResponse<ToDoActivity>>> bulkOperations = new List<Task<ItemResponse<ToDoActivity>>>();
             List<ToDoActivity> items = new List<ToDoActivity>();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 50; i++)
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
                 items.Add(item);
                 bulkOperations.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, requestOptions: requestOptions));
             }
 
-            foreach(Task<ItemResponse<ToDoActivity>> result in bulkOperations)
+            foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)
+            {
+                ItemResponse<ToDoActivity> itemResponse = await result;
+                this.ValidateItemNoContentResponse(itemResponse);
+            }
+
+            foreach (ToDoActivity item in items)
+            {
+                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), patch, requestOptions: requestOptions));
+            }
+
+            foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)
             {
                 ItemResponse<ToDoActivity> itemResponse = await result;
                 this.ValidateItemNoContentResponse(itemResponse);
@@ -284,7 +338,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.ValidateItemResponse(itemResponse);
             }
         }
-
 
         private void ValidateResponse(
            TransactionalBatchResponse response,

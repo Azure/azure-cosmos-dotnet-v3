@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -21,105 +21,25 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModel, IDisposable
     {
-        // Gateway has backoff/retry logic to hide transient errors.
-        private readonly TimeSpan requestTimeout = TimeSpan.FromSeconds(65);
         private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ISessionContainer sessionContainer;
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
-        private CookieContainer cookieJar;
 
-        private GatewayStoreModel(
+        public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource)
+            DocumentClientEventSource eventSource,
+            JsonSerializerSettings serializerSettings,
+            CosmosHttpClient httpClient)
         {
-            // CookieContainer is not really required, but is helpful in debugging.
-            this.cookieJar = new CookieContainer();
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
-        }
-
-        public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            TimeSpan requestTimeout,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType,
-            HttpMessageHandler messageHandler)
-            : this(endpointManager,
-                  sessionContainer,
-                  defaultConsistencyLevel,
-                  eventSource)
-        {
-            this.InitializeGatewayStoreClient(
-                requestTimeout,
-                serializerSettings,
-                userAgent,
-                apiType,
-                new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar }));
-        }
-
-        public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            TimeSpan requestTimeout,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType,
-            Func<HttpClient> httpClientFactory)
-            : this(endpointManager,
-                  sessionContainer,
-                  defaultConsistencyLevel,
-                  eventSource)
-        {
-            HttpClient httpClient = httpClientFactory();
-            if (httpClient == null)
-            {
-                throw new InvalidOperationException("HttpClientFactory did not produce an HttpClient");
-            }
-
-            this.InitializeGatewayStoreClient(
-                requestTimeout,
-                serializerSettings,
-                userAgent,
-                apiType,
-                httpClient);
-
-        }
-
-        private void InitializeGatewayStoreClient(
-            TimeSpan requestTimeout,
-            JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
-            ApiType apiType,
-            HttpClient httpClient)
-        {
-            // Use max of client specified and our own request timeout value when sending
-            // requests to gateway. Otherwise, we will have gateway's transient
-            // error hiding retries are of no use.
-            httpClient.Timeout = (requestTimeout > this.requestTimeout) ? requestTimeout : this.requestTimeout;
-            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-
-            httpClient.AddUserAgentHeader(userAgent);
-            httpClient.AddApiTypeHeader(apiType);
-
-            // Set requested API version header that can be used for
-            // version enforcement.
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
-                HttpConstants.Versions.CurrentVersion);
-
-            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
 
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
@@ -127,9 +47,12 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings);
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
-            this.ApplySessionToken(request);
+            GatewayStoreModel.ApplySessionToken(
+                request,
+                this.defaultConsistencyLevel,
+                this.sessionContainer);
 
             DocumentServiceResponse response;
             try
@@ -153,13 +76,15 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage, CancellationToken cancellationToken = default)
         {
             AccountProperties databaseAccount = null;
 
             // Get the ServiceDocumentResource from the gateway.
-            using (HttpResponseMessage responseMessage =
-                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellationToken))
+            using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
+                requestMessage,
+                ResourceType.DatabaseAccount,
+                cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
@@ -220,7 +145,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private void CaptureSessionToken(
@@ -268,50 +192,74 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ApplySessionToken(DocumentServiceRequest request)
+        internal static void ApplySessionToken(
+            DocumentServiceRequest request,
+            ConsistencyLevel defaultConsistencyLevel,
+            ISessionContainer sessionContainer)
         {
-            if (request.Headers != null &&
-                !string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
+            if (request.Headers == null)
             {
-                if (ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+                Debug.Fail("DocumentServiceRequest does not have headers.");
+                return;
+            }
+
+            // Master resource operations don't require session token.
+            if (GatewayStoreModel.IsMasterOperation(request.ResourceType, request.OperationType))
+            {
+                if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
                 {
                     request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
                 }
-                return; //User is explicitly controlling the session.
+
+                return;
             }
 
-            if (request.Headers != null &&
-                 request.OperationType == OperationType.QueryPlan)
+            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.SessionToken]))
             {
-                {
-                    string isPlanOnlyString = request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest];
-                    bool isPlanOnly = false;
-                    if (bool.TryParse(isPlanOnlyString, out isPlanOnly) && isPlanOnly)
-                    {
-                        return; // for query plan session token is not needed
-                    }
-                }
+                return; // User is explicitly controlling the session.
             }
 
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
 
             bool sessionConsistency =
-                this.defaultConsistencyLevel == ConsistencyLevel.Session ||
+                defaultConsistencyLevel == ConsistencyLevel.Session ||
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency || ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+            if (!sessionConsistency)
             {
-                return; // Only apply the session token in case of session consistency and when resource is not a master resource
+                return; // Only apply the session token in case of session consistency
             }
 
             //Apply the ambient session.
-            string sessionToken = this.sessionContainer.ResolveGlobalSessionToken(request);
+            string sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
 
             if (!string.IsNullOrEmpty(sessionToken))
             {
                 request.Headers[HttpConstants.HttpHeaders.SessionToken] = sessionToken;
             }
+        }
+
+        // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
+        internal static bool IsMasterOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            // Stored procedures, trigger, and user defined functions CRUD operations are done on
+            // master so they do not require the session token. Stored procedures execute is not a master operation
+            return ReplicatedResourceClient.IsMasterResource(resourceType) ||
+                   GatewayStoreModel.IsStoredProcedureCrudOperation(resourceType, operationType) ||
+                   resourceType == ResourceType.Trigger ||
+                   resourceType == ResourceType.UserDefinedFunction ||
+                   operationType == OperationType.QueryPlan;
+        }
+
+        internal static bool IsStoredProcedureCrudOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            return resourceType == ResourceType.StoredProcedure &&
+                   operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
         private void Dispose(bool disposing)

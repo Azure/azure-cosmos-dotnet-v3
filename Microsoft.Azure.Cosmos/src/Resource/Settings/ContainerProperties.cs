@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -17,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
     /// A database may contain zero or more named containers and each container consists of zero or more JSON documents. 
     /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources, 
     /// they can be authorized using either the master key or resource keys.
-    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-resources/#collections</see> for more details on containers.
     /// </remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/databases-containers-items"/>
     /// <example>
     /// The example below creates a new partitioned container with 50000 Request-per-Unit throughput.
     /// The partition key is the first level 'country' property in all the documents within this container.
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
-        private string[] partitionKeyPathTokens;
+        private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
 
         /// <summary>
@@ -93,6 +94,22 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
+#if INTERNAL || SUBPARTITIONING
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
+        {
+            this.Id = id;
+
+            this.PartitionKeyPaths = partitionKeyPaths;
+
+            this.ValidateRequiredProperties();
+        }
+
+#endif
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         ///
@@ -262,10 +279,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return this.geospatialConfigInternal;
             }
-            set
-            {
-                this.geospatialConfigInternal = value;
-            }
+            set => this.geospatialConfigInternal = value;
         }
         /// <summary>
         /// JSON path used for containers partitioning
@@ -273,7 +287,15 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public string PartitionKeyPath
         {
-            get => this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+            get =>
+#if SUBPARTITIONING
+                if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
+                {
+                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                }
+
+#endif
+                this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -288,6 +310,38 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if INTERNAL || SUBPARTITIONING
+        /// <summary>
+        /// JSON path used for containers partitioning
+        /// </summary>
+        [JsonIgnore]
+        public IReadOnlyList<string> PartitionKeyPaths
+        {
+            get => this.PartitionKey?.Paths;
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(this.PartitionKeyPaths));
+                }
+
+                Collection<string> paths = new Collection<string>();
+                foreach (string path in value)
+                {
+                    paths.Add(path);
+                }
+
+                this.PartitionKey = new PartitionKeyDefinition
+                {
+                    Paths = paths,
+                    Kind = Documents.PartitionKind.MultiHash,
+                    Version = Documents.PartitionKeyDefinitionVersion.V2
+                };
+
+            }
+        }
+
+#endif
         /// <summary>
         /// Gets or sets the time to live base time stamp property path.
         /// </summary>
@@ -510,7 +564,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool HasPartitionKey => this.PartitionKey != null;
 
-        internal string[] PartitionKeyPathTokens
+        internal IReadOnlyList<IReadOnlyList<string>> PartitionKeyPathTokens
         {
             get
             {
@@ -519,17 +573,36 @@ namespace Microsoft.Azure.Cosmos
                     return this.partitionKeyPathTokens;
                 }
 
-                if (this.PartitionKey.Paths.Count > 1)
+                if (this.PartitionKey == null)
+                {
+                    throw new ArgumentNullException(nameof(this.PartitionKey));
+                }
+
+                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                 {
                     throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
                 }
 
-                if (this.PartitionKeyPath == null)
+                if (this.PartitionKey.Kind != Documents.PartitionKind.MultiHash && this.PartitionKeyPath == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+#if INTERNAL || SUBPARTITIONING
+                if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
+                {
+                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
+                }
+#endif
+
+                List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
+                foreach (string path in this.PartitionKey?.Paths)
+                {
+                    string[] splitPaths = path.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                    partitionKeyPathTokensList.Add(new List<string>(splitPaths));
+                }
+
+                this.partitionKeyPathTokens = partitionKeyPathTokensList;
                 return this.partitionKeyPathTokens;
             }
         }

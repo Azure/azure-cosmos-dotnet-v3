@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
         {
             string endpoint = AccountEndpoint;
-            string key = Guid.NewGuid().ToString();
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
             string region = Regions.WestCentralUS;
             ConnectionMode connectionMode = ConnectionMode.Gateway;
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
@@ -290,14 +291,27 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void VerifyHttpClientHandlerSettingsThrowIfNotUsedInGatewayMode()
+        public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                ConnectionMode = ConnectionMode.Direct
+                GatewayModeMaxConnectionLimit = 42
             };
 
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.WebProxy = new TestWebProxy(); });
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            });
+
+            cosmosClientOptions = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient()
+            };
+
+            Assert.ThrowsException<ArgumentException>(() =>
+            {
+                cosmosClientOptions.GatewayModeMaxConnectionLimit = 42;
+            });
         }
 
         [TestMethod]
@@ -316,10 +330,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 webProxy: webProxy);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
-            DelegatingHandler handler = (DelegatingHandler) cosmosClient.DocumentClient.httpMessageHandler;
-            HttpClientHandler innerHandler = (HttpClientHandler)handler.InnerHandler;
-
-            Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
+            FieldInfo httpClient = cosmosClient.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
+            CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)httpClient.GetValue(cosmosClient.DocumentClient);
+            HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
+            
+            Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
         }
 
         [TestMethod]
@@ -378,10 +393,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void HttpClientFactoryBuildsConnectionPolicy()
         {
             string endpoint = AccountEndpoint;
-            string key = Guid.NewGuid().ToString();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                authKeyOrResourceToken: key)
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
                 .WithHttpClientFactory(this.HttpClientFactoryDelegate);
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
@@ -396,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: AccountEndpoint,
-                authKeyOrResourceToken: Guid.NewGuid().ToString());
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
 
             CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsFalse(cosmosClientOptions.LimitToEndpoint);

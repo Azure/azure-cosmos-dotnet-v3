@@ -86,13 +86,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the current depth (level of nesting).
         /// </summary>
-        public int CurrentDepth
-        {
-            get
-            {
-                return this.nestingStackIndex + 1;
-            }
-        }
+        public int CurrentDepth => this.nestingStackIndex + 1;
 
         /// <summary>
         /// Gets the current JsonTokenType.
@@ -102,35 +96,17 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets a value indicating whether a property is expected.
         /// </summary>
-        public bool IsPropertyExpected
-        {
-            get
-            {
-                return (this.CurrentTokenType != JsonTokenType.FieldName) && (this.currentContext == JsonObjectContext.Object);
-            }
-        }
+        public bool IsPropertyExpected => (this.CurrentTokenType != JsonTokenType.FieldName) && (this.currentContext == JsonObjectContext.Object);
 
         /// <summary>
         /// Gets a value indicating whether the current context is an array.
         /// </summary>
-        public bool InArrayContext
-        {
-            get
-            {
-                return this.currentContext == JsonObjectContext.Array;
-            }
-        }
+        public bool InArrayContext => this.currentContext == JsonObjectContext.Array;
 
         /// <summary>
         /// Gets a value indicating whether the current context in an object.
         /// </summary>
-        public bool InObjectContext
-        {
-            get
-            {
-                return this.currentContext == JsonObjectContext.Object;
-            }
-        }
+        public bool InObjectContext => this.currentContext == JsonObjectContext.Object;
 
         /// <summary>
         /// Gets the current JsonObjectContext
@@ -151,13 +127,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets a mask to use to get the current context from the nesting stack
         /// </summary>
-        private byte Mask
-        {
-            get
-            {
-                return (byte)(1 << (this.nestingStackIndex % 8));
-            }
-        }
+        private byte Mask => (byte)(1 << (this.nestingStackIndex % 8));
 
         /// <summary>
         /// Registers a JsonTokenType.
@@ -260,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Registers the end of a json array (']')
         /// </summary>
-        private void RegisterEndArray()
+        public void RegisterEndArray()
         {
             if (this.currentContext != JsonObjectContext.Array)
             {
@@ -292,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Registers a end of a json object ('}')
         /// </summary>
-        private void RegisterEndObject()
+        public void RegisterEndObject()
         {
             if (this.currentContext != JsonObjectContext.Object)
             {
@@ -327,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Register a Json FieldName
         /// </summary>
-        private void RegisterFieldName()
+        public void RegisterFieldName()
         {
             if (this.currentContext != JsonObjectContext.Object)
             {

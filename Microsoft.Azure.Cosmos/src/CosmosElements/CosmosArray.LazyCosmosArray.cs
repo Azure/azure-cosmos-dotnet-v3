@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#nullable enable
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -15,28 +17,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #else
     internal
 #endif
-    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>, IEquatable<CosmosArray>, IComparable<CosmosArray>
     {
         private sealed class LazyCosmosArray : CosmosArray
         {
+            private readonly Lazy<List<CosmosElement>> lazyCosmosElementArray;
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-            private readonly Lazy<Lazy<CosmosElement>[]> lazyCosmosElementArray;
 
             public LazyCosmosArray(
                 IJsonNavigator jsonNavigator,
                 IJsonNavigatorNode jsonNavigatorNode)
             {
-                if (jsonNavigator == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigator)}");
-                }
-
-                if (jsonNavigatorNode == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
-                }
-
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Array)
                 {
@@ -46,43 +38,28 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
 
-                this.lazyCosmosElementArray = new Lazy<Lazy<CosmosElement>[]>(() =>
+                this.lazyCosmosElementArray = new Lazy<List<CosmosElement>>(() =>
                 {
-                    Lazy<CosmosElement>[] lazyArray = new Lazy<CosmosElement>[this.jsonNavigator.GetArrayItemCount(this.jsonNavigatorNode)];
-                    int index = 0;
+                    List<CosmosElement> elements = new List<CosmosElement>(jsonNavigator.GetArrayItemCount(jsonNavigatorNode));
                     // Using foreach instead of indexer, since the navigator doesn't support random seeks efficiently.
-                    foreach (IJsonNavigatorNode arrayItem in this.jsonNavigator.GetArrayItems(this.jsonNavigatorNode))
+                    foreach (IJsonNavigatorNode arrayItem in jsonNavigator.GetArrayItems(jsonNavigatorNode))
                     {
-                        lazyArray[index] = new Lazy<CosmosElement>(() => CosmosElement.Dispatch(this.jsonNavigator, arrayItem));
-                        index++;
+                        elements.Add(CosmosElement.Dispatch(jsonNavigator, arrayItem));
                     }
 
-                    return lazyArray;
+                    return elements;
                 });
-                
             }
 
-            public override int Count => this.lazyCosmosElementArray.Value.Length;
+            public override int Count => this.lazyCosmosElementArray.Value.Count;
 
-            public override CosmosElement this[int index] => this.lazyCosmosElementArray.Value[index].Value;
+            public override CosmosElement this[int index] => this.lazyCosmosElementArray.Value[index];
 
-            public override IEnumerator<CosmosElement> GetEnumerator() => this.lazyCosmosElementArray.Value.Select(lazyItem => lazyItem.Value).GetEnumerator();
+            public override Enumerator GetEnumerator() => new Enumerator(this.lazyCosmosElementArray.Value.GetEnumerator());
 
-            public override void WriteTo(IJsonWriter jsonWriter)
-            {
-                if (jsonWriter == null)
-                {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
-                }
+            public override void WriteTo(IJsonWriter jsonWriter) => this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);
 
-                this.jsonNavigator.WriteTo(this.jsonNavigatorNode, jsonWriter);
-            }
-
-            public override IJsonReader CreateReader()
-            {
-                IJsonReader cosmosDBReader = this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
-                return cosmosDBReader;
-            }
+            public override IJsonReader CreateReader() => this.jsonNavigator.CreateReader(this.jsonNavigatorNode);
         }
     }
 #if INTERNAL

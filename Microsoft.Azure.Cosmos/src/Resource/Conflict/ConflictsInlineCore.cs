@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -23,15 +22,18 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.DeleteAsync(conflict, partitionKey, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(DeleteAsync),
+                requestOptions: null,
+                task: (diagnostics, trace) => base.DeleteAsync(diagnostics, conflict, partitionKey, trace, cancellationToken));
         }
 
         public override FeedIterator GetConflictQueryStreamIterator(
-           string queryText = null,
-           string continuationToken = null,
-           QueryRequestOptions requestOptions = null)
+          string queryText = null,
+          string continuationToken = null,
+          QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorInlineCore(base.GetConflictQueryStreamIterator(
                 queryText,
@@ -75,9 +77,12 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => base.ReadCurrentAsync<T>(cosmosConflict, partitionKey, cancellationToken));
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(ReadCurrentAsync),
+                requestOptions: null,
+                task: (diagnostics, trace) => base.ReadCurrentAsync<T>(diagnostics, cosmosConflict, partitionKey, trace, cancellationToken));
         }
 
         public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)

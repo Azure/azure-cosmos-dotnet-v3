@@ -7,20 +7,18 @@
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.ItemProducers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class OrderByQueryTests : QueryTestsBase
@@ -429,8 +427,12 @@
             #endregion
 
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
-                string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).ReadNextAsync();
+                $"SELECT TOP 0 * FROM r",
+                requestOptions: new QueryRequestOptions() 
+                {  
+                    MaxConcurrency = 10, 
+                    MaxItemCount = -1 
+                }).ReadNextAsync();
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 
@@ -958,32 +960,24 @@
 
         private static CosmosElement GenerateRandomJsonValue(Random random)
         {
-            switch (random.Next(0, 7))
+            return (random.Next(0, 7)) switch
             {
                 // Number
-                case 0:
-                    return CosmosNumber64.Create(random.Next());
+                0 => CosmosNumber64.Create(random.Next()),
                 // String
-                case 1:
-                    return CosmosString.Create(new string('a', random.Next(0, 100)));
+                1 => CosmosString.Create(new string('a', random.Next(0, 100))),
                 // Null
-                case 2:
-                    return CosmosNull.Create();
+                2 => CosmosNull.Create(),
                 // Bool
-                case 3:
-                    return CosmosBoolean.Create((random.Next() % 2) == 0);
+                3 => CosmosBoolean.Create((random.Next() % 2) == 0),
                 // Object
-                case 4:
-                    return CosmosObject.Create(new List<KeyValuePair<string, CosmosElement>>());
+                4 => CosmosObject.Create(new Dictionary<string, CosmosElement>()),
                 // Array
-                case 5:
-                    return CosmosArray.Create(new List<CosmosElement>());
+                5 => CosmosArray.Create(new List<CosmosElement>()),
                 // Undefined
-                case 6:
-                    return null;
-                default:
-                    throw new ArgumentException();
-            }
+                6 => null,
+                _ => throw new ArgumentException(),
+            };
         }
 
         private sealed class MockOrderByComparer : IComparer<CosmosElement>
@@ -1177,7 +1171,7 @@
                     }
 
                     Assert.IsTrue(
-                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
+                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens),
                         $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");

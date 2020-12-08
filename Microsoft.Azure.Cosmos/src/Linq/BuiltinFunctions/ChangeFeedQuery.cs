@@ -28,9 +28,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly DocumentClient client;
         private readonly string resourceLink;
         private readonly ChangeFeedOptions feedOptions;
+        private readonly string ifModifiedSince;
         private HttpStatusCode lastStatusCode = HttpStatusCode.OK;
         private string nextIfNoneMatch;
-        private string ifModifiedSince;
+        
         #endregion Fields
 
         #region Constructor
@@ -80,20 +81,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <value>Boolean value representing if whether there are potentially additional results that can be retrieved.</value>
         /// <remarks>Initially returns true. This value is set based on whether the last execution returned a continuation token.</remarks>
-        public bool HasMoreResults
-        {
-            get
-            {
-                return this.lastStatusCode != HttpStatusCode.NotModified;
-            }
-        }
+        public bool HasMoreResults => this.lastStatusCode != HttpStatusCode.NotModified;
 
         /// <summary>
         /// Read feed and retrieves the next page of results in the Azure Cosmos DB service.
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default)
         {
             return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
         }
@@ -103,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default)
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
@@ -126,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (response.ResponseBody != null && response.ResponseBody.Length > 0)
                 {
                     long responseLengthInBytes = response.ResponseBody.Length;
-                    int itemCount = 0;
-                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
+                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out int itemCount);
                     DocumentFeedResponse<dynamic> feedResponse = new DocumentFeedResponse<dynamic>(
                         feedResource,
                         itemCount,
@@ -153,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            INameValueCollection headers = new DictionaryNameValueCollection();
+            INameValueCollection headers = new StoreRequestNameValueCollection();
 
             if (this.feedOptions.MaxItemCount.HasValue)
             {

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 new Documents.Routing.Range<string>("A", "B", true, false),
                 new Documents.Routing.Range<string>("D", "E", true, false),
             };
-            FeedRangeInternal feedRangeInternal = new FeedRangeEPK(new Documents.Routing.Range<string>("A", "E", true, false));
+            FeedRangeInternal feedRangeInternal = new FeedRangeEpk(new Documents.Routing.Range<string>("A", "E", true, false));
             FeedRangeCompositeContinuation token = new FeedRangeCompositeContinuation(containerRid, feedRangeInternal, keyRanges);
             Assert.IsTrue(FeedRangeContinuation.TryParse(token.ToString(), out _));
             Assert.IsFalse(FeedRangeContinuation.TryParse("whatever", out _));

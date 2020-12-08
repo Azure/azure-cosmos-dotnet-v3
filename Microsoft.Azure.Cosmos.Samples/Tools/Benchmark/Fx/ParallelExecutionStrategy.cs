@@ -10,20 +10,21 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Newtonsoft.Json;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
-        private readonly Func<IBenchmarkOperatrion> benchmarkOperation;
+        private readonly Func<IBenchmarkOperation> benchmarkOperation;
 
         private volatile int pendingExecutorCount;
 
         public ParallelExecutionStrategy(
-            Func<IBenchmarkOperatrion> benchmarkOperation)
+            Func<IBenchmarkOperation> benchmarkOperation)
         {
             this.benchmarkOperation = benchmarkOperation;
         }
 
-        public async Task ExecuteAsync(
+        public async Task<RunSummary> ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFailures,
@@ -56,10 +57,10 @@ namespace CosmosBenchmark
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
             }
 
-            await this.LogOutputStats(executors);
+            return await this.LogOutputStats(executors);
         }
 
-        private async Task LogOutputStats(IExecutor[] executors)
+        private async Task<RunSummary> LogOutputStats(IExecutor[] executors)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
@@ -79,7 +80,7 @@ namespace CosmosBenchmark
                     IExecutor executor = executors[i];
                     Summary executorSummary = new Summary()
                     {
-                        succesfulOpsCount = executor.SuccessOperationCount,
+                        successfulOpsCount = executor.SuccessOperationCount,
                         failedOpsCount = executor.FailedOperationCount,
                         ruCharges = executor.TotalRuCharges,
                     };
@@ -93,7 +94,7 @@ namespace CosmosBenchmark
                 Summary diff = currentTotalSummary - lastSummary;
                 lastSummary = currentTotalSummary;
 
-                diff.Print(currentTotalSummary.failedOpsCount + currentTotalSummary.succesfulOpsCount);
+                diff.Print(currentTotalSummary.failedOpsCount + currentTotalSummary.successfulOpsCount);
                 perLoopCounters.Add((int)diff.Rps());
 
                 await Task.Delay(TimeSpan.FromSeconds(outputLoopDelayInSeconds));
@@ -105,26 +106,49 @@ namespace CosmosBenchmark
                 Console.WriteLine();
                 Console.WriteLine("Summary:");
                 Console.WriteLine("--------------------------------------------------------------------- ");
-                lastSummary.Print(lastSummary.failedOpsCount + lastSummary.succesfulOpsCount);
+                lastSummary.Print(lastSummary.failedOpsCount + lastSummary.successfulOpsCount);
 
                 // Skip first 5 and last 5 counters as outliers
                 IEnumerable<int> exceptFirst5 = perLoopCounters.Skip(5);
                 int[] summaryCounters = exceptFirst5.Take(exceptFirst5.Count() - 5).OrderByDescending(e => e).ToArray();
 
-                if (summaryCounters.Length > 0)
+                RunSummary runSummary = new RunSummary();
+
+                if (summaryCounters.Length > 10)
                 {
                     Console.WriteLine();
-                    Console.WriteLine("After Excluding outliers");
-                    double[] percentiles = new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95 };
-                    foreach (double e in percentiles)
-                    {
-                        Console.WriteLine($"\tTOP  {e * 100}% AVG RPS : { Math.Round(summaryCounters.Take((int)(e * summaryCounters.Length)).Average(), 0) }");
-                    }
+                    Utility.TeeTraceInformation("After Excluding outliers");
+
+                    runSummary.Top10PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.1 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top20PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.2 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top30PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.3 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top40PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.4 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top50PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.5 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top60PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.6 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top70PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.7 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top80PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.8 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top90PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.9 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.95 * summaryCounters.Length)).Average(), 0);
+                    runSummary.AverageRps = Math.Round(summaryCounters.Average(), 0);
+
+                    runSummary.Top50PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(50);
+                    runSummary.Top75PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(75);
+                    runSummary.Top90PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(90);
+                    runSummary.Top95PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(95);
+                    runSummary.Top99PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(99);
+
+                    string summary = JsonConvert.SerializeObject(runSummary);
+                    Utility.TeeTraceInformation(summary);
+                }
+                else
+                {
+                    Utility.TeeTraceInformation("Please adjust ItemCount high to run of at-least 1M");
                 }
 
                 Console.WriteLine("--------------------------------------------------------------------- ");
+
+                return runSummary;
             }
         }
-
     }
 }

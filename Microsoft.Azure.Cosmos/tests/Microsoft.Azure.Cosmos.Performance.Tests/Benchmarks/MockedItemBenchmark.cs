@@ -16,8 +16,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         OfTCustom = 2,
     }
 
-    [MemoryDiagnoser]
-    [Config(typeof(ItemBenchmarkConfig))]
+    [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
         public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
@@ -43,18 +42,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task CreateItem()
         {
             await this.CurrentBenchmark.CreateItem();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task DeleteItemExists()
         {
             await this.CurrentBenchmark.DeleteItemExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task DeleteItemNotExists()
         {
             await this.CurrentBenchmark.DeleteItemNotExists();
@@ -67,40 +69,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task ReadItemExists()
         {
             await this.CurrentBenchmark.ReadItemExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task ReadItemNotExists()
         {
             await this.CurrentBenchmark.ReadItemNotExists();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task UpdateItem()
         {
             await this.CurrentBenchmark.UpdateItem();
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public async Task UpsertItem()
         {
             await this.CurrentBenchmark.UpsertItem();
-        }
-
-        private class ItemBenchmarkConfig : ManualConfig
-        {
-            public ItemBenchmarkConfig()
-            {
-                this.Add(StatisticColumn.Q3);
-                this.Add(StatisticColumn.P80);
-                this.Add(StatisticColumn.P85);
-                this.Add(StatisticColumn.P90);
-                this.Add(StatisticColumn.P95);
-                this.Add(StatisticColumn.P100);
-            }
         }
     }
 }

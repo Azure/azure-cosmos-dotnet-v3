@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -21,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
+        private readonly CosmosSerializer patchOperationSerializer;
 
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
@@ -29,11 +29,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.customSerializer = null;
                 this.sqlQuerySpecSerializer = null;
+                this.patchOperationSerializer = null;
             }
             else
             {
                 this.customSerializer = new CosmosJsonSerializerWrapper(customSerializer);
                 this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                    cosmosSerializer: this.customSerializer,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
@@ -129,6 +133,10 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(PartitionedQueryExecutionInfo))
             {
                 return CosmosSerializerCore.propertiesSerializer;
+            }
+            else if (inputType.IsGenericType && inputType.GetGenericArguments()[0] == typeof(PatchOperation))
+            {
+                return this.patchOperationSerializer;
             }
 
             if (inputType == typeof(SqlQuerySpec))

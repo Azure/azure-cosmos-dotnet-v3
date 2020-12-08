@@ -11,10 +11,10 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1161,6 +1161,15 @@
                 // Date and Time
                 "GetCurrentDateTime()",
                 "GetCurrentTimestamp()",
+                "GetCurrentTicks()",
+                "DateTimeAdd(\"mm\", 1, \"2020-07-09T23:20:13.4575530Z\")",
+                "DateTimeDiff(\"yyyy\", \"2028-01-01T01:02:03.1234527Z\", \"2020 - 01 - 03T01: 02:03.1234567Z\")",
+                "DateTimeFromParts(2020, 9, 4)",
+                "DateTimePart(\"mcs\", \"2020-01-02T03:04:05.6789123Z\")",
+                "DateTimeToTicks(\"2020-01-02T03:04:05Z\")",
+                "DateTimeToTimestamp(\"2020-07-09\")",
+                "TicksToDateTime(15943368134575530)",
+                "TimestampToDateTime(1594227912345)",
 
                 // Mathematical
                 "ABS(42)",
@@ -1199,7 +1208,9 @@
                 "CONCAT('hello', 'world')",
                 "CONCAT('hello', 'world', 'bye')",
                 "CONTAINS('hello', 'world')",
+                "CONTAINS('hello', 'world', true)",
                 "ENDSWITH('hello', 'world')",
+                "ENDSWITH('hello', 'world', true)",
                 "INDEX_OF('hello', 'world')",
                 "INDEX_OF('hello', 'world', 42)",
                 "LEFT('hello', 42)",
@@ -1212,6 +1223,9 @@
                 "RIGHT('hello', 2)",
                 "RTRIM('hello')",
                 "STARTSWITH('hello', 'world')",
+                "STARTSWITH('hello', 'world', true)",
+                "STRINGEQUALS('hello', 'world')",
+                "STRINGEQUALS('hello', 'world', true)",
                 "StringToArray('[]')",
                 "StringToBoolean('false')",
                 "StringToNull('null')",
@@ -1332,9 +1346,9 @@
                 input.SqlQuerySpec,
                 input.PartitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
-                isContinuationExpected: true,
+                isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: true);
+                hasLogicalPartitionKey: false);
 
             if (info.Failed)
             {

@@ -5,17 +5,12 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.EmulatorTests.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Linq;
-    using System.Net;
-    using System.Runtime.CompilerServices;
+    using System.Diagnostics;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
@@ -27,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
-        private static readonly ItemRequestOptions RequestOptionDisableDiagnostic = new ItemRequestOptions()
+        private static readonly TransactionalBatchRequestOptions RequestOptionDisableDiagnostic = new TransactionalBatchRequestOptions()
         {
             DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton
         };
@@ -202,12 +197,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<(string, string)> activityIdAndErrorMessage = new List<(string, string)>(maxCount);
                 Guid transportExceptionActivityId = Guid.NewGuid();
                 string transportErrorMessage = $"TransportErrorMessage{Guid.NewGuid()}";
-
+                Guid activityIdScope = Guid.Empty;
                 Action<Uri, Documents.ResourceOperation, Documents.DocumentServiceRequest> interceptor =
                     (uri, operation, request) =>
                 {
+                    Assert.AreNotEqual(Trace.CorrelationManager.ActivityId, Guid.Empty, "Activity scope should be set");
+                    
                     if (request.ResourceType == Documents.ResourceType.Document)
                     {
+                        if (activityIdScope == Guid.Empty)
+                        {
+                            activityIdScope = Trace.CorrelationManager.ActivityId;
+                        }
+                        else
+                        {
+                            Assert.AreEqual(Trace.CorrelationManager.ActivityId, activityIdScope, "Activity scope should match on retries");
+                        }
+
                         if (count >= maxCount)
                         {
                             TransportClientHelper.ThrowTransportExceptionOnItemOperation(
@@ -321,6 +327,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 replaceResponse.Diagnostics,
                 disableDiagnostics);
 
+            testItem.description = "PatchedDescription";
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/description", testItem.description)
+            };
+            ItemResponse<ToDoActivity> patchResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new PartitionKey(testItem.status),
+                patchOperations: patch,
+                requestOptions: requestOptions);
+
+            Assert.AreEqual(patchResponse.Resource.description, "PatchedDescription");
+
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                patchResponse.Diagnostics,
+                disableDiagnostics);
+
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 id: testItem.id,
@@ -357,6 +381,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 replaceStreamResponse.Diagnostics,
                 disableDiagnostics);
 
+            ResponseMessage patchStreamResponse = await containerInternal.PatchItemStreamAsync(
+               id: testItem.id,
+               partitionKey: new PartitionKey(testItem.status),
+               patchOperations: patch,
+               requestOptions: requestOptions);
+            CosmosDiagnosticsTests.VerifyPointDiagnostics(
+                patchStreamResponse.Diagnostics,
+                disableDiagnostics);
+
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status),
@@ -384,6 +417,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string pkValue = "DiagnosticTestPk";
             TransactionalBatch batch = this.Container.CreateTransactionalBatch(new PartitionKey(pkValue));
+            BatchCore batchCore = (BatchCore)batch;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Remove("/cost")
+            };
 
             List<ToDoActivity> createItems = new List<ToDoActivity>();
             for (int i = 0; i < 50; i++)
@@ -396,10 +434,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             for (int i = 0; i < 20; i++)
             {
                 batch.ReadItem(createItems[i].id);
+                batchCore.PatchItem(createItems[i].id, patch);
             }
 
-            RequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
-            TransactionalBatchResponse response = await ((BatchCore)batch).ExecuteAsync(requestOptions);
+            TransactionalBatchRequestOptions requestOptions = disableDiagnostics ? RequestOptionDisableDiagnostic : null;
+            TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
 
             Assert.IsNotNull(response);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
@@ -410,6 +449,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true)]
         [DataRow(false)]
+        [Ignore] // turn this back on when we have tracing diagnostics.
         public async Task ChangeFeedDiagnostics(bool disableDiagnostics)
         {
             string pkValue = "ChangeFeedDiagnostics";
@@ -426,14 +466,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.WhenAll(createItemsTasks);
 
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
-            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(changeFeedRequestOptions: requestOptions);
+            FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(
+                ChangeFeedStartFrom.Beginning(),
+                changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {
                 using (ResponseMessage response = await changeFeedIterator.ReadNextAsync())
                 {
                     CosmosDiagnosticsTests.VerifyChangeFeedDiagnostics(
                        diagnostics: response.Diagnostics,
-                        disableDiagnostics: disableDiagnostics);
+                       disableDiagnostics: disableDiagnostics);
                 }
             }
         }
@@ -618,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDiagnosticsContext diagnosticsContext = (diagnostics as CosmosDiagnosticsCore).Context;
 
             // If all the pages are buffered then several of the normal summary validation will fail.
-            if (diagnosticsContext.GetTotalRequestCount() > 0)
+            if (diagnosticsContext.GetTotalResponseCount() > 0)
             {
                 DiagnosticValidator.ValidateCosmosDiagnosticsContext(diagnosticsContext);
             }
@@ -698,8 +740,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Verify the typed query iterator
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                    sql,
-                    requestOptions: requestOptions);
+                sql,
+                requestOptions: requestOptions);
 
             List<ToDoActivity> results = new List<ToDoActivity>();
             long totalOutDocumentCount = 0;

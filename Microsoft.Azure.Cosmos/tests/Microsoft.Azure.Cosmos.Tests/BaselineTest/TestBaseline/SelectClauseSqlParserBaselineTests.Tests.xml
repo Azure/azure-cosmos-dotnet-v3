@@ -1,0 +1,128 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select Star]]></Description>
+      <Query><![CDATA[SELECT *]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT *]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Case Insensitive]]></Description>
+      <Query><![CDATA[SeLeCt *]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT *]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select List]]></Description>
+      <Query><![CDATA[SELECT 1, 2, 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT 1, 2, 3]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select List with aliases]]></Description>
+      <Query><![CDATA[SELECT 1 AS asdf, 2, 3 AS asdf2]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT 1 AS asdf, 2, 3 AS asdf2]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select Value]]></Description>
+      <Query><![CDATA[SELECT VALUE 1]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE 1]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DISTINCT]]></Description>
+      <Query><![CDATA[SELECT DISTINCT *]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT DISTINCT *]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TOP]]></Description>
+      <Query><![CDATA[SELECT TOP 5 *]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT TOP 5 *]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TOP with parameters]]></Description>
+      <Query><![CDATA[SELECT TOP @TOPCOUNT *]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT TOP @TOPCOUNT *]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[No Selection]]></Description>
+      <Query><![CDATA[SELECT]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Wrong keyword]]></Description>
+      <Query><![CDATA[Selec *]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trailing comma]]></Description>
+      <Query><![CDATA[SELECT 1,]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select Value more than 1 expression]]></Description>
+      <Query><![CDATA[SELECT VALUE 1, 2]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select Value no spaces]]></Description>
+      <Query><![CDATA[SELECTVALUE 1]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TOP non number]]></Description>
+      <Query><![CDATA[SELECT TOP 'asdf' *]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>

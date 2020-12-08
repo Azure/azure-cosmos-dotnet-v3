@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONCAT(root["StringField"], "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONCAT(root["StringField"], "str1", "str2") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -40,7 +40,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3", "str4") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -51,7 +51,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3", "str4") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -62,7 +62,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONTAINS(root["StringField"], "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -73,7 +73,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONTAINS(root["StringField"], "c") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -84,7 +84,55 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CONTAINS("str", root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains w/ string (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Contains("Str", Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE CONTAINS(root["StringField"], "Str", false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in string constant (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => "sTr".Contains(doc.StringField, Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE CONTAINS("sTr", root["StringField"], false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains w/ string (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Contains("Str", OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONTAINS(root["StringField"], "Str", true) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Contains in string constant (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => "sTr".Contains(doc.StringField, OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE CONTAINS("sTr", root["StringField"], true) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -95,7 +143,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["StringField"] IN ("one", "two", "three")) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -106,7 +154,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["StringField"] IN ("one", "two", "three")) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -118,7 +166,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
+WHERE (root["StringField"] IN ("one", "two", "three"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -130,7 +178,7 @@ WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
+WHERE (root["StringField"] IN ("one", "two", "three"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -141,7 +189,7 @@ WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["StringField"] NOT IN ("one", "two", "three")) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -152,7 +200,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["StringField"] NOT IN ("one", "two", "three")) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -164,7 +212,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
+WHERE (root["StringField"] NOT IN ("one", "two", "three"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -176,7 +224,7 @@ WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
+WHERE (root["StringField"] NOT IN ("one", "two", "three"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -187,7 +235,7 @@ WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE false 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -198,7 +246,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (NOT false) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -209,7 +257,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ENDSWITH(root["StringField"], "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -220,7 +268,55 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ENDSWITH("str", root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[EndsWith (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.EndsWith("stR", Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE ENDSWITH(root["StringField"], "stR", false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant string EndsWith (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => "STR".EndsWith(doc.StringField, Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE ENDSWITH("STR", root["StringField"], false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[EndsWith (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.EndsWith("stR", OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ENDSWITH(root["StringField"], "stR", true) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Constant string EndsWith (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => "STR".EndsWith(doc.StringField, OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ENDSWITH("STR", root["StringField"], true) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -231,7 +327,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE INDEX_OF(root["StringField"], "c") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -242,7 +338,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE INDEX_OF(root["StringField"], "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -253,7 +349,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE INDEX_OF(root["StringField"], "c", 0) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -264,7 +360,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE INDEX_OF(root["StringField"], "str", 0) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -275,7 +371,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE LENGTH(root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -286,7 +382,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE LOWER(root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -297,7 +393,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE LTRIM(root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -308,7 +404,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE REPLACE(root["StringField"], "c", "a") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -319,7 +415,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE REPLACE(root["StringField"], "str", "str2") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -330,7 +426,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE RTRIM(root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -341,7 +437,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE STARTSWITH(root["StringField"], "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -352,7 +448,55 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE STARTSWITH("str", root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[StartsWith (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.StartsWith("Str", Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE STARTSWITH(root["StringField"], "Str", false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String constant StartsWith (case-sensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => "sTr".StartsWith(doc.StringField, Ordinal))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE STARTSWITH("sTr", root["StringField"], false) 
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[StartsWith (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.StartsWith("Str", OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE STARTSWITH(root["StringField"], "Str", true) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String constant StartsWith (case-insensitive)]]></Description>
+      <Expression><![CDATA[query.Select(doc => "sTr".StartsWith(doc.StringField, OrdinalIgnoreCase))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE STARTSWITH("sTr", root["StringField"], true) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -363,7 +507,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SUBSTRING(root["StringField"], 0, 1) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -374,7 +518,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE UPPER(root["StringField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>
