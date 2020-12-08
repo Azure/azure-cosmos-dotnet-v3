@@ -987,5 +987,74 @@ namespace Microsoft.Azure.Cosmos
         public abstract ContainerBuilder DefineContainer(
             string name,
             string partitionKeyPath);
+
+#if PREVIEW
+        /// <summary>
+        /// Returns a reference to a client encryption key object.
+        /// </summary>
+        /// <param name="id">Unique identifier for the client encryption key.</param>
+        /// <returns>Client encryption key reference.</returns>
+        /// <remarks>
+        /// The reference returned doesn't guarantee existence of the client encryption key.
+        /// Please ensure it already exists or is created through <see cref="CreateClientEncryptionKeyAsync"/>.
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
+        /// ClientEncryptionKey key = await db.GetClientEncryptionKey("keyId");
+        /// ClientEncryptionKeyProperties keyProperties = await key.ReadAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract ClientEncryptionKey GetClientEncryptionKey(string id);
+
+        /// <summary>
+        /// Returns an iterator that can be iterated to get properties of client encryption keys.
+        /// </summary>
+        /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
+        /// <returns>An iterator over client encryption keys.</returns>
+        /// <remarks>
+        /// <see cref="ClientEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
+        /// </remarks>
+        public abstract FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Saves the client encryption key as an asynchronous operation in the Azure Cosmos service.
+        /// This should be invoked from the Encryption package.
+        /// </summary>
+        /// <param name="clientEncryptionKey">Client encryption key.</param>
+        /// <param name="clientEncryptionKeyProperties">Client encryption key properties.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
+        /// <returns>An awaitable response which wraps a <see cref="ClientEncryptionKeyProperties"/> containing the read resource record.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
+        public abstract Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+            ClientEncryptionKey clientEncryptionKey,
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Replaces the client encryption key properties for the key provided as an asynchronous operation in the Azure Cosmos service.
+        /// This should be invoked from the Encryption package.
+        /// </summary>
+        /// <param name="clientEncryptionKey">Client encryption key.</param>
+        /// <param name="clientEncryptionKeyProperties">New client encryption key properties.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
+        /// <returns>An awaitable response which wraps a <see cref="ClientEncryptionKeyProperties"/> containing the read resource record.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
+        public abstract Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
+            ClientEncryptionKey clientEncryptionKey,
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+#endif
     }
 }

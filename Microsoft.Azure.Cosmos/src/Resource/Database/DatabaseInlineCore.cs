@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class DatabaseInlineCore : DatabaseCore
@@ -297,6 +298,63 @@ namespace Microsoft.Azure.Cosmos
                 nameof(UpsertUserAsync),
                 requestOptions,
                 (diagnostics, trace) => base.UpsertUserAsync(diagnostics, id, requestOptions, trace, cancellationToken));
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override ClientEncryptionKey GetClientEncryptionKey(string id)
+        {
+            return base.GetClientEncryptionKey(id);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyIterator(
+                QueryDefinition queryDefinition,
+                string continuationToken = null,
+                QueryRequestOptions requestOptions = null)  
+        {
+            return base.GetClientEncryptionKeyIterator(queryDefinition, continuationToken, requestOptions);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+                ClientEncryptionKey clientEncryptionKey,
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateClientEncryptionKeyAsync),
+                requestOptions,
+                (diagnostics, trace) => base.CreateClientEncryptionKeyAsync(clientEncryptionKey, clientEncryptionKeyProperties, requestOptions, cancellationToken));
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
+                ClientEncryptionKey clientEncryptionKey,
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReplaceClientEncryptionKeyAsync),
+                requestOptions,
+                (diagnostics, trace) => base.ReplaceClientEncryptionKeyAsync(clientEncryptionKey, clientEncryptionKeyProperties, requestOptions, cancellationToken));
         }
     }
 }
