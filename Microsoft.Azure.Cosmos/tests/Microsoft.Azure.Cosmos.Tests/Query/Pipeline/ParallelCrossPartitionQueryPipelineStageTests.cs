@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 3; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 

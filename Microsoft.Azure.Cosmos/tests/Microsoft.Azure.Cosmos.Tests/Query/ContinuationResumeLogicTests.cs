@@ -13,493 +13,173 @@
     [TestClass]
     public class ContinuationResumeLogicTests
     {
-        //#region match
-        //[TestMethod]
-        //public void TestMatchRangesTocontinuationTokens_OneToOne()
-        //{
-        //    FeedRangeEpk partitionKeyRange = new FeedRangeEpk(
-        //        new Documents.Routing.Range<string>(
-        //            min: string.Empty,
-        //            max: "FF",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
+        [TestMethod]
+        public void ResumeEmptyStart()
+        {
+            FeedRangeEpk range1 = Range(min: string.Empty, max: "A");
+            FeedRangeEpk range2 = Range(min: "A", max: "B");
+            FeedRangeEpk range3 = Range(min: "B", max: string.Empty);
+            ParallelContinuationToken token = Token(min: string.Empty, max: "A");
 
-        //    ParallelContinuationToken token = new ParallelContinuationToken(
-        //        token: "asdf",
-        //        range: new Documents.Routing.Range<string>(
-        //            min: string.Empty,
-        //            max: "FF",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
-
-        //    IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMapping = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-        //    {
-        //        { partitionKeyRange, token }
-        //    };
-
-        //    ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
-        //        expectedMapping,
-        //        new FeedRangeEpk[] { partitionKeyRange },
-        //        new ParallelContinuationToken[] { token });
-        //}
-
-        //[TestMethod]
-        //public void TestMatchRangesTocontinuationTokens_OneToMany()
-        //{
-        //    FeedRangeEpk partitionKeyRange1 = new FeedRangeEpk(
-        //        new Documents.Routing.Range<string>(
-        //            min: string.Empty,
-        //            max: "A",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
-
-        //    FeedRangeEpk partitionKeyRange2 = new FeedRangeEpk(
-        //        new Documents.Routing.Range<string>(
-        //            min: "A",
-        //            max: "B",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
-
-        //    ParallelContinuationToken token = new ParallelContinuationToken(
-        //        token: "asdf",
-        //        range: new Documents.Routing.Range<string>(
-        //            min: string.Empty,
-        //            max: "B",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
-
-        //    IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMapping = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-        //    {
-        //        { partitionKeyRange1, token },
-        //        { partitionKeyRange2, token }
-        //    };
-
-        //    ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
-        //        expectedMapping,
-        //        new FeedRangeEpk[] { partitionKeyRange1, partitionKeyRange2 },
-        //        new ParallelContinuationToken[] { token });
-        //}
-
-        //[TestMethod]
-        //public void TestMatchRangesTocontinuationTokens_OneToNone()
-        //{
-        //    FeedRangeEpk partitionKeyRange = new FeedRangeEpk(
-        //        new Documents.Routing.Range<string>(
-        //            min: string.Empty,
-        //            max: "A",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
-
-        //    ParallelContinuationToken token = new ParallelContinuationToken(
-        //        token: "asdf",
-        //        range: new Documents.Routing.Range<string>(
-        //            min: "B",
-        //            max: "C",
-        //            isMinInclusive: true,
-        //            isMaxInclusive: false));
-
-        //    IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMapping = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-        //    {
-        //        { partitionKeyRange, null },
-        //    };
-
-        //    ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
-        //        expectedMapping,
-        //        new FeedRangeEpk[] { partitionKeyRange },
-        //        new ParallelContinuationToken[] { token });
-        //}
-
-        //[TestMethod]
-        //[ExpectedException(typeof(ArgumentNullException))]
-        //public void TestMatchRangesTocontinuationTokens_ArgumentNullException()
-        //{
-        //    ContinuationResumeLogicTests.RunMatchRangesToContinuationTokens(
-        //        expectedMapping: null,
-        //        partitionKeyRanges: new FeedRangeEpk[] { },
-        //        partitionedTokens: null);
-        //}
-        //#endregion
+            RunTryGetInitializationInfo(
+                Mapping(),
+                Mapping((range1, token)),
+                Mapping((CombineRanges(range2, range3), null)),
+                new FeedRangeEpk[] { range1, range2, range3 },
+                new IPartitionedToken[] { token });
+        }
 
         [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeOnAMerge()
+        public void ResumeEmptyEnd()
+        {
+            FeedRangeEpk range1 = Range(min: string.Empty, max: "A");
+            FeedRangeEpk range2 = Range(min: "A", max: "B");
+            FeedRangeEpk range3 = Range(min: "B", max: string.Empty);
+            ParallelContinuationToken token = Token(min: "B", max: string.Empty);
+
+            RunTryGetInitializationInfo(
+                Mapping((CombineRanges(range1, range2), null)),
+                Mapping((range3, token)),
+                Mapping(),
+                new FeedRangeEpk[] { range1, range2, range3 },
+                new IPartitionedToken[] { token });
+        }
+
+        [TestMethod]
+        public void ResumeLeftPartition()
+        {
+            FeedRangeEpk range1 = Range(min: string.Empty, max: "A");
+            FeedRangeEpk range2 = Range(min: "A", max: "B");
+            FeedRangeEpk range3 = Range(min: "B", max: "C");
+            ParallelContinuationToken token = Token(min: string.Empty, max: "A");
+
+            RunTryGetInitializationInfo(
+                Mapping(),
+                Mapping((range1, token)),
+                Mapping((CombineRanges(range2, range3), null)),
+                new FeedRangeEpk[] { range1, range2, range3 },
+                new IPartitionedToken[] { token });
+        }
+
+        [TestMethod]
+        public void ResumeMiddlePartition()
+        {
+            FeedRangeEpk range1 = Range(min: string.Empty, max: "A");
+            FeedRangeEpk range2 = Range(min: "A", max: "B");
+            FeedRangeEpk range3 = Range(min: "B", max: "C");
+            ParallelContinuationToken token = Token(min: "A", max: "B");
+
+            RunTryGetInitializationInfo(
+                Mapping((range1, null)),
+                Mapping((range2, token)),
+                Mapping((range3, null)),
+                new FeedRangeEpk[] { range1, range2, range3 },
+                new IPartitionedToken[] { token });
+        }
+
+        [TestMethod]
+        public void ResumeRightPartition()
+        {
+            FeedRangeEpk range1 = Range(min: string.Empty, max: "A");
+            FeedRangeEpk range2 = Range(min: "A", max: "B");
+            FeedRangeEpk range3 = Range(min: "B", max: "C");
+            ParallelContinuationToken token = Token(min: "B", max: "C");
+
+            RunTryGetInitializationInfo(
+                Mapping((CombineRanges(range1, range2), null)),
+                Mapping((range3, token)),
+                Mapping(),
+                new FeedRangeEpk[] { range1, range2, range3 },
+                new IPartitionedToken[] { token });
+        }
+
+        [TestMethod]
+        public void ResumeOnAMerge()
         {
             // Suppose that we read from range 1
-            FeedRangeEpk partitionKeyRange1 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            FeedRangeEpk range1 = Range(min: string.Empty, max: "A");
 
             // Then Range 1 Merged with Range 2
-            FeedRangeEpk partitionKeyRange2 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            // To make Range 3
-            FeedRangeEpk partitionKeyRange3 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            FeedRangeEpk range2 = Range(min: "A", max: "B");
 
             // And we have a continuation token for range 1
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            ParallelContinuationToken token = Token(min: string.Empty, max: "A");
 
             // Then we should resume on range 1 with epk range filtering 
             // and still have range 2 with null continuation.
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { partitionKeyRange1, token },
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-
-                { partitionKeyRange2, null },
-            };
-
             RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { partitionKeyRange3 },
+                Mapping(),
+                Mapping((range1, token)),
+                Mapping((range2, null)),
+                new FeedRangeEpk[] { CombineRanges(range1, range2) },
                 new IPartitionedToken[] { token });
         }
 
         [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeEmptyStart()
+        public void ResumeOnAMerge_LogicalPartition()
         {
-            FeedRangeEpk pkRange1 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            // Suppose that we read from range 2 with a logical partiton key that hashes to D
+            FeedRangeEpk range2 = Range(min: "C", max: "E");
 
-            FeedRangeEpk pkRange2 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            // Then Range 1
+            FeedRangeEpk range1 = Range(min: "A", max: "C");
 
-            FeedRangeEpk pkRange3 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: string.Empty,
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            // and Range 3 merge with range 2
+            FeedRangeEpk range3 = Range(min: "E", max: "G");
 
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            // And we have a continuation token for range 2
+            ParallelContinuationToken token = Token(min: "C", max: "E");
 
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange1, token },
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { CombineRanges(pkRange2, pkRange3), null },
-            };
-
+            // Then we should resume on range 2 with epk range filtering 
+            // and still have range 1 and 3 with null continuation (but, since there is a logical partition key it won't match any results).
             RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { pkRange1, pkRange2, pkRange3 },
+                Mapping((range1, null)),
+                Mapping((range2, token)),
+                Mapping((range3, null)),
+                new FeedRangeEpk[] { CombineRanges(CombineRanges(range1, range2), range3) },
                 new IPartitionedToken[] { token });
         }
 
         [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeEmptyEnd()
+        public void ResumeOnASplit()
         {
-            FeedRangeEpk pkRange1 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange2 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange3 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: string.Empty,
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: string.Empty,
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { CombineRanges(pkRange1, pkRange2), null },
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange3, token },
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
+            FeedRangeEpk range1 = Range(min: "A", max: "C");
+            FeedRangeEpk range2 = Range(min: "C", max: "E");
+            FeedRangeEpk range3 = Range(min: "E", max: "F");
+            ParallelContinuationToken token = Token(min: "A", max: "E");
 
             RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { pkRange1, pkRange2, pkRange3 },
+                Mapping(),
+                Mapping((CombineRanges(range1, range2), token)),
+                Mapping((range3, null)),
+                new FeedRangeEpk[] { range1, range2, range3 },
                 new IPartitionedToken[] { token });
         }
 
         [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeLeftPartition()
-        {
-            FeedRangeEpk pkRange1 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange2 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange3 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: "C",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange1, token}
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { CombineRanges(pkRange2, pkRange3), null},
-            };
-
-            RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { pkRange1, pkRange2, pkRange3 },
-                new IPartitionedToken[] { token });
-        }
-
-        [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeMiddlePartition()
-        {
-            FeedRangeEpk pkRange1 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange2 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange3 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: "C",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange1, null}
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange2, token},
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange3, null},
-            };
-
-            RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { pkRange1, pkRange2, pkRange3 },
-                new IPartitionedToken[] { token });
-        }
-
-        [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeRightPartition()
-        {
-            FeedRangeEpk pkRange1 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: string.Empty,
-                    max: "A",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange2 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "B",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            FeedRangeEpk pkRange3 = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: "C",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: "C",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { CombineRanges(pkRange1, pkRange2), null},
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange3, token},
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
-
-            RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { pkRange1, pkRange2, pkRange3 },
-                new IPartitionedToken[] { token });
-        }
-
-        [TestMethod]
-        public void TestTryGetInitializationInfo_ResumeLogicalParition_OnSplit()
+        public void ResumeOnSplit_LogicalParition()
         {
             // Suppose the partition spans epk range A to E
             // And the user send a query with partition key that hashes to C
             // The the token will look like:
-            ParallelContinuationToken token = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>(
-                    min: "A",
-                    max: "E",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
+            ParallelContinuationToken token = Token(min: "A", "E");
 
             // Now suppose there is a split that creates two partitions A to B and B to E
             // Now C will map to the partition that goes from B to E
-            FeedRangeEpk pkRange = new FeedRangeEpk(
-                new Documents.Routing.Range<string>(
-                    min: "B",
-                    max: "E",
-                    isMinInclusive: true,
-                    isMaxInclusive: false));
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-                { pkRange, token},
-            };
-
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions = new Dictionary<FeedRangeEpk, IPartitionedToken>()
-            {
-            };
+            FeedRangeEpk range = Range(min: "B", max: "E");
 
             RunTryGetInitializationInfo(
-                expectedMappingLeftPartitions,
-                expectedMappingTargetPartition,
-                expectedMappingRightPartitions,
-                new FeedRangeEpk[] { pkRange },
+                Mapping(),
+                Mapping((range, token)),
+                Mapping(),
+                new FeedRangeEpk[] { range },
                 new IPartitionedToken[] { token });
         }
 
         private static void RunTryGetInitializationInfo(
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingLeftPartitions,
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingTargetPartition,
-            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedMappingRightPartitions,
+            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedLeftMapping,
+            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedTargetMapping,
+            IReadOnlyDictionary<FeedRangeEpk, IPartitionedToken> expectedRightMapping,
             IEnumerable<FeedRangeEpk> partitionKeyRanges,
             IEnumerable<IPartitionedToken> partitionedTokens)
         {
@@ -509,9 +189,9 @@
             Assert.IsTrue(tryGetInitializationInfo.Succeeded);
             PartitionMapping<IPartitionedToken> partitionMapping = tryGetInitializationInfo.Result;
 
-            AssertPartitionMappingAreEqual(expectedMappingLeftPartitions, partitionMapping.PartitionsLeftOfTarget);
-            AssertPartitionMappingAreEqual(expectedMappingTargetPartition, partitionMapping.TargetPartition);
-            AssertPartitionMappingAreEqual(expectedMappingRightPartitions, partitionMapping.PartitionsRightOfTarget);
+            AssertPartitionMappingAreEqual(expectedLeftMapping, partitionMapping.MappingLeftOfTarget);
+            AssertPartitionMappingAreEqual(expectedTargetMapping, partitionMapping.TargetMapping);
+            AssertPartitionMappingAreEqual(expectedRightMapping, partitionMapping.MappingRightOfTarget);
         }
 
         private static void AssertPartitionMappingAreEqual(
@@ -533,6 +213,38 @@
                     expected: JsonConvert.SerializeObject(kvp.Value),
                     actual: JsonConvert.SerializeObject(partitionedToken));
             }
+        }
+
+        private static FeedRangeEpk Range(string min, string max)
+        {
+            return new FeedRangeEpk(
+                new Documents.Routing.Range<string>(
+                    min: min,
+                    max: max,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
+        }
+
+        private static ParallelContinuationToken Token(string min, string max)
+        {
+            return new ParallelContinuationToken(
+                token: Guid.NewGuid().ToString(),
+                range: new Documents.Routing.Range<string>(
+                    min: min,
+                    max: max,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
+        }
+
+        private static Dictionary<FeedRangeEpk, IPartitionedToken> Mapping(params (FeedRangeEpk, IPartitionedToken)[] rangeAndTokens)
+        {
+            Dictionary<FeedRangeEpk, IPartitionedToken> mapping = new Dictionary<FeedRangeEpk, IPartitionedToken>();
+            foreach ((FeedRangeEpk range, IPartitionedToken token) in rangeAndTokens)
+            {
+                mapping[range] = token;
+            };
+
+            return mapping;
         }
 
         private static FeedRangeEpk CombineRanges(FeedRangeEpk range1, FeedRangeEpk range2)
