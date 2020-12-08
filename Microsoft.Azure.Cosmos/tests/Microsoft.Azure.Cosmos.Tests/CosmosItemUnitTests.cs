@@ -731,7 +731,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                                         .GetContainer("testcontainer");
 
             ContainerInternal containerInternal = (ContainerInternal)container;
-            ResponseMessage responseMessage = await containerInternal.DeleteAllItemsByPartitionKeyAsync(
+            ResponseMessage responseMessage = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(
                 partitionKey: partitionKey,
                 requestOptions: requestOptions);
             Assert.IsNotNull(responseMessage);

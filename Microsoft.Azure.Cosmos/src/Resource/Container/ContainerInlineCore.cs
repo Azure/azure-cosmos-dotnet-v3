@@ -400,15 +400,15 @@ namespace Microsoft.Azure.Cosmos
             return base.GetItemQueryIterator<T>(feedRange, queryDefinition, continuationToken, requestOptions);
         }
 
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyAsync(
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
           Cosmos.PartitionKey partitionKey,
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteAllItemsByPartitionKeyAsync),
+                nameof(DeleteAllItemsByPartitionKeyStreamAsync),
                 requestOptions,
-                (diagnostics) => base.DeleteAllItemsByPartitionKeyAsync(partitionKey, requestOptions, cancellationToken));
+                (diagnostics) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, requestOptions, cancellationToken));
         }
     }
 }

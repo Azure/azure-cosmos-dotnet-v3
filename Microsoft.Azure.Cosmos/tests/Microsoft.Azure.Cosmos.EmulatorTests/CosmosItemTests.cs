@@ -522,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
             ItemResponse<dynamic>  itemResponse = await this.Container.CreateItemAsync<dynamic>(testItem1);
             Cosmos.PartitionKey partitionKey1 = new Cosmos.PartitionKey(pKString);
-            ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyAsync(partitionKey1);
+            ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1);
             Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
 
             ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item1", partitionKey1);

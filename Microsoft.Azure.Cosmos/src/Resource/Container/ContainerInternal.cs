@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if !PREVIEW
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyAsync(
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                ItemRequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));

@@ -1072,6 +1072,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW        
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Documents are lazily deleted in the background whenever enough resources are available.
         /// </summary>
         /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
         /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
@@ -1079,7 +1080,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/>.
         /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyAsync(
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                ItemRequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));

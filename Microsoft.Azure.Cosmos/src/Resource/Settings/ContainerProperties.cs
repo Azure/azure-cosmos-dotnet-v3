@@ -140,23 +140,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the PartitionKeyDeleteThroughputFraction for the container.
-        /// </summary>
-        /// <para>
-        /// This specifies the maximum fraction of container( or database) throughput that can be used for document deletes initiated in the background in response to DeleteAllItemsByPartitionKey operation.
-        /// The request units consumed for deletion of documents will always be within the RU limits determined using PartitionkeyDeleteThroughputFraction.
-        /// In the absence of background document deletes, the whole container (or database) throughput is available for use by other operations.
-        /// If not set, the default value is considered to be 1.0, meaning the whole user throughput can be used for background document deletes.
-        /// </para>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKeyDeleteThroughputFraction, NullValueHandling = NullValueHandling.Ignore)]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        double? PartitionKeyDeleteThroughputFraction{ get; set; }
-
-        /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
@@ -574,12 +557,6 @@ namespace Microsoft.Azure.Cosmos
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
-            }
-
-            if (this.PartitionKeyDeleteThroughputFraction != null
-                && (this.PartitionKeyDeleteThroughputFraction < 0 || this.PartitionKeyDeleteThroughputFraction > 1))
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.PartitionKeyDeleteThroughputFraction));
             }
         }
     }

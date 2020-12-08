@@ -105,35 +105,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties PkDeleteContainer = new ContainerProperties()
             {
                 Id = containerName,
-                PartitionKeyPath = "/pk",
-                PartitionKeyDeleteThroughputFraction = 0.5
+                PartitionKeyPath = "/pk"
             };
 
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(PkDeleteContainer);
             Assert.AreEqual(containerName, response.Resource.Id);
-            Assert.AreEqual(0.5, response.Resource.PartitionKeyDeleteThroughputFraction);
-        }
-
-        [TestMethod]
-        public async Task ContainerInvalidPKDeleteThroughputTest()
-        {
-            string containerName = "PkDeleteContainer";
-            try
-            {
-                ContainerProperties PkDeleteContainer = new ContainerProperties()
-                {
-                    Id = containerName,
-                    PartitionKeyPath = "/pk",
-                    PartitionKeyDeleteThroughputFraction = -1
-                };
-                ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(PkDeleteContainer);
-                Assert.Fail("Expected an exception");
-            }
-            catch (ArgumentOutOfRangeException e)
-            {
-                //PartitionKeyDeleteThroughputFraction has to be between [0.0,1.0]
-                Assert.IsTrue(e.Message.Contains("Parameter name: PartitionKeyDeleteThroughputFraction"));
-            }
         }
 
         [TestMethod]
