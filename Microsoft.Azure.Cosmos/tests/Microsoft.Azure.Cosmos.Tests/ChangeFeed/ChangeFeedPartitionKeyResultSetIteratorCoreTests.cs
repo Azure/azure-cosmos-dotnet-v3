@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -132,10 +131,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Checks that for a PKRange based lease, the PKRangeId header is set
+        /// Checks that for a PKRange based lease, the feed range is a FeedRangePartitionKeyRange
         /// </summary>
         [TestMethod]
-        public async Task ShouldSetPKRangeIdHeader()
+        public async Task ShouldSetFeedRangePartitionKeyRange()
         {
             int itemCount = 5;
             string pkRangeId = "0";
@@ -146,13 +145,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = pkRangeId
             };
 
-            Func<Action<RequestMessage>, bool> validateEnricher  = (Action<RequestMessage> enricher) =>
-            {
-                RequestMessage requestMessage = new RequestMessage();
-                enricher(requestMessage);
-                return requestMessage.PartitionKeyRangeId != null;
-            };
-
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
@@ -161,9 +153,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<FeedRange>(),
+                It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
                 It.IsAny<Stream>(),
-                It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
+                It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
@@ -189,9 +181,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<FeedRange>(),
+                It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
                 It.IsAny<Stream>(),
-                It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
+                It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
@@ -199,10 +191,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         /// <summary>
-        /// Checks that we return a 410 if the range resolves to two destinations
+        /// Checks that for an EPK Range lease, the feedrange is EPK
         /// </summary>
         [TestMethod]
-        public async Task ShouldReturnPartitionKeyRangeGone()
+        public async Task ShouldUseFeedRangeEpk()
         {
             int itemCount = 5;
             string pkRangeId = "0";
@@ -223,84 +215,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<FeedRange>(),
+                It.Is<FeedRange>(fr => fr is FeedRangeEpk),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
-                It.IsAny<ITrace>(),
-                It.IsAny<CancellationToken>()
-                )
-            ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
-            containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
-            containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-            MockDocumentClientWithSplit mockDocumentClient = new MockDocumentClientWithSplit();
-            mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);
-
-            ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
-                lease: documentServiceLeaseCore,
-                continuationToken: null,
-                maxItemCount: itemCount,
-                container: containerMock.Object,
-                startTime: startTime,
-                startFromBeginning: false);
-
-            ResponseMessage response = await iterator.ReadNextAsync();
-            Assert.AreEqual(System.Net.HttpStatusCode.Gone, response.StatusCode);
-            Assert.AreEqual(Documents.SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
-
-            mockContext.Verify(c => c.ProcessResourceOperationStreamAsync(
-                It.IsAny<string>(),
-                It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
-                It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
-                It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
-                It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<FeedRange>(),
-                It.IsAny<Stream>(),
-                It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
-                It.IsAny<ITrace>(),
-                It.IsAny<CancellationToken>()
-                ), Times.Never);
-        }
-
-        /// <summary>
-        /// Checks that for an EPK Range lease, the EPK headers are set.
-        /// </summary>
-        [TestMethod]
-        public async Task ShouldSetEPKRangeHeaders()
-        {
-            int itemCount = 5;
-            string pkRangeId = "0";
-            DateTime startTime = DateTime.UtcNow;
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk feedRange = new FeedRangeEpk(range);
-            DocumentServiceLeaseCoreEpk documentServiceLeaseCore = new DocumentServiceLeaseCoreEpk()
-            {
-                LeaseToken = pkRangeId,
-                FeedRange = feedRange
-            };
-
-            Func<Action<RequestMessage>, bool> validateEnricher = (Action<RequestMessage> enricher) =>
-            {
-                RequestMessage requestMessage = new RequestMessage();
-                enricher(requestMessage);
-                return requestMessage.PartitionKeyRangeId != null
-                    && (string)requestMessage.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] == RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString()
-                    && (string)requestMessage.Headers[HttpConstants.HttpHeaders.StartEpk] == range.Min
-                    && (string)requestMessage.Headers[HttpConstants.HttpHeaders.EndEpk] == range.Max;
-            };
-
-            Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(c => c.ProcessResourceOperationStreamAsync(
-                It.IsAny<string>(),
-                It.Is<Documents.ResourceType>(rt => rt == Documents.ResourceType.Document),
-                It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
-                It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
-                It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<FeedRange>(),
-                It.IsAny<Stream>(),
-                It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
@@ -328,21 +245,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.IsAny<FeedRange>(),
+                It.Is<FeedRange>(fr => fr is FeedRangeEpk),
                 It.IsAny<Stream>(),
-                It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
+                It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
-        }
-
-        private class MockDocumentClientWithSplit : MockDocumentClient
-        {
-            internal override IReadOnlyList<Documents.PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
-            {
-                return (IReadOnlyList<Documents.PartitionKeyRange>)new List<Documents.PartitionKeyRange>() { new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "BB", Id = "0" }, new Documents.PartitionKeyRange() { MinInclusive = "BB", MaxExclusive = "FF", Id = "1" } };
-            }
         }
     }
 }
