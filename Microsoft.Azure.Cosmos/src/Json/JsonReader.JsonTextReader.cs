@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override Utf8String GetUtf8StringValue()
             {
-                throw new NotImplementedException();
+                return Utf8String.TranscodeUtf16(this.GetStringValue());
             }
 
             /// <inheritdoc />

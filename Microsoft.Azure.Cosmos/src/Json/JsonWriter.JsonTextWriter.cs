@@ -278,18 +278,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteVariableSizeIntegerValue(long value)
-            {
-                this.WriteIntegerInternal(value);
-            }
-
-            /// <inheritdoc />
-            public override void WriteDouble(double value)
-            {
-                this.WriteDoubleInternal(value);
-            }
-
-            /// <inheritdoc />
             public override void WriteGuidValue(Guid value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Guid);

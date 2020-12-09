@@ -20,19 +20,17 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="scope"></param>
         void Write(JsonWriter.PreblittedBinaryJsonScope scope);
 
-#pragma warning disable SA1310
         /// <summary>
         /// Writes a "{ $t: cosmosBsonType, $v: " snippet.
         /// </summary>
         /// <param name="cosmosBsonTypeByte">Cosmos BSON type.</param>
-        void Write_DollarT_BsonType_DollarV(byte cosmosBsonTypeByte);
+        void WriteDollarTBsonTypeDollarV(byte cosmosBsonTypeByte);
 
         /// <summary>
         /// Writes a "{ $t: cosmosBsonType, $v: {" snippet (or "{ $t: cosmosBsonType, $v: [" if array).
         /// </summary>
         /// <param name="isNestedArray">Indicates whether the nested scope should be an array.</param>
         /// <param name="cosmosBsonTypeByte">Cosmos BSON type.</param>
-        void Write_DollarT_BsonType_DollarV_NestedScope(bool isNestedArray, byte cosmosBsonTypeByte);
-#pragma warning restore SA1310
+        void WriteDollarTBsonTypeDollarVNestedScope(bool isNestedArray, byte cosmosBsonTypeByte);
     }
 }

@@ -44,7 +44,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -64,7 +64,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -84,7 +84,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
         #endregion
         #region Numbers
@@ -107,7 +107,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -129,7 +129,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -151,7 +151,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -173,7 +173,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -195,7 +195,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -217,7 +217,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -239,7 +239,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -264,7 +264,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, numberValueString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -299,7 +299,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -359,7 +359,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -381,7 +381,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -409,7 +409,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedString);
-                this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, binaryOutput);
                 systemStringId++;
             }
         }
@@ -418,6 +418,7 @@
         [Owner("brchon")]
         public void DateTimeStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 string dateTimeString = "2015-06-30 23:45:13";
                 string stringPayload = $"\"{dateTimeString}\"";
@@ -434,7 +435,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -453,7 +454,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -472,7 +473,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -491,7 +492,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -510,7 +511,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -529,7 +530,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -548,9 +549,10 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
+            JsonWriter.EnableEncodedStrings = false;
             {
                 string dateTimeString = "2015-06-30 23:45:13";
                 string stringPayload = $"\"{dateTimeString}\"";
@@ -568,7 +570,7 @@
                 binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
 
@@ -576,6 +578,7 @@
         [Owner("brchon")]
         public void HexStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 string hexString = "eccab3900d55b946";
                 string stringPayload = $"\"{hexString}\"";
@@ -592,7 +595,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -611,7 +614,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -631,9 +634,10 @@
                 compressedBinaryPayload = compressedBinaryPayload.Concat(Encoding.UTF8.GetBytes(hexString)).ToArray();
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
+            JsonWriter.EnableEncodedStrings = false;
             {
                 string hexString = "eccab3900d55b946";
                 string stringPayload = $"\"{hexString}\"";
@@ -651,7 +655,7 @@
                 binaryPayload.AddRange(Encoding.UTF8.GetBytes(hexString));
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
 
@@ -659,6 +663,7 @@
         [Owner("brchon")]
         public void CompressedStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 // 4 bit packed string
                 string compressedString = "ababababababababababababababababg";
@@ -678,7 +683,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -701,7 +706,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -727,7 +732,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -756,7 +761,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -806,9 +811,10 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
+            JsonWriter.EnableEncodedStrings = false;
             {
                 string compressedString = "thequickbrownfoxjumpedoverthelazydog";
                 string stringPayload = $"\"{compressedString}\"";
@@ -826,7 +832,7 @@
                 binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
 
@@ -834,6 +840,7 @@
         [Owner("brchon")]
         public void GuidStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 // Empty Guid
                 string guidString = "00000000-0000-0000-0000-000000000000";
@@ -852,7 +859,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -873,7 +880,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -894,7 +901,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -915,7 +922,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -936,7 +943,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -957,7 +964,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -978,7 +985,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -998,7 +1005,7 @@
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, binaryPayload);
             }
 
             {
@@ -1019,7 +1026,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -1040,7 +1047,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -1060,7 +1067,7 @@
                 compressedBinaryPayload = compressedBinaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
             {
@@ -1081,9 +1088,10 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
+            JsonWriter.EnableEncodedStrings = false;
             {
                 string guidString = "00000000-0000-0000-0000-000000000000";
                 string stringPayload = $"\"{guidString}\"";
@@ -1101,7 +1109,7 @@
                 binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
 
@@ -1109,6 +1117,7 @@
         [Owner("brchon")]
         public void ReferenceStringsTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             {
                 // 1 byte reference string
                 string stringValue = "hello";
@@ -1133,7 +1142,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, binaryPayload);
             }
 
             {
@@ -1357,9 +1366,10 @@
                     0xC5, 0x02
                 };
 
-                this.VerifyWriter(tokensToWrite, binaryPayload, enableEncodedStrings: true);
+                this.VerifyWriter(tokensToWrite, binaryPayload);
             }
 
+            JsonWriter.EnableEncodedStrings = false;
             {
                 // 1 byte reference string
                 string stringValue = "hello";
@@ -1384,7 +1394,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
         #endregion
@@ -1407,7 +1417,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1430,7 +1440,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1469,7 +1479,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1508,7 +1518,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1535,7 +1545,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1574,7 +1584,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1603,7 +1613,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1632,7 +1642,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1682,7 +1692,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1711,7 +1721,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1768,7 +1778,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
         #endregion Array
         #region Escaping
@@ -1857,7 +1867,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
         }
 
         [TestMethod]
@@ -1880,7 +1890,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
         }
 
         [TestMethod]
@@ -1926,7 +1936,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
@@ -1993,13 +2003,14 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: false);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void AllPrimitivesObjectTest()
         {
+            JsonWriter.EnableEncodedStrings = true;
             string expectedString = @"{
                 ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
                 ""double"": 0.18963001816981939,
@@ -2195,7 +2206,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryOutput, enableEncodedStrings: true);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
         }
         #endregion
         #region Exceptions
@@ -2300,7 +2311,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2329,7 +2340,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2358,7 +2369,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2387,7 +2398,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2416,7 +2427,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2445,7 +2456,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2474,7 +2485,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2503,7 +2514,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
 
@@ -2531,7 +2542,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
 
             {
@@ -2556,7 +2567,7 @@
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
-                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, enableEncodedStrings: false);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
             }
         }
         #endregion
@@ -2608,11 +2619,11 @@
             }
         }
 
-        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, bool enableEncodedStrings, Exception expectedException = null)
+        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, Exception expectedException = null)
         {
             foreach (bool writeAsUtf8String in new bool[] { false, true })
             {
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, enableEncodedStrings: enableEncodedStrings);
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
                 this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
             }
         }

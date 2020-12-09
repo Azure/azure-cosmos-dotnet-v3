@@ -72,12 +72,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteValue(value);
         }
 
-        /// <inheritdoc />
-        public override void WriteDouble(double value)
-        {
-            throw new NotImplementedException();
-        }
-
         public override void WriteGuidValue(Guid value)
         {
             this.writer.WriteValue(value);
@@ -138,12 +132,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override void WriteUInt32Value(uint value)
         {
             this.writer.WriteValue(value);
-        }
-
-        /// <inheritdoc />
-        public override void WriteVariableSizeIntegerValue(long value)
-        {
-            throw new NotImplementedException();
         }
 
         public static NewtonsoftToCosmosDBWriter CreateTextWriter()

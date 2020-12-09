@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using RMResources = Documents.RMResources;
 
     /// <summary>
@@ -203,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Registers any json token type.
         /// </summary>
         /// <param name="jsonTokenType">The jsonTokenType to register</param>
-        public void RegisterValue(JsonTokenType jsonTokenType)
+        private void RegisterValue(JsonTokenType jsonTokenType)
         {
             if ((this.currentContext == JsonObjectContext.Object) && (this.CurrentTokenType != JsonTokenType.FieldName))
             {
@@ -219,19 +218,9 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Registers any json token type.
-        /// </summary>
-        /// <param name="jsonTokenType">The jsonTokenType to register</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RegisterValueUnsafe(JsonTokenType jsonTokenType)
-        {
-            this.CurrentTokenType = jsonTokenType;
-        }
-
-        /// <summary>
         /// Registers a beginning of a json array ('[')
         /// </summary>
-        public void RegisterBeginArray()
+        private void RegisterBeginArray()
         {
             // An array start is also a value
             this.RegisterValue(JsonTokenType.BeginArray);
@@ -263,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Registers a beginning of a json object ('{')
         /// </summary>
-        public void RegisterBeginObject()
+        private void RegisterBeginObject()
         {
             // An object start is also a value
             this.RegisterValue(JsonTokenType.BeginObject);

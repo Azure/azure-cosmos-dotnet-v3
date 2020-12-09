@@ -130,18 +130,6 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteUInt32Value(uint value);
 
         /// <summary>
-        /// Writes a long value in the 1/2/3/4/8 bytes.
-        /// </summary>
-        /// <param name="value">The value of the integer to write.</param>
-        void WriteVariableSizeIntegerValue(long value);
-
-        /// <summary>
-        /// Writes a double.
-        /// </summary>
-        /// <param name="value">The value of the double to write.</param>
-        void WriteDouble(double value);
-
-        /// <summary>
         /// Writes a Guid value into the internal buffer.
         /// </summary>
         /// <param name="value">The value of the guid to write.</param>

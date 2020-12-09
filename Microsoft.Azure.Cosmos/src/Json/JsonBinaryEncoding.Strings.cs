@@ -177,13 +177,30 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken)
         {
-            // First retrieve the string length
-            GetStringValue(buffer, stringToken, destinationBuffer: Span<byte>.Empty, out int valueLength);
+            byte typeMarker = stringToken.Span[0];
 
-            Memory<byte> destinationBuffer = new byte[valueLength];
-            GetStringValue(buffer, stringToken, destinationBuffer.Span, out valueLength);
+            if (IsBufferedStringCandidate[typeMarker])
+            {
+                if (!TryGetBufferedStringValue(
+                    buffer,
+                    stringToken,
+                    out Utf8Memory bufferedStringValue))
+                {
+                    throw new JsonInvalidTokenException();
+                }
 
-            return Utf8String.UnsafeFromUtf8BytesNoValidation(destinationBuffer);
+                return Utf8String.UnsafeFromUtf8BytesNoValidation(bufferedStringValue.Memory);
+            }
+
+            if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) || JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker))
+            {
+                DecodeString(stringToken.Span, Span<byte>.Empty, out int valueLength);
+                Memory<byte> bytes = new byte[valueLength];
+                DecodeString(stringToken.Span, bytes.Span, out valueLength);
+                return Utf8String.UnsafeFromUtf8BytesNoValidation(bytes);
+            }
+
+            throw new JsonInvalidTokenException();
         }
 
         public static string GetStringValue(
