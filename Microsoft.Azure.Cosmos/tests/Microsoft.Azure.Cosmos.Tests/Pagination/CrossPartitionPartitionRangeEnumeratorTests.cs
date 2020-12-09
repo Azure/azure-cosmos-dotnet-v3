@@ -6,10 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -74,11 +72,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Implementation implementation = new Implementation();
             await implementation.TestMergeDuringDrainAsync();
         }
+
         [TestMethod]
         public async Task TestMergeDuringDrainWithStateAsync()
         {
             Implementation implementation = new Implementation();
             await implementation.TestMergeDuringDrainWithStateAsync();
+        }
+
+        [TestMethod]
+        public async Task TestMergeAndSplitDuringDrainAsync()
+        {
+            Implementation implementation = new Implementation();
+            await implementation.TestMergeAndSplitDuringDrainAsync();
         }
 
         private sealed class Implementation : PartitionRangeEnumeratorTests<CrossFeedRangePage<ReadFeedPage, ReadFeedState>, CrossFeedRangeState<ReadFeedState>>
@@ -89,120 +95,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             [TestMethod]
-            public async Task TestSplitWithResumeContinuationAsync()
+            public async Task TestMergeAndSplitImplementationAsync(bool useState, bool allowSplits, bool allowMerges)
             {
                 int numItems = 1000;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
 
-                (HashSet<string> firstDrainResults, CrossFeedRangeState<ReadFeedState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
-
-                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: default);
-
-                // Split the partition we were reading from
-                await inMemoryCollection.SplitAsync(ranges.First(), cancellationToken: default);
-
-                // And a partition we have let to read from
-                await inMemoryCollection.SplitAsync(ranges[ranges.Count / 2], cancellationToken: default);
-
-                // Resume from state
-                IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
-
-                HashSet<string> secondDrainResults = await this.DrainFullyAsync(enumerable);
-                Assert.AreEqual(numItems, firstDrainResults.Count + secondDrainResults.Count);
-            }
-
-            [TestMethod]
-            public async Task TestSplitWithDuringDrainAsync()
-            {
-                int numItems = 1000;
-                IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
-
                 HashSet<string> identifiers = new HashSet<string>();
                 Random random = new Random();
-                await foreach (TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> tryGetPage in enumerable)
+                while (await enumerator.MoveNextAsync())
                 {
-                    if (random.Next() % 2 == 0)
-                    {
-                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
-                            trace: NoOpTrace.Singleton,
-                            cancellationToken: default);
-                        FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
-                        await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
-                    }
-
-                    tryGetPage.ThrowIfFailed();
-
-                    IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
-                    foreach (Record record in records)
-                    {
-                        identifiers.Add(record.Identifier);
-                    }
-                }
-
-                Assert.AreEqual(numItems, identifiers.Count);
-            }
-
-            [TestMethod]
-            public async Task TestMergeDuringDrainAsync()
-            {
-                int numItems = 1000;
-                IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerable = this.CreateEnumerable(inMemoryCollection);
-
-                HashSet<string> identifiers = new HashSet<string>();
-                Random random = new Random();
-                await foreach (TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> tryGetPage in enumerable)
-                {
-                    if (random.Next() % 2 == 0)
-                    {
-                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
-                            trace: NoOpTrace.Singleton,
-                            cancellationToken: default);
-                        if (ranges.Count > 1)
-                        {
-                            ranges = ranges.OrderBy(range => range.Range.Min).ToList();
-                            int indexToMerge = random.Next(0, ranges.Count);
-                            int adjacentIndex = indexToMerge == (ranges.Count - 1) ? indexToMerge - 1 : indexToMerge + 1;
-                            await inMemoryCollection.MergeAsync(ranges[indexToMerge], ranges[adjacentIndex], cancellationToken: default);
-                        }
-                    }
-
-                    tryGetPage.ThrowIfFailed();
-
-                    IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
-                    foreach (Record record in records)
-                    {
-                        identifiers.Add(record.Identifier);
-                    }
-                }
-
-                Assert.AreEqual(numItems, identifiers.Count);
-            }
-
-            [TestMethod]
-            public async Task TestMergeDuringDrainWithStateAsync()
-            {
-                int numItems = 1000;
-                IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-
-                HashSet<string> identifiers = new HashSet<string>();
-                Random random = new Random();
-
-                CrossFeedRangeState<ReadFeedState> state = null;
-                do
-                {
-                    IAsyncEnumerable<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerable = this.CreateEnumerable(inMemoryCollection, state);
-                    IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = enumerable.GetAsyncEnumerator();
-                    await enumerator.MoveNextAsync();
-
                     TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> tryGetPage = enumerator.Current;
-
                     tryGetPage.ThrowIfFailed();
 
                     IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
@@ -211,7 +114,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         identifiers.Add(record.Identifier);
                     }
 
-                    state = tryGetPage.Result.State;
+                    if (useState)
+                    {
+                        enumerator = this.CreateEnumerator(inMemoryCollection, tryGetPage.Result.State);
+                    }
 
                     if (random.Next() % 2 == 0)
                     {
@@ -219,16 +125,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
-                        if (ranges.Count > 1)
+
+                        if (allowSplits && (random.Next() % 2 == 0))
                         {
-                            ranges = ranges.OrderBy(range => range.Range.Min).ToList();
-                            int indexToMerge = random.Next(0, ranges.Count);
-                            int adjacentIndex = indexToMerge == (ranges.Count - 1) ? indexToMerge - 1 : indexToMerge + 1;
-                            await inMemoryCollection.MergeAsync(ranges[indexToMerge], ranges[adjacentIndex], cancellationToken: default);
+                            // Split
+                            FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
+                            await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
+                        }
+
+                        if (allowMerges && (random.Next() % 2 == 0))
+                        {
+                            // Merge
+                            if (ranges.Count > 1)
+                            {
+                                ranges = ranges.OrderBy(range => range.Range.Min).ToList();
+                                int indexToMerge = random.Next(0, ranges.Count);
+                                int adjacentIndex = indexToMerge == (ranges.Count - 1) ? indexToMerge - 1 : indexToMerge + 1;
+                                await inMemoryCollection.MergeAsync(ranges[indexToMerge], ranges[adjacentIndex], cancellationToken: default);
+                            }
                         }
                     }
                 }
-                while (state != null);
 
                 Assert.AreEqual(numItems, identifiers.Count);
             }

@@ -439,62 +439,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(numItems, documents.Count);
         }
 
-        [TestMethod]
-        public async Task TestDrainFully_StartFromBegining_WithStateResume_Simple_WithMergeAsync()
-        {
-            int numItems = 1000;
-            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-
-            Random random = new Random();
-            List<CosmosElement> documents = new List<CosmosElement>();
-
-            QueryState queryState = null;
-            do
-            {
-                TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    documentContainer: documentContainer,
-                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                    targetRanges: await documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton,
-                        cancellationToken: default),
-                    pageSize: 10,
-                    partitionKey: null,
-                    maxConcurrency: 10,
-                    cancellationToken: default,
-                    continuationToken: queryState?.Value);
-                if (monadicCreate.Failed)
-                {
-                    Assert.Fail();
-                }
-                Assert.IsTrue(monadicCreate.Succeeded);
-                IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
-
-                Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
-                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                Assert.IsTrue(tryGetQueryPage.Succeeded);
-
-                QueryPage queryPage = tryGetQueryPage.Result;
-                documents.AddRange(queryPage.Documents);
-
-                queryState = queryPage.State;
-
-                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: default).Result;
-                if (ranges.Count > 1)
-                {
-                    ranges = ranges.OrderBy(range => range.Range.Min).ToList();
-                    int indexToMerge = random.Next(0, ranges.Count);
-                    int adjacentIndex = indexToMerge == (ranges.Count - 1) ? indexToMerge - 1 : indexToMerge + 1;
-                    await documentContainer.MergeAsync(ranges[indexToMerge], ranges[adjacentIndex], cancellationToken: default);
-                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                }
-            } while (queryState != null);
-
-            Assert.AreEqual(numItems, documents.Count);
-        }
-
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
             int numItems,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
