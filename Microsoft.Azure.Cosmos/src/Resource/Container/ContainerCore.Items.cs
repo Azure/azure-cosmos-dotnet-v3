@@ -910,8 +910,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+        public Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
           Cosmos.PartitionKey partitionKey,
+          ITrace trace,
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -938,6 +939,7 @@ namespace Microsoft.Azure.Cosmos
                 itemId: null,
                 streamPayload: null,
                 requestEnricher: null,
+                trace: trace,
                 diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
         }
