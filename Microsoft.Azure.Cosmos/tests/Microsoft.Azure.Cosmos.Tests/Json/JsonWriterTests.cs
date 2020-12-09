@@ -418,7 +418,6 @@
         [Owner("brchon")]
         public void DateTimeStringsTest()
         {
-            JsonWriter.EnableEncodedStrings = true;
             {
                 string dateTimeString = "2015-06-30 23:45:13";
                 string stringPayload = $"\"{dateTimeString}\"";
@@ -552,7 +551,6 @@
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
-            JsonWriter.EnableEncodedStrings = false;
             {
                 string dateTimeString = "2015-06-30 23:45:13";
                 string stringPayload = $"\"{dateTimeString}\"";
@@ -578,7 +576,6 @@
         [Owner("brchon")]
         public void HexStringsTest()
         {
-            JsonWriter.EnableEncodedStrings = true;
             {
                 string hexString = "eccab3900d55b946";
                 string stringPayload = $"\"{hexString}\"";
@@ -637,7 +634,6 @@
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
-            JsonWriter.EnableEncodedStrings = false;
             {
                 string hexString = "eccab3900d55b946";
                 string stringPayload = $"\"{hexString}\"";
@@ -663,7 +659,6 @@
         [Owner("brchon")]
         public void CompressedStringsTest()
         {
-            JsonWriter.EnableEncodedStrings = true;
             {
                 // 4 bit packed string
                 string compressedString = "ababababababababababababababababg";
@@ -814,7 +809,6 @@
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
-            JsonWriter.EnableEncodedStrings = false;
             {
                 string compressedString = "thequickbrownfoxjumpedoverthelazydog";
                 string stringPayload = $"\"{compressedString}\"";
@@ -840,7 +834,6 @@
         [Owner("brchon")]
         public void GuidStringsTest()
         {
-            JsonWriter.EnableEncodedStrings = true;
             {
                 // Empty Guid
                 string guidString = "00000000-0000-0000-0000-000000000000";
@@ -1091,7 +1084,6 @@
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
 
-            JsonWriter.EnableEncodedStrings = false;
             {
                 string guidString = "00000000-0000-0000-0000-000000000000";
                 string stringPayload = $"\"{guidString}\"";
@@ -1117,7 +1109,6 @@
         [Owner("brchon")]
         public void ReferenceStringsTest()
         {
-            JsonWriter.EnableEncodedStrings = true;
             {
                 // 1 byte reference string
                 string stringValue = "hello";
@@ -1369,7 +1360,6 @@
                 this.VerifyWriter(tokensToWrite, binaryPayload);
             }
 
-            JsonWriter.EnableEncodedStrings = false;
             {
                 // 1 byte reference string
                 string stringValue = "hello";
@@ -2010,7 +2000,6 @@
         [Owner("brchon")]
         public void AllPrimitivesObjectTest()
         {
-            JsonWriter.EnableEncodedStrings = true;
             string expectedString = @"{
                 ""id"": ""7029d079-4016-4436-b7da-36c0bae54ff6"",
                 ""double"": 0.18963001816981939,
