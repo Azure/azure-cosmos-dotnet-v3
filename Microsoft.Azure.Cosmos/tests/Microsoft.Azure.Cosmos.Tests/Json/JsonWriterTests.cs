@@ -14,18 +14,6 @@
     {
         private const byte BinaryFormat = 128;
 
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            // Put test init code here
-        }
-
-        [ClassInitialize]
-        public static void Initialize(TestContext textContext)
-        {
-            // put class init code here
-        }
-
         #region Literals
         [TestMethod]
         [Owner("brchon")]
@@ -550,26 +538,6 @@
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
-
-            {
-                string dateTimeString = "2015-06-30 23:45:13";
-                string stringPayload = $"\"{dateTimeString}\"";
-                JsonToken[] tokensToWrite =
-                {
-                    JsonToken.String(dateTimeString)
-                };
-
-                List<byte> binaryPayload = new List<byte>()
-                {
-                    BinaryFormat,
-                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
-                };
-
-                binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
-
-                this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
-            }
         }
 
         [TestMethod]
@@ -632,26 +600,6 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
-            }
-
-            {
-                string hexString = "eccab3900d55b946";
-                string stringPayload = $"\"{hexString}\"";
-                JsonToken[] tokensToWrite =
-                {
-                    JsonToken.String(hexString)
-                };
-
-                List<byte> binaryPayload = new List<byte>()
-                {
-                    BinaryFormat,
-                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + hexString.Length),
-                };
-
-                binaryPayload.AddRange(Encoding.UTF8.GetBytes(hexString));
-
-                this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
 
@@ -807,26 +755,6 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
-            }
-
-            {
-                string compressedString = "thequickbrownfoxjumpedoverthelazydog";
-                string stringPayload = $"\"{compressedString}\"";
-                JsonToken[] tokensToWrite =
-                {
-                    JsonToken.String(compressedString)
-                };
-
-                List<byte> binaryPayload = new List<byte>()
-                {
-                    BinaryFormat,
-                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + compressedString.Length),
-                };
-
-                binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
-
-                this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
 
@@ -1083,26 +1011,6 @@
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
             }
-
-            {
-                string guidString = "00000000-0000-0000-0000-000000000000";
-                string stringPayload = $"\"{guidString}\"";
-                JsonToken[] tokensToWrite =
-                {
-                    JsonToken.String(guidString)
-                };
-
-                List<byte> binaryPayload = new List<byte>()
-                {
-                    BinaryFormat,
-                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length),
-                };
-
-                binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
-
-                this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
-            }
         }
 
         [TestMethod]
@@ -1265,13 +1173,13 @@
                 byte[] binaryPayload = new byte[]
                 {
                     0x80, 0xEB, 0xCE, 0x02, 0x89, 0x70, 0x72, 0x6F,
-                    0x70, 0x65, 0x72, 0x74, 0x79, 0x31, 0x86, 0x76, 
+                    0x70, 0x65, 0x72, 0x74, 0x79, 0x31, 0x86, 0x76,
                     0x61, 0x6C, 0x75, 0x65, 0x31, 0x89, 0x70, 0x72,
                     0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x32, 0xC3,
                     0x0E, 0x89, 0x70, 0x72, 0x6F, 0x70, 0x65, 0x72,
                     0x74, 0x79, 0x33, 0xE2, 0x64, 0x89, 0x70, 0x72,
                     0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x30, 0xC3,
-                    0x04, 0xC3, 0x15, 0xC3, 0x21, 0x89, 0x70, 0x72, 
+                    0x04, 0xC3, 0x15, 0xC3, 0x21, 0x89, 0x70, 0x72,
                     0x6F, 0x70, 0x65, 0x72, 0x74, 0x79, 0x34, 0x89,
                     0x70, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79,
                     0x35, 0x89, 0x70, 0x72, 0x6F, 0x70, 0x65, 0x72,
@@ -1285,7 +1193,7 @@
                     0x2D, 0xC3, 0x21, 0xC3, 0x0E, 0xC3, 0x3D, 0xC3,
                     0x0E, 0xC3, 0x47, 0xE2, 0xB8, 0x8E, 0x53, 0x74,
                     0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75,
-                    0x65, 0x5F, 0x5F, 0x30, 0x8E, 0x53, 0x74, 0x72, 
+                    0x65, 0x5F, 0x5F, 0x30, 0x8E, 0x53, 0x74, 0x72,
                     0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75, 0x65,
                     0x5F, 0x5F, 0x31, 0x8E, 0x53, 0x74, 0x72, 0x69,
                     0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75, 0x65, 0x5F,
@@ -1296,7 +1204,7 @@
                     0x8E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x56,
                     0x61, 0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x35, 0x8E,
                     0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x56, 0x61,
-                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x36, 0x8E, 0x53, 
+                    0x6C, 0x75, 0x65, 0x5F, 0x5F, 0x36, 0x8E, 0x53,
                     0x74, 0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C,
                     0x75, 0x65, 0x5F, 0x5F, 0x37, 0x8E, 0x53, 0x74,
                     0x72, 0x69, 0x6E, 0x67, 0x56, 0x61, 0x6C, 0x75,
@@ -1341,50 +1249,23 @@
                     0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x34, 0x8B,
                     0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
                     0x5F, 0x5F, 0x35, 0x8B, 0x42, 0x72, 0x6F, 0x77,
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x36, 0x8B, 
-                    0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67, 
-                    0x5F, 0x5F, 0x37, 0x8B, 0x42, 0x72, 0x6F, 0x77, 
-                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x38, 0x8B, 
-                    0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67, 
-                    0x5F, 0x5F, 0x39, 0x86, 0x76, 0x61, 0x6C, 0x75, 
-                    0x65, 0x34, 0xC4, 0x93, 0x02, 0xC4, 0x93, 0x02, 
-                    0xC4, 0x87, 0x02, 0xC4, 0x7B, 0x02, 0xC4, 0x6F, 
-                    0x02, 0xC4, 0x57, 0x02, 0xC4, 0x4B, 0x02, 0xC4, 
-                    0x3F, 0x02, 0xC4, 0x33, 0x02, 0xC4, 0x27, 0x02, 
-                    0xC4, 0x1B, 0x02, 0x89, 0x70, 0x72, 0x6F, 0x70, 
-                    0x65, 0x72, 0x74, 0x79, 0x41, 0x86, 0x76, 0x61, 
-                    0x6C, 0x75, 0x65, 0x41, 0xC4, 0xBB, 0x02, 0xC4, 
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x36, 0x8B,
+                    0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
+                    0x5F, 0x5F, 0x37, 0x8B, 0x42, 0x72, 0x6F, 0x77,
+                    0x6E, 0x44, 0x6F, 0x67, 0x5F, 0x5F, 0x38, 0x8B,
+                    0x42, 0x72, 0x6F, 0x77, 0x6E, 0x44, 0x6F, 0x67,
+                    0x5F, 0x5F, 0x39, 0x86, 0x76, 0x61, 0x6C, 0x75,
+                    0x65, 0x34, 0xC4, 0x93, 0x02, 0xC4, 0x93, 0x02,
+                    0xC4, 0x87, 0x02, 0xC4, 0x7B, 0x02, 0xC4, 0x6F,
+                    0x02, 0xC4, 0x57, 0x02, 0xC4, 0x4B, 0x02, 0xC4,
+                    0x3F, 0x02, 0xC4, 0x33, 0x02, 0xC4, 0x27, 0x02,
+                    0xC4, 0x1B, 0x02, 0x89, 0x70, 0x72, 0x6F, 0x70,
+                    0x65, 0x72, 0x74, 0x79, 0x41, 0x86, 0x76, 0x61,
+                    0x6C, 0x75, 0x65, 0x41, 0xC4, 0xBB, 0x02, 0xC4,
                     0xC5, 0x02
                 };
 
                 this.VerifyWriter(tokensToWrite, binaryPayload);
-            }
-
-            {
-                // 1 byte reference string
-                string stringValue = "hello";
-                string stringPayload = "[\"hello\",\"hello\"]";
-                JsonToken[] tokensToWrite =
-                {
-                    JsonToken.ArrayStart(),
-                    JsonToken.String(stringValue),
-                    JsonToken.String(stringValue),
-                    JsonToken.ArrayEnd()
-                };
-
-                List<byte> binaryPayload = new List<byte>()
-                {
-                    BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.Array1ByteLength,
-                    12,
-                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
-                    (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
-                    (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
-                    (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
-                };
-
-                this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload.ToArray());
             }
         }
         #endregion
@@ -2485,7 +2366,7 @@
             Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
             foreach (Guid value in values)
             {
-                string expectedStringOutput = $"G{value.ToString()}";
+                string expectedStringOutput = $"G{value}";
                 byte[] expectedBinaryOutput;
                 unchecked
                 {
