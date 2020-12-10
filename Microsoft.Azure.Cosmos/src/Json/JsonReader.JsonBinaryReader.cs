@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
@@ -316,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override string GetStringValue()
+            public override UtfAnyString GetStringValue()
             {
                 if (!(
                     (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
@@ -325,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonInvalidTokenException();
                 }
 
-                return JsonBinaryEncoding.GetStringValue(
+                return JsonBinaryEncoding.GetUtf8StringValue(
                     this.rootBuffer,
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }

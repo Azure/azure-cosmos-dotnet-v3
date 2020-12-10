@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Interface for all JsonReaders that know how to read jsons.
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the next JSON token from the JsonReader as a string.
         /// </summary>
         /// <returns>The next JSON token from the JsonReader as a string.</returns>
-        string GetStringValue();
+        UtfAnyString GetStringValue();
 
         /// <summary>
         /// Tries to get the buffered UTF-8 string value.
