@@ -49,6 +49,12 @@ namespace Microsoft.Azure.Cosmos.Json
         string GetStringValue();
 
         /// <summary>
+        /// Gets the next JSON token from the JsonReader as a UTF-8 string.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a UTF-8 string.</returns>
+        Utf8Memory GetUtf8StringValue();
+
+        /// <summary>
         /// Tries to get the buffered UTF-8 string value.
         /// </summary>
         /// <param name="value">The buffered UTF-8 string value if found.</param>

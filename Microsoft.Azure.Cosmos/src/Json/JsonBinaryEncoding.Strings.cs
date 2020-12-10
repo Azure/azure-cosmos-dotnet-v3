@@ -184,6 +184,19 @@ namespace Microsoft.Azure.Cosmos.Json
             return Utf8Span.UnsafeFromUtf8BytesNoValidation(destinationBuffer).ToString();
         }
 
+        public static Utf8Memory GetUtf8StringValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken)
+        {
+            // First retrieve the string length
+            GetStringValue(buffer, stringToken, destinationBuffer: Span<byte>.Empty, out int valueLength);
+
+            byte[] destinationBuffer = new byte[valueLength];
+            GetStringValue(buffer, stringToken, destinationBuffer, out valueLength);
+
+            return Utf8Memory.UnsafeCreateNoValidation(destinationBuffer);
+        }
+
         private static void GetStringValue(
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken,

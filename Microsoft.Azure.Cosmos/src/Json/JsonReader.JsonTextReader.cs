@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text;
 
     /// <summary>
     /// JsonReader partial.
@@ -289,6 +290,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.token.Start,
                     this.token.End).Span;
                 return JsonTextParser.GetStringValue(stringToken);
+            }
+
+            /// <inheritdoc />
+            public override Utf8Memory GetUtf8StringValue()
+            {
+                return Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(this.GetStringValue()));
             }
 
             /// <inheritdoc />

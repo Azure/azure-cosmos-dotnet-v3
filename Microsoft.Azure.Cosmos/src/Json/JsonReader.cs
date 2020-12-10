@@ -98,6 +98,9 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract string GetStringValue();
 
         /// <inheritdoc />
+        public abstract Utf8Memory GetUtf8StringValue();
+
+        /// <inheritdoc />
         public abstract bool TryGetBufferedStringValue(out Utf8Memory value);
 
         /// <inheritdoc />

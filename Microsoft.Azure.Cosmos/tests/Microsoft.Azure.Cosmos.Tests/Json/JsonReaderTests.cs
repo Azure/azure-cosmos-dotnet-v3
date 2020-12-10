@@ -3301,7 +3301,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private void VerifyStringOrFieldNameHelper(IJsonReader jsonReader, string expectedString)
         {
             string actualString = jsonReader.GetStringValue();
+            Utf8Memory actualUtf8StringValue = jsonReader.GetUtf8StringValue();
             Assert.AreEqual(expectedString, actualString);
+            Assert.AreEqual(expectedString, actualUtf8StringValue.ToString());
         }
 
         private void VerifyNumber(IJsonReader jsonReader, Number64 expectedNumberValue)
