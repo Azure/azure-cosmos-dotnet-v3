@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -84,9 +85,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return this.reader.Value.ToString();
         }
 
-        public override Utf8Memory GetUtf8StringValue()
+        public override Utf8String GetUtf8StringValue()
         {
-            return Utf8Memory.UnsafeCreateNoValidation(Encoding.UTF8.GetBytes(this.reader.Value.ToString()));
+            return Utf8String.TranscodeUtf16(this.GetStringValue());
         }
 
         public override uint GetUInt32Value()
