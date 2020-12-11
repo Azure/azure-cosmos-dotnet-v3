@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -83,12 +82,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override string GetStringValue()
         {
             return this.reader.Value.ToString();
-        }
-
-        /// <inheritdoc />
-        public override Utf8String GetUtf8StringValue()
-        {
-            return Utf8String.TranscodeUtf16(this.GetStringValue());
         }
 
         public override uint GetUInt32Value()

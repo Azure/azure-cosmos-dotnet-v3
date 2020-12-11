@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a pre-blitted binary JSON scope.
         /// </summary>
         /// <param name="scope">Scope to write.</param>
-        void Write(JsonWriter.PreblittedBinaryJsonScope scope);
+        void Write(PreblittedBinaryJsonScope scope);
 
         /// <summary>
         /// Writes a "{ $t: cosmosBsonType, $v: " snippet.

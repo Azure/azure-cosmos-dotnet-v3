@@ -25,6 +25,28 @@ namespace Microsoft.Azure.Cosmos.Json
         internal static bool EnableEncodedStrings = false;
 
         /// <summary>
+        /// Executes the provided lambda and captures a copy of the written bytes for reuse.
+        /// The lambda is executed at a field name, and should leave the reader in a state where
+        /// it is valid to end the scope.
+        /// </summary>
+        /// <param name="scopeWriter">Writes the contents of the scope.</param>
+        /// <returns>Blitted bytes.</returns>
+        public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
+        {
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter();
+            Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
+            Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
+            Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
+
+            jsonBinaryWriter.WriteObjectStart();
+            jsonBinaryWriter.WriteFieldName("someFieldName");
+            int startPosition = (int)jsonBinaryWriter.CurrentLength;
+            scopeWriter(jsonBinaryWriter);
+
+            return jsonBinaryWriter.CapturePreblittedBinaryJsonScope(startPosition);
+        }
+
+        /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.
         /// </summary>
         private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions, ITypedBinaryJsonWriter
@@ -497,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             /// <summary>
             /// Captures a preblitted binary JSON scope.
-            /// This method is for use by <see cref="PreblittedBinaryJsonScope.Capture"/>.
+            /// This method is for use by <see cref="JsonWriter.CapturePreblittedBinaryJsonScope"/>.
             /// </summary>
             /// <param name="startPosition">Scope start position.</param>
             /// <returns>A preblitted binary JSON scope.</returns>
@@ -1380,44 +1402,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public int Offset { get; }
                 public int MaxOffset { get; }
-            }
-        }
-
-        /// <summary>
-        /// Holds a blitted binary JSON blob.
-        /// </summary>
-        public readonly struct PreblittedBinaryJsonScope
-        {
-            /// <summary>
-            /// Blitted bytes.
-            /// </summary>
-            public readonly ReadOnlyMemory<byte> Bytes;
-
-            internal PreblittedBinaryJsonScope(ReadOnlyMemory<byte> bytes)
-            {
-                this.Bytes = bytes;
-            }
-
-            /// <summary>
-            /// Executes the provided lambda and captures a copy of the written bytes for reuse.
-            /// The lambda is executed at a field name, and should leave the reader in a state where
-            /// it is valid to end the scope.
-            /// </summary>
-            /// <param name="scopeWriter">Writes the contents of the scope.</param>
-            /// <returns>Blitted bytes.</returns>
-            public static PreblittedBinaryJsonScope Capture(Action<ITypedBinaryJsonWriter> scopeWriter)
-            {
-                JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter();
-                Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
-                Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
-                Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
-
-                jsonBinaryWriter.WriteObjectStart();
-                jsonBinaryWriter.WriteFieldName("someFieldName");
-                int startPosition = (int)jsonBinaryWriter.CurrentLength;
-                scopeWriter(jsonBinaryWriter);
-
-                return jsonBinaryWriter.CapturePreblittedBinaryJsonScope(startPosition);
             }
         }
     }
