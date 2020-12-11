@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Json
 {
+    using Microsoft.Azure.Cosmos.Core.Utf8;
+
     /// <summary>
     /// Interface for all TypedJsonReaders that know how to read typed json.
     /// </summary>
@@ -22,5 +24,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="typeCode">The type code read.</param>
         /// <returns>Success.</returns>
         bool TryReadTypedJsonValueWrapper(out int typeCode);
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a UTF-8 span.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a span.</returns>
+        Utf8Span GetUtf8SpanValue();
     }
 }

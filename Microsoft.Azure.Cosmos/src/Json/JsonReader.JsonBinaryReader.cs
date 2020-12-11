@@ -507,6 +507,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
 
+            /// <inheritdoc />
+            public Utf8Span GetUtf8SpanValue()
+            {
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.GetUtf8SpanValue(
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+
             private static JsonTokenType GetJsonTokenType(byte typeMarker)
             {
                 JsonTokenType jsonTokenType = JsonBinaryReader.TypeMarkerToTokenType[typeMarker];
