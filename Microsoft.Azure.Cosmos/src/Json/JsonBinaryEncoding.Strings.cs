@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
@@ -184,7 +185,60 @@ namespace Microsoft.Azure.Cosmos.Json
             return Utf8Span.UnsafeFromUtf8BytesNoValidation(destinationBuffer).ToString();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Utf8Span GetUtf8SpanValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken)
+        {
+            return Utf8Span.UnsafeFromUtf8BytesNoValidation(GetUtf8MemoryValue(buffer, stringToken).Span);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Utf8String GetUtf8StringValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken)
+        {
+            return Utf8String.UnsafeFromUtf8BytesNoValidation(GetUtf8MemoryValue(buffer, stringToken));
+        }
+
+        public static bool TryGetBufferedStringValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken,
+            out Utf8Memory value)
+        {
+            if (stringToken.IsEmpty)
+            {
+                value = default;
+                return false;
+            }
+
+            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
+                buffer,
+                stringToken,
+                out value))
+            {
+                return true;
+            }
+
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(
+                stringToken.Span,
+                out UtfAllString encodedStringValue))
+            {
+                value = encodedStringValue.Utf8EscapedString;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static bool TryGetDictionaryEncodedStringValue(
+            ReadOnlySpan<byte> stringToken,
+            out UtfAllString value) => TryGetEncodedStringValue(
+                stringToken,
+                out value);
+
+        private static ReadOnlyMemory<byte> GetUtf8MemoryValue(
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken)
         {
@@ -200,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonInvalidTokenException();
                 }
 
-                return Utf8String.UnsafeFromUtf8BytesNoValidation(bufferedStringValue.Memory);
+                return bufferedStringValue.Memory;
             }
 
             if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) || JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker))
@@ -208,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 DecodeString(stringToken.Span, Span<byte>.Empty, out int valueLength);
                 Memory<byte> bytes = new byte[valueLength];
                 DecodeString(stringToken.Span, bytes.Span, out valueLength);
-                return Utf8String.UnsafeFromUtf8BytesNoValidation(bytes);
+                return bytes;
             }
 
             throw new JsonInvalidTokenException();
@@ -257,43 +311,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new JsonInvalidTokenException();
             }
         }
-
-        public static bool TryGetBufferedStringValue(
-            ReadOnlyMemory<byte> buffer,
-            ReadOnlyMemory<byte> stringToken,
-            out Utf8Memory value)
-        {
-            if (stringToken.IsEmpty)
-            {
-                value = default;
-                return false;
-            }
-
-            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
-                buffer,
-                stringToken,
-                out value))
-            {
-                return true;
-            }
-
-            if (JsonBinaryEncoding.TryGetEncodedStringValue(
-                stringToken.Span,
-                out UtfAllString encodedStringValue))
-            {
-                value = encodedStringValue.Utf8EscapedString;
-                return true;
-            }
-
-            value = default;
-            return false;
-        }
-
-        public static bool TryGetDictionaryEncodedStringValue(
-            ReadOnlySpan<byte> stringToken,
-            out UtfAllString value) => TryGetEncodedStringValue(
-                stringToken,
-                out value);
 
         /// <summary>
         /// Try Get Encoded String Value
