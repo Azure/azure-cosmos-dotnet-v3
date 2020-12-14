@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.changeFeedPolicyInternal;
             }
 
-            set => this.changeFeedPolicyInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
+            set => this.changeFeedPolicyInternal = value;
         }
 
         /// <summary>

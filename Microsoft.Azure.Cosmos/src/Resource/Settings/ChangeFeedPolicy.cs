@@ -31,14 +31,39 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class ChangeFeedPolicy
     {
+        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration, NullValueHandling = NullValueHandling.Ignore)]
+        private int? retentionDurationInMinutes;
+
         /// <summary>
         /// Gets or sets a value that indicates for how long operation logs have to be retained.
         /// </summary>
+        /// <remarks>
+        /// Minimum granularity supported is minutes.
+        /// </remarks>
         /// <value>
-        /// Value is in TimeSpan. Any seconds will be ceiled as 1 minute.
+        /// Value is in TimeSpan.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ChangeFeedRetentionConverter))]
-        public TimeSpan RetentionDuration { get; set; }
+        [JsonIgnore]
+        public TimeSpan RetentionDuration 
+        {
+            get
+            {
+                if (!this.retentionDurationInMinutes.HasValue)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                return TimeSpan.FromMinutes(this.retentionDurationInMinutes.Value);
+            }
+            set
+            {
+                if (value.Seconds > 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.RetentionDuration), "Retention duration's minimum granularity is minutes.");
+                }
+
+                this.retentionDurationInMinutes = (int)value.TotalMinutes;
+            }
+        }
     }
 }

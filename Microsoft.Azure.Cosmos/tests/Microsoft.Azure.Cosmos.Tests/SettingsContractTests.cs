@@ -630,6 +630,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual((int)desiredTimeSpan.TotalMinutes, retentionValue.Value<int>(), "Change Feed Policy serialized retention value incorrect");
         }
 
+        [TestMethod]
+        public void ChangeFeedPolicySerialization_InvalidValues()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            string serialization = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsFalse(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should not be included by default");
+
+            TimeSpan desiredTimeSpan = TimeSpan.FromSeconds(10);
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { RetentionDuration = desiredTimeSpan });
+        }
+
         private static T CosmosDeserialize<T>(string payload)
         {
             using (MemoryStream ms = new MemoryStream())
