@@ -46,6 +46,6 @@ namespace Microsoft.Azure.Cosmos
         /// This is required for interoperability and data transfer between engines.
         /// </summary>
         [JsonProperty(PropertyName = "clientEncryptionDataType")]
-        public ClientEncryptionDataType ClientEncryptionDataType { get; set; }
+        public ClientEncryptionDataType? ClientEncryptionDataType { get; set; }
     }
 }

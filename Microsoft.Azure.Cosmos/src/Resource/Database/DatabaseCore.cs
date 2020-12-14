@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -725,6 +727,113 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
+#if PREVIEW
+        public override
+#else
+        internal virtual
+#endif
+            ClientEncryptionKey GetClientEncryptionKey(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new ClientEncryptionKeyInlineCore(
+                new ClientEncryptionKeyCore(
+                    this.ClientContext,
+                    database: this,
+                    id));
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal virtual
+#endif
+            FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyIterator(
+                QueryDefinition queryDefinition,
+                string continuationToken = null,
+                QueryRequestOptions requestOptions = null)
+        {
+            if (!(this.GetClientEncryptionKeyStreamIterator(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions) is FeedIteratorInternal cekStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
+            }
+
+            return new FeedIteratorCore<ClientEncryptionKeyProperties>(
+                cekStreamIterator,
+                (responseMessage) =>
+                {
+                    FeedResponse<ClientEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<ClientEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
+                    return results;
+                });
+        }
+
+        internal FeedIterator GetClientEncryptionKeyStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+                clientContext: this.ClientContext,
+                resourceLink: this.LinkUri,
+                resourceType: ResourceType.ClientEncryptionKey,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                options: requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal virtual
+#endif
+            async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+                ClientEncryptionKey clientEncryptionKey,
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties);
+            ResponseMessage responseMessage = await this.CreateClientEncryptionKeyStreamAsync(
+                streamPayload,
+                requestOptions,
+                cancellationToken);
+
+            ClientEncryptionKeyResponse dekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(clientEncryptionKey, responseMessage);
+            Debug.Assert(dekResponse.Resource != null);
+
+            return dekResponse;
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal virtual
+#endif
+            async Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
+                ClientEncryptionKey clientEncryptionKey,
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties);
+            ResponseMessage responseMessage = await this.ReplaceClientEncryptionKeyStreamAsync(
+                streamPayload,
+                clientEncryptionKey,
+                requestOptions,
+                cancellationToken);
+
+            ClientEncryptionKeyResponse dekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(clientEncryptionKey, responseMessage);
+            Debug.Assert(dekResponse.Resource != null);
+
+            return dekResponse;
+        }
+
         private void ValidateContainerProperties(ContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
@@ -821,6 +930,67 @@ namespace Microsoft.Azure.Cosmos
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse?.Resource?.ResourceId;
+        }
+
+        private Task<ResponseMessage> CreateClientEncryptionKeyStreamAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.ClientEncryptionKey,
+                operationType: OperationType.Create,
+                cosmosContainerCore: null,
+                feedRange: null,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                requestEnricher: null,
+                diagnosticsContext: null,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> ReplaceClientEncryptionKeyStreamAsync(
+            Stream streamPayload,
+            ClientEncryptionKey clientEncryptionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.GetResourceUriForReplaceClientEncryptionKey(clientEncryptionKey.Id),
+                resourceType: ResourceType.ClientEncryptionKey,
+                operationType: OperationType.Replace,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                itemId: clientEncryptionKey.Id,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                requestEnricher: null,
+                diagnosticsContext: null,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
+        }
+
+        private string GetResourceUriForReplaceClientEncryptionKey(string id)
+        {
+            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.Length + Paths.ClientEncryptionKeysPathSegment.Length + 2 + id.Length);
+            stringBuilder.Append(this.LinkUri);
+            stringBuilder.Append("/");
+            stringBuilder.Append(Paths.ClientEncryptionKeysPathSegment);
+            stringBuilder.Append("/");
+            stringBuilder.Append(id);
+            return stringBuilder.ToString();
         }
 
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
