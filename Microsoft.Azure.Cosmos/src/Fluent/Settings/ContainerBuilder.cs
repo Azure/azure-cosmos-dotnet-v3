@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly Uri containerUri;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
+        private ClientEncryptionPolicy clientEncryptionPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -58,6 +59,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return new ConflictResolutionDefinition(
                 this,
                 (conflictPolicy) => this.AddConflictResolution(conflictPolicy));
+        }
+
+        /// <summary>
+        /// Defines the ClientEncryptionPolicy for Azure Cosmos container
+        /// </summary>
+        /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+            ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()
+        {
+            return new ClientEncryptionPolicyDefinition(
+                this,
+                (clientEncryptionPolicy) => this.AddClientEncryptionPolicy(clientEncryptionPolicy));
         }
 
         /// <summary>
@@ -156,6 +173,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.ConflictResolutionPolicy = this.conflictResolutionPolicy;
             }
 
+            if (this.clientEncryptionPolicy != null)
+            {
+                containerProperties.ClientEncryptionPolicy = this.clientEncryptionPolicy;
+            }
+
             return containerProperties;
         }
 
@@ -179,6 +201,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
 
             this.conflictResolutionPolicy = conflictResolutionPolicy;
+        }
+
+        private void AddClientEncryptionPolicy(ClientEncryptionPolicy clientEncryptionPolicy)
+        {
+            this.clientEncryptionPolicy = clientEncryptionPolicy;
         }
     }
 }
