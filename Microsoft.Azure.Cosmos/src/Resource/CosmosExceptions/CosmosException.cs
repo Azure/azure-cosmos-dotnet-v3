@@ -178,12 +178,18 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
         {
-            return new ResponseMessage(
+            ResponseMessage responseMessage = new ResponseMessage(
                  headers: this.Headers,
                  requestMessage: request,
                  cosmosException: this,
                  statusCode: this.StatusCode,
                  diagnostics: this.DiagnosticsContext);
+            if (this.SubStatusCode != 0)
+            {
+                responseMessage.Headers.SubStatusCode = (SubStatusCodes)this.SubStatusCode;
+            }
+
+            return responseMessage;
         }
 
         private static string GetMessageHelper(
