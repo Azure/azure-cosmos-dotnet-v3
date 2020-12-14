@@ -44,18 +44,15 @@
     "Microsoft.Azure.Cosmos.ChangeFeedPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.TimeSpan get_RetentionDuration()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.TimeSpan get_RetentionDuration()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.TimeSpan get_RetentionDuration();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.TimeSpan RetentionDuration[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"retentionDuration\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.ChangeFeedRetentionConverter))]": {
+        "System.TimeSpan RetentionDuration[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
-            "JsonConverterAttribute",
-            "JsonPropertyAttribute"
+            "JsonIgnoreAttribute"
           ],
           "MethodInfo": "System.TimeSpan RetentionDuration;CanRead:True;CanWrite:True;System.TimeSpan get_RetentionDuration();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_RetentionDuration(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -64,11 +61,9 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_RetentionDuration(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_RetentionDuration(System.TimeSpan)": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_RetentionDuration(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
