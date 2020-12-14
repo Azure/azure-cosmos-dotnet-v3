@@ -29,8 +29,11 @@ namespace Microsoft.Azure.Cosmos
         internal abstract void Accept(RequestMessage requestMessage);
 
         /// <summary>
-        /// Creates a <see cref="ChangeFeedMode"/>  to receive incremental item changes.
+        /// Creates a <see cref="ChangeFeedMode"/> to receive incremental item changes.
         /// </summary>
+        /// <remarks>
+        /// Incremental mode includes item creations and updates, not deletions.
+        /// </remarks>
         /// <returns>A <see cref="ChangeFeedMode"/>  to receive incremental item changes.</returns>
         public static ChangeFeedMode Incremental()
         {
@@ -38,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a <see cref="ChangeFeedMode"/>  to receive notifications for insertions, updates, and delete operations.
+        /// Creates a <see cref="ChangeFeedMode"/> to receive notifications for creations, updates, and delete operations.
         /// </summary>
         /// <remarks>
         /// A container with a change feed policy configured is required. The delete operations will be included only within the configured retention period.

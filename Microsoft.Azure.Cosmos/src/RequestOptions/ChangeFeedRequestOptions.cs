@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         public bool EmitOldContinuationToken { get; set; }
 
         /// <summary>
-        /// Gets or sets the blah.
+        /// Gets or sets the desired mode on which to consume the Change Feed.
         /// </summary>
         /// <value>Default value is <see cref="ChangeFeedMode.Incremental"/>. </value>
         public ChangeFeedMode FeedMode { get; set; } = ChangeFeedRequestOptions.DefaultMode;
