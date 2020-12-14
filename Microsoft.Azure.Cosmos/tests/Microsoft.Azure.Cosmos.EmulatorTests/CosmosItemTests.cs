@@ -568,21 +568,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PartitionKeyDeleteTest()
         {
             string pKString = "PK1";
+            string pKString2 = "PK2";
             dynamic testItem1 = new
             {
                 id = "item1",
                 status = pKString
             };
 
+            dynamic testItem2 = new
+            {
+                id = "item2",
+                status = pKString
+            };
+
+            dynamic testItem3 = new
+            {
+                id = "item3",
+                status = pKString2
+            };
+
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
             ItemResponse<dynamic>  itemResponse = await this.Container.CreateItemAsync<dynamic>(testItem1);
+            ItemResponse<dynamic> itemResponse2 = await this.Container.CreateItemAsync<dynamic>(testItem2);
+            ItemResponse<dynamic> itemResponse3 = await this.Container.CreateItemAsync<dynamic>(testItem3);
             Cosmos.PartitionKey partitionKey1 = new Cosmos.PartitionKey(pKString);
-            ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1);
-            Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+            Cosmos.PartitionKey partitionKey2 = new Cosmos.PartitionKey(pKString2);
+            using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
+            {
+                Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+            }
 
-            ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item1", partitionKey1);
-            Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
-            Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+            using (ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item1", partitionKey1))
+            {
+                Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
+                Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+            }
+
+            using (ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item2", partitionKey1))
+            {
+                Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
+                Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+            }
+
+            //verify item with the other Partition Key is not deleted
+            using (ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item3", partitionKey2))
+            {
+                Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.OK);
+            }
         }
 
         [TestMethod]

@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAllItemsByPartitionKeyStreamAsync),
                 requestOptions,
-                (diagnostics, trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, diagnostics, trace, requestOptions, cancellationToken));
         }
     }
 }

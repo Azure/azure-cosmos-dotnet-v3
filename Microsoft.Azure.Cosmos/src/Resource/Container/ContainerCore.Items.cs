@@ -912,6 +912,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
           Cosmos.PartitionKey partitionKey,
+          CosmosDiagnosticsContext diagnosticsContext,
           ITrace trace,
           ItemRequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
@@ -927,7 +928,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
