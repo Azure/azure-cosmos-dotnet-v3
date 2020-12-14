@@ -52,6 +52,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Handle a Partition Gone response and decide what to do based on the type of lease.
+        /// </summary>
+        /// <returns>Returns the list of leases to create and a boolean that indicates whether or not to remove the current lease.</returns>
         public override async Task<(IEnumerable<DocumentServiceLease>, bool)> HandlePartitionGoneAsync(DocumentServiceLease lease)
         {
             if (lease == null)
