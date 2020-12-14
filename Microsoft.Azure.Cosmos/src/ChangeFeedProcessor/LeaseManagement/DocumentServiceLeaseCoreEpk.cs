@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// Lease implementation for EPK based leases.
     /// </summary>
     [Serializable]
-    [JsonConverter(typeof(DocumentServiceLeaseDisabledConverter))]
     internal sealed class DocumentServiceLeaseCoreEpk : DocumentServiceLease
     {
         private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);

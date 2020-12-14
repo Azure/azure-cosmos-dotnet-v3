@@ -39,13 +39,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (jObject.TryGetValue(DocumentServiceLeaseConverter.VersionPropertyName, out JToken versionJToken))
             {
                 DocumentServiceLeaseVersion documentServiceLeaseVersion = (DocumentServiceLeaseVersion)versionJToken.Value<int>();
-
+                serializer.ContractResolver.ResolveContract(typeof(DocumentServiceLeaseCoreEpk)).Converter = null;
                 if (documentServiceLeaseVersion == DocumentServiceLeaseVersion.EPKRangeBasedLease)
                 {
                     return serializer.Deserialize(jObject.CreateReader(), typeof(DocumentServiceLeaseCoreEpk));
                 }
             }
 
+            serializer.ContractResolver.ResolveContract(typeof(DocumentServiceLeaseCore)).Converter = null;
             return serializer.Deserialize(jObject.CreateReader(), typeof(DocumentServiceLeaseCore));
         }
 
@@ -56,11 +57,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (value is DocumentServiceLeaseCore documentServiceLeaseCore)
             {
+                serializer.ContractResolver.ResolveContract(typeof(DocumentServiceLeaseCore)).Converter = null;
                 serializer.Serialize(writer, documentServiceLeaseCore);
             }
 
             if (value is DocumentServiceLeaseCoreEpk documentServiceLeaseCoreEpk)
             {
+                serializer.ContractResolver.ResolveContract(typeof(DocumentServiceLeaseCoreEpk)).Converter = null;
                 serializer.Serialize(writer, documentServiceLeaseCoreEpk);
             }
         }
