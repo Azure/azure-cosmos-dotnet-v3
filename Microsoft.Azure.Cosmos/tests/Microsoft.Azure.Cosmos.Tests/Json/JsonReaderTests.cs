@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Globalization;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -3301,7 +3302,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private void VerifyStringOrFieldNameHelper(IJsonReader jsonReader, string expectedString)
         {
             string actualString = jsonReader.GetStringValue();
+            Utf8String actualUtf8StringValue = jsonReader.GetUtf8StringValue();
             Assert.AreEqual(expectedString, actualString);
+            Assert.AreEqual(expectedString, actualUtf8StringValue.ToString());
+            if (jsonReader is ITypedJsonReader typedJsonReader)
+            {
+                Utf8Span actualUtf8SpanValue = typedJsonReader.GetUtf8SpanValue();
+                Assert.AreEqual(expectedString, actualUtf8SpanValue.ToString());
+            }
         }
 
         private void VerifyNumber(IJsonReader jsonReader, Number64 expectedNumberValue)
