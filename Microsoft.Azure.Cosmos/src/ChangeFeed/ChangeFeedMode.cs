@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using Microsoft.Azure.Cosmos.ChangeFeed;
 
     /// <summary>
