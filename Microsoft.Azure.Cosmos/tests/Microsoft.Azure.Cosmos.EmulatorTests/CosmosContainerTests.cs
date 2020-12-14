@@ -552,18 +552,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncTest()
         {
+            RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
+            RequestHandlerHelper requestHandlerHelper = new RequestHandlerHelper();
+
+            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestChargeHandler, requestHandlerHelper));
+            Cosmos.Database database = client.GetDatabase(this.cosmosDatabase.Id);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath1 = "/users";
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            requestChargeHandler.TotalRequestCharges = 0;
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(settings);
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, containerResponse.RequestCharge);
 
+            Assert.IsTrue(containerResponse.RequestCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath1, containerResponse.Resource.PartitionKey.Paths.First());
 
             //Creating container with same partition key path
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            requestChargeHandler.TotalRequestCharges = 0;
+            containerResponse = await database.CreateContainerIfNotExistsAsync(settings);
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, containerResponse.RequestCharge);
 
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
@@ -574,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 settings = new ContainerProperties(containerName, partitionKeyPath2);
-                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+                containerResponse = await database.CreateContainerIfNotExistsAsync(settings);
                 Assert.Fail("Should through ArgumentException on partition key path");
             }
             catch (ArgumentException ex)
@@ -586,11 +597,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     containerName,
                     partitionKeyPath1)));
             }
-
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
 
+            // Test the conflict scenario on create.
+            bool conflictReturned = false;
+            requestHandlerHelper.CallBackOnResponse = (request, response) =>
+            {
+                if (request.OperationType == Documents.OperationType.Create &&
+                    request.ResourceType == Documents.ResourceType.Collection)
+                {
+                    conflictReturned = true;
+                    // Simulate a race condition which results in a 409
+                    return CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.Conflict,
+                        subStatusCode: default,
+                        message: "Fake 409 conflict",
+                        stackTrace: string.Empty,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: response.Headers.RequestCharge,
+                        retryAfter: default,
+                        headers: response.Headers,
+                        diagnosticsContext: response.DiagnosticsContext,
+                        error: default,
+                        innerException: default).ToCosmosResponseMessage(request);
+                }
 
+                return response;
+            };
+
+            requestChargeHandler.TotalRequestCharges = 0;
+            ContainerResponse createWithConflictResponse = await database.CreateContainerIfNotExistsAsync(
+                Guid.NewGuid().ToString(), 
+                "/pk");
+
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createWithConflictResponse.RequestCharge);
+            Assert.AreEqual(HttpStatusCode.OK, createWithConflictResponse.StatusCode);
+            Assert.IsTrue(conflictReturned);
+
+            await createWithConflictResponse.Container.DeleteContainerAsync();
+        }
+
+        [TestMethod]
+        public async Task CreateContainerWithSystemKeyTest()
+        {
             //Creating existing container with partition key having value for SystemKey
             //https://github.com/Azure/azure-cosmos-dotnet-v3/issues/623
             string v2ContainerName = "V2Container";
@@ -605,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.cosmosDatabase.CreateContainerAsync(containerPropertiesWithSystemKey);
 
             ContainerProperties containerProperties = new ContainerProperties(v2ContainerName, "/test");
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(v2ContainerName, containerResponse.Resource.Id);
             Assert.AreEqual("/test", containerResponse.Resource.PartitionKey.Paths.First());
@@ -624,7 +674,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-
         }
 
         [TestMethod]
