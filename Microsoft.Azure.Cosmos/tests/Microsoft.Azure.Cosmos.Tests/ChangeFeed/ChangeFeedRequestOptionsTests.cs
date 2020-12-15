@@ -9,14 +9,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
     [TestClass]
     [TestCategory("ChangeFeed")]
-    public class ChangeFeedModeTests
+    public class ChangeFeedRequestOptionsTests
     {
         [TestMethod]
         public void ChangeFeedMode_Incremental_SetsCorrectHeader()
         {
-            ChangeFeedMode changeFeedMode = ChangeFeedMode.Incremental();
+            ChangeFeedRequestOptions changeFeedRequestOptions = new ChangeFeedRequestOptions
+            {
+                FeedMode = ChangeFeedMode.Incremental()
+            };
             RequestMessage requestMessage = new RequestMessage();
-            changeFeedMode.Accept(requestMessage);
+            changeFeedRequestOptions.PopulateRequestOptions(requestMessage);
 
             Assert.AreEqual(HttpConstants.A_IMHeaderValues.IncrementalFeed, requestMessage.Headers[HttpConstants.HttpHeaders.A_IM]);
         }
@@ -24,11 +27,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ChangeFeedMode_FullFidelity_SetsCorrectHeader()
         {
-            ChangeFeedMode changeFeedMode = ChangeFeedMode.FullFidelity();
+            ChangeFeedRequestOptions changeFeedRequestOptions = new ChangeFeedRequestOptions
+            {
+                FeedMode = ChangeFeedMode.FullFidelity()
+            };
             RequestMessage requestMessage = new RequestMessage();
-            changeFeedMode.Accept(requestMessage);
+            changeFeedRequestOptions.PopulateRequestOptions(requestMessage);
 
             Assert.AreEqual(ChangeFeedModeFullFidelity.FullFidelityHeader, requestMessage.Headers[HttpConstants.HttpHeaders.A_IM]);
+        }
+
+        [TestMethod]
+        public void ChangeFeedMode_Default()
+        {
+            ChangeFeedRequestOptions changeFeedRequestOptions = new ChangeFeedRequestOptions();
+
+            Assert.AreEqual(ChangeFeedMode.Incremental(), changeFeedRequestOptions.FeedMode);
         }
     }
 }
