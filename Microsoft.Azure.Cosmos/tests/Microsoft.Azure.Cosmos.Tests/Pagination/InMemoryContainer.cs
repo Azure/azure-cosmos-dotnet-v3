@@ -497,6 +497,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

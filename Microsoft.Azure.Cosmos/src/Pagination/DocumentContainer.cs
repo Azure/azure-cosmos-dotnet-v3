@@ -161,11 +161,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
                 this.MonadicChangeFeedAsync(
                     state,
                     feedRange,
                     pageSize,
+                    changeFeedMode,
                     cancellationToken), 
                 cancellationToken);
 
@@ -173,10 +175,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
                 state,
                 feedRange,
                 pageSize,
+                changeFeedMode,
                 cancellationToken);
 
         public Task<string> GetResourceIdentifierAsync(

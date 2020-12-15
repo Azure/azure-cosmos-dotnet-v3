@@ -15,25 +15,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     {
         private readonly IChangeFeedDataSource changeFeedDataSource;
         private readonly int pageSize;
+        private readonly ChangeFeedMode changeFeedMode;
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
             FeedRangeInternal range,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedState state,
             CancellationToken cancellationToken)
             : base(range, cancellationToken, state)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
             this.pageSize = pageSize;
+            this.changeFeedMode = changeFeedMode;
         }
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.changeFeedDataSource.MonadicChangeFeedAsync(
-            this.State,
-            this.Range,
-            this.pageSize,
-            cancellationToken);
+        protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        {
+            return this.changeFeedDataSource.MonadicChangeFeedAsync(
+                this.State,
+                this.Range,
+                this.pageSize,
+                this.changeFeedMode,
+                cancellationToken);
+        }
     }
 }

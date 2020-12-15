@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             CancellationToken cancellationToken);
     }
 }

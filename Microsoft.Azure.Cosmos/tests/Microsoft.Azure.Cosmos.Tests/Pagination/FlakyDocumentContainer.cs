@@ -193,6 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             ChangeFeedState state, 
             FeedRangeInternal feedRange, 
             int pageSize, 
+            ChangeFeedMode changeFeedMode,
             CancellationToken cancellationToken)
         {
             if (this.ShouldReturn429())
@@ -215,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 state,
                 feedRange,
                 pageSize,
+                changeFeedMode,
                 cancellationToken);
         }
 
