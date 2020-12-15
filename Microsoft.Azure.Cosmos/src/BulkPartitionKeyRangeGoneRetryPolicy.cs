@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="ItemBatchOperationContext"/>
     internal sealed class BulkPartitionKeyRangeGoneRetryPolicy : IDocumentClientRetryPolicy
     {
-        private const int MaxRetries = 1;
+        private const int MaxRetries = 5;
 
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
 
@@ -32,20 +32,21 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            DocumentClientException clientException = exception as DocumentClientException;
-
-            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
-                clientException?.StatusCode,
-                clientException?.GetSubStatus());
-
-            if (shouldRetryResult != null)
+            if (exception is DocumentClientException clientException)
             {
-                return Task.FromResult(shouldRetryResult);
-            }
+                ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
+                    clientException?.StatusCode,
+                    clientException?.GetSubStatus());
 
-            if (this.nextRetryPolicy == null)
-            {
-                return Task.FromResult(ShouldRetryResult.NoRetry());
+                if (shouldRetryResult != null)
+                {
+                    return Task.FromResult(shouldRetryResult);
+                }
+
+                if (this.nextRetryPolicy == null)
+                {
+                    return Task.FromResult(ShouldRetryResult.NoRetry());
+                }
             }
 
             return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
@@ -83,11 +84,18 @@ namespace Microsoft.Azure.Cosmos
                 && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone 
                 || subStatusCode == SubStatusCodes.NameCacheIsStale 
                 || subStatusCode == SubStatusCodes.CompletingSplit
-                || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
-                && this.retriesAttempted < MaxRetries)
+                || subStatusCode == SubStatusCodes.CompletingPartitionMigration))
             {
-                this.retriesAttempted++;
-                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                if (this.retriesAttempted < MaxRetries)
+                {
+                    this.retriesAttempted++;
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                }
+                else
+                {
+                    // Got too many 410s
+                    return ShouldRetryResult.NoRetry();
+                }
             }
 
             return null;
