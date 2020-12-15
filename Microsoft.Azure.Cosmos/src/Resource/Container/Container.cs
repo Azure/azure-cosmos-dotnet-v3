@@ -1176,7 +1176,8 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW        
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
-        /// Documents are lazily deleted in the background whenever enough resources are available.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
         /// </summary>
         /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
         /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
