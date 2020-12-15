@@ -44,5 +44,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(ChangeFeedMode.Incremental(), changeFeedRequestOptions.FeedMode);
         }
+
+        [TestMethod]
+        public void ChangeFeedRequestOptions_Clone()
+        {
+            ChangeFeedRequestOptions changeFeedRequestOptions = new ChangeFeedRequestOptions()
+            {
+                FeedMode = ChangeFeedMode.FullFidelity(),
+                PageSizeHint = 20
+            };
+
+            ChangeFeedRequestOptions changeFeedRequestOptions_Clone = changeFeedRequestOptions.Clone();
+
+            Assert.AreEqual(changeFeedRequestOptions.FeedMode, changeFeedRequestOptions_Clone.FeedMode);
+            Assert.AreEqual(changeFeedRequestOptions.PageSizeHint, changeFeedRequestOptions_Clone.PageSizeHint);
+        }
     }
 }

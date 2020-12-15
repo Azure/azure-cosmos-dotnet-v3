@@ -109,57 +109,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public void ValidateChangeFeedRequestOptions_Default()
-        {
-            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions();
-
-            RequestMessage httpRequest = new RequestMessage(
-                HttpMethod.Post,
-                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
-
-            options.PopulateRequestOptions(httpRequest);
-
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.A_IM, out string aIM));
-            Assert.AreEqual(HttpConstants.A_IMHeaderValues.IncrementalFeed, aIM);
-        }
-
-        [TestMethod]
-        public void ValidateChangeFeedRequestOptions_Incremental()
-        {
-            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
-            {
-                FeedMode = ChangeFeedMode.Incremental()
-            };
-
-            RequestMessage httpRequest = new RequestMessage(
-                HttpMethod.Post,
-                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
-
-            options.PopulateRequestOptions(httpRequest);
-
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.A_IM, out string aIM));
-            Assert.AreEqual(HttpConstants.A_IMHeaderValues.IncrementalFeed, aIM);
-        }
-
-        [TestMethod]
-        public void ValidateChangeFeedRequestOptions_FullFidelity()
-        {
-            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
-            {
-                FeedMode = ChangeFeedMode.FullFidelity()
-            };
-
-            RequestMessage httpRequest = new RequestMessage(
-                HttpMethod.Post,
-                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
-
-            options.PopulateRequestOptions(httpRequest);
-
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.A_IM, out string aIM));
-            Assert.AreEqual(ChangeFeedModeFullFidelity.FullFidelityHeader, aIM);
-        }
-
-        [TestMethod]
         public void InitializeBatchExecutorForContainer_Null_WhenAllowBulk_False()
         {
             string databaseId = "db1234";

@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedRequestOptions()
             {
                 PageSizeHint = this.pageSizeHint,
+                FeedMode = this.FeedMode
             };
         }
     }
