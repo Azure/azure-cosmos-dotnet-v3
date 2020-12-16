@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             this.diagnosticsContext.AddDiagnosticsInternal(
                 new PointOperationStatistics(
                     activityId: Trace.CorrelationManager.ActivityId.ToString(),
-                    statusCode: exception is OperationCanceledException ? HttpStatusCode.RequestTimeout : HttpStatusCode.ServiceUnavailable,
+                    statusCode: HttpStatusCode.RequestTimeout,
                     subStatusCode: SubStatusCodes.Unknown,
                     responseTimeUtc: DateTime.UtcNow,
                     requestCharge: 0,

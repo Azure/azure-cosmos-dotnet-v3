@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: cosmosException.Headers.ActivityId,
                 statusCode: cosmosException.StatusCode,
-                subStatusCode: documentClientException.GetSubStatus(),
+                subStatusCode: cosmosException.Headers.SubStatusCode,
                 responseTimeUtc: DateTime.UtcNow,
                 requestCharge: cosmosException.Headers.RequestCharge,
                 errorMessage: documentClientException.ToString(),
