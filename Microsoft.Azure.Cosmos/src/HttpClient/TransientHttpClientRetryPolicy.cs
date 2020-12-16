@@ -47,10 +47,11 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             HttpRequestMessage httpRequestMessage = this.getHttpReqestMessage();
+
             this.diagnosticsContext.AddDiagnosticsInternal(
                 new PointOperationStatistics(
                     activityId: Trace.CorrelationManager.ActivityId.ToString(),
-                    statusCode: HttpStatusCode.InternalServerError,
+                    statusCode: exception is OperationCanceledException ? HttpStatusCode.RequestTimeout : HttpStatusCode.ServiceUnavailable,
                     subStatusCode: SubStatusCodes.Unknown,
                     responseTimeUtc: DateTime.UtcNow,
                     requestCharge: 0,
