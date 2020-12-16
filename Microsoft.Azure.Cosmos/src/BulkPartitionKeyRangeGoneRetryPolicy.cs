@@ -33,11 +33,11 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            if (exception is DocumentClientException clientException)
+            if (exception is CosmosException clientException)
             {
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
-                    clientException?.StatusCode,
-                    clientException?.GetSubStatus(),
+                    clientException.StatusCode,
+                    (SubStatusCodes)clientException.SubStatusCode,
                     cancellationToken);
 
                 if (shouldRetryResult != null)
