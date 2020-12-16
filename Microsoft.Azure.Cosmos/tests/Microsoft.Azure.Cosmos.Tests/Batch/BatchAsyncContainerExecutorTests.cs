@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
-            mockContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
+            mockContainer.Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
             Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
             mockContainer.Setup(c => c.ClientContext).Returns(context.Object);
             context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());

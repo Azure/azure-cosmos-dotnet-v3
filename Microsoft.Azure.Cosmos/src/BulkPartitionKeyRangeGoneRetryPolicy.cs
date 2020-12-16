@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                     || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
                 {
                     PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                    string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
+                    string containerRid = await this.container.GetRIDAsync(cancellationToken: cancellationToken);
                     await partitionKeyRangeCache.TryGetOverlappingRangesAsync(containerRid, FeedRangeEpk.FullRange.Range, forceRefresh: true);
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }

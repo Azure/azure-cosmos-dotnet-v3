@@ -59,8 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage requestMessage = new RequestMessage(
                         HttpMethod.Get,
                         "/dbs/test/colls/abc/docs/123",
-                        diagnosticsContext,
-                        Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton);
+                        diagnosticsContext);
 
             ResponseMessage response = dce.ToCosmosResponseMessage(requestMessage);
 

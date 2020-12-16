@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static ContainerInternal GetSplitEnabledContainer()
         {
             Mock<ContainerInternal> container = new Mock<ContainerInternal>();
-            container.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
+            container.Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
             Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
             container.Setup(c => c.ClientContext).Returns(context.Object);
             context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());
