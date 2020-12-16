@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     }
                 },
                 responseCreator: response => response,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: null,
                 diagnosticsContext: null,
                 trace: trace,
