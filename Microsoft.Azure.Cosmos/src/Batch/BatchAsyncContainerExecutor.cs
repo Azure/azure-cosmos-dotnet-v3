@@ -135,12 +135,11 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerInternal,
             RetryOptions retryOptions)
         {
-            InvalidPartitionExceptionRetryPolicy invalidPartitionExceptionRetryPolicy = new InvalidPartitionExceptionRetryPolicy(new ResourceThrottleRetryPolicy(
-                retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                retryOptions.MaxRetryWaitTimeInSeconds));
             return new BulkPartitionKeyRangeGoneRetryPolicy(
                containerInternal,
-               invalidPartitionExceptionRetryPolicy);
+               new ResourceThrottleRetryPolicy(
+                retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                retryOptions.MaxRetryWaitTimeInSeconds));
         }
 
         private static bool ValidateOperationEPK(
