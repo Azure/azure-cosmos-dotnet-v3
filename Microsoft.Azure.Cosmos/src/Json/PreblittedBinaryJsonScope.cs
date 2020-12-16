@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         public readonly ReadOnlyMemory<byte> Bytes;
 
-        internal PreblittedBinaryJsonScope(ReadOnlyMemory<byte> bytes)
+        public PreblittedBinaryJsonScope(ReadOnlyMemory<byte> bytes)
         {
             this.Bytes = bytes;
         }
