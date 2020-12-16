@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FieldInfo httpClientProperty = cosmosHttpClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
                 httpClientProperty.SetValue(cosmosHttpClient, httpClient);
 
-                FieldInfo gatewayRequestTimeoutProperty = cosmosHttpClient.GetType().GetField("GatewayRequestTimeout", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo gatewayRequestTimeoutProperty = typeof(CosmosHttpClient).GetField("GatewayRequestTimeout", BindingFlags.Public | BindingFlags.Static);
                 gatewayRequestTimeoutProperty.SetValue(cosmosHttpClient, TimeSpan.FromSeconds(1));
 
                 // Verify the failure has the required info
