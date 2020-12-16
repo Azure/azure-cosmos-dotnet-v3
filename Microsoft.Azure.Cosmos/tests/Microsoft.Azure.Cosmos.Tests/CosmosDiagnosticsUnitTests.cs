@@ -13,7 +13,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -42,9 +44,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateTransportHandlerLogging()
+        {
+            DocumentClientException dce = new DocumentClientException(
+                "test",
+                null,
+                new StoreResponseNameValueCollection(),
+                HttpStatusCode.Gone,
+                SubStatusCodes.PartitionKeyRangeGone,
+                new Uri("htts://localhost.com"));
+
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+
+            RequestMessage requestMessage = new RequestMessage(
+                        HttpMethod.Get,
+                        "/dbs/test/colls/abc/docs/123",
+                        diagnosticsContext,
+                        Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton);
+
+            ResponseMessage response = dce.ToCosmosResponseMessage(requestMessage);
+
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
+
+            bool visited = false;
+            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in diagnosticsContext)
+            {
+                if (cosmosDiagnosticsInternal is PointOperationStatistics operationStatistics)
+                {
+                    visited = true;
+                    Assert.AreEqual(operationStatistics.StatusCode, HttpStatusCode.Gone);
+                    Assert.AreEqual(operationStatistics.SubStatusCode, SubStatusCodes.PartitionKeyRangeGone);
+                }
+            }
+
+            Assert.IsTrue(visited, "PointOperationStatistics was not found in the diagnostics.");
+        }
+
+        [TestMethod]
         public async Task ValidateActivityId()
         {
-           using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
               cosmosClient,
               new MockDocumentClient(),
