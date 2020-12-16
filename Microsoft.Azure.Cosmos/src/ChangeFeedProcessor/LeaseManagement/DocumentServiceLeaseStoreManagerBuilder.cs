@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
         public static async Task<DocumentServiceLeaseStoreManager> InitializeAsync(
+            ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             string leaseContainerPrefix,
             string instanceName)
@@ -40,20 +41,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             DocumentServiceLeaseStoreManagerBuilder leaseStoreManagerBuilder = new DocumentServiceLeaseStoreManagerBuilder()
                 .WithLeasePrefix(leaseContainerPrefix)
+                .WithMonitoredContainer(monitoredContainer)
                 .WithLeaseContainer(leaseContainer)
                 .WithRequestOptionsFactory(requestOptionsFactory)
                 .WithHostName(instanceName);
 
-            return await leaseStoreManagerBuilder.BuildAsync().ConfigureAwait(false);
+            return leaseStoreManagerBuilder.Build();
         }
 
-        private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
-        private Container container;
+        private readonly DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
+        private ContainerInternal monitoredContainer;
+        private ContainerInternal leaseContainer;
         private RequestOptionsFactory requestOptionsFactory;
 
-        private DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
+        private DocumentServiceLeaseStoreManagerBuilder WithMonitoredContainer(ContainerInternal monitoredContainer)
         {
-            this.container = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
+            return this;
+        }
+
+        private DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(ContainerInternal leaseContainer)
+        {
+            this.leaseContainer = leaseContainer ?? throw new ArgumentNullException(nameof(leaseContainer));
             return this;
         }
 
@@ -75,11 +84,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this;
         }
 
-        private Task<DocumentServiceLeaseStoreManager> BuildAsync()
+        private DocumentServiceLeaseStoreManager Build()
         {
-            if (this.container == null)
+            if (this.monitoredContainer == null)
             {
-                throw new InvalidOperationException(nameof(this.container) + " was not specified");
+                throw new InvalidOperationException(nameof(this.monitoredContainer) + " was not specified");
+            }
+
+            if (this.leaseContainer == null)
+            {
+                throw new InvalidOperationException(nameof(this.leaseContainer) + " was not specified");
             }
 
             if (this.requestOptionsFactory == null)
@@ -87,8 +101,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
             }
 
-            DocumentServiceLeaseStoreManagerCosmos leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
-            return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
+            return new DocumentServiceLeaseStoreManagerCosmos(this.options, this.monitoredContainer, this.leaseContainer, this.requestOptionsFactory);
         }
     }
 }

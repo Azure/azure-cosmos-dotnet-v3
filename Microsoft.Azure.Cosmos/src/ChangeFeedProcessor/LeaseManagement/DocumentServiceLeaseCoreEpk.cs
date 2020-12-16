@@ -9,17 +9,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Lease implementation for PartitionKeyRange based leases.
+    /// Lease implementation for EPK based leases.
     /// </summary>
     [Serializable]
-    internal sealed class DocumentServiceLeaseCore : DocumentServiceLease
+    internal sealed class DocumentServiceLeaseCoreEpk : DocumentServiceLease
     {
         private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
-        // Used to detect if the user is migrating from a V2 CFP schema
-        private bool isMigratingFromV2 = false;
-
-        public DocumentServiceLeaseCore()
+        public DocumentServiceLeaseCoreEpk()
         {
         }
 
@@ -27,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public string LeaseId { get; set; }
 
         [JsonProperty("version")]
-        public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.PartitionKeyRangeBasedLease;
+        public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.EPKRangeBasedLease;
 
         [JsonIgnore]
         public override string Id => this.LeaseId;
@@ -37,26 +34,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         [JsonProperty("LeaseToken")]
         public string LeaseToken { get; set; }
-
-        [JsonProperty("PartitionId", NullValueHandling = NullValueHandling.Ignore)]
-        private string PartitionId
-        {
-            get
-            {
-                if (this.isMigratingFromV2)
-                {
-                    // If the user migrated the lease from V2 schema, we maintain the PartitionId property for backward compatibility
-                    return this.LeaseToken;
-                }
-
-                return null;
-            }
-            set
-            {
-                this.LeaseToken = value;
-                this.isMigratingFromV2 = true;
-            }
-        }
 
         [JsonIgnore]
         public override string CurrentLeaseToken => this.LeaseToken;
