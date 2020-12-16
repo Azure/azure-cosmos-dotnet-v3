@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
-        private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
-
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
 

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class HttpTimeoutPolicyControlPlaneRead : HttpTimeoutPolicy
     {
         public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyControlPlaneRead();
+        private static readonly string Name = nameof(HttpTimeoutPolicyControlPlaneRead);
 
         private HttpTimeoutPolicyControlPlaneRead()
         {
@@ -21,9 +22,9 @@ namespace Microsoft.Azure.Cosmos
             (TimeSpan.FromSeconds(20), TimeSpan.Zero), 
         };
 
-        public override string TimeoutPolicyName => nameof(HttpTimeoutPolicyControlPlaneRead);
+        public override string TimeoutPolicyName => HttpTimeoutPolicyControlPlaneRead.Name;
 
-        public override TimeSpan MaximumRetryTimeLimit => TimeSpan.FromSeconds(65);
+        public override TimeSpan MaximumRetryTimeLimit => CosmosHttpClient.GatewayRequestTimeout;
 
         public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
 
