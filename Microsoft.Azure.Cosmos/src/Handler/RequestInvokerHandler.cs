@@ -292,7 +292,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.SqlQuery ||
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
-                operationType == OperationType.ExecuteJavaScript)
+                operationType == OperationType.ExecuteJavaScript ||
+                operationType == OperationType.CompleteUserTransaction)
             {
                 return HttpMethod.Post;
             }
