@@ -21,6 +21,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         public readonly ReadOnlyMemory<byte> Bytes;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PreblittedBinaryJsonScope"/> struct.
+        /// </summary>
+        /// <param name="bytes">Preblitted binary json bytes.</param>
         public PreblittedBinaryJsonScope(ReadOnlyMemory<byte> bytes)
         {
             this.Bytes = bytes;
