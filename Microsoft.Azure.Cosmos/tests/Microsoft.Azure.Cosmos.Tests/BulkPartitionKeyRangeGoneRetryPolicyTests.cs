@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class BulkPartitionKeyRangeGoneRetryPolicyTests
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task NotRetryOnSuccess()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                Mock.Of<ContainerInternal>(),
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
@@ -28,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetriesOn429()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                Mock.Of<ContainerInternal>(),
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
@@ -39,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetriesOnSplits()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                Mock.Of<ContainerInternal>(),
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
@@ -50,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetriesOnCompletingSplits()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                Mock.Of<ContainerInternal>(),
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingSplit };
@@ -61,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetriesOnCompletingPartitionMigrationSplits()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                Mock.Of<ContainerInternal>(),
                 new ResourceThrottleRetryPolicy(1));
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingPartitionMigration };
