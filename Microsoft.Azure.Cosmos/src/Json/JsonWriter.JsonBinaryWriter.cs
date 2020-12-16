@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     abstract partial class JsonWriter : IJsonWriter
     {
-        internal static bool EnableEncodedStrings = false;
-
         /// <summary>
         /// Executes the provided lambda and captures a copy of the written bytes for reuse.
         /// The lambda is executed at a field name, and should leave the reader in a state where
@@ -847,23 +845,20 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new InvalidOperationException($"Unable to serialize a {nameof(JsonBinaryEncoding.MultiByteTypeMarker)} of length: {multiByteTypeMarker.Length}");
                     }
                 }
-                else if (EnableEncodedStrings 
-                    && isFieldName
+                else if (isFieldName
                     && (utf8Span.Length >= MinReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
                 {
                     // Work is done in the check
                 }
-                else if (EnableEncodedStrings
-                    && !isFieldName
+                else if (!isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidLength)
                     && JsonBinaryEncoding.TryEncodeGuidString(utf8Span.Span, this.binaryWriter.Cursor))
                 {
                     // Encoded value as guid string
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
                 }
-                else if (EnableEncodedStrings
-                    && !isFieldName
+                else if (!isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidWithQuotesLength)
                     && (utf8Span.Span[0] == '"')
                     && (utf8Span.Span[JsonBinaryEncoding.GuidWithQuotesLength - 1] == '"')
@@ -874,16 +869,13 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Cursor[0] = JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString;
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
                 }
-                else if (EnableEncodedStrings
-                    && !isFieldName
+                else if (!isFieldName
                     && JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, out int bytesWritten))
                 {
                     // Encoded value as a compressed string
                     this.binaryWriter.Position += bytesWritten;
                 }
-                else if (
-                    EnableEncodedStrings 
-                    && !isFieldName
+                else if (!isFieldName
                     && (utf8Span.Length >= MinReferenceStringLength)
                     && (utf8Span.Length <= MaxReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
