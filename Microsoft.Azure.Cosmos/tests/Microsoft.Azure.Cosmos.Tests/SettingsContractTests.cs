@@ -616,7 +616,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
             string serialization = JsonConvert.SerializeObject(containerSettings);
-            Assert.IsFalse(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should not be included by default");
+            Assert.IsTrue(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should be included by default");
+            Assert.IsFalse(serialization.Contains(Constants.Properties.LogRetentionDuration), "Change Feed Policy retention should not be included by default");
 
             TimeSpan desiredTimeSpan = TimeSpan.FromHours(1);
             containerSettings.ChangeFeedPolicy = new Cosmos.ChangeFeedPolicy() { RetentionDuration = desiredTimeSpan };
@@ -635,7 +636,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
             string serialization = JsonConvert.SerializeObject(containerSettings);
-            Assert.IsFalse(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should not be included by default");
+            Assert.IsTrue(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should be included by default");
+            Assert.IsFalse(serialization.Contains(Constants.Properties.LogRetentionDuration), "Change Feed Policy retention should not be included by default");
 
             TimeSpan desiredTimeSpan = TimeSpan.FromSeconds(10);
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { RetentionDuration = desiredTimeSpan });
