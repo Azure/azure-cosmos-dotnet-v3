@@ -11,20 +11,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// This class provides extension methods for <see cref="MdeContainer"/>.
+    /// This class provides extension methods for <see cref="QueryDefinition"/>.
     /// </summary>
     public static class QueryDefinitionExtensions
     {
         /// <summary>
-        /// Get Cosmos Client with Encryption support for performing operations using client-side encryption.
+        /// Gets a QueryDefinition with Encrypted Parameters.
         /// </summary>
         /// <param name="queryDefinition"> Query Definition to be replaced with Encrypted Values.</param>
-        /// <param name="container">Container handler </param>
-        /// <param name="name">Query Paramerter Name. </param>
-        /// <param name="value">Query Paramerter Value.</param>
-        /// <param name="path">Encrypted Property Path. </param>
-        /// <typeparam name="T">Type of item.</typeparam>
-        /// <returns>QueryDefinition</returns>
+        /// <param name="name"> Query Paramerter Name. </param>
+        /// <param name="value"> Query Paramerter Value.</param>
+        /// <param name="path"> Encrypted Property Path. </param>
+        /// <param name="container"> Container handler </param>
+        /// <typeparam name="T"> Type of item.</typeparam>
+        /// <returns> QueryDefinition with encrypted parameters. </returns>
         public static async Task<QueryDefinition> AddEncryptedParameterAsync<T>(
             this QueryDefinition queryDefinition,
             string name,

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="cosmosClient">Regular Cosmos Client.</param>
         /// <param name="encryptionKeystoreProvider">EncryptionKeyStoreProvider, provider that allows interaction with the master keys.</param>
-        /// <returns>CosmosClient to perform operations supporting client-side encryption / decryption.</returns>
+        /// <returns> CosmosClient to perform operations supporting client-side encryption / decryption.</returns>
         public static CosmosClient WithEncryption(
             this CosmosClient cosmosClient,
             EncryptionKeyStoreProvider encryptionKeystoreProvider)

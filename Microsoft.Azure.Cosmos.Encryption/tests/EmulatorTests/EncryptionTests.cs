@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TransactionalBatchResponse batchResponse = await publicModelContainer1.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
                 .CreateItem(doc1ToCreate)
                 .CreateItemStream(doc2ToCreate.ToStream())
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, new MdeEncryptionTransactionalBatchItemRequestOptions { IfMatchEtag = doc1ToReplaceCreateResponse.ETag })
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, new TransactionalBatchItemRequestOptions { IfMatchEtag = doc1ToReplaceCreateResponse.ETag })
                 .CreateItem(doc3ToCreate)
                 .CreateItem(doc4ToCreate)
                 .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream())

@@ -8,23 +8,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// This class provides extension methods for <see cref="EncryptionContainer"/>.
+    /// This class provides extension methods for <see cref="Database"/>.
     /// </summary>
     public static class EncryptionDatabaseExtensions
     {
         /// <summary>
-        /// Create a Client Encryption Key
+        /// Create a Client Encryption Key used to Encrypt data.
         /// </summary>
         /// <param name="database">Regular cosmos database.</param>
-        /// <param name="clientEncryptionKeyId">Provide CEK id.</param>
-        /// <param name="encryptionAlgorithm">Provide Encryption Algorthm </param>
-        /// <param name="encryptionKeyWrapMetadata">Provide EncryptionKeyWrapMetadata.</param>
+        /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
+        /// <param name="encryptionAlgorithm"> Encryption Algorthm. </param>
+        /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
             string encryptionAlgorithm,
-            Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+            Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
@@ -56,18 +56,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Create a Client Encryption Key
+        /// ReWrap an existing Client Encryption Key.
         /// </summary>
         /// <param name="database">Regular cosmos database.</param>
-        /// <param name="clientEncryptionKeyId">Provide CEK id.</param>
-        /// <param name="encryptionAlgorithm">Provide Encryption Algorthm </param>
-        /// <param name="encryptionKeyWrapMetadata">Provide EncryptionKeyWrapMetadata.</param>
+        /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
+        /// <param name="encryptionAlgorithm"> Encryption Algorthm. </param>
+        /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static async Task<ClientEncryptionKeyResponse> RewrapClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
             string encryptionAlgorithm,
-            Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+            Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 

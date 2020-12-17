@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
-        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="encryptionCosmosClient"> Cosmos Client configured with Encryption.</param>
         public MdeContainer(
             Container container,
             EncryptionCosmosClient encryptionCosmosClient)
