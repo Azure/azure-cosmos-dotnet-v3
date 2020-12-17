@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// Value is in TimeSpan.
         /// </value>
         [JsonIgnore]
-        public TimeSpan RetentionDuration 
+        public TimeSpan FullFidelityRetention 
         {
             get
             {
@@ -59,7 +59,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (value.Seconds > 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.RetentionDuration), "Retention duration's minimum granularity is minutes.");
+                    throw new ArgumentOutOfRangeException(nameof(this.FullFidelityRetention), "Retention's minimum granularity is minutes.");
+                }
+
+                if (value.TotalSeconds < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.FullFidelityRetention), "Retention cannot be negative.");
                 }
 
                 this.retentionDurationInMinutes = (int)value.TotalMinutes;

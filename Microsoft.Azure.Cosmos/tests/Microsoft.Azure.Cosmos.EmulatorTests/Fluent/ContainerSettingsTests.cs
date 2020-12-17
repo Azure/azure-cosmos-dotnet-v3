@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
                 ContainerProperties containerSettings = containerResponse.Resource;
                 Assert.IsNotNull(containerSettings.ChangeFeedPolicy);
-                Assert.AreEqual(retention.TotalMinutes, containerSettings.ChangeFeedPolicy.RetentionDuration.TotalMinutes);
+                Assert.AreEqual(retention.TotalMinutes, containerSettings.ChangeFeedPolicy.FullFidelityRetention.TotalMinutes);
             }
             finally
             {
