@@ -694,6 +694,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
+            int firstSetBit = 128;
+            int lastSetBit = 0;
+            int charCount = 0;
             BitArray valueCharSet = new BitArray(length: 128);
             // Create a bit-set with all the ASCII character of the string value
             for (int index = 0; index < stringValue.Length; index++)
@@ -707,33 +710,18 @@ namespace Microsoft.Azure.Cosmos.Json
                     return false;
                 }
 
+                if (!valueCharSet[charValue])
+                {
+                    charCount++;
+
+                    firstSetBit = Math.Min(charValue, firstSetBit);
+                    lastSetBit = Math.Max(charValue, lastSetBit);
+                }
+
                 valueCharSet.Set(charValue, true);
             }
 
-            int firstSetBit = 0;
-            for (; (firstSetBit < valueCharSet.Length) && !valueCharSet[firstSetBit]; firstSetBit++)
-            {
-            }
-
-            int lastSetBit = valueCharSet.Length - 1;
-            for (; (lastSetBit > 0) && !valueCharSet[lastSetBit]; lastSetBit--)
-            {
-            }
-
-            int charCount = 0;
-            int firstBitSet = int.MaxValue;
-            int lastBitSet = int.MinValue;
-            for (int i = 0; i < valueCharSet.Length; i++)
-            {
-                if (valueCharSet[i])
-                {
-                    charCount++;
-                    firstBitSet = Math.Min(firstBitSet, i);
-                    lastBitSet = Math.Max(lastBitSet, i);
-                }
-            }
-
-            int charRange = lastSetBit - firstSetBit + 1;
+            int charRange = (lastSetBit - firstSetBit) + 1;
 
             // Attempt to encode the string as 4-bit packed values over a defined character set
             if ((stringValue.Length <= 0xFF) && (charCount <= 16) && (stringValue.Length >= Min4BitCharSetStringLength))
