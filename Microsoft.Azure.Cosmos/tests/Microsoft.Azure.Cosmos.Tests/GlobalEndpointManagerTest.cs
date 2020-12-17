@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
 
             //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
-            Thread.Sleep(2000);
+            Thread.Sleep(3000);
             await globalEndpointManager.RefreshLocationAsync(null);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
         }
