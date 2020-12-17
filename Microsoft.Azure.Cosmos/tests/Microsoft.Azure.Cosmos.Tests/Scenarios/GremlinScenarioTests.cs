@@ -172,28 +172,28 @@ namespace Microsoft.Azure.Cosmos.Scenarios
 
             // Edge system document properties
             CosmosString idLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, idName);
-            Assert.AreEqual(idValue, idLazyString.Value);
+            Assert.AreEqual(idValue, idLazyString.Value.ToString());
 
             CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinScenarioTests.PartitionKeyPropertyName);
-            Assert.AreEqual(pkValue, pkLazyString.Value);
+            Assert.AreEqual(pkValue, pkLazyString.Value.ToString());
 
             CosmosString labelLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, labelName);
-            Assert.AreEqual(labelValue, labelLazyString.Value);
+            Assert.AreEqual(labelValue, labelLazyString.Value.ToString());
 
             CosmosString vertexIdLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinKeywords.KW_EDGEDOC_VERTEXID);
-            Assert.AreEqual(vertexIdValue, vertexIdLazyString.Value);
+            Assert.AreEqual(vertexIdValue, vertexIdLazyString.Value.ToString());
 
             CosmosString vertexLabelLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinKeywords.KW_EDGEDOC_VERTEXLABEL);
-            Assert.AreEqual(vertexLabelValue, vertexLabelLazyString.Value);
+            Assert.AreEqual(vertexLabelValue, vertexLabelLazyString.Value.ToString());
 
             CosmosString sinkIdLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinKeywords.KW_EDGE_SINKV);
-            Assert.AreEqual(sinkIdValue, sinkIdLazyString.Value);
+            Assert.AreEqual(sinkIdValue, sinkIdLazyString.Value.ToString());
 
             CosmosString sinkLabelLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinKeywords.KW_EDGE_SINKV_LABEL);
-            Assert.AreEqual(sinkLabelValue, sinkLabelLazyString.Value);
+            Assert.AreEqual(sinkLabelValue, sinkLabelLazyString.Value.ToString());
 
             CosmosString sinkPartitionLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, GremlinKeywords.KW_EDGE_SINKV_PARTITION);
-            Assert.AreEqual(sinkPartitionValue, sinkPartitionLazyString.Value);
+            Assert.AreEqual(sinkPartitionValue, sinkPartitionLazyString.Value.ToString());
 
             CosmosBoolean isEdgeLazyBool = this.GetAndAssertObjectProperty<CosmosBoolean>(edgeLazyObject, GremlinKeywords.KW_EDGEDOC_IDENTIFIER);
             Assert.AreEqual(isEdgeValue, isEdgeLazyBool.Value);
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.AreEqual((double)doubleValue, doubleValueLazyNumber.Value);
 
             CosmosString stringValueLazyString = this.GetAndAssertObjectProperty<CosmosString>(edgeLazyObject, stringName);
-            Assert.AreEqual(stringValue, stringValueLazyString.Value);
+            Assert.AreEqual(stringValue, stringValueLazyString.Value.ToString());
         }
 
         internal void SerializeAndDeserializeVertexDocumentTest(JsonSerializationFormat jsonSerializationFormat)
