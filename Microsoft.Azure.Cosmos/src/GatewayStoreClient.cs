@@ -75,11 +75,13 @@ namespace Microsoft.Azure.Cosmos
         internal Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> requestMessage,
             ResourceType resourceType,
+            HttpTimeoutPolicy timeoutPolicy,
             CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(
                 createRequestMessageAsync: requestMessage,
                 resourceType: resourceType,
+                timeoutPolicy: timeoutPolicy,
                 diagnosticsContext: null,
                 cancellationToken: cancellationToken);
         }
@@ -370,6 +372,7 @@ namespace Microsoft.Azure.Cosmos
             return this.httpClient.SendHttpAsync(
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,
+                HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 diagnosticsContext,
                 cancellationToken);
         }
