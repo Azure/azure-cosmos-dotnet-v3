@@ -653,7 +653,8 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationHelper.CheckTimeRangeIsCurrent(allowedClockSkewInSeconds, utcStartTime, utcEndTime);
         }
 
-        private static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
+        // This function is used by Compute
+        internal static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
@@ -751,7 +752,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
+        // This function is used by Compute
+        internal static int ComputeMemoryCapacity(string verbInput, string authResourceId, string resourceTypeInput)
         {
             return
                 verbInput.Length
