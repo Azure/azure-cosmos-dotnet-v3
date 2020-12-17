@@ -640,6 +640,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(serialization.Contains(Constants.Properties.LogRetentionDuration), "Change Feed Policy retention should not be included by default");
 
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(10) });
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromMilliseconds(10) });
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(-10) });
         }
 

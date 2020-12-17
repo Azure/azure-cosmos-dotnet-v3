@@ -57,12 +57,13 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                if (value.Seconds > 0)
+                if (value.Seconds > 0 
+                    || value.Milliseconds > 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.FullFidelityRetention), "Retention's minimum granularity is minutes.");
+                    throw new ArgumentOutOfRangeException(nameof(this.FullFidelityRetention), "Retention's granularity is minutes.");
                 }
 
-                if (value.TotalSeconds < 0)
+                if (value.TotalMilliseconds < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.FullFidelityRetention), "Retention cannot be negative.");
                 }

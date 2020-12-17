@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
             ContainerBuilder parent,
             Action<ChangeFeedPolicy> attachCallback)
         {
-            this.parent = parent;
-            this.attachCallback = attachCallback;
+            this.parent = parent ?? throw new ArgumentNullException(nameof(parent));
+            this.attachCallback = attachCallback ?? throw new ArgumentNullException(nameof(attachCallback));
         }
 
         /// <summary>
