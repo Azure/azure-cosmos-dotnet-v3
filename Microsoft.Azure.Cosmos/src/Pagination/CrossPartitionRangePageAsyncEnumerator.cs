@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
         private readonly AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>> lazyEnumerators;
+        private readonly ISplitStrategy<TPage, TState> splitStrategy;
         private CancellationToken cancellationToken;
 
         public CrossPartitionRangePageAsyncEnumerator(
@@ -35,11 +36,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             int? maxConcurrency,
             CancellationToken cancellationToken,
-            CrossFeedRangeState<TState> state = default)
+            CrossFeedRangeState<TState> state = default,
+            ISplitStrategy<TPage, TState> splitStrategy = null)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(feedRangeProvider));
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
             this.cancellationToken = cancellationToken;
+            this.splitStrategy = splitStrategy ?? new DefaultSplitStrategy<TPage, TState>(feedRangeProvider, createPartitionRangeEnumerator);
 
             this.lazyEnumerators = new AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
             {
@@ -129,38 +132,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                 if (IsSplitException(exception))
                 {
-                    // Handle split
-                    List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                    await this.splitStrategy.HandleSplitAsync(
                         currentPaginator.Range,
-                        cancellationToken: this.cancellationToken);
-                    if (childRanges.Count == 0)
-                    {
-                        throw new InvalidOperationException("Got back no children");
-                    }
-
-                    if (childRanges.Count == 1)
-                    {
-                        // We optimistically assumed that the cache is not stale.
-                        // In the event that it is (where we only get back one child / the partition that we think got split)
-                        // Then we need to refresh the cache
-                        await this.feedRangeProvider.RefreshProviderAsync(this.cancellationToken);
-                        childRanges = await this.feedRangeProvider.GetChildRangeAsync(
-                            currentPaginator.Range,
-                            cancellationToken: this.cancellationToken);
-                    }
-
-                    if (childRanges.Count() <= 1)
-                    {
-                        throw new InvalidOperationException("Expected more than 1 child");
-                    }
-
-                    foreach (FeedRangeInternal childRange in childRanges)
-                    {
-                        PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
-                            childRange,
-                            currentPaginator.State);
-                        enumerators.Enqueue(childPaginator);
-                    }
+                        currentPaginator.State,
+                        enumerators,
+                        this.cancellationToken);
 
                     // Recursively retry
                     return await this.MoveNextAsync();
@@ -230,17 +206,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             // TODO: code this out
             return false;
-        }
-
-        private interface IQueue<T> : IEnumerable<T>
-        {
-            T Peek();
-
-            void Enqueue(T item);
-
-            T Dequeue();
-
-            public int Count { get; }
         }
 
         private sealed class PriorityQueueWrapper<T> : IQueue<T>

@@ -122,17 +122,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 throw new ArgumentNullException(nameof(documentContainer));
             }
 
-            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator = new CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>(
-                documentContainer,
+            CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator =
                 CrossPartitionChangeFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
                     changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(int.MaxValue),
                     changeFeedRequestOptions.FeedMode,
-                    cancellationToken),
+                    cancellationToken);
+
+            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator = new CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>(
+                documentContainer,
+                partitionRangeEnumeratorCreator,
                 comparer: default /* this uses a regular queue instead of prioirty queue */,
                 maxConcurrency: default,
                 cancellationToken,
-                state);
+                state,
+                splitStrategy: changeFeedRequestOptions.FeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator));
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = new CrossPartitionChangeFeedAsyncEnumerator(
                 crossPartitionEnumerator,
