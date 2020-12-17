@@ -182,9 +182,9 @@
             Console.WriteLine("Creating Document 2: SubTotal : {0} After roundtripping post Decryption: {1}", order2.SubTotal, readOrder.SubTotal);
 
             // Query Demo.
-            // Here SubTotal is an encrypted prperty.
+            // Here SubTotal and OrderDate are encrypted properties.
             QueryDefinition withEncryptedParameter = new QueryDefinition(
-                    "SELECT * FROM c where c.SubTotal = @SubTotal");
+                    "SELECT * FROM c where c.SubTotal = @SubTotal AND c.OrderDate = @OrderDate");
 
             await withEncryptedParameter.AddEncryptedParameterAsync(
                     "@SubTotal",
@@ -192,11 +192,17 @@
                     "/SubTotal",
                     containerWithEncryption);
 
+            await withEncryptedParameter.AddEncryptedParameterAsync(
+                    "@OrderDate",
+                    order2.OrderDate,
+                    "/OrderDate",
+                    containerWithEncryption);
+
             FeedIterator<SalesOrder> queryResponseIterator;
             queryResponseIterator = containerWithEncryption.GetItemQueryIterator<SalesOrder>(withEncryptedParameter);
 
             FeedResponse<SalesOrder> readDocs = await queryResponseIterator.ReadNextAsync();
-            Console.WriteLine("Query result: SELECT * FROM c where c.SubTotal = {0}. Total Documents : {1} ", order2.SubTotal, readDocs.Count);
+            Console.WriteLine("1) Query result: SELECT * FROM c where c.SubTotal = {0} AND c.OrderDate = {1}. Total Documents : {2} ", order2.SubTotal, order2.OrderDate, readDocs.Count);
 
             withEncryptedParameter = new QueryDefinition(
                     "SELECT c.SubTotal FROM c");
@@ -204,7 +210,7 @@
             queryResponseIterator = containerWithEncryption.GetItemQueryIterator<SalesOrder>(withEncryptedParameter);
 
             readDocs = await queryResponseIterator.ReadNextAsync();
-            Console.WriteLine("Query result: SELECT c.SubTotal FROM c. Total Documents : {0} ", readDocs.Count);
+            Console.WriteLine("2) Query result: SELECT c.SubTotal FROM c. Total Documents : {0} ", readDocs.Count);
         }
 
         private static SalesOrder GetSalesOrderSample(string account, string orderId)
