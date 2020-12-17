@@ -1036,38 +1036,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public IEnumerable<int> PartitionKeyRangeIds => this.partitionKeyRangeIdToHashRange.Keys;
 
-        private TryCatch<int> MonadicGetPkRangeIdFromEpk(FeedRangeEpk feedRangeEpk)
-        {
-            List<int> matchIds;
-            if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
-            {
-                matchIds = this.PartitionKeyRangeIds.ToList();
-            }
-            else
-            {
-                PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
-                matchIds = this.partitionKeyRangeIdToHashRange
-                    .Where(kvp => kvp.Value.Contains(hashRange) || hashRange.Contains(kvp.Value))
-                    .Select(kvp => kvp.Key)
-                    .ToList();
-            }
-
-            if (matchIds.Count != 1)
-            {
-                // Simulate a split exception, since we don't have a partition key range id to route to.
-                CosmosException goneException = new CosmosException(
-                    message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                    statusCode: System.Net.HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                    activityId: Guid.NewGuid().ToString(),
-                    requestCharge: default);
-
-                return TryCatch<int>.FromException(goneException);
-            }
-
-            return TryCatch<int>.FromResult(matchIds[0]);
-        }
-
         private static PartitionKeyHash GetHashFromPayload(
             CosmosObject payload,
             PartitionKeyDefinition partitionKeyDefinition)
@@ -1209,14 +1177,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             int partitionKeyRangeId;
             if (feedRange is FeedRangeEpk feedRangeEpk)
             {
-                // Check to see if it lines up exactly with one physical partition
-                TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
-                if (monadicGetPkRangeIdFromEpkRange.Failed)
+                // Check to see if any of the system ranges contain the user range.
+                List<int> matchIds;
+                if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
                 {
-                    return monadicGetPkRangeIdFromEpkRange;
+                    matchIds = this.PartitionKeyRangeIds.ToList();
+                }
+                else
+                {
+                    PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
+                    matchIds = this.partitionKeyRangeIdToHashRange
+                        .Where(kvp => kvp.Value.Contains(hashRange))
+                        .Select(kvp => kvp.Key)
+                        .ToList();
                 }
 
-                partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+                if (matchIds.Count != 1)
+                {
+                    // Simulate a split exception, since we don't have a partition key range id to route to.
+                    CosmosException goneException = new CosmosException(
+                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: default);
+
+                    return TryCatch<int>.FromException(goneException);
+                }
+
+                partitionKeyRangeId = matchIds[0];
             }
             else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
             {

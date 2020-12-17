@@ -32,24 +32,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
-        public async Task TestDrainFullyAsync()
-        {
-            Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
-        }
-
-        [TestMethod]
         public async Task TestEmptyPages()
         {
             Implementation implementation = new Implementation();
             await implementation.TestEmptyPages();
-        }
-
-        [TestMethod]
-        public async Task TestResumingFromStateAsync()
-        {
-            Implementation implementation = new Implementation();
-            await implementation.TestResumingFromStateAsync();
         }
 
         [TestMethod]
@@ -80,7 +66,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 int numItems = 1000;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
                 IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = this.CreateEnumerator(inMemoryCollection);
-
                 HashSet<string> identifiers = new HashSet<string>();
                 Random random = new Random();
                 while (await enumerator.MoveNextAsync())
@@ -91,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
                     foreach (Record record in records)
                     {
-                        identifiers.Add(record.Identifier);
+                        identifiers.Add(record.Payload["pk"].ToString());
                     }
 
                     if (useState)
