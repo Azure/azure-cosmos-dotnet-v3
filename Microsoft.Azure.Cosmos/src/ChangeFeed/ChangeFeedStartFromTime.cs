@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <param name="time">The time to start reading from.</param>
         /// <param name="feedRange">The (optional) range to start from.</param>
         public ChangeFeedStartFromTime(DateTime time, FeedRangeInternal feedRange)
-            : base()
+            : base(feedRange)
         {
             if (time.Kind != DateTimeKind.Utc)
             {
@@ -27,18 +27,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             this.StartTime = time;
-            this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
 
         /// <summary>
         /// Gets the time the ChangeFeed operation should start reading from.
         /// </summary>
         public DateTime StartTime { get; }
-
-        /// <summary>
-        /// Gets the (optional) range to start from.
-        /// </summary>
-        public FeedRangeInternal FeedRange { get; }
 
         internal override void Accept(ChangeFeedStartFromVisitor visitor)
         {

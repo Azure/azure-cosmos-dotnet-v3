@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal class DefaultSplitStrategy<TPage, TState> : ISplitStrategy<TPage, TState>
         where TPage : Page<TState>
@@ -28,12 +29,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal range,
             TState state,
             IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(cancellationToken);
+            List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
 
             List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                 range,
+                trace,
                 cancellationToken: cancellationToken);
             if (childRanges.Count == 0)
             {
@@ -45,9 +48,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 // We optimistically assumed that the cache is not stale.
                 // In the event that it is (where we only get back one child / the partition that we think got split)
                 // Then we need to refresh the cache
-                await this.feedRangeProvider.RefreshProviderAsync(cancellationToken);
+                await this.feedRangeProvider.RefreshProviderAsync(trace, cancellationToken);
                 childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                     range,
+                    trace,
                     cancellationToken: cancellationToken);
             }
 

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using CosmosPagination = Microsoft.Azure.Cosmos.Pagination;
 
     internal class FullFidelityChangeFeedSplitStrategy : CosmosPagination.ISplitStrategy<ChangeFeedPage, ChangeFeedState>
@@ -27,9 +28,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             FeedRangeInternal range,
             ChangeFeedState state,
             CosmosPagination.IQueue<CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>> enumerators,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, cancellationToken: cancellationToken);
+            List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, trace, cancellationToken);
             if (childRanges.Count == 0)
             {
                 throw new InvalidOperationException("Got back no children");
@@ -40,8 +42,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 // We optimistically assumed that the cache is not stale.
                 // In the event that it is (where we only get back one child / the partition that we think got split)
                 // Then we need to refresh the cache
-                await this.feedRangeProvider.RefreshProviderAsync(cancellationToken);
-                childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, cancellationToken: cancellationToken);
+                await this.feedRangeProvider.RefreshProviderAsync(trace, cancellationToken);
+                childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, trace, cancellationToken);
             }
 
             if (childRanges.Count() <= 1)

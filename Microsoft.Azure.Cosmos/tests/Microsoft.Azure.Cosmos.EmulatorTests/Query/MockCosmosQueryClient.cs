@@ -9,6 +9,7 @@
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan
@@ -46,6 +47,7 @@
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.QueryPlanCalls++;
@@ -57,6 +59,7 @@
                 partitionKey,
                 supportedQueryFeatures,
                 diagnosticsContext,
+                trace,
                 cancellationToken);
         }
 
@@ -65,13 +68,14 @@
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
+            FeedRange feedRange,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return base.ExecuteItemQueryAsync(
@@ -83,9 +87,10 @@
                 queryPageDiagnostics: queryPageDiagnostics,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
-                partitionKeyRange: partitionKeyRange,
+                feedRange: feedRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
     }

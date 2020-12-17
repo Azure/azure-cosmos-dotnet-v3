@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -83,7 +84,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 (HashSet<string> firstDrainResults, CrossFeedRangeState<ReadFeedState> state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
-                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default);
 
                 // Split the partition we were reading from
                 await inMemoryCollection.SplitAsync(ranges.First(), cancellationToken: default);
@@ -111,7 +114,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     if (random.Next() % 2 == 0)
                     {
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                            trace: NoOpTrace.Singleton, 
+                            cancellationToken: default);
                         FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
                         await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
                     }

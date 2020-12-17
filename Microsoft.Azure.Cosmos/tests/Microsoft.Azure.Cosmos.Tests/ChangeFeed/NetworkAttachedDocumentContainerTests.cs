@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -45,10 +46,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.Is<OperationType>(rt => rt == OperationType.ReadFeed),
                 It.IsAny<RequestOptions>(),
                 It.Is<ContainerInternal>(o => o == container.Object),
-                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                NoOpTrace.Singleton,
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(response);
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
                 changeFeedMode: ChangeFeedMode.Incremental(),
+                NoOpTrace.Singleton,
                 cancellationToken: default);
 
             context.Verify(c => c.ProcessResourceOperationStreamAsync(
@@ -71,10 +74,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.Is<OperationType>(rt => rt == OperationType.ReadFeed),
                 It.IsAny<RequestOptions>(),
                 It.Is<ContainerInternal>(o => o == container.Object),
-                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                NoOpTrace.Singleton,
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }
@@ -105,10 +109,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.Is<OperationType>(rt => rt == OperationType.ReadFeed),
                 It.IsAny<RequestOptions>(),
                 It.Is<ContainerInternal>(o => o == container.Object),
-                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                NoOpTrace.Singleton,
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(response);
@@ -123,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
                 changeFeedMode: ChangeFeedMode.FullFidelity(),
+                NoOpTrace.Singleton,
                 cancellationToken: default);
 
             context.Verify(c => c.ProcessResourceOperationStreamAsync(
@@ -131,10 +137,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.Is<OperationType>(rt => rt == OperationType.ReadFeed),
                 It.IsAny<RequestOptions>(),
                 It.Is<ContainerInternal>(o => o == container.Object),
-                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                NoOpTrace.Singleton,
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }
@@ -165,10 +172,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.Is<OperationType>(rt => rt == OperationType.ReadFeed),
                 It.IsAny<RequestOptions>(),
                 It.Is<ContainerInternal>(o => o == container.Object),
-                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                NoOpTrace.Singleton,
                 It.IsAny<CancellationToken>()
                 )
             ).ReturnsAsync(response);
@@ -183,6 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
                 changeFeedMode: new ChangeFeedRequestOptions().FeedMode,
+                NoOpTrace.Singleton,
                 cancellationToken: default);
 
             context.Verify(c => c.ProcessResourceOperationStreamAsync(
@@ -191,10 +200,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.Is<OperationType>(rt => rt == OperationType.ReadFeed),
                 It.IsAny<RequestOptions>(),
                 It.Is<ContainerInternal>(o => o == container.Object),
-                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<Cosmos.FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
                 It.IsAny<CosmosDiagnosticsContext>(),
+                NoOpTrace.Singleton,
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
         }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.cancellationToken = cancellationToken;
             this.splitStrategy = splitStrategy ?? new DefaultSplitStrategy<TPage, TState>(feedRangeProvider, createPartitionRangeEnumerator);
 
-            this.lazyEnumerators = new AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (CancellationToken token) =>
+            this.lazyEnumerators = new AsyncLazy<IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>>>(async (ITrace trace, CancellationToken token) =>
             {
                 ReadOnlyMemory<FeedRangeState<TState>> rangeAndStates;
                 if (state != default)
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 else
                 {
                     // Fan out to all partitions with default state
-                    List<FeedRangeEpk> ranges = await feedRangeProvider.GetFeedRangesAsync(token);
+                    List<FeedRangeEpk> ranges = await feedRangeProvider.GetFeedRangesAsync(trace, token);
 
                     List<FeedRangeState<TState>> rangesAndStatesBuilder = new List<FeedRangeState<TState>>(ranges.Count);
                     foreach (FeedRangeInternal range in ranges)
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                 if (maxConcurrency.HasValue)
                 {
-                    await ParallelPrefetch.PrefetchInParallelAsync(bufferedEnumerators, maxConcurrency.Value, token);
+                    await ParallelPrefetch.PrefetchInParallelAsync(bufferedEnumerators, maxConcurrency.Value, trace, token);
                 }
 
                 IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> queue;
@@ -101,87 +102,103 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public FeedRangeInternal CurrentRange { get; private set; }
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(cancellationToken: this.cancellationToken);
-            if (enumerators.Count == 0)
+            using (ITrace childTrace = trace.StartChild(name: nameof(MoveNextAsync), component: TraceComponent.Pagination, level: TraceLevel.Info))
             {
-                this.Current = default;
-                this.CurrentRange = default;
-                return false;
-            }
-
-            PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
-            if (!await currentPaginator.MoveNextAsync())
-            {
-                // Current enumerator is empty,
-                // so recursively retry on the next enumerator.
-                return await this.MoveNextAsync();
-            }
-
-            if (currentPaginator.Current.Failed)
-            {
-                // Check if it's a retryable exception.
-                Exception exception = currentPaginator.Current.Exception;
-                while (exception.InnerException != null)
+                IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(
+                    childTrace,
+                    cancellationToken: this.cancellationToken);
+                if (enumerators.Count == 0)
                 {
-                    exception = exception.InnerException;
+                    this.Current = default;
+                    this.CurrentRange = default;
+                    return false;
                 }
 
-                if (IsSplitException(exception))
+                PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
+                if (!await currentPaginator.MoveNextAsync(childTrace))
                 {
-                    await this.splitStrategy.HandleSplitAsync(
-                        currentPaginator.Range,
-                        currentPaginator.State,
-                        enumerators,
-                        this.cancellationToken);
-
-                    // Recursively retry
-                    return await this.MoveNextAsync();
+                    // Current enumerator is empty,
+                    // so recursively retry on the next enumerator.
+                    return await this.MoveNextAsync(childTrace);
                 }
 
-                if (IsMergeException(exception))
+                if (currentPaginator.Current.Failed)
                 {
-                    throw new NotImplementedException();
+                    // Check if it's a retryable exception.
+                    Exception exception = currentPaginator.Current.Exception;
+                    while (exception.InnerException != null)
+                    {
+                        exception = exception.InnerException;
+                    }
+
+                    if (IsSplitException(exception))
+                    {
+                        await this.splitStrategy.HandleSplitAsync(
+                            currentPaginator.Range,
+                            currentPaginator.State,
+                            enumerators,
+                            trace,
+                            this.cancellationToken);
+
+                        // Recursively retry
+                        return await this.MoveNextAsync();
+                    }
+
+                    if (IsMergeException(exception))
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    // Just enqueue the paginator and the user can decide if they want to retry.
+                    enumerators.Enqueue(currentPaginator);
+
+                    this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
+                    this.CurrentRange = currentPaginator.Range;
+                    return true;
                 }
 
-                // Just enqueue the paginator and the user can decide if they want to retry.
-                enumerators.Enqueue(currentPaginator);
+                if (currentPaginator.State != default)
+                {
+                    // Don't enqueue the paginator otherwise it's an infinite loop.
+                    enumerators.Enqueue(currentPaginator);
+                }
 
-                this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
+                CrossFeedRangeState<TState> crossPartitionState;
+                if (enumerators.Count == 0)
+                {
+                    crossPartitionState = null;
+                }
+                else
+                {
+                    FeedRangeState<TState>[] feedRangeAndStates = new FeedRangeState<TState>[enumerators.Count];
+                    int i = 0;
+                    foreach (PartitionRangePageAsyncEnumerator<TPage, TState> enumerator in enumerators)
+                    {
+                        feedRangeAndStates[i++] = new FeedRangeState<TState>(enumerator.Range, enumerator.State);
+                    }
+
+                    crossPartitionState = new CrossFeedRangeState<TState>(feedRangeAndStates);
+                }
+
+                this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromResult(
+                    new CrossFeedRangePage<TPage, TState>(currentPaginator.Current.Result, crossPartitionState));
                 this.CurrentRange = currentPaginator.Range;
                 return true;
             }
-
-            if (currentPaginator.State != default)
-            {
-                // Don't enqueue the paginator otherwise it's an infinite loop.
-                enumerators.Enqueue(currentPaginator);
-            }
-
-            CrossFeedRangeState<TState> crossPartitionState;
-            if (enumerators.Count == 0)
-            {
-                crossPartitionState = null;
-            }
-            else
-            {
-                FeedRangeState<TState>[] feedRangeAndStates = new FeedRangeState<TState>[enumerators.Count];
-                int i = 0;
-                foreach (PartitionRangePageAsyncEnumerator<TPage, TState> enumerator in enumerators)
-                {
-                    feedRangeAndStates[i++] = new FeedRangeState<TState>(enumerator.Range, enumerator.State);
-                }
-
-                crossPartitionState = new CrossFeedRangeState<TState>(feedRangeAndStates);
-            }
-
-            this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromResult(
-                new CrossFeedRangePage<TPage, TState>(currentPaginator.Current.Result, crossPartitionState));
-            this.CurrentRange = currentPaginator.Range;
-            return true;
         }
 
         public ValueTask DisposeAsync()

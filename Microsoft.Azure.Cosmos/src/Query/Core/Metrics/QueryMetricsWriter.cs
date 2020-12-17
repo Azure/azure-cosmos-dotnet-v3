@@ -45,12 +45,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #if false
             // ClientSideMetrics
             this.WriteClientSideMetrics(queryMetrics.ClientSideMetrics);
-
+#endif
             // IndexUtilizationInfo
             this.WriteBeforeIndexUtilizationInfo();
 
             this.WriteIndexUtilizationInfo(queryMetrics.IndexUtilizationInfo);
-#endif
+            
+            this.WriteAfterIndexUtilizationInfo();
+
             this.WriteAfterQueryMetrics();
         }
 

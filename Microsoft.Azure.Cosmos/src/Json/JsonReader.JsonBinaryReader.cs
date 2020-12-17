@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
@@ -331,6 +332,21 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
+            public override Utf8String GetUtf8StringValue()
+            {
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.GetUtf8StringValue(
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+
+            /// <inheritdoc />
             public override bool TryGetBufferedStringValue(out Utf8Memory bufferedUtf8StringValue)
             {
                 if (!(
@@ -438,16 +454,18 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Verify the reader is at the required position and the required
                 // number of bytes are available.
+                int startPosition = this.jsonBinaryBuffer.Position;
                 if (this.CurrentTokenType != JsonTokenType.BeginObject ||
-                    !this.JsonObjectState.IsPropertyExpected)
+                    !this.JsonObjectState.IsPropertyExpected ||
+                    this.arrayAndObjectEndStack.Peek() - startPosition <= 3)
                 {
                     typeCode = default;
                     return false;
                 }
 
                 ReadOnlySpan<byte> bytes = this.jsonBinaryBuffer.GetBufferedRawJsonToken(
-                    this.jsonBinaryBuffer.Position,
-                    this.jsonBinaryBuffer.Position + 3).Span;
+                    startPosition,
+                    startPosition + 3).Span;
 
                 // Pattern: $t .. int value carried as part of type marker .. $v
                 if (bytes[0] == dollarTSystemStringSingleByteEncoding &&
@@ -456,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.JsonObjectState.RegisterFieldName();
                     this.jsonBinaryBuffer.SkipBytes(3);
-                    this.currentTokenPosition = this.jsonBinaryBuffer.Position;
+                    this.currentTokenPosition = startPosition;
                     typeCode = bytes[1];
 
                     return true;
@@ -487,6 +505,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+
+            /// <inheritdoc />
+            public Utf8Span GetUtf8SpanValue()
+            {
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.GetUtf8SpanValue(
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
 
             private static JsonTokenType GetJsonTokenType(byte typeMarker)
