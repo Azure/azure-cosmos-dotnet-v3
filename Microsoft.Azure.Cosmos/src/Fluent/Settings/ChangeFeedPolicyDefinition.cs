@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="retention"> Indicates for how long operation logs have to be retained. <see cref="ChangeFeedPolicy.FullFidelityRetention"/>.</param>
         /// <returns>An instance of the current <see cref="ChangeFeedPolicyDefinition"/>.</returns>
-        public ChangeFeedPolicyDefinition WithRetentionDuration(TimeSpan retention)
+        public ChangeFeedPolicyDefinition WithFullFidelityRetention(TimeSpan retention)
         {
             this.changeFeedPolicyRetention = retention;
 
