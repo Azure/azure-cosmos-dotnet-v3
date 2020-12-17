@@ -157,7 +157,8 @@ namespace CosmosBenchmark
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
+                ConnectionMode = Microsoft.Azure.Cosmos.ConnectionMode.Gateway,
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
