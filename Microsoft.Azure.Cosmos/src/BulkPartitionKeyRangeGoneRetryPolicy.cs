@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -17,59 +18,61 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="ItemBatchOperationContext"/>
     internal sealed class BulkPartitionKeyRangeGoneRetryPolicy : IDocumentClientRetryPolicy
     {
-        private const int MaxRetries = 1;
-
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
+        private readonly ContainerInternal container;
 
-        private int retriesAttempted;
-
-        public BulkPartitionKeyRangeGoneRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy)
+        public BulkPartitionKeyRangeGoneRetryPolicy(
+            ContainerInternal container,
+            IDocumentClientRetryPolicy nextRetryPolicy)
         {
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.nextRetryPolicy = nextRetryPolicy;
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
             CancellationToken cancellationToken)
         {
-            DocumentClientException clientException = exception as DocumentClientException;
-
-            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
-                clientException?.StatusCode,
-                clientException?.GetSubStatus(),
-                clientException?.ResourceAddress);
-
-            if (shouldRetryResult != null)
+            if (exception is CosmosException clientException)
             {
-                return Task.FromResult(shouldRetryResult);
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    clientException.StatusCode,
+                    (SubStatusCodes)clientException.SubStatusCode,
+                    cancellationToken);
+
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
+
+                if (this.nextRetryPolicy == null)
+                {
+                    return ShouldRetryResult.NoRetry();
+                }
             }
 
-            if (this.nextRetryPolicy == null)
-            {
-                return Task.FromResult(ShouldRetryResult.NoRetry());
-            }
-
-            return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
+            return await this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(cosmosResponseMessage?.StatusCode,
+            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
-                cosmosResponseMessage?.GetResourceAddress());
+                cancellationToken);
             if (shouldRetryResult != null)
             {
-                return Task.FromResult(shouldRetryResult);
+                return shouldRetryResult;
             }
 
             if (this.nextRetryPolicy == null)
             {
-                return Task.FromResult(ShouldRetryResult.NoRetry());
+                return ShouldRetryResult.NoRetry();
             }
 
-            return this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+            return await this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
@@ -77,17 +80,27 @@ namespace Microsoft.Azure.Cosmos
             this.nextRetryPolicy.OnBeforeSendRequest(request);
         }
 
-        private ShouldRetryResult ShouldRetryInternal(
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
-            string resourceIdOrFullName)
+            CancellationToken cancellationToken)
         {
-            if (statusCode == HttpStatusCode.Gone
-                && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone || subStatusCode == SubStatusCodes.NameCacheIsStale)
-                && this.retriesAttempted < MaxRetries)
+            if (statusCode == HttpStatusCode.Gone)
             {
-                this.retriesAttempted++;
-                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                if (subStatusCode == SubStatusCodes.PartitionKeyRangeGone
+                    || subStatusCode == SubStatusCodes.CompletingSplit
+                    || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
+                {
+                    PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    string containerRid = await this.container.GetRIDAsync(cancellationToken: cancellationToken);
+                    await partitionKeyRangeCache.TryGetOverlappingRangesAsync(containerRid, FeedRangeEpk.FullRange.Range, forceRefresh: true);
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                }
+
+                if (subStatusCode == SubStatusCodes.NameCacheIsStale)
+                {
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                }
             }
 
             return null;

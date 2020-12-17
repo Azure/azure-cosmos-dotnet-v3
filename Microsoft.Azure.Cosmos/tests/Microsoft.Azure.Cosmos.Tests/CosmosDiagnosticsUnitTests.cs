@@ -13,7 +13,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -42,9 +44,46 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateTransportHandlerLogging()
+        {
+            DocumentClientException dce = new DocumentClientException(
+                "test",
+                null,
+                new StoreResponseNameValueCollection(),
+                HttpStatusCode.Gone,
+                SubStatusCodes.PartitionKeyRangeGone,
+                new Uri("htts://localhost.com"));
+
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+
+            RequestMessage requestMessage = new RequestMessage(
+                        HttpMethod.Get,
+                        "/dbs/test/colls/abc/docs/123",
+                        diagnosticsContext);
+
+            ResponseMessage response = dce.ToCosmosResponseMessage(requestMessage);
+
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
+
+            bool visited = false;
+            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in diagnosticsContext)
+            {
+                if (cosmosDiagnosticsInternal is PointOperationStatistics operationStatistics)
+                {
+                    visited = true;
+                    Assert.AreEqual(operationStatistics.StatusCode, HttpStatusCode.Gone);
+                    Assert.AreEqual(operationStatistics.SubStatusCode, SubStatusCodes.PartitionKeyRangeGone);
+                }
+            }
+
+            Assert.IsTrue(visited, "PointOperationStatistics was not found in the diagnostics.");
+        }
+
+        [TestMethod]
         public async Task ValidateActivityId()
         {
-           using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
               cosmosClient,
               new MockDocumentClient(),
@@ -157,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string result = cosmosDiagnostics.ToString();
 
-            string regex = @"\{""DiagnosticVersion"":""2"",""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTimeInMs"":.+,""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
+            string regex = @"\{""DiagnosticVersion"":""2"",""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTimeInMs"":.+,""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1,""Operation"":""ValidateDiagnosticsContext""\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
             Assert.IsTrue(Regex.IsMatch(result, regex), $"regex: {regex} result: {result}");
 
             JToken jToken = JToken.Parse(result);

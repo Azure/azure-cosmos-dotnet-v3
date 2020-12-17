@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -107,6 +108,90 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Content = responseContent
                 };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
+
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                    responseMessage,
+                    batchRequest,
+                    MockCosmosUtil.Serializer,
+                    true,
+                    CancellationToken.None);
+
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
+            };
+
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithCompletingSplit
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+            {
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
+                int index = 0;
+                foreach (ItemBatchOperation operation in request.Operations)
+                {
+                    results.Add(
+                    new TransactionalBatchOperationResult(HttpStatusCode.Gone)
+                    {
+                        ETag = operation.Id,
+                        SubStatusCode = SubStatusCodes.CompletingSplit
+                    });
+
+                    arrayOperations[index++] = operation;
+                }
+
+                MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+                SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    partitionKey: null,
+                    operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                    serializerCore: MockCosmosUtil.Serializer,
+                cancellationToken: cancellationToken);
+
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+                {
+                    Content = responseContent
+                };
+                responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
+
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                    responseMessage,
+                    batchRequest,
+                    MockCosmosUtil.Serializer,
+                    true,
+                    CancellationToken.None);
+
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
+            };
+
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithCompletingPartitionMigration
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+            {
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
+                int index = 0;
+                foreach (ItemBatchOperation operation in request.Operations)
+                {
+                    results.Add(
+                    new TransactionalBatchOperationResult(HttpStatusCode.Gone)
+                    {
+                        ETag = operation.Id,
+                        SubStatusCode = SubStatusCodes.CompletingSplit
+                    });
+
+                    arrayOperations[index++] = operation;
+                }
+
+                MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+                SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    partitionKey: null,
+                    operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                    serializerCore: MockCosmosUtil.Serializer,
+                cancellationToken: cancellationToken);
+
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+                {
+                    Content = responseContent
+                };
+                responseMessage.Headers.SubStatusCode = SubStatusCodes.CompletingPartitionMigration;
 
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     responseMessage,
@@ -364,9 +449,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetrierGetsCalledOnSplit()
         {
             IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
             IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
@@ -377,6 +464,64 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithSplit, retryDelegate.Object);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
+            await batchAsyncBatcher.DispatchAsync(metric);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
+            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
+        }
+
+        [TestMethod]
+        public async Task RetrierGetsCalledOnCompletingSplit()
+        {
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                GetSplitEnabledContainer(),
+                new ResourceThrottleRetryPolicy(1));
+
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                GetSplitEnabledContainer(),
+                new ResourceThrottleRetryPolicy(1));
+
+            ItemBatchOperation operation1 = this.CreateItemBatchOperation();
+            ItemBatchOperation operation2 = this.CreateItemBatchOperation();
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+
+            Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingSplit, retryDelegate.Object);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
+            await batchAsyncBatcher.DispatchAsync(metric);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
+            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
+        }
+
+        [TestMethod]
+        public async Task RetrierGetsCalledOnCompletingPartitionMigration()
+        {
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                GetSplitEnabledContainer(),
+                new ResourceThrottleRetryPolicy(1));
+
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                GetSplitEnabledContainer(),
+                new ResourceThrottleRetryPolicy(1));
+
+            ItemBatchOperation operation1 = this.CreateItemBatchOperation();
+            ItemBatchOperation operation2 = this.CreateItemBatchOperation();
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+
+            Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingPartitionMigration, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
@@ -407,6 +552,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        private static ContainerInternal GetSplitEnabledContainer()
+        {
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
+            Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
+            container.Setup(c => c.ClientContext).Returns(context.Object);
+            context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());
+            return container.Object;
+        }
+
         private class BatchAsyncBatcherThatOverflows : BatchAsyncBatcher
         {
             public BatchAsyncBatcherThatOverflows(
@@ -426,6 +581,29 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Returning a pending operation to retry
                 return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(serverRequest, new ArraySegment<ItemBatchOperation>(serverRequest.Operations.ToArray(), 1, 1));
             }
+        }
+
+        private class ClientWithSplitDetection : MockDocumentClient
+        {
+            private readonly Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
+
+            public ClientWithSplitDetection()
+            {
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null);
+                this.partitionKeyRangeCache.Setup(
+                        m => m.TryGetOverlappingRangesAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<Documents.Routing.Range<string>>(),
+                            It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
+                        )
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
+            }
+
+            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+            {
+                return Task.FromResult(this.partitionKeyRangeCache.Object);
+            }
+
         }
     }
 }
