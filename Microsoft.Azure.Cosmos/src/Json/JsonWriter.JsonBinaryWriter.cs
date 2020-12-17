@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Immutable;
     using System.Linq;
     using System.Runtime.InteropServices;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
@@ -22,9 +23,31 @@ namespace Microsoft.Azure.Cosmos.Json
     abstract partial class JsonWriter : IJsonWriter
     {
         /// <summary>
+        /// Executes the provided lambda and captures a copy of the written bytes for reuse.
+        /// The lambda is executed at a field name, and should leave the reader in a state where
+        /// it is valid to end the scope.
+        /// </summary>
+        /// <param name="scopeWriter">Writes the contents of the scope.</param>
+        /// <returns>Blitted bytes.</returns>
+        public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
+        {
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter();
+            Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
+            Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
+            Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
+
+            jsonBinaryWriter.WriteObjectStart();
+            jsonBinaryWriter.WriteFieldName("someFieldName");
+            int startPosition = (int)jsonBinaryWriter.CurrentLength;
+            scopeWriter(jsonBinaryWriter);
+
+            return jsonBinaryWriter.CapturePreblittedBinaryJsonScope(startPosition);
+        }
+
+        /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.
         /// </summary>
-        private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions
+        private sealed class JsonBinaryWriter : JsonWriter, IJsonBinaryWriterExtensions, ITypedBinaryJsonWriter
         {
             private enum RawValueType : byte
             {
@@ -190,6 +213,20 @@ namespace Microsoft.Azure.Cosmos.Json
                 RawValueType.Token,      // <special value reserved> 0xFE
                 RawValueType.Token,      // Invalid
             }.Select(x => (byte)x).ToImmutableArray();
+
+            /// <summary>
+            /// '$t' encoded string.
+            /// </summary>
+            private static readonly byte DollarTSystemString =
+                (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin
+                + JsonBinaryEncoding.SystemStrings.GetSystemStringId(Utf8Span.TranscodeUtf16("$t")).Value);
+
+            /// <summary>
+            /// '$v' encoded string.
+            /// </summary>
+            private static readonly byte DollarVSystemString =
+                (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin
+                + JsonBinaryEncoding.SystemStrings.GetSystemStringId(Utf8Span.TranscodeUtf16("$v")).Value);
 
             /// <summary>
             /// Writer used to write fully materialized context to the internal stream.
@@ -430,13 +467,75 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Position);
             }
 
+            /// <inheritdoc />
+            public void WriteDollarTBsonTypeDollarV(byte cosmosBsonTypeByte)
+            {
+                const int totalSize =
+                    sizeof(byte) // Typemaker byte
+                    + sizeof(byte) // Length byte reservation
+                    + sizeof(byte) // $t
+                    + sizeof(byte) // cosmos bson type
+                    + sizeof(byte); // $v
+
+                this.binaryWriter.EnsureRemainingBufferSpace(totalSize);
+                this.RegisterArrayOrObjectStart(isArray: false, this.binaryWriter.Position, valueCount: 1);
+                this.JsonObjectState.RegisterFieldName();
+
+                Span<byte> binaryWriterCursor = this.binaryWriter.Cursor.Slice(2);
+                binaryWriterCursor[0] = JsonBinaryWriter.DollarTSystemString;
+                binaryWriterCursor[1] = cosmosBsonTypeByte;
+                binaryWriterCursor[2] = JsonBinaryWriter.DollarVSystemString;
+                this.binaryWriter.Position += totalSize;
+            }
+
+            /// <inheritdoc />
+            public void WriteDollarTBsonTypeDollarVNestedScope(bool isNestedArray, byte cosmosBsonTypeByte)
+            {
+                const int totalSize =
+                    sizeof(byte) // Typemaker byte
+                    + sizeof(byte) // Length byte reservation
+                    + sizeof(byte) // $t
+                    + sizeof(byte) // cosmos bson type
+                    + sizeof(byte) // $v
+                    + sizeof(byte) // Nested scope typemaker byte
+                    + sizeof(byte); // Nested scope length byte reservation
+
+                this.binaryWriter.EnsureRemainingBufferSpace(totalSize);
+                this.RegisterArrayOrObjectStart(isArray: false, this.binaryWriter.Position, valueCount: 1);
+                this.JsonObjectState.RegisterFieldName();
+                this.RegisterArrayOrObjectStart(isNestedArray, this.binaryWriter.Position + 5, valueCount: 0);
+
+                Span<byte> binaryWriterCursor = this.binaryWriter.Cursor.Slice(2);
+                binaryWriterCursor[0] = JsonBinaryWriter.DollarTSystemString;
+                binaryWriterCursor[1] = cosmosBsonTypeByte;
+                binaryWriterCursor[2] = JsonBinaryWriter.DollarVSystemString;
+                this.binaryWriter.Position += totalSize;
+            }
+
+            /// <inheritdoc />
+            public void Write(PreblittedBinaryJsonScope scope)
+            {
+                this.binaryWriter.Write(scope.Bytes.Span);
+                // Dummy register token
+                this.JsonObjectState.RegisterToken(JsonTokenType.Null);
+                this.bufferedContexts.Peek().Count++;
+            }
+
+            /// <summary>
+            /// Captures a preblitted binary JSON scope.
+            /// This method is for use by <see cref="JsonWriter.CapturePreblittedBinaryJsonScope"/>.
+            /// </summary>
+            /// <param name="startPosition">Scope start position.</param>
+            /// <returns>A preblitted binary JSON scope.</returns>
+            internal PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(int startPosition)
+            {
+                return new PreblittedBinaryJsonScope(
+                    this.binaryWriter.BufferAsSpan.Slice(startPosition, this.binaryWriter.Position - startPosition).ToArray());
+            }
+
             private void WriterArrayOrObjectStart(bool isArray)
             {
-                this.JsonObjectState.RegisterToken(isArray ? JsonTokenType.BeginArray : JsonTokenType.BeginObject);
-
-                // Save the start index
-                ArrayAndObjectInfo info = new ArrayAndObjectInfo(this.CurrentLength, this.sharedStrings.Count, this.stringReferenceOffsets.Count, valueCount: 0);
-                this.bufferedContexts.Push(info);
+                this.RegisterArrayOrObjectStart(isArray, this.binaryWriter.Position, valueCount: 0);
 
                 // Assume 1-byte value length; as such, we need to reserve up 3 bytes (1 byte type marker, 1 byte length, 1 byte count).
                 // We'll adjust this as needed when writing the end of the array/object.
@@ -446,6 +545,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.binaryWriter.Write((byte)0);
                 }
+            }
+
+            private void RegisterArrayOrObjectStart(bool isArray, long offset, int valueCount)
+            {
+                this.JsonObjectState.RegisterToken(isArray ? JsonTokenType.BeginArray : JsonTokenType.BeginObject);
+
+                // Save the start index
+                ArrayAndObjectInfo info = new ArrayAndObjectInfo(
+                    offset,
+                    this.sharedStrings.Count,
+                    this.stringReferenceOffsets.Count,
+                    valueCount);
+                this.bufferedContexts.Push(info);
             }
 
             private void WriteArrayOrObjectEnd(bool isArray)
