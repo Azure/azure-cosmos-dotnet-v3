@@ -244,8 +244,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 // In this case we route to the physical partition and 
                                 // pass the epk range headers to filter within partition
                                 request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
-                                request.Properties[HandlerConstants.StartEpkString] = feedRangeEpk.Range.Min;
-                                request.Properties[HandlerConstants.EndEpkString] = feedRangeEpk.Range.Max;
+                                request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
+                                request.Headers[HttpConstants.HttpHeaders.StartEpk] = feedRangeEpk.Range.Min;
+                                request.Headers[HttpConstants.HttpHeaders.EndEpk] = feedRangeEpk.Range.Max;
                             }
                         }
                     }
@@ -293,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
                 operationType == OperationType.ExecuteJavaScript ||
+                operationType == OperationType.CompleteUserTransaction ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
             {
                 return HttpMethod.Post;
