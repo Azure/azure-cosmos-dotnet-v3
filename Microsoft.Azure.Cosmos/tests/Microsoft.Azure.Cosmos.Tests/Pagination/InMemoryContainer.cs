@@ -119,28 +119,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 if (feedRange is FeedRangeEpk feedRangeEpk)
                 {
                     // look for overlapping epk ranges.
-                    List<FeedRangeEpk> overlappedIds;
+                    List<FeedRangeEpk> overlappingRanges;
                     if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
                     {
-                        overlappedIds = this.cachedPartitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                        overlappingRanges = this.cachedPartitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
                     }
                     else
                     {
-                        PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
-                        overlappedIds = this.cachedPartitionKeyRangeIdToHashRange
-                            .Where(kvp => hashRange.Contains(kvp.Value))
-                            .Select(kvp => CreateRangeFromId(kvp.Key))
-                            .ToList();
+                        overlappingRanges = new List<FeedRangeEpk>();
+                        PartitionKeyHashRange userRange = FeedRangeEpkToHashRange(feedRangeEpk);
+                        foreach (PartitionKeyHashRange systemRange in this.cachedPartitionKeyRangeIdToHashRange.Values)
+                        {
+                            if (userRange.TryGetOverlappingRange(systemRange, out PartitionKeyHashRange overlappingRange))
+                            {
+                                overlappingRanges.Add(HashRangeToFeedRangeEpk(overlappingRange));
+                            }
+                        }
                     }
 
-                    if (overlappedIds.Count == 0)
+                    if (overlappingRanges.Count == 0)
                     {
                         return TryCatch<List<FeedRangeEpk>>.FromException(
                             new KeyNotFoundException(
                                 $"PartitionKeyRangeId: {feedRangeEpk} does not exist."));
                     }
 
-                    return TryCatch<List<FeedRangeEpk>>.FromResult(overlappedIds);
+                    return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
                 }
 
                 if (!(feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange))
@@ -189,8 +193,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     return tryGetRightRanges;
                 }
 
-                List<FeedRangeEpk> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
-                return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
+                List<FeedRangeEpk> recursiveOverlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
+                return TryCatch<List<FeedRangeEpk>>.FromResult(recursiveOverlappingRanges);
             }
         }
 
@@ -342,11 +346,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     return Task.FromResult(
                         TryCatch<ReadFeedPage>.FromException(
                             new CosmosException(
-                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                            statusCode: System.Net.HttpStatusCode.Gone,
-                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                            activityId: Guid.NewGuid().ToString(),
-                            requestCharge: 42)));
+                                message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                                statusCode: System.Net.HttpStatusCode.Gone,
+                                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                                activityId: Guid.NewGuid().ToString(),
+                                requestCharge: 42)));
                 }
 
                 if (!this.partitionedRecords.TryGetValue(range, out Records records))
@@ -731,11 +735,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return Task.FromResult(
                     TryCatch.FromException(
                         new CosmosException(
-                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: 42)));
+                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: 42)));
             }
 
             if (!this.partitionedRecords.TryGetValue(parentRange, out Records parentRecords))
@@ -1252,6 +1256,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
             return hashRange;
+        }
+
+        private static FeedRangeEpk HashRangeToFeedRangeEpk(PartitionKeyHashRange hashRange)
+        {
+            return new FeedRangeEpk(
+                new Documents.Routing.Range<string>(
+                    min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.ToString() : string.Empty,
+                    max: hashRange.EndExclusive.HasValue ? hashRange.EndExclusive.ToString() : string.Empty,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
         }
 
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)

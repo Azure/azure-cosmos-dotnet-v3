@@ -145,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (IsSplitException(exception))
                     {
                         // Handle split
+
                         List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                             currentPaginator.Range,
                             childTrace,

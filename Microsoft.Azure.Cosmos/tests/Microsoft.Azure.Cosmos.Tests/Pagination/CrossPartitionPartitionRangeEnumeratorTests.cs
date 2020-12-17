@@ -53,38 +53,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
-        public async Task TestSplitWithDuringDrainAsync()
+        [DataRow(false, false, false, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: false")]
+        [DataRow(false, false, true, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: true")]
+        [DataRow(false, true, false, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: false")]
+        [DataRow(false, true, true, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: true")]
+        [DataRow(true, false, false, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: false")]
+        [DataRow(true, false, true, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: true")]
+        [DataRow(true, true, false, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: false")]
+        [DataRow(true, true, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
+        public async Task TestSplitAndMergeAsync(bool useState, bool allowSplits, bool allowMerges)
         {
             Implementation implementation = new Implementation();
-            await implementation.TestSplitWithDuringDrainAsync();
-        }
-
-        [TestMethod]
-        public async Task TestSplitWithResumeContinuationAsync()
-        {
-            Implementation implementation = new Implementation();
-            await implementation.TestSplitWithResumeContinuationAsync();
-        }
-
-        [TestMethod]
-        public async Task TestMergeDuringDrainAsync()
-        {
-            Implementation implementation = new Implementation();
-            await implementation.TestMergeDuringDrainAsync();
-        }
-
-        [TestMethod]
-        public async Task TestMergeDuringDrainWithStateAsync()
-        {
-            Implementation implementation = new Implementation();
-            await implementation.TestMergeDuringDrainWithStateAsync();
-        }
-
-        [TestMethod]
-        public async Task TestMergeAndSplitDuringDrainAsync()
-        {
-            Implementation implementation = new Implementation();
-            await implementation.TestMergeAndSplitDuringDrainAsync();
+            await implementation.TestSplitAndMergeImplementationAsync(useState, allowSplits, allowMerges);
         }
 
         private sealed class Implementation : PartitionRangeEnumeratorTests<CrossFeedRangePage<ReadFeedPage, ReadFeedState>, CrossFeedRangeState<ReadFeedState>>
@@ -95,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             [TestMethod]
-            public async Task TestMergeAndSplitImplementationAsync(bool useState, bool allowSplits, bool allowMerges)
+            public async Task TestSplitAndMergeImplementationAsync(bool useState, bool allowSplits, bool allowMerges)
             {
                 int numItems = 1000;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -116,19 +96,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     if (useState)
                     {
+                        if (tryGetPage.Result.State == null)
+                        {
+                            break;
+                        }
+
                         enumerator = this.CreateEnumerator(inMemoryCollection, tryGetPage.Result.State);
                     }
 
                     if (random.Next() % 2 == 0)
                     {
-                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
-                            trace: NoOpTrace.Singleton,
-                            cancellationToken: default);
-
                         if (allowSplits && (random.Next() % 2 == 0))
                         {
                             // Split
+                            await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                            List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                                trace: NoOpTrace.Singleton,
+                                cancellationToken: default);
                             FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
                             await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
                         }
@@ -136,6 +120,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         if (allowMerges && (random.Next() % 2 == 0))
                         {
                             // Merge
+                            await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                            List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                                trace: NoOpTrace.Singleton,
+                                cancellationToken: default);
                             if (ranges.Count > 1)
                             {
                                 ranges = ranges.OrderBy(range => range.Range.Min).ToList();
