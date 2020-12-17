@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
             using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
                 requestMessage,
                 ResourceType.DatabaseAccount,
+                HttpTimeoutPolicyControlPlaneRead.Instance,
                 cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
