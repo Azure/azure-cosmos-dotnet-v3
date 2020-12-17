@@ -275,11 +275,17 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -291,16 +297,23 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedIteratorCore(
                 documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -312,6 +325,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(

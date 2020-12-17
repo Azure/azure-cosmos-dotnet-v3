@@ -29,6 +29,18 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             new ChangeFeedIteratorCore(
                 documentContainer: null,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning());
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ChangeFeedIteratorCore_Null_Mode()
+        {
+            new ChangeFeedIteratorCore(
+                documentContainer: Mock.Of<IDocumentContainer>(),
+                changeFeedMode: null,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
         }
@@ -41,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             new ChangeFeedIteratorCore(
                 Mock.Of<IDocumentContainer>(),
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = maxItemCount
@@ -53,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 Mock.Of<IDocumentContainer>(),
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
@@ -66,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
@@ -91,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
@@ -115,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
@@ -155,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 

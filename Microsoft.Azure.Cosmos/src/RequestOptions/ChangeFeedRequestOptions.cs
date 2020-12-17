@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class ChangeFeedRequestOptions : RequestOptions
     {
-        private static readonly ChangeFeedMode DefaultMode = ChangeFeedMode.Incremental();
-
         private int? pageSizeHint;
 
         /// <summary>
@@ -59,12 +57,6 @@ namespace Microsoft.Azure.Cosmos
         public bool EmitOldContinuationToken { get; set; }
 
         /// <summary>
-        /// Gets or sets the desired mode on which to consume the Change Feed.
-        /// </summary>
-        /// <value>Default value is <see cref="ChangeFeedMode.Incremental"/>. </value>
-        public ChangeFeedMode FeedMode { get; set; } = ChangeFeedRequestOptions.DefaultMode;
-
-        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
@@ -81,7 +73,9 @@ namespace Microsoft.Azure.Cosmos
                     this.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
             }
 
-            this.FeedMode.Accept(request);
+            request.Headers.Add(
+                HttpConstants.HttpHeaders.A_IM,
+                HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
         /// <summary>
@@ -110,8 +104,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new ChangeFeedRequestOptions()
             {
-                PageSizeHint = this.pageSizeHint,
-                FeedMode = this.FeedMode
+                PageSizeHint = this.pageSizeHint
             };
         }
     }

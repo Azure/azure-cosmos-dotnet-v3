@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 state: ChangeFeedState.Beginning(),
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
-                changeFeedMode: ChangeFeedMode.Incremental(),
+                changeFeedMode: ChangeFeedMode.Incremental,
                 cancellationToken: default);
 
             context.Verify(c => c.ProcessResourceOperationStreamAsync(
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 state: ChangeFeedState.Beginning(),
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
-                changeFeedMode: ChangeFeedMode.FullFidelity(),
+                changeFeedMode: ChangeFeedMode.FullFidelity,
                 cancellationToken: default);
 
             context.Verify(c => c.ProcessResourceOperationStreamAsync(
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 state: ChangeFeedState.Beginning(),
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
-                changeFeedMode: new ChangeFeedRequestOptions().FeedMode,
+                changeFeedMode: ChangeFeedMode.Incremental,
                 cancellationToken: default);
 
             context.Verify(c => c.ProcessResourceOperationStreamAsync(

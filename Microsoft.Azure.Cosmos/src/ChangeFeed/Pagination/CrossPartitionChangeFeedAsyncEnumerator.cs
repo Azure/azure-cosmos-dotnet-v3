@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         public static CrossPartitionChangeFeedAsyncEnumerator Create(
             IDocumentContainer documentContainer,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             CrossFeedRangeState<ChangeFeedState> state,
             CancellationToken cancellationToken)
@@ -122,12 +123,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 throw new ArgumentNullException(nameof(documentContainer));
             }
 
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
+            }
+
             CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator = new CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>(
                 documentContainer,
                 CrossPartitionChangeFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
                     changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(int.MaxValue),
-                    changeFeedRequestOptions.FeedMode,
+                    changeFeedMode,
                     cancellationToken),
                 comparer: default /* this uses a regular queue instead of prioirty queue */,
                 maxConcurrency: default,

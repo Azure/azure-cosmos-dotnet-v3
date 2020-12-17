@@ -568,6 +568,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -578,6 +579,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new ChangeFeedCrossFeedRangeAsyncEnumerable(
                 documentContainer,
+                changeFeedMode,
                 changeFeedRequestOptions,
                 state);
         }

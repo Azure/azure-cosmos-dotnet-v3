@@ -384,16 +384,18 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedStreamIterator(changeFeedStartFrom, changeFeedRequestOptions);
+            return base.GetChangeFeedStreamIterator(changeFeedStartFrom, changeFeedMode, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(changeFeedStartFrom, changeFeedRequestOptions);
+            return base.GetChangeFeedIterator<T>(changeFeedStartFrom, changeFeedMode, changeFeedRequestOptions);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -431,9 +433,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
-            return base.GetChangeFeedAsyncEnumerable(state, changeFeedRequestOptions);
+            return base.GetChangeFeedAsyncEnumerable(state, changeFeedMode, changeFeedRequestOptions);
         }
 
         public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable( 
