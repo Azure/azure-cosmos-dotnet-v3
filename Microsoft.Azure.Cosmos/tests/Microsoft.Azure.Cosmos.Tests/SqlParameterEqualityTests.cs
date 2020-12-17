@@ -16,14 +16,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             SqlParameter param1 = new SqlParameter("name", null);
             SqlParameter param2 = new SqlParameter("name", null);
 
-            Assert.IsTrue(param1.Equals(param2));
-
             SqlParameter param3 = new SqlParameter("name", "value");
+            SqlParameter param4 = new SqlParameter("name", new string(new[] { 'v', 'a', 'l', 'u', 'e' }));
+
+            Assert.IsTrue(param1.Equals(param2));
+            Assert.IsTrue(param2.Equals(param1));
 
             Assert.IsFalse(param1.Equals(param3));
+            Assert.IsFalse(param3.Equals(param1));
 
-            SqlParameter param4 = new SqlParameter("name", new string(new[] { 'v', 'a', 'l', 'u', 'e' }));
             Assert.IsTrue(param3.Equals(param4));
+            Assert.IsTrue(param4.Equals(param3));
         }
     }
 }
