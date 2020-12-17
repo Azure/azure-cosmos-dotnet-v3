@@ -17,9 +17,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Encryption.KeyVaultAccessClientTests;
+    using DataEncryptionKey = DataEncryptionKey;
+    using EncryptionKeyWrapMetadata = EncryptionKeyWrapMetadata;
 
     [TestClass]
     public class EncryptionTests
@@ -35,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static Container itemContainer;
         private static Container encryptionContainer;
         private static Container keyContainer;
+        private static Container publicModelContainer1;
+        private static Container publicModelContainer2;
         private static TestKeyWrapProvider testKeyWrapProvider;
         private static CosmosDataEncryptionKeyProvider dekProvider;
         private static TestEncryptor encryptor;
@@ -83,6 +88,541 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 EncryptionTests.client.Dispose();
             }
+        }
+
+        [TestMethod]
+        public async Task MdeEncryptionTest()
+        {
+            Database publicModelDB = null;
+
+            string authKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
+            CosmosClient encryptionCosmosClient = new CosmosClient("https://localhost:8081", authKey);
+
+            encryptionCosmosClient = encryptionCosmosClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+
+            ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_StringFormat",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                ClientEncryptionDataType = ClientEncryptionDataType.String
+            };
+
+            ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_ArrayFormat",
+                ClientEncryptionKeyId = "key2",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+            };
+
+            ClientEncryptionIncludedPath path3 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_NestedObjectFormatL1",
+                ClientEncryptionKeyId = "key3",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+            };
+
+            ClientEncryptionIncludedPath path4 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_IntArray",
+                ClientEncryptionKeyId = "key3",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+            };
+            ClientEncryptionIncludedPath path5 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_IntFormat",
+                ClientEncryptionKeyId = "key3",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                ClientEncryptionDataType = ClientEncryptionDataType.Long
+            };
+            ClientEncryptionIncludedPath path6 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_DecimalFormat",
+                ClientEncryptionKeyId = "key3",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                ClientEncryptionDataType = ClientEncryptionDataType.Double
+            };
+            ClientEncryptionIncludedPath path7 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_DateFormat",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = MdeEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+            };
+
+
+            try
+            {
+                ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy()
+                {
+                    IncludedPaths = { path1, path2, path3, path5, path6, path7 }
+                };
+
+                publicModelDB = await encryptionCosmosClient.CreateDatabaseAsync("PublicModelDB");
+                ContainerProperties containerProperties = new ContainerProperties("publicmodelContainer1", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+                publicModelContainer1 = await publicModelDB.CreateContainerAsync(containerProperties);
+
+                ContainerResponse containerResponse2 = await publicModelDB.DefineContainer("publicmodelContainer2", "/PK")
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path3)
+                        .WithIncludedPath(path4)
+                        .WithIncludedPath(path7)
+                        .Attach()
+                    .CreateAsync();
+
+
+                await publicModelDB.CreateClientEncryptionKeyAsync(
+                    "key1",
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    new Cosmos.EncryptionKeyWrapMetadata("key1", "tempmetadata1"));
+
+                await publicModelDB.CreateClientEncryptionKeyAsync(
+                    "key2",
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    new Cosmos.EncryptionKeyWrapMetadata("key2", "tempmetadata2"));
+
+                ClientEncryptionKeyResponse clientEncryptionKeyResponsetemp = await publicModelDB.CreateClientEncryptionKeyAsync(
+                    "key3",
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    new Cosmos.EncryptionKeyWrapMetadata("key3", "tempmetadata3"));
+
+
+                await publicModelDB.RewrapClientEncryptionKeyAsync(
+                  "key1",
+                  CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                  new Cosmos.EncryptionKeyWrapMetadata("key1", "InitialUpdated"));
+              
+                //publicModelContainer1 = publicModelDB.GetContainer("publicmodelContainer1");
+                //publicModelContainer2 = publicModelDB.GetContainer("publicmodelContainer2");
+
+                publicModelContainer1 = encryptionCosmosClient.GetContainer("PublicModelDB", "publicmodelContainer1");
+                publicModelContainer2 = encryptionCosmosClient.GetContainer("PublicModelDB", "publicmodelContainer2");
+
+                //await publicModelContainer1.InitializeEncryptionAsync(); 
+                //await publicModelContainer2.InitializeEncryptionAsync();
+
+                TestDoc2 testDoc1 = TestDoc2.Create();
+                ItemResponse<TestDoc2> createResponse1 = await publicModelContainer1.CreateItemAsync(testDoc1,
+                    new PartitionKey(testDoc1.PK));
+
+                VerifyExpectedDocResponse(testDoc1, createResponse1.Resource);
+
+                await publicModelDB.RewrapClientEncryptionKeyAsync(
+                   "key1",
+                   CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                   new Cosmos.EncryptionKeyWrapMetadata("key1", "tempmetadata1Update"));
+
+
+                TestDoc2 testDoc2 = TestDoc2.Create();
+                ItemResponse<TestDoc2> createResponse2 = await publicModelContainer1.CreateItemAsync(
+                    testDoc2,
+                    new PartitionKey(testDoc2.PK));
+                VerifyExpectedDocResponse(testDoc2, createResponse2.Resource);
+
+                /* ------------------Validating change feed------------*/
+                FeedIterator<TestDoc2> changeIterator = publicModelContainer1.GetChangeFeedIterator<TestDoc2>(
+                ChangeFeedStartFrom.Beginning());
+
+                List<TestDoc2> changeFeedReturnedDocs = new List<TestDoc2>();
+                while (changeIterator.HasMoreResults)
+                {
+                    try
+                    {
+                        FeedResponse<TestDoc2> testDocs = await changeIterator.ReadNextAsync();
+                        for (int index = 0; index < testDocs.Count; index++)
+                        {
+                            if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
+                            {
+                                changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
+                            }
+                        }
+                    }
+                    catch (CosmosException ex)
+                    {
+                        Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
+                        break;
+                    }
+                }
+
+                Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
+
+                VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+                VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+                /* ------------------Validating change feed------------*/
+
+                TestDoc2 testDoc3 = TestDoc2.Create();
+                ItemResponse<TestDoc2> createResponse3 = await publicModelContainer1.CreateItemAsync(
+                    testDoc3,
+                    new PartitionKey(testDoc3.PK));
+                VerifyExpectedDocResponse(testDoc3, createResponse3.Resource);
+
+                TestDoc2 testDoc4 = TestDoc2.Create();
+                ItemResponse<TestDoc2> createResponse4 = await publicModelContainer2.CreateItemAsync(
+                    testDoc4,
+                    new PartitionKey(testDoc4.PK));
+                VerifyExpectedDocResponse(testDoc4, createResponse4.Resource);
+
+
+                /* ------------------------------- QUERY SUPPORT --------------------------*/
+
+                QueryDefinition withEncryptedParameter = new QueryDefinition(
+                    "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat AND c.Sensitive_DecimalFormat = @Sensitive_DecimalFormat");
+
+                await withEncryptedParameter.AddEncryptedParameterAsync(
+                    "@Sensitive_StringFormat",
+                    testDoc3.Sensitive_StringFormat,
+                    "/Sensitive_StringFormat",
+                    publicModelContainer1);
+                await withEncryptedParameter.AddEncryptedParameterAsync(
+                    "@Sensitive_IntFormat",
+                    testDoc3.Sensitive_IntFormat,
+                    "/Sensitive_IntFormat",
+                    publicModelContainer1);
+                await withEncryptedParameter.AddEncryptedParameterAsync(
+                    "@Sensitive_DecimalFormat",
+                    testDoc3.Sensitive_DecimalFormat,
+                    "/Sensitive_DecimalFormat",
+                    publicModelContainer1);
+                await withEncryptedParameter.AddEncryptedParameterAsync(
+                    "@Sensitive_DateFormat",
+                    testDoc3.Sensitive_DateFormat,
+                    "/Sensitive_DateFormat",
+                    publicModelContainer1);
+
+                QueryRequestOptions requestOptions = null;
+
+                FeedIterator<TestDoc2> queryResponseIterator;
+                queryResponseIterator = publicModelContainer1.GetItemQueryIterator<TestDoc2>(withEncryptedParameter, requestOptions: requestOptions);
+
+                FeedResponse<TestDoc2> readDocs = await queryResponseIterator.ReadNextAsync();
+                Assert.AreEqual(1, readDocs.Count);
+
+                /* ------------------------------- QUERY SUPPORT END ---------------------*/
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to create:{0}", ex.Message);
+            }
+
+            await publicModelDB.RewrapClientEncryptionKeyAsync(
+                   "key2",
+                   CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                   new Cosmos.EncryptionKeyWrapMetadata("key2", "tempmetadata2"));
+
+            await publicModelDB.RewrapClientEncryptionKeyAsync(
+                   "key3",
+                   CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                   new Cosmos.EncryptionKeyWrapMetadata("key3", "tempmetadata3"));
+
+
+            /*------BATCH TEST-------*/            
+
+            string partitionKey = "thePK";
+            TestDoc2 d1 = TestDoc2.Create(partitionKey);
+            TestDoc2 d2 = TestDoc2.Create(partitionKey);
+            TestDoc2 d3 = TestDoc2.Create(partitionKey);
+            TestDoc2 d4 = TestDoc2.Create(partitionKey);
+            TestDoc2 d5 = TestDoc2.Create(partitionKey);
+
+
+
+            TestDoc2 doc1ToCreate = TestDoc2.Create(partitionKey);
+            TestDoc2 doc2ToCreate = TestDoc2.Create(partitionKey);
+            TestDoc2 doc3ToCreate = TestDoc2.Create(partitionKey);
+            TestDoc2 doc4ToCreate = TestDoc2.Create(partitionKey);
+
+            ItemResponse<TestDoc2> doc1ToReplaceCreateResponse = await publicModelContainer1.CreateItemAsync(
+                    d1,
+                    new PartitionKey(d1.PK));
+
+            TestDoc2 doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
+            doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TestDoc2 doc2ToReplace = await publicModelContainer1.CreateItemAsync(
+                    d2,
+                    new PartitionKey(d2.PK));
+
+            doc2ToReplace.NonSensitive = Guid.NewGuid().ToString();
+            doc2ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TestDoc2 doc1ToUpsert = await publicModelContainer1.CreateItemAsync(
+                    d3,
+                    new PartitionKey(d3.PK));
+            doc1ToUpsert.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TestDoc2 doc2ToUpsert = await publicModelContainer1.CreateItemAsync(
+                    d4,
+                    new PartitionKey(d4.PK));
+            doc2ToUpsert.NonSensitive = Guid.NewGuid().ToString();
+            doc2ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TestDoc2 docToDelete = await publicModelContainer1.CreateItemAsync(
+                    d5,
+                    new PartitionKey(d5.PK));
+
+            TransactionalBatchResponse batchResponse = await publicModelContainer1.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreate)
+                .CreateItemStream(doc2ToCreate.ToStream())
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, new MdeEncryptionTransactionalBatchItemRequestOptions { IfMatchEtag = doc1ToReplaceCreateResponse.ETag })
+                .CreateItem(doc3ToCreate)
+                .CreateItem(doc4ToCreate)
+                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream())
+                .UpsertItem(doc1ToUpsert)
+                .DeleteItem(docToDelete.Id)
+                .UpsertItemStream(doc2ToUpsert.ToStream())
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+
+            TransactionalBatchOperationResult<TestDoc2> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc2>(0);
+            VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc2>(1);
+            VerifyExpectedDocResponse(doc2ToCreate, doc2.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc3 = batchResponse.GetOperationResultAtIndex<TestDoc2>(2);
+            VerifyExpectedDocResponse(doc1ToReplace, doc3.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc4 = batchResponse.GetOperationResultAtIndex<TestDoc2>(3);
+            VerifyExpectedDocResponse(doc3ToCreate, doc4.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc5 = batchResponse.GetOperationResultAtIndex<TestDoc2>(4);
+            VerifyExpectedDocResponse(doc4ToCreate, doc5.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc6 = batchResponse.GetOperationResultAtIndex<TestDoc2>(5);
+            VerifyExpectedDocResponse(doc2ToReplace, doc6.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc7 = batchResponse.GetOperationResultAtIndex<TestDoc2>(6);
+            VerifyExpectedDocResponse(doc1ToUpsert, doc7.Resource);
+
+            TransactionalBatchOperationResult<TestDoc2> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc2>(8);
+            VerifyExpectedDocResponse(doc2ToUpsert, doc8.Resource);
+
+
+            ResponseMessage readResponseMessage = await publicModelContainer1.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
+            Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
+
+            /*------END BATCH TEST*/
+
+
+            if (publicModelDB != null)
+            {
+                using (await publicModelDB.DeleteStreamAsync()) { }
+            }
+
+            if (encryptionCosmosClient != null)
+            {
+                encryptionCosmosClient.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task MdeBulkCrudTest()
+        {
+            Database publicModelDB = null;
+            Console.WriteLine("-- Staring Timer --");
+
+            string authKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                AllowBulkExecution = true
+            };
+
+            CosmosClient encryptionCosmosClient = new CosmosClient("https://localhost:8081", authKey, cosmosClientOptions);
+
+            encryptionCosmosClient = encryptionCosmosClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+
+            ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_StringFormat",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = MdeEncryptionType.Randomized,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                ClientEncryptionDataType = ClientEncryptionDataType.String
+
+            };
+
+            ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_ArrayFormat",
+                ClientEncryptionKeyId = "key2",
+                EncryptionType = MdeEncryptionType.Randomized,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+            };
+
+            try
+            {
+                ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy()
+                {
+                    IncludedPaths = { path1, path2 }
+                };
+
+                publicModelDB = await encryptionCosmosClient.CreateDatabaseAsync("PublicModelDB");
+                ContainerProperties containerProperties = new ContainerProperties("publicmodelContainer1", "/PK")
+                {
+                    ClientEncryptionPolicy = clientEncryptionPolicy,
+                };
+
+                publicModelContainer1 = await publicModelDB.CreateContainerAsync(containerProperties);
+
+                await publicModelDB.CreateClientEncryptionKeyAsync(
+                    "key1",
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    new Cosmos.EncryptionKeyWrapMetadata("key1", "tempmetadata1"));
+
+                await publicModelDB.CreateClientEncryptionKeyAsync(
+                    "key2",
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    new Cosmos.EncryptionKeyWrapMetadata("key2", "tempmetadata2"));
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to create:{0}", ex.Message);
+            }
+
+            string partitionKey = "thePK";
+            TestDoc2 d1 = TestDoc2.Create(partitionKey);
+            TestDoc2 d2 = TestDoc2.Create(partitionKey);
+            TestDoc2 d3 = TestDoc2.Create(partitionKey);
+
+            ItemResponse<TestDoc2> doc1ToReplaceCreateResponse = await publicModelContainer1.CreateItemAsync(
+                    d1,
+                    new PartitionKey(d1.PK));
+
+            TestDoc2 docToReplace = doc1ToReplaceCreateResponse.Resource;
+            docToReplace.NonSensitive = "Hello There replaced";
+            docToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TestDoc2 doc1ToUpsert = await publicModelContainer1.CreateItemAsync(
+                    d2,
+                    new PartitionKey(d2.PK));
+            doc1ToUpsert.NonSensitive = "Hello There replaced for upsert";
+            doc1ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TestDoc2 docToDelete = await publicModelContainer1.CreateItemAsync(
+                    d3,
+                    new PartitionKey(d3.PK));
+
+            List<Task> tasks = new List<Task>()
+            {
+                EncryptionTests.MdeCreateItemAsync(publicModelContainer1),
+                EncryptionTests.MdeUpsertItemAsync(publicModelContainer1, TestDoc2.Create(),HttpStatusCode.Created),
+                EncryptionTests.MdeReplaceItemAsync(publicModelContainer1, docToReplace),
+                EncryptionTests.MdeUpsertItemAsync(publicModelContainer1, doc1ToUpsert, HttpStatusCode.OK),
+                EncryptionTests.MdeDeleteItemAsync(publicModelContainer1, docToDelete)
+            };
+
+            await Task.WhenAll(tasks);
+
+            if (publicModelDB != null)
+            {
+                using (await publicModelDB.DeleteStreamAsync()) { }
+            }
+
+            if (encryptionCosmosClient != null)
+            {
+                encryptionCosmosClient.Dispose();
+            }
+
+        }
+
+        private static async Task<ItemResponse<TestDoc2>> MdeUpsertItemAsync(
+            Container container,
+            TestDoc2 testDoc,
+            HttpStatusCode expectedStatusCode)
+        {
+            ItemResponse<TestDoc2> upsertResponse = await container.UpsertItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK));
+            Assert.AreEqual(expectedStatusCode, upsertResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, upsertResponse.Resource);
+            return upsertResponse;
+        }
+
+        private static async Task<ItemResponse<TestDoc2>> MdeCreateItemAsync(
+            Container container,
+            string partitionKey = null)
+        {
+            TestDoc2 testDoc = TestDoc2.Create(partitionKey);
+            ItemResponse<TestDoc2> createResponse = await container.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+            return createResponse;
+        }
+
+        private static async Task<ItemResponse<TestDoc2>> MdeReplaceItemAsync(
+            Container encryptedContainer,
+            TestDoc2 testDoc,
+            string etag = null)
+        {
+            ItemResponse<TestDoc2> replaceResponse = await encryptedContainer.ReplaceItemAsync(
+                testDoc,
+                testDoc.Id,
+                new PartitionKey(testDoc.PK),
+                EncryptionTests.MdeGetRequestOptions(etag));
+
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, replaceResponse.Resource);
+            return replaceResponse;
+        }
+        private static ItemRequestOptions MdeGetRequestOptions(
+            string ifMatchEtag = null)
+        {
+            return new ItemRequestOptions
+            {
+                IfMatchEtag = ifMatchEtag
+            };
+        }
+
+        private static async Task<ItemResponse<TestDoc2>> MdeDeleteItemAsync(
+            Container encryptedContainer,
+            TestDoc2 testDoc)
+        {
+            ItemResponse<TestDoc2> deleteResponse = await encryptedContainer.DeleteItemAsync<TestDoc2>(
+                testDoc.Id,
+                new PartitionKey(testDoc.PK));
+
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+            Assert.IsNull(deleteResponse.Resource);
+            return deleteResponse;
+        }
+
+        private static void VerifyExpectedDocResponse(TestDoc2 expectedDoc, TestDoc2 verifyDoc)
+        {
+            Assert.AreEqual(expectedDoc.Id, verifyDoc.Id);
+            Assert.AreEqual(expectedDoc.Sensitive_StringFormat, verifyDoc.Sensitive_StringFormat);
+            if (expectedDoc.Sensitive_ArrayFormat != null)
+            {
+                Assert.AreEqual(expectedDoc.Sensitive_ArrayFormat[0].Sensitive_ArrayDecimalFormat, verifyDoc.Sensitive_ArrayFormat[0].Sensitive_ArrayDecimalFormat);
+                Assert.AreEqual(expectedDoc.Sensitive_ArrayFormat[0].Sensitive_ArrayIntFormat, verifyDoc.Sensitive_ArrayFormat[0].Sensitive_ArrayIntFormat);
+                Assert.AreEqual(expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_IntFormatL1, verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_IntFormatL1);
+                Assert.AreEqual(
+                    expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_IntFormatL2,
+                    verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_IntFormatL2);
+            }
+            else
+            {
+                Assert.AreEqual(expectedDoc.Sensitive_ArrayFormat, verifyDoc.Sensitive_ArrayFormat);
+                Assert.AreEqual(expectedDoc.Sensitive_NestedObjectFormatL1, verifyDoc.Sensitive_NestedObjectFormatL1);
+            }
+            Assert.AreEqual(expectedDoc.Sensitive_DateFormat, verifyDoc.Sensitive_DateFormat);
+            Assert.AreEqual(expectedDoc.Sensitive_DecimalFormat, verifyDoc.Sensitive_DecimalFormat);
+            Assert.AreEqual(expectedDoc.NonSensitive, verifyDoc.NonSensitive);
         }
 
         [TestMethod]
@@ -1800,6 +2340,253 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             public Stream ToStream()
             {
                 return TestCommon.ToStream(this);
+            }
+        }
+
+
+        public class TestDoc2
+        {
+            public static List<string> PathsToEncrypt { get; } =
+                new List<string>() {
+                    "/Sensitive_StringFormat",
+                    "/Sensitive_ArrayFormat",
+                    "/Sensitive_DecimalFormat",
+                    "/Sensitive_IntFormat",
+                    "/Sensitive_IntArray",
+                    "/Sensitive_DateFormat",
+                    "/Sensitive_NestedObjectFormatL1"
+                };
+
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            public string PK { get; set; }
+
+            public string NonSensitive { get; set; }
+
+            public string Sensitive_StringFormat { get; set; }
+
+            public DateTime Sensitive_DateFormat { get; set; }
+
+            public decimal Sensitive_DecimalFormat { get; set; }
+
+            public int Sensitive_IntFormat { get; set; }
+
+            public int[] Sensitive_IntArray { get; set; }
+
+            public Sensitive_ArrayData[] Sensitive_ArrayFormat { get; set; }
+
+            public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
+
+            public TestDoc2()
+            {
+            }
+
+            public class Sensitive_ArrayData
+            {
+                public int Sensitive_ArrayIntFormat { get; set; }
+                public decimal Sensitive_ArrayDecimalFormat { get; set; }
+            }
+
+            public class Sensitive_ArrayDataWithObject
+            {
+                public int Sensitive_ArrayIntFormat { get; set; }
+                public decimal Sensitive_ArrayDecimalFormat { get; set; }
+                public Sensitive_NestedObjectL0 Sensitive_NestedObjectFormatL0 { get; set; }
+            }
+
+            public class Sensitive_NestedObjectL0
+            {
+                public int Sensitive_IntFormatL0 { get; set; }
+                public decimal Sensitive_DecimalFormatL0 { get; set; }
+            }
+
+            public class Sensitive_NestedObjectL1
+            {
+                public int[] Sensitive_IntArrayL1 { get; set; }
+                public int Sensitive_IntFormatL1 { get; set; }
+                public decimal Sensitive_DecimalFormatL1 { get; set; }
+                public Sensitive_ArrayData[] Sensitive_ArrayFormatL1 { get; set; }
+                public Sensitive_NestedObjectL2 Sensitive_NestedObjectFormatL2 { get; set; }
+            }
+
+            public class Sensitive_NestedObjectL2
+            {
+                public int Sensitive_IntFormatL2 { get; set; }
+                public decimal Sensitive_DecimalFormatL2 { get; set; }
+                public Sensitive_ArrayData[] Sensitive_ArrayFormatL2 { get; set; }
+                public Sensitive_NestedObjectL3 Sensitive_NestedObjectFormatL3 { get; set; }
+            }
+
+            public class Sensitive_NestedObjectL3
+            {
+                public int Sensitive_IntFormatL3 { get; set; }
+                public Sensitive_ArrayData[] Sensitive_ArrayFormatL3 { get; set; }
+                public decimal Sensitive_DecimalFormatL3 { get; set; }
+                public Sensitive_ArrayDataWithObject[] Sensitive_ArrayWithObjectFormat { get; set; }
+            }
+
+            public TestDoc2(TestDoc2 other)
+            {
+                this.Id = other.Id;
+                this.PK = other.PK;
+                this.NonSensitive = other.NonSensitive;
+                this.Sensitive_StringFormat = other.Sensitive_StringFormat;
+                this.Sensitive_DateFormat = other.Sensitive_DateFormat;
+                this.Sensitive_DecimalFormat = other.Sensitive_DecimalFormat;
+                this.Sensitive_IntFormat = other.Sensitive_IntFormat;
+                this.Sensitive_ArrayFormat = other.Sensitive_ArrayFormat;
+                this.Sensitive_NestedObjectFormatL1 = other.Sensitive_NestedObjectFormatL1;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is TestDoc2 doc
+                       && this.Id == doc.Id
+                       && this.PK == doc.PK
+                       && this.NonSensitive == doc.NonSensitive
+                       && this.Sensitive_StringFormat == doc.Sensitive_StringFormat
+                       && this.Sensitive_DateFormat == doc.Sensitive_DateFormat
+                       && this.Sensitive_DecimalFormat == doc.Sensitive_DecimalFormat
+                       && this.Sensitive_IntFormat == doc.Sensitive_IntFormat
+                       && this.Sensitive_ArrayFormat == doc.Sensitive_ArrayFormat
+                       && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1;
+            }
+
+            public bool EqualsExceptEncryptedProperty(object obj)
+            {
+                return obj is TestDoc2 doc
+                       && this.Id == doc.Id
+                       && this.PK == doc.PK
+                       && this.NonSensitive == doc.NonSensitive
+                       && this.Sensitive_StringFormat != doc.Sensitive_StringFormat;
+            }
+            public override int GetHashCode()
+            {
+                int hashCode = 1652434776;
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.PK);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.NonSensitive);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Sensitive_StringFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime>.Default.GetHashCode(this.Sensitive_DateFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Decimal>.Default.GetHashCode(this.Sensitive_DecimalFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.Sensitive_IntFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Array>.Default.GetHashCode(this.Sensitive_ArrayFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Object>.Default.GetHashCode(this.Sensitive_NestedObjectFormatL1);
+                return hashCode;
+            }
+
+            public static TestDoc2 Create(string partitionKey = null)
+            {
+                return new TestDoc2()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PK = partitionKey ?? Guid.NewGuid().ToString(),
+                    NonSensitive = Guid.NewGuid().ToString(),
+                    Sensitive_StringFormat = Guid.NewGuid().ToString(),
+                    Sensitive_DateFormat = new DateTime(1987, 12, 25),
+                    Sensitive_DecimalFormat = 472.3108m,
+                    Sensitive_IntArray = new int[2] { 99, 999 },
+                    Sensitive_IntFormat = 1965,
+                    Sensitive_ArrayFormat = new Sensitive_ArrayData[]
+                    {
+                        new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 1111,
+                            Sensitive_ArrayDecimalFormat = 1111.11m
+                        }
+                    },
+                    Sensitive_NestedObjectFormatL1 = new Sensitive_NestedObjectL1()
+                    {
+                        Sensitive_IntArrayL1 = new int[2] { 999, 100 },
+                        Sensitive_IntFormatL1 = 1999,
+                        Sensitive_DecimalFormatL1 = 1999.1m,
+                        Sensitive_ArrayFormatL1 = new Sensitive_ArrayData[]
+                    {
+                        new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 1,
+                            Sensitive_ArrayDecimalFormat = 2.1m
+                        },
+                        new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 2,
+                            Sensitive_ArrayDecimalFormat = 3.1m
+                        }
+                    },
+                        Sensitive_NestedObjectFormatL2 = new Sensitive_NestedObjectL2()
+                        {
+                            Sensitive_IntFormatL2 = 2000,
+                            Sensitive_DecimalFormatL2 = 2000.1m,
+                            Sensitive_ArrayFormatL2 = new Sensitive_ArrayData[]
+                    {
+                        new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 2,
+                            Sensitive_ArrayDecimalFormat = 3.1m
+                        }
+                    },
+                            Sensitive_NestedObjectFormatL3 = new Sensitive_NestedObjectL3()
+                            {
+                                Sensitive_IntFormatL3 = 3000,
+                                Sensitive_DecimalFormatL3 = 3000.1m,
+                                Sensitive_ArrayFormatL3 = new Sensitive_ArrayData[]
+                    {
+                        new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 3,
+                            Sensitive_ArrayDecimalFormat = 4.1m,
+                        }
+                    },
+                                Sensitive_ArrayWithObjectFormat = new Sensitive_ArrayDataWithObject[]
+                    {
+                        new Sensitive_ArrayDataWithObject
+                        {
+                            Sensitive_ArrayIntFormat = 4,
+                            Sensitive_ArrayDecimalFormat = 5.1m,
+                            Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                            {
+                            Sensitive_IntFormatL0 = 888,
+                            Sensitive_DecimalFormatL0 = 888.1m,
+                            }
+                        }
+                    }
+                            }
+                        }
+                    }
+                };
+            }
+
+            public Stream ToStream()
+            {
+                return TestCommon.ToStream(this);
+            }
+        }
+
+        internal class TestEncryptionKeyStoreProvider : EncryptionKeyStoreProvider
+        {
+            public override string ProviderName => "TESTKEYSTORE_VAULT";
+
+            public override byte[] UnwrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] encryptedKey)
+            {
+                byte[] plainkey = encryptedKey.Select(b => (byte)(b - 1)).ToArray();
+                return plainkey;
+            }
+
+            public override byte[] WrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] key)
+            {
+                byte[] encryptedkey = key.Select(b => (byte)(b + 1)).ToArray();
+                return encryptedkey;
+            }
+
+            public override byte[] Sign(string masterKeyPath, bool allowEnclaveComputations)
+            {
+                return null;
+            }
+
+            public override bool Verify(string masterKeyPath, bool allowEnclaveComputations, byte[] signature)
+            {
+                return true;
             }
         }
 

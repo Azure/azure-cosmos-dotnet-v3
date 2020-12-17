@@ -45,6 +45,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpClientFactory", "HttpCl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Geospatial", "Geospatial\Geospatial.csproj", "{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MdeEncryption", "MdeEncryption\MdeEncryption.csproj", "{982F0969-D091-45D8-A45E-A8032D5738DA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,10 @@ Global
 		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA8F6FE6-78FC-4828-BBBC-5B9D7D46F7AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{982F0969-D091-45D8-A45E-A8032D5738DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{982F0969-D091-45D8-A45E-A8032D5738DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{982F0969-D091-45D8-A45E-A8032D5738DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{982F0969-D091-45D8-A45E-A8032D5738DA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
