@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             Dictionary<string, MdeEncryptionSettings> settingsByDekId = new Dictionary<string, MdeEncryptionSettings>();
-            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(this.Container, forceRefresh);
+            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(this.Container, false);
 
             if (this.ClientEncryptionPolicy == null)
             {
@@ -70,17 +70,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiessAsync(
                     dataEncryptionKeyId,
                     this.Container,
-                    forceRefresh);
+                    false);
 
                 if (clientEncryptionKeyProperties != null)
                 {
                     KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
                         this.EncryptionKeyStoreProvider);
 
                     ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                               clientEncryptionKeyProperties.Id,
+                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                                keyEncryptionKey,
                                clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(this.EncryptAsync)}.");
+                throw new InvalidOperationException($"{nameof(this.EncryptAndSerializeValueAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
             }
 
             if (settings.ClientEncryptionDataType == null)
@@ -281,6 +281,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName);
+
+                if (settings == null)
+                {
+                    throw new ArgumentException("Invalid Encryption Setting for the Property");
+                }
 
                 VerifyAndGetPropertyDataType(propertyValue, settings.ClientEncryptionDataType);
                 await this.EncryptAndSerializePropertyAsync(
@@ -354,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (plainText == null)
             {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(this.DecryptAsync)}.");
+                throw new InvalidOperationException($"{nameof(this.DecryptPropertyAsync)} returned null plainText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}.");
             }
 
             return await Task.FromResult(plainText);
@@ -456,6 +461,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     string propertyName = path.Path.Substring(1);
                     MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName);
+
+                    if (settings == null)
+                    {
+                        throw new ArgumentException("Invalid Encryption Setting for the Property");
+                    }
+
                     await this.DecryptAndDeserializePropertyAsync(
                             document,
                             settings,
@@ -536,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     }
                     else
                     {
-                        throw new ArgumentException("Invalid Encryption Setting for the Property");
+                        return null;
                     }
                 }
                 else
@@ -546,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentException("Invalid Encryption Setting for the Property");
+                return null;
             }
         }
 

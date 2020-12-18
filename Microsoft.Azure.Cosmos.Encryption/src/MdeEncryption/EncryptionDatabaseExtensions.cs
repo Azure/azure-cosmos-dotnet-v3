@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                encryptionKeyWrapMetadata.Value,
+                encryptionKeyWrapMetadata.Name,
                 encryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                encryptionKeyWrapMetadata.Value,
+                encryptionKeyWrapMetadata.Name,
                 keyEncryptionKey);
 
             byte[] wrappedDataEncryptionKey = protectedDataEncryptionKey.EncryptedValue;
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync();
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                encryptionKeyWrapMetadata.Value,
+                encryptionKeyWrapMetadata.Name,
                 encryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 

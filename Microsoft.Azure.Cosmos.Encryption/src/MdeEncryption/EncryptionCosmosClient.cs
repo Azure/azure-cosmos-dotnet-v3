@@ -56,6 +56,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return null;
         }
 
+        internal void SetEncryptedDatabaseIds(string id)
+        {
+            if (EncryptedDatabaseListSema.Wait(-1))
+            {
+                try
+                {
+                    this.encryptedDatabaseIds.Add(id);
+                }
+                finally
+                {
+                    EncryptedDatabaseListSema.Release(1);
+                }
+            }
+        }
+
         internal ClientEncryptionPropertiesRefreshManager ClientEncryptionPolicyRefreshManager { get; }
 
         private bool isDisposed = false;
@@ -255,18 +270,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Database GetDatabase(string id)
         {
             this.ThrowIfDisposed();
-            if (EncryptedDatabaseListSema.Wait(-1))
-            {
-                try
-                {
-                    this.encryptedDatabaseIds.Add(id);
-                }
-                finally
-                {
-                    EncryptedDatabaseListSema.Release(1);
-                }
-            }
-
             return new EncryptionDatabase(this.cosmosClient.GetDatabase(id), this);
         }
 

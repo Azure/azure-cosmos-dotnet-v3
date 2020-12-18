@@ -51,47 +51,52 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (container != null && container is MdeContainer mdeContainer)
             {
-                Stream itemStream = mdeContainer.CosmosSerializer.ToStream<T>(value);
-                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(itemStream);
+                Stream valueStream = mdeContainer.CosmosSerializer.ToStream<T>(value);
+                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
                 await mdeContainer.MdeEncryptionProcessor.InitializeMdeProcessorIfNotInitializedAsync();
 
-                try
+                // get the paths encryption setting.
+                MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.GetEncryptionSettingForPropertyAsync(path.Substring(1));
+                if (settings == null)
                 {
-                    // get the paths encryption setting.
-                    MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.GetEncryptionSettingForPropertyAsync(path.Substring(1));
-
-                    ClientEncryptionDataType? clientEncryptionDataType = null;
-
-                    // use the configured data type for the path else identify and add the marker infront of the cipher text.
-                    byte[] serializedData = settings.ClientEncryptionDataType != null
-                        ? Serialize(propertyValueToEncrypt, settings.ClientEncryptionDataType)
-                        : Serialize(propertyValueToEncrypt, clientEncryptionDataType = GetDataTypeForSerialization(propertyValueToEncrypt));
-                    byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
-
-                    if (settings.ClientEncryptionDataType == null)
-                    {
-                        if (clientEncryptionDataType == null)
-                        {
-                            throw new InvalidOperationException($"Failed to Identify Data Type for Query Parameter: {name} with path: {path}");
-                        }
-
-                        byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                        cipherTextWithTypeMarker[0] = (byte)clientEncryptionDataType;
-                        Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                        withEncryptedValues.WithParameter(name, cipherTextWithTypeMarker);
-                    }
-                    else
-                    {
-                        withEncryptedValues.WithParameter(name, cipherText);
-                    }
-
-                    return await Task.FromResult(withEncryptedValues);
+                    // property not encrypted.
+                    withEncryptedValues.WithParameter(name, value);
+                    return withEncryptedValues;
                 }
-                catch (Exception ex)
+
+                ClientEncryptionDataType? clientEncryptionDataType = null;
+
+                // use the configured data type for the path else identify and add the marker infront of the cipher text.
+                byte[] serializedData = settings.ClientEncryptionDataType != null
+                    ? Serialize(propertyValueToEncrypt, settings.ClientEncryptionDataType)
+                    : Serialize(propertyValueToEncrypt, clientEncryptionDataType = GetDataTypeForSerialization(propertyValueToEncrypt));
+
+                byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
+
+                if (cipherText == null)
                 {
-                    throw new InvalidOperationException($"Invalid Query Parameter passed: {ex.Message}");
+                    throw new InvalidOperationException($"{nameof(AddEncryptedParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
                 }
+
+                if (settings.ClientEncryptionDataType == null)
+                {
+                    if (clientEncryptionDataType == null)
+                    {
+                        throw new InvalidOperationException($"Failed to Identify Data Type for Query Parameter: {name} with path: {path}");
+                    }
+
+                    byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
+                    cipherTextWithTypeMarker[0] = (byte)clientEncryptionDataType;
+                    Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+                    withEncryptedValues.WithParameter(name, cipherTextWithTypeMarker);
+                }
+                else
+                {
+                    withEncryptedValues.WithParameter(name, cipherText);
+                }
+
+                return withEncryptedValues;
             }
             else
             {
@@ -116,23 +121,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private static ClientEncryptionDataType? GetDataTypeForSerialization(JToken propertyValueToEncrypt)
         {
-            ClientEncryptionDataType? clientEncryptionDataType = null;
-            switch (propertyValueToEncrypt.Type)
+            ClientEncryptionDataType? clientEncryptionDataType = propertyValueToEncrypt.Type switch
             {
-                case JTokenType.Boolean:
-                    clientEncryptionDataType = ClientEncryptionDataType.Bool;
-                    break;
-                case JTokenType.Float:
-                    clientEncryptionDataType = ClientEncryptionDataType.Double;
-                    break;
-                case JTokenType.Integer:
-                    clientEncryptionDataType = ClientEncryptionDataType.Long;
-                    break;
-                case JTokenType.String:
-                    clientEncryptionDataType = ClientEncryptionDataType.String;
-                    break;
-            }
-
+                JTokenType.Boolean => ClientEncryptionDataType.Bool,
+                JTokenType.Float => ClientEncryptionDataType.Double,
+                JTokenType.Integer => ClientEncryptionDataType.Long,
+                JTokenType.String => ClientEncryptionDataType.String,
+                _ => throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValueToEncrypt.Type}"),
+            };
             return clientEncryptionDataType;
         }
     }

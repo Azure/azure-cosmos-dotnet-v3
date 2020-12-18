@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.database = database;
             this.encryptionCosmosClient = encryptionCosmosClient;
+            this.encryptionCosmosClient.SetEncryptedDatabaseIds(this.database.Id);
         }
 
         private readonly EncryptionCosmosClient encryptionCosmosClient;
