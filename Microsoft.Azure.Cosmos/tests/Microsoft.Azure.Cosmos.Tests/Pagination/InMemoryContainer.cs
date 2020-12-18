@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -170,9 +171,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     }
 
                     List<FeedRangeEpk> singleRange = new List<FeedRangeEpk>()
-                {
-                    CreateRangeFromId(partitionKeyRangeId),
-                };
+                    {
+                        CreateRangeFromId(partitionKeyRangeId),
+                    };
 
                     return TryCatch<List<FeedRangeEpk>>.FromResult(singleRange);
                 }
@@ -501,6 +502,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 SqlQuery sqlQuery = monadicParse.Result;
+                if ((sqlQuery.OrderbyClause != null) && (continuationToken != null))
+                {
+                    // This is a hack.
+                    // If the query is an ORDER BY query then we need to seek to the resume term.
+                    // Since I don't want to port over the proper logic from the backend I will just inject a filter.
+                    // For now I am only handling the single order by item case
+                    if (sqlQuery.OrderbyClause.OrderbyItems.Length != 1)
+                    {
+                        throw new NotImplementedException("Can only support a single order by column");
+                    }
+
+                    SqlOrderByItem orderByItem = sqlQuery.OrderbyClause.OrderbyItems[0];
+                    CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
+                    SqlBinaryScalarExpression resumeFilter = SqlBinaryScalarExpression.Create(
+                        orderByItem.IsDescending ? SqlBinaryScalarOperatorKind.LessThan : SqlBinaryScalarOperatorKind.GreaterThan,
+                        orderByItem.Expression,
+                        parsedContinuationToken["orderByItem"].Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton));
+
+                    SqlWhereClause modifiedWhereClause = sqlQuery.WhereClause.FilterExpression == null
+                        ? SqlWhereClause.Create(resumeFilter)
+                        : SqlWhereClause.Create(
+                            SqlBinaryScalarExpression.Create(
+                                SqlBinaryScalarOperatorKind.And,
+                                sqlQuery.WhereClause.FilterExpression,
+                                resumeFilter));
+
+                    sqlQuery = SqlQuery.Create(
+                        sqlQuery.SelectClause,
+                        sqlQuery.FromClause,
+                        modifiedWhereClause,
+                        sqlQuery.GroupByClause,
+                        sqlQuery.OrderbyClause,
+                        sqlQuery.OffsetLimitClause);
+
+                    // We still need to handle duplicate values and break the tie with the rid
+                    // But since all the values are unique for our testing purposes we can ignore this for now.
+                }
                 IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
                 IEnumerable<CosmosElement> queryPageResults = queryResults;
 
@@ -508,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 string continuationResourceId;
                 int continuationSkipCount;
 
-                if (continuationToken != null)
+                if ((sqlQuery.OrderbyClause == null) && (continuationToken != null))
                 {
                     CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
                     continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
@@ -570,11 +608,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         currentSkipCount += continuationSkipCount;
                     }
 
-                    CosmosObject queryStateValue = CosmosObject.Create(new Dictionary<string, CosmosElement>()
+                    Dictionary<string, CosmosElement> queryStateDictionary = new Dictionary<string, CosmosElement>()
                     {
                         { "resourceId", CosmosString.Create(currentResourceId) },
                         { "skipCount", CosmosNumber64.Create(currentSkipCount) },
-                    });
+                    };
+
+                    if (sqlQuery.OrderbyClause != null)
+                    {
+                        SqlOrderByItem orderByItem = sqlQuery.OrderbyClause.OrderbyItems[0];
+                        string propertyName = ((SqlPropertyRefScalarExpression)orderByItem.Expression).Identifier.Value;
+                        queryStateDictionary["orderByItem"] = ((CosmosObject)lastDocument["payload"])[propertyName];
+                    }
+
+                    CosmosObject queryStateValue = CosmosObject.Create(queryStateDictionary);
 
                     queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
                 }
@@ -1391,6 +1438,79 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 DateTime now = DateTime.UtcNow;
                 ChangeFeedStateTime startTime = new ChangeFeedStateTime(now);
                 return this.Visit(startTime, input);
+            }
+        }
+
+        private sealed class CosmosElementToSqlScalarExpressionVisitor : ICosmosElementVisitor<SqlScalarExpression>
+        {
+            public static readonly CosmosElementToSqlScalarExpressionVisitor Singleton = new CosmosElementToSqlScalarExpressionVisitor();
+
+            private CosmosElementToSqlScalarExpressionVisitor()
+            {
+                // Private constructor, since this class is a singleton.
+            }
+
+            public SqlScalarExpression Visit(CosmosArray cosmosArray)
+            {
+                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
+                foreach (CosmosElement item in cosmosArray)
+                {
+                    items.Add(item.Accept(this));
+                }
+
+                return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
+            }
+
+            public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
+            {
+                // Can not convert binary to scalar expression without knowing the API type.
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
+            {
+                return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
+            {
+                // Can not convert guid to scalar expression without knowing the API type.
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosNull cosmosNull)
+            {
+                return SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
+            }
+
+            public SqlScalarExpression Visit(CosmosNumber cosmosNumber)
+            {
+                if (!(cosmosNumber is CosmosNumber64 cosmosNumber64))
+                {
+                    throw new ArgumentException($"Unknown {nameof(CosmosNumber)} type: {cosmosNumber.GetType()}.");
+                }
+
+                return SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber64.GetValue()));
+            }
+
+            public SqlScalarExpression Visit(CosmosObject cosmosObject)
+            {
+                List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
+                foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
+                {
+                    SqlPropertyName name = SqlPropertyName.Create(prop.Key);
+                    CosmosElement value = prop.Value;
+                    SqlScalarExpression expression = value.Accept(this);
+                    SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
+                    properties.Add(property);
+                }
+
+                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+            }
+
+            public SqlScalarExpression Visit(CosmosString cosmosString)
+            {
+                return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
             }
         }
     }

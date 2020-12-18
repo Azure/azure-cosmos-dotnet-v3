@@ -262,17 +262,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: new SqlQuerySpec(@"
-                        SELECT c._rid AS _rid, [{""item"": c._ts}] AS orderByItems, c AS payload
+                        SELECT c._rid AS _rid, [{""item"": c.pk}] AS orderByItems, c AS payload
                         FROM c
                         WHERE {documentdb-formattableorderbyquery-filter}
-                        ORDER BY c._ts"),
+                        ORDER BY c.pk"),
                     targetRanges: await documentContainer.GetFeedRangesAsync(
                         trace: NoOpTrace.Singleton,
                         cancellationToken: default),
                     partitionKey: null,
                     orderByColumns: new List<OrderByColumn>()
                     {
-                        new OrderByColumn("c._ts", SortOrder.Ascending)
+                        new OrderByColumn("c.pk", SortOrder.Ascending)
                     },
                     pageSize: 10,
                     maxConcurrency: 10,
