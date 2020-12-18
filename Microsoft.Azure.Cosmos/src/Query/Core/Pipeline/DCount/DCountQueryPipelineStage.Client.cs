@@ -22,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
         {
             private ClientDCountQueryPipelineStage(
                 IQueryPipelineStage source,
-                IAggregator countAggregator,
+                long count,
                 DCountInfo info,
                 CancellationToken cancellationToken)
-                : base(source, countAggregator, info, cancellationToken)
+                : base(source, count, info, cancellationToken)
             {
                 // all the work is done in the base constructor.
             }
@@ -41,13 +41,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
-                TryCatch<IAggregator> tryCountAggregator = CountAggregator.TryCreate(
-                    continuationToken: null);
-                if (tryCountAggregator.Failed)
-                {
-                    return TryCatch<IQueryPipelineStage>.FromException(tryCountAggregator.Exception);
-                }
-
                 TryCatch<IQueryPipelineStage> tryCreateSource = monadicCreatePipelineStage(continuationToken, cancellationToken);
                 if (tryCreateSource.Failed)
                 {
@@ -55,10 +48,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 }
 
                 ClientDCountQueryPipelineStage stage = new ClientDCountQueryPipelineStage(
-                    tryCreateSource.Result,
-                    tryCountAggregator.Result,
-                    info,
-                    cancellationToken);
+                    source: tryCreateSource.Result,
+                    count: 0,
+                    info: info,
+                    cancellationToken: cancellationToken);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
@@ -94,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     responseLengthBytes += sourcePage.ResponseLengthInBytes;
 
                     this.cancellationToken.ThrowIfCancellationRequested();
-                    this.countAggregator.Aggregate(CosmosNumber64.Create(sourcePage.Documents.Count));
+                    this.count += sourcePage.Documents.Count;
                 }
 
                 List<CosmosElement> finalResult = new List<CosmosElement>();

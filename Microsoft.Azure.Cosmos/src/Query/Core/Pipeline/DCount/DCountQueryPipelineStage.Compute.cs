@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
             private ComputeDCountQueryPipelineStage(
                 IQueryPipelineStage source,
-                IAggregator countAggregator,
+                long count,
                 DCountInfo info,
                 CancellationToken cancellationToken)
-                : base(source, countAggregator, info, cancellationToken)
+                : base(source, count, info, cancellationToken)
             {
                 // all the work is done in the base constructor.
             }
@@ -57,14 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 }
                 else
                 {
-                    dcountContinuationToken = new DCountContinuationToken(countAggregatorContinuationToken: null, sourceContinuationToken: null);
-                }
-
-                TryCatch<IAggregator> tryCreateSingleGroupAggregator = CountAggregator.TryCreate(
-                    continuationToken: dcountContinuationToken.CountAggregatorContinuationToken);
-                if (tryCreateSingleGroupAggregator.Failed)
-                {
-                    return TryCatch<IQueryPipelineStage>.FromException(tryCreateSingleGroupAggregator.Exception);
+                    dcountContinuationToken = new DCountContinuationToken(count: 0, sourceContinuationToken: null);
                 }
 
                 TryCatch<IQueryPipelineStage> tryCreateSource;
@@ -84,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                 ComputeDCountQueryPipelineStage stage = new ComputeDCountQueryPipelineStage(
                     tryCreateSource.Result,
-                    tryCreateSingleGroupAggregator.Result,
+                    dcountContinuationToken.Count,
                     info,
                     cancellationToken);
 
@@ -122,10 +115,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                     QueryPage sourcePage = tryGetSourcePage.Result;
                     this.cancellationToken.ThrowIfCancellationRequested();
-                    this.countAggregator.Aggregate(CosmosNumber64.Create(sourcePage.Documents.Count));
+                    this.count += sourcePage.Documents.Count;
 
                     DCountContinuationToken dcountContinuationToken = new DCountContinuationToken(
-                        countAggregatorContinuationToken: this.countAggregator.GetCosmosElementContinuationToken(),
+                        count: this.count,
                         sourceContinuationToken: sourcePage.State != null ? sourcePage.State.Value : DoneSourceToken);
                     QueryState queryState = new QueryState(DCountContinuationToken.ToCosmosElement(dcountContinuationToken));
                     QueryPage emptyPage = new QueryPage(
@@ -167,20 +160,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 return true;
             }
 
-            private sealed class DCountContinuationToken
+            private readonly struct DCountContinuationToken
             {
                 private const string SourceTokenName = "SourceToken";
                 private const string DCountTokenName = "DCountToken";
 
                 public DCountContinuationToken(
-                    CosmosElement countAggregatorContinuationToken,
+                    long count,
                     CosmosElement sourceContinuationToken)
                 {
-                    this.CountAggregatorContinuationToken = countAggregatorContinuationToken;
+                    this.Count = count;
                     this.SourceContinuationToken = sourceContinuationToken;
                 }
 
-                public CosmosElement CountAggregatorContinuationToken { get; }
+                public long Count { get; }
+
+                public CosmosElement CountToken => CosmosNumber64.Create(this.Count);
 
                 public CosmosElement SourceContinuationToken { get; }
 
@@ -194,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         },
                         {
                             DCountContinuationToken.DCountTokenName,
-                            dcountContinuationToken.CountAggregatorContinuationToken
+                            dcountContinuationToken.CountToken
                         }
                     };
 
@@ -203,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                 public static bool TryCreateFromCosmosElement(
                     CosmosElement continuationToken,
-                    out DCountContinuationToken aggregateContinuationToken)
+                    out DCountContinuationToken dContinuationToken)
                 {
                     if (continuationToken == null)
                     {
@@ -212,15 +207,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                     if (!(continuationToken is CosmosObject rawAggregateContinuationToken))
                     {
-                        aggregateContinuationToken = default;
+                        dContinuationToken = default;
                         return false;
                     }
 
                     if (!rawAggregateContinuationToken.TryGetValue(
                         DCountContinuationToken.DCountTokenName,
-                        out CosmosElement countAggregatorContinuationToken))
+                        out CosmosElement countToken))
                     {
-                        aggregateContinuationToken = default;
+                        dContinuationToken = default;
+                        return false;
+                    }
+
+                    if (!(countToken is CosmosNumber count))
+                    {
+                        dContinuationToken = default;
                         return false;
                     }
 
@@ -228,12 +229,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         DCountContinuationToken.SourceTokenName,
                         out CosmosElement sourceContinuationToken))
                     {
-                        aggregateContinuationToken = default;
+                        dContinuationToken = default;
                         return false;
                     }
 
-                    aggregateContinuationToken = new DCountContinuationToken(
-                        countAggregatorContinuationToken: countAggregatorContinuationToken,
+                    dContinuationToken = new DCountContinuationToken(
+                        count: Number64.ToLong(count.Value),
                         sourceContinuationToken: sourceContinuationToken);
                     return true;
                 }
