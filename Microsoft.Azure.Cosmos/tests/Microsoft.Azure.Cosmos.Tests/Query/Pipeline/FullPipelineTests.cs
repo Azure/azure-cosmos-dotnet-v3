@@ -158,6 +158,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        [Ignore("[TODO]: ndeshpan enable after ServiceInterop.dll is refreshed")]
+        public async Task DCount()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i}, \"val\": {i % 50} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT VALUE COUNT(1) FROM (SELECT DISTINCT VALUE c.val FROM c)",
+                documents: documents);
+
+            Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
+            Assert.IsTrue(documentsQueried[0] is CosmosNumber);
+            CosmosNumber result = documentsQueried[0] as CosmosNumber;
+            Assert.AreEqual(expected: 50, actual: result);
+        }
+
+        [TestMethod]
         [Ignore]
         // Need to implement group by continuation token on the in memory collection.
         public async Task GroupBy()
