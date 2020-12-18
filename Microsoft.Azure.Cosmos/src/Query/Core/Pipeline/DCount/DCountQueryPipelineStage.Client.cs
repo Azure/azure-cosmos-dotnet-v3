@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                 }
 
                 List<CosmosElement> finalResult = new List<CosmosElement>();
-                CosmosElement aggregationResult = this.countAggregator.GetResult();
+                CosmosElement aggregationResult = this.GetFinalResult();
                 if (aggregationResult != null)
                 {
                     finalResult.Add(aggregationResult);
