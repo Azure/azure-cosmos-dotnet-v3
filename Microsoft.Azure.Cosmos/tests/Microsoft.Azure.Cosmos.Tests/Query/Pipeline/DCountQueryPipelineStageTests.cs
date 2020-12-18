@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             foreach ((PageList pages, int expectedCount, DistinctQueryType[] distinctQueryTypes) in testCases)
             {
-                foreach(string dcountAlias in new[] {null, "", "$1", "expectedCount" })
+                foreach(string dcountAlias in new[] {null, string.Empty, "$1", "expectedCount" })
                 {
                     foreach (DistinctQueryType distinctQueryType in distinctQueryTypes)
                     {
