@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
         [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy, NullValueHandling = NullValueHandling.Ignore)]
-        private ChangeFeedPolicy changeFeedPolicyInternal = new ChangeFeedPolicy();
+        private ChangeFeedPolicy changeFeedPolicyInternal;
 
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
@@ -278,8 +278,15 @@ namespace Microsoft.Azure.Cosmos
 #endif
         ChangeFeedPolicy ChangeFeedPolicy
         {
-            get => this.changeFeedPolicyInternal;
+            get
+            {
+                if (this.changeFeedPolicyInternal == null)
+                {
+                    this.changeFeedPolicyInternal = new ChangeFeedPolicy();
+                }
 
+                return this.changeFeedPolicyInternal;
+            }
             set => this.changeFeedPolicyInternal = value;
         }
 

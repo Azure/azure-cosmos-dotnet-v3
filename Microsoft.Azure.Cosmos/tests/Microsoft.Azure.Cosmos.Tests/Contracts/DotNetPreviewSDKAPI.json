@@ -44,12 +44,22 @@
     "Microsoft.Azure.Cosmos.ChangeFeedPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.TimeSpan FullFidelityNoRetention": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan FullFidelityNoRetention;CanRead:True;CanWrite:False;System.TimeSpan get_FullFidelityNoRetention();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.TimeSpan FullFidelityRetention[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
             "JsonIgnoreAttribute"
           ],
           "MethodInfo": "System.TimeSpan FullFidelityRetention;CanRead:True;CanWrite:True;System.TimeSpan get_FullFidelityRetention();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullFidelityRetention(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_FullFidelityNoRetention()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan get_FullFidelityNoRetention();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan get_FullFidelityRetention()": {
           "Type": "Method",

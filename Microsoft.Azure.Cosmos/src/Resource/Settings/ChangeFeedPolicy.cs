@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class ChangeFeedPolicy
     {
-        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration, NullValueHandling = NullValueHandling.Ignore)]
-        private int? retentionDurationInMinutes;
+        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration)]
+        private int retentionDurationInMinutes = 0;
 
         /// <summary>
         /// Gets or sets a value that indicates for how long operation logs have to be retained.
@@ -44,20 +44,12 @@ namespace Microsoft.Azure.Cosmos
         /// Value is in TimeSpan.
         /// </value>
         [JsonIgnore]
-        public TimeSpan FullFidelityRetention 
+        public TimeSpan FullFidelityRetention
         {
-            get
-            {
-                if (!this.retentionDurationInMinutes.HasValue)
-                {
-                    return TimeSpan.Zero;
-                }
-
-                return TimeSpan.FromMinutes(this.retentionDurationInMinutes.Value);
-            }
+            get => TimeSpan.FromMinutes(this.retentionDurationInMinutes);
             set
             {
-                if (value.Seconds > 0 
+                if (value.Seconds > 0
                     || value.Milliseconds > 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.FullFidelityRetention), "Retention's granularity is minutes.");
@@ -71,5 +63,10 @@ namespace Microsoft.Azure.Cosmos
                 this.retentionDurationInMinutes = (int)value.TotalMinutes;
             }
         }
+
+        /// <summary>
+        /// Disables the retention log.
+        /// </summary>
+        public static TimeSpan FullFidelityNoRetention => TimeSpan.Zero;
     }
 }
