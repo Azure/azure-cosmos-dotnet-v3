@@ -370,15 +370,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             sqlObject.OffsetExpression.Accept(this);
         }
 
-        public override void Visit(SqlOrderbyClause sqlOrderByClause)
+        public override void Visit(SqlOrderByClause sqlOrderByClause)
         {
             this.writer.Write("ORDER BY ");
-            sqlOrderByClause.OrderbyItems[0].Accept(this);
+            sqlOrderByClause.OrderByItems[0].Accept(this);
 
-            for (int i = 1; i < sqlOrderByClause.OrderbyItems.Length; i++)
+            for (int i = 1; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
                 this.writer.Write(", ");
-                sqlOrderByClause.OrderbyItems[i].Accept(this);
+                sqlOrderByClause.OrderByItems[i].Accept(this);
             }
         }
 

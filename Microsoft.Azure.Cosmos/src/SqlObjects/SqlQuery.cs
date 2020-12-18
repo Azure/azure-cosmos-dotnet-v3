@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             SqlFromClause fromClause,
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
-            SqlOrderbyClause orderbyClause,
+            SqlOrderByClause orderbyClause,
             SqlOffsetLimitClause offsetLimitClause)
         {
             this.SelectClause = selectClause ?? throw new ArgumentNullException(nameof(selectClause));
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public SqlGroupByClause GroupByClause { get; }
 
-        public SqlOrderbyClause OrderbyClause { get; }
+        public SqlOrderByClause OrderbyClause { get; }
 
         public SqlOffsetLimitClause OffsetLimitClause { get; }
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             SqlFromClause fromClause,
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
-            SqlOrderbyClause orderByClause,
+            SqlOrderByClause orderByClause,
             SqlOffsetLimitClause offsetLimitClause)
         {
             return new SqlQuery(
