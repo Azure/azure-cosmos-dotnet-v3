@@ -70,8 +70,6 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc />
         public override CosmosDiagnostics Diagnostics => this.serverResponse.Diagnostics;
 
-        internal override CosmosDiagnosticsContext DiagnosticsContext => this.serverResponse.DiagnosticsContext;
-
         internal override CosmosSerializerCore SerializerCore { get; }
 
         /// <summary>

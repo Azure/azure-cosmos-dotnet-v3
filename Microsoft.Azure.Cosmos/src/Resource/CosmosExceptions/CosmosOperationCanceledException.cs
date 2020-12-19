@@ -16,15 +16,6 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly OperationCanceledException originalException;
 
-        internal CosmosOperationCanceledException(
-            OperationCanceledException originalException,
-            CosmosDiagnosticsContext diagnosticsContext)
-            : this(
-                originalException,
-                diagnosticsContext?.Diagnostics)
-        {
-        }
-
         /// <summary>
         /// Create an instance of CosmosOperationCanceledException
         /// </summary>

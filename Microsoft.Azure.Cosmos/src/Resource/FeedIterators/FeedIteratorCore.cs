@@ -66,18 +66,13 @@ namespace Microsoft.Azure.Cosmos
             return this.ReadNextAsync(NoOpTrace.Singleton);
         }
 
-        public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
-            using (diagnosticsContext.GetOverallScope())
-            {
-                return await this.ReadNextInternalAsync(trace, diagnosticsContext, cancellationToken);
-            }
+            return this.ReadNextInternalAsync(trace, cancellationToken);
         }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
             ITrace trace,
-            CosmosDiagnosticsContext diagnostics,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

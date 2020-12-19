@@ -90,11 +90,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
-        /// <summary>
-        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
-        /// </summary>
-        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
-
         internal static Result ReadOperationResult(ReadOnlyMemory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
             RowBuffer row = new RowBuffer(input.Length);
@@ -115,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Ensure the mandatory fields were populated
-            if (batchOperationResult.StatusCode == default(HttpStatusCode))
+            if (batchOperationResult.StatusCode == default)
             {
                 return Result.Failure;
             }

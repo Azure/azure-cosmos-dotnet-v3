@@ -15,6 +15,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
         enum TraceComponent
     {
         /// <summary>
+        /// Component that handles authorizing requests and managing auth tokens / credentials.
+        /// </summary>
+        Authorization,
+
+        /// <summary>
+        /// Component that handles batch requests.
+        /// </summary>
+        Batch,
+
+        /// <summary>
         /// Component that handles aggregating ChangeFeed results across multiple pages and partitions.
         /// </summary>
         ChangeFeed,

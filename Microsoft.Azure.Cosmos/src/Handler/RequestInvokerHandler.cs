@@ -77,7 +77,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
-            CosmosDiagnosticsContext diagnosticsScope,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -95,7 +94,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 feedRange: feedRange,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                diagnosticsContext: diagnosticsScope,
                 trace: trace,
                 cancellationToken: cancellationToken);
 
@@ -111,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -123,15 +120,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
-            }
-
-            // DEVNOTE: Non-Item operations need to be refactored to always pass
-            // the diagnostic context in. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1276
-            bool disposeDiagnosticContext = false;
-            if (diagnosticsContext == null)
-            {
-                diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                disposeDiagnosticContext = true;
             }
 
             // This is needed for query where a single
@@ -148,7 +136,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 RequestMessage request = new RequestMessage(
                     method,
                     resourceUriString,
-                    diagnosticsContext,
                     trace)
                 {
                     OperationType = operationType,
@@ -167,21 +154,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         }
                         else if (feedRangePartitionKey.PartitionKey.IsNone)
                         {
-                            using (diagnosticsContext.CreateScope("GetNonePkValue"))
+                            try
                             {
-                                try
-                                {
-                                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                                }
-                                catch (DocumentClientException dce)
-                                {
-                                    return dce.ToCosmosResponseMessage(request);
-                                }
-                                catch (CosmosException ce)
-                                {
-                                    return ce.ToCosmosResponseMessage(request);
-                                }
+                                PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(
+                                    trace,
+                                    cancellationToken);
+                                request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                            }
+                            catch (DocumentClientException dce)
+                            {
+                                return dce.ToCosmosResponseMessage(request);
+                            }
+                            catch (CosmosException ce)
+                            {
+                                return ce.ToCosmosResponseMessage(request);
                             }
                         }
                         else
@@ -274,11 +260,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             finally
             {
-                if (disposeDiagnosticContext)
-                {
-                    diagnosticsContext.GetOverallScope().Dispose();
-                }
-
                 activityScope?.Dispose();
             }
         }

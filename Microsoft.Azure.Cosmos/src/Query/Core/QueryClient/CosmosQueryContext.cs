@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
     using OperationType = Documents.OperationType;
-    using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
     using ResourceType = Documents.ResourceType;
 
     internal abstract class CosmosQueryContext
@@ -51,8 +50,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
             this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
-
-        internal abstract IDisposable CreateDiagnosticScope(string name);
 
         internal abstract Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,

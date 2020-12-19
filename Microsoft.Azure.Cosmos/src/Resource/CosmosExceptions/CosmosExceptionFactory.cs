@@ -7,13 +7,14 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System;
     using System.IO;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal static class CosmosExceptionFactory
     {
         internal static CosmosException Create(
             DocumentClientException dce,
-            CosmosDiagnosticsContext diagnosticsContext)
+            ITrace trace)
         {
             Headers headers = new Headers();
             if (dce.Headers != null)
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 dce.RequestCharge,
                 dce.RetryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 dce.Error,
                 dce.InnerException);
         }
@@ -74,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge: 0,
                 retryAfter: default,
                 headers: requestMessage?.Headers,
-                diagnosticsContext: default,
+                trace: NoOpTrace.Singleton,
                 error: default,
                 innerException: default);
         }
@@ -96,14 +97,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             (Error error, string contentMessage) = CosmosExceptionFactory.GetErrorFromStream(responseMessage.Content);
             if (!string.IsNullOrEmpty(contentMessage))
             {
-                if (string.IsNullOrEmpty(errorMessage))
-                {
-                    errorMessage = contentMessage;
-                }
-                else
-                {
-                    errorMessage = $"Error Message: {errorMessage}; Content {contentMessage};";
-                }
+                errorMessage = string.IsNullOrEmpty(errorMessage) ? contentMessage : $"Error Message: {errorMessage}; Content {contentMessage};";
             }
 
             return CosmosExceptionFactory.Create(
@@ -115,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers,
-                responseMessage.DiagnosticsContext,
+                responseMessage.Trace,
                 error,
                 responseMessage.CosmosException?.InnerException);
         }
@@ -228,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge = default,
             TimeSpan? retryAfter = default,
             Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
@@ -241,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
@@ -254,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge = default,
             TimeSpan? retryAfter = default,
             Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
@@ -267,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
@@ -280,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge = default,
             TimeSpan? retryAfter = default,
             Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
@@ -293,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
@@ -306,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge = default,
             TimeSpan? retryAfter = default,
             Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
@@ -319,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
@@ -332,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge = default,
             TimeSpan? retryAfter = default,
             Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default,
             Exception innerException = default)
         {
@@ -345,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
@@ -359,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge = default,
             TimeSpan? retryAfter = default,
             Headers headers = default,
-            CosmosDiagnosticsContext diagnosticsContext = default,
+            ITrace trace = default,
             Error error = default)
         {
             return CosmosExceptionFactory.Create(
@@ -371,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }
@@ -385,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             double requestCharge,
             TimeSpan? retryAfter,
             Headers headers,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             Error error,
             Exception innerException)
         {
@@ -398,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge,
                 retryAfter,
                 headers,
-                diagnosticsContext,
+                trace,
                 error,
                 innerException);
         }

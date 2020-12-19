@@ -12,8 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                 CreateRequestMessage,
                 resourceType,
                 timeoutPolicy,
-                diagnosticsContext,
+                trace,
                 cancellationToken);
         }
 
@@ -207,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (createRequestMessageAsync == null)
@@ -218,16 +219,16 @@ namespace Microsoft.Azure.Cosmos
             return this.SendHttpHelperAsync(
                 createRequestMessageAsync,
                 resourceType,
-                diagnosticsContext ?? new CosmosDiagnosticsContextCore(),
                 timeoutPolicy,
+                trace,
                 cancellationToken);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
-            CosmosDiagnosticsContext diagnosticsContext,
             HttpTimeoutPolicy timeoutPolicy,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             bool isDefaultCancellationToken = cancellationToken == default;
@@ -250,74 +251,75 @@ namespace Microsoft.Azure.Cosmos
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    try
+                    using (ITrace helperTrace = trace.StartChild("Execute Http", TraceComponent.Transport, Tracing.TraceLevel.Info))
                     {
-                        using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpHelperAsync)))
+                        try
                         {
                             return await this.ExecuteHttpHelperAsync(
                                 requestMessage,
                                 resourceType,
                                 cancellationToken);
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        // Log the error message
-                        diagnosticsContext.AddDiagnosticsInternal(
-                              new PointOperationStatistics(
-                                  activityId: Trace.CorrelationManager.ActivityId.ToString(),
-                                  statusCode: HttpStatusCode.ServiceUnavailable,
-                                  subStatusCode: SubStatusCodes.Unknown,
-                                  responseTimeUtc: DateTime.UtcNow,
-                                  requestCharge: 0,
-                                  errorMessage: e.ToString(),
-                                  method: requestMessage.Method,
-                                  requestUri: requestMessage.RequestUri.OriginalString,
-                                  requestSessionToken: null,
-                                  responseSessionToken: null));
-
-                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
-                            !timeoutEnumerator.MoveNext(); // No more retries are configured
-
-                        switch (e)
+                        catch (Exception e)
                         {
-                            case OperationCanceledException operationCanceledException:
-                                // Throw if the user passed in cancellation was requested
-                                if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
-                                {
+                            // Log the error message
+                            trace.AddDatum(
+                                "Error",
+                                new PointOperationStatisticsTraceDatum(
+                                      activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                      statusCode: HttpStatusCode.ServiceUnavailable,
+                                      subStatusCode: SubStatusCodes.Unknown,
+                                      responseTimeUtc: DateTime.UtcNow,
+                                      requestCharge: 0,
+                                      errorMessage: e.ToString(),
+                                      method: requestMessage.Method,
+                                      requestUri: requestMessage.RequestUri.OriginalString,
+                                      requestSessionToken: null,
+                                      responseSessionToken: null));
+
+                            bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+                                !timeoutEnumerator.MoveNext(); // No more retries are configured
+
+                            switch (e)
+                            {
+                                case OperationCanceledException operationCanceledException:
+                                    // Throw if the user passed in cancellation was requested
+                                    if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
+                                    {
+                                        throw;
+                                    }
+
+                                    // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
+                                    // the request timed out and was not user canceled operation.
+                                    if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
+                                    {
+                                        // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
+                                        string message =
+                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId};";
+                                        throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                            message,
+                                            innerException: operationCanceledException,
+                                            diagnosticsContext: diagnosticsContext);
+                                    }
+
+                                    break;
+                                case WebException webException:
+                                    if (isOutOfRetries || (requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                    {
+                                        throw;
+                                    }
+
+                                    break;
+                                case HttpRequestException httpRequestException:
+                                    if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
+                                    {
+                                        throw;
+                                    }
+
+                                    break;
+                                default:
                                     throw;
-                                }
-
-                                // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
-                                // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
-                                {
-                                    // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                                    string message =
-                                        $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId};";
-                                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                        message,
-                                        innerException: operationCanceledException,
-                                        diagnosticsContext: diagnosticsContext);
-                                }
-
-                                break;
-                            case WebException webException:
-                                if (isOutOfRetries || (requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
-                                {
-                                    throw;
-                                }
-
-                                break;
-                            case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
-                                {
-                                    throw;
-                                }
-
-                                break;
-                            default:
-                                throw;
+                            }
                         }
                     }
                 }

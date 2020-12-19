@@ -14,9 +14,7 @@ namespace Microsoft.Azure.Cosmos
 
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -69,16 +67,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
-                PartitionKeyInternal partitionKeyInternal;
-                if (partitionKey.Value.IsNone)
-                {
-                    partitionKeyInternal = containerProperties.GetNoneValue();
-                }
-                else
-                {
-                    partitionKeyInternal = partitionKey.Value.InternalKey;
-                }
-
+                PartitionKeyInternal partitionKeyInternal = partitionKey.Value.IsNone ? containerProperties.GetNoneValue() : partitionKey.Value.InternalKey;
                 effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
             }
 
@@ -113,7 +102,6 @@ namespace Microsoft.Azure.Cosmos
             Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
-            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             bool isContinuationExpected,
@@ -142,17 +130,13 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
-                diagnosticsContext: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
 
             return CosmosQueryClientCore.GetCosmosElementResponse(
-                clientQueryCorrelationId,
                 requestOptions,
                 resourceType,
                 message,
-                feedRange,
-                queryPageDiagnostics,
                 trace);
         }
 
@@ -163,7 +147,6 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -292,26 +275,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static TryCatch<QueryPage> GetCosmosElementResponse(
-            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
-            FeedRange feedRange,
-            Action<QueryPageDiagnostics> queryPageDiagnostics,
             ITrace trace)
         {
             using (ITrace getCosmosElementResponse = trace.StartChild("Get Cosmos Element Response", TraceComponent.Json, Tracing.TraceLevel.Info))
             {
                 using (cosmosResponseMessage)
                 {
-                    QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
-                        clientQueryCorrelationId: clientQueryCorrelationId,
-                        partitionKeyRangeId: feedRange is FeedRangePartitionKey feedRangePartitionKey && feedRangePartitionKey.PartitionKey.IsNone ? "None" : feedRange.ToJsonString(),
-                        queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
-                        indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                        diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
-                    queryPageDiagnostics(queryPage);
-
                     if (
                         cosmosResponseMessage.Headers.QueryMetricsText != null &&
                         BackendMetricsParser.TryParse(cosmosResponseMessage.Headers.QueryMetricsText, out BackendMetrics backendMetrics))
@@ -323,21 +295,12 @@ namespace Microsoft.Azure.Cosmos
 
                     if (!cosmosResponseMessage.IsSuccessStatusCode)
                     {
-                        CosmosException exception;
-                        if (cosmosResponseMessage.CosmosException != null)
-                        {
-                            exception = cosmosResponseMessage.CosmosException;
-                        }
-                        else
-                        {
-                            exception = new CosmosException(
-                                cosmosResponseMessage.ErrorMessage,
-                                cosmosResponseMessage.StatusCode,
-                                (int)cosmosResponseMessage.Headers.SubStatusCode,
-                                cosmosResponseMessage.Headers.ActivityId,
-                                cosmosResponseMessage.Headers.RequestCharge);
-                        }
-
+                        CosmosException exception = cosmosResponseMessage.CosmosException ?? new CosmosException(
+                            cosmosResponseMessage.ErrorMessage,
+                            cosmosResponseMessage.StatusCode,
+                            (int)cosmosResponseMessage.Headers.SubStatusCode,
+                            cosmosResponseMessage.Headers.ActivityId,
+                            cosmosResponseMessage.Headers.RequestCharge);
                         return TryCatch<QueryPage>.FromException(exception);
                     }
 
@@ -353,26 +316,12 @@ namespace Microsoft.Azure.Cosmos
                         resourceType,
                         requestOptions.CosmosSerializationFormatOptions);
 
-                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
-                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
-                    {
-                        cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
-                    }
-                    else
-                    {
-                        cosmosQueryExecutionInfo = default;
-                    }
-
-                    QueryState queryState;
-                    if (cosmosResponseMessage.Headers.ContinuationToken != null)
-                    {
-                        queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
-                    }
-                    else
-                    {
-                        queryState = default;
-                    }
-
+                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo = cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString)
+                        ? JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString)
+                        : default;
+                    QueryState queryState = cosmosResponseMessage.Headers.ContinuationToken != null
+                        ? new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken))
+                        : default;
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
@@ -479,16 +428,7 @@ namespace Microsoft.Azure.Cosmos
             // }
             // You want to create a CosmosElement for each document in "Documents".
 
-            ReadOnlyMemory<byte> content;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
-            {
-                content = buffer;
-            }
-            else
-            {
-                content = memoryStream.ToArray();
-            }
-
+            ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
             IJsonNavigator jsonNavigator;
             if (cosmosSerializationOptions != null)
             {

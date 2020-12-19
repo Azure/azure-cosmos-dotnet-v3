@@ -288,17 +288,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.toStringValue = queryMetricsTraceDatum.QueryMetrics.ToString();
                 }
 
+                public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
+                {
+                    throw new NotImplementedException();
+                }
+
+                public void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    throw new NotImplementedException();
+                }
+
                 public override string ToString()
                 {
                     return this.toStringValue;
-                }
-
-                public void Visit(CosmosDiagnosticsTraceDatum cosmosDiagnosticsTraceDatum)
-                {
-                    StringWriter writer = new StringWriter();
-                    CosmosDiagnosticsSerializerVisitor serializer = new CosmosDiagnosticsSerializerVisitor(writer);
-                    cosmosDiagnosticsTraceDatum.CosmosDiagnostics.Accept(serializer);
-                    this.toStringValue = writer.ToString();
                 }
             }
 

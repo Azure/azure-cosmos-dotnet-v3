@@ -26,33 +26,24 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly RequestOptions batchOptions;
 
-        private readonly CosmosDiagnosticsContext diagnosticsContext;
-
         public BatchExecutor(
             ContainerInternal container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
-            RequestOptions batchOptions,
-            CosmosDiagnosticsContext diagnosticsContext)
+            RequestOptions batchOptions)
         {
             this.container = container;
             this.clientContext = this.container.ClientContext;
             this.inputOperations = operations;
             this.partitionKey = partitionKey;
             this.batchOptions = batchOptions;
-            this.diagnosticsContext = diagnosticsContext;
         }
 
-        public async Task<TransactionalBatchResponse> ExecuteAsync(CancellationToken cancellationToken)
+        public async Task<TransactionalBatchResponse> ExecuteAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            using (this.diagnosticsContext.GetOverallScope())
+            using (ITrace executeNextBatchTrace = trace.StartChild("Execute Next Batch", TraceComponent.Batch, Tracing.TraceLevel.Info))
             {
                 BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
-
-                foreach (ItemBatchOperation operation in this.inputOperations)
-                {
-                    operation.DiagnosticsContext = this.diagnosticsContext;
-                }
 
                 PartitionKey? serverRequestPartitionKey = this.partitionKey;
                 if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
@@ -61,16 +52,17 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 SinglePartitionKeyServerBatchRequest serverRequest;
-                using (this.diagnosticsContext.CreateScope("CreateBatchRequest"))
-                {
-                    serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                          serverRequestPartitionKey,
-                          new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
-                          this.clientContext.SerializerCore,
-                          cancellationToken);
-                }
+                serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    serverRequestPartitionKey,
+                    new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
+                    this.clientContext.SerializerCore,
+                    executeNextBatchTrace,
+                    cancellationToken);
 
-                return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
+                return await this.ExecuteServerRequestAsync( 
+                    serverRequest,
+                    executeNextBatchTrace,
+                    cancellationToken);
             }
         }
 
@@ -78,40 +70,42 @@ namespace Microsoft.Azure.Cosmos
         /// Makes a single batch request to the server.
         /// </summary>
         /// <param name="serverRequest">A server request with a set of operations on items.</param>
+        /// <param name="trace">The trace.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>Response from the server.</returns>
         private async Task<TransactionalBatchResponse> ExecuteServerRequestAsync(
             SinglePartitionKeyServerBatchRequest serverRequest,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
+            using (ITrace executeBatchTrace = trace.StartChild("Execute Batch Request", TraceComponent.Batch, Tracing.TraceLevel.Info))
             {
-                Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
-                ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                    this.container.LinkUri,
-                    ResourceType.Document,
-                    OperationType.Batch,
-                    this.batchOptions,
-                    this.container,
-                    serverRequest.PartitionKey.HasValue ? new FeedRangePartitionKey(serverRequest.PartitionKey.Value) : null,
-                    serverRequestPayload,
-                    requestMessage =>
-                    {
-                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
-                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
-                        requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
-                    },
-                    diagnosticsContext: this.diagnosticsContext,
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken);
-
-                using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))
+                using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
+                    Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
+                    ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
+                        this.container.LinkUri,
+                        ResourceType.Document,
+                        OperationType.Batch,
+                        this.batchOptions,
+                        this.container,
+                        serverRequest.PartitionKey.HasValue ? new FeedRangePartitionKey(serverRequest.PartitionKey.Value) : null,
+                        serverRequestPayload,
+                        requestMessage =>
+                        {
+                            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
+                            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchAtomic, bool.TrueString);
+                            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
+                        },
+                        executeBatchTrace,
+                        cancellationToken);
+
                     return await TransactionalBatchResponse.FromResponseMessageAsync(
                         responseMessage,
                         serverRequest,
                         this.clientContext.SerializerCore,
                         shouldPromoteOperationStatus: true,
+                        executeBatchTrace,
                         cancellationToken);
                 }
             }

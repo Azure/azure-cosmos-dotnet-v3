@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -529,18 +530,20 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Internal constructor purely for unit-testing
         /// </summary>
-        internal DocumentClient(Uri serviceEndpoint,
-                      string authKey)
+        internal DocumentClient(Uri serviceEndpoint, string authKey)
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
             this.ConnectionPolicy = new ConnectionPolicy();
         }
 
-        internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync()
+        internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
-            await this.EnsureValidClientAsync();
-            return this.collectionCache;
+            using (ITrace childTrace = trace.StartChild("Get Collection Cache", TraceComponent.Routing, Tracing.TraceLevel.Info))
+            {
+                await this.EnsureValidClientAsync();
+                return this.collectionCache;
+            }
         }
 
         internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
@@ -6095,7 +6098,7 @@ namespace Microsoft.Azure.Cosmos
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            CosmosDiagnosticsContext diagnosticsContext)
+            ITrace trace)
         {
             return this.cosmosAuthorization.GetUserAuthorizationTokenAsync(
                 resourceAddress,
@@ -6103,7 +6106,7 @@ namespace Microsoft.Azure.Cosmos
                 requestVerb,
                 headers,
                 tokenType,
-                diagnosticsContext);
+                trace);
         }
 
         Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(

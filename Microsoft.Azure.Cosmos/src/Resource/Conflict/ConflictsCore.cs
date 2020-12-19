@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos
         protected CosmosClientContext ClientContext { get; }
 
         public Task<ResponseMessage> DeleteAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties conflict,
             PartitionKey partitionKey,
             ITrace trace,
@@ -62,7 +61,6 @@ namespace Microsoft.Azure.Cosmos
                 feedRange: new FeedRangePartitionKey(partitionKey),
                 streamPayload: null,
                 requestEnricher: null,
-                diagnosticsContext: diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -136,7 +134,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
             ITrace trace,
@@ -176,7 +173,6 @@ namespace Microsoft.Azure.Cosmos
                 feedRange: new FeedRangePartitionKey(partitionKey),
                 streamPayload: null,
                 requestEnricher: null,
-                diagnosticsContext: diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken);
 

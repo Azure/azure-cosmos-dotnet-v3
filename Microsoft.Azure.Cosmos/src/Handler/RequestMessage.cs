@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -45,7 +44,6 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUri?.OriginalString;
             this.InternalRequestUri = requestUri;
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -53,17 +51,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="method">The http method</param>
         /// <param name="requestUriString">The requested URI</param>
-        /// <param name="diagnosticsContext">The diagnostics object used to track the request</param>
         /// /// <param name="trace">The trace node to append traces to.</param>
         internal RequestMessage(
             HttpMethod method,
             string requestUriString,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace)
         {
             this.Method = method;
             this.RequestUriString = requestUriString;
-            this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
             this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
@@ -109,8 +104,6 @@ namespace Microsoft.Azure.Cosmos
         internal string RequestUriString { get; }
 
         internal Uri InternalRequestUri { get; private set; }
-
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         internal ITrace Trace { get; }
 

@@ -962,7 +962,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             DatabaseProperties databaseProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
@@ -978,7 +977,6 @@ namespace Microsoft.Azure.Cosmos
                 feedRange: null,
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
-                diagnosticsContext: diagnosticsContext,
                 trace,
                 cancellationToken: cancellationToken);
 
@@ -986,7 +984,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             DatabaseProperties databaseProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions,
@@ -1003,7 +1000,6 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 responseCreator: (response) => response,
-                diagnosticsContext: diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }

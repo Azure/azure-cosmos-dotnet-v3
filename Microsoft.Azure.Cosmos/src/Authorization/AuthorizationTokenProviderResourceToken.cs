@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            CosmosDiagnosticsContext diagnosticsContext)
+            ITrace trace)
         {
             // If the input auth token is a resource token, then use it as a bearer-token.
             return this.urlEncodedAuthKeyResourceTokenValueTask;

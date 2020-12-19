@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Common
 #if !NETSTANDARD16
     using System.Diagnostics;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 #endif
 
     /// <summary>
