@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.IO;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
     using Newtonsoft.Json.Linq;
@@ -24,14 +25,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="path"> Encrypted Property Path. </param>
         /// <param name="container"> Container handler </param>
         /// <typeparam name="T"> Type of item.</typeparam>
+        /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> QueryDefinition with encrypted parameters. </returns>
         public static async Task<QueryDefinition> AddEncryptedParameterAsync<T>(
             this QueryDefinition queryDefinition,
             string name,
             T value,
             string path,
-            Container container)
+            Container container,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (queryDefinition == null)
             {
                 throw new ArgumentNullException("Missing QueryDefinition in the argument");
@@ -52,9 +57,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (container != null && container is MdeContainer mdeContainer)
             {
                 Stream valueStream = mdeContainer.CosmosSerializer.ToStream<T>(value);
-                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
+                JToken propertyValueToEncrypt = MdeEncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
-                await mdeContainer.MdeEncryptionProcessor.InitializeMdeProcessorIfNotInitializedAsync();
+                await mdeContainer.MdeEncryptionProcessor.InitializeMdeProcessorIfNotInitializedAsync(cancellationToken);
 
                 // get the paths encryption setting.
                 MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.GetEncryptionSettingForPropertyAsync(path.Substring(1));

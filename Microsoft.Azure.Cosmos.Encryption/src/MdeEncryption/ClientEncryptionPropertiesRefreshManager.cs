@@ -76,20 +76,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async void UpdateClientEncryptionProperties()
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
-            if (!this.isRefreshing)
+            if (!this.isRefreshing && !this.isDisposed)
             {
                 List<string> encryptedDatabaseList = new List<string>(this.cosmosClient.GetEncryptedDatabaseIds());
 
                 foreach (string databaseId in encryptedDatabaseList)
                 {
-                    Database database = this.cosmosClient.GetDatabase(databaseId);
-                    this.isRefreshing = true;
-
-                    using (FeedIterator<ClientEncryptionKeyProperties> feedIterator = database.GetClientEncryptionKeyIterator(null))
+                    try
                     {
-                        while (feedIterator.HasMoreResults)
+                        Database database = this.cosmosClient.GetDatabase(databaseId);
+                        this.isRefreshing = true;
+
+                        using (FeedIterator<ClientEncryptionKeyProperties> feedIterator = database.GetClientEncryptionKeyIterator(null))
                         {
-                            try
+                            while (feedIterator.HasMoreResults)
                             {
                                 FeedResponse<ClientEncryptionKeyProperties> feedResponse = await feedIterator.ReadNextAsync();
                                 foreach (ClientEncryptionKeyProperties clientEncryptionKeyProperties in feedResponse.Resource)
@@ -97,13 +97,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     await this.cosmosClient.UpdateClientEncryptionPropertyCacheAsync(
                                                 clientEncryptionKeyProperties.Id,
                                                 clientEncryptionKeyProperties,
-                                                true);
+                                                shouldforceRefresh: true);
                                 }
                             }
-                            catch (Exception)
-                            {
-                                return;
-                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // can happen before we set a cancellation.
+                        if (ex is ObjectDisposedException)
+                        {
+                            return;
                         }
                     }
                 }

@@ -49,8 +49,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
         }
 
-        internal async Task InitializeEncryptionSettingsAsync(bool forceRefresh = false)
+        internal async Task InitializeEncryptionSettingsAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // update the property level setting.
             if (this.perPropertyEncryptionSetting != null && !forceRefresh)
             {
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             Dictionary<string, MdeEncryptionSettings> settingsByDekId = new Dictionary<string, MdeEncryptionSettings>();
-            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(this.Container, false);
+            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(this.Container, cancellationToken, false);
 
             if (this.ClientEncryptionPolicy == null)
             {
@@ -67,9 +69,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string dataEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
             {
-                ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiessAsync(
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
                     dataEncryptionKeyId,
                     this.Container,
+                    cancellationToken,
                     false);
 
                 if (clientEncryptionKeyProperties != null)
@@ -122,11 +125,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        public async Task InitializeMdeProcessorIfNotInitializedAsync()
+        public async Task InitializeMdeProcessorIfNotInitializedAsync(CancellationToken cancellationToken = default)
         {
             if (this.perPropertyEncryptionSetting == null)
             {
-                await this.InitializeEncryptionSettingsAsync(false);
+                await this.InitializeEncryptionSettingsAsync(false, cancellationToken);
             }
         }
 

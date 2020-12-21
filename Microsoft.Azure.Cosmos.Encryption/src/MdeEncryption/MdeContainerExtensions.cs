@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -16,14 +17,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Initializes and Caches the Client Encryption Policy configured for the container.
         /// </summary>
         /// <param name="container">MdeContainer.</param>
+        /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static async Task<Container> InitializeEncryptionAsync(
-            this Container container)
+            this Container container,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (container is MdeContainer mdeContainer)
             {
                 EncryptionCosmosClient encryptionCosmosClient = mdeContainer.EncryptionCosmosClient;
-                await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, true);
+                await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, cancellationToken, false);
                 return await Task.FromResult(mdeContainer);
             }
             else

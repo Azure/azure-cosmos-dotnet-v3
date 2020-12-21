@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
 
@@ -19,13 +20,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
         /// <param name="encryptionAlgorithm"> Encryption Algorthm. </param>
         /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
+        /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
             string encryptionAlgorithm,
-            Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+            Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
             EncryptionCosmosClient encryptionCosmosClient = (EncryptionCosmosClient)database.Client;
@@ -50,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                 clientEncryptionKey,
-                clientEncryptionKeyProperties);
+                clientEncryptionKeyProperties,
+                cancellationToken: cancellationToken);
 
             return clientEncryptionKeyResponse;
         }
@@ -62,19 +68,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
         /// <param name="encryptionAlgorithm"> Encryption Algorthm. </param>
         /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
+        /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         public static async Task<ClientEncryptionKeyResponse> RewrapClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
             string encryptionAlgorithm,
-            Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+            Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
             EncryptionCosmosClient encryptionCosmosClient = (EncryptionCosmosClient)database.Client;
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
 
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync();
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 encryptionKeyWrapMetadata.Name,
@@ -93,7 +103,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await database.ReplaceClientEncryptionKeyAsync(
                 clientEncryptionKey,
-                clientEncryptionKeyProperties);
+                clientEncryptionKeyProperties,
+                cancellationToken: cancellationToken);
 
             return clientEncryptionKeyResponse;
         }
