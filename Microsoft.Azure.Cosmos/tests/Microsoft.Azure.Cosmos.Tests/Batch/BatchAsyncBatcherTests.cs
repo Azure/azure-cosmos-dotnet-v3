@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -38,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             return operation;
         }
 
-        private BatchAsyncBatcherExecuteDelegate Executor
-            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate Executor
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
-                cancellationToken: cancellationToken);
+                    trace: trace,
+                    cancellationToken: cancellationToken);
 
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK)
@@ -72,13 +74,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
+                    trace,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithSplit
-            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithSplit
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -101,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
-                cancellationToken: cancellationToken);
+                    trace: trace,
+                    cancellationToken: cancellationToken);
 
                 ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
                 {
@@ -114,13 +118,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
+                    trace,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithCompletingSplit
-            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithCompletingSplit
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -143,7 +148,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
-                cancellationToken: cancellationToken);
+                    trace: trace,
+                    cancellationToken: cancellationToken);
 
                 ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
                 {
@@ -156,13 +162,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
+                    trace,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithCompletingPartitionMigration
-            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithCompletingPartitionMigration
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -185,7 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
-                cancellationToken: cancellationToken);
+                    trace: trace,
+                    cancellationToken: cancellationToken);
 
                 ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
                 {
@@ -198,14 +206,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
+                    trace,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
         // The response will include all but 2 operation responses
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
-            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
+            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
             {
                 int operationCount = request.Operations.Count - 2;
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -229,25 +238,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
-                cancellationToken: cancellationToken);
+                    trace: trace,
+                    cancellationToken: cancellationToken);
 
                 TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
+                    trace,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
-            = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
+            = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
             {
                 throw expectedException;
             };
 
-        private BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, ITrace trace, CancellationToken cancellation) =>
         {
             return Task.CompletedTask;
         };
@@ -343,8 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     operationType: OperationType.Create,
                     operationIndex: i,
                     partitionKey: new Cosmos.PartitionKey(i.ToString()),
-                    id: i.ToString(),
-                    diagnosticsContext: new CosmosDiagnosticsContextCore());
+                    id: i.ToString());
 
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);
@@ -352,7 +362,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
             }
 
-            await batchAsyncBatcher.DispatchAsync(metric);
+            ITrace dispatchTrace;
+            using (dispatchTrace = Trace.GetRootTrace("test"))
+            {
+                await batchAsyncBatcher.DispatchAsync(metric, dispatchTrace);
+            }
 
             for (int i = 0; i < 10; i++)
             {
@@ -361,8 +375,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransactionalBatchOperationResult result = await operation.Context.OperationTask;
                 Assert.AreEqual(i.ToString(), result.ETag);
 
-                Assert.IsNotNull(operation.DiagnosticsContext);
-                Assert.AreEqual(operation.DiagnosticsContext, result.DiagnosticsContext);
+                Assert.IsNotNull(dispatchTrace);
+                Assert.AreEqual(operation.Trace, result.DiagnosticsContext);
                 Assert.IsFalse(string.IsNullOrEmpty(operation.DiagnosticsContext.ToString()));
             }
         }
@@ -569,7 +583,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int maxBatchByteSize,
                 CosmosSerializerCore serializerCore,
                 BatchAsyncBatcherExecuteDelegate executor,
-                BatchAsyncBatcherRetryDelegate retrier) : base (maxBatchOperationCount, maxBatchByteSize, serializerCore, executor, retrier)
+                BatchAsyncBatcherRetryDelegate retrier) : base(maxBatchOperationCount, maxBatchByteSize, serializerCore, executor, retrier)
             {
 
             }

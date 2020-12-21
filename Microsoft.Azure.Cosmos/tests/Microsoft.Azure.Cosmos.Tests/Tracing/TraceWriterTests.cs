@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tests.Query.Metrics;
     using Microsoft.Azure.Cosmos.Tracing;

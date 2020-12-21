@@ -217,11 +217,16 @@ namespace Microsoft.Azure.Cosmos
     /// Executor implementation that processes a list of operations.
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken);
+    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(
+        PartitionKeyRangeServerBatchRequest request, 
+        ITrace trace, 
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Delegate to process a request for retry an operation
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task BatchAsyncBatcherRetryDelegate(ItemBatchOperation operation, CancellationToken cancellationToken);
+    internal delegate Task BatchAsyncBatcherRetryDelegate(
+        ItemBatchOperation operation, 
+        CancellationToken cancellationToken);
 }

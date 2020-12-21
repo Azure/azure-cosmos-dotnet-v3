@@ -28,27 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             Cosmos.ConsistencyLevel? accountConsistencyLevel = null)
         {
-            DocumentClient documentClient;
-            if (accountConsistencyLevel.HasValue)
-            {
-                documentClient = new MockDocumentClient(accountConsistencyLevel.Value);
-            }
-            else
-            {
-                documentClient = new MockDocumentClient();
-            }
-            
+            DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value) : new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             return cosmosClientBuilder.Build(documentClient);
-        }
-
-        public static CosmosDiagnosticsContext CreateDiagnosticsContext()
-        {
-            return new CosmosDiagnosticsContextCore(
-                nameof(CreateDiagnosticsContext),
-                "DiagnosticValidatorUserAgentString");
         }
 
         public static Mock<ContainerInternal> CreateMockContainer(
