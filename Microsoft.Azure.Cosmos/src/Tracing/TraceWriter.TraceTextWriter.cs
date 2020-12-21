@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal static partial class TraceWriter
     {
@@ -81,6 +84,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             private static readonly string[] newLines = new string[] { Environment.NewLine };
             private static readonly char[] newLineCharacters = Environment.NewLine.ToCharArray();
+
+            private static class AddressResolutionStatisticsTextTable
+            {
+                private static class Headers
+                {
+                    public const string StartTime = "Start Time (utc)";
+                    public const string EndTime = "End Time (utc)";
+                    public const string Endpoint = "Endpoint";
+                }
+
+                private static class HeaderLengths
+                {
+                    public static readonly int StartTime = Headers.StartTime.Length;
+                    public static readonly int EndTime = Headers.EndTime.Length;
+                    public static readonly int Endpoint = 80 - (StartTime + EndTime);
+                }
+
+                private static readonly TextTable.Column[] Columns = new TextTable.Column[]
+                {
+                    new TextTable.Column(Headers.StartTime, HeaderLengths.StartTime),
+                    new TextTable.Column(Headers.EndTime, HeaderLengths.EndTime),
+                    new TextTable.Column(Headers.Endpoint, HeaderLengths.Endpoint),
+                };
+
+                public static readonly TextTable Singleton = new TextTable(Columns);
+            }
 
             public static void WriteTrace(
                 TextWriter writer,
@@ -290,12 +319,115 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
-                    throw new NotImplementedException();
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine(pointOperationStatisticsTraceDatum.ActivityId);
+                    stringBuilder.AppendLine($"Status Code: {pointOperationStatisticsTraceDatum.StatusCode}/{pointOperationStatisticsTraceDatum.SubStatusCode}");
+                    stringBuilder.AppendLine($"Response Time: {pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Request Charge: {pointOperationStatisticsTraceDatum.RequestCharge}");
+                    stringBuilder.AppendLine($"Request URI: {pointOperationStatisticsTraceDatum.RequestUri}");
+                    stringBuilder.AppendLine($"Session Tokens: {pointOperationStatisticsTraceDatum.RequestSessionToken} / {pointOperationStatisticsTraceDatum.ResponseSessionToken}");
+                    if (pointOperationStatisticsTraceDatum.ErrorMessage != null)
+                    {
+                        stringBuilder.AppendLine($"Error Message: {pointOperationStatisticsTraceDatum.ErrorMessage}");
+                    }
+
+                    this.toStringValue = stringBuilder.ToString();
                 }
 
                 public void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    throw new NotImplementedException();
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine($"Start Time: {clientSideRequestStatisticsTraceDatum.RequestStartTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    if (clientSideRequestStatisticsTraceDatum.RequestEndTimeUtc.HasValue)
+                    {
+                        stringBuilder.AppendLine($"End Time: {clientSideRequestStatisticsTraceDatum.RequestEndTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}");
+                    }
+
+                    stringBuilder.AppendLine("Contacted Replicas");
+                    Dictionary<Uri, int> uriAndCounts = new Dictionary<Uri, int>();
+                    foreach (Uri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    {
+                        if (!uriAndCounts.TryGetValue(uri, out int count))
+                        {
+                            count = 0;
+                        }
+
+                        uriAndCounts[uri] = ++count;
+                    }
+
+                    foreach (KeyValuePair<Uri, int> uriAndCount in uriAndCounts)
+                    {
+                        stringBuilder.AppendLine($"{space}{uriAndCount.Key}: {uriAndCount.Value}");
+                    }
+
+                    stringBuilder.AppendLine("Failed to Contact Replicas");
+                    foreach (Uri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
+                    {
+                        stringBuilder.AppendLine($"{space}{failedToContactReplica}");
+                    }
+
+                    stringBuilder.AppendLine("Regions Contacted");
+                    foreach (Uri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    {
+                        stringBuilder.AppendLine($"{space}{regionContacted}");
+                    }
+
+                    stringBuilder.AppendLine("Address Resolution Statistics");
+                    stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.TopLine);
+                    stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.Header);
+                    stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.MiddleLine);
+                    foreach (AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                    {
+                        string row = AddressResolutionStatisticsTextTable.Singleton.GetRow(
+                            stat.StartTime,
+                            stat.EndTime,
+                            stat.TargetEndpoint);
+                        stringBuilder.AppendLine(row);
+                    }
+
+                    stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.BottomLine);
+
+                    stringBuilder.AppendLine("Store Response Statistics");
+                    foreach (StoreResponseStatistics stat in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                    {
+                        if (stat.RequestStartTime.HasValue)
+                        {
+                            stringBuilder.AppendLine($"Start Time: {stat.RequestStartTime.Value.ToString("o", CultureInfo.InvariantCulture)}");
+                        }
+                        else
+                        {
+                            stringBuilder.AppendLine("Start Time Not Found");
+                        }
+
+                        stringBuilder.AppendLine($"End Time: {stat.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture)}");
+
+                        stringBuilder.AppendLine($"Resource Type: {stat.RequestResourceType}");
+                        stringBuilder.AppendLine($"Operation Type: {stat.RequestOperationType}");
+
+                        if (stat.StoreResult != null)
+                        {
+                            stringBuilder.AppendLine("Store Result");
+                            stringBuilder.AppendLine($"{space}Activity Id: {stat.StoreResult.ActivityId}");
+                            stringBuilder.AppendLine($"{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress}");
+                            stringBuilder.AppendLine($"{space}Status Code: {stat.StoreResult.StatusCode}/{stat.StoreResult.SubStatusCode}");
+                            stringBuilder.AppendLine($"{space}Is Valid: {stat.StoreResult.IsValid}");
+                            stringBuilder.AppendLine($"{space}LSN Info");
+                            stringBuilder.AppendLine($"{space}{space}LSN: {stat.StoreResult.LSN}");
+                            stringBuilder.AppendLine($"{space}{space}Item LSN: {stat.StoreResult.ItemLSN}");
+                            stringBuilder.AppendLine($"{space}{space}Global LSN: {stat.StoreResult.GlobalCommittedLSN}");
+                            stringBuilder.AppendLine($"{space}{space}Quorum Acked LSN: {stat.StoreResult.QuorumAckedLSN}");
+                            stringBuilder.AppendLine($"{space}{space}Using LSN: {stat.StoreResult.UsingLocalLSN}");
+                            stringBuilder.AppendLine($"{space}Session Token: {stat.StoreResult.SessionToken.ConvertToString()}");
+                            stringBuilder.AppendLine($"{space}Quorum Info");
+                            stringBuilder.AppendLine($"{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
+                            stringBuilder.AppendLine($"{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
+                            stringBuilder.AppendLine($"{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
+                            stringBuilder.AppendLine($"{space}Exception");
+                            stringBuilder.AppendLine($"{space}{stat.StoreResult.GetException()}");
+                        }
+                    }
+
+                    this.toStringValue = stringBuilder.ToString();
                 }
 
                 public override string ToString()

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Handles operation queueing and dispatching.
@@ -125,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
+                _ = toDispatch.DispatchAsync(this.partitionMetric, NoOpTrace.Singleton, this.cancellationTokenSource.Token);
             }
         }
 
@@ -183,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
+                _ = toDispatch.DispatchAsync(this.partitionMetric, NoOpTrace.Singleton, this.cancellationTokenSource.Token);
             }
 
             this.ResetTimer();

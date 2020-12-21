@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ResponseMessage ToCosmosResponseMessage(
-            this DocumentServiceResponse documentServiceResponse, 
+            this DocumentServiceResponse documentServiceResponse,
             RequestMessage requestMessage,
             RequestChargeTracker requestChargeTracker,
             ITrace trace)
@@ -69,10 +70,12 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(requestMessage != null, nameof(requestMessage));
             Headers headers = new Headers(documentServiceResponse.Headers);
 
-            if (documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
+            if (documentServiceResponse.RequestStats != null)
             {
-                CosmosDiagnosticsTraceDatum clientSideRequestStatisticsTraceDatum = new CosmosDiagnosticsTraceDatum(cosmosClientSideRequestStatistics);
-                trace.AddDatum(nameof(CosmosClientSideRequestStatistics), clientSideRequestStatisticsTraceDatum);
+                StringBuilder stringBuilder = new StringBuilder();
+                documentServiceResponse.RequestStats.AppendToBuilder(stringBuilder);
+
+                trace.AddDatum("Client Side Request Stats", stringBuilder.ToString());
             }
 
             if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)
@@ -87,10 +90,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
-            if (!(documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics clientSideRequestStatistics) ||
-                (clientSideRequestStatistics.ContactedReplicas.Count == 0 && clientSideRequestStatistics.FailedReplicas.Count == 0))
+            if (!(documentServiceResponse.RequestStats != null) ||
+                (documentServiceResponse.RequestStats.ContactedReplicas.Count == 0 && documentServiceResponse.RequestStats.FailedReplicas.Count == 0))
             {
-                PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+                PointOperationStatisticsTraceDatum pointOperationStatistics = new PointOperationStatisticsTraceDatum(
                     activityId: headers.ActivityId,
                     responseTimeUtc: DateTime.UtcNow,
                     statusCode: documentServiceResponse.StatusCode,
@@ -102,9 +105,7 @@ namespace Microsoft.Azure.Cosmos
                     requestSessionToken: requestMessage?.Headers?.Session,
                     responseSessionToken: headers.Session);
 
-                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
-
-                trace.AddDatum(nameof(PointOperationStatistics), new CosmosDiagnosticsTraceDatum(pointOperationStatistics));
+                trace.AddDatum(nameof(PointOperationStatisticsTraceDatum), pointOperationStatistics);
             }
 
             // If it's considered a failure create the corresponding CosmosException
@@ -123,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage: requestMessage,
                 headers: headers,
                 cosmosException: null,
-                diagnostics: requestMessage.DiagnosticsContext)
+                trace: requestMessage.Trace)
             {
                 Content = documentServiceResponse.ResponseBody
             };
@@ -133,38 +134,26 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException documentClientException, RequestMessage requestMessage)
         {
-            CosmosDiagnosticsContext diagnosticsContext = requestMessage?.DiagnosticsContext;
-            if (requestMessage != null)
-            {
-                diagnosticsContext = requestMessage.DiagnosticsContext;
-
-                if (diagnosticsContext == null)
-                {
-                    throw new ArgumentNullException("Request message should contain a DiagnosticsContext");
-                }
-            }
-            else
-            {
-                diagnosticsContext = new CosmosDiagnosticsContextCore();
-            }
-
             CosmosException cosmosException = CosmosExceptionFactory.Create(
                 documentClientException,
-                diagnosticsContext);
+                requestMessage?.Trace);
 
-            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
-                activityId: cosmosException.Headers.ActivityId,
-                statusCode: cosmosException.StatusCode,
-                subStatusCode: cosmosException.Headers.SubStatusCode,
-                responseTimeUtc: DateTime.UtcNow,
-                requestCharge: cosmosException.Headers.RequestCharge,
-                errorMessage: documentClientException.ToString(),
-                method: requestMessage?.Method,
-                requestUri: requestMessage?.RequestUriString,
-                requestSessionToken: requestMessage?.Headers?.Session,
-                responseSessionToken: cosmosException.Headers.Session);
+            if (requestMessage?.Trace != null)
+            {
+                PointOperationStatisticsTraceDatum pointOperationStatistics = new PointOperationStatisticsTraceDatum(
+                    activityId: cosmosException.Headers.ActivityId,
+                    statusCode: cosmosException.StatusCode,
+                    subStatusCode: cosmosException.Headers.SubStatusCode,
+                    responseTimeUtc: DateTime.UtcNow,
+                    requestCharge: cosmosException.Headers.RequestCharge,
+                    errorMessage: documentClientException.ToString(),
+                    method: requestMessage?.Method,
+                    requestUri: requestMessage?.RequestUriString,
+                    requestSessionToken: requestMessage?.Headers?.Session,
+                    responseSessionToken: cosmosException.Headers.Session);
 
-            diagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+                requestMessage?.Trace.AddDatum("Point Operation Statistics", pointOperationStatistics);
+            }
 
             // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
             if (documentClientException.StatusCode == null)
@@ -201,10 +190,10 @@ namespace Microsoft.Azure.Cosmos
 
         public static async Task<IDisposable> UsingWaitAsync(
             this SemaphoreSlim semaphoreSlim,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (diagnosticsContext?.CreateScope(nameof(UsingWaitAsync)))
+            using (trace.StartChild("Using Wait"))
             {
                 await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
                 return new UsableSemaphoreWrapper(semaphoreSlim);

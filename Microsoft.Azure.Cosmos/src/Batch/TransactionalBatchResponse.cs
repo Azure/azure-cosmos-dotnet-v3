@@ -235,6 +235,7 @@ namespace Microsoft.Azure.Cosmos
                                 responseMessage,
                                 serverRequest,
                                 serializer,
+                                trace,
                                 shouldPromoteOperationStatus);
 
                             if (response == null)
@@ -245,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
                                     SubStatusCodes.Unknown,
                                     ClientResources.ServerResponseDeserializationFailure,
                                     responseMessage.Headers,
-                                    responseMessage.DiagnosticsContext,
+                                    trace,
                                     serverRequest.Operations,
                                     serializer);
                             }
@@ -259,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.SubStatusCode,
                             responseMessage.ErrorMessage,
                             responseMessage.Headers,
-                            responseMessage.DiagnosticsContext,
+                            trace,
                             serverRequest.Operations,
                             serializer);
                     }
@@ -275,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
                                 SubStatusCodes.Unknown,
                                 ClientResources.InvalidServerResponse,
                                 responseMessage.Headers,
-                                responseMessage.DiagnosticsContext,
+                                trace,
                                 serverRequest.Operations,
                                 serializer);
                         }
@@ -320,6 +321,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializerCore serializer,
+            ITrace trace,
             bool shouldPromoteOperationStatus)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -370,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSubStatusCode,
                 responseMessage.ErrorMessage,
                 responseMessage.Headers,
-                responseMessage.DiagnosticsContext,
+                trace,
                 serverRequest.Operations,
                 serializer)
             {

@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType)
         {
             string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
+                    await this.tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
             return (token, default);
         }
 

@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken)
         {
             return this.ProcessScriptsCreateOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Create,
@@ -123,7 +122,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessStoredProcedureOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Read,
                 streamPayload: null,
@@ -176,7 +174,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ExecuteStoredProcedureStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 parameters: parameters,
@@ -202,7 +199,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ExecuteStoredProcedureStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
@@ -232,7 +228,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: storedProcedureId);
 
             return this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
@@ -265,7 +260,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessScriptsCreateOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.Create,
@@ -598,7 +592,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: id);
 
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: operationType,
@@ -625,7 +618,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: id);
 
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: operationType,

@@ -180,13 +180,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                         PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                        CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                        CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(trace);
                         ContainerProperties collectionFromCache =
                             await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
 
                         IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                             collectionFromCache.ResourceId,
                             feedRangeEpk.Range,
+                            trace,
                             forceRefresh: false);
                         if (overlappingRanges == null)
                         {

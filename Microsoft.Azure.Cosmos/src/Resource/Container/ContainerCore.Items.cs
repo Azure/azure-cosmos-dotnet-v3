@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ResponseMessage> UpsertItemStreamAsync(
             Stream streamPayload,
             PartitionKey partitionKey,
-            ITrace trace, 
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -744,10 +744,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
             while (true)
             {
-                using (diagnosticsContext.CreateScope("ExtractPkValue"))
-                {
-                    partitionKey = await this.GetPartitionKeyValueFromStreamAsync(itemStream, cancellationToken);
-                }
+                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(itemStream, trace, cancellationToken);
 
                 ResponseMessage responseMessage = await this.ProcessItemStreamAsync(
                     partitionKey,
@@ -755,7 +752,6 @@ namespace Microsoft.Azure.Cosmos
                     itemStream,
                     operationType,
                     requestOptions,
-                    diagnosticsContext: diagnosticsContext,
                     trace: trace,
                     cancellationToken: cancellationToken);
 
@@ -766,7 +762,9 @@ namespace Microsoft.Azure.Cosmos
 
                 if (requestRetryPolicy == null)
                 {
-                    requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), null);
+                    requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
+                        await this.ClientContext.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                        requestRetryPolicy);
                 }
 
                 ShouldRetryResult retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
@@ -786,9 +784,9 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (diagnosticsContext == null)
+            if (trace == null)
             {
-                throw new ArgumentNullException(nameof(diagnosticsContext));
+                throw new ArgumentNullException(nameof(trace));
             }
 
             if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
@@ -974,7 +972,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             ResponseMessage responseMessage = await this.PatchItemStreamAsync(
-                diagnosticsContext,
                 id,
                 partitionKey,
                 patchOperations,
@@ -993,9 +990,9 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            if (diagnosticsContext == null)
+            if (trace == null)
             {
-                throw new ArgumentNullException(nameof(diagnosticsContext));
+                throw new ArgumentNullException(nameof(trace));
             }
 
             if (string.IsNullOrWhiteSpace(id))
@@ -1020,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Stream patchOperationsStream;
-            using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
+            using (ITrace serializeTrace = trace.StartChild("Patch Operations Serialize"))
             {
                 patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
             }
@@ -1038,7 +1035,6 @@ namespace Microsoft.Azure.Cosmos
                 itemId: id,
                 streamPayload: patchOperationsStream,
                 requestEnricher: null,
-                diagnosticsContext: diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }

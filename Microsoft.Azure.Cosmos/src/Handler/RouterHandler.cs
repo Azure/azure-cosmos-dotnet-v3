@@ -29,10 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
-            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
-            {
-                return await targetHandler.SendAsync(request, cancellationToken);
-            }
+            return await targetHandler.SendAsync(request, cancellationToken);
         }
     }
 }

@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
 #if DEBUG
             try
             {
-                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
+                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
                 if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
@@ -252,7 +252,13 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(
+                        this.OperationType, 
+                        this.ResourceType,
+                        this.RequestUriString, 
+                        this.Content, 
+                        AuthorizationTokenType.PrimaryMasterKey, 
+                        this.Headers.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)
@@ -260,7 +266,6 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
-                serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;
@@ -289,10 +294,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
-            if (this.OnBeforeSendRequestActions != null)
-            {
-                this.OnBeforeSendRequestActions(serviceRequest);
-            }
+            this.OnBeforeSendRequestActions?.Invoke(serviceRequest);
         }
 
         private bool AssertPartitioningPropertiesAndHeaders()

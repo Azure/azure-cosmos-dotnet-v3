@@ -190,18 +190,17 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            ITrace trace,
             Func<ITrace, Task<TResult>> task)
         {
             if (SynchronizationContext.Current == null)
             {
                 return this.RunWithDiagnosticsHelperAsync(
-                    trace,
+                    NoOpTrace.Singleton,
                     task);
             }
 
             return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
-                trace,
+                NoOpTrace.Singleton,
                 task);
         }
 

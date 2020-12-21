@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -107,6 +108,7 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task DispatchAsync(
             BatchPartitionMetric partitionMetric,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             this.interlockIncrementCheck.EnterLockCheck();
@@ -143,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Stopwatch stopwatch = Stopwatch.StartNew();
 
-                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
+                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
 
                     int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
                     partitionMetric.Add(
@@ -156,18 +158,6 @@ namespace Microsoft.Azure.Cosmos
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
                             TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
-
-                            // Bulk has diagnostics per a item operation.
-                            // Batch has a single diagnostics for the execute operation
-                            if (itemBatchOperation.DiagnosticsContext != null)
-                            {
-                                response.DiagnosticsContext = itemBatchOperation.DiagnosticsContext;
-                                response.DiagnosticsContext.AddDiagnosticsInternal(batchResponse.DiagnosticsContext);
-                            }
-                            else
-                            {
-                                response.DiagnosticsContext = batchResponse.DiagnosticsContext;
-                            }
 
                             if (!response.IsSuccessStatusCode)
                             {
@@ -227,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
     /// Executor implementation that processes a list of operations.
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken);
+    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken);
 
     /// <summary>
     /// Delegate to process a request for retry an operation

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -62,8 +63,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     endEpk = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
                 }
 
-                startEpk = startEpk ?? PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
-                endEpk = endEpk ?? PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
+                startEpk ??= PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
+                endEpk ??= PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
 
                 List<Range<string>> providedRanges = new List<Range<string>>
                 {
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 

@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
                  requestMessage: request,
                  cosmosException: this,
                  statusCode: this.StatusCode,
-                 diagnostics: this.Trace);
+                 trace: this.Trace);
             if (this.SubStatusCode != 0)
             {
                 responseMessage.Headers.SubStatusCode = (SubStatusCodes)this.SubStatusCode;

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -55,9 +56,9 @@ namespace Microsoft.Azure.Cosmos
                     requestCharge: 0,
                     retryAfter: null,
                     headers: null,
-                    diagnosticsContext: null,
                     error: null,
-                    innerException: null);
+                    innerException: null,
+                    trace: NoOpTrace.Singleton);
             }
 
             return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };

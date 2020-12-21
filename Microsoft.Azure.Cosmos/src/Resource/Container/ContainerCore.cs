@@ -77,7 +77,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             ResponseMessage response = await this.ReadContainerStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -364,6 +363,7 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
+                NoOpTrace.Singleton,
                 cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
@@ -415,6 +415,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
                     forceRefresh,
+                    trace,
                     cancellationToken);
                 return containerProperties?.ResourceId;
             }
@@ -424,6 +425,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.GetCachedContainerPropertiesAsync(
                 forceRefresh: false,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken)
                 .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
         }
@@ -437,6 +439,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
                 forceRefresh: false,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
             if (containerProperties == null)
             {
@@ -461,9 +464,9 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// For non-existing container will throw <see cref="DocumentClientException"/> with 404 as status code
         /// </remarks>
-        public override async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default)
+        public override async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken: cancellationToken);
+            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(forceRefresh: false, trace, cancellationToken: cancellationToken);
             return containerProperties.GetNoneValue();
         }
 
@@ -472,6 +475,7 @@ namespace Microsoft.Azure.Cosmos
             string collectionRID = null;
             return this.GetCachedRIDAsync(
                 forceRefresh: false,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken)
                 .ContinueWith(ridTask =>
                 {
@@ -498,6 +502,7 @@ namespace Microsoft.Azure.Cosmos
         {
             string rid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
+                trace: trace,
                 cancellationToken: cancellationToken);
             ThroughputResponse throughputResponse = await executeOfferOperation(rid);
             if (throughputResponse.StatusCode != HttpStatusCode.NotFound)

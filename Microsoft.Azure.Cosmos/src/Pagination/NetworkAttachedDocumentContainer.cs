@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken);
                 List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                     this.container.LinkUri,
-                    await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
+                    await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken: cancellationToken),
                     containerProperties.PartitionKey,
                     feedRange,
                     forceRefresh: false,
@@ -252,7 +252,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 Guid.NewGuid(),
                 feedRange,
                 queryRequestOptions,
-                queryPageDiagnostics: this.AddQueryPageDiagnostic,
                 sqlQuerySpec,
                 continuationToken,
                 isContinuationExpected: false,
@@ -289,7 +288,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 },
                 feedRange: feedRange,
                 streamPayload: default,
-                diagnosticsContext: this.diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken);
 
@@ -331,17 +329,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            using (ITrace getRidTrace = trace.StartChild("Get Container RID", TraceComponent.Routing, TraceLevel.Info))
+            try
             {
-                try
-                {
-                    string resourceIdentifier = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken);
-                    return TryCatch<string>.FromResult(resourceIdentifier);
-                }
-                catch (Exception ex)
-                {
-                    return TryCatch<string>.FromException(ex);
-                }
+                string resourceIdentifier = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
+                return TryCatch<string>.FromResult(resourceIdentifier);
+            }
+            catch (Exception ex)
+            {
+                return TryCatch<string>.FromException(ex);
             }
         }
 

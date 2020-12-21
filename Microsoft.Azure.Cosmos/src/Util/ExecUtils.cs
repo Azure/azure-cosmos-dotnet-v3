@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return ExecUtils.ProcessResourceOperationAsync(
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             Func<ResponseMessage, T> responseCreator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return ExecUtils.ProcessResourceOperationAsync(
@@ -58,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: null,
                 responseCreator: responseCreator,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -69,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Stream streamPayload,
             Func<ResponseMessage, T> responseCreator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return ExecUtils.ProcessResourceOperationAsync(
@@ -82,6 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: null,
                 responseCreator: responseCreator,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -100,6 +106,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (client == null)
@@ -118,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -132,6 +140,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (requestHandler == null)
@@ -149,6 +158,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(responseCreator));
             }
 
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             ResponseMessage response = await requestHandler.SendAsync(
                 resourceUri,
                 resourceType,
@@ -158,8 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 feedRange,
                 streamPayload,
                 requestEnricher,
-                null,
-                NoOpTrace.Singleton,
+                trace,
                 cancellationToken);
 
             return responseCreator(response);

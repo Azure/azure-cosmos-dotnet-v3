@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Abstraction which allows defining of custom message handlers.
@@ -37,8 +38,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request"><see cref="RequestMessage"/> received by the handler.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> received by the handler.</param>
         /// <returns>An instance of <see cref="ResponseMessage"/>.</returns>
-        public virtual async Task<ResponseMessage> SendAsync(
+        public virtual Task<ResponseMessage> SendAsync(
             RequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return this.SendAsync(request, NoOpTrace.Singleton, cancellationToken);
+        }
+
+        internal virtual Task<ResponseMessage> SendAsync(
+            RequestMessage request,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (this.InnerHandler == null)
@@ -46,10 +55,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(this.InnerHandler))
-            {
-                return await this.InnerHandler.SendAsync(request, cancellationToken);
-            }
+            return this.InnerHandler.SendAsync(request, trace, cancellationToken);
         }
     }
 }

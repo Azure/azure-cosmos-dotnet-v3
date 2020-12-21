@@ -167,7 +167,6 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.UseGatewayMode = true;
                 },
-                diagnosticsContext: diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
@@ -250,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
                     // Return NotFoundException this time. Next query will succeed.
                     // This can only happen if collection is deleted/created with same name and client was not restarted
                     // in between.
-                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(getPKRangesTrace);
                     collectionCache.Refresh(resourceLink);
                 }
 
@@ -364,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClearSessionTokenCache(collectionLink);
 
-            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
             using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
                Documents.OperationType.Query,
                Documents.ResourceType.Collection,
@@ -382,7 +381,11 @@ namespace Microsoft.Azure.Cosmos
             bool forceRefresh = false)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
-            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
+            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
+                collectionResourceId, 
+                range,
+                NoOpTrace.Singleton,
+                forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()

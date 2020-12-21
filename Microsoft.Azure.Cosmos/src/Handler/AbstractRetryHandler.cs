@@ -26,19 +26,25 @@ namespace Microsoft.Azure.Cosmos.Handlers
             try
             {
                 return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
+                    callbackMethod: (trace) =>
                     {
-                        return base.SendAsync(request, cancellationToken);
+                        return base.SendAsync(request, trace, cancellationToken);
                     },
-                    callShouldRetry: (cosmosResponseMessage, token) =>
+                    callShouldRetry: (cosmosResponseMessage, trace, token) =>
                     {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                        using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
+                        {
+                            return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                        }
                     },
-                    callShouldRetryException: (exception, token) =>
+                    callShouldRetryException: (exception, trace, token) =>
                     {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                        using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
+                        {
+                            return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                        }
                     },
-                    diagnosticsContext: request.DiagnosticsContext,
+                    trace: request.Trace,
                     cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
@@ -70,9 +76,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         private static async Task<ResponseMessage> ExecuteHttpRequestAsync(
-           Func<Task<ResponseMessage>> callbackMethod,
-           Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
-           Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
+           Func<ITrace, Task<ResponseMessage>> callbackMethod,
+           Func<ResponseMessage, ITrace, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
+           Func<Exception, ITrace, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
            ITrace trace,
            CancellationToken cancellationToken)
         {
@@ -83,13 +89,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 try
                 {
-                    ResponseMessage cosmosResponseMessage = await callbackMethod();
+                    ResponseMessage cosmosResponseMessage = await callbackMethod(trace);
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
                         return cosmosResponseMessage;
                     }
 
-                    result = await callShouldRetry(cosmosResponseMessage, cancellationToken);
+                    result = await callShouldRetry(cosmosResponseMessage, trace, cancellationToken);
 
                     if (!result.ShouldRetry)
                     {
@@ -98,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 catch (HttpRequestException httpRequestException)
                 {
-                    result = await callShouldRetryException(httpRequestException, cancellationToken);
+                    result = await callShouldRetryException(httpRequestException, trace, cancellationToken);
                     if (!result.ShouldRetry)
                     {
                         // Today we don't translate request exceptions into status codes since this was an error before

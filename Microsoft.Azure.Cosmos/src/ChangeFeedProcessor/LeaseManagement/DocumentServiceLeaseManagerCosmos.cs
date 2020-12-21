@@ -263,7 +263,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                string containerRId = await this.monitoredContainer.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
+                string containerRId = await this.monitoredContainer.GetCachedRIDAsync(
+                    forceRefresh: false,
+                    NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
                 return TryCatch<string>.FromResult(containerRId);
             }
             catch (CosmosException cosmosException)

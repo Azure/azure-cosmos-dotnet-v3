@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class FeedRangePartitionKeyRangeExtractor : IFeedRangeAsyncVisitor<IReadOnlyList<Documents.Routing.Range<string>>>
@@ -26,7 +27,10 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
             return await feedRange.GetEffectiveRangesAsync(
                 partitionKeyRangeCache,
-                await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
+                await this.container.GetCachedRIDAsync(
+                    forceRefresh: false, 
+                    NoOpTrace.Singleton, 
+                    cancellationToken: cancellationToken),
                 partitionKeyDefinition);
         }
 
@@ -36,7 +40,10 @@ namespace Microsoft.Azure.Cosmos
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             return await feedRange.GetEffectiveRangesAsync(
                 routingMapProvider: partitionKeyRangeCache,
-                containerRid: await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
+                containerRid: await this.container.GetCachedRIDAsync(
+                     forceRefresh: false, 
+                     NoOpTrace.Singleton, 
+                     cancellationToken: cancellationToken),
                 partitionKeyDefinition: null);
         }
 
@@ -44,8 +51,12 @@ namespace Microsoft.Azure.Cosmos
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collectionRid: await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken),
+                collectionRid: await this.container.GetCachedRIDAsync(
+                    forceRefresh: false,
+                    NoOpTrace.Singleton, 
+                    cancellationToken: cancellationToken),
                 range: feedRange.Range,
+                trace: NoOpTrace.Singleton,
                 forceRefresh: false);
             return pkRanges.Select(pkRange => pkRange.ToRange()).ToList();
         }

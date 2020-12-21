@@ -372,7 +372,6 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
 
             return this.CreateContainerAsync(
-                diagnosticsContext,
                 containerProperties,
                 throughput,
                 requestOptions,
@@ -771,7 +770,6 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: null,
-               diagnosticsContext: diagnosticsContext,
                trace: trace,
                cancellationToken: cancellationToken);
         }

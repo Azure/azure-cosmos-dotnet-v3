@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: new CosmosDiagnosticsContextCore());
+                    trace: trace);
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: new CosmosDiagnosticsContextCore());
+                    trace: trace);
             }
 
             CrossFeedRangePage<Pagination.ChangeFeedPage, ChangeFeedState> crossFeedRangePage = enumerator.Current.Result;

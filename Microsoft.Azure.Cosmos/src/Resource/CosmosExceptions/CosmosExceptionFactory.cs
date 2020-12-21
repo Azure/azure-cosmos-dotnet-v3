@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge: responseHeaders.RequestCharge,
                 retryAfter: responseHeaders.RetryAfter,
                 headers: responseHeaders,
-                diagnosticsContext: requestMessage.DiagnosticsContext,
+                trace: requestMessage.Trace,
                 error: error,
                 innerException: null);
         }
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 requestCharge: headers.RequestCharge,
                 retryAfter: headers.RetryAfter,
                 headers: headers,
-                diagnosticsContext: requestMessage.DiagnosticsContext,
+                trace: requestMessage.Trace,
                 error: error,
                 innerException: null);
         }

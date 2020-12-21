@@ -295,11 +295,16 @@ namespace Microsoft.Azure.Cosmos
                                     {
                                         // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
                                         string message =
-                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId};";
+                                            $"GatewayStoreClient Request Timeout. " +
+                                            $"Start Time UTC:{startDateTimeUtc}; " +
+                                            $"Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Milliseconds; " +
+                                            $"Request Timeout {requestTimeout.TotalMilliseconds} Milliseconds; " +
+                                            $"Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Milliseconds; " +
+                                            $"Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
                                         throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                             message,
                                             innerException: operationCanceledException,
-                                            diagnosticsContext: diagnosticsContext);
+                                            trace: helperTrace);
                                     }
 
                                     break;
@@ -326,7 +331,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (delayForNextRequest != TimeSpan.Zero)
                 {
-                    using (diagnosticsContext.CreateScope($"HttpRetryDelay; Delay:{delayForNextRequest} seconds; Current request timeout {requestTimeout}; TimeoutPolicy: {timeoutPolicy.TimeoutPolicyName}"))
+                    using (ITrace delayTrace = trace.StartChild("Retry Delay", TraceComponent.Transport, Tracing.TraceLevel.Info))
                     {
                         await Task.Delay(delayForNextRequest);
                     }
@@ -342,7 +347,7 @@ namespace Microsoft.Azure.Cosmos
             DateTime sendTimeUtc = DateTime.UtcNow;
             Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
 
-            Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
+            Guid requestedActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
             this.eventSource.Request(
                 requestedActivityId,
                 localGuid,

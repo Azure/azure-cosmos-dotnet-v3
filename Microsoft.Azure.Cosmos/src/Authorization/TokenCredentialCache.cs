@@ -162,7 +162,6 @@ namespace Microsoft.Azure.Cosmos
                         break;
                     }
 
-
                     using (ITrace getTokenTrace = trace.StartChild(
                         name: nameof(this.RefreshCachedTokenWithRetryHelperAsync),
                         component: TraceComponent.Authorization,
@@ -224,21 +223,22 @@ namespace Microsoft.Azure.Cosmos
                                 message: ClientResources.FailedToGetAadToken,
                                 subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
                                 innerException: lastException,
-                                diagnosticsContext: diagnosticsContext);
+                                trace: getTokenTrace);
                         }
                         catch (Exception exception)
                         {
                             lastException = exception;
-                            diagnosticsContext.AddDiagnosticsInternal(
-                                new PointOperationStatistics(
-                                    activityId: Trace.CorrelationManager.ActivityId.ToString(),
+                            getTokenTrace.AddDatum(
+                                "Internal Server Error Exception",
+                                new PointOperationStatisticsTraceDatum(
+                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
                                     statusCode: HttpStatusCode.InternalServerError,
                                     subStatusCode: SubStatusCodes.Unknown,
                                     responseTimeUtc: DateTime.UtcNow,
                                     requestCharge: default,
                                     errorMessage: exception.ToString(),
                                     method: default,
-                                    requestUri: default,
+                                    requestUri: null,
                                     requestSessionToken: default,
                                     responseSessionToken: default));
 
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
                     message: ClientResources.FailedToGetAadToken,
                     subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
                     innerException: lastException,
-                    diagnosticsContext: diagnosticsContext);
+                    trace: trace);
             }
             finally
             {
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
 
                     DefaultTrace.TraceInformation("StartRefreshToken() - Invoking refresh");
 
-                    await this.RefreshCachedTokenWithRetryHelperAsync(EmptyCosmosDiagnosticsContext.Singleton);
+                    await this.RefreshCachedTokenWithRetryHelperAsync(NoOpTrace.Singleton);
                 }
                 catch (Exception ex)
                 {

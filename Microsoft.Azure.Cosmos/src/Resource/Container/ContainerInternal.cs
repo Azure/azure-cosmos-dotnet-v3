@@ -37,15 +37,17 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         public abstract Task<string> GetCachedRIDAsync(
-            bool forceRefresh = false,
-            CancellationToken cancellationToken = default);
+            bool forceRefresh,
+            ITrace trace,
+            CancellationToken cancellationToken);
 
         public abstract Task<Documents.PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(
             CancellationToken cancellationToken);
 
         public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
-            bool forceRefresh = false,
-            CancellationToken cancellationToken = default);
+            bool forceRefresh,
+            ITrace trace,
+            CancellationToken cancellationToken);
 
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
             CancellationToken cancellationToken = default);
@@ -86,10 +88,8 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
+            ITrace trace,
             CancellationToken cancellation);
-
-        public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
-            CancellationToken cancellationToken = default);
 
         public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
