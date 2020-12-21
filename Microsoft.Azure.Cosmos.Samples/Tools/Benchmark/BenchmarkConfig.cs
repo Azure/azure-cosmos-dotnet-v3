@@ -7,6 +7,7 @@ namespace CosmosBenchmark
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Http;
     using System.Runtime;
     using CommandLine;
     using Microsoft.Azure.Cosmos;
@@ -154,12 +155,19 @@ namespace CosmosBenchmark
 
         internal CosmosClient CreateCosmosClient(string accountKey)
         {
+            SocketsHttpHandler socketsHttpHandler = new SocketsHttpHandler() 
+            {
+                MaxConnectionsPerServer = int.MaxValue,
+                PooledConnectionLifetime = TimeSpan.MaxValue,
+                PooledConnectionIdleTimeout = TimeSpan.MaxValue,
+            };
+
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 ConnectionMode = Microsoft.Azure.Cosmos.ConnectionMode.Gateway,
-                GatewayModeMaxConnectionLimit = int.MaxValue,
+                HttpClientFactory = ()=> new HttpClient(socketsHttpHandler),
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
