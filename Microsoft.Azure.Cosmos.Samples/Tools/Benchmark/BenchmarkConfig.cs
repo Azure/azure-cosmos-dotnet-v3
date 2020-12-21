@@ -159,6 +159,7 @@ namespace CosmosBenchmark
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 ConnectionMode = Microsoft.Azure.Cosmos.ConnectionMode.Gateway,
+                GatewayModeMaxConnectionLimit = int.MaxValue,
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
