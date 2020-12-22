@@ -29,19 +29,34 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
+        /// Creates a new instance of key wrap metadata.
+        /// </summary>
+        /// <param name="name">Name of the master key (KEK).</param>
+        /// <param name="value">Value of the metadata.</param>
+        public EncryptionKeyWrapMetadata(string name, string value)
+            : this(type: "custom", name: name, value: value)
+        {
+        }
+
+        /// <summary>
         /// Creates a new instance of key wrap metadata based on an existing instance.
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
-            : this(source?.Type, source?.Value, source?.Algorithm)
+            : this(source?.Type, source?.Value, source?.Algorithm, source?.Name)
         {
         }
 
-        internal EncryptionKeyWrapMetadata(string type, string value, string algorithm = null)
+        internal EncryptionKeyWrapMetadata(
+            string type,
+            string value,
+            string algorithm = null,
+            string name = null)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
             this.Algorithm = algorithm;
+            this.Name = name;
         }
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
@@ -49,6 +64,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
         internal string Algorithm { get; private set; }
+
+        /// <summary>
+        /// Gets the name of KeyEncryptionKey / MasterKey.
+        /// Note: This name is saved in the Cosmos DB service.
+        /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
+        /// </summary>
+        [JsonProperty(PropertyName = "name", NullValueHandling = NullValueHandling.Ignore)]
+        public string Name { get; private set; }
 
         /// <summary>
         /// Gets serialized form of metadata.
@@ -72,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Type);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Algorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Value);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Name);
             return hashCode;
         }
 
@@ -87,7 +111,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return other != null &&
                    this.Type == other.Type &&
                    this.Algorithm == other.Algorithm &&
-                   this.Value == other.Value;
+                   this.Value == other.Value &&
+                   this.Name == other.Name;
+        }
+
+        internal string GetName(EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+        {
+            /* A legacy DEK may not have a Name value in meta-data*/
+            if (string.IsNullOrWhiteSpace(encryptionKeyWrapMetadata.Name))
+            {
+                return encryptionKeyWrapMetadata.Value;
+            }
+            else
+            {
+                return encryptionKeyWrapMetadata.Name;
+            }
         }
     }
 }
