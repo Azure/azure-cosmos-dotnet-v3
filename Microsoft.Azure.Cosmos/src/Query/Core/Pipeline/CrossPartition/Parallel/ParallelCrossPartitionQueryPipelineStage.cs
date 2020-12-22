@@ -83,18 +83,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             else
             {
                 // left most and any non null continuations
-                List<FeedRangeState<QueryState>> feedRangeStates = crossPartitionState
+                IOrderedEnumerable<FeedRangeState<QueryState>> feedRangeStates = crossPartitionState
                     .Value
                     .ToArray()
-                    .OrderBy(tuple => (FeedRangeEpk)tuple.FeedRange, EpkRangeComparer.Singleton)
-                    .ToList();
+                    .OrderBy(tuple => ((FeedRangeEpk)tuple.FeedRange).Range.Min);
+
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
-                for (int i = 0; i < feedRangeStates.Count; i++)
+                {
+                    FeedRangeState<QueryState> firstState = feedRangeStates.First();
+                    ParallelContinuationToken firstParallelContinuationToken = new ParallelContinuationToken(
+                        token: firstState.State != null ? ((CosmosString)firstState.State.Value).Value : null,
+                        range: ((FeedRangeEpk)firstState.FeedRange).Range);
+
+                    activeParallelContinuationTokens.Add(firstParallelContinuationToken);
+                }
+
+                foreach (FeedRangeState<QueryState> feedRangeState in feedRangeStates.Skip(1))
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
 
-                    FeedRangeState<QueryState> feedRangeState = feedRangeStates[i];
-                    if ((i == 0) || (feedRangeState.State != null))
+                    if (feedRangeState.State != null)
                     {
                         ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                             token: feedRangeState.State != null ? ((CosmosString)feedRangeState.State.Value).Value : null,
