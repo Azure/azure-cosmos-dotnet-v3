@@ -6,7 +6,6 @@
     using System.Runtime.CompilerServices;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.Azure.Cosmos.Test.SqlObjects;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

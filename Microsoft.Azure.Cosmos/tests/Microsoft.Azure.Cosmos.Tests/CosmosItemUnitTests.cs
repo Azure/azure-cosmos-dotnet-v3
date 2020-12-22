@@ -10,14 +10,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]

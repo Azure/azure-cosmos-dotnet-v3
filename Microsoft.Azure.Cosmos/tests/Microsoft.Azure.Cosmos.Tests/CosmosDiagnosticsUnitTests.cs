@@ -5,15 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -54,31 +56,34 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SubStatusCodes.PartitionKeyRangeGone,
                 new Uri("htts://localhost.com"));
 
-            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
-
-            RequestMessage requestMessage = new RequestMessage(
-                        HttpMethod.Get,
-                        "/dbs/test/colls/abc/docs/123",
-                        diagnosticsContext,
-                        Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton);
+            ITrace trace;
+            RequestMessage requestMessage;
+            using (trace = Cosmos.Tracing.Trace.GetRootTrace("testing"))
+            {
+                requestMessage = new RequestMessage(
+                    HttpMethod.Get,
+                    "/dbs/test/colls/abc/docs/123",
+                    trace);
+            }
 
             ResponseMessage response = dce.ToCosmosResponseMessage(requestMessage);
 
             Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
             Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
 
-            bool visited = false;
-            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in diagnosticsContext)
+            IEnumerable<PointOperationStatisticsTraceDatum> pointOperationStatistics = trace.Data.Values
+                .Where(traceDatum => traceDatum is PointOperationStatisticsTraceDatum operationStatistics)
+                .Select(x => (PointOperationStatisticsTraceDatum)x);
+
+            if (pointOperationStatistics.Count() != 1)
             {
-                if (cosmosDiagnosticsInternal is PointOperationStatistics operationStatistics)
-                {
-                    visited = true;
-                    Assert.AreEqual(operationStatistics.StatusCode, HttpStatusCode.Gone);
-                    Assert.AreEqual(operationStatistics.SubStatusCode, SubStatusCodes.PartitionKeyRangeGone);
-                }
+                Assert.Fail("PointOperationStatistics was not found in the diagnostics.");
             }
 
-            Assert.IsTrue(visited, "PointOperationStatistics was not found in the diagnostics.");
+            PointOperationStatisticsTraceDatum operationStatistics = pointOperationStatistics.First();
+
+            Assert.AreEqual(operationStatistics.StatusCode, HttpStatusCode.Gone);
+            Assert.AreEqual(operationStatistics.SubStatusCode, SubStatusCodes.PartitionKeyRangeGone);
         }
 
         [TestMethod]
@@ -95,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new RequestOptions(),
                 (trace) => this.ValidateActivityIdHelper());
 
-            Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
+            Assert.AreEqual(Guid.Empty, System.Diagnostics.Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
         }
 
         [TestMethod]
@@ -121,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new RequestOptions(),
                     (trace) => this.ValidateActivityIdHelper());
 
-                Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
+                Assert.AreEqual(Guid.Empty, System.Diagnostics.Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
             }
             finally
             {
@@ -131,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private Task<Guid> ValidateActivityIdHelper()
         {
-            Guid activityId = Trace.CorrelationManager.ActivityId;
+            Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
             Assert.AreNotEqual(Guid.Empty, activityId);
             return Task.FromResult(activityId);
         }
