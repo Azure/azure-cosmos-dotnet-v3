@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.Generic;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using System.IO;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
-        internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
+        internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
             return Task.FromResult(this.collectionCache.Object);
         }
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            CosmosDiagnosticsContext diagnosticsContext) // unused, use token based upon what is passed in constructor 
+            ITrace trace) // unused, use token based upon what is passed in constructor 
         {
             // this is masterkey authZ
             headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
@@ -164,20 +165,23 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
 
-            List<PartitionKeyRange> result = new List<PartitionKeyRange>();
-            result.Add(new PartitionKeyRange()
+            List<PartitionKeyRange> result = new List<PartitionKeyRange>
             {
-                MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                Id = "0"
-            }); 
+                new PartitionKeyRange()
+                {
+                    MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    Id = "0"
+                }
+            };
 
-            this.partitionKeyRangeCache.Setup(
-                    m => m.TryGetOverlappingRangesAsync(
-                        It.IsAny<string>(),
-                        It.IsAny<Documents.Routing.Range<string>>(),
-                        It.IsAny<bool>())
-                ).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
+            this.partitionKeyRangeCache
+                .Setup(m => m.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Documents.Routing.Range<string>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<bool>()))
+                .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
@@ -194,8 +198,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             AddressInformation[] addressInformation = this.GetMockAddressInformation();
             Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
 
-            ReplicationPolicy replicationPolicy = new ReplicationPolicy();
-            replicationPolicy.MaxReplicaSetSize = 1;
+            ReplicationPolicy replicationPolicy = new ReplicationPolicy
+            {
+                MaxReplicaSetSize = 1
+            };
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -238,13 +244,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             // rntbd://yt1prdddc01-docdb-1.documents.azure.com:14003/apps/ce8ab332-f59e-4ce7-a68e-db7e7cfaa128/services/68cc0b50-04c6-4716-bc31-2dfefd29e3ee/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/131170760736528207s/
             for (int i = 0; i <= 2; i++)
             {
-                addressInformation[i] = new AddressInformation();
-                addressInformation[i].PhysicalUri =
+                addressInformation[i] = new AddressInformation
+                {
+                    PhysicalUri =
                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
-                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/";
-                addressInformation[i].IsPrimary = i == 0 ? true : false;
-                addressInformation[i].Protocol = Protocol.Tcp;
-                addressInformation[i].IsPublic = true;
+                    + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
+                    IsPrimary = i == 0,
+                    Protocol = Protocol.Tcp,
+                    IsPublic = true
+                };
             }
             return addressInformation;
         }

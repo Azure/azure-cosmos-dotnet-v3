@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Cosmos.PartitionKey(partitionKey1),
                 new ArraySegment<ItemBatchOperation>(operations),
                 serializerCore: MockCosmosUtil.Serializer,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
@@ -72,18 +74,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ContainerInternal containerCore = (ContainerInlineCore)cosmosClient.GetDatabase("db").GetContainer("cont");
-            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
-
-            results.Add(new TransactionalBatchOperationResult(HttpStatusCode.Conflict));
-
-            results.Add(
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+            {
+                new TransactionalBatchOperationResult(HttpStatusCode.Conflict),
                 new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     RequestCharge = 2.5,
                     ETag = "1234",
                     RetryAfter = TimeSpan.FromMilliseconds(360)
-                });
+                }
+            };
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
@@ -97,12 +98,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new ItemBatchOperation(OperationType.Read, operationIndex: 0, id: "someId", containerCore: containerCore)
                     }),
                 serializerCore: MockCosmosUtil.Serializer,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: CancellationToken.None);
             TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage((HttpStatusCode)StatusCodes.MultiStatus) { Content = responseContent },
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
+                NoOpTrace.Singleton,
                 CancellationToken.None);
 
             Assert.IsNotNull(batchRequest);

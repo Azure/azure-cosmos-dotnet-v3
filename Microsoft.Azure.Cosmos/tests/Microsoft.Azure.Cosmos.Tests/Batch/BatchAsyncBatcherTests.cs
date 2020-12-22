@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class BatchAsyncBatcherTests
     {
-        private static Exception expectedException = new Exception();
-        private static BatchPartitionMetric metric = new BatchPartitionMetric();
+        private static readonly Exception expectedException = new Exception();
+        private static readonly BatchPartitionMetric metric = new BatchPartitionMetric();
 
         private ItemBatchOperation CreateItemBatchOperation(bool withContext = false)
         {
@@ -253,15 +253,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
         private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
-            = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
-            {
-                throw expectedException;
-            };
+            = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) => throw expectedException;
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, ITrace trace, CancellationToken cancellation) =>
-        {
-            return Task.CompletedTask;
-        };
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -315,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HasFixedByteSize()
         {
             ItemBatchOperation itemBatchOperation = this.CreateItemBatchOperation(true);
-            await itemBatchOperation.MaterializeResourceAsync(MockCosmosUtil.Serializer, default(CancellationToken));
+            await itemBatchOperation.MaterializeResourceAsync(MockCosmosUtil.Serializer, default);
             // Each operation is 2 bytes
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(itemBatchOperation));
@@ -335,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             operation2.AttachContext(context2);
             batchAsyncBatcher.TryAdd(operation1);
             batchAsyncBatcher.TryAdd(operation2);
-            await batchAsyncBatcher.DispatchAsync(metric);
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
 
             Assert.AreEqual(TaskStatus.Faulted, context1.OperationTask.Status);
             Assert.AreEqual(TaskStatus.Faulted, context2.OperationTask.Status);
@@ -376,8 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(i.ToString(), result.ETag);
 
                 Assert.IsNotNull(dispatchTrace);
-                Assert.AreEqual(operation.Trace, result.DiagnosticsContext);
-                Assert.IsFalse(string.IsNullOrEmpty(operation.DiagnosticsContext.ToString()));
+                Assert.IsFalse(string.IsNullOrEmpty(TraceWriter.TraceToText(dispatchTrace)));
             }
         }
 
@@ -395,7 +388,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operations.Add(operation);
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
             }
-            await batchAsyncBatcher.DispatchAsync(metric);
+
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
 
             // Responses 1 and 10 should be missing
             for (int i = 0; i < 10; i++)
@@ -422,7 +416,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            await secondAsyncBatcher.DispatchAsync(metric);
+            await secondAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
+
             // All tasks should be completed
             for (int i = 0; i < 10; i++)
             {
@@ -455,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = this.CreateItemBatchOperation();
             operation.AttachContext(new ItemBatchOperationContext(string.Empty));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
-            await batchAsyncBatcher.DispatchAsync(metric);
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
             Assert.IsFalse(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation()));
         }
 
@@ -480,12 +475,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithSplit, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
-            await batchAsyncBatcher.DispatchAsync(metric);
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
-            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
         }
 
         [TestMethod]
@@ -509,12 +502,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingSplit, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
-            await batchAsyncBatcher.DispatchAsync(metric);
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
-            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
         }
 
         [TestMethod]
@@ -538,12 +529,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingPartitionMigration, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
-            await batchAsyncBatcher.DispatchAsync(metric);
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Assert.IsNull(operation1.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
-            Assert.IsNull(operation2.DiagnosticsContext, "Batch operations do not have diagnostics per operation");
         }
 
         [TestMethod]
@@ -560,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcherThatOverflows batchAsyncBatcher = new BatchAsyncBatcherThatOverflows(2, 1000, MockCosmosUtil.Serializer, executeDelegate.Object, retryDelegate.Object);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
-            await batchAsyncBatcher.DispatchAsync(metric);
+            await batchAsyncBatcher.DispatchAsync(metric, NoOpTrace.Singleton);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -569,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static ContainerInternal GetSplitEnabledContainer()
         {
             Mock<ContainerInternal> container = new Mock<ContainerInternal>();
-            container.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
+            container.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
             Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
             container.Setup(c => c.ClientContext).Returns(context.Object);
             context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());
@@ -590,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             internal override async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)
             {
-                (PartitionKeyRangeServerBatchRequest serverRequest, ArraySegment<ItemBatchOperation> pendingOperations) = await base.CreateServerRequestAsync(cancellationToken);
+                (PartitionKeyRangeServerBatchRequest serverRequest, _) = await base.CreateServerRequestAsync(cancellationToken);
 
                 // Returning a pending operation to retry
                 return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(serverRequest, new ArraySegment<ItemBatchOperation>(serverRequest.Operations.ToArray(), 1, 1));
@@ -608,6 +597,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
+                            It.IsAny<ITrace>(),
                             It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
                         )
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));

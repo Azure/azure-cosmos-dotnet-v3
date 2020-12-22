@@ -351,7 +351,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ResponseMessage message = new ResponseMessage(statusCode);
             message.Headers.Add(Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
             message.Headers.Add(Documents.HttpConstants.HttpHeaders.RequestCharge, "1");
-            message.DiagnosticsContext.AddDiagnosticsInternal(new Diagnostics.PointOperationStatistics(Guid.NewGuid().ToString(), statusCode, Documents.SubStatusCodes.Unknown, DateTime.UtcNow, 1, "", HttpMethod.Post, "https://localhost", localLsn, localLsn));
             if (!string.IsNullOrEmpty(itemLsn))
             {
                 JObject firstDocument = new JObject

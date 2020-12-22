@@ -434,7 +434,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     responseStream,
                     requestCharge: 42,
                     activityId: Guid.NewGuid().ToString(),
-                    CosmosDiagnosticsContext.Create(default),
                     continuationState);
 
                 return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));

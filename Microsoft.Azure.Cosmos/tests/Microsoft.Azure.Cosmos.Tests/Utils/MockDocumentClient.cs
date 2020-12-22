@@ -230,12 +230,13 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
+                            It.IsAny<ITrace>(),
                             It.IsAny<bool>()
                         )
-                ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) =>
-                {
-                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, trace, forceRefresh));
-                });
+                ).Returns(
+                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) 
+                    => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(
+                        this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
 
             this.partitionKeyRangeCache.Setup(
                     m => m.TryGetPartitionKeyRangeByIdAsync(

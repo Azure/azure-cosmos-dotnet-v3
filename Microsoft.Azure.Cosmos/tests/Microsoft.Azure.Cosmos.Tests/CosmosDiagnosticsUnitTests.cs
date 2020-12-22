@@ -93,10 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Guid result = await clientContext.OperationHelperAsync<Guid>(
                 nameof(ValidateActivityId),
                 new RequestOptions(),
-                (diagnostics, trace) =>
-                {
-                    return this.ValidateActivityIdHelper();
-                });
+                (trace) => this.ValidateActivityIdHelper());
 
             Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
         }
@@ -122,10 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Guid result = await clientContext.OperationHelperAsync<Guid>(
                     nameof(ValidateActivityIdWithSynchronizationContext),
                     new RequestOptions(),
-                    (diagnostics, trace) =>
-                    {
-                        return this.ValidateActivityIdHelper();
-                    });
+                    (trace) => this.ValidateActivityIdHelper());
 
                 Assert.AreEqual(Guid.Empty, Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
             }
