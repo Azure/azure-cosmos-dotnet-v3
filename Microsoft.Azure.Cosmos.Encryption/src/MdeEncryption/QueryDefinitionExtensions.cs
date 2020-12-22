@@ -59,10 +59,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream valueStream = mdeContainer.CosmosSerializer.ToStream<T>(value);
                 JToken propertyValueToEncrypt = MdeEncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
-                await mdeContainer.MdeEncryptionProcessor.InitializeMdeProcessorIfNotInitializedAsync(cancellationToken);
+                await mdeContainer.MdeEncryptionProcessor.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
 
                 // get the paths encryption setting.
-                MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.GetEncryptionSettingForPropertyAsync(path.Substring(1));
+                MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.GetEncryptionSettingForPropertyAsync(path.Substring(1), cancellationToken);
                 if (settings == null)
                 {
                     // property not encrypted.

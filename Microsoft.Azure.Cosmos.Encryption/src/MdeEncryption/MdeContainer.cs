@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (this.EncryptionCosmosClient == null)
+            if (this.MdeEncryptionProcessor == null)
             {
                 return await this.container.CreateItemAsync<T>(
                     item,

@@ -21,6 +21,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private Dictionary<string, MdeEncryptionSettings> perPropertyEncryptionSetting;
 
+        private static readonly SemaphoreSlim EncryptionSettingSema = new SemaphoreSlim(1, 1);
+
+        private bool isEncryptionSettingsInitDone;
+
         /// <summary>
         /// Gets the container that has items which are to be encrypted.
         /// </summary>
@@ -47,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.Container = container ?? throw new ArgumentNullException(nameof(container));
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
+            this.isEncryptionSettingsInitDone = false;
         }
 
         internal async Task InitializeEncryptionSettingsAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
@@ -54,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             cancellationToken.ThrowIfCancellationRequested();
 
             // update the property level setting.
-            if (this.perPropertyEncryptionSetting != null && !forceRefresh)
+            if (this.isEncryptionSettingsInitDone && !forceRefresh)
             {
                 throw new InvalidOperationException("The Encrypton Processor has already been initialized");
             }
@@ -62,9 +67,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Dictionary<string, MdeEncryptionSettings> settingsByDekId = new Dictionary<string, MdeEncryptionSettings>();
             this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(this.Container, cancellationToken, false);
 
+            // no policy was configured.
             if (this.ClientEncryptionPolicy == null)
             {
-                throw new InvalidOperationException("Please configure ClientEncryptionPolicy when using Encryption based Cosmos Client");
+                this.isEncryptionSettingsInitDone = true;
+                return;
             }
 
             foreach (string dataEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
@@ -123,13 +130,31 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         encryptionType,
                         propertyToEncrypt.ClientEncryptionDataType);
             }
+
+            this.isEncryptionSettingsInitDone = true;
         }
 
-        public async Task InitializeMdeProcessorIfNotInitializedAsync(CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Initializes the Encryption Setting for the processor if not initialized or if shouldForceRefresh is true.
+        /// </summary>
+        /// <param name="shouldForceRefresh"> Force reinitialize the processor encryption settings </param>
+        /// <param name="cancellationToken">(Optional) Token to cancel the operation.</param>
+        /// <returns>Task to await.</returns>
+        public async Task InitializeMdeProcessorIfNotInitializedAsync(bool shouldForceRefresh = false, CancellationToken cancellationToken = default)
         {
-            if (this.perPropertyEncryptionSetting == null)
+            if (await EncryptionSettingSema.WaitAsync(-1))
             {
-                await this.InitializeEncryptionSettingsAsync(false, cancellationToken);
+                try
+                {
+                    if (!this.isEncryptionSettingsInitDone || shouldForceRefresh)
+                    {
+                        await this.InitializeEncryptionSettingsAsync(shouldForceRefresh, cancellationToken);
+                    }
+                }
+                finally
+                {
+                    EncryptionSettingSema.Release(1);
+                }
             }
         }
 
@@ -249,9 +274,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (this.perPropertyEncryptionSetting == null)
+            await this.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
+
+            if (this.ClientEncryptionPolicy == null)
             {
-                await this.InitializeEncryptionSettingsAsync(false);
+                return input;
             }
 
             foreach (ClientEncryptionIncludedPath path in this.ClientEncryptionPolicy.IncludedPaths)
@@ -263,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (string.Equals(path.Path.Substring(1), "id"))
                 {
-                    throw new InvalidOperationException($"{path} includes a invalid path: '{path}'.");
+                    throw new InvalidOperationException($"{path} includes an invalid path: '{path.Path}'.");
                 }
             }
 
@@ -283,11 +310,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName);
+                MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
 
                 if (settings == null)
                 {
-                    throw new ArgumentException("Invalid Encryption Setting for the Property");
+                    throw new ArgumentException("Invalid Encryption Setting for the Property:{0}", propertyName);
                 }
 
                 VerifyAndGetPropertyDataType(propertyValue, settings.ClientEncryptionDataType);
@@ -463,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
                 {
                     string propertyName = path.Path.Substring(1);
-                    MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName);
+                    MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
 
                     if (settings == null)
                     {
@@ -493,12 +520,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (this.perPropertyEncryptionSetting == null)
-            {
-                await this.InitializeEncryptionSettingsAsync(false);
-            }
+            await this.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
 
-            if (input == null)
+            if (input == null || this.ClientEncryptionPolicy == null)
             {
                 return input;
             }
@@ -522,9 +546,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (this.perPropertyEncryptionSetting == null)
+            await this.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
+
+            if (this.ClientEncryptionPolicy == null)
             {
-                await this.InitializeEncryptionSettingsAsync(false);
+                return document;
             }
 
             Debug.Assert(document != null);
@@ -537,13 +563,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return document;
         }
 
-        public async Task<MdeEncryptionSettings> GetEncryptionSettingForPropertyAsync(string propertyName)
+        public async Task<MdeEncryptionSettings> GetEncryptionSettingForPropertyAsync(string propertyName, CancellationToken cancellationToken)
         {
             if (this.perPropertyEncryptionSetting.TryGetValue(propertyName, out MdeEncryptionSettings settings))
             {
                 if (settings.MdeEncryptionSettingsExpiry <= DateTime.UtcNow)
                 {
-                    await this.InitializeEncryptionSettingsAsync(true);
+                    await this.InitializeMdeProcessorIfNotInitializedAsync(true, cancellationToken);
                     if (this.perPropertyEncryptionSetting.TryGetValue(propertyName, out settings))
                     {
                         return settings;

@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public async Task<ClientEncryptionPolicy> GetOrAddClientEncryptionPolicyAsync(
             Container container,
-            CancellationToken cancellationToken,
-            bool shouldforceRefresh)
+            CancellationToken cancellationToken = default,
+            bool shouldforceRefresh = false)
         {
             this.ThrowIfDisposed();
 
