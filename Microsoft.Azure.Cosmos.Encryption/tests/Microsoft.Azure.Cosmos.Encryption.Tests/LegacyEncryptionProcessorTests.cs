@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using TestDoc = TestCommon.TestDoc;
 
     [TestClass]
-    public class EncryptionProcessorTests
+    public class LegacyEncryptionProcessorTests
     {
         private static Mock<Encryptor> mockEncryptor;
         private static EncryptionOptions encryptionOptions;
@@ -26,20 +26,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
         public static void ClassInitialize(TestContext testContext)
         {
-            EncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
+            _ = testContext;
+            LegacyEncryptionProcessorTests.encryptionOptions = new EncryptionOptions()
             {
-                DataEncryptionKeyId = EncryptionProcessorTests.dekId,
+                DataEncryptionKeyId = LegacyEncryptionProcessorTests.dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt
             };
 
-            EncryptionProcessorTests.mockEncryptor = new Mock<Encryptor>();
-            EncryptionProcessorTests.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            LegacyEncryptionProcessorTests.mockEncryptor = new Mock<Encryptor>();
+            LegacyEncryptionProcessorTests.mockEncryptor.Setup(m => m.EncryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((byte[] plainText, string dekId, string algo, CancellationToken t) =>
-                    dekId == EncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
-            EncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    dekId == LegacyEncryptionProcessorTests.dekId ? TestCommon.EncryptData(plainText) : throw new InvalidOperationException("DEK not found."));
+            LegacyEncryptionProcessorTests.mockEncryptor.Setup(m => m.DecryptAsync(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((byte[] cipherText, string dekId, string algo, CancellationToken t) => 
-                    dekId == EncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
+                    dekId == LegacyEncryptionProcessorTests.dekId ? TestCommon.DecryptData(cipherText) : throw new InvalidOperationException("Null DEK was returned."));
         }
 
         [TestMethod]
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new EncryptionOptions()
             {
-                DataEncryptionKeyId = EncryptionProcessorTests.dekId,
+                DataEncryptionKeyId = LegacyEncryptionProcessorTests.dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
             };
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 await EncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
-                    EncryptionProcessorTests.mockEncryptor.Object,
+                    LegacyEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
@@ -76,15 +77,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
-            JObject encryptedDoc = await EncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
-                EncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            EncryptionProcessorTests.VerifyDecryptionSucceeded(
+            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
                 decryptionContext);
@@ -95,15 +96,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             TestDoc testDoc = TestDoc.Create();
 
-            JObject encryptedDoc = await EncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await LegacyEncryptionProcessorTests.VerifyEncryptionSucceeded(testDoc);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
-                EncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            EncryptionProcessorTests.VerifyDecryptionSucceeded(
+            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
                 decryptionContext);
@@ -116,19 +117,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
-                EncryptionProcessorTests.mockEncryptor.Object,
-                EncryptionProcessorTests.encryptionOptions,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.encryptionOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedStream,
-                EncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
-            EncryptionProcessorTests.VerifyDecryptionSucceeded(
+            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
                 decryptionContext);
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 docStream,
-                EncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -156,8 +157,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
-                EncryptionProcessorTests.mockEncryptor.Object,
-                EncryptionProcessorTests.encryptionOptions,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                LegacyEncryptionProcessorTests.encryptionOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -176,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionProperties encryptionProperties = ((JObject)eiJProp.Value).ToObject<EncryptionProperties>();
 
             Assert.IsNotNull(encryptionProperties);
-            Assert.AreEqual(EncryptionProcessorTests.dekId, encryptionProperties.DataEncryptionKeyId);
+            Assert.AreEqual(LegacyEncryptionProcessorTests.dekId, encryptionProperties.DataEncryptionKeyId);
             Assert.AreEqual(2, encryptionProperties.EncryptionFormatVersion);
             Assert.IsNotNull(encryptionProperties.EncryptedData);
 
@@ -195,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(decryptionContext);
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
             DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
-            Assert.AreEqual(EncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
+            Assert.AreEqual(LegacyEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
             Assert.AreEqual(TestDoc.PathsToEncrypt.Count, decryptionInfo.PathsDecrypted.Count);
             Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
         }
