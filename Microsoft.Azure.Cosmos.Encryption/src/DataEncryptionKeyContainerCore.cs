@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Data.Encryption.Cryptography;
 
     internal class DataEncryptionKeyContainerCore : DataEncryptionKeyContainer
     {
@@ -37,18 +38,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override async Task<ItemResponse<DataEncryptionKeyProperties>> CreateDataEncryptionKeyAsync(
-                string id,
-                string encryptionAlgorithm,
-                EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
-                ItemRequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default)
+            string id,
+            string encryptionAlgorithm,
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id));
             }
 
-            if (encryptionAlgorithm != CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            if (!CosmosEncryptionAlgorithm.VerifyIfSupportedAlgorithm(encryptionAlgorithm))
             {
                 throw new ArgumentException(string.Format("Unsupported Encryption Algorithm {0}", encryptionAlgorithm), nameof(encryptionAlgorithm));
             }
@@ -60,21 +61,43 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            byte[] rawDek = DataEncryptionKey.Generate(encryptionAlgorithm);
+            byte[] wrappedDek = null;
+            EncryptionKeyWrapMetadata updatedMetadata = null;
+            InMemoryRawDek inMemoryRawDek = null;
 
-            (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek inMemoryRawDek) = await this.WrapAsync(
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+            {
+                (wrappedDek, updatedMetadata, inMemoryRawDek) = await this.GenerateAndWrapRawDekForLegacyEncAlgoAsync(
                 id,
-                rawDek,
                 encryptionAlgorithm,
                 encryptionKeyWrapMetadata,
                 diagnosticsContext,
                 cancellationToken);
+            }
+            else if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            {
+                (wrappedDek, updatedMetadata) = this.GenerateAndWrapPdekForMdeEncAlgo(encryptionKeyWrapMetadata);
+            }
 
-            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithm, wrappedDek, updatedMetadata, DateTime.UtcNow);
+            DataEncryptionKeyProperties dekProperties = new DataEncryptionKeyProperties(
+                    id,
+                    encryptionAlgorithm,
+                    wrappedDek,
+                    updatedMetadata,
+                    DateTime.UtcNow);
 
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(dekProperties, new PartitionKey(dekProperties.Id), cancellationToken: cancellationToken);
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await this.DekProvider.Container.CreateItemAsync(
+                dekProperties,
+                new PartitionKey(dekProperties.Id),
+                cancellationToken: cancellationToken);
+
             this.DekProvider.DekCache.SetDekProperties(id, dekResponse.Resource);
-            this.DekProvider.DekCache.SetRawDek(id, inMemoryRawDek);
+
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+            {
+                this.DekProvider.DekCache.SetRawDek(id, inMemoryRawDek);
+            }
+
             return dekResponse;
         }
 
@@ -84,10 +107,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             ItemResponse<DataEncryptionKeyProperties> response = await this.ReadInternalAsync(
                 id,
                 requestOptions,
-                diagnosticsContext: null,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             this.DekProvider.DekCache.SetDekProperties(id, response.Resource);
@@ -108,14 +132,35 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
 
-            (DataEncryptionKeyProperties dekProperties, InMemoryRawDek inMemoryRawDek) = await this.FetchUnwrappedAsync(
+            DataEncryptionKeyProperties dekProperties = await this.FetchDataEncryptionKeyPropertiesAsync(
                 id,
                 diagnosticsContext,
                 cancellationToken);
 
+            byte[] rawkey = null;
+
+            if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+            {
+                InMemoryRawDek inMemoryRawDek = await this.FetchUnwrappedAsync(
+                    dekProperties,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                rawkey = inMemoryRawDek.DataEncryptionKey.RawKey;
+            }
+            else if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            {
+                EncryptionKeyUnwrapResult encryptionKeyUnwrapResult = await this.DekProvider.MdeKeyWrapProvider.UnwrapKeyAsync(
+                    dekProperties.WrappedDataEncryptionKey,
+                    dekProperties.EncryptionKeyWrapMetadata,
+                    cancellationToken);
+
+                rawkey = encryptionKeyUnwrapResult.DataEncryptionKey;
+            }
+
             (byte[] wrappedDek, EncryptionKeyWrapMetadata updatedMetadata, InMemoryRawDek updatedRawDek) = await this.WrapAsync(
                 id,
-                inMemoryRawDek.DataEncryptionKey.RawKey,
+                rawkey,
                 dekProperties.EncryptionAlgorithm,
                 newWrapMetadata,
                 diagnosticsContext,
@@ -170,11 +215,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             this.DekProvider.DekCache.SetDekProperties(id, response.Resource);
-            this.DekProvider.DekCache.SetRawDek(id, updatedRawDek);
+
+            if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+            {
+                this.DekProvider.DekCache.SetRawDek(id, updatedRawDek);
+            }
+
             return response;
         }
 
-        internal async Task<(DataEncryptionKeyProperties, InMemoryRawDek)> FetchUnwrappedAsync(
+        internal async Task<DataEncryptionKeyProperties> FetchDataEncryptionKeyPropertiesAsync(
             string id,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -187,18 +237,121 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     diagnosticsContext,
                     cancellationToken);
 
-                InMemoryRawDek inMemoryRawDek = await this.DekProvider.DekCache.GetOrAddRawDekAsync(
-                    dekProperties,
-                    this.UnwrapAsync,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                return (dekProperties, inMemoryRawDek);
+                return dekProperties;
             }
             catch (CosmosException exception)
             {
                 throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
                     $"Failed to retrieve Data Encryption Key with id: '{id}'.",
+                    exception);
+            }
+        }
+
+        /// <summary>
+        /// For providing support to Encrypt/Decrypt items using Legacy DEK with MDE based algorithm.
+        /// UnWrap using Legacy Key Provider and Init MDE Encryption Algorithm with Unwrapped Key.
+        /// </summary>
+        /// <param name="dekProperties"> DEK Properties </param>
+        /// <param name="cancellationToken"> Cancellation Token </param>
+        /// <returns> Data Encryption Key </returns>
+        internal async Task<DataEncryptionKey> FetchUnWrappedMdeSupportedLegacyDekAsync(
+            DataEncryptionKeyProperties dekProperties,
+            CancellationToken cancellationToken)
+        {
+            if (this.DekProvider.EncryptionKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm based DEK, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+            }
+
+            EncryptionKeyUnwrapResult unwrapResult;
+            try
+            {
+                // unwrap with original wrap provider
+                unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+                            dekProperties.WrappedDataEncryptionKey,
+                            dekProperties.EncryptionKeyWrapMetadata,
+                            cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                    $"Failed to unwrap Data Encryption Key with id: '{dekProperties.Id}'.",
+                    exception);
+            }
+
+            // Init PlainDataEncryptionKey and then Init MDE Algorithm using PlaintextDataEncryptionKey.
+            // PlaintextDataEncryptionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
+            PlaintextDataEncryptionKey plaintextDataEncryptionKey = new PlaintextDataEncryptionKey(
+                dekProperties.EncryptionKeyWrapMetadata.GetName(dekProperties.EncryptionKeyWrapMetadata),
+                unwrapResult.DataEncryptionKey);
+
+            return new MdeEncryptionAlgorithm(
+                plaintextDataEncryptionKey,
+                Data.Encryption.Cryptography.EncryptionType.Randomized);
+        }
+
+        internal async Task<DataEncryptionKey> FetchUnWrappedLegacySupportedMdeDekAsync(
+            DataEncryptionKeyProperties dekProperties,
+            string encryptionAlgorithm,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            EncryptionKeyUnwrapResult unwrapResult;
+
+            if (this.DekProvider.EncryptionKeyStoreProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithm based DEK, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
+            }
+
+            try
+            {
+                using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
+                {
+                    unwrapResult = await this.UnWrapDekMdeEncAlgoAsync(
+                       dekProperties,
+                       diagnosticsContext,
+                       cancellationToken);
+                }
+
+                return DataEncryptionKey.Create(
+                    unwrapResult.DataEncryptionKey,
+                    encryptionAlgorithm);
+            }
+            catch (Exception exception)
+            {
+                throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                    $"Failed to unwrap Data Encryption Key with id: '{dekProperties.Id}'.",
+                    exception);
+            }
+        }
+
+        internal async Task<InMemoryRawDek> FetchUnwrappedAsync(
+            DataEncryptionKeyProperties dekProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+                {
+                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties);
+
+                    // TTL is not used since DEK is not cached.
+                    return new InMemoryRawDek(dek, TimeSpan.FromMilliseconds(0));
+                }
+
+                return await this.DekProvider.DekCache.GetOrAddRawDekAsync(
+                    dekProperties,
+                    this.UnwrapAsync,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                    $"Failed to unwrap Data Encryption Key with id: '{dekProperties.Id}'.",
                     exception);
             }
         }
@@ -211,16 +364,45 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            EncryptionKeyWrapResult keyWrapResponse;
+            EncryptionKeyWrapResult keyWrapResponse = null;
             using (diagnosticsContext.CreateScope("WrapDataEncryptionKey"))
             {
-                keyWrapResponse = await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken);
+                keyWrapResponse = string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) && this.DekProvider.EncryptionKeyWrapProvider != null
+                    ? await this.DekProvider.EncryptionKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken)
+                    : string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized) && this.DekProvider.MdeKeyWrapProvider != null
+                        ? await this.DekProvider.MdeKeyWrapProvider.WrapKeyAsync(key, metadata, cancellationToken)
+                        : throw new ArgumentException(string.Format(
+                            "Unsupported encryption algorithm {0}." +
+                            " Please initialize the Encryptor or CosmosDataEncryptionKeyProvider with an implementation of the EncryptionKeyStoreProvider / EncryptionKeyWrapProvider.",
+                            encryptionAlgorithm));
             }
 
             // Verify
-            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(id, encryptionAlgorithm, keyWrapResponse.WrappedDataEncryptionKey, keyWrapResponse.EncryptionKeyWrapMetadata, DateTime.UtcNow);
-            InMemoryRawDek roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
-            if (!roundTripResponse.DataEncryptionKey.RawKey.SequenceEqual(key))
+            DataEncryptionKeyProperties tempDekProperties = new DataEncryptionKeyProperties(
+                id,
+                encryptionAlgorithm,
+                keyWrapResponse.WrappedDataEncryptionKey,
+                keyWrapResponse.EncryptionKeyWrapMetadata,
+                DateTime.UtcNow);
+
+            byte[] rawKey = null;
+            InMemoryRawDek roundTripResponse = null;
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+            {
+                roundTripResponse = await this.UnwrapAsync(tempDekProperties, diagnosticsContext, cancellationToken);
+                rawKey = roundTripResponse.DataEncryptionKey.RawKey;
+            }
+            else if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            {
+                EncryptionKeyUnwrapResult unwrapResult = await this.UnWrapDekMdeEncAlgoAsync(
+                    tempDekProperties,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                rawKey = unwrapResult.DataEncryptionKey;
+            }
+
+            if (!rawKey.SequenceEqual(key))
             {
                 throw new InvalidOperationException("The key wrapping provider configured was unable to unwrap the wrapped key correctly.");
             }
@@ -234,6 +416,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             EncryptionKeyUnwrapResult unwrapResult;
+
+            if (this.DekProvider.EncryptionKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+            }
+
             using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
             {
                 unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
@@ -242,9 +431,95 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            DataEncryptionKey dek = DataEncryptionKey.Create(unwrapResult.DataEncryptionKey, dekProperties.EncryptionAlgorithm);
+            DataEncryptionKey dek = DataEncryptionKey.Create(
+                unwrapResult.DataEncryptionKey,
+                dekProperties.EncryptionAlgorithm);
 
             return new InMemoryRawDek(dek, unwrapResult.ClientCacheTimeToLive);
+        }
+
+        private async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> GenerateAndWrapRawDekForLegacyEncAlgoAsync(
+            string id,
+            string encryptionAlgorithm,
+            EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (this.DekProvider.EncryptionKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized}' algorithm, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.");
+            }
+
+            byte[] rawDek = DataEncryptionKey.Generate(encryptionAlgorithm);
+
+            return await this.WrapAsync(
+                id,
+                rawDek,
+                encryptionAlgorithm,
+                encryptionKeyWrapMetadata,
+                diagnosticsContext,
+                cancellationToken);
+        }
+
+        private (byte[], EncryptionKeyWrapMetadata) GenerateAndWrapPdekForMdeEncAlgo(EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
+        {
+            if (this.DekProvider.MdeKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithm, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
+            }
+
+            KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                encryptionKeyWrapMetadata.Name,
+                encryptionKeyWrapMetadata.Value,
+                this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider);
+
+            ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                encryptionKeyWrapMetadata.Name,
+                keyEncryptionKey);
+
+            byte[] wrappedDek = protectedDataEncryptionKey.EncryptedValue;
+            EncryptionKeyWrapMetadata updatedMetadata = encryptionKeyWrapMetadata;
+            return (wrappedDek, updatedMetadata);
+        }
+
+        private async Task<EncryptionKeyUnwrapResult> UnWrapDekMdeEncAlgoAsync(
+            DataEncryptionKeyProperties dekProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            EncryptionKeyUnwrapResult unwrapResult;
+            if (this.DekProvider.MdeKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithm, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
+            }
+
+            using (diagnosticsContext.CreateScope("UnwrapDataEncryptionKey"))
+            {
+                unwrapResult = await this.DekProvider.MdeKeyWrapProvider.UnwrapKeyAsync(
+                                    dekProperties.WrappedDataEncryptionKey,
+                                    dekProperties.EncryptionKeyWrapMetadata,
+                                    cancellationToken);
+            }
+
+            return unwrapResult;
+        }
+
+        internal DataEncryptionKey InitMdeEncryptionAlgorithm(DataEncryptionKeyProperties dekProperties)
+        {
+            if (this.DekProvider.MdeKeyWrapProvider == null)
+            {
+                throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithm, " +
+                    "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
+            }
+
+            return new MdeEncryptionAlgorithm(
+                dekProperties,
+                Data.Encryption.Cryptography.EncryptionType.Randomized,
+                this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider,
+                this.DekProvider.PdekCacheTimeToLive);
         }
 
         private async Task<DataEncryptionKeyProperties> ReadResourceAsync(
@@ -268,11 +543,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
-                id,
-                new PartitionKey(id),
-                requestOptions,
-                cancellationToken);
+            using (diagnosticsContext.CreateScope("ReadInternalAsync"))
+            {
+                return await this.DekProvider.Container.ReadItemAsync<DataEncryptionKeyProperties>(
+                    id,
+                    new PartitionKey(id),
+                    requestOptions,
+                    cancellationToken);
+            }
         }
     }
 }

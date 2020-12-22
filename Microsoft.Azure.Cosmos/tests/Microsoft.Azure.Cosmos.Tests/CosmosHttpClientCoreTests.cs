@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.IO;
     using System.Net.Sockets;
-    using System.Web.Http;
     using System.Collections.Generic;
 
     [TestClass]

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
     /// Default implementation for a provider to get a data encryption key - wrapped keys are stored in a Cosmos DB container.
@@ -22,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal DekCache DekCache { get; }
 
+        /* MDE's Protected Data Encryption key Cache TTL*/
+        internal TimeSpan? PdekCacheTimeToLive { get; }
+
         internal Container Container
         {
             get
@@ -36,9 +40,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Gets a provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
+        /// Gets a provider of type EncryptionKeyWrapProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
         /// </summary>
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
+
+        /// <summary>
+        /// Gets a provider of type EncryptionKeyStoreProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
+        /// </summary>
+        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+
+        internal MdeKeyWrapProvider MdeKeyWrapProvider { get; }
 
         /// <summary>
         /// Gets Container for data encryption keys.
@@ -57,6 +68,45 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
+        /// </summary>
+        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider's ProtectedDataEncryptionKey before having to refresh. 0 results in no Caching.</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? cacheTimeToLive = null,
+            TimeSpan? dekPropertiesTimeToLive = null)
+        {
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.PdekCacheTimeToLive = cacheTimeToLive;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
+        /// </summary>
+        /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
+        /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
+        /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider ProtectedDataEncryptionKey before having to refresh. 0 results in no Caching.</param>
+        /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        public CosmosDataEncryptionKeyProvider(
+            EncryptionKeyWrapProvider encryptionKeyWrapProvider,
+            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
+            TimeSpan? cacheTimeToLive = null,
+            TimeSpan? dekPropertiesTimeToLive = null)
+        {
+            this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
+            this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
+            this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
+            this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
+            this.DekCache = new DekCache(dekPropertiesTimeToLive);
+            this.PdekCacheTimeToLive = cacheTimeToLive;
         }
 
         /// <summary>
@@ -102,8 +152,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
-            (DataEncryptionKeyProperties _, InMemoryRawDek inMemoryRawDek) = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
+            DataEncryptionKeyProperties dataEncryptionKeyProperties = await this.dataEncryptionKeyContainerCore.FetchDataEncryptionKeyPropertiesAsync(
                 id,
+                diagnosticsContext: CosmosDiagnosticsContext.Create(null),
+                cancellationToken: cancellationToken);
+
+            // supports Encryption with MDE based algorithm using Legacy Encryption Algorithm Configured DEK.
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized) &&
+                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+            {
+                return await this.dataEncryptionKeyContainerCore.FetchUnWrappedMdeSupportedLegacyDekAsync(
+                    dataEncryptionKeyProperties,
+                    cancellationToken);
+            }
+
+            // supports Encryption with Legacy based algorithm using Mde Encryption Algorithm Configured DEK.
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
+                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+            {
+                return await this.dataEncryptionKeyContainerCore.FetchUnWrappedLegacySupportedMdeDekAsync(
+                    dataEncryptionKeyProperties,
+                    encryptionAlgorithm,
+                    diagnosticsContext: CosmosDiagnosticsContext.Create(null),
+                    cancellationToken);
+            }
+
+            InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
+                dataEncryptionKeyProperties,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                 cancellationToken: cancellationToken);
 
