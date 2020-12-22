@@ -93,7 +93,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
                         : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
 
-                    return response.ToCosmosResponseMessage(request, processMessageAsyncTrace);
+                    return response.ToCosmosResponseMessage(
+                        request, 
+                        serviceRequest.RequestContext.RequestChargeTracker,
+                        processMessageAsyncTrace);
                 }
             }
         }
