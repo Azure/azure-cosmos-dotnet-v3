@@ -14,11 +14,13 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             Stream content,
             double requestCharge,
             string activityId,
+            CosmosDiagnosticsContext diagnostics,
             ReadFeedState state)
             : base(state)
         {
             this.Content = content ?? throw new ArgumentNullException(nameof(content));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
+            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ActivityId = activityId;
         }
 
@@ -27,5 +29,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         public double RequestCharge { get; }
 
         public string ActivityId { get; }
+
+        public CosmosDiagnosticsContext Diagnostics { get; }
     }
 }

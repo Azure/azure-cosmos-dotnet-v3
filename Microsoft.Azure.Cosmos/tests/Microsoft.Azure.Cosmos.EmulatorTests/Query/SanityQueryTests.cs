@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -870,6 +871,55 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             }
                         }
                     }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestTracingAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 10,
+                        MaxItemCount = 10,
+                        ReturnResultsInDeterministicOrder = true,
+                    };
+
+                    FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                        queryText: query,
+                        requestOptions: queryRequestOptions);
+                    ITrace trace;
+                    int numChildren = 1; // +1 for create query pipeline
+                    using (trace = Trace.GetRootTrace("Cross Partition Query"))
+                    {
+                        while (feedIterator.HasMoreResults)
+                        {
+                            await feedIterator.ReadNextAsync(trace, default);
+                            numChildren++;
+                        }
+                    }
+
+                    string traceString = TraceWriter.TraceToText(trace);
+
+                    Console.WriteLine(traceString);
+
+                    //Assert.AreEqual(numChildren, trace.Children.Count);
                 }
             }
         }

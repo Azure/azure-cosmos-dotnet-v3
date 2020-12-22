@@ -93,6 +93,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("FailedRequestCount");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetFailedResponseCount());
 
+            this.jsonWriter.WritePropertyName("Operation");
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.OperationName);
+
             this.jsonWriter.WriteEndObject();
 
             this.jsonWriter.WritePropertyName("Context");
