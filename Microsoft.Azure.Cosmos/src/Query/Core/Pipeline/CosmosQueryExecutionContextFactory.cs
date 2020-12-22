@@ -342,7 +342,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext,
                     inputParameters,
                     partitionedQueryExecutionInfo,
-                    targetRanges);
+                    targetRanges,
+                    cancellationToken);
             }
 
             return tryCreatePipelineStage;
