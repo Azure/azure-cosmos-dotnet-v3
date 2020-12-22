@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (cacheTimeToLive.HasValue)
             {
                 // no caching
-                if (cacheTimeToLive.Value == TimeSpan.FromMilliseconds(0))
+                if (cacheTimeToLive.Value == TimeSpan.Zero)
                 {
                     protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
                         dekProperties.Id,
