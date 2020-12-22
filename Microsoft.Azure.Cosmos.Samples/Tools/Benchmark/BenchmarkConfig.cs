@@ -159,7 +159,7 @@ namespace CosmosBenchmark
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = 10,
-                MaxTcpConnectionsPerEndpoint = int.MaxValue,
+                MaxTcpConnectionsPerEndpoint = 1000000,
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
