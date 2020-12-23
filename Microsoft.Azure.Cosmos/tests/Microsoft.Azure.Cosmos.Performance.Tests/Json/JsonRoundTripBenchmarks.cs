@@ -89,7 +89,6 @@
         {
             Text,
             Binary,
-            BinaryWithDictionaryEncoding,
             NewtonsoftText,
         }
 

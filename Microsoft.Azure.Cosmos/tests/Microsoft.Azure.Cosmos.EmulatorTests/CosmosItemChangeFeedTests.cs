@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -183,8 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
-            ResponseMessage responseMessage =
-                    await setIteratorNew.ReadNextAsync(this.cancellationToken);
+            ResponseMessage responseMessage = await setIteratorNew.ReadNextAsync(this.cancellationToken);
 
             Assert.Fail("Should have thrown.");
         }
@@ -462,6 +462,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string partitionKeyRangeId,
                 int? maxItemCount,
                 StandByFeedIteratorRequestOptions options,
+                ITrace trace,
                 CancellationToken cancellationToken)
             {
                 if (this.Iteration++ == 0)

@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap.GetOverlappingRanges(range);
         }
 
-        public async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
+        public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
             string collectionResourceId,
             string partitionKeyRangeId,
             bool forceRefresh = false)

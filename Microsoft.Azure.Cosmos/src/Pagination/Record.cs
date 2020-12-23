@@ -12,19 +12,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         public Record(
             ResourceId resourceIdentifier,
-            long timestamp,
+            DateTime timestamp,
             string identifier,
             CosmosObject payload)
         {
             this.ResourceIdentifier = resourceIdentifier;
-            this.Timestamp = timestamp < 0 ? throw new ArgumentOutOfRangeException(nameof(timestamp)) : timestamp;
+            this.Timestamp = timestamp.Kind != DateTimeKind.Utc ? throw new ArgumentOutOfRangeException("date time must be utc") : timestamp;
             this.Identifier = identifier ?? throw new ArgumentNullException(nameof(identifier));
             this.Payload = payload ?? throw new ArgumentNullException(nameof(payload));
         }
 
         public ResourceId ResourceIdentifier { get; }
 
-        public long Timestamp { get; }
+        public DateTime Timestamp { get; }
 
         public string Identifier { get; }
 

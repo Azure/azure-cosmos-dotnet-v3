@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             switch (docDbError)
             {
                 case DocDbError.PartitionSplit:
-                    throw new FeedSplitException("Partition split.", lastContinuation);
+                    throw new FeedRangeGoneException("Partition split.", lastContinuation);
                 case DocDbError.PartitionNotFound:
                     throw new FeedNotFoundException("Partition not found.", lastContinuation);
                 case DocDbError.ReadSessionNotAvailable:
