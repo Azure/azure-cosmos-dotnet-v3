@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System.Collections.Generic;
     using Newtonsoft.Json;
 
     internal class EncryptionProperties
@@ -20,16 +21,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         [JsonProperty(PropertyName = Constants.EncryptedData)]
         public byte[] EncryptedData { get; }
 
+        [JsonProperty(PropertyName = Constants.EncryptedPaths)]
+        public IEnumerable<string> EncryptedPaths { get; }
+
         public EncryptionProperties(
             int encryptionFormatVersion,
             string encryptionAlgorithm,
             string dataEncryptionKeyId,
-            byte[] encryptedData)
+            byte[] encryptedData,
+            IEnumerable<string> encryptedPaths)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
             this.EncryptionAlgorithm = encryptionAlgorithm;
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
+            this.EncryptedPaths = encryptedPaths;
         }
     }
 }

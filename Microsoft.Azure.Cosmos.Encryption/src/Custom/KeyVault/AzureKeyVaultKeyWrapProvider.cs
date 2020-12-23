@@ -89,7 +89,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             byte[] result = await this.keyVaultAccessClient.WrapKeyAsync(key, keyVaultUriProperties, cancellationToken);
-            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Type, metadata.Value, KeyVaultConstants.RsaOaep256);
+            EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(
+                type: metadata.Type,
+                value: metadata.Value,
+                algorithm: KeyVaultConstants.RsaOaep256);
+
             return new EncryptionKeyWrapResult(result, responseMetadata);
         }
     }

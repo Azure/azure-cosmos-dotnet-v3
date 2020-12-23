@@ -12,5 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public const string EncryptionAlgorithm = "_ea";
         public const string EncryptionDekId = "_en";
         public const string EncryptionFormatVersion = "_ef";
+        public const string EncryptedPaths = "_ep";
+        public const int DekPropertiesDefaultTTLInMinutes = 120;
     }
 }
