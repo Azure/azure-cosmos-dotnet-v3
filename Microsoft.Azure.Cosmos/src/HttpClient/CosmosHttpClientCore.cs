@@ -230,9 +230,8 @@ namespace Microsoft.Azure.Cosmos
             HttpTimeoutPolicy timeoutPolicy,
             CancellationToken cancellationToken)
         {
-            bool isDefaultCancellationToken = cancellationToken == default;
             DateTime startDateTimeUtc = DateTime.UtcNow;
-            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.TimeoutEnumerator;
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
             timeoutEnumerator.MoveNext();
             while (true)
             {
@@ -240,24 +239,17 @@ namespace Microsoft.Azure.Cosmos
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
                     // If the default cancellation token is passed then use the timeout policy
-                    CancellationTokenSource cancellationTokenSource = null;
-                    if (isDefaultCancellationToken)
-                    {
-                        cancellationTokenSource = new CancellationTokenSource();
-                        cancellationTokenSource.CancelAfter(requestTimeout);
-                        cancellationToken = cancellationTokenSource.Token;
-                    }
-
-                    cancellationToken.ThrowIfCancellationRequested();
+                    using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cancellationTokenSource.CancelAfter(requestTimeout);
 
                     try
                     {
-                        using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpHelperAsync)))
+                        using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpHelperAsync) + ":" + timeoutPolicy.TimeoutPolicyName))
                         {
                             return await this.ExecuteHttpHelperAsync(
                                 requestMessage,
                                 resourceType,
-                                cancellationToken);
+                                cancellationTokenSource.Token);
                         }
                     }
                     catch (Exception e)
@@ -283,14 +275,14 @@ namespace Microsoft.Azure.Cosmos
                         {
                             case OperationCanceledException operationCanceledException:
                                 // Throw if the user passed in cancellation was requested
-                                if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
+                                if (cancellationToken.IsCancellationRequested)
                                 {
                                     throw;
                                 }
 
                                 // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                 // the request timed out and was not user canceled operation.
-                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
+                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
                                 {
                                     // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
                                     string message =
@@ -303,14 +295,14 @@ namespace Microsoft.Azure.Cosmos
 
                                 break;
                             case WebException webException:
-                                if (isOutOfRetries || (requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                 {
                                     throw;
                                 }
 
                                 break;
                             case HttpRequestException httpRequestException:
-                                if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
+                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
                                 {
                                     throw;
                                 }

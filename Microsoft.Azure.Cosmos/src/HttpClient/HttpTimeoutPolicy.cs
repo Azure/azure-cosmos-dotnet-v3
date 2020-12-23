@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Http;
     using Microsoft.Azure.Documents;
 
     internal abstract class HttpTimeoutPolicy
@@ -12,7 +13,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract string TimeoutPolicyName { get; }
         public abstract TimeSpan MaximumRetryTimeLimit { get; }
         public abstract int TotalRetryCount { get; }
-        public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutEnumerator { get; }
+        public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
+        public abstract bool IsSafeToRetry(HttpMethod httpMethod);
 
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest)
@@ -20,12 +22,12 @@ namespace Microsoft.Azure.Cosmos
             if (documentServiceRequest.ResourceType == ResourceType.Document
                 && documentServiceRequest.OperationType == OperationType.QueryPlan)
             {
-                return HttpTimeoutPolicyControlPlaneHotPath.Instance;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
 
             if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
             {
-                return HttpTimeoutPolicyControlPlaneHotPath.Instance;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
 
             return HttpTimeoutPolicyDefault.Instance;
