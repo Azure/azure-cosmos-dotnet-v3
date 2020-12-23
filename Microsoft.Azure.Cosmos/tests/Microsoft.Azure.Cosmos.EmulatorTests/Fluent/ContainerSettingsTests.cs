@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("/address/spatial/*", spatialPath.Path);
             Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
 
-            Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.IncludedPaths.Count);
+            Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.IncludedPaths.Count());
             Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.PolicyFormatVersion);
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
@@ -522,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/user";
             int timeToLivetimeToLiveInSeconds = 10;
 
-            ContainerResponse containerResponse = null;
+            ContainerResponse containerResponse;
             try
             {
                 containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
@@ -579,7 +579,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = "Randomized",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                ClientEncryptionDataType = ClientEncryptionDataType.String
             };
             
             ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
@@ -594,7 +593,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties responseSettings = containerResponse;
 
             Assert.IsNotNull(responseSettings.ClientEncryptionPolicy);
-            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count);
+            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(path1, clientEncryptionIncludedPath));
             clientEncryptionIncludedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.Last();
@@ -675,8 +674,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return expected.Path == actual.Path &&
                    expected.ClientEncryptionKeyId == actual.ClientEncryptionKeyId &&
                    expected.EncryptionType == actual.EncryptionType &&
-                   expected.EncryptionAlgorithm == actual.EncryptionAlgorithm &&
-                   expected.ClientEncryptionDataType == actual.ClientEncryptionDataType;
+                   expected.EncryptionAlgorithm == actual.EncryptionAlgorithm;
         }
     }    
 }

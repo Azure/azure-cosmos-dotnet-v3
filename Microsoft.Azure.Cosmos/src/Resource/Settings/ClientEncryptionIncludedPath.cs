@@ -39,13 +39,5 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = "encryptionAlgorithm")]
         public string EncryptionAlgorithm { get; set; }
-
-        /// <summary>
-        /// Gets or sets the column data type. 
-        /// The user can optionally set this to enforce the data type for the value in the given Path.
-        /// This is required for interoperability and data transfer between engines.
-        /// </summary>
-        [JsonProperty(PropertyName = "clientEncryptionDataType")]
-        public ClientEncryptionDataType ClientEncryptionDataType { get; set; }
     }
 }

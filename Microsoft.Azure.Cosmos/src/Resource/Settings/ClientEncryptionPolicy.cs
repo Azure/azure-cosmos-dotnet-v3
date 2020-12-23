@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.ObjectModel;
+    using System.Collections.Generic;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -26,24 +26,31 @@ namespace Microsoft.Azure.Cosmos
             this.PolicyFormatVersion = 1;
         }
 
-        private Collection<ClientEncryptionIncludedPath> includedPath = new Collection<ClientEncryptionIncludedPath>();
+        private IEnumerable<ClientEncryptionIncludedPath> includedPath = new List<ClientEncryptionIncludedPath>();
 
         /// <summary>
         /// Paths of the item that need encryption along with path-specific settings.
         /// </summary>
         [JsonProperty(PropertyName = "includedPaths")]
-        public Collection<ClientEncryptionIncludedPath> IncludedPaths { get => this.includedPath; internal set => this.includedPath = this.ValidateIncludedPaths(value); } 
+        public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths
+        {
+            get => this.includedPath;
+            internal set
+            {
+                this.ValidateIncludedPaths(value);
+                this.includedPath = value;
+            }
+        } 
 
         [JsonProperty(PropertyName = "policyFormatVersion")]
         internal int PolicyFormatVersion { get; set; }
 
-        internal Collection<ClientEncryptionIncludedPath> ValidateIncludedPaths(Collection<ClientEncryptionIncludedPath> clientEncryptionIncludedPath)
+        private void ValidateIncludedPaths(IEnumerable<ClientEncryptionIncludedPath> clientEncryptionIncludedPath)
         {
             foreach (ClientEncryptionIncludedPath path in clientEncryptionIncludedPath)
             {
                 this.ValidateClientEncryptionIncludedPath(path);
             }
-            return clientEncryptionIncludedPath;
         }
 
         private void ValidateClientEncryptionIncludedPath(ClientEncryptionIncludedPath clientEncryptionIncludedPath)

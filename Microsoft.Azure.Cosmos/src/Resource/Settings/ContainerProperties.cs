@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.clientEncryptionPolicyInternal;
 
-            set => this.clientEncryptionPolicyInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
+            set => this.clientEncryptionPolicyInternal = value;
         }
 
         /// <summary>

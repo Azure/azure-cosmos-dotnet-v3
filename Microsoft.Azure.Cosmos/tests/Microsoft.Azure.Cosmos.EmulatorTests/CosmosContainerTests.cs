@@ -1360,7 +1360,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = containerResponse;
             ContainerProperties responseSettings = containerResponse;
 
-            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count);
+            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
             ClientEncryptionIncludedPath includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
             Assert.AreEqual("/path1", includedPath.Path);
             Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
