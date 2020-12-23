@@ -93,17 +93,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     container.Id,
                     new DisableServiceInterop(client.ClientContext, container));
 
+                bool isQueryRequestFound = false;
                 httpClientHandler.RequestCallBack = (request, cancellationToken) =>
                 {
                     if(request.Headers.TryGetValues(HttpConstants.HttpHeaders.IsQueryPlanRequest, out IEnumerable<string> isQueryPlan) &&
                         isQueryPlan.FirstOrDefault() == bool.TrueString)
                     {
+                        Assert.IsFalse(isQueryRequestFound, "Should only call get query plan once.");
                         Assert.AreNotEqual(cancellationToken, default);
                     }
                 };
 
                 using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status");
                 FeedResponse<JObject> response = await iterator.ReadNextAsync();
+
+                Assert.IsTrue(isQueryRequestFound, "Query plan call back was not called.");
 
                 string diagnostics = response.Diagnostics.ToString();
                 JObject parsedDiagnostics = JObject.Parse(diagnostics);

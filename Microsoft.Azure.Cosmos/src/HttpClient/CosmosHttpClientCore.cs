@@ -235,6 +235,8 @@ namespace Microsoft.Azure.Cosmos
             timeoutEnumerator.MoveNext();
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
