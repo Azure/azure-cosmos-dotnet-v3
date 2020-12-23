@@ -19,22 +19,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public Data.Encryption.Cryptography.EncryptionType EncryptionType { get; set; }
 
-        public ClientEncryptionDataType? ClientEncryptionDataType { get; set; }
-
         public MdeEncryptionSettings()
         {
         }
 
         internal static MdeEncryptionSettings Create(
             MdeEncryptionSettings settingsForKey,
-            Data.Encryption.Cryptography.EncryptionType encryptionType,
-            ClientEncryptionDataType? clientEncryptionDataType = null)
+            Data.Encryption.Cryptography.EncryptionType encryptionType)
         {
             return new MdeEncryptionSettings()
             {
                 ClientEncryptionKeyId = settingsForKey.ClientEncryptionKeyId,
                 DataEncryptionKey = settingsForKey.DataEncryptionKey,
-                ClientEncryptionDataType = clientEncryptionDataType,
                 EncryptionType = encryptionType,
                 MdeEncryptionSettingsExpiry = DateTime.UtcNow + TimeSpan.FromMinutes(30),
                 AeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(

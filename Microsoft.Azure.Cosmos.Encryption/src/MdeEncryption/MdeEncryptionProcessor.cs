@@ -89,10 +89,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
                         this.EncryptionKeyStoreProvider);
 
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                    ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                                clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                                keyEncryptionKey,
                                clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                    protectedDataEncryptionKey.TimeToLive = TimeSpan.FromMinutes(30);
 
                     settingsByDekId[dataEncryptionKeyId] = new MdeEncryptionSettings
                     {
@@ -127,8 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.perPropertyEncryptionSetting[propertyName]
                     = MdeEncryptionSettings.Create(
                         settingsByDekId[propertyToEncrypt.ClientEncryptionKeyId],
-                        encryptionType,
-                        propertyToEncrypt.ClientEncryptionDataType);
+                        encryptionType);
             }
 
             this.isEncryptionSettingsInitDone = true;
@@ -231,18 +232,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             JToken propertyValueToEncrypt = jToken;
 
-            ClientEncryptionDataType? clientEncryptionDataType = null;
-            if (settings.ClientEncryptionDataType != null)
-            {
-                VerifyAndGetPropertyDataType(jToken, settings.ClientEncryptionDataType);
-                clientEncryptionDataType = settings.ClientEncryptionDataType;
-            }
-            else
-            {
-                clientEncryptionDataType = VerifyAndGetPropertyDataType(propertyValueToEncrypt, clientEncryptionDataType);
-            }
-
-            (ClientEncryptionDataType? typeMarker, byte[] plainText) = this.Serialize(propertyValueToEncrypt, clientEncryptionDataType);
+            (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
 
             byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText);
 
@@ -251,17 +241,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException($"{nameof(this.EncryptAndSerializeValueAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
             }
 
-            if (settings.ClientEncryptionDataType == null)
-            {
-                byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                return await Task.FromResult(cipherTextWithTypeMarker);
-            }
-            else
-            {
-                return await Task.FromResult(cipherText);
-            }
+            byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
+            cipherTextWithTypeMarker[0] = (byte)typeMarker;
+            Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+            return await Task.FromResult(cipherTextWithTypeMarker);
         }
 
         /// <remarks>
@@ -317,7 +300,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException("Invalid Encryption Setting for the Property:{0}", propertyName);
                 }
 
-                VerifyAndGetPropertyDataType(propertyValue, settings.ClientEncryptionDataType);
                 await this.EncryptAndSerializePropertyAsync(
                                 itemJObj,
                                 propertyValue,
@@ -345,17 +327,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return null;
             }
 
-            byte[] cipherText;
-
-            if (settings.ClientEncryptionDataType != null)
-            {
-                cipherText = cipherTextWithTypeMarker;
-            }
-            else
-            {
-                cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
-                Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
-            }
+            byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
+            Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
 
             byte[] plainText = await this.DecryptPropertyAsync(
                 cipherText,
@@ -363,20 +336,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext,
                 cancellationToken);
 
-            ClientEncryptionDataType? clientEncryptionDataType;
-            if (settings.ClientEncryptionDataType != null)
-            {
-                clientEncryptionDataType = settings.ClientEncryptionDataType;
-            }
-            else
-            {
-                ClientEncryptionDataType typeMarker = (ClientEncryptionDataType)cipherTextWithTypeMarker[0];
-                clientEncryptionDataType = typeMarker;
-            }
-
-            return this.DeserializeAndAddProperty(
+            return DeserializeAndAddProperty(
                 plainText,
-                clientEncryptionDataType);
+                (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
         private async Task<byte[]> DecryptPropertyAsync(
@@ -610,64 +572,44 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return itemJObj;
         }
 
-        private (ClientEncryptionDataType?, byte[]) Serialize(JToken propertyValue, ClientEncryptionDataType? clientEncryptionDataType = null)
+        internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
             SqlNvarcharSerializer sqlNvarcharSerializer = new SqlNvarcharSerializer(-1);
 
-            return clientEncryptionDataType switch
+            return propertyValue.Type switch
             {
-                ClientEncryptionDataType.Bool => (ClientEncryptionDataType.Bool, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
-                ClientEncryptionDataType.Double => (ClientEncryptionDataType.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
-                ClientEncryptionDataType.Long => (ClientEncryptionDataType.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
-                ClientEncryptionDataType.String => (ClientEncryptionDataType.String, sqlNvarcharSerializer.Serialize(propertyValue.ToObject<string>())),
+                JTokenType.Boolean => (TypeMarker.Boolean, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
+                JTokenType.Float => (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
+                JTokenType.Integer => (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
+                JTokenType.String => (TypeMarker.String, sqlNvarcharSerializer.Serialize(propertyValue.ToObject<string>())),
                 _ => throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}"),
             };
         }
 
-        private JToken DeserializeAndAddProperty(
+        internal static JToken DeserializeAndAddProperty(
             byte[] serializedBytes,
-            ClientEncryptionDataType? clientEncryptionDataType = null)
+            TypeMarker typeMarker)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
 
-            return clientEncryptionDataType switch
+            return typeMarker switch
             {
-                ClientEncryptionDataType.Bool => sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
-                ClientEncryptionDataType.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
-                ClientEncryptionDataType.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
-                ClientEncryptionDataType.String => sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes),
-                _ => throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {clientEncryptionDataType}"),
+                TypeMarker.Boolean => sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
+                TypeMarker.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
+                TypeMarker.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
+                TypeMarker.String => sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes),
+                _ => throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {typeMarker}"),
             };
         }
 
-        private static ClientEncryptionDataType? VerifyAndGetPropertyDataType(
-            JToken propertyValueToEncrypt,
-            ClientEncryptionDataType? passedclientEncryptionDataType = null)
+        internal enum TypeMarker : byte
         {
-            ClientEncryptionDataType? clientEncryptionDataType = null;
-            switch (propertyValueToEncrypt.Type)
-            {
-                case JTokenType.Boolean:
-                    clientEncryptionDataType = ClientEncryptionDataType.Bool;
-                    break;
-                case JTokenType.Float:
-                    clientEncryptionDataType = ClientEncryptionDataType.Double;
-                    break;
-                case JTokenType.Integer:
-                    clientEncryptionDataType = ClientEncryptionDataType.Long;
-                    break;
-                case JTokenType.String:
-                    clientEncryptionDataType = ClientEncryptionDataType.String;
-                    break;
-            }
-
-            if (passedclientEncryptionDataType != null && clientEncryptionDataType != passedclientEncryptionDataType)
-            {
-                throw new ArgumentException($"Incorrect DataType:{passedclientEncryptionDataType} configured in the ClientEncryptionPolicy");
-            }
-
-            return clientEncryptionDataType;
+            Null = 1, // not used
+            Boolean = 2,
+            Double = 3,
+            Long = 4,
+            String = 5,
         }
     }
 }
