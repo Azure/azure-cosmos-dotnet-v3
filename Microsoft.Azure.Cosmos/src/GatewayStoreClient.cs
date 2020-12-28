@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)
         {
-            INameValueCollection headers = new HttpHeadersNameValueCollectionWrapper(
+            INameValueCollection headers = new HttpResponseHeadersWrapper(
                 responseMessage.Headers,
                 responseMessage.Content?.Headers);
 
