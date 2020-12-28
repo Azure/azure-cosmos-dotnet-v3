@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -250,9 +251,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestCharge: response.Headers.RequestCharge,
                         retryAfter: default,
                         headers: response.Headers,
-                        diagnosticsContext: response.DiagnosticsContext,
                         error: default,
-                        innerException: default).ToCosmosResponseMessage(request);
+                        innerException: default,
+                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
                 }
 
                 return response;

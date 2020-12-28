@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using System.IO;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -177,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 dynamic oldContinuation = new
                 {
                     V = 0,
-                    Rid = await container.GetCachedRIDAsync(cancellationToken: this.cancellationToken),
+                    Rid = await container.GetCachedRIDAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: this.cancellationToken),
                     Continuation = ct
                 };
                 continuations.Add(JsonConvert.SerializeObject(oldContinuation));

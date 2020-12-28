@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
@@ -920,6 +921,50 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     Console.WriteLine(traceString);
 
                     //Assert.AreEqual(numChildren, trace.Children.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestCosmosDiagnosticsAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 10,
+                        MaxItemCount = 10,
+                        ReturnResultsInDeterministicOrder = true,
+                    };
+
+                    FeedIterator<CosmosElement> feedIterator = container.GetItemQueryIterator<CosmosElement>(
+                        queryText: query,
+                        requestOptions: queryRequestOptions);
+
+                    List<CosmosDiagnostics> diagnostics = new List<CosmosDiagnostics>();
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<CosmosElement> feedResponse = await feedIterator.ReadNextAsync(default);
+                        Assert.IsTrue(feedResponse.Diagnostics is CosmosTraceDiagnostics cosmosTraceDiagnostics);
+                        diagnostics.Add(feedResponse.Diagnostics);
+                    }
+
+                    string concatenatedDiagnostics = string.Concat(diagnostics.Select(x => x.ToString()));
+                    Assert.IsTrue(concatenatedDiagnostics.Contains("QueryPlan"));
                 }
             }
         }

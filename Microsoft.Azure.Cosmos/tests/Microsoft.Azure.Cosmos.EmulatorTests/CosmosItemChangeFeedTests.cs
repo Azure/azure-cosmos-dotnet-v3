@@ -317,60 +317,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task GetChangeFeedTokensAsync_MatchesPkRanges()
-        {
-            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerInternal itemsCore = this.LargerContainer;
-            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
-            Assert.AreEqual(pkRangesCount, tokens.Count());
-        }
-
-        [TestMethod]
-        public async Task GetChangeFeedTokensAsync_AllowsParallelProcessing()
-        {
-            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerInternal itemsCore = this.LargerContainer;
-            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
-            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
-            Assert.AreEqual(pkRangesCount, tokens.Count());
-            int totalDocuments = 200;
-            await this.CreateRandomItems(this.LargerContainer, totalDocuments, randomPartitionKey: true);
-            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
-            {
-                int count = 0;
-                FeedIterator iteratorForToken =
-                    itemsCore.GetStandByFeedIterator(continuationToken: token, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
-                while (true)
-                {
-                    using (ResponseMessage responseMessage =
-                    await iteratorForToken.ReadNextAsync(this.cancellationToken))
-                    {
-                        if (!responseMessage.IsSuccessStatusCode)
-                        {
-                            break;
-                        }
-
-                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                        count += response.Count;
-                    }
-                }
-
-                return count;
-
-            })).ToList();
-
-            await Task.WhenAll(tasks);
-
-            int documentsRead = 0;
-            foreach (Task<int> task in tasks)
-            {
-                documentsRead += task.Result;
-            }
-
-            Assert.AreEqual(totalDocuments, documentsRead);
-        }
-
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
@@ -441,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
+                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {

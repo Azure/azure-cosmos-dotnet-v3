@@ -19,9 +19,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
         private bool received429ResponseSinceLastStartRequest = false;
 
-        public ClientSideRequestStatisticsTraceDatum()
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
         {
-            this.RequestStartTimeUtc = DateTime.UtcNow;
+            this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
             this.EndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
             this.RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();

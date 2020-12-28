@@ -254,7 +254,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(ce.RetryAfter.HasValue);
                 Assert.AreEqual(42, ce.RetryAfter.Value.TotalMilliseconds);
                 Assert.AreEqual(activityId, ce.ActivityId);
-                Assert.IsNotNull(ce.DiagnosticsContext);
                 Assert.IsTrue(ce.Message.Contains(errorMessage));
             }
 
@@ -280,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(429, (int)response.StatusCode);
                 Assert.AreEqual("42", response.Headers.RetryAfterLiteral);
                 Assert.AreEqual(activityId, response.Headers.ActivityId);
-                Assert.IsNotNull(response.DiagnosticsContext);
+                Assert.IsNotNull(response.Trace);
                 Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
             }
         }
