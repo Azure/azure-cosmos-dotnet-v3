@@ -148,7 +148,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Timeout(30000)]
         public async Task ChangeFeedIteratorCore_PartitionKey_ReadAll()
         {
             int totalCount = 0;
@@ -238,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Timeout(30000)]
         public async Task ChangeFeedIteratorCore_PartitionKey_OfT_ReadAll()
         {
             int totalCount = 0;

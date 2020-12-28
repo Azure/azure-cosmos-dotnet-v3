@@ -8,13 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Globalization;
     using System.Linq;
     using System.Net.Http.Headers;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class HttpHeadersNameValueCollectionWrapper : INameValueCollection
+    internal sealed class HttpResponseHeadersWrapper : CosmosMessageHeadersInternal
     {
         private readonly HttpResponseHeaders httpResponseHeaders;
         private readonly HttpContentHeaders httpContentHeaders;
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="responseHeaders"></param>
         /// <param name="httpContentHeaders"></param>
-        public HttpHeadersNameValueCollectionWrapper(
+        public HttpResponseHeadersWrapper(
             HttpResponseHeaders responseHeaders,
             HttpContentHeaders httpContentHeaders)
         {
@@ -45,13 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.dictionaryNameValueCollection = new Lazy<DictionaryNameValueCollection>(() => new DictionaryNameValueCollection());
         }
 
-        public string this[string key]
-        {
-            get => this.Get(key);
-            set => this.Set(key, value);
-        }
-
-        public void Add(string key, string value)
+        public override void Add(string key, string value)
         {
             if (this.httpResponseHeaders.TryAddWithoutValidation(key, value))
             {
@@ -66,17 +59,12 @@ namespace Microsoft.Azure.Cosmos
             this.dictionaryNameValueCollection.Value.Add(key, value);
         }
 
-        public void Add(INameValueCollection collection)
+        public override void Add(INameValueCollection collection)
         {
             this.dictionaryNameValueCollection.Value.Add(collection);
         }
 
-        public string[] AllKeys()
-        {
-            return this.Keys().ToArray();
-        }
-
-        public void Clear()
+        public override void Clear()
         {
             this.httpResponseHeaders.Clear();
 
@@ -91,11 +79,22 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public INameValueCollection Clone()
+        public override bool TryGetValue(string headerName, out string value)
+        {
+            value = this.Get(headerName);
+            return value != null;
+        }
+
+        public override string[] AllKeys()
+        {
+            return this.Keys().ToArray();
+        }
+
+        public override INameValueCollection Clone()
         {
             INameValueCollection headers = new DictionaryNameValueCollection();
 
-            foreach (KeyValuePair<string, IEnumerable<string>> headerPair in this.httpResponseHeaders)
+            foreach (KeyValuePair<string, IEnumerable<string>> headerPair in this.AllItems())
             {
                 foreach (string val in headerPair.Value)
                 {
@@ -103,32 +102,10 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (this.httpContentHeaders != null)
-            {
-                foreach (KeyValuePair<string, IEnumerable<string>> headerPair in this.httpContentHeaders)
-                {
-                    foreach (string val in headerPair.Value)
-                    {
-                        headers.Add(headerPair.Key, val);
-                    }
-                }
-            }
-
-            if (this.dictionaryNameValueCollection.IsValueCreated)
-            {
-                foreach (KeyValuePair<string, IEnumerable<string>> headerPair in this.dictionaryNameValueCollection.Value)
-                {
-                    foreach (string val in headerPair.Value)
-                    {
-                        headers.Add(headerPair.Key, val);
-                    }
-                }
-            }
-
             return headers;
         }
 
-        public int Count()
+        public override int Count()
         {
             int count = 0;
             if (this.dictionaryNameValueCollection.IsValueCreated)
@@ -144,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             return this.httpResponseHeaders.Count() + count;
         }
 
-        public string Get(string key)
+        public override string Get(string key)
         {
             if (!this.httpResponseHeaders.TryGetValues(key, out IEnumerable<string> result))
             {
@@ -160,9 +137,9 @@ namespace Microsoft.Azure.Cosmos
             return result == null ? null : string.Join(",", result);
         }
 
-        public IEnumerator GetEnumerator()
+        public override IEnumerator<string> GetEnumerator()
         {
-            return this.AllItems().GetEnumerator();
+            return this.Keys().GetEnumerator();
         }
 
         private IEnumerable AllItems()
@@ -189,12 +166,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public string[] GetValues(string key)
+        public override string[] GetValues(string key)
         {
             return this.httpResponseHeaders.GetValues(key).ToArray();
         }
 
-        public IEnumerable<string> Keys()
+        public override IEnumerable<string> Keys()
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in this.AllItems())
             {
@@ -202,10 +179,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public void Remove(string key)
+        public override void Remove(string key)
         {
-            if (this.httpResponseHeaders.Remove(key))
+            // HttpRepsonseMessageHeaders will throw an exception if it is invalid header
+            if (this.httpResponseHeaders.TryGetValues(key, out _))
             {
+                this.httpResponseHeaders.Remove(key);
                 return;
             }
 
@@ -220,13 +199,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public void Set(string key, string value)
+        public override void Set(string key, string value)
         {
             this.Remove(key);
             this.Add(key, value);
         }
 
-        public NameValueCollection ToNameValueCollection()
+        public override NameValueCollection ToNameValueCollection()
         {
             throw new NotImplementedException();
         }
