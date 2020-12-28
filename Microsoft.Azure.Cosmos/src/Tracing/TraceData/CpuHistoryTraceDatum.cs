@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
 
-    internal sealed class CpuHistoryTraceDatum
+    internal sealed class CpuHistoryTraceDatum : TraceDatum
     {
         public CpuHistoryTraceDatum(Documents.Rntbd.CpuLoadHistory cpuLoadHistory)
         {
@@ -14,5 +14,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         }
 
         public Documents.Rntbd.CpuLoadHistory Value { get; }
+
+        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
+        {
+            traceDatumVisitor.Visit(this);
+        }
     }
 }

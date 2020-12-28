@@ -14,5 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum);
         void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum);
         void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum);
+        void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum);
     }
 }

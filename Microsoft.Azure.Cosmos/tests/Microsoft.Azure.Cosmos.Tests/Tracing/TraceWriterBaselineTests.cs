@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System.Linq;
     using System.Net.Http;
     using System.Runtime.CompilerServices;
+    using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.ChangeFeed;
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     [TestClass]
@@ -119,8 +121,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                TraceForBaselineTesting rootTrace;
+                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                     {
@@ -137,8 +139,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                TraceForBaselineTesting rootTrace;
+                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                     {
@@ -156,8 +158,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                TraceForBaselineTesting rootTrace;
+                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                     {
@@ -178,8 +180,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+                TraceForBaselineTesting rootTrace;
+                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
                     {
@@ -258,10 +260,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 inputs.Add(new Input("Trace With Grandchildren", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
+
+            this.ExecuteTestSuite(inputs);
         }
 
         [TestMethod]
-        public void TraceDatums()
+        public void TraceData()
         {
             List<Input> inputs = new List<Input>();
 
@@ -393,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 new List<Documents.Rntbd.CpuLoad>()
                                 {
                                     new Documents.Rntbd.CpuLoad(DateTime.MinValue, 42),
-                                new Documents.Rntbd.CpuLoad(DateTime.MinValue, 1337),
+                                    new Documents.Rntbd.CpuLoad(DateTime.MinValue, 23),
                                 }),
                             monitoringInterval: TimeSpan.MaxValue));
                     rootTrace.AddDatum("CPU History", datum);
@@ -403,6 +407,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 inputs.Add(new Input("CPU History", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
+
+            this.ExecuteTestSuite(inputs);
         }
 
         [TestMethod]
@@ -508,6 +514,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 inputs.Add(new Input("Query", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
+
+            this.ExecuteTestSuite(inputs);
         }
 
         public override Output ExecuteTest(Input input)
@@ -515,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             string text = TraceWriter.TraceToText(input.Trace);
             string json = TraceWriter.TraceToJson(input.Trace);
 
-            return new Output(text, json);
+            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
@@ -610,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         public sealed class Input : BaselineTestInput
         {
-            private static readonly string[] sourceCode = File.ReadAllLines(nameof(TraceWriterBaselineTests) + ".cs");
+            private static readonly string[] sourceCode = File.ReadAllLines($"Tracing\\{nameof(TraceWriterBaselineTests)}.cs");
 
             internal Input(string description, ITrace trace, int startLineNumber, int endLineNumber)
                 : base(description)
@@ -629,20 +637,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
                 xmlWriter.WriteElementString(nameof(this.Description), this.Description);
-                xmlWriter.WriteStartElement("Source Code");
+                xmlWriter.WriteStartElement("Setup");
                 ArraySegment<string> codeSnippet = new ArraySegment<string>(
                     sourceCode,
                     this.StartLineNumber,
                     this.EndLineNumber - this.StartLineNumber - 1);
-                string setup =
+
+                string setup;
+                try
+                {
+                    setup =
                     Environment.NewLine
                     + string
                         .Join(
                             Environment.NewLine,
                             codeSnippet
-                                .Select(x => x.Substring("            ".Length)))
+                                .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
                     + Environment.NewLine;
-                xmlWriter.WriteCData(setup);
+                }
+                catch(Exception ex)
+                {
+                    throw ex;
+                }
+                xmlWriter.WriteCData(setup ?? "asdf");
                 xmlWriter.WriteEndElement();
             }
         }
@@ -706,7 +723,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             public ITrace Parent { get; }
 
-            public IReadOnlyList<ITrace> Children => null;
+            public IReadOnlyList<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 

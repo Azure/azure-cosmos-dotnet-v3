@@ -96,8 +96,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 private static class HeaderLengths
                 {
-                    public static readonly int StartTime = Headers.StartTime.Length;
-                    public static readonly int EndTime = Headers.EndTime.Length;
+                    public static readonly int StartTime = Math.Max(Headers.StartTime.Length, DateTime.MaxValue.ToString().Length);
+                    public static readonly int EndTime = Math.Max(Headers.EndTime.Length, DateTime.MaxValue.ToString().Length);
                     public static readonly int Endpoint = 80 - (StartTime + EndTime);
                 }
 
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine(pointOperationStatisticsTraceDatum.ActivityId);
+                    stringBuilder.AppendLine($"Activity ID: {pointOperationStatisticsTraceDatum.ActivityId}");
                     stringBuilder.AppendLine($"Status Code: {pointOperationStatisticsTraceDatum.StatusCode}/{pointOperationStatisticsTraceDatum.SubStatusCode}");
                     stringBuilder.AppendLine($"Response Time: {pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
                     stringBuilder.AppendLine($"Request Charge: {pointOperationStatisticsTraceDatum.RequestCharge}");
@@ -392,40 +392,50 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     {
                         if (stat.RequestStartTime.HasValue)
                         {
-                            stringBuilder.AppendLine($"Start Time: {stat.RequestStartTime.Value.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}Start Time: {stat.RequestStartTime.Value.ToString("o", CultureInfo.InvariantCulture)}");
                         }
                         else
                         {
-                            stringBuilder.AppendLine("Start Time Not Found");
+                            stringBuilder.AppendLine("{space}Start Time Not Found");
                         }
 
-                        stringBuilder.AppendLine($"End Time: {stat.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture)}");
+                        stringBuilder.AppendLine($"{space}End Time: {stat.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture)}");
 
-                        stringBuilder.AppendLine($"Resource Type: {stat.RequestResourceType}");
-                        stringBuilder.AppendLine($"Operation Type: {stat.RequestOperationType}");
+                        stringBuilder.AppendLine($"{space}Resource Type: {stat.RequestResourceType}");
+                        stringBuilder.AppendLine($"{space}Operation Type: {stat.RequestOperationType}");
 
                         if (stat.StoreResult != null)
                         {
-                            stringBuilder.AppendLine("Store Result");
-                            stringBuilder.AppendLine($"{space}Activity Id: {stat.StoreResult.ActivityId}");
-                            stringBuilder.AppendLine($"{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress}");
-                            stringBuilder.AppendLine($"{space}Status Code: {stat.StoreResult.StatusCode}/{stat.StoreResult.SubStatusCode}");
-                            stringBuilder.AppendLine($"{space}Is Valid: {stat.StoreResult.IsValid}");
-                            stringBuilder.AppendLine($"{space}LSN Info");
-                            stringBuilder.AppendLine($"{space}{space}LSN: {stat.StoreResult.LSN}");
-                            stringBuilder.AppendLine($"{space}{space}Item LSN: {stat.StoreResult.ItemLSN}");
-                            stringBuilder.AppendLine($"{space}{space}Global LSN: {stat.StoreResult.GlobalCommittedLSN}");
-                            stringBuilder.AppendLine($"{space}{space}Quorum Acked LSN: {stat.StoreResult.QuorumAckedLSN}");
-                            stringBuilder.AppendLine($"{space}{space}Using LSN: {stat.StoreResult.UsingLocalLSN}");
-                            stringBuilder.AppendLine($"{space}Session Token: {stat.StoreResult.SessionToken.ConvertToString()}");
-                            stringBuilder.AppendLine($"{space}Quorum Info");
-                            stringBuilder.AppendLine($"{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
-                            stringBuilder.AppendLine($"{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
-                            stringBuilder.AppendLine($"{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
-                            stringBuilder.AppendLine($"{space}Exception");
-                            stringBuilder.AppendLine($"{space}{stat.StoreResult.GetException()}");
+                            stringBuilder.AppendLine($"{space}Store Result");
+                            stringBuilder.AppendLine($"{space}{space}Activity Id: {stat.StoreResult.ActivityId}");
+                            stringBuilder.AppendLine($"{space}{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress}");
+                            stringBuilder.AppendLine($"{space}{space}Status Code: {stat.StoreResult.StatusCode}/{stat.StoreResult.SubStatusCode}");
+                            stringBuilder.AppendLine($"{space}{space}Is Valid: {stat.StoreResult.IsValid}");
+                            stringBuilder.AppendLine($"{space}{space}LSN Info");
+                            stringBuilder.AppendLine($"{space}{space}{space}LSN: {stat.StoreResult.LSN}");
+                            stringBuilder.AppendLine($"{space}{space}{space}Item LSN: {stat.StoreResult.ItemLSN}");
+                            stringBuilder.AppendLine($"{space}{space}{space}Global LSN: {stat.StoreResult.GlobalCommittedLSN}");
+                            stringBuilder.AppendLine($"{space}{space}{space}Quorum Acked LSN: {stat.StoreResult.QuorumAckedLSN}");
+                            stringBuilder.AppendLine($"{space}{space}{space}Using LSN: {stat.StoreResult.UsingLocalLSN}");
+                            stringBuilder.AppendLine($"{space}{space}Session Token: {stat.StoreResult.SessionToken.ConvertToString()}");
+                            stringBuilder.AppendLine($"{space}{space}Quorum Info");
+                            stringBuilder.AppendLine($"{space}{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
+                            stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
+                            stringBuilder.AppendLine($"{space}{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
+                            stringBuilder.AppendLine($"{space}{space}Exception");
+                            stringBuilder.AppendLine($"{space}{space}{stat.StoreResult.GetException()}");
                         }
                     }
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
+                public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine(cpuHistoryTraceDatum.Value.ToString());
+
+                    // TODO: Expose the raw data so we can custom format the string.
 
                     this.toStringValue = stringBuilder.ToString();
                 }

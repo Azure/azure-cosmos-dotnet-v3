@@ -4824,11 +4824,9 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.RequestHandler InnerHandler;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.RequestHandler get_InnerHandler();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_InnerHandler(Microsoft.Azure.Cosmos.RequestHandler);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.RequestHandler+<SendAsync>))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken)": {
           "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] SendAsync(Microsoft.Azure.Cosmos.RequestMessage, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_InnerHandler(Microsoft.Azure.Cosmos.RequestHandler)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {

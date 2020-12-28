@@ -202,6 +202,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectEnd();
             }
 
+            public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("CPU History");
+                this.jsonWriter.WriteStringValue(cpuHistoryTraceDatum.Value.ToString());
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
             private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
