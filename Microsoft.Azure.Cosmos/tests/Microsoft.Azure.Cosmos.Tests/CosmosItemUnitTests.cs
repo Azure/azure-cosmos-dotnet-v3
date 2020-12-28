@@ -884,7 +884,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private async Task VerifyPartitionKeyDeleteOperation(
             Cosmos.PartitionKey partitionKey,
             string partitionKeySerialized,
-            ItemRequestOptions requestOptions = null)
+            RequestOptions requestOptions = null)
         {
             ResponseMessage response = null;
             HttpStatusCode httpStatusCode = HttpStatusCode.OK;

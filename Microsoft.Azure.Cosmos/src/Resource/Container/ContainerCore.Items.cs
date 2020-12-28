@@ -914,7 +914,7 @@ namespace Microsoft.Azure.Cosmos
           Cosmos.PartitionKey partitionKey,
           CosmosDiagnosticsContext diagnosticsContext,
           ITrace trace,
-          ItemRequestOptions requestOptions = null,
+          RequestOptions requestOptions = null,
           CancellationToken cancellationToken = default(CancellationToken))
         {
             Cosmos.PartitionKey? resultingPartitionKey;
