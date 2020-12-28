@@ -101,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.IsFalse(isQueryRequestFound, "Should only call get query plan once.");
                         Assert.AreNotEqual(cancellationToken, default);
+                        isQueryRequestFound = true;
                     }
                 };
 
