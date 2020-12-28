@@ -123,47 +123,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)
         {
-            // Use DictionaryNameValueCollection because some Compute scenarios have duplicate headers
-            INameValueCollection headers = new DictionaryNameValueCollection();
-
-            foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Headers)
-            {
-                if (string.Compare(headerPair.Key, HttpConstants.HttpHeaders.OwnerFullName, StringComparison.Ordinal) == 0)
-                {
-                    foreach (string val in headerPair.Value)
-                    {
-                        headers.Add(headerPair.Key, Uri.UnescapeDataString(val));
-                    }
-                }
-                else
-                {
-                    foreach (string val in headerPair.Value)
-                    {
-                        headers.Add(headerPair.Key, val);
-                    }
-                }
-            }
-
-            if (responseMessage.Content != null)
-            {
-                foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Content.Headers)
-                {
-                    if (string.Compare(headerPair.Key, HttpConstants.HttpHeaders.OwnerFullName, StringComparison.Ordinal) == 0)
-                    {
-                        foreach (string val in headerPair.Value)
-                        {
-                            headers.Add(headerPair.Key, Uri.UnescapeDataString(val));
-                        }
-                    }
-                    else
-                    {
-                        foreach (string val in headerPair.Value)
-                        {
-                            headers.Add(headerPair.Key, val);
-                        }
-                    }
-                }
-            }
+            INameValueCollection headers = new HttpHeadersNameValueCollectionWrapper(
+                responseMessage.Headers,
+                responseMessage.Content?.Headers);
 
             return headers;
         }
