@@ -23,7 +23,25 @@
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Data.Encryption.Cryptography">
+	  <HintPath>..\..\..\Microsoft.Azure.Cosmos.Encryption\src\MdeServices\MdeCryptographyLib\Microsoft.Data.Encryption.Cryptography.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
+  </ItemGroup>
+	
   <PropertyGroup>
     <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
   </PropertyGroup>  

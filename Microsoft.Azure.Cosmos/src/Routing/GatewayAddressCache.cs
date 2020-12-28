@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 uri: targetEndpoint,
                 additionalHeaders: headers,
                 resourceType: resourceType,
-                timeoutPolicy: HttpTimeoutPolicyControlPlaneHotPath.Instance,
+                timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default))
             {
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 uri: targetEndpoint,
                 additionalHeaders: headers,
                 resourceType: ResourceType.Document,
-                timeoutPolicy: HttpTimeoutPolicyControlPlaneHotPath.Instance,
+                timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default))
             {

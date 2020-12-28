@@ -231,34 +231,28 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            bool isDefaultCancellationToken = cancellationToken == default;
             DateTime startDateTimeUtc = DateTime.UtcNow;
-            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.TimeoutEnumerator;
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
             timeoutEnumerator.MoveNext();
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
                 using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
                 {
                     // If the default cancellation token is passed then use the timeout policy
-                    CancellationTokenSource cancellationTokenSource = null;
-                    if (isDefaultCancellationToken)
-                    {
-                        cancellationTokenSource = new CancellationTokenSource();
-                        cancellationTokenSource.CancelAfter(requestTimeout);
-                        cancellationToken = cancellationTokenSource.Token;
-                    }
+                    using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cancellationTokenSource.CancelAfter(requestTimeout);
 
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    using (ITrace helperTrace = trace.StartChild("Execute Http", TraceComponent.Transport, Tracing.TraceLevel.Info))
+                    using (ITrace helperTrace = trace.StartChild($"Execute Http With Timeout Policy: {timeoutPolicy.TimeoutPolicyName}", TraceComponent.Transport, Tracing.TraceLevel.Info))
                     {
                         try
                         {
                             return await this.ExecuteHttpHelperAsync(
                                 requestMessage,
                                 resourceType,
-                                cancellationToken);
+                                cancellationTokenSource.Token);
                         }
                         catch (Exception e)
                         {
@@ -284,23 +278,18 @@ namespace Microsoft.Azure.Cosmos
                             {
                                 case OperationCanceledException operationCanceledException:
                                     // Throw if the user passed in cancellation was requested
-                                    if (!isDefaultCancellationToken && cancellationToken.IsCancellationRequested)
+                                    if (cancellationToken.IsCancellationRequested)
                                     {
                                         throw;
                                     }
 
                                     // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
                                     // the request timed out and was not user canceled operation.
-                                    if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
+                                    if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
                                     {
                                         // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
                                         string message =
-                                            $"GatewayStoreClient Request Timeout. " +
-                                            $"Start Time UTC:{startDateTimeUtc}; " +
-                                            $"Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Milliseconds; " +
-                                            $"Request Timeout {requestTimeout.TotalMilliseconds} Milliseconds; " +
-                                            $"Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Milliseconds; " +
-                                            $"Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
                                         throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                             message,
                                             innerException: operationCanceledException,
@@ -309,14 +298,14 @@ namespace Microsoft.Azure.Cosmos
 
                                     break;
                                 case WebException webException:
-                                    if (isOutOfRetries || (requestMessage.Method != HttpMethod.Get && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                    if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
                                     {
                                         throw;
                                     }
 
                                     break;
                                 case HttpRequestException httpRequestException:
-                                    if (isOutOfRetries || requestMessage.Method != HttpMethod.Get)
+                                    if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
                                     {
                                         throw;
                                     }
