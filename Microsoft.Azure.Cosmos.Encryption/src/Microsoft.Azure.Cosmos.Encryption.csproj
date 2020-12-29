@@ -36,6 +36,28 @@
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Custom\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="Microsoft.Data.Encryption.Cryptography">
+      <HintPath>..\src\Custom\MdeServices\MdeCryptographyLib\Microsoft.Data.Encryption.Cryptography.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.7.1" />
+  </ItemGroup>
   
   <PropertyGroup>
     <SigningType>Product</SigningType>
