@@ -180,20 +180,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(NotImplementedException))]
-        [DataRow(HeaderType.Headers)]
-        [DataRow(HeaderType.HttpResponseHeadersNameValueCollectionWrapperWithContentHeaders)]
-        [DataRow(HeaderType.HttpResponseHeadersNameValueCollectionWrapperNoContentHeaders)]
-        public void TestGetToNameValueCollection(HeaderType headerType)
-        {
-            INameValueCollection headers = this.CreateHeaders(headerType);
-            string value = Guid.NewGuid().ToString();
-            headers[Key] = value;
-            NameValueCollection anotherCollection = headers.ToNameValueCollection();
-            Assert.AreEqual(value, anotherCollection[Key]);
-        }
-
-        [TestMethod]
         [DataRow(HeaderType.Headers)]
         [DataRow(HeaderType.HttpResponseHeadersNameValueCollectionWrapperWithContentHeaders)]
         [DataRow(HeaderType.HttpResponseHeadersNameValueCollectionWrapperNoContentHeaders)]

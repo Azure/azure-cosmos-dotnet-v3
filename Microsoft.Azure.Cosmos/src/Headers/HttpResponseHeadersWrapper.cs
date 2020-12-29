@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return result == null ? null : string.Join(",", result);
+            return this.JoinHeaders(result);
         }
 
         public override IEnumerator<string> GetEnumerator()
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Keys().GetEnumerator();
         }
 
-        private IEnumerable AllItems()
+        private IEnumerable<KeyValuePair<string, IEnumerable<string>>> AllItems()
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in this.httpResponseHeaders)
             {
@@ -207,7 +207,18 @@ namespace Microsoft.Azure.Cosmos
 
         public override NameValueCollection ToNameValueCollection()
         {
-            throw new NotImplementedException();
+            NameValueCollection nameValueCollection = new NameValueCollection();
+            foreach (KeyValuePair<string, IEnumerable<string>> header in this.AllItems())
+            {
+                nameValueCollection.Add(header.Key, this.JoinHeaders(header.Value));
+            }
+
+            return nameValueCollection;
+        }
+
+        private string JoinHeaders(IEnumerable<string> headerValues)
+        {
+            return headerValues == null ? null : string.Join(",", headerValues);
         }
     }
 }
