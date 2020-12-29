@@ -511,7 +511,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GatewayQueryPlanDiagnostic()
         {
-            int totalItems = 10;
+            int totalItems = 3;
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
                 this.Container,
                 pkCount: totalItems,
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-      //  [DataRow(true)]
+        [DataRow(true)]
         [DataRow(false)]
         public async Task QueryOperationDiagnostic(bool disableDiagnostics)
         {
@@ -564,12 +564,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 perPKItemCount: 1,
                 randomPartitionKey: true);
 
-            //long readFeedTotalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
-            //    queryText: null,
-            //    expectedItemCount: totalItems,
-            //    disableDiagnostics: disableDiagnostics);
+            long readFeedTotalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
+                queryText: null,
+                expectedItemCount: totalItems,
+                disableDiagnostics: disableDiagnostics);
 
-            //Assert.AreEqual(totalItems, readFeedTotalOutputDocumentCount);
+            Assert.AreEqual(totalItems, readFeedTotalOutputDocumentCount);
 
             //Checking query metrics on typed query
             long totalOutputDocumentCount = await this.ExecuteQueryAndReturnOutputDocumentCount(
