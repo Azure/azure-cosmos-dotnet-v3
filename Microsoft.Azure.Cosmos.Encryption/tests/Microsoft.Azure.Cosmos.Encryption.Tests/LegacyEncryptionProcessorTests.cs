@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using TestDoc = TestCommon.TestDoc;
 
     [TestClass]
