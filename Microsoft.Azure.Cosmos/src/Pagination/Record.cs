@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Documents;
 
     internal sealed class Record
@@ -29,5 +31,22 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public string Identifier { get; }
 
         public CosmosObject Payload { get; }
+
+        public CosmosObject ToDocument()
+        {
+            Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
+            {
+                ["_rid"] = CosmosString.Create(this.ResourceIdentifier.ToString()),
+                ["_ts"] = CosmosNumber64.Create(this.Timestamp.Ticks),
+                ["id"] = CosmosString.Create(this.Identifier)
+            };
+
+            foreach (KeyValuePair<string, CosmosElement> property in this.Payload)
+            {
+                keyValuePairs[property.Key] = property.Value;
+            }
+
+            return CosmosObject.Create(keyValuePairs);
+        }
     }
 }

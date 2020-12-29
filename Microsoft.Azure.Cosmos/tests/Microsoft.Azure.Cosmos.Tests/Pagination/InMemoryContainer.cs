@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<CosmosObject> documents = new List<CosmosObject>();
                 foreach (Record record in page)
                 {
-                    CosmosObject document = ConvertRecordToCosmosElement(record);
+                    CosmosObject document = record.ToDocument();
                     documents.Add(CosmosObject.Create(document));
                 }
 
@@ -486,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<CosmosObject> documents = new List<CosmosObject>();
                 foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRange, this.partitionKeyDefinition)))
                 {
-                    CosmosObject document = ConvertRecordToCosmosElement(record);
+                    CosmosObject document = record.ToDocument();
                     documents.Add(CosmosObject.Create(document));
                 }
 
@@ -674,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<CosmosObject> documents = new List<CosmosObject>();
                 foreach (Change change in filteredChanges)
                 {
-                    CosmosObject document = ConvertRecordToCosmosElement(change.Record);
+                    CosmosObject document = change.Record.ToDocument();
                     documents.Add(CosmosObject.Create(document));
                 }
 
@@ -1154,23 +1154,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 _ => throw new ArgumentOutOfRangeException(),
             };
             return partitionKeyHash;
-        }
-
-        private static CosmosObject ConvertRecordToCosmosElement(Record record)
-        {
-            Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
-            {
-                ["_rid"] = CosmosString.Create(record.ResourceIdentifier.ToString()),
-                ["_ts"] = CosmosNumber64.Create(record.Timestamp.Ticks),
-                ["id"] = CosmosString.Create(record.Identifier)
-            };
-
-            foreach (KeyValuePair<string, CosmosElement> property in record.Payload)
-            {
-                keyValuePairs[property.Key] = property.Value;
-            }
-
-            return CosmosObject.Create(keyValuePairs);
         }
 
         private static bool IsRecordWithinFeedRange(

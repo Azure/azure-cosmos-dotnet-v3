@@ -18,12 +18,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
     {
+        private static readonly TryCatch<PartitionedQueryExecutionInfo> QueryPlanNotSupportedLocally = TryCatch<PartitionedQueryExecutionInfo>.FromException(
+            new NotSupportedException("Query Plan not supported locally"));
         private readonly ContainerInternal container;
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly QueryRequestOptions queryRequestOptions;
@@ -80,9 +83,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             long ticks = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
 
             Record record = new Record(
-                resourceIdentifier, 
+                resourceIdentifier,
                 new DateTime(ticks: ticks, DateTimeKind.Utc),
-                identifier, 
+                identifier,
                 insertedDocument);
 
             return TryCatch<Record>.FromResult(record);
