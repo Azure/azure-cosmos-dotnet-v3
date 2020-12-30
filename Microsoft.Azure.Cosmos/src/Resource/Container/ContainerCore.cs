@@ -513,7 +513,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 collectionRid = await this.GetCachedRIDAsync(
                     forceRefresh: true,
-                    cancellationToken: cancellationToken);
+                    cancellationToken);
 
                 collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
                     collectionRid,
