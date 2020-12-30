@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class MdeContainer : Container
     {
-        private readonly Container container;
+        internal Container Container { get; }
 
         public CosmosSerializer CosmosSerializer { get; }
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Container container,
             EncryptionCosmosClient encryptionCosmosClient)
         {
-            this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.Container = container ?? throw new ArgumentNullException(nameof(container));
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(container));
 
             this.MdeEncryptionProcessor = new MdeEncryptionProcessor(
@@ -44,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.CosmosSerializer = this.Database.Client.ClientOptions.Serializer;
         }
 
-        public override string Id => this.container.Id;
+        public override string Id => this.Container.Id;
 
-        public override Conflicts Conflicts => this.container.Conflicts;
+        public override Conflicts Conflicts => this.Container.Conflicts;
 
-        public override Scripts.Scripts Scripts => this.container.Scripts;
+        public override Scripts.Scripts Scripts => this.Container.Scripts;
 
-        public override Database Database => this.container.Database;
+        public override Database Database => this.Container.Database;
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (this.MdeEncryptionProcessor == null)
             {
-                return await this.container.CreateItemAsync<T>(
+                return await this.Container.CreateItemAsync<T>(
                     item,
                     partitionKey,
                     requestOptions,
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (this.MdeEncryptionProcessor == null)
             {
-                return await this.container.CreateItemStreamAsync(
+                return await this.Container.CreateItemStreamAsync(
                     streamPayload,
                     partitionKey,
                     requestOptions,
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext,
                 cancellationToken);
 
-            ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
+            ResponseMessage responseMessage = await this.Container.CreateItemStreamAsync(
                 streamPayload,
                 partitionKey,
                 requestOptions,
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteItemAsync<T>(
+            return this.Container.DeleteItemAsync<T>(
                 id,
                 partitionKey,
                 requestOptions,
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteItemStreamAsync(
+            return this.Container.DeleteItemStreamAsync(
                 id,
                 partitionKey,
                 requestOptions,
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            ResponseMessage responseMessage = await this.container.ReadItemStreamAsync(
+            ResponseMessage responseMessage = await this.Container.ReadItemStreamAsync(
                 id,
                 partitionKey,
                 requestOptions,
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!(this.MdeEncryptionProcessor != null))
             {
-                return await this.container.ReplaceItemAsync(
+                return await this.Container.ReplaceItemAsync(
                     item,
                     id,
                     partitionKey,
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (!(this.MdeEncryptionProcessor != null))
             {
-                return await this.container.ReplaceItemStreamAsync(
+                return await this.Container.ReplaceItemStreamAsync(
                     streamPayload,
                     id,
                     partitionKey,
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext,
                 cancellationToken);
 
-            ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
+            ResponseMessage responseMessage = await this.Container.ReplaceItemStreamAsync(
                 streamPayload,
                 id,
                 partitionKey,
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (!(this.MdeEncryptionProcessor != null))
             {
-                return await this.container.UpsertItemAsync(
+                return await this.Container.UpsertItemAsync(
                     item,
                     partitionKey,
                     requestOptions,
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (!(this.MdeEncryptionProcessor != null))
             {
-                return await this.container.UpsertItemStreamAsync(
+                return await this.Container.UpsertItemStreamAsync(
                     streamPayload,
                     partitionKey,
                     requestOptions,
@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 diagnosticsContext,
                 cancellationToken);
 
-            ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
+            ResponseMessage responseMessage = await this.Container.UpsertItemStreamAsync(
                 streamPayload,
                 partitionKey,
                 requestOptions,
@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PartitionKey partitionKey)
         {
             return new MdeEncryptionTransactionalBatch(
-                this.container.CreateTransactionalBatch(partitionKey),
+                this.Container.CreateTransactionalBatch(partitionKey),
                 this.MdeEncryptionProcessor,
                 this.CosmosSerializer);
         }
@@ -510,7 +510,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteContainerAsync(
+            // clear the cached policies for this container.
+            this.EncryptionCosmosClient.RemoveClientEncryptionPolicy(this.Container);
+
+            return this.Container.DeleteContainerAsync(
                 requestOptions,
                 cancellationToken);
         }
@@ -519,7 +522,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteContainerStreamAsync(
+            // clear the cached policies for this container.
+            this.EncryptionCosmosClient.RemoveClientEncryptionPolicy(this.Container);
+
+            return this.Container.DeleteContainerStreamAsync(
                 requestOptions,
                 cancellationToken);
         }
@@ -529,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            return this.container.GetChangeFeedEstimatorBuilder(
+            return this.Container.GetChangeFeedEstimatorBuilder(
                 processorName,
                 estimationDelegate,
                 estimationPeriod);
@@ -540,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.container.GetItemLinqQueryable<T>(
+            return this.Container.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
                 requestOptions);
@@ -576,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReadContainerAsync(
+            return this.Container.ReadContainerAsync(
                 requestOptions,
                 cancellationToken);
         }
@@ -585,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReadContainerStreamAsync(
+            return this.Container.ReadContainerStreamAsync(
                 requestOptions,
                 cancellationToken);
         }
@@ -593,14 +599,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReadThroughputAsync(cancellationToken);
+            return this.Container.ReadThroughputAsync(cancellationToken);
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReadThroughputAsync(
+            return this.Container.ReadThroughputAsync(
                 requestOptions,
                 cancellationToken);
         }
@@ -610,7 +616,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReplaceContainerAsync(
+            return this.Container.ReplaceContainerAsync(
                 containerProperties,
                 requestOptions,
                 cancellationToken);
@@ -621,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReplaceContainerStreamAsync(
+            return this.Container.ReplaceContainerStreamAsync(
                 containerProperties,
                 requestOptions,
                 cancellationToken);
@@ -632,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReplaceThroughputAsync(
+            return this.Container.ReplaceThroughputAsync(
                 throughput,
                 requestOptions,
                 cancellationToken);
@@ -644,7 +650,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return new MdeEncryptionFeedIterator(
-                this.container.GetItemQueryStreamIterator(
+                this.Container.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions),
@@ -658,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return new MdeEncryptionFeedIterator(
-                this.container.GetItemQueryStreamIterator(
+                this.Container.GetItemQueryStreamIterator(
                     queryText,
                     continuationToken,
                     requestOptions),
@@ -672,7 +678,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             // TODO: need client SDK to expose underlying feedIterator to make decryption work for this scenario
             // Issue #1484
-            return this.container.GetChangeFeedProcessorBuilder(
+            return this.Container.GetChangeFeedProcessorBuilder(
                 processorName,
                 onChangesDelegate);
         }
@@ -682,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.ReplaceThroughputAsync(
+            return this.Container.ReplaceThroughputAsync(
                 throughputProperties,
                 requestOptions,
                 cancellationToken);
@@ -691,14 +697,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(
             CancellationToken cancellationToken = default)
         {
-            return this.container.GetFeedRangesAsync(cancellationToken);
+            return this.Container.GetFeedRangesAsync(cancellationToken);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+            return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -708,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             QueryRequestOptions requestOptions = null)
         {
             return new MdeEncryptionFeedIterator(
-                this.container.GetItemQueryStreamIterator(
+                this.Container.GetItemQueryStreamIterator(
                     feedRange,
                     queryDefinition,
                     continuationToken,
@@ -736,7 +742,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string processorName,
             Container leaseContainer)
         {
-            return this.container.GetChangeFeedEstimator(processorName, leaseContainer);
+            return this.Container.GetChangeFeedEstimator(processorName, leaseContainer);
         }
 
         public override FeedIterator GetChangeFeedStreamIterator(
@@ -744,7 +750,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new MdeEncryptionFeedIterator(
-                this.container.GetChangeFeedStreamIterator(
+                this.Container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
                     changeFeedRequestOptions),
                 this.MdeEncryptionProcessor,

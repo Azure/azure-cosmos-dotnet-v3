@@ -102,5 +102,57 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 mdeContainer.MdeEncryptionProcessor,
                 mdeContainer.CosmosSerializer);
         }
+
+        /// <summary>
+        /// Initialize a new instance of the Microsoft.Azure.Cosmos.PermissionProperties
+        /// with permission to Microsoft.Azure.Cosmos.Container.
+        /// </summary>
+        /// <param name="container"> The encryption container. </param>
+        /// <param name="id"> The permission id. </param>
+        /// <param name="permissionMode"> The Microsoft.Azure.Cosmos.PermissionProperties.PermissionMode. </param>
+        /// <param name="resourcePartitionKey"> (Optional) The partition key value for the permission in the Azure Cosmos DB service. </param>
+        /// <returns> PermissionProperties for the Container </returns>
+        public static PermissionProperties GetPermissionPropertiesForMdeContainer(
+            this Container container,
+            string id,
+            PermissionMode permissionMode,
+            PartitionKey? resourcePartitionKey = null)
+        {
+            if (container is MdeContainer mdeContainer)
+            {
+                return new PermissionProperties(id, permissionMode, mdeContainer.Container, resourcePartitionKey);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForMdeContainer)} is only supported with {nameof(MdeContainer)}.");
+            }
+        }
+
+        /// <summary>
+        /// Initialize a new instance of the Microsoft.Azure.Cosmos.PermissionProperties
+        /// with permission to Cosmos item.
+        /// </summary>
+        /// <param name="container"> The encryption container. </param>
+        /// <param name="id"> The permission id. </param>
+        /// <param name="permissionMode"> The Microsoft.Azure.Cosmos.PermissionProperties.PermissionMode. </param>
+        /// <param name="resourcePartitionKey"> The partition key value for the permission in the Azure Cosmos DB service </param>
+        /// <param name="itemId">  The cosmos item id </param>
+        /// <returns> PermissionProperties for the Container </returns>
+        public static PermissionProperties GetPermissionPropertiesForMdeContainer(
+            this Container container,
+            string id,
+            PermissionMode permissionMode,
+            PartitionKey resourcePartitionKey,
+            string itemId)
+        {
+            if (container is MdeContainer mdeContainer)
+            {
+                return new PermissionProperties(id, permissionMode, mdeContainer.Container, resourcePartitionKey, itemId);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForMdeContainer)} is only supported with {nameof(MdeContainer)}.");
+            }
+        }
     }
 }

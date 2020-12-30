@@ -78,8 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (!this.isRefreshing && !this.isDisposed)
             {
-                List<string> encryptedDatabaseList = new List<string>(this.cosmosClient.GetEncryptedDatabaseIds());
-
+                HashSet<string> encryptedDatabaseList = new HashSet<string>(this.cosmosClient.GetEncryptedDatabaseIds());
                 foreach (string databaseId in encryptedDatabaseList)
                 {
                     try
@@ -96,8 +95,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 {
                                     await this.cosmosClient.UpdateClientEncryptionPropertyCacheAsync(
                                                 clientEncryptionKeyProperties.Id,
-                                                clientEncryptionKeyProperties,
-                                                shouldforceRefresh: true);
+                                                database.Id,
+                                                clientEncryptionKeyProperties);
                                 }
                             }
                         }

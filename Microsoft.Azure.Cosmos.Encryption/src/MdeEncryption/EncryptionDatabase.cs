@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.database = database;
             this.encryptionCosmosClient = encryptionCosmosClient;
-            this.encryptionCosmosClient.SetEncryptedDatabaseIds(this.database.Id);
+            this.encryptionCosmosClient.SetEncryptedDatabaseId(this.database.Id);
         }
 
         private readonly EncryptionCosmosClient encryptionCosmosClient;
@@ -33,13 +34,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return new MdeContainer(this.container, this.encryptionCosmosClient);
         }
 
-        public override async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+        public override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
             ClientEncryptionKey clientEncryptionKey,
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.CreateClientEncryptionKeyAsync(
+            return this.database.CreateClientEncryptionKeyAsync(
                 clientEncryptionKey,
                 clientEncryptionKeyProperties,
                 requestOptions,
@@ -164,26 +165,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return encryptionContainerResponse;
         }
 
-        public override async Task<ResponseMessage> CreateContainerStreamAsync(
+        public override Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.CreateContainerStreamAsync(
+            return this.database.CreateContainerStreamAsync(
                 containerProperties,
                 throughputProperties,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async Task<ResponseMessage> CreateContainerStreamAsync(
+        public override Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.CreateContainerStreamAsync(
+            return this.database.CreateContainerStreamAsync(
                 containerProperties,
                 throughput,
                 requestOptions,
@@ -208,6 +209,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            FeedIterator<ContainerProperties> feedIterator = this.database.GetContainerQueryIterator<ContainerProperties>();
+            while (feedIterator.HasMoreResults)
+            {
+                foreach (ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
+                {
+                    // clear the cached policies for this container.
+                    this.encryptionCosmosClient.RemoveClientEncryptionPolicy(this.database.GetContainer(containerProperties.Id));
+                }
+            }
+
+            this.encryptionCosmosClient.RemoveEncryptedDatabaseId(this.database.Id);
             return await this.database.DeleteAsync(requestOptions, cancellationToken);
         }
 
@@ -215,6 +227,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            FeedIterator<ContainerProperties> feedIterator = this.database.GetContainerQueryIterator<ContainerProperties>();
+            while (feedIterator.HasMoreResults)
+            {
+                foreach (ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
+                {
+                    // clear the cached policies for this container.
+                    this.encryptionCosmosClient.RemoveClientEncryptionPolicy(this.database.GetContainer(containerProperties.Id));
+                }
+            }
+
+            this.encryptionCosmosClient.RemoveEncryptedDatabaseId(this.database.Id);
             return await this.database.DeleteStreamAsync(requestOptions, cancellationToken);
         }
 
@@ -312,69 +335,69 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return await this.database.ReadAsync(requestOptions, cancellationToken);
         }
 
-        public override async Task<ResponseMessage> ReadStreamAsync(
+        public override Task<ResponseMessage> ReadStreamAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReadStreamAsync(requestOptions, cancellationToken);
+            return this.database.ReadStreamAsync(requestOptions, cancellationToken);
         }
 
-        public override async Task<int?> ReadThroughputAsync(
+        public override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReadThroughputAsync(cancellationToken);
+            return this.database.ReadThroughputAsync(cancellationToken);
         }
 
-        public override async Task<ThroughputResponse> ReadThroughputAsync(
+        public override Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReadThroughputAsync(
+            return this.database.ReadThroughputAsync(
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
+        public override Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
             ClientEncryptionKey clientEncryptionKey,
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReplaceClientEncryptionKeyAsync(
+            return this.database.ReplaceClientEncryptionKeyAsync(
                 clientEncryptionKey,
                 clientEncryptionKeyProperties,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async Task<ThroughputResponse> ReplaceThroughputAsync(
+        public override Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReplaceThroughputAsync(
+            return this.database.ReplaceThroughputAsync(
                 throughputProperties,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async Task<ThroughputResponse> ReplaceThroughputAsync(
+        public override Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReplaceThroughputAsync(
+            return this.database.ReplaceThroughputAsync(
                 throughput,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override async Task<UserResponse> UpsertUserAsync(
+        public override Task<UserResponse> UpsertUserAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.UpsertUserAsync(
+            return this.database.UpsertUserAsync(
                 id,
                 requestOptions,
                 cancellationToken);

@@ -20,17 +20,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly AsyncCache<string, ClientEncryptionPolicy> clientEncryptionPolicyCache;
 
-        private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCache;
+        private readonly AsyncCache<string, CachedClientEncryptionProperties> clientEncryptionKeyPropertiesCache;
 
-        private readonly List<string> encryptedDatabaseIds = new List<string>();
+        private readonly TimeSpan clientEncryptionKeyPropertiesCacheTimeToLive;
+
+        private readonly HashSet<string> encryptedDatabaseIds = new HashSet<string>();
 
         public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.cosmosClient = cosmosClient;
-            this.ClientEncryptionPolicyRefreshManager = new ClientEncryptionPropertiesRefreshManager(this, TimeSpan.FromMinutes(30));
-            this.clientEncryptionPolicyCache = new AsyncCache<string, ClientEncryptionPolicy>();
-            this.clientEncryptionKeyPropertiesCache = new AsyncCache<string, ClientEncryptionKeyProperties>();
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider;
+            this.clientEncryptionPolicyCache = new AsyncCache<string, ClientEncryptionPolicy>();
+            this.clientEncryptionKeyPropertiesCache = new AsyncCache<string, CachedClientEncryptionProperties>();
+            this.clientEncryptionKeyPropertiesCacheTimeToLive = TimeSpan.FromMinutes(60);
+            this.ClientEncryptionPolicyRefreshManager = new ClientEncryptionPropertiesRefreshManager(this, TimeSpan.FromMinutes(30));
         }
 
         private static readonly SemaphoreSlim CekPropertiesCacheSema = new SemaphoreSlim(1, 1);
@@ -39,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
-        internal List<string> GetEncryptedDatabaseIds()
+        internal HashSet<string> GetEncryptedDatabaseIds()
         {
             this.ThrowIfDisposed();
 
@@ -58,13 +61,38 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return null;
         }
 
-        internal void SetEncryptedDatabaseIds(string id)
+        internal void SetEncryptedDatabaseId(string id)
         {
+            this.ThrowIfDisposed();
+
             if (EncryptedDatabaseListSema.Wait(-1))
             {
                 try
                 {
-                    this.encryptedDatabaseIds.Add(id);
+                    if (!this.encryptedDatabaseIds.Contains(id))
+                    {
+                        this.encryptedDatabaseIds.Add(id);
+                    }
+                }
+                finally
+                {
+                    EncryptedDatabaseListSema.Release(1);
+                }
+            }
+        }
+
+        internal void RemoveEncryptedDatabaseId(string id)
+        {
+            this.ThrowIfDisposed();
+
+            if (EncryptedDatabaseListSema.Wait(-1))
+            {
+                try
+                {
+                    if (!this.encryptedDatabaseIds.Contains(id))
+                    {
+                        this.encryptedDatabaseIds.Remove(id);
+                    }
                 }
                 finally
                 {
@@ -77,7 +105,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private bool isDisposed = false;
 
-        public async Task<ClientEncryptionPolicy> GetOrAddClientEncryptionPolicyAsync(
+        /// <summary>
+        /// Gets or Adds ClientEncryptionPolicy. The Cache gets seeded initially either via InitializeEncryptionAsync call on the container,
+        /// or during the the first request to create an item.
+        /// </summary>
+        /// <param name="container"> The container handler to read the policies from.</param>
+        /// <param name="cancellationToken"> cancellation token </param>
+        /// <param name="shouldforceRefresh"> force refresh the cache </param>
+        /// <returns> task result </returns>
+        internal async Task<ClientEncryptionPolicy> GetOrAddClientEncryptionPolicyAsync(
             Container container,
             CancellationToken cancellationToken = default,
             bool shouldforceRefresh = false)
@@ -100,23 +136,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
                  forceRefresh: shouldforceRefresh);
         }
 
-        public async Task<ClientEncryptionKeyProperties> GetOrAddClientEncryptionKeyPropertiesAsync(
-            string id,
+        internal void RemoveClientEncryptionPolicy(Container container)
+        {
+            string cacheKey = container.Database.Id + container.Id;
+            this.clientEncryptionPolicyCache.Remove(cacheKey);
+        }
+
+        internal async Task<CachedClientEncryptionProperties> GetOrAddClientEncryptionKeyPropertiesAsync(
+            string clientEncryptionKeyId,
             Container container,
             CancellationToken cancellationToken = default,
             bool shouldforceRefresh = false)
         {
             this.ThrowIfDisposed();
+            string cacheKey = container.Database.Id + clientEncryptionKeyId;
 
-            // we wait unless its a very long previous operation.
             if (await CekPropertiesCacheSema.WaitAsync(-1))
             {
                 try
                 {
                     return await this.clientEncryptionKeyPropertiesCache.GetAsync(
-                         id,
+                         cacheKey,
                          null,
-                         async () => await this.GetClientEncryptionKeyPropertiesAsync(container, id, cancellationToken),
+                         async () => await this.GetClientEncryptionKeyPropertiesAsync(container, clientEncryptionKeyId, cancellationToken),
                          cancellationToken,
                          forceRefresh: shouldforceRefresh);
                 }
@@ -131,25 +173,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        public async Task<bool> UpdateClientEncryptionPropertyCacheAsync(
-            string id,
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            CancellationToken cancellationToken = default,
-            bool shouldforceRefresh = false)
+        internal async Task<bool> UpdateClientEncryptionPropertyCacheAsync(
+            string clientEncryptionKeyId,
+            string databaseId,
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties)
         {
             this.ThrowIfDisposed();
 
-            // we wait unless its a very long previous operation.
+            string cacheKey = databaseId + clientEncryptionKeyId;
             if (await CekPropertiesCacheSema.WaitAsync(-1))
             {
                 try
                 {
-                    await this.clientEncryptionKeyPropertiesCache.GetAsync(
-                         id,
-                         null,
-                         async () => await Task.FromResult(clientEncryptionKeyProperties),
-                         cancellationToken,
-                         forceRefresh: shouldforceRefresh);
+                    CachedClientEncryptionProperties cachedClientEncryptionProperties = new CachedClientEncryptionProperties(
+                        clientEncryptionKeyProperties,
+                        DateTime.UtcNow + this.clientEncryptionKeyPropertiesCacheTimeToLive);
+
+                    this.clientEncryptionKeyPropertiesCache.Set(cacheKey, cachedClientEncryptionProperties);
                 }
                 finally
                 {
@@ -164,7 +204,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return true;
         }
 
-        public async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
+        internal void RemoveClientEncryptionPropertyCache(string id)
+        {
+            this.clientEncryptionKeyPropertiesCache.Remove(id);
+        }
+
+        internal async Task<CachedClientEncryptionProperties> GetClientEncryptionKeyPropertiesAsync(
             Container container,
             string clientEncryptionKeyId,
             CancellationToken cancellationToken = default)
@@ -188,7 +233,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentException("Encryption Based Container without Data Encryption Keys.Please make sure you have created the Client Encryption Keys", ex.Message);
             }
 
-            return await Task.FromResult(clientEncryptionKeyProperties);
+            CachedClientEncryptionProperties cachedClientEncryptionProperties = new CachedClientEncryptionProperties(
+                clientEncryptionKeyProperties,
+                DateTime.UtcNow + this.clientEncryptionKeyPropertiesCacheTimeToLive);
+
+            return cachedClientEncryptionProperties;
         }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
@@ -261,24 +310,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return encryptionDatabaseResponse;
         }
 
-        public override async Task<ResponseMessage> CreateDatabaseStreamAsync(
+        public override Task<ResponseMessage> CreateDatabaseStreamAsync(
             DatabaseProperties databaseProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.cosmosClient.CreateDatabaseStreamAsync(
+            return this.cosmosClient.CreateDatabaseStreamAsync(
                 databaseProperties,
                 throughput,
                 requestOptions,
                 cancellationToken);
         }
 
-        /// <summary>
-        /// Gets an Encryption Supported Database.
-        /// </summary>
-        /// <param name="id"> Database Id </param>
-        /// <returns> Database with Encryption support </returns>
         public override Database GetDatabase(string id)
         {
             this.ThrowIfDisposed();
@@ -324,9 +368,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.cosmosClient.GetDatabaseQueryStreamIterator(queryText, continuationToken, requestOptions);
         }
 
-        public override async Task<AccountProperties> ReadAccountAsync()
+        public override Task<AccountProperties> ReadAccountAsync()
         {
-            return await this.cosmosClient.ReadAccountAsync();
+            return this.cosmosClient.ReadAccountAsync();
         }
 
         private void ThrowIfDisposed()

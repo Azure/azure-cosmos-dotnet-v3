@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class MdeEncryptionProcessor
     {
-        private Dictionary<string, MdeEncryptionSettings> perPropertyEncryptionSetting;
-
         private static readonly SemaphoreSlim EncryptionSettingSema = new SemaphoreSlim(1, 1);
 
         private bool isEncryptionSettingsInitDone;
@@ -45,6 +43,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 DateParseHandling = DateParseHandling.None,
             });
 
+        internal MdeEncryptionSettings MdeEncryptionSettings { get; }
+
         public MdeEncryptionProcessor(
             Container container,
             EncryptionCosmosClient encryptionCosmosClient)
@@ -52,14 +52,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.Container = container ?? throw new ArgumentNullException(nameof(container));
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
             this.isEncryptionSettingsInitDone = false;
+            this.MdeEncryptionSettings = new MdeEncryptionSettings();
         }
 
-        internal async Task InitializeEncryptionSettingsAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Builds up and caches the Encryption Setting by getting the cached entries of Client Encryption Policy and the corresponding keys.
+        /// Sets up the MDE Algorithm for encryption and decryption by initializing the KeyEncryptionKey and ProtectedDataEncryptionKey.
+        /// </summary>
+        /// <param name="cancellationToken"> cancellation token </param>
+        /// <returns> Task </returns>
+        internal async Task InitializeEncryptionSettingsAsync(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             // update the property level setting.
-            if (this.isEncryptionSettingsInitDone && !forceRefresh)
+            if (this.isEncryptionSettingsInitDone)
             {
                 throw new InvalidOperationException("The Encrypton Processor has already been initialized");
             }
@@ -74,13 +81,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return;
             }
 
-            foreach (string dataEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
+            foreach (string clientEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
             {
-                ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
-                    dataEncryptionKeyId,
+                CachedClientEncryptionProperties cachedClientEncryptionProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
+                    clientEncryptionKeyId,
                     this.Container,
                     cancellationToken,
                     false);
+
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
 
                 if (clientEncryptionKeyProperties != null)
                 {
@@ -89,26 +98,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
                         this.EncryptionKeyStoreProvider);
 
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                    ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
                                clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                                keyEncryptionKey,
                                clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
-                    protectedDataEncryptionKey.TimeToLive = TimeSpan.FromMinutes(30);
-
-                    settingsByDekId[dataEncryptionKeyId] = new MdeEncryptionSettings
+                    settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
                     {
-                        ClientEncryptionKeyId = dataEncryptionKeyId,
+                        EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                        ClientEncryptionKeyId = clientEncryptionKeyId,
                         DataEncryptionKey = protectedDataEncryptionKey,
                     };
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Failed to retrieve ClientEncryptionProperties for the Client Encryption Key : {dataEncryptionKeyId}.");
+                    throw new InvalidOperationException($"Failed to retrieve ClientEncryptionProperties for the Client Encryption Key : {clientEncryptionKeyId}.");
                 }
             }
 
-            this.perPropertyEncryptionSetting = new Dictionary<string, MdeEncryptionSettings>();
             foreach (ClientEncryptionIncludedPath propertyToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
             {
                 Data.Encryption.Cryptography.EncryptionType encryptionType = Data.Encryption.Cryptography.EncryptionType.Plaintext;
@@ -126,10 +133,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 string propertyName = propertyToEncrypt.Path.Substring(1);
-                this.perPropertyEncryptionSetting[propertyName]
-                    = MdeEncryptionSettings.Create(
+
+                this.MdeEncryptionSettings.SetEncryptionSettingForProperty(
+                    propertyName,
+                    MdeEncryptionSettings.Create(
                         settingsByDekId[propertyToEncrypt.ClientEncryptionKeyId],
-                        encryptionType);
+                        encryptionType),
+                    settingsByDekId[propertyToEncrypt.ClientEncryptionKeyId].EncryptionSettingTimeToLive);
             }
 
             this.isEncryptionSettingsInitDone = true;
@@ -138,18 +148,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Initializes the Encryption Setting for the processor if not initialized or if shouldForceRefresh is true.
         /// </summary>
-        /// <param name="shouldForceRefresh"> Force reinitialize the processor encryption settings </param>
         /// <param name="cancellationToken">(Optional) Token to cancel the operation.</param>
         /// <returns>Task to await.</returns>
-        public async Task InitializeMdeProcessorIfNotInitializedAsync(bool shouldForceRefresh = false, CancellationToken cancellationToken = default)
+        public async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
         {
             if (await EncryptionSettingSema.WaitAsync(-1))
             {
                 try
                 {
-                    if (!this.isEncryptionSettingsInitDone || shouldForceRefresh)
+                    if (!this.isEncryptionSettingsInitDone)
                     {
-                        await this.InitializeEncryptionSettingsAsync(shouldForceRefresh, cancellationToken);
+                        await this.InitializeEncryptionSettingsAsync(cancellationToken);
                     }
                 }
                 finally
@@ -188,30 +197,35 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else if (propertyValue.Type == JTokenType.Array)
             {
-                if (propertyValue.Children().Count() != 1 && !propertyValue.Children().First().Children().Any())
+                if (propertyValue.Children().Count() > 0)
                 {
-                    for (int i = 0; i < propertyValue.Count(); i++)
+                    if (!propertyValue.Children().First().Children().Any())
                     {
-                        propertyValue[i] = await this.EncryptAndSerializeValueAsync(propertyValue[i], settings);
-                    }
-                }
-
-                foreach (JObject arrayjObject in propertyValue.Children<JObject>())
-                {
-                    foreach (JProperty jProperty in arrayjObject.Properties())
-                    {
-                        if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
+                        for (int i = 0; i < propertyValue.Count(); i++)
                         {
-                            await this.EncryptAndSerializePropertyAsync(
-                                    null,
-                                    jProperty.Value,
-                                    settings,
-                                    diagnosticsContext,
-                                    cancellationToken);
+                            propertyValue[i] = await this.EncryptAndSerializeValueAsync(propertyValue[i], settings);
                         }
-                        else
+                    }
+                    else
+                    {
+                        foreach (JObject arrayjObject in propertyValue.Children<JObject>())
                         {
-                            jProperty.Value = await this.EncryptAndSerializeValueAsync(jProperty.Value, settings);
+                            foreach (JProperty jProperty in arrayjObject.Properties())
+                            {
+                                if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
+                                {
+                                    await this.EncryptAndSerializePropertyAsync(
+                                            null,
+                                            jProperty.Value,
+                                            settings,
+                                            diagnosticsContext,
+                                            cancellationToken);
+                                }
+                                else
+                                {
+                                    jProperty.Value = await this.EncryptAndSerializeValueAsync(jProperty.Value, settings);
+                                }
+                            }
                         }
                     }
                 }
@@ -257,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            await this.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
+            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
             if (this.ClientEncryptionPolicy == null)
             {
@@ -283,9 +297,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             foreach (ClientEncryptionIncludedPath pathToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
             {
                 string propertyName = pathToEncrypt.Path.Substring(1);
+
+                // possibly a wrong path configured in the Client Encryption Policy, ignore.
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
-                    throw new ArgumentException($"{nameof(pathToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                    continue;
                 }
 
                 if (propertyValue.Type == JTokenType.Null)
@@ -293,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
+                MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetorUpdateEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
 
                 if (settings == null)
                 {
@@ -391,39 +407,44 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else if (propertyValue.Type == JTokenType.Array)
             {
-                if (propertyValue.Children().Count() != 1 && !propertyValue.Children().First().Children().Any())
+                if (propertyValue.Children().Count() > 0)
                 {
-                    for (int i = 0; i < propertyValue.Count(); i++)
+                    if (!propertyValue.Children().First().Children().Any())
                     {
-                        propertyValue[i] = await this.DecryptAndDeserializeValueAsync(
-                                     propertyValue[i],
-                                     settings,
-                                     diagnosticsContext,
-                                     cancellationToken);
-                    }
-                }
-
-                foreach (JObject arrayjObject in propertyValue.Children<JObject>())
-                {
-                    foreach (JProperty jProperty in arrayjObject.Properties())
-                    {
-                        if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
+                        for (int i = 0; i < propertyValue.Count(); i++)
                         {
-                            await this.DecryptAndDeserializePropertyAsync(
-                                   itemJObj,
-                                   settings,
-                                   propertyName,
-                                   jProperty.Value,
-                                   diagnosticsContext,
-                                   cancellationToken);
+                            propertyValue[i] = await this.DecryptAndDeserializeValueAsync(
+                                         propertyValue[i],
+                                         settings,
+                                         diagnosticsContext,
+                                         cancellationToken);
                         }
-                        else
+                    }
+                    else
+                    {
+                        foreach (JObject arrayjObject in propertyValue.Children<JObject>())
                         {
-                            jProperty.Value = await this.DecryptAndDeserializeValueAsync(
-                                     jProperty.Value,
-                                     settings,
-                                     diagnosticsContext,
-                                     cancellationToken);
+                            foreach (JProperty jProperty in arrayjObject.Properties())
+                            {
+                                if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
+                                {
+                                    await this.DecryptAndDeserializePropertyAsync(
+                                           itemJObj,
+                                           settings,
+                                           propertyName,
+                                           jProperty.Value,
+                                           diagnosticsContext,
+                                           cancellationToken);
+                                }
+                                else
+                                {
+                                    jProperty.Value = await this.DecryptAndDeserializeValueAsync(
+                                             jProperty.Value,
+                                             settings,
+                                             diagnosticsContext,
+                                             cancellationToken);
+                                }
+                            }
                         }
                     }
                 }
@@ -452,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
                 {
                     string propertyName = path.Path.Substring(1);
-                    MdeEncryptionSettings settings = await this.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
+                    MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetorUpdateEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
 
                     if (settings == null)
                     {
@@ -482,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            await this.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
+            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
             if (input == null || this.ClientEncryptionPolicy == null)
             {
@@ -508,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            await this.InitializeMdeProcessorIfNotInitializedAsync(false, cancellationToken);
+            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
             if (this.ClientEncryptionPolicy == null)
             {
@@ -523,33 +544,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                          cancellationToken);
 
             return document;
-        }
-
-        public async Task<MdeEncryptionSettings> GetEncryptionSettingForPropertyAsync(string propertyName, CancellationToken cancellationToken)
-        {
-            if (this.perPropertyEncryptionSetting.TryGetValue(propertyName, out MdeEncryptionSettings settings))
-            {
-                if (settings.MdeEncryptionSettingsExpiry <= DateTime.UtcNow)
-                {
-                    await this.InitializeMdeProcessorIfNotInitializedAsync(true, cancellationToken);
-                    if (this.perPropertyEncryptionSetting.TryGetValue(propertyName, out settings))
-                    {
-                        return settings;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-                else
-                {
-                    return settings;
-                }
-            }
-            else
-            {
-                return null;
-            }
         }
 
         private JObject RetrieveItem(
