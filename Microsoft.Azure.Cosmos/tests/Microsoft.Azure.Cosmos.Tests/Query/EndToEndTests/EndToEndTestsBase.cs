@@ -8,7 +8,6 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Poco;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -27,12 +26,10 @@
 
         private async Task RunQueryTestAsync(
             IReadOnlyList<CosmosObject> documentsToInsert,
-            ImplementationAsync implementationAsync,
-            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
+            ImplementationAsync implementationAsync)
         {
             (IQueryableContainer container, List<CosmosObject> documentsInserted) = await this.CreateContainerAsync(
-                documentsToInsert,
-                failureConfigs);
+                documentsToInsert);
 
             using (container)
             {
@@ -43,12 +40,10 @@
         private async Task RunQueryTestAsync<T>(
             IReadOnlyList<CosmosObject> documentsToInsert,
             ImplementationAsync<T> implementationAsync,
-            T testArgument,
-            FlakyDocumentContainer.FailureConfigs failureConfigs = null)
+            T testArgument)
         {
             (IQueryableContainer container, List<CosmosObject> documentsInserted) = await this.CreateContainerAsync(
-                documentsToInsert,
-                failureConfigs);
+                documentsToInsert);
 
             using (container)
             {
@@ -239,8 +234,7 @@
         }
 
         internal abstract Task<(IQueryableContainer, List<CosmosObject>)> CreateContainerAsync(
-            IReadOnlyList<CosmosObject> documentsToInsert,
-            FlakyDocumentContainer.FailureConfigs failureConfigs);
+            IReadOnlyList<CosmosObject> documentsToInsert);
 
         internal interface IQueryableContainer : IDisposable
         {

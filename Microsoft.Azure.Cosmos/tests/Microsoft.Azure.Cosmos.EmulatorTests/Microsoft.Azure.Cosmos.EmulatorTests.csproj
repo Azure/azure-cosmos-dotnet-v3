@@ -24,6 +24,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Poco\Person.cs" Link="Query\EndToEndTests\Person.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\EndToEndTests\EndToEndTestsBase.cs" Link="Query\EndToEndTests\EndToEndTestsBase.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\EndToEndTests\EndToEndTestsBase.Sanity.cs" Link="Query\EndToEndTests\EndToEndTestsBase.Sanity.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
